@@ -1,8 +1,6 @@
-use std::sync::Arc;
-
 #[cfg(test)]
 use crate::structures::{Gene, Chromosome};
-use genetic_algorithms::operations::mutation::{swap, inversion, scramble, aga_probability};
+use genetic_algorithms::{fitness::FitnessFnWrapper, operations::mutation::{aga_probability, inversion, scramble, swap}};
 
 #[test]
 fn test_swap_mutation(){
@@ -14,7 +12,7 @@ fn test_swap_mutation(){
     Gene{id:46}, Gene{id:47}, Gene{id:48}, Gene{id:49}, Gene{id:50}]; 
 
     //We create the individuals
-    let mut individual_1 = Chromosome{dna: dna_1, fitness: 0.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
+    let mut individual_1 = Chromosome{dna: dna_1, fitness: 0.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
     let individual_1_copy = individual_1.clone();
 
     //We mutate the dna
@@ -32,7 +30,7 @@ fn test_inversion_mutation(){
     Gene{id:46}, Gene{id:47}, Gene{id:48}, Gene{id:49}, Gene{id:50}]; 
 
     //We create the individuals
-    let mut individual_1 = Chromosome{dna: dna_1, fitness: 0.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
+    let mut individual_1 = Chromosome{dna: dna_1, fitness: 0.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
     let individual_1_copy = individual_1.clone();
 
     //We mutate the dna
@@ -50,7 +48,7 @@ fn test_scramble_mutation(){
     Gene{id:46}, Gene{id:47}, Gene{id:48}, Gene{id:49}, Gene{id:50}]; 
 
     //We create the individuals
-    let mut individual_1 = Chromosome{dna: dna_1, fitness: 0.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
+    let mut individual_1 = Chromosome{dna: dna_1, fitness: 0.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
     let individual_1_copy = individual_1.clone();
 
     //We mutate the dna
@@ -61,8 +59,8 @@ fn test_scramble_mutation(){
 #[test]
 fn test_mutation_aga_probability_over_avg(){
 
-    let parent_1 = Chromosome{dna: Vec::<Gene>::new(), fitness: 25.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let parent_2 = Chromosome{dna: Vec::<Gene>::new(), fitness: 100.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
+    let parent_1 = Chromosome{dna: Vec::<Gene>::new(), fitness: 25.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let parent_2 = Chromosome{dna: Vec::<Gene>::new(), fitness: 100.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
     let f_avg = 50.0;
     let probability_max = 0.75;
     let probability_min = 0.25;
@@ -78,8 +76,8 @@ fn test_mutation_aga_probability_over_avg(){
 #[test]
 fn test_mutation_aga_probability_under_avg(){
 
-    let parent_1 = Chromosome{dna: Vec::<Gene>::new(), fitness: 25.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let parent_2 = Chromosome{dna: Vec::<Gene>::new(), fitness: 49.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
+    let parent_1 = Chromosome{dna: Vec::<Gene>::new(), fitness: 25.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let parent_2 = Chromosome{dna: Vec::<Gene>::new(), fitness: 49.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
     let f_avg = 50.0;
     let probability_max = 0.75;
     let probability_min = 0.25;

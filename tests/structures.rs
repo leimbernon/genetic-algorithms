@@ -1,6 +1,5 @@
+use genetic_algorithms::fitness::FitnessFnWrapper;
 use genetic_algorithms::traits::{GeneT, ChromosomeT};
-use std::{fmt::Debug, sync::Arc};
-use std::fmt;
 
 //Structures definition
 #[derive(Debug, Copy, Clone, Default, PartialEq)]
@@ -17,54 +16,12 @@ impl GeneT for Gene{
     }
 }
 
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct Chromosome{
     pub dna: Vec<Gene>,
     pub fitness: f64,
     pub age: i32,
-    pub fitness_fn: Arc<dyn Fn(&[Gene]) -> f64 + Send + Sync>,
-}
-
-impl Default for Chromosome {
-    fn default() -> Self {
-        Self {
-            dna: Vec::new(),
-            fitness: 0.0,
-            age: 0,
-            fitness_fn: Arc::new(|_| 0.0),
-        }
-    }
-}
-
-impl Debug for Chromosome{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Binary")
-            .field("dna", &self.dna)
-            .field("fitness", &self.fitness)
-            .field("age", &self.age)
-            // Custom message for the function since functions cannot be printed
-            .field("fitness_fn", &"<function>")
-            .finish()
-    }
-}
-
-impl Clone for Chromosome{
-    fn clone(&self) -> Self {
-        Self {
-            dna: self.dna.clone(),
-            fitness: self.fitness,
-            age: self.age,
-            // Clone the Arc, which increments the reference count
-            fitness_fn: Arc::clone(&self.fitness_fn),
-        }
-    }
-}
-
-impl PartialEq for Chromosome {
-    fn eq(&self, other: &Self) -> bool {
-        self.dna == other.dna
-            && self.fitness == other.fitness
-            && self.age == other.age
-    }
+    pub fitness_fn: FitnessFnWrapper<Gene>,
 }
 
 impl ChromosomeT for Chromosome{
@@ -88,9 +45,9 @@ impl ChromosomeT for Chromosome{
     }
     fn set_fitness_fn<F>(&mut self, fitness_fn: F) -> &mut Self
     where
-        F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static,
+        F: Fn(&[Gene]) -> f64 + Send + Sync + 'static,
     {
-        self.fitness_fn = Arc::new(fitness_fn);
+        self.fitness_fn = FitnessFnWrapper::new(fitness_fn);
         self
     }
     fn calculate_fitness(&mut self) {

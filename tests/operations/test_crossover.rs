@@ -1,8 +1,6 @@
-use std::sync::Arc;
-
 #[cfg(test)]
 use crate::structures::{Gene, Chromosome};
-use genetic_algorithms::operations::crossover::{cycle, multipoint, uniform_crossover, aga_probability};
+use genetic_algorithms::{fitness::FitnessFnWrapper, operations::crossover::{aga_probability, cycle, multipoint, uniform_crossover}};
 
 
 #[test]
@@ -12,8 +10,8 @@ fn test_cycle_crossover(){
     let dna_1 = vec![Gene{id:1}, Gene{id:2}, Gene{id:3}, Gene{id:4}];
     let dna_2 = vec![Gene{id:4}, Gene{id:3}, Gene{id:2}, Gene{id:1}];
 
-    let parent_1 = Chromosome{dna: dna_1, fitness: 0.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let parent_2 = Chromosome{dna: dna_2, fitness: 0.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
+    let parent_1 = Chromosome{dna: dna_1, fitness: 0.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let parent_2 = Chromosome{dna: dna_2, fitness: 0.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
 
     //Getting the offspring
     let mut offspring = cycle::cycle(&parent_1, &parent_2).unwrap();
@@ -49,8 +47,8 @@ fn test_multipoint_crossover_2_points(){
     let dna_1 = vec![Gene{id:1}, Gene{id:2}, Gene{id:3}, Gene{id:4}, Gene{id:5}, Gene{id:6}];
     let dna_2 = vec![Gene{id:6}, Gene{id:5}, Gene{id:4}, Gene{id:3}, Gene{id:2}, Gene{id:1}];
 
-    let parent_1 = Chromosome{dna: dna_1, fitness: 0.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let parent_2 = Chromosome{dna: dna_2, fitness: 0.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
+    let parent_1 = Chromosome{dna: dna_1, fitness: 0.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let parent_2 = Chromosome{dna: dna_2, fitness: 0.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
 
     //Getting the offspring
     let mut offspring = multipoint(&parent_1, &parent_2, &2).unwrap();
@@ -88,8 +86,8 @@ fn test_multipoint_crossover_4_points(){
     let dna_1 = vec![Gene{id:1}, Gene{id:2}, Gene{id:3}, Gene{id:4}, Gene{id:5}, Gene{id:6}];
     let dna_2 = vec![Gene{id:6}, Gene{id:5}, Gene{id:4}, Gene{id:3}, Gene{id:2}, Gene{id:1}];
 
-    let parent_1 = Chromosome{dna: dna_1, fitness: 0.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let parent_2 = Chromosome{dna: dna_2, fitness: 0.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
+    let parent_1 = Chromosome{dna: dna_1, fitness: 0.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let parent_2 = Chromosome{dna: dna_2, fitness: 0.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
 
     //Getting the offspring
     let mut offspring = multipoint(&parent_1, &parent_2, &4).unwrap();
@@ -127,8 +125,8 @@ fn test_uniform_crossover(){
     let dna_1 = vec![Gene{id:1}, Gene{id:2}, Gene{id:3}, Gene{id:4}];
     let dna_2 = vec![Gene{id:4}, Gene{id:3}, Gene{id:2}, Gene{id:1}];
 
-    let parent_1 = Chromosome{dna: dna_1, fitness: 0.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let parent_2 = Chromosome{dna: dna_2, fitness: 0.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
+    let parent_1 = Chromosome{dna: dna_1, fitness: 0.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let parent_2 = Chromosome{dna: dna_2, fitness: 0.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
 
     //Getting the offspring
     let mut offspring = uniform_crossover::uniform(&parent_1, &parent_2).unwrap();
@@ -146,8 +144,8 @@ fn test_uniform_crossover(){
 #[test]
 fn test_xover_aga_probability_over_avg(){
 
-    let parent_1 = Chromosome{dna: Vec::<Gene>::new(), fitness: 25.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let parent_2 = Chromosome{dna: Vec::<Gene>::new(), fitness: 100.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
+    let parent_1 = Chromosome{dna: Vec::<Gene>::new(), fitness: 25.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let parent_2 = Chromosome{dna: Vec::<Gene>::new(), fitness: 100.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
     let f_max = 150.0;
     let f_avg = 50.0;
     let probability_max = 0.75;
@@ -164,8 +162,8 @@ fn test_xover_aga_probability_over_avg(){
 #[test]
 fn test_xover_aga_probability_under_avg(){
 
-    let parent_1 = Chromosome{dna: Vec::<Gene>::new(), fitness: 25.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let parent_2 = Chromosome{dna: Vec::<Gene>::new(), fitness: 49.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
+    let parent_1 = Chromosome{dna: Vec::<Gene>::new(), fitness: 25.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let parent_2 = Chromosome{dna: Vec::<Gene>::new(), fitness: 49.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
     let f_max = 150.0;
     let f_avg = 50.0;
     let probability_max = 0.75;

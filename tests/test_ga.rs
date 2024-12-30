@@ -1,8 +1,7 @@
 #[cfg(test)]
 mod structures;
-use std::sync::Arc;
 
-use genetic_algorithms::{operations::{Selection, Crossover, Mutation, Survivor}, population::Population, traits::{ChromosomeT, ConfigurationT}, configuration::ProblemSolving, ga};
+use genetic_algorithms::{configuration::ProblemSolving, fitness::FitnessFnWrapper, ga, operations::{Crossover, Mutation, Selection, Survivor}, population::Population, traits::{ChromosomeT, ConfigurationT}};
 use genetic_algorithms::ga::TerminationCause;
 use crate::structures::{Gene, Chromosome};
 use genetic_algorithms::ga::Ga;
@@ -28,16 +27,16 @@ fn test_ga_start_maximize(){
     let dna_10 = vec![Gene{id:1}, Gene{id:4}, Gene{id:3}, Gene{id:2}];
 
     let individuals = vec![
-        Chromosome{dna: dna_1, fitness: 1.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
-        Chromosome{dna: dna_2, fitness: 2.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
-        Chromosome{dna: dna_3, fitness: 3.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
-        Chromosome{dna: dna_4, fitness: 4.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
-        Chromosome{dna: dna_5, fitness: 5.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
-        Chromosome{dna: dna_6, fitness: 6.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
-        Chromosome{dna: dna_7, fitness: 7.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
-        Chromosome{dna: dna_8, fitness: 8.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
-        Chromosome{dna: dna_9, fitness: 9.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
-        Chromosome{dna: dna_10, fitness: 10.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},
+        Chromosome{dna: dna_1, fitness: 1.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
+        Chromosome{dna: dna_2, fitness: 2.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
+        Chromosome{dna: dna_3, fitness: 3.0, age: 0, fitness_fn: FitnessFnWrapper::default()},  
+        Chromosome{dna: dna_4, fitness: 4.0, age: 0, fitness_fn: FitnessFnWrapper::default()},  
+        Chromosome{dna: dna_5, fitness: 5.0, age: 0, fitness_fn: FitnessFnWrapper::default()},  
+        Chromosome{dna: dna_6, fitness: 6.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
+        Chromosome{dna: dna_7, fitness: 7.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
+        Chromosome{dna: dna_8, fitness: 8.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
+        Chromosome{dna: dna_9, fitness: 9.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
+        Chromosome{dna: dna_10, fitness: 10.0, age: 0, fitness_fn: FitnessFnWrapper::default()},
     ];
 
     let mut population = Population::new(individuals);
@@ -71,16 +70,16 @@ fn test_ga_run_minimize(){
     let dna_10 = vec![Gene{id:1}, Gene{id:4}, Gene{id:3}, Gene{id:2}];
 
     let individuals = vec![
-        Chromosome{dna: dna_1, fitness: 1.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
-        Chromosome{dna: dna_2, fitness: 2.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
-        Chromosome{dna: dna_3, fitness: 3.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
-        Chromosome{dna: dna_4, fitness: 4.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
-        Chromosome{dna: dna_5, fitness: 5.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
-        Chromosome{dna: dna_6, fitness: 6.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
-        Chromosome{dna: dna_7, fitness: 7.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
-        Chromosome{dna: dna_8, fitness: 8.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
-        Chromosome{dna: dna_9, fitness: 9.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
-        Chromosome{dna: dna_10, fitness: 10.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},
+        Chromosome{dna: dna_1, fitness: 1.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
+        Chromosome{dna: dna_2, fitness: 2.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
+        Chromosome{dna: dna_3, fitness: 3.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
+        Chromosome{dna: dna_4, fitness: 4.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
+        Chromosome{dna: dna_5, fitness: 5.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
+        Chromosome{dna: dna_6, fitness: 6.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
+        Chromosome{dna: dna_7, fitness: 7.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
+        Chromosome{dna: dna_8, fitness: 8.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
+        Chromosome{dna: dna_9, fitness: 9.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
+        Chromosome{dna: dna_10, fitness: 10.0, age: 0, fitness_fn: FitnessFnWrapper::default()},
     ];
 
     let mut population = Population::new(individuals);
@@ -116,16 +115,16 @@ fn test_ga_run(){
     let dna_10 = vec![Gene{id:1}, Gene{id:4}, Gene{id:3}, Gene{id:2}];
 
     let individuals = vec![
-        Chromosome{dna: dna_1, fitness: 1.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
-        Chromosome{dna: dna_2, fitness: 2.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
-        Chromosome{dna: dna_3, fitness: 3.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
-        Chromosome{dna: dna_4, fitness: 4.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
-        Chromosome{dna: dna_5, fitness: 5.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
-        Chromosome{dna: dna_6, fitness: 6.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
-        Chromosome{dna: dna_7, fitness: 7.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
-        Chromosome{dna: dna_8, fitness: 8.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
-        Chromosome{dna: dna_9, fitness: 9.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
-        Chromosome{dna: dna_10, fitness: 10.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
+        Chromosome{dna: dna_1, fitness: 1.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
+        Chromosome{dna: dna_2, fitness: 2.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
+        Chromosome{dna: dna_3, fitness: 3.0, age: 0, fitness_fn: FitnessFnWrapper::default()},  
+        Chromosome{dna: dna_4, fitness: 4.0, age: 0, fitness_fn: FitnessFnWrapper::default()},  
+        Chromosome{dna: dna_5, fitness: 5.0, age: 0, fitness_fn: FitnessFnWrapper::default()},  
+        Chromosome{dna: dna_6, fitness: 6.0, age: 0, fitness_fn: FitnessFnWrapper::default()},  
+        Chromosome{dna: dna_7, fitness: 7.0, age: 0, fitness_fn: FitnessFnWrapper::default()},  
+        Chromosome{dna: dna_8, fitness: 8.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
+        Chromosome{dna: dna_9, fitness: 9.0, age: 0, fitness_fn: FitnessFnWrapper::default()},  
+        Chromosome{dna: dna_10, fitness: 10.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
     ];
 
     let mut population = Population::new(individuals);
@@ -235,16 +234,16 @@ fn test_callback_function(){
     let dna_10 = vec![Gene{id:1}, Gene{id:4}, Gene{id:3}, Gene{id:2}];
 
     let individuals = vec![
-        Chromosome{dna: dna_1, fitness: 1.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
-        Chromosome{dna: dna_2, fitness: 2.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
-        Chromosome{dna: dna_3, fitness: 3.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
-        Chromosome{dna: dna_4, fitness: 4.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
-        Chromosome{dna: dna_5, fitness: 5.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
-        Chromosome{dna: dna_6, fitness: 6.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
-        Chromosome{dna: dna_7, fitness: 7.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
-        Chromosome{dna: dna_8, fitness: 8.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
-        Chromosome{dna: dna_9, fitness: 9.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
-        Chromosome{dna: dna_10, fitness: 10.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
+        Chromosome{dna: dna_1, fitness: 1.0, age: 0, fitness_fn: FitnessFnWrapper::default()},  
+        Chromosome{dna: dna_2, fitness: 2.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
+        Chromosome{dna: dna_3, fitness: 3.0, age: 0, fitness_fn: FitnessFnWrapper::default()},  
+        Chromosome{dna: dna_4, fitness: 4.0, age: 0, fitness_fn: FitnessFnWrapper::default()},  
+        Chromosome{dna: dna_5, fitness: 5.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
+        Chromosome{dna: dna_6, fitness: 6.0, age: 0, fitness_fn: FitnessFnWrapper::default()},  
+        Chromosome{dna: dna_7, fitness: 7.0, age: 0, fitness_fn: FitnessFnWrapper::default()},  
+        Chromosome{dna: dna_8, fitness: 8.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
+        Chromosome{dna: dna_9, fitness: 9.0, age: 0, fitness_fn: FitnessFnWrapper::default()},  
+        Chromosome{dna: dna_10, fitness: 10.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
     ];
 
     let mut population = Population::new(individuals);

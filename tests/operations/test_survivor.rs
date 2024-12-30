@@ -1,8 +1,6 @@
-use std::sync::Arc;
-
 #[cfg(test)]
 use crate::structures::{Gene, Chromosome};
-use genetic_algorithms::{operations::survivor::{fitness, age}, traits::ChromosomeT, configuration::{ProblemSolving, LimitConfiguration}};
+use genetic_algorithms::{configuration::{LimitConfiguration, ProblemSolving}, fitness::FitnessFnWrapper, operations::survivor::{age, fitness}, traits::ChromosomeT};
 
 #[test]
 fn test_fitness_survivor_minization(){
@@ -22,18 +20,18 @@ fn test_fitness_survivor_minization(){
     let dna_12 = vec![Gene{id:1}];
 
     //We create the individuals
-    let individual_1 = Chromosome{dna: dna_1, fitness: 10.1, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_2 = Chromosome{dna: dna_2, fitness: 10.2, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_3 = Chromosome{dna: dna_3, fitness: 10.3, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_4 = Chromosome{dna: dna_4, fitness: 11.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_5 = Chromosome{dna: dna_5, fitness: 12.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_6 = Chromosome{dna: dna_6, fitness: 13.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_7 = Chromosome{dna: dna_7, fitness: 14.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_8 = Chromosome{dna: dna_8, fitness: 15.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_9 = Chromosome{dna: dna_9, fitness: 16.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_10 = Chromosome{dna: dna_10, fitness: 17.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_11 = Chromosome{dna: dna_11, fitness: 18.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_12 = Chromosome{dna: dna_12, fitness: 19.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
+    let individual_1 = Chromosome{dna: dna_1, fitness: 10.1, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_2 = Chromosome{dna: dna_2, fitness: 10.2, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_3 = Chromosome{dna: dna_3, fitness: 10.3, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_4 = Chromosome{dna: dna_4, fitness: 11.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_5 = Chromosome{dna: dna_5, fitness: 12.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_6 = Chromosome{dna: dna_6, fitness: 13.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_7 = Chromosome{dna: dna_7, fitness: 14.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_8 = Chromosome{dna: dna_8, fitness: 15.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_9 = Chromosome{dna: dna_9, fitness: 16.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_10 = Chromosome{dna: dna_10, fitness: 17.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_11 = Chromosome{dna: dna_11, fitness: 18.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_12 = Chromosome{dna: dna_12, fitness: 19.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
 
 
     //We create the population and create the random mating
@@ -68,18 +66,18 @@ fn test_fitness_survivor_maximization(){
     let dna_12 = vec![Gene{id:1}];
 
     //We create the individuals
-    let individual_1 = Chromosome{dna: dna_1, fitness: 10.1, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_2 = Chromosome{dna: dna_2, fitness: 10.2, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_3 = Chromosome{dna: dna_3, fitness: 10.3, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_4 = Chromosome{dna: dna_4, fitness: 11.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_5 = Chromosome{dna: dna_5, fitness: 12.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_6 = Chromosome{dna: dna_6, fitness: 13.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_7 = Chromosome{dna: dna_7, fitness: 14.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_8 = Chromosome{dna: dna_8, fitness: 15.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_9 = Chromosome{dna: dna_9, fitness: 16.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_10 = Chromosome{dna: dna_10, fitness: 17.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_11 = Chromosome{dna: dna_11, fitness: 18.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_12 = Chromosome{dna: dna_12, fitness: 19.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
+    let individual_1 = Chromosome{dna: dna_1, fitness: 10.1, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_2 = Chromosome{dna: dna_2, fitness: 10.2, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_3 = Chromosome{dna: dna_3, fitness: 10.3, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_4 = Chromosome{dna: dna_4, fitness: 11.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_5 = Chromosome{dna: dna_5, fitness: 12.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_6 = Chromosome{dna: dna_6, fitness: 13.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_7 = Chromosome{dna: dna_7, fitness: 14.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_8 = Chromosome{dna: dna_8, fitness: 15.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_9 = Chromosome{dna: dna_9, fitness: 16.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_10 = Chromosome{dna: dna_10, fitness: 17.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_11 = Chromosome{dna: dna_11, fitness: 18.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_12 = Chromosome{dna: dna_12, fitness: 19.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
 
 
     //We create the population and create the random mating
@@ -114,18 +112,18 @@ fn test_age_based_survivor(){
     let dna_12 = vec![Gene{id:1}];
 
     //We create the individuals
-    let individual_1 = Chromosome{dna: dna_1, fitness: 10.1, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_2 = Chromosome{dna: dna_2, fitness: 10.2, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_3 = Chromosome{dna: dna_3, fitness: 10.3, age: 1, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_4 = Chromosome{dna: dna_4, fitness: 11.0, age: 1, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_5 = Chromosome{dna: dna_5, fitness: 12.0, age: 3, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_6 = Chromosome{dna: dna_6, fitness: 13.0, age: 3, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_7 = Chromosome{dna: dna_7, fitness: 14.0, age: 2, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_8 = Chromosome{dna: dna_8, fitness: 15.0, age: 2, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_9 = Chromosome{dna: dna_9, fitness: 16.0, age: 2, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_10 = Chromosome{dna: dna_10, fitness: 17.0, age: 2, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_11 = Chromosome{dna: dna_11, fitness: 18.0, age: 1, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_12 = Chromosome{dna: dna_12, fitness: 19.0, age: 1, fitness_fn: Arc::new(|_| 0.0)};
+    let individual_1 = Chromosome{dna: dna_1, fitness: 10.1, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_2 = Chromosome{dna: dna_2, fitness: 10.2, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_3 = Chromosome{dna: dna_3, fitness: 10.3, age: 1, fitness_fn: FitnessFnWrapper::default()};
+    let individual_4 = Chromosome{dna: dna_4, fitness: 11.0, age: 1, fitness_fn: FitnessFnWrapper::default()};
+    let individual_5 = Chromosome{dna: dna_5, fitness: 12.0, age: 3, fitness_fn: FitnessFnWrapper::default()};
+    let individual_6 = Chromosome{dna: dna_6, fitness: 13.0, age: 3, fitness_fn: FitnessFnWrapper::default()};
+    let individual_7 = Chromosome{dna: dna_7, fitness: 14.0, age: 2, fitness_fn: FitnessFnWrapper::default()};
+    let individual_8 = Chromosome{dna: dna_8, fitness: 15.0, age: 2, fitness_fn: FitnessFnWrapper::default()};
+    let individual_9 = Chromosome{dna: dna_9, fitness: 16.0, age: 2, fitness_fn: FitnessFnWrapper::default()};
+    let individual_10 = Chromosome{dna: dna_10, fitness: 17.0, age: 2, fitness_fn: FitnessFnWrapper::default()};
+    let individual_11 = Chromosome{dna: dna_11, fitness: 18.0, age: 1, fitness_fn: FitnessFnWrapper::default()};
+    let individual_12 = Chromosome{dna: dna_12, fitness: 19.0, age: 1, fitness_fn: FitnessFnWrapper::default()};
 
 
     //We create the population and create the random mating
@@ -164,18 +162,18 @@ fn test_survivor_fitness_fixed(){
     let dna_12 = vec![Gene{id:1}];
 
     //We create the individuals
-    let individual_1 = Chromosome{dna: dna_1, fitness: 10.1, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_2 = Chromosome{dna: dna_2, fitness: 10.2, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_3 = Chromosome{dna: dna_3, fitness: 10.3, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_4 = Chromosome{dna: dna_4, fitness: 11.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_5 = Chromosome{dna: dna_5, fitness: 12.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_6 = Chromosome{dna: dna_6, fitness: 13.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_7 = Chromosome{dna: dna_7, fitness: 14.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_8 = Chromosome{dna: dna_8, fitness: 15.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_9 = Chromosome{dna: dna_9, fitness: 16.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_10 = Chromosome{dna: dna_10, fitness: 17.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_11 = Chromosome{dna: dna_11, fitness: 18.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
-    let individual_12 = Chromosome{dna: dna_12, fitness: 19.0, age: 0, fitness_fn: Arc::new(|_| 0.0)};
+    let individual_1 = Chromosome{dna: dna_1, fitness: 10.1, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_2 = Chromosome{dna: dna_2, fitness: 10.2, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_3 = Chromosome{dna: dna_3, fitness: 10.3, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_4 = Chromosome{dna: dna_4, fitness: 11.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_5 = Chromosome{dna: dna_5, fitness: 12.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_6 = Chromosome{dna: dna_6, fitness: 13.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_7 = Chromosome{dna: dna_7, fitness: 14.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_8 = Chromosome{dna: dna_8, fitness: 15.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_9 = Chromosome{dna: dna_9, fitness: 16.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_10 = Chromosome{dna: dna_10, fitness: 17.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_11 = Chromosome{dna: dna_11, fitness: 18.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let individual_12 = Chromosome{dna: dna_12, fitness: 19.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
 
 
     //We create the population and create the random mating

@@ -1,4 +1,4 @@
-use crate::{configuration::GaConfiguration, genotypes::Binary as BinaryGenotype, operations::{self, survivor::fitness::ProblemSolving}, population::Population, traits::ChromosomeT};
+use crate::{configuration::GaConfiguration, operations::{self, survivor::fitness::ProblemSolving}, population::Population, traits::ChromosomeT};
 
 pub mod condition_checker;
 

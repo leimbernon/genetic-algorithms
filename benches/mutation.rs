@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use std::sync::Arc;
 use criterion::{criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion, PlotConfiguration};
 
+use genetic_algorithms::fitness::FitnessFnWrapper;
 use rand::Rng;
 use pprof::criterion::{Output, PProfProfiler};
 
@@ -73,7 +74,7 @@ impl Default for SimpleChromosome {
             dna: Vec::new(),
             fitness: 0.0,
             age: 0,
-            fitness_fn: Arc::new(|_| 0.0),
+            fitness_fn: FitnessFnWrapper::default(),
         }
     }
 }
@@ -117,7 +118,7 @@ fn setup_individual(gene_length: usize) -> SimpleChromosome {
             .map(|_| Gene { id: rand::thread_rng().gen_range(0..255) })
             .collect(),
         age: rand::thread_rng().gen_range(0..100),
-        fitness_fn: Arc::new(|_| 0.0),
+        fitness_fn: FitnessFnWrapper::default(),
     }
 }
 

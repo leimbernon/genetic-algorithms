@@ -75,7 +75,7 @@ impl Default for SimpleChromosome {
             dna: Vec::new(),
             fitness: 0.0,
             age: 0,
-            fitness_fn: Arc::new(|_| 0.0),
+            fitness_fn: FitnessFnWrapper::default(),
         }
     }
 }
@@ -130,7 +130,7 @@ fn setup_population(population_size: usize, gene_length: usize) -> Vec<SimpleChr
                 fitness: rng.gen_range(0.0..1.0),
                 dna,
                 age: rng.gen_range(0..100),
-                fitness_fn: Arc::new(|_| 0.0),
+                fitness_fn: FitnessFnWrapper::default(),
             }
         })
         .collect()
