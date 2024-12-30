@@ -1,4 +1,4 @@
-use crate::{configuration::GaConfiguration, population::Population, traits::{ChromosomeT}, operations::{self, survivor::fitness::ProblemSolving}};
+use crate::{configuration::GaConfiguration, genotypes::Binary as BinaryGenotype, operations::{self, survivor::fitness::ProblemSolving}, population::Population, traits::ChromosomeT};
 
 pub mod condition_checker;
 
@@ -6,7 +6,7 @@ pub mod condition_checker;
  * Function to call the different condition checkers 
  */
 pub fn condition_checker_factory<U>(configuration: Option<&GaConfiguration>, population: Option<&Population<U>>, 
-                                    alleles: Option<&[U::Gene]>, default_population: bool)
+                                    alleles: Option<&[U::Gene]>)
 where
 U: ChromosomeT + Send + Sync + 'static + Clone
 {
@@ -41,15 +41,20 @@ U: ChromosomeT + Send + Sync + 'static + Clone
         //2.4- Condition checkers for the repetition of the alleles
         if configuration.limit_configuration.alleles_can_be_repeated{
             if let Some(alleles) = alleles {
-                condition_checker::check_genotype_length_not_bigger_than_alleles::<U>(alleles, configuration.limit_configuration.genes_per_individual);
+                condition_checker::check_genotype_length_not_bigger_than_alleles::<U>(alleles, configuration.limit_configuration.genes_per_chromosome);
             }
         }
 
         //2.5- Condition checkers for the default population
-        if default_population{
-            condition_checker::check_genes_per_individual_is_set(configuration);
+        if population.is_none() || population.unwrap().individuals.is_empty(){
+            if configuration.limit_configuration.genes_per_chromosome <= 0 {
+                panic!("The number of genes per chromosome must be set.");
+            };
             condition_checker::check_population_size_is_set(configuration);
-            condition_checker::check_alleles_are_set::<U>(alleles);
+
+            //If the Gene is not a BinaryGenotype, we check that the alleles are set
+            //condition_checker::check_alleles_are_set::<U>(alleles);
+            
         } 
 
         //2.6- Condition checker for the couples

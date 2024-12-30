@@ -6,11 +6,12 @@ use genetic_algorithms::ga::TerminationCause;
 use genetic_algorithms::initializers::binary_random_initialization;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection};
 use genetic_algorithms::population::Population;
-use genetic_algorithms::traits::{ChromosomeT, ConfigurationT};
+use genetic_algorithms::traits::ConfigurationT;
 
 const EXCESS_WEIGHT_PENALTY: f64 = 1000.0;
 const MAX_WEIGHT: f64 = 67.0;
 
+#[derive(Clone)]
 struct Item{
     weight: f64,
     value: f64,
@@ -21,6 +22,8 @@ const ITEMS: [Item; 10] =[Item{weight: 23.0, value: 505.0}, Item{weight: 26.0, v
                           Item{weight: 32.0, value: 354.0}, Item{weight: 27.0, value: 414.0},
                           Item{weight: 29.0, value: 498.0}, Item{weight: 26.0, value: 545.0},
                           Item{weight: 30.0, value: 473.0}, Item{weight: 27.0, value: 543.0}];
+
+
 fn fitness_fn(dna: &[BinaryGenotype])->f64{
     let mut total_weight = 0.0;
     let mut total_value = 0.0;
@@ -45,22 +48,11 @@ fn report(generation: &i32, _population: &Population<BinaryChromosome>, terminat
 
 fn main(){
 
-    let mut population = Population::new_empty();
-
-    // Initialization
-    for _ in 0..100{
-        let genes = binary_random_initialization(10, None, None);
-        let mut chromosome = BinaryChromosome::new();
-
-        chromosome.set_dna(genes.as_slice());
-        chromosome.set_fitness_fn(fitness_fn);
-        chromosome.calculate_fitness();
-        println!("Phenotype: {} - Fitness: {}", chromosome.phenotype(), chromosome.get_fitness());
-        population.individuals.push(chromosome);
-    }
-
     let mut _population = ga::Ga::new()
-        .with_population(population)
+        .with_genes_per_chromosome(10)
+        .with_population_size(100)
+        .with_initialization_fn(binary_random_initialization)
+        .with_fitness_fn(fitness_fn)
         .with_best_individual_by_generation(true)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)

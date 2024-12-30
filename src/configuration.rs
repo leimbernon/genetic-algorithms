@@ -85,7 +85,7 @@ pub struct LimitConfiguration{
     pub fitness_target: Option<f64>, 
     pub get_best_individual_by_generation: bool,
     pub population_size: i32,
-    pub genes_per_individual: i32,
+    pub genes_per_chromosome: i32,
     pub needs_unique_ids: bool,
     pub alleles_can_be_repeated: bool,
 }
@@ -97,7 +97,7 @@ impl Default for LimitConfiguration {
             fitness_target: None, 
             get_best_individual_by_generation: false,
             population_size: 0,
-            genes_per_individual: 0,
+            genes_per_chromosome: 0,
             needs_unique_ids: false,
             alleles_can_be_repeated: false,
         }
@@ -191,7 +191,7 @@ impl ConfigurationT for GaConfiguration{
         self
     }
     fn with_genes_per_chromosome(&mut self, genes_per_individual: i32) -> &mut Self {
-        self.limit_configuration.genes_per_individual = genes_per_individual;
+        self.limit_configuration.genes_per_chromosome = genes_per_individual;
         self
     }
     fn with_needs_unique_ids(&mut self, needs_unique_ids: bool) -> &mut Self {

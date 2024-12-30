@@ -1,9 +1,16 @@
 #[cfg(test)]
 mod structures;
+use std::sync::Arc;
+
 use genetic_algorithms::{operations::{Selection, Crossover, Mutation, Survivor}, population::Population, traits::{ChromosomeT, ConfigurationT}, configuration::ProblemSolving, ga};
 use genetic_algorithms::ga::TerminationCause;
 use crate::structures::{Gene, Chromosome};
+use genetic_algorithms::ga::Ga;
 extern crate num_cpus;
+
+fn fitness_fn(_dna: &[Gene]) -> f64 {
+    0.0
+}
 
 #[test]
 fn test_ga_start_maximize(){
@@ -20,10 +27,18 @@ fn test_ga_start_maximize(){
     let dna_9 = vec![Gene{id:2}, Gene{id:1}, Gene{id:4}, Gene{id:3}];
     let dna_10 = vec![Gene{id:1}, Gene{id:4}, Gene{id:3}, Gene{id:2}];
 
-    let individuals = vec![Chromosome{dna: dna_1, fitness: 1.0, age: 0}, Chromosome{dna: dna_2, fitness: 2.0, age: 0},
-    Chromosome{dna: dna_3, fitness: 3.0, age: 0}, Chromosome{dna: dna_4, fitness: 4.0, age: 0}, Chromosome{dna: dna_5, fitness: 5.0, age: 0}, 
-    Chromosome{dna: dna_6, fitness: 6.0, age: 0}, Chromosome{dna: dna_7, fitness: 7.0, age: 0}, Chromosome{dna: dna_8, fitness: 8.0, age: 0},
-    Chromosome{dna: dna_9, fitness: 9.0, age: 0}, Chromosome{dna: dna_10, fitness: 10.0, age: 0}];
+    let individuals = vec![
+        Chromosome{dna: dna_1, fitness: 1.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
+        Chromosome{dna: dna_2, fitness: 2.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
+        Chromosome{dna: dna_3, fitness: 3.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
+        Chromosome{dna: dna_4, fitness: 4.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
+        Chromosome{dna: dna_5, fitness: 5.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
+        Chromosome{dna: dna_6, fitness: 6.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
+        Chromosome{dna: dna_7, fitness: 7.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
+        Chromosome{dna: dna_8, fitness: 8.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
+        Chromosome{dna: dna_9, fitness: 9.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
+        Chromosome{dna: dna_10, fitness: 10.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},
+    ];
 
     let mut population = Population::new(individuals);
     population = ga::Ga::new()
@@ -55,10 +70,18 @@ fn test_ga_run_minimize(){
     let dna_9 = vec![Gene{id:2}, Gene{id:1}, Gene{id:4}, Gene{id:3}];
     let dna_10 = vec![Gene{id:1}, Gene{id:4}, Gene{id:3}, Gene{id:2}];
 
-    let individuals = vec![Chromosome{dna: dna_1, fitness: 1.0, age: 0}, Chromosome{dna: dna_2, fitness: 2.0, age: 0},
-    Chromosome{dna: dna_3, fitness: 3.0, age: 0}, Chromosome{dna: dna_4, fitness: 4.0, age: 0}, Chromosome{dna: dna_5, fitness: 5.0, age: 0}, 
-    Chromosome{dna: dna_6, fitness: 6.0, age: 0}, Chromosome{dna: dna_7, fitness: 7.0, age: 0}, Chromosome{dna: dna_8, fitness: 8.0, age: 0},
-    Chromosome{dna: dna_9, fitness: 9.0, age: 0}, Chromosome{dna: dna_10, fitness: 10.0, age: 0}];
+    let individuals = vec![
+        Chromosome{dna: dna_1, fitness: 1.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
+        Chromosome{dna: dna_2, fitness: 2.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
+        Chromosome{dna: dna_3, fitness: 3.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
+        Chromosome{dna: dna_4, fitness: 4.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
+        Chromosome{dna: dna_5, fitness: 5.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
+        Chromosome{dna: dna_6, fitness: 6.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
+        Chromosome{dna: dna_7, fitness: 7.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
+        Chromosome{dna: dna_8, fitness: 8.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
+        Chromosome{dna: dna_9, fitness: 9.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
+        Chromosome{dna: dna_10, fitness: 10.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},
+    ];
 
     let mut population = Population::new(individuals);
     population = ga::Ga::new()
@@ -92,10 +115,18 @@ fn test_ga_run(){
     let dna_9 = vec![Gene{id:2}, Gene{id:1}, Gene{id:4}, Gene{id:3}];
     let dna_10 = vec![Gene{id:1}, Gene{id:4}, Gene{id:3}, Gene{id:2}];
 
-    let individuals = vec![Chromosome{dna: dna_1, fitness: 1.0, age: 0}, Chromosome{dna: dna_2, fitness: 2.0, age: 0},
-    Chromosome{dna: dna_3, fitness: 3.0, age: 0}, Chromosome{dna: dna_4, fitness: 4.0, age: 0}, Chromosome{dna: dna_5, fitness: 5.0, age: 0}, 
-    Chromosome{dna: dna_6, fitness: 6.0, age: 0}, Chromosome{dna: dna_7, fitness: 7.0, age: 0}, Chromosome{dna: dna_8, fitness: 8.0, age: 0},
-    Chromosome{dna: dna_9, fitness: 9.0, age: 0}, Chromosome{dna: dna_10, fitness: 10.0, age: 0}];
+    let individuals = vec![
+        Chromosome{dna: dna_1, fitness: 1.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
+        Chromosome{dna: dna_2, fitness: 2.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
+        Chromosome{dna: dna_3, fitness: 3.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
+        Chromosome{dna: dna_4, fitness: 4.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
+        Chromosome{dna: dna_5, fitness: 5.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
+        Chromosome{dna: dna_6, fitness: 6.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
+        Chromosome{dna: dna_7, fitness: 7.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
+        Chromosome{dna: dna_8, fitness: 8.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
+        Chromosome{dna: dna_9, fitness: 9.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
+        Chromosome{dna: dna_10, fitness: 10.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
+    ];
 
     let mut population = Population::new(individuals);
     population = ga::Ga::new()
@@ -126,8 +157,11 @@ fn test_parent_crossover_repeating_alleles(){
     static ALLELES_CAN_BE_REPEATED: bool = true;
     static NUMBER_OF_THREADS: i32 = 8;
 
-    let population: Population<Chromosome> = ga::Ga::new()
+
+    let mut ga_instance = Ga::new();
+    let ga: &mut Ga<Chromosome> = &mut ga_instance
                     .with_threads(NUMBER_OF_THREADS)
+                    .with_fitness_fn(fitness_fn)
                     .with_population_size(POPULATION_SIZE)
                     .with_genes_per_chromosome(GENES_PER_INDIVIDUAL)
                     .with_needs_unique_ids(NEEDS_UNIQUE_IDS)
@@ -137,7 +171,7 @@ fn test_parent_crossover_repeating_alleles(){
                     .initialization();
 
     //Once population has been initialized, we check for each individual in the population the number of genes in the dna
-    for individual in population.individuals{
+    for individual in &ga.population.individuals{
         assert!(individual.dna.len() == GENES_PER_INDIVIDUAL.try_into().unwrap());
     }
 }
@@ -155,8 +189,10 @@ fn test_parent_crossover_without_repeating_alleles(){
     static ALLELES_CAN_BE_REPEATED: bool = false;
     static NUMBER_OF_THREADS: i32 = 8;
 
-    let population: Population<Chromosome> = ga::Ga::new()
+    let mut ga_instance = Ga::new();
+    let ga: &mut Ga<Chromosome> = &mut ga_instance
                     .with_threads(NUMBER_OF_THREADS)
+                    .with_fitness_fn(fitness_fn)
                     .with_population_size(POPULATION_SIZE)
                     .with_genes_per_chromosome(GENES_PER_INDIVIDUAL)
                     .with_needs_unique_ids(NEEDS_UNIQUE_IDS)
@@ -166,10 +202,10 @@ fn test_parent_crossover_without_repeating_alleles(){
                     .initialization();
 
     //Once population has been initialized, we check for each individual we check that genes are not repeated
-    for individual in population.individuals{
+    for individual in &ga.population.individuals{
         let mut gene_ids = Vec::new();
 
-        for gene in individual.dna{
+        for gene in &individual.dna{
             if !gene_ids.is_empty(){
                 assert!(!gene_ids.contains(&gene.id));
             }
@@ -198,10 +234,18 @@ fn test_callback_function(){
     let dna_9 = vec![Gene{id:2}, Gene{id:1}, Gene{id:4}, Gene{id:3}];
     let dna_10 = vec![Gene{id:1}, Gene{id:4}, Gene{id:3}, Gene{id:2}];
 
-    let individuals = vec![Chromosome{dna: dna_1, fitness: 1.0, age: 0}, Chromosome{dna: dna_2, fitness: 2.0, age: 0},
-                           Chromosome{dna: dna_3, fitness: 3.0, age: 0}, Chromosome{dna: dna_4, fitness: 4.0, age: 0}, Chromosome{dna: dna_5, fitness: 5.0, age: 0},
-                           Chromosome{dna: dna_6, fitness: 6.0, age: 0}, Chromosome{dna: dna_7, fitness: 7.0, age: 0}, Chromosome{dna: dna_8, fitness: 8.0, age: 0},
-                           Chromosome{dna: dna_9, fitness: 9.0, age: 0}, Chromosome{dna: dna_10, fitness: 10.0, age: 0}];
+    let individuals = vec![
+        Chromosome{dna: dna_1, fitness: 1.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
+        Chromosome{dna: dna_2, fitness: 2.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
+        Chromosome{dna: dna_3, fitness: 3.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
+        Chromosome{dna: dna_4, fitness: 4.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
+        Chromosome{dna: dna_5, fitness: 5.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
+        Chromosome{dna: dna_6, fitness: 6.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
+        Chromosome{dna: dna_7, fitness: 7.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
+        Chromosome{dna: dna_8, fitness: 8.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
+        Chromosome{dna: dna_9, fitness: 9.0, age: 0, fitness_fn: Arc::new(|_| 0.0)},  
+        Chromosome{dna: dna_10, fitness: 10.0, age: 0, fitness_fn: Arc::new(|_| 0.0)}, 
+    ];
 
     let mut population = Population::new(individuals);
     population = ga::Ga::new()

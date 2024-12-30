@@ -37,6 +37,7 @@ fn test_initializers_generic_random_initialization_without_repetitions(){
 
 }
 
+#[test]
 fn test_binary_random_initialization(){
     let genes = binary_random_initialization(100, None, None);
     let mut chromosome = Binary::new();

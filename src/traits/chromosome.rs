@@ -24,6 +24,9 @@ pub trait ChromosomeT: Clone + Default{
         self.set_dna(dna_temp.as_slice());
         self
     }
+    fn set_fitness_fn<F>(&mut self, fitness_fn: F) -> &mut Self
+    where
+        F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static;
     fn calculate_fitness(&mut self);
     fn get_fitness(&self) -> f64;
     fn set_fitness(&mut self, fitness: f64)->&mut Self;

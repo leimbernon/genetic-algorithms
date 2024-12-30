@@ -2,7 +2,7 @@ use std::{sync::{mpsc::sync_channel, Mutex, Arc}, thread, collections::HashMap};
 use rand::Rng;
 use log::{trace, debug, info};
 use std::env;
-use crate::{population::Population, traits::{ChromosomeT, ConfigurationT}, operations::{selection, crossover, mutation, survivor}, configuration::{ProblemSolving, LimitConfiguration, LogLevel}, helpers::condition_checker_factory};
+use crate::{configuration::{LimitConfiguration, LogLevel, ProblemSolving}, helpers::condition_checker_factory, operations::{crossover, mutation, selection, survivor}, population::Population, traits::{ChromosomeT, ConfigurationT}};
 use crate::configuration::GaConfiguration;
 
 #[derive(Debug, PartialEq)]
@@ -19,9 +19,9 @@ where
     pub configuration: GaConfiguration,
     pub alleles: Vec<U::Gene>,
     pub population: Population<U>,
-    pub default_population: bool,
 
     pub initialization_fn: Option<Arc<dyn Fn(i32, Option<&[U::Gene]>, Option<bool>) -> Vec<U::Gene> + Send + Sync>>,
+    pub fitness_fn: Option<Arc<dyn Fn(&[U::Gene]) -> f64 + Send + Sync>>,
 }
 
 
@@ -34,8 +34,8 @@ where
             configuration: GaConfiguration{..Default::default()},
             population: Population::new_empty(),
             alleles: Vec::new(),
-            default_population: true,
             initialization_fn: None,
+            fitness_fn: None,
         }
     }
 }
@@ -174,12 +174,22 @@ where
      */
     pub fn with_population(&mut self, population: Population<U>) -> &mut Self {
         self.population = population;
-        self.default_population = false;
         
         //Checks if the number of couples is 0, sets the number of couples to the half of the population
         if self.configuration.selection_configuration.number_of_couples == 0 {
             self.configuration.selection_configuration.number_of_couples = ((self.population.size() / 2) as f64).round() as i32;
         }
+        self
+    }
+
+    /**
+     * Function to set the fitness function
+     */
+    pub fn with_fitness_fn<F>(&mut self, fitness_fn: F) -> &mut Self
+    where
+        F: Fn(&[U::Gene]) -> f64 + Send + Sync + 'static
+    {
+        self.fitness_fn = Some(Arc::new(fitness_fn));
         self
     }
 
@@ -198,7 +208,7 @@ where
     /**
      * Function to randomly initialize the population
      */
-    pub fn initialization(&mut self) ->Population<U>
+    pub fn initialization(&mut self) -> &mut Self
     where U:ChromosomeT + Send + Sync + 'static + Clone
     {
 
@@ -208,7 +218,7 @@ where
         }
 
         //Before starting the run, we will check the conditions
-        condition_checker_factory::<U>(Some(&self.configuration), None, Some(&self.alleles), self.default_population);
+        condition_checker_factory::<U>(Some(&self.configuration), None, Some(&self.alleles));
 
         info!("Initialization started");
         //let mut individuals = Vec::new();
@@ -217,7 +227,7 @@ where
         //Setting the number of individuals per thread
         let individuals_per_thread = self.configuration.limit_configuration.population_size / self.configuration.number_of_threads;
 
-        //Cloning the individuals for multithreading
+        //Cloning the individuals and fitness function for multithreading
         let alleles_t = Arc::new(Mutex::new(self.alleles.clone()));
 
         //Walking through the threads
@@ -229,11 +239,13 @@ where
             genes_per_individual_t,
             individuals_per_thread_t,
             needs_unique_ids_t,
-            initialization_fn_t) = (tx.clone(), Arc::clone(&alleles_t),
-                                        self.configuration.limit_configuration.genes_per_individual,
+            initialization_fn_t,
+            fitness_fn_t) = (tx.clone(), Arc::clone(&alleles_t),
+                                        self.configuration.limit_configuration.genes_per_chromosome,
                                         individuals_per_thread,
                                         self.configuration.limit_configuration.needs_unique_ids,
-                                        self.initialization_fn.clone().unwrap());
+                                        self.initialization_fn.clone().unwrap(),
+                                        self.fitness_fn.clone().unwrap());
 
             //Starting the thread management
             thread::spawn(move || {
@@ -249,8 +261,15 @@ where
                     individual.set_dna(dna_individual.as_slice());
 
 
-                    //Sets the dna of the individual, the age, and calculates fitness
+                    // Wrap the fitness function in a closure
+                    let fitness_fn = {
+                        let fitness_fn_t = fitness_fn_t.clone();
+                        move |genes: &[U::Gene]| (fitness_fn_t)(genes)
+                    };
+
+                    //Sets the dna of the individual, the age, sets the fitness fn and calculates fitness
                     individual.set_age(0);
+                    individual.set_fitness_fn(fitness_fn);
                     individual.calculate_fitness();
 
                     //Adds the individual in the vector
@@ -271,7 +290,8 @@ where
             individuals.append(&mut received);
         }
 
-        Population::new(individuals)
+        self.with_population(Population::new(individuals));
+        self
 
     }
 
@@ -288,13 +308,14 @@ where
         F: Fn(&i32, &Population<U>, TerminationCause)
     {
         //Before starting the run, we will check the conditions
-        condition_checker_factory::<U>(Some(&self.configuration), Some(&self.population), Some(&self.alleles), self.default_population);
+        condition_checker_factory::<U>(Some(&self.configuration), Some(&self.population), Some(&self.alleles));
 
         //If we want to initialize the population randomly
-        if self.initialization_fn.is_some() {
-            let tmp_population= self.initialization();
-            self.with_population(tmp_population);
-        }   
+        if self.population.size() == 0 && self.initialization_fn.is_some() {
+            self.initialization();
+        } else if self.population.size() == 0 && self.initialization_fn.is_none() {
+            panic!("No initialization function set");
+        }
 
         //We set the environment variable from the configuration value
         let key = "RUST_LOG";

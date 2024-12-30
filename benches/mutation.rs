@@ -1,3 +1,6 @@
+use std::fmt;
+use std::fmt::Debug;
+use std::sync::Arc;
 use criterion::{criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion, PlotConfiguration};
 
 use rand::Rng;
@@ -22,11 +25,11 @@ impl GeneT for Gene {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq)]
 struct SimpleChromosome {
     dna: Vec<Gene>,
     pub fitness: f64,
     pub age: i32,
+    pub fitness_fn: Arc<dyn Fn(&[Gene]) -> f64 + Send + Sync>,
 }
 impl ChromosomeT for SimpleChromosome {
     type Gene = Gene;
@@ -52,8 +55,58 @@ impl ChromosomeT for SimpleChromosome {
         self.dna = dna.to_vec();
         self
     }
+    fn set_fitness_fn<F>(&mut self, fitness_fn: F) -> &mut Self
+    where
+        F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static,
+    {
+        self.fitness_fn = Arc::new(fitness_fn);
+        self
+    }
     fn calculate_fitness(&mut self) {
         self.fitness = 0.0;
+    }
+}
+
+impl Default for SimpleChromosome {
+    fn default() -> Self {
+        Self {
+            dna: Vec::new(),
+            fitness: 0.0,
+            age: 0,
+            fitness_fn: Arc::new(|_| 0.0),
+        }
+    }
+}
+
+impl Debug for SimpleChromosome{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Binary")
+            .field("dna", &self.dna)
+            .field("fitness", &self.fitness)
+            .field("age", &self.age)
+            // Custom message for the function since functions cannot be printed
+            .field("fitness_fn", &"<function>")
+            .finish()
+    }
+}
+
+impl Clone for SimpleChromosome{
+    fn clone(&self) -> Self {
+        Self {
+            dna: self.dna.clone(),
+            fitness: self.fitness,
+            age: self.age,
+            // Clone the Arc, which increments the reference count
+            fitness_fn: Arc::clone(&self.fitness_fn),
+        }
+    }
+}
+
+impl PartialEq for SimpleChromosome {
+    fn eq(&self, other: &Self) -> bool {
+        self.dna == other.dna
+            && self.fitness == other.fitness
+            && self.age == other.age
     }
 }
 
@@ -64,6 +117,7 @@ fn setup_individual(gene_length: usize) -> SimpleChromosome {
             .map(|_| Gene { id: rand::thread_rng().gen_range(0..255) })
             .collect(),
         age: rand::thread_rng().gen_range(0..100),
+        fitness_fn: Arc::new(|_| 0.0),
     }
 }
 

@@ -86,11 +86,11 @@ U:ChromosomeT + Send + Sync + 'static + Clone{
 }
 
 /**
- * Function to check that the number of genes per individual is set
+ * Function to check that the number of genes per chromosome is set
  */
-pub fn check_genes_per_individual_is_set(configuration: &GaConfiguration){
-    if configuration.limit_configuration.genes_per_individual <= 0 {
-        panic!("The number of genes per individual must be set.");
+pub fn check_genes_per_chromosome_is_set(configuration: &GaConfiguration){
+    if configuration.limit_configuration.genes_per_chromosome <= 0 {
+        panic!("The number of genes per chromosome must be set.");
     }
 }
 

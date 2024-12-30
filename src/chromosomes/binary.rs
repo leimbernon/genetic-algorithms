@@ -67,6 +67,13 @@ impl ChromosomeT for Binary{
         self.dna = dna.to_vec();
         self
     }
+    fn set_fitness_fn<F>(&mut self, fitness_fn: F) -> &mut Self
+    where
+        F: Fn(&[BinaryGenotype]) -> f64 + Send + Sync + 'static,
+    {
+        self.fitness_fn = Arc::new(fitness_fn);
+        self
+    }
     fn calculate_fitness(&mut self) {
         self.fitness = (self.fitness_fn)(&self.dna);
     }
@@ -94,14 +101,6 @@ impl Binary {
             age: 0,
             fitness_fn: Arc::new(|_| 0.0),
         }
-    }
-
-    pub fn set_fitness_fn<F>(&mut self, fitness_fn: F) -> &mut Self
-    where
-        F: Fn(&[BinaryGenotype]) -> f64 + Send + Sync + 'static,
-    {
-        self.fitness_fn = Arc::new(fitness_fn);
-        self
     }
 
     pub fn phenotype(&self) -> String {
