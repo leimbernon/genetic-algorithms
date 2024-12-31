@@ -1,7 +1,7 @@
 pub(crate) use crate::configuration::LimitConfiguration;
 use crate::traits::ChromosomeT;
-use self::fitness::fitness_based;
-use self::age::age_based;
+pub use self::fitness::fitness_based;
+pub use self::age::age_based;
 
 use super::Survivor;
 pub mod fitness;

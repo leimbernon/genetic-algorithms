@@ -1,12 +1,13 @@
 use criterion::{criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion, PlotConfiguration};
 
+use genetic_algorithms::fitness::FitnessFnWrapper;
 use rand::seq::SliceRandom;
 use rand::Rng;
 use pprof::criterion::{Output, PProfProfiler};
 
-use genetic_algorithms::operations::crossover::multipoint::multipoint_crossover;
-use genetic_algorithms::operations::crossover::uniform_crossover::uniform;
-use genetic_algorithms::operations::crossover::cycle::cycle;
+use genetic_algorithms::operations::crossover::multipoint;
+use genetic_algorithms::operations::crossover::uniform;
+use genetic_algorithms::operations::crossover::cycle;
 use genetic_algorithms::traits::{GeneT, ChromosomeT};
 
 #[derive(Debug, Copy, Clone, Default, PartialEq)]
@@ -28,6 +29,7 @@ struct SimpleChromosome {
     dna: Vec<Gene>,
     pub fitness: f64,
     pub age: i32,
+    pub fitness_fn: FitnessFnWrapper<Gene>,
 }
 impl ChromosomeT for SimpleChromosome {
     type Gene = Gene;
@@ -53,6 +55,13 @@ impl ChromosomeT for SimpleChromosome {
         self.dna = dna.to_vec();
         self
     }
+    fn set_fitness_fn<F>(&mut self, fitness_fn: F) -> &mut Self
+    where
+        F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static,
+    {
+        self.fitness_fn = FitnessFnWrapper::new(fitness_fn);
+        self
+    }
     fn calculate_fitness(&mut self) {
         self.fitness = 0.0;
     }
@@ -76,6 +85,7 @@ fn setup_population(population_size: usize, gene_length: usize) -> Vec<SimpleChr
                 fitness: rng.gen_range(0.0..1.0),
                 dna,
                 age: rng.gen_range(0..100),
+                fitness_fn: FitnessFnWrapper::default(),
             }
         })
         .collect()
@@ -114,7 +124,7 @@ fn benchmark_crossover_methods(c: &mut Criterion) {
                     let parent_1 = &individuals[0];
                     let parent_2 = &individuals[1];
                     b.iter(|| {
-                        let _ = multipoint_crossover(parent_1, parent_2, &points);
+                        let _ = multipoint(parent_1, parent_2, &points);
                     });
                 },
             );

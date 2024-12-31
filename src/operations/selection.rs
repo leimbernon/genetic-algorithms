@@ -3,10 +3,10 @@ pub(crate) use std::collections::HashMap;
 use crate::configuration::SelectionConfiguration;
 use crate::traits::ChromosomeT;
 
-use self::random::random;
-use self::fitness_proportionate::roulette_wheel_selection;
-use self::fitness_proportionate::stochastic_universal_sampling;
-use self::tournament::tournament;
+pub use self::random::random;
+pub use self::fitness_proportionate::roulette_wheel_selection;
+pub use self::fitness_proportionate::stochastic_universal_sampling;
+pub use self::tournament::tournament;
 
 use super::Selection;
 

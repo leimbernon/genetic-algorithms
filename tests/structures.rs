@@ -1,3 +1,4 @@
+use genetic_algorithms::fitness::FitnessFnWrapper;
 use genetic_algorithms::traits::{GeneT, ChromosomeT};
 
 //Structures definition
@@ -20,7 +21,9 @@ pub struct Chromosome{
     pub dna: Vec<Gene>,
     pub fitness: f64,
     pub age: i32,
+    pub fitness_fn: FitnessFnWrapper<Gene>,
 }
+
 impl ChromosomeT for Chromosome{
     type Gene = Gene;
     fn get_dna(&self) -> &[Self::Gene] {
@@ -39,6 +42,13 @@ impl ChromosomeT for Chromosome{
     }
     fn get_age(&self) -> i32 {
         self.age
+    }
+    fn set_fitness_fn<F>(&mut self, fitness_fn: F) -> &mut Self
+    where
+        F: Fn(&[Gene]) -> f64 + Send + Sync + 'static,
+    {
+        self.fitness_fn = FitnessFnWrapper::new(fitness_fn);
+        self
     }
     fn calculate_fitness(&mut self) {
         

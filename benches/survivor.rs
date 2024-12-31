@@ -1,5 +1,6 @@
 use criterion::{criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion, PlotConfiguration};
 
+use genetic_algorithms::fitness::FitnessFnWrapper;
 use rand::Rng;
 use pprof::criterion::{Output, PProfProfiler};
 
@@ -8,7 +9,7 @@ use genetic_algorithms::operations::survivor::age::age_based;
 use genetic_algorithms::operations::survivor::fitness::fitness_based;
 
 
-#[derive(Debug, Copy, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct Gene {
     pub id: i32,
 }
@@ -27,6 +28,7 @@ struct SimpleChromosome {
     dna: Vec<Gene>,
     pub fitness: f64,
     pub age: i32,
+    pub fitness_fn: FitnessFnWrapper<Gene>,
 }
 impl ChromosomeT for SimpleChromosome {
     type Gene = Gene;
@@ -52,6 +54,13 @@ impl ChromosomeT for SimpleChromosome {
         self.dna = dna.to_vec();
         self
     }
+    fn set_fitness_fn<F>(&mut self, fitness_fn: F) -> &mut Self
+    where
+        F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static,
+    {
+        self.fitness_fn = FitnessFnWrapper::new(fitness_fn);
+        self
+    }
     fn calculate_fitness(&mut self) {
         self.fitness = 0.0;
     }
@@ -65,6 +74,7 @@ fn setup_population(population_size: usize, gene_length: usize) -> Vec<SimpleChr
                 .map(|_| Gene { id: rand::thread_rng().gen_range(0..255) })
                 .collect(),
             age: rand::thread_rng().gen_range(0..100),
+            fitness_fn: FitnessFnWrapper::default(),
         })
         .collect()
 }

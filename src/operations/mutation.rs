@@ -1,7 +1,7 @@
 use crate::traits::ChromosomeT;
-use self::swap::swap;
-use self::inversion::inversion;
-use self::scramble::scramble;
+pub use self::swap::swap;
+pub use self::inversion::inversion;
+pub use self::scramble::scramble;
 use super::Mutation;
 
 pub mod swap;

@@ -1,7 +1,7 @@
 use crate::traits::ChromosomeT;
 use log::{trace, debug};
 
-pub fn multipoint_crossover<U: ChromosomeT>(parent_1: &U, parent_2: &U, crossover_number_of_points: &i32) -> Option<Vec<U>>{
+pub fn multipoint<U: ChromosomeT>(parent_1: &U, parent_2: &U, crossover_number_of_points: &i32) -> Option<Vec<U>>{
 
     //Before doing the operation, we check that the dna in parent 1 has the same length of the dna in parent 2
     if parent_1.get_dna().len() != parent_2.get_dna().len() {
