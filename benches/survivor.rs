@@ -1,7 +1,3 @@
-use std::fmt;
-use std::fmt::Debug;
-use std::sync::Arc;
-
 use criterion::{criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion, PlotConfiguration};
 
 use genetic_algorithms::fitness::FitnessFnWrapper;
@@ -13,7 +9,7 @@ use genetic_algorithms::operations::survivor::age::age_based;
 use genetic_algorithms::operations::survivor::fitness::fitness_based;
 
 
-#[derive(Debug, Copy, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct Gene {
     pub id: i32,
 }
@@ -27,11 +23,12 @@ impl GeneT for Gene {
     }
 }
 
+#[derive(Debug, Clone, Default, PartialEq)]
 struct SimpleChromosome {
     dna: Vec<Gene>,
     pub fitness: f64,
     pub age: i32,
-    pub fitness_fn: Arc<dyn Fn(&[Gene]) -> f64 + Send + Sync>,
+    pub fitness_fn: FitnessFnWrapper<Gene>,
 }
 impl ChromosomeT for SimpleChromosome {
     type Gene = Gene;
@@ -61,57 +58,13 @@ impl ChromosomeT for SimpleChromosome {
     where
         F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static,
     {
-        self.fitness_fn = Arc::new(fitness_fn);
+        self.fitness_fn = FitnessFnWrapper::new(fitness_fn);
         self
     }
     fn calculate_fitness(&mut self) {
         self.fitness = 0.0;
     }
 }
-
-impl Default for SimpleChromosome {
-    fn default() -> Self {
-        Self {
-            dna: Vec::new(),
-            fitness: 0.0,
-            age: 0,
-            fitness_fn: FitnessFnWrapper::default(),
-        }
-    }
-}
-
-impl Debug for SimpleChromosome{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Binary")
-            .field("dna", &self.dna)
-            .field("fitness", &self.fitness)
-            .field("age", &self.age)
-            // Custom message for the function since functions cannot be printed
-            .field("fitness_fn", &"<function>")
-            .finish()
-    }
-}
-
-impl Clone for SimpleChromosome{
-    fn clone(&self) -> Self {
-        Self {
-            dna: self.dna.clone(),
-            fitness: self.fitness,
-            age: self.age,
-            // Clone the Arc, which increments the reference count
-            fitness_fn: Arc::clone(&self.fitness_fn),
-        }
-    }
-}
-
-impl PartialEq for SimpleChromosome {
-    fn eq(&self, other: &Self) -> bool {
-        self.dna == other.dna
-            && self.fitness == other.fitness
-            && self.age == other.age
-    }
-}
-
 
 fn setup_population(population_size: usize, gene_length: usize) -> Vec<SimpleChromosome> {
     (0..population_size)
