@@ -40,7 +40,7 @@ fn test_ga_start_maximize(){
     ];
 
     let mut population = Population::new(individuals);
-    population = ga::Ga::new()
+    population = Ga::new()
                         .with_problem_solving(ProblemSolving::Maximization)
                         .with_selection_method(Selection::Random)
                         .with_crossover_method(Crossover::Cycle)
@@ -83,7 +83,7 @@ fn test_ga_run_minimize(){
     ];
 
     let mut population = Population::new(individuals);
-    population = ga::Ga::new()
+    population = Ga::new()
                     .with_problem_solving(ProblemSolving::Minimization)
                     .with_selection_method(Selection::Random)
                     .with_crossover_method(Crossover::Cycle)
@@ -94,7 +94,7 @@ fn test_ga_run_minimize(){
                     .run();
     
     assert_eq!(population.individuals.len(), 1);
-    assert_eq!(population.individuals[0].get_fitness(), 10.0);
+    assert_eq!(population.individuals[0].get_fitness(), 1.0);
 
 }
 

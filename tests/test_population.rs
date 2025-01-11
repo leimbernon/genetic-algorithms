@@ -14,9 +14,9 @@ fn test_add_individual_gn_aga(){
     let mut population  = Population::new_empty();
 
     //We add the individuals in the population 1 by 1 
-    population.add_individual_gn(individual_1, 0, true);
-    population.add_individual_gn(individual_2, 0, true);
-    population.add_individual_gn(individual_3, 0, true);
+    population.add_individual_gn(&individual_1, 0, true);
+    population.add_individual_gn(&individual_2, 0, true);
+    population.add_individual_gn(&individual_3, 0, true);
 
     //We check the computations
     assert_eq!(population.f_max, 120.0);
@@ -34,9 +34,9 @@ fn test_add_individual_gn(){
     let mut population  = Population::new_empty();
 
     //We add the individuals in the population 1 by 1 
-    population.add_individual_gn(individual_1, 0, false);
-    population.add_individual_gn(individual_2, 0, false);
-    population.add_individual_gn(individual_3, 0, false);
+    population.add_individual_gn(&individual_1, 0, false);
+    population.add_individual_gn(&individual_2, 0, false);
+    population.add_individual_gn(&individual_3, 0, false);
 
     //We check the computations
     assert_eq!(population.size(), 3);
