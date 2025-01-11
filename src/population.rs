@@ -43,8 +43,8 @@ where
                      best_individual: U::new(), best_individual_is_set: false }
     }
 
-    // Function to calculate f_avg and f_max of the first population
-    pub fn aga_init(& mut self){
+    // Function to calculate f_avg and f_max
+    pub fn recalculate_aga(& mut self){
         self.f_max = 0.0;
         self.f_avg = 0.0;
         for individual in self.individuals.as_slice(){
@@ -149,15 +149,5 @@ where
         }
 
         debug!(target="chromosome_events", method="get_best_chromosome"; "Best chromosome method finished");
-    }
-
-    pub fn recalculate_aga(&mut self, aga: bool){
-        if aga {
-            for individual in &mut self.individuals {
-                self.f_avg += individual.get_fitness();
-                self.f_max = if individual.get_fitness() > self.f_max {individual.get_fitness()} else{self.f_max};
-            }
-            self.f_avg /= self.individuals.len() as f64;
-        }
     }
 }

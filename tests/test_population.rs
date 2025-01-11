@@ -16,7 +16,7 @@ fn test_add_individuals_aga(){
 
     //We add the individuals in the population 1 by 1 
     population.add_individuals(&mut individuals);
-    population.recalculate_aga(true);
+    population.recalculate_aga();
 
     //We check the computations
     assert_eq!(population.f_max, 120.0);

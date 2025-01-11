@@ -328,7 +328,7 @@ where
 
         //Initialize the adaptive ga
         if self.configuration.adaptive_ga{
-            self.population.aga_init();
+            self.population.recalculate_aga();
         }
 
         //Best individual within the generations and population returned
@@ -367,7 +367,9 @@ where
 
             //5- Survivor selection
             survivor::factory(self.configuration.survivor, &mut self.population.individuals, initial_population_size, self.configuration.limit_configuration);
-            self.population.recalculate_aga(self.configuration.adaptive_ga);
+            if self.configuration.adaptive_ga{
+                self.population.recalculate_aga();
+            }
             debug!(target="ga_events", method="run"; "Survivors selected");
 
             // If we want to perform a callback
