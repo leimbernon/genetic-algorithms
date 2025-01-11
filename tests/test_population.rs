@@ -15,7 +15,8 @@ fn test_add_individuals_aga(){
     let mut population  = Population::new_empty();
 
     //We add the individuals in the population 1 by 1 
-    population.add_individuals(&mut individuals, true);
+    population.add_individuals(&mut individuals);
+    population.recalculate_aga(true);
 
     //We check the computations
     assert_eq!(population.f_max, 120.0);
@@ -34,7 +35,7 @@ fn test_add_individuals(){
     let mut population  = Population::new_empty();
 
     //We add the individuals in the population 1 by 1 
-    population.add_individuals(&mut individuals, false);
+    population.add_individuals(&mut individuals);
 
     //We check the computations
     assert_eq!(population.size(), 3);

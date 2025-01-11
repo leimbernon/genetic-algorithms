@@ -363,10 +363,11 @@ where
             debug!(target="ga_events", method="run"; "Best individual calculated - generation {}", i+1);
 
             //4- Insert the children in the population
-            self.population.add_individuals(&mut offspring, self.configuration.adaptive_ga);
+            self.population.add_individuals(&mut offspring);
 
             //5- Survivor selection
             survivor::factory(self.configuration.survivor, &mut self.population.individuals, initial_population_size, self.configuration.limit_configuration);
+            self.population.recalculate_aga(self.configuration.adaptive_ga);
             debug!(target="ga_events", method="run"; "Survivors selected");
 
             // If we want to perform a callback

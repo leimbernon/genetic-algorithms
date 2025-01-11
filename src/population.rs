@@ -54,22 +54,9 @@ where
         self.f_avg /= self.individuals.len() as f64;
     }
 
-    //Function to add individuals in the list and recalculate the fitness without going through the entire population
-    pub fn add_individuals(&mut self, individuals: &mut Vec<U>, aga: bool){
-
-        if aga {
-            self.f_avg *= self.individuals.len() as f64;
-        }
-        let individuals_c = individuals.clone();
+    //Function to add individuals in the list
+    pub fn add_individuals(&mut self, individuals: &mut Vec<U>){
         self.individuals.append(individuals);
-        if aga {
-            for individual in individuals_c{
-                //We calculate the f_max and add the values to the f_avg
-                self.f_max = if individual.get_fitness() > self.f_max {individual.get_fitness()} else{self.f_max};
-                self.f_avg += individual.get_fitness();
-            }
-            self.f_avg /= self.individuals.len() as f64;
-        }
     }
 
     // Returns the number of individuals in the population.
@@ -80,7 +67,6 @@ where
     // Population fitness calculation
     pub fn fitness_calculation(&mut self, number_of_threads: i32, problem_solving: ProblemSolving)
     {
-        // TODO: Review if it makes sense to add AGA calculations
         debug!(target="population_events", method="fitness_calculation"; "Started the population fitness calculation");
         let (tx, rx) = sync_channel(number_of_threads as usize);
 
@@ -163,5 +149,15 @@ where
         }
 
         debug!(target="chromosome_events", method="get_best_chromosome"; "Best chromosome method finished");
+    }
+
+    pub fn recalculate_aga(&mut self, aga: bool){
+        if aga {
+            for individual in &mut self.individuals {
+                self.f_avg += individual.get_fitness();
+                self.f_max = if individual.get_fitness() > self.f_max {individual.get_fitness()} else{self.f_max};
+            }
+            self.f_avg /= self.individuals.len() as f64;
+        }
     }
 }
