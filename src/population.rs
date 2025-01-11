@@ -54,27 +54,6 @@ where
         self.f_avg /= self.individuals.len() as f64;
     }
 
-    // Adds an individual with a generation number.
-    pub fn add_individual_gn(&mut self, individual: &U, generation_number: i32, aga: bool){
-        
-        if aga {
-            //We calculate the f_max
-            self.f_max = if individual.get_fitness() > self.f_max {individual.get_fitness()} else{self.f_max};
-
-            //We recalculate the average fitness and add the individual
-            self.f_avg *= self.individuals.len() as f64;
-            self.f_avg += individual.get_fitness();
-        }
-
-        self.individuals.push(individual.clone());
-        self.generation_numbers.push(generation_number);
-
-        if aga {
-            self.f_avg /= self.individuals.len() as f64;
-        }
-
-    }
-
     //Function to add individuals in the list and recalculate the fitness without going through the entire population
     pub fn add_individuals(&mut self, individuals: &mut Vec<U>, aga: bool){
 
@@ -101,6 +80,7 @@ where
     // Population fitness calculation
     pub fn fitness_calculation(&mut self, number_of_threads: i32, problem_solving: ProblemSolving)
     {
+        // TODO: Review if it makes sense to add AGA calculations
         debug!(target="population_events", method="fitness_calculation"; "Started the population fitness calculation");
         let (tx, rx) = sync_channel(number_of_threads as usize);
 

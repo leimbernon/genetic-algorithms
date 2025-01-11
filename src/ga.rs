@@ -78,10 +78,6 @@ where
         self.configuration.with_fitness_target(fitness_target);
         self
     }
-    fn with_best_individual_by_generation(&mut self, best_individual_by_generation: bool) -> &mut Self {
-        self.configuration.with_best_individual_by_generation(best_individual_by_generation);
-        self
-    }
     fn with_population_size(&mut self, population_size: i32) -> &mut Self {
         self.configuration.with_population_size(population_size);
         self
@@ -295,14 +291,14 @@ where
 
     }
 
-    pub fn run(&mut self)->Population<U>{
+    pub fn run(&mut self)->&Population<U>{
         self.run_with_callback(None::<fn(&i32, &Population<U>,TerminationCause)>, 0)
     }
 
     /**
      * Method for running the Genetic Algorithms with callback
      */
-    pub fn run_with_callback<F>(&mut self, callback: Option<F>, generations_to_callback: i32)->Population<U>
+    pub fn run_with_callback<F>(&mut self, callback: Option<F>, generations_to_callback: i32)->&Population<U>
     where 
         U:ChromosomeT + Send + Sync + 'static + Clone,
         F: Fn(&i32, &Population<U>, TerminationCause)
@@ -341,7 +337,6 @@ where
 
         //Calculation of the fitness and the best individual
         self.population.fitness_calculation(self.configuration.number_of_threads, self.configuration.limit_configuration.problem_solving);
-        let mut best_population: Population<U> = Population::new_empty();
 
         // Starting counting the generations for the callback
         let mut generation_callback_count = 0;
@@ -366,11 +361,6 @@ where
                 self.population.decide_best_individual(child, self.configuration.limit_configuration.problem_solving);
             }
             debug!(target="ga_events", method="run"; "Best individual calculated - generation {}", i+1);
-
-            //3.1 If we want to return the best individual by generation
-            if self.configuration.limit_configuration.get_best_individual_by_generation {
-                best_population.add_individual_gn(&self.population.best_individual, i, self.configuration.adaptive_ga);
-            }
 
             //4- Insert the children in the population
             self.population.add_individuals(&mut offspring, self.configuration.adaptive_ga);
@@ -401,11 +391,6 @@ where
             }
         }
 
-        //If it's not required to return the best individuals by generation
-        if !self.configuration.limit_configuration.get_best_individual_by_generation {
-            best_population.add_individual_gn(&self.population.best_individual, -1, self.configuration.adaptive_ga);
-        }
-
         // If we want to perform a callback and the fitness target is not reached
         if let Some(func) = &callback {
             if termination_cause == TerminationCause::NotTerminated {
@@ -414,8 +399,7 @@ where
             }
         }
 
-        // TODO: Review if this makes sense anymore
-        best_population
+        &self.population
     }
 }
 
