@@ -1,4 +1,6 @@
 use crate::{configuration::GaConfiguration, operations::{self, survivor::fitness::ProblemSolving}, population::Population, traits::ChromosomeT};
+use std::any::TypeId;
+use crate::genotypes::Binary;
 
 pub mod ga_condition_checker;
 pub mod chromosome_condition_checker;
@@ -9,7 +11,8 @@ pub mod population_condition_checker;
 pub fn condition_checker_factory<U>(configuration: Option<&GaConfiguration>, population: Option<&Population<U>>, 
                                     alleles: Option<&[U::Gene]>)
 where
-U: ChromosomeT + Send + Sync + 'static + Clone
+U: ChromosomeT + Send + Sync + 'static + Clone,
+U::Gene: 'static,
 {
     //1- We call the condition for checking the length of every individual
     if let Some(population) = population{
@@ -48,14 +51,13 @@ U: ChromosomeT + Send + Sync + 'static + Clone
 
         //2.5- Condition checkers for the default population
         if population.is_none() || population.unwrap().individuals.is_empty(){
-            if configuration.limit_configuration.genes_per_chromosome <= 0 {
-                panic!("The number of genes per chromosome must be set.");
-            };
+            chromosome_condition_checker::check_genes_per_chromosome_is_set(configuration);
             population_condition_checker::check_population_size_is_set(configuration);
 
             //If the Gene is not a BinaryGenotype, we check that the alleles are set
-            //condition_checker::check_alleles_are_set::<U>(alleles);
-            
+            if TypeId::of::<U::Gene>() == TypeId::of::<Binary>() {
+                chromosome_condition_checker::check_alleles_are_set::<U>(alleles);
+            }
         } 
 
         //2.6- Condition checker for the couples
