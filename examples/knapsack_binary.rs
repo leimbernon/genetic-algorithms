@@ -53,7 +53,6 @@ fn main(){
         .with_population_size(100)
         .with_initialization_fn(binary_random_initialization)
         .with_fitness_fn(fitness_fn)
-        .with_best_individual_by_generation(true)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
         .with_mutation_method(Mutation::Swap)

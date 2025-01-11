@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod structures;
 
-use genetic_algorithms::{configuration::ProblemSolving, fitness::FitnessFnWrapper, ga, operations::{Crossover, Mutation, Selection, Survivor}, population::Population, traits::{ChromosomeT, ConfigurationT}};
+use genetic_algorithms::{configuration::ProblemSolving, fitness::FitnessFnWrapper, operations::{Crossover, Mutation, Selection, Survivor}, population::Population, traits::{ChromosomeT, ConfigurationT}};
 use genetic_algorithms::ga::TerminationCause;
 use crate::structures::{Gene, Chromosome};
 use genetic_algorithms::ga::Ga;
@@ -39,8 +39,9 @@ fn test_ga_start_maximize(){
         Chromosome{dna: dna_10, fitness: 10.0, age: 0, fitness_fn: FitnessFnWrapper::default()},
     ];
 
-    let mut population = Population::new(individuals);
-    population = ga::Ga::new()
+    let population = Population::new(individuals);
+    let mut binding = Ga::new();
+    let population = binding
                         .with_problem_solving(ProblemSolving::Maximization)
                         .with_selection_method(Selection::Random)
                         .with_crossover_method(Crossover::Cycle)
@@ -49,8 +50,8 @@ fn test_ga_start_maximize(){
                         .with_population(population)
                         .run();
     
-    assert_eq!(population.individuals.len(), 1);
-    assert_eq!(population.individuals[0].get_fitness(), 20.0);
+    assert_eq!(population.individuals.len(), 10);
+    assert_eq!(population.best_individual.get_fitness(), 20.0);
 
 }
 
@@ -82,8 +83,9 @@ fn test_ga_run_minimize(){
         Chromosome{dna: dna_10, fitness: 10.0, age: 0, fitness_fn: FitnessFnWrapper::default()},
     ];
 
-    let mut population = Population::new(individuals);
-    population = ga::Ga::new()
+    let population = Population::new(individuals);
+    let mut binding = Ga::new();
+    let population = binding
                     .with_problem_solving(ProblemSolving::Minimization)
                     .with_selection_method(Selection::Random)
                     .with_crossover_method(Crossover::Cycle)
@@ -93,8 +95,8 @@ fn test_ga_run_minimize(){
                     .with_population(population)
                     .run();
     
-    assert_eq!(population.individuals.len(), 1);
-    assert_eq!(population.individuals[0].get_fitness(), 10.0);
+    assert_eq!(population.individuals.len(), 10);
+    assert_eq!(population.best_individual.get_fitness(), 1.0);
 
 }
 
@@ -127,8 +129,9 @@ fn test_ga_run(){
         Chromosome{dna: dna_10, fitness: 10.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
     ];
 
-    let mut population = Population::new(individuals);
-    population = ga::Ga::new()
+    let population = Population::new(individuals);
+    let mut binding = Ga::new();
+    let population = binding
                     .with_threads(8)
                     .with_problem_solving(ProblemSolving::Maximization)
                     .with_selection_method(Selection::Tournament)
@@ -139,7 +142,7 @@ fn test_ga_run(){
                     .with_population(population)
                     .run();
     
-    assert_eq!(population.individuals.len(), 1);
+    assert_eq!(population.individuals.len(), 10);
     
 }
 
@@ -246,8 +249,9 @@ fn test_callback_function(){
         Chromosome{dna: dna_10, fitness: 10.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
     ];
 
-    let mut population = Population::new(individuals);
-    population = ga::Ga::new()
+    let population = Population::new(individuals);
+    let mut binding = Ga::new();
+    let population = binding
         .with_threads(8)
         .with_problem_solving(ProblemSolving::Maximization)
         .with_selection_method(Selection::Tournament)
@@ -259,5 +263,5 @@ fn test_callback_function(){
         .with_max_generations(10)
         .run_with_callback(Some(callback_function), 8);
 
-    assert_eq!(population.individuals.len(), 1);
+    assert_eq!(population.individuals.len(), 10);
 }

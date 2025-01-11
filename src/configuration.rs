@@ -82,8 +82,7 @@ impl Default for MutationConfiguration {
 pub struct LimitConfiguration{
     pub problem_solving: ProblemSolving,
     pub max_generations: i32,
-    pub fitness_target: Option<f64>, 
-    pub get_best_individual_by_generation: bool,
+    pub fitness_target: Option<f64>,
     pub population_size: i32,
     pub genes_per_chromosome: i32,
     pub needs_unique_ids: bool,
@@ -94,8 +93,7 @@ impl Default for LimitConfiguration {
         LimitConfiguration { 
             problem_solving: ProblemSolving::Minimization, 
             max_generations: 100, 
-            fitness_target: None, 
-            get_best_individual_by_generation: false,
+            fitness_target: None,
             population_size: 0,
             genes_per_chromosome: 0,
             needs_unique_ids: false,
@@ -182,10 +180,7 @@ impl ConfigurationT for GaConfiguration{
         self.limit_configuration.fitness_target = Some(fitness_target);
         self
     }
-    fn with_best_individual_by_generation(&mut self, best_individual_by_generation: bool) -> &mut Self {
-        self.limit_configuration.get_best_individual_by_generation = best_individual_by_generation;
-        self
-    }
+
     fn with_population_size(&mut self, population_size: i32) -> &mut Self {
         self.limit_configuration.population_size = population_size;
         self

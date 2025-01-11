@@ -1,6 +1,6 @@
 use crate::traits::GeneT;
 
-pub trait ChromosomeT: Clone + Default{
+pub trait ChromosomeT: Clone + Default + Send + Sync + 'static{
 
     type Gene: GeneT;
 
