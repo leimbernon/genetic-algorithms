@@ -6,7 +6,7 @@ use genetic_algorithms::{fitness::FitnessFnWrapper, operations::crossover::{aga_
 #[test]
 fn test_cycle_crossover(){
 
-    //we create 2 dnas of 4 genes for 2 individuals
+    //we create 2 dnas of 4 genes for 2 chromosomes
     let dna_1 = vec![Gene{id:1}, Gene{id:2}, Gene{id:3}, Gene{id:4}];
     let dna_2 = vec![Gene{id:4}, Gene{id:3}, Gene{id:2}, Gene{id:1}];
 
@@ -43,7 +43,7 @@ fn test_cycle_crossover(){
 #[test]
 fn test_multipoint_crossover_2_points(){
 
-    //we create 2 dnas of 4 genes for 2 individuals
+    //we create 2 dnas of 4 genes for 2 chromosomes
     let dna_1 = vec![Gene{id:1}, Gene{id:2}, Gene{id:3}, Gene{id:4}, Gene{id:5}, Gene{id:6}];
     let dna_2 = vec![Gene{id:6}, Gene{id:5}, Gene{id:4}, Gene{id:3}, Gene{id:2}, Gene{id:1}];
 
@@ -82,7 +82,7 @@ fn test_multipoint_crossover_2_points(){
 #[test]
 fn test_multipoint_crossover_4_points(){
 
-    //we create 2 dnas of 4 genes for 2 individuals
+    //we create 2 dnas of 4 genes for 2 chromosomes
     let dna_1 = vec![Gene{id:1}, Gene{id:2}, Gene{id:3}, Gene{id:4}, Gene{id:5}, Gene{id:6}];
     let dna_2 = vec![Gene{id:6}, Gene{id:5}, Gene{id:4}, Gene{id:3}, Gene{id:2}, Gene{id:1}];
 
@@ -121,7 +121,7 @@ fn test_multipoint_crossover_4_points(){
 #[test]
 fn test_uniform_crossover(){
 
-    //we create 2 dnas of 4 genes for 2 individuals
+    //we create 2 dnas of 4 genes for 2 chromosomes
     let dna_1 = vec![Gene{id:1}, Gene{id:2}, Gene{id:3}, Gene{id:4}];
     let dna_2 = vec![Gene{id:4}, Gene{id:3}, Gene{id:2}, Gene{id:1}];
 

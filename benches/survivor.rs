@@ -89,22 +89,22 @@ fn benchmark_survivor_methods(c: &mut Criterion) {
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     for &gene_length in &gene_lengths {
-        let individuals = setup_population(population_size, gene_length);
+        let chromosomes = setup_population(population_size, gene_length);
 
         // Benchmark for age survivor
         group.bench_with_input(BenchmarkId::new("age survivor", format!("genes_{}", gene_length)), &gene_length, |b, _| {
             b.iter(|| {
-                let mut individuals = individuals.clone();
-                age_based(&mut individuals, population_size);
+                let mut chromosomes = chromosomes.clone();
+                age_based(&mut chromosomes, population_size);
             });
         });
 
          // Benchmark for fitness survivor
         group.bench_with_input(BenchmarkId::new("fitness survivor", format!("genes_{}", gene_length)), &gene_length, |b, _| {
             b.iter(|| {
-                let mut individuals = individuals.clone();
+                let mut chromosomes = chromosomes.clone();
                 let limit_configuration = genetic_algorithms::configuration::LimitConfiguration::default();
-                fitness_based(&mut individuals, population_size, limit_configuration);
+                fitness_based(&mut chromosomes, population_size, limit_configuration);
             });
         });
     } 

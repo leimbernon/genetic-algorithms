@@ -14,14 +14,14 @@ pub mod random;
 pub mod fitness_proportionate;
 pub mod tournament;
 
-pub fn factory<U>(individuals: &Vec<U>, configuration: SelectionConfiguration, number_of_threads: i32) -> HashMap<usize, usize>
+pub fn factory<U>(chromosomes: &Vec<U>, configuration: SelectionConfiguration, number_of_threads: i32) -> HashMap<usize, usize>
 where
 U: ChromosomeT + Sync + Send + 'static + Clone
 {
     match configuration.method {
-        Selection::Random => {random(individuals)},
-        Selection::RouletteWheel => {roulette_wheel_selection(individuals)},
-        Selection::StochasticUniversalSampling => {stochastic_universal_sampling(individuals, configuration.number_of_couples)},
-        Selection::Tournament => {tournament(individuals, configuration.number_of_couples, number_of_threads)},
+        Selection::Random => {random(chromosomes)},
+        Selection::RouletteWheel => {roulette_wheel_selection(chromosomes)},
+        Selection::StochasticUniversalSampling => {stochastic_universal_sampling(chromosomes, configuration.number_of_couples)},
+        Selection::Tournament => {tournament(chromosomes, configuration.number_of_couples, number_of_threads)},
     }
 }

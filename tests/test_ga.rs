@@ -26,7 +26,7 @@ fn test_ga_start_maximize(){
     let dna_9 = vec![Gene{id:2}, Gene{id:1}, Gene{id:4}, Gene{id:3}];
     let dna_10 = vec![Gene{id:1}, Gene{id:4}, Gene{id:3}, Gene{id:2}];
 
-    let individuals = vec![
+    let chromosomes = vec![
         Chromosome{dna: dna_1, fitness: 1.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
         Chromosome{dna: dna_2, fitness: 2.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
         Chromosome{dna: dna_3, fitness: 3.0, age: 0, fitness_fn: FitnessFnWrapper::default()},  
@@ -39,7 +39,7 @@ fn test_ga_start_maximize(){
         Chromosome{dna: dna_10, fitness: 10.0, age: 0, fitness_fn: FitnessFnWrapper::default()},
     ];
 
-    let population = Population::new(individuals);
+    let population = Population::new(chromosomes);
     let mut binding = Ga::new();
     let population = binding
                         .with_problem_solving(ProblemSolving::Maximization)
@@ -50,8 +50,8 @@ fn test_ga_start_maximize(){
                         .with_population(population)
                         .run();
     
-    assert_eq!(population.individuals.len(), 10);
-    assert_eq!(population.best_individual.get_fitness(), 20.0);
+    assert_eq!(population.chromosomes.len(), 10);
+    assert_eq!(population.best_chromosome.get_fitness(), 20.0);
 
 }
 
@@ -70,7 +70,7 @@ fn test_ga_run_minimize(){
     let dna_9 = vec![Gene{id:2}, Gene{id:1}, Gene{id:4}, Gene{id:3}];
     let dna_10 = vec![Gene{id:1}, Gene{id:4}, Gene{id:3}, Gene{id:2}];
 
-    let individuals = vec![
+    let chromosomes = vec![
         Chromosome{dna: dna_1, fitness: 1.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
         Chromosome{dna: dna_2, fitness: 2.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
         Chromosome{dna: dna_3, fitness: 3.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
@@ -83,7 +83,7 @@ fn test_ga_run_minimize(){
         Chromosome{dna: dna_10, fitness: 10.0, age: 0, fitness_fn: FitnessFnWrapper::default()},
     ];
 
-    let population = Population::new(individuals);
+    let population = Population::new(chromosomes);
     let mut binding = Ga::new();
     let population = binding
                     .with_problem_solving(ProblemSolving::Minimization)
@@ -95,8 +95,8 @@ fn test_ga_run_minimize(){
                     .with_population(population)
                     .run();
     
-    assert_eq!(population.individuals.len(), 10);
-    assert_eq!(population.best_individual.get_fitness(), 1.0);
+    assert_eq!(population.chromosomes.len(), 10);
+    assert_eq!(population.best_chromosome.get_fitness(), 1.0);
 
 }
 
@@ -116,7 +116,7 @@ fn test_ga_run(){
     let dna_9 = vec![Gene{id:2}, Gene{id:1}, Gene{id:4}, Gene{id:3}];
     let dna_10 = vec![Gene{id:1}, Gene{id:4}, Gene{id:3}, Gene{id:2}];
 
-    let individuals = vec![
+    let chromosomes = vec![
         Chromosome{dna: dna_1, fitness: 1.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
         Chromosome{dna: dna_2, fitness: 2.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
         Chromosome{dna: dna_3, fitness: 3.0, age: 0, fitness_fn: FitnessFnWrapper::default()},  
@@ -129,7 +129,7 @@ fn test_ga_run(){
         Chromosome{dna: dna_10, fitness: 10.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
     ];
 
-    let population = Population::new(individuals);
+    let population = Population::new(chromosomes);
     let mut binding = Ga::new();
     let population = binding
                     .with_threads(8)
@@ -142,7 +142,7 @@ fn test_ga_run(){
                     .with_population(population)
                     .run();
     
-    assert_eq!(population.individuals.len(), 10);
+    assert_eq!(population.chromosomes.len(), 10);
     
 }
 
@@ -153,7 +153,7 @@ fn test_parent_crossover_repeating_alleles(){
     let binding =  vec![Gene{id:1}, Gene{id:2}, Gene{id:3}, Gene{id:4},
                                    Gene{id:5}, Gene{id:6}, Gene{id:7}, Gene{id:8}];
     let alleles = binding.as_slice();
-    static GENES_PER_INDIVIDUAL: i32 = 6;
+    static GENES_PER_CHROMOSOME: i32 = 6;
     static POPULATION_SIZE: i32 = 100;
     static NEEDS_UNIQUE_IDS: bool = false;
     static ALLELES_CAN_BE_REPEATED: bool = true;
@@ -165,16 +165,16 @@ fn test_parent_crossover_repeating_alleles(){
                     .with_threads(NUMBER_OF_THREADS)
                     .with_fitness_fn(fitness_fn)
                     .with_population_size(POPULATION_SIZE)
-                    .with_genes_per_chromosome(GENES_PER_INDIVIDUAL)
+                    .with_genes_per_chromosome(GENES_PER_CHROMOSOME)
                     .with_needs_unique_ids(NEEDS_UNIQUE_IDS)
                     .with_alleles_can_be_repeated(ALLELES_CAN_BE_REPEATED)
                     .with_alleles(alleles.to_vec())
                     .with_initialization_fn(genetic_algorithms::initializers::generic_random_initialization::<Chromosome>)
                     .initialization();
 
-    //Once population has been initialized, we check for each individual in the population the number of genes in the dna
-    for individual in &ga.population.individuals{
-        assert!(individual.dna.len() == GENES_PER_INDIVIDUAL.try_into().unwrap());
+    //Once population has been initialized, we check for each chromosome in the population the number of genes in the dna
+    for chromosome in &ga.population.chromosomes {
+        assert!(chromosome.dna.len() == GENES_PER_CHROMOSOME.try_into().unwrap());
     }
 }
 
@@ -185,7 +185,7 @@ fn test_parent_crossover_without_repeating_alleles(){
     let binding =  vec![Gene{id:1}, Gene{id:2}, Gene{id:3}, Gene{id:4},
                                    Gene{id:5}, Gene{id:6}, Gene{id:7}, Gene{id:8}];
     let alleles = binding.as_slice();
-    static GENES_PER_INDIVIDUAL: i32 = 6;
+    static GENES_PER_CHROMOSOME: i32 = 6;
     static POPULATION_SIZE: i32 = 100;
     static NEEDS_UNIQUE_IDS: bool = false;
     static ALLELES_CAN_BE_REPEATED: bool = false;
@@ -196,18 +196,18 @@ fn test_parent_crossover_without_repeating_alleles(){
                     .with_threads(NUMBER_OF_THREADS)
                     .with_fitness_fn(fitness_fn)
                     .with_population_size(POPULATION_SIZE)
-                    .with_genes_per_chromosome(GENES_PER_INDIVIDUAL)
+                    .with_genes_per_chromosome(GENES_PER_CHROMOSOME)
                     .with_needs_unique_ids(NEEDS_UNIQUE_IDS)
                     .with_alleles_can_be_repeated(ALLELES_CAN_BE_REPEATED)
                     .with_alleles(alleles.to_vec())
                     .with_initialization_fn(genetic_algorithms::initializers::generic_random_initialization_without_repetitions::<Chromosome>)
                     .initialization();
 
-    //Once population has been initialized, we check for each individual we check that genes are not repeated
-    for individual in &ga.population.individuals{
+    //Once population has been initialized, we check for each chromosome we check that genes are not repeated
+    for chromosome in &ga.population.chromosomes {
         let mut gene_ids = Vec::new();
 
-        for gene in &individual.dna{
+        for gene in &chromosome.dna{
             if !gene_ids.is_empty(){
                 assert!(!gene_ids.contains(&gene.id));
             }
@@ -218,7 +218,7 @@ fn test_parent_crossover_without_repeating_alleles(){
 
 fn callback_function(generation_number: &i32, population: &Population<Chromosome>, termination_cause: TerminationCause){
     assert!(*generation_number >= 7);
-    assert_eq!(population.individuals.len(), 10);
+    assert_eq!(population.chromosomes.len(), 10);
     assert!(termination_cause == TerminationCause::NotTerminated ||  termination_cause == TerminationCause::GenerationLimitReached);
 }
 
@@ -236,7 +236,7 @@ fn test_callback_function(){
     let dna_9 = vec![Gene{id:2}, Gene{id:1}, Gene{id:4}, Gene{id:3}];
     let dna_10 = vec![Gene{id:1}, Gene{id:4}, Gene{id:3}, Gene{id:2}];
 
-    let individuals = vec![
+    let chromosome = vec![
         Chromosome{dna: dna_1, fitness: 1.0, age: 0, fitness_fn: FitnessFnWrapper::default()},  
         Chromosome{dna: dna_2, fitness: 2.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
         Chromosome{dna: dna_3, fitness: 3.0, age: 0, fitness_fn: FitnessFnWrapper::default()},  
@@ -249,7 +249,7 @@ fn test_callback_function(){
         Chromosome{dna: dna_10, fitness: 10.0, age: 0, fitness_fn: FitnessFnWrapper::default()}, 
     ];
 
-    let population = Population::new(individuals);
+    let population = Population::new(chromosome);
     let mut binding = Ga::new();
     let population = binding
         .with_threads(8)
@@ -263,5 +263,5 @@ fn test_callback_function(){
         .with_max_generations(10)
         .run_with_callback(Some(callback_function), 8);
 
-    assert_eq!(population.individuals.len(), 10);
+    assert_eq!(population.chromosomes.len(), 10);
 }

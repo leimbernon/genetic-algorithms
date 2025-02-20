@@ -66,7 +66,7 @@ impl ChromosomeT for SimpleChromosome {
     }
 }
 
-fn setup_individual(gene_length: usize) -> SimpleChromosome {
+fn setup_chromosome(gene_length: usize) -> SimpleChromosome {
     SimpleChromosome {
         fitness: rand::thread_rng().gen_range(0.0..1.0),
         dna: (0..gene_length)
@@ -84,15 +84,15 @@ fn benchmark_mutation_methods(c: &mut Criterion) {
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     for &gene_length in &gene_lengths {
-        let individual = setup_individual(gene_length);
+        let chromosome = setup_chromosome(gene_length);
 
         // Benchmark for swap mutation
         group.bench_with_input(
             BenchmarkId::new("swap mutation", format!("genes_{}", gene_length)),
-            &individual,
-            |b, individual| {
+            &chromosome,
+            |b, chromosome| {
                 b.iter(|| {
-                    let _ = swap(&mut individual.clone());
+                    let _ = swap(&mut chromosome.clone());
                 });
             },
         );
@@ -100,21 +100,21 @@ fn benchmark_mutation_methods(c: &mut Criterion) {
         // Benchmark for inversion mutation
         group.bench_with_input(
             BenchmarkId::new("inversion mutation", format!("genes_{}", gene_length)),
-            &individual,
-            |b, individual| {
+            &chromosome,
+            |b, chromosome| {
                 b.iter(|| {
-                    let _ = inversion(&mut individual.clone());
+                    let _ = inversion(&mut chromosome.clone());
                 });
             },
         );
 
          // Benchmark for scramble mutation
          group.bench_with_input(
-            BenchmarkId::new("scramble mutation", format!("genes_{}", gene_length)),
-            &individual,
-            |b, individual| {
+             BenchmarkId::new("scramble mutation", format!("genes_{}", gene_length)),
+             &chromosome,
+             |b, chromosome| {
                 b.iter(|| {
-                    let _ = scramble(&mut individual.clone());
+                    let _ = scramble(&mut chromosome.clone());
                 });
             },
         );
