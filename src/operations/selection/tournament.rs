@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::{sync::Mutex, thread};
 use rand::Rng;
-use log::{trace, debug};
+use log::{trace, debug, info};
 
 /**
  * Main function for tournament selection
@@ -90,6 +90,13 @@ fn tournament_multithread<U>(chromosomes: &Vec<U>, couples: i32, number_of_threa
 where
 U:ChromosomeT+ Send + Sync + 'static + Clone
 {
+
+    // If number of threads are 0, we set to 1
+    let mut number_of_threads = number_of_threads;
+    if number_of_threads == 0 {
+        number_of_threads=1;
+        info!(target="tournament_multithread", method="tournament"; "Number of threads were 0 have been set to 1")
+    }
 
     debug!(target="selection_events", method="tournament"; "Starting tournament selection in multiple threads ({})", number_of_threads);
     let mut mating = HashMap::new();
