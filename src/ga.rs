@@ -451,7 +451,8 @@ U:ChromosomeT + Send + Sync + 'static + Clone
 {
     //Setting the control variables
     debug!(target="ga_events", method="parent_crossover"; "Started the parent crossover");
-    let number_of_threads = if configuration.number_of_threads > parents.len() as i32 {parents.len() as i32}else{configuration.number_of_threads};
+    let number_of_threads = if configuration.number_of_threads < parents.len() as i32 {parents.len() as i32}
+        else if configuration.number_of_threads > 0 {configuration.number_of_threads} else {1};
     let jump = parents.len() / number_of_threads as usize;
 
     let mut handles = Vec::new();
