@@ -53,7 +53,7 @@ fn main(){
 
     // For maximization problem
     let mut binding = ga::Ga::new();
-    let mut population = binding
+    let population = binding
         .with_genes_per_chromosome(10)
         .with_population_size(1000)
         .with_initialization_fn(binary_random_initialization)
@@ -69,7 +69,7 @@ fn main(){
 
     // For fixed fitness problem
     let mut binding_fixed = ga::Ga::new();
-    let mut population = binding_fixed
+    let population = binding_fixed
         .with_genes_per_chromosome(10)
         .with_population_size(1000)
         .with_initialization_fn(binary_random_initialization)
