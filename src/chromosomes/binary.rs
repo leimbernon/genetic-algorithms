@@ -28,7 +28,7 @@ impl ChromosomeT for Binary{
         self
     }
     fn calculate_fitness(&mut self) {
-        self.fitness_fn.call(&self.dna);
+        self.fitness = self.fitness_fn.call(&self.dna);
     }
     fn get_fitness(&self) -> f64 {
         self.fitness

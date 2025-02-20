@@ -19,6 +19,7 @@ where
     pub configuration: GaConfiguration,
     pub alleles: Vec<U::Gene>,
     pub population: Population<U>,
+    pub termination_cause: TerminationCause,
 
     pub initialization_fn: Option<Arc<dyn Fn(i32, Option<&[U::Gene]>, Option<bool>) -> Vec<U::Gene> + Send + Sync>>,
     pub fitness_fn: Option<Arc<dyn Fn(&[U::Gene]) -> f64 + Send + Sync>>,
@@ -34,6 +35,7 @@ where
             configuration: GaConfiguration{..Default::default()},
             population: Population::new_empty(),
             alleles: Vec::new(),
+            termination_cause: TerminationCause::NotTerminated,
             initialization_fn: None,
             fitness_fn: None,
         }
@@ -291,7 +293,7 @@ where
     }
 
     pub fn run(&mut self)->&Population<U>{
-        self.run_with_callback(None::<fn(&i32, &Population<U>,TerminationCause)>, 0)
+        self.run_with_callback(None::<fn(&i32, &Population<U>, &TerminationCause)>, 0)
     }
 
     /**
@@ -300,7 +302,7 @@ where
     pub fn run_with_callback<F>(&mut self, callback: Option<F>, generations_to_callback: i32)->&Population<U>
     where 
         U:ChromosomeT + Send + Sync + 'static + Clone,
-        F: Fn(&i32, &Population<U>, TerminationCause)
+        F: Fn(&i32, &Population<U>, &TerminationCause)
     {
         //Before starting the run, we will check the conditions
         condition_checker_factory::<U>(Some(&self.configuration), Some(&self.population), Some(&self.alleles));
@@ -339,7 +341,6 @@ where
 
         // Starting counting the generations for the callback
         let mut generation_callback_count = 0;
-        let mut termination_cause = TerminationCause::NotTerminated;
 
         //We start the cycles
         for i in 0..self.configuration.limit_configuration.max_generations {
@@ -374,7 +375,7 @@ where
             // If we want to perform a callback
             if let Some(func) = &callback {
                 if (generation_callback_count+1) == generations_to_callback {
-                    func(&i, &self.population, TerminationCause::NotTerminated);
+                    func(&i, &self.population, &self.termination_cause);
                     generation_callback_count = 0;
                 } else {
                     generation_callback_count+=1;
@@ -386,8 +387,8 @@ where
 
                 // If we want to perform a callback
                 if let Some(func) = &callback {
-                    termination_cause = TerminationCause::FitnessTargetReached;
-                    func(&i, &self.population, TerminationCause::NotTerminated);
+                    self.termination_cause = TerminationCause::FitnessTargetReached;
+                    func(&i, &self.population, &self.termination_cause);
                 }
                 break;
             }
@@ -395,9 +396,9 @@ where
 
         // If we want to perform a callback and the fitness target is not reached
         if let Some(func) = &callback {
-            if termination_cause == TerminationCause::NotTerminated {
-                termination_cause = TerminationCause::GenerationLimitReached;
-                func(&self.configuration.limit_configuration.max_generations, &self.population, termination_cause);
+            if self.termination_cause == TerminationCause::NotTerminated {
+                self.termination_cause = TerminationCause::GenerationLimitReached;
+                func(&self.configuration.limit_configuration.max_generations, &self.population, &self.termination_cause);
             }
         }
 

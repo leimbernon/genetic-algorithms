@@ -8,6 +8,9 @@ use genetic_algorithms::operations::{Crossover, Mutation, Selection};
 use genetic_algorithms::population::Population;
 use genetic_algorithms::traits::ConfigurationT;
 
+// see https://en.wikipedia.org/wiki/Knapsack_problem
+// With 10 items the optimal value is 1270.
+
 const EXCESS_WEIGHT_PENALTY: f64 = 1000.0;
 const MAX_WEIGHT: f64 = 67.0;
 
@@ -42,21 +45,42 @@ fn fitness_fn(dna: &[BinaryGenotype])->f64{
     total_value
 }
 
-fn report(generation: &i32, population: &Population<BinaryChromosome>, termination_cause: TerminationCause){
+fn report(generation: &i32, population: &Population<BinaryChromosome>, termination_cause: &TerminationCause){
     println!("Generation: {} - Score: {} - Termination Cause: {:?}", generation, population.best_chromosome.fitness, termination_cause);
 }
 
 fn main(){
 
-    let mut _population = ga::Ga::new()
+    // For maximization problem
+    let mut binding = ga::Ga::new();
+    let mut population = binding
         .with_genes_per_chromosome(10)
-        .with_population_size(100)
+        .with_population_size(1000)
         .with_initialization_fn(binary_random_initialization)
         .with_fitness_fn(fitness_fn)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
         .with_mutation_method(Mutation::Swap)
         .with_problem_solving(ProblemSolving::Maximization)
-        .with_max_generations(1000)
-        .run_with_callback(Some(report), 10);
+        .with_max_generations(5000)
+        .run_with_callback(Some(report), 100);
+
+    println!("Best chromosome for maximization: {}", population.best_chromosome.phenotype());
+
+    // For fixed fitness problem
+    let mut binding_fixed = ga::Ga::new();
+    let mut population = binding_fixed
+        .with_genes_per_chromosome(10)
+        .with_population_size(1000)
+        .with_initialization_fn(binary_random_initialization)
+        .with_fitness_fn(fitness_fn)
+        .with_selection_method(Selection::Tournament)
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::Swap)
+        .with_problem_solving(ProblemSolving::FixedFitness)
+        .with_fitness_target(1270.0)
+        .with_max_generations(5000)
+        .run_with_callback(Some(report), 100);
+
+    println!("Best chromosome for fixed fitness: {}", population.best_chromosome.phenotype());
 }
