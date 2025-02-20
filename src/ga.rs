@@ -82,8 +82,8 @@ where
         self.configuration.with_population_size(population_size);
         self
     }
-    fn with_genes_per_chromosome(&mut self, genes_per_individual: i32) -> &mut Self {
-        self.configuration.with_genes_per_chromosome(genes_per_individual);
+    fn with_genes_per_chromosome(&mut self, genes_per_chromosome: i32) -> &mut Self {
+        self.configuration.with_genes_per_chromosome(genes_per_chromosome);
         self
     }
     fn with_needs_unique_ids(&mut self, needs_unique_ids: bool) -> &mut Self {
@@ -217,13 +217,12 @@ where
         condition_checker_factory::<U>(Some(&self.configuration), None, Some(&self.alleles));
 
         info!("Initialization started");
-        //let mut individuals = Vec::new();
         let (tx, rx) = sync_channel(self.configuration.number_of_threads as usize);
 
-        //Setting the number of individuals per thread
-        let individuals_per_thread = self.configuration.limit_configuration.population_size / self.configuration.number_of_threads;
+        //Setting the number of chromosomes per thread
+        let chromosomes_per_thread = self.configuration.limit_configuration.population_size / self.configuration.number_of_threads;
 
-        //Cloning the individuals and fitness function for multithreading
+        //Cloning the chromosomes and fitness function for multithreading
         let alleles_t = Arc::new(Mutex::new(self.alleles.clone()));
 
         //Walking through the threads
@@ -232,29 +231,29 @@ where
             //Cloning the information from the main thread
             let (tx,
             alleles_t,
-            genes_per_individual_t,
-            individuals_per_thread_t,
+            genes_per_chromosome_t,
+            chromosomes_per_thread_t,
             needs_unique_ids_t,
             initialization_fn_t,
             fitness_fn_t) = (tx.clone(), Arc::clone(&alleles_t),
-                                        self.configuration.limit_configuration.genes_per_chromosome,
-                                        individuals_per_thread,
-                                        self.configuration.limit_configuration.needs_unique_ids,
-                                        self.initialization_fn.clone().unwrap(),
-                                        self.fitness_fn.clone().unwrap());
+                             self.configuration.limit_configuration.genes_per_chromosome,
+                             chromosomes_per_thread,
+                             self.configuration.limit_configuration.needs_unique_ids,
+                             self.initialization_fn.clone().unwrap(),
+                             self.fitness_fn.clone().unwrap());
 
             //Starting the thread management
             thread::spawn(move || {
 
-                let mut individuals = Vec::new();
+                let mut chromosomes = Vec::new();
 
-                for _ in 0..individuals_per_thread_t{
+                for _ in 0..chromosomes_per_thread_t {
 
-                    let mut individual = U::new();
+                    let mut chromosome = U::new();
 
                     //Gets the dna randomly
-                    let dna_individual = (initialization_fn_t)(genes_per_individual_t, Some(&alleles_t.lock().unwrap()), Some(needs_unique_ids_t));
-                    individual.set_dna(dna_individual.as_slice());
+                    let dna_chromosome = (initialization_fn_t)(genes_per_chromosome_t, Some(&alleles_t.lock().unwrap()), Some(needs_unique_ids_t));
+                    chromosome.set_dna(dna_chromosome.as_slice());
 
 
                     // Wrap the fitness function in a closure
@@ -263,30 +262,30 @@ where
                         move |genes: &[U::Gene]| (fitness_fn_t)(genes)
                     };
 
-                    //Sets the dna of the individual, the age, sets the fitness fn and calculates fitness
-                    individual.set_age(0);
-                    individual.set_fitness_fn(fitness_fn);
-                    individual.calculate_fitness();
+                    //Sets the dna of the chromosome, the age, sets the fitness fn and calculates fitness
+                    chromosome.set_age(0);
+                    chromosome.set_fitness_fn(fitness_fn);
+                    chromosome.calculate_fitness();
 
-                    //Adds the individual in the vector
-                    individuals.push(individual);
+                    //Adds the chromosome in the vector
+                    chromosomes.push(chromosome);
 
                 }
 
-                //we send the individuals randomly initialized
-                tx.send(individuals).unwrap();
+                //we send the chromosomes randomly initialized
+                tx.send(chromosomes).unwrap();
             });
         }
 
         drop(tx);
 
-        // We receive from the threads and add them into individuals
-        let mut individuals = Vec::new();
+        // We receive from the threads and add them into chromosomes
+        let mut chromosomes = Vec::new();
         for mut received in rx {
-            individuals.append(&mut received);
+            chromosomes.append(&mut received);
         }
 
-        self.with_population(Population::new(individuals));
+        self.with_population(Population::new(chromosomes));
         self
 
     }
@@ -331,11 +330,11 @@ where
             self.population.recalculate_aga();
         }
 
-        //Best individual within the generations and population returned
+        //Best chromosome within the generations and population returned
         let initial_population_size = self.population.size();
         let mut age = 0;
 
-        //Calculation of the fitness and the best individual
+        //Calculation of the fitness and the best chromosome
         self.population.fitness_calculation(self.configuration.number_of_threads, self.configuration.limit_configuration.problem_solving);
 
         // Starting counting the generations for the callback
@@ -349,24 +348,24 @@ where
             age += 1;
 
             //1- Parent selection for reproduction
-            let mut parents = selection::factory(&self.population.individuals, self.configuration.selection_configuration, self.configuration.number_of_threads);
+            let mut parents = selection::factory(&self.population.chromosomes, self.configuration.selection_configuration, self.configuration.number_of_threads);
             debug!(target="ga_events", method="run"; "Parents selected for reproduction");
 
             //2- Getting the offspring
-            let mut offspring = parent_crossover(&mut parents, &self.population.individuals, &self.configuration, age, self.population.f_max, self.population.f_avg);
+            let mut offspring = parent_crossover(&mut parents, &self.population.chromosomes, &self.configuration, age, self.population.f_max, self.population.f_avg);
             debug!(target="ga_events", method="run"; "Offspring created");
 
-            //3- Sets the best individual
+            //3- Sets the best chromosome
             for child in &offspring{
-                self.population.decide_best_individual(child, self.configuration.limit_configuration.problem_solving);
+                self.population.decide_best_chromosome(child, self.configuration.limit_configuration.problem_solving);
             }
-            debug!(target="ga_events", method="run"; "Best individual calculated - generation {}", i+1);
+            debug!(target="ga_events", method="run"; "Best chromosome calculated - generation {}", i+1);
 
             //4- Insert the children in the population
-            self.population.add_individuals(&mut offspring);
+            self.population.add_chromosomes(&mut offspring);
 
             //5- Survivor selection
-            survivor::factory(self.configuration.survivor, &mut self.population.individuals, initial_population_size, self.configuration.limit_configuration);
+            survivor::factory(self.configuration.survivor, &mut self.population.chromosomes, initial_population_size, self.configuration.limit_configuration);
             if self.configuration.adaptive_ga{
                 self.population.recalculate_aga();
             }
@@ -383,7 +382,7 @@ where
             }
 
             //6- Identifies if the limit has been reached or not
-            if limit_reached(self.configuration.limit_configuration, &self.population.individuals){
+            if limit_reached(self.configuration.limit_configuration, &self.population.chromosomes){
 
                 // If we want to perform a callback
                 if let Some(func) = &callback {
@@ -409,7 +408,7 @@ where
 /**
  * Function to identify if the limit has been reached or not in the current generation
  */
-fn limit_reached<U>(limit: LimitConfiguration, individuals: &Vec<U>)->bool
+fn limit_reached<U>(limit: LimitConfiguration, chromosomes: &Vec<U>) ->bool
 where
 U:ChromosomeT
 {
@@ -419,7 +418,7 @@ U:ChromosomeT
 
     if limit.problem_solving == ProblemSolving::Minimization{
         //If the problem-solving is minimization, fitness must be 0
-        for chromosome in individuals {
+        for chromosome in chromosomes {
             if chromosome.get_fitness() == 0.0 {
                 trace!(target="ga_events", method="limit_reached"; "limit reached for minimization");
                 result = true;
@@ -429,7 +428,7 @@ U:ChromosomeT
     }else if limit.problem_solving == ProblemSolving::FixedFitness{
 
         //If the problem-solving is a fixed fitness
-        for chromosome in individuals {
+        for chromosome in chromosomes {
             if chromosome.get_fitness() == limit.fitness_target.unwrap() {
                 trace!(target="ga_events", method="limit_reached"; "limit reached for fixed fitness");
                 result = true;
@@ -445,7 +444,7 @@ U:ChromosomeT
 /**
  * Function for parent crossover
  */
-fn parent_crossover<U>(parents: &mut HashMap<usize, usize>, individuals: &Vec<U>, configuration: &GaConfiguration, age: i32, f_max: f64, f_avg: f64) -> Vec<U>
+fn parent_crossover<U>(parents: &mut HashMap<usize, usize>, chromosomes: &Vec<U>, configuration: &GaConfiguration, age: i32, f_max: f64, f_avg: f64) -> Vec<U>
 where 
 U:ChromosomeT + Send + Sync + 'static + Clone
 {
@@ -483,7 +482,7 @@ U:ChromosomeT + Send + Sync + 'static + Clone
     for t in 0..number_of_threads{
 
         //We copy the parents that we want to crossover inside the thread
-        let (individuals, configuration, offspring, crossover_probability_config, mutation_probability_config) = (individuals.clone(), configuration.clone(), Arc::clone(&offspring), crossover_probability_config, mutation_probability_config);
+        let (chromosomes, configuration, offspring, crossover_probability_config, mutation_probability_config) = (chromosomes.clone(), configuration.clone(), Arc::clone(&offspring), crossover_probability_config, mutation_probability_config);
         let mut parents_t = HashMap::new();
         let parents_c = parents.clone();
 
@@ -507,8 +506,8 @@ U:ChromosomeT + Send + Sync + 'static + Clone
 
             for(key, value) in parents_t.iter(){
                 //Getting the parent 1 and 2 for crossover                
-                let parent_1 = individuals.get(*key).unwrap().clone();
-                let parent_2 = individuals.get(*value).unwrap().clone();
+                let parent_1 = chromosomes.get(*key).unwrap().clone();
+                let parent_2 = chromosomes.get(*value).unwrap().clone();
 
                 //Making the crossover of the parents when the random number is below or equal to the given probability
                 let crossover_probability = rng.gen_range(0.0..1.0);

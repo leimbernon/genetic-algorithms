@@ -185,8 +185,8 @@ impl ConfigurationT for GaConfiguration{
         self.limit_configuration.population_size = population_size;
         self
     }
-    fn with_genes_per_chromosome(&mut self, genes_per_individual: i32) -> &mut Self {
-        self.limit_configuration.genes_per_chromosome = genes_per_individual;
+    fn with_genes_per_chromosome(&mut self, genes_per_chromosome: i32) -> &mut Self {
+        self.limit_configuration.genes_per_chromosome = genes_per_chromosome;
         self
     }
     fn with_needs_unique_ids(&mut self, needs_unique_ids: bool) -> &mut Self {

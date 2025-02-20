@@ -5,7 +5,7 @@ use genetic_algorithms::{configuration::{LimitConfiguration, ProblemSolving}, fi
 #[test]
 fn test_fitness_survivor_minization(){
 
-    //We create 12 fitnesss for 12 individuals
+    //We create 12 fitnesss for 12 chromosomes
     let dna_1 = vec![Gene{id:1}];
     let dna_2 = vec![Gene{id:1}];
     let dna_3 = vec![Gene{id:1}];
@@ -19,28 +19,28 @@ fn test_fitness_survivor_minization(){
     let dna_11 = vec![Gene{id:1}];
     let dna_12 = vec![Gene{id:1}];
 
-    //We create the individuals
-    let individual_1 = Chromosome{dna: dna_1, fitness: 10.1, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_2 = Chromosome{dna: dna_2, fitness: 10.2, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_3 = Chromosome{dna: dna_3, fitness: 10.3, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_4 = Chromosome{dna: dna_4, fitness: 11.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_5 = Chromosome{dna: dna_5, fitness: 12.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_6 = Chromosome{dna: dna_6, fitness: 13.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_7 = Chromosome{dna: dna_7, fitness: 14.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_8 = Chromosome{dna: dna_8, fitness: 15.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_9 = Chromosome{dna: dna_9, fitness: 16.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_10 = Chromosome{dna: dna_10, fitness: 17.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_11 = Chromosome{dna: dna_11, fitness: 18.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_12 = Chromosome{dna: dna_12, fitness: 19.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    //We create the chromosomes
+    let chromosome_1 = Chromosome{dna: dna_1, fitness: 10.1, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_2 = Chromosome{dna: dna_2, fitness: 10.2, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_3 = Chromosome{dna: dna_3, fitness: 10.3, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_4 = Chromosome{dna: dna_4, fitness: 11.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_5 = Chromosome{dna: dna_5, fitness: 12.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_6 = Chromosome{dna: dna_6, fitness: 13.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_7 = Chromosome{dna: dna_7, fitness: 14.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_8 = Chromosome{dna: dna_8, fitness: 15.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_9 = Chromosome{dna: dna_9, fitness: 16.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_10 = Chromosome{dna: dna_10, fitness: 17.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_11 = Chromosome{dna: dna_11, fitness: 18.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_12 = Chromosome{dna: dna_12, fitness: 19.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
 
 
     //We create the population and create the random mating
-    let mut population = vec![individual_1, individual_2, individual_3, individual_4, individual_5, individual_6,
-    individual_7, individual_8, individual_9, individual_10, individual_11, individual_12];
+    let mut population = vec![chromosome_1, chromosome_2, chromosome_3, chromosome_4, chromosome_5, chromosome_6,
+                              chromosome_7, chromosome_8, chromosome_9, chromosome_10, chromosome_11, chromosome_12];
 
     fitness::fitness_based(&mut population, 10,  LimitConfiguration{problem_solving: ProblemSolving::Minimization, ..Default::default()});
 
-    //Tests that the population has 10 individuals
+    //Tests that the population has 10 chromosomes
     assert_eq!(population.len(), 10);
     assert_eq!(population[0].get_fitness(), 17.0);
     assert_eq!(population[9].get_fitness(), 10.1);
@@ -51,7 +51,7 @@ fn test_fitness_survivor_minization(){
 #[test]
 fn test_fitness_survivor_maximization(){
 
-    //We create 12 fitnesss for 12 individuals
+    //We create 12 fitnesss for 12 chromosomes
     let dna_1 = vec![Gene{id:1}];
     let dna_2 = vec![Gene{id:1}];
     let dna_3 = vec![Gene{id:1}];
@@ -65,28 +65,28 @@ fn test_fitness_survivor_maximization(){
     let dna_11 = vec![Gene{id:1}];
     let dna_12 = vec![Gene{id:1}];
 
-    //We create the individuals
-    let individual_1 = Chromosome{dna: dna_1, fitness: 10.1, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_2 = Chromosome{dna: dna_2, fitness: 10.2, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_3 = Chromosome{dna: dna_3, fitness: 10.3, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_4 = Chromosome{dna: dna_4, fitness: 11.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_5 = Chromosome{dna: dna_5, fitness: 12.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_6 = Chromosome{dna: dna_6, fitness: 13.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_7 = Chromosome{dna: dna_7, fitness: 14.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_8 = Chromosome{dna: dna_8, fitness: 15.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_9 = Chromosome{dna: dna_9, fitness: 16.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_10 = Chromosome{dna: dna_10, fitness: 17.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_11 = Chromosome{dna: dna_11, fitness: 18.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_12 = Chromosome{dna: dna_12, fitness: 19.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    //We create the chromosomes
+    let chromosome_1 = Chromosome{dna: dna_1, fitness: 10.1, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_2 = Chromosome{dna: dna_2, fitness: 10.2, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_3 = Chromosome{dna: dna_3, fitness: 10.3, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_4 = Chromosome{dna: dna_4, fitness: 11.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_5 = Chromosome{dna: dna_5, fitness: 12.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_6 = Chromosome{dna: dna_6, fitness: 13.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_7 = Chromosome{dna: dna_7, fitness: 14.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_8 = Chromosome{dna: dna_8, fitness: 15.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_9 = Chromosome{dna: dna_9, fitness: 16.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_10 = Chromosome{dna: dna_10, fitness: 17.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_11 = Chromosome{dna: dna_11, fitness: 18.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_12 = Chromosome{dna: dna_12, fitness: 19.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
 
 
     //We create the population and create the random mating
-    let mut population = vec![individual_1, individual_2, individual_3, individual_4, individual_5, individual_6,
-    individual_7, individual_8, individual_9, individual_10, individual_11, individual_12];
+    let mut population = vec![chromosome_1, chromosome_2, chromosome_3, chromosome_4, chromosome_5, chromosome_6,
+                              chromosome_7, chromosome_8, chromosome_9, chromosome_10, chromosome_11, chromosome_12];
 
     fitness::fitness_based(&mut population, 10, LimitConfiguration{problem_solving: ProblemSolving::Maximization, ..Default::default()});
 
-    //Tests that the population has 10 individuals
+    //Tests that the population has 10 chromosomes
     assert_eq!(population.len(), 10);
     assert_eq!(population[0].get_fitness(), 19.0);
     assert_eq!(population[9].get_fitness(), 10.3);
@@ -97,7 +97,7 @@ fn test_fitness_survivor_maximization(){
 #[test]
 fn test_age_based_survivor(){
 
-    //We create 12 fitnesss for 12 individuals
+    //We create 12 fitnesss for 12 chromosomes
     let dna_1 = vec![Gene{id:1}];
     let dna_2 = vec![Gene{id:1}];
     let dna_3 = vec![Gene{id:1}];
@@ -111,28 +111,28 @@ fn test_age_based_survivor(){
     let dna_11 = vec![Gene{id:1}];
     let dna_12 = vec![Gene{id:1}];
 
-    //We create the individuals
-    let individual_1 = Chromosome{dna: dna_1, fitness: 10.1, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_2 = Chromosome{dna: dna_2, fitness: 10.2, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_3 = Chromosome{dna: dna_3, fitness: 10.3, age: 1, fitness_fn: FitnessFnWrapper::default()};
-    let individual_4 = Chromosome{dna: dna_4, fitness: 11.0, age: 1, fitness_fn: FitnessFnWrapper::default()};
-    let individual_5 = Chromosome{dna: dna_5, fitness: 12.0, age: 3, fitness_fn: FitnessFnWrapper::default()};
-    let individual_6 = Chromosome{dna: dna_6, fitness: 13.0, age: 3, fitness_fn: FitnessFnWrapper::default()};
-    let individual_7 = Chromosome{dna: dna_7, fitness: 14.0, age: 2, fitness_fn: FitnessFnWrapper::default()};
-    let individual_8 = Chromosome{dna: dna_8, fitness: 15.0, age: 2, fitness_fn: FitnessFnWrapper::default()};
-    let individual_9 = Chromosome{dna: dna_9, fitness: 16.0, age: 2, fitness_fn: FitnessFnWrapper::default()};
-    let individual_10 = Chromosome{dna: dna_10, fitness: 17.0, age: 2, fitness_fn: FitnessFnWrapper::default()};
-    let individual_11 = Chromosome{dna: dna_11, fitness: 18.0, age: 1, fitness_fn: FitnessFnWrapper::default()};
-    let individual_12 = Chromosome{dna: dna_12, fitness: 19.0, age: 1, fitness_fn: FitnessFnWrapper::default()};
+    //We create the chromosomes
+    let chromosome_1 = Chromosome{dna: dna_1, fitness: 10.1, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_2 = Chromosome{dna: dna_2, fitness: 10.2, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_3 = Chromosome{dna: dna_3, fitness: 10.3, age: 1, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_4 = Chromosome{dna: dna_4, fitness: 11.0, age: 1, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_5 = Chromosome{dna: dna_5, fitness: 12.0, age: 3, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_6 = Chromosome{dna: dna_6, fitness: 13.0, age: 3, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_7 = Chromosome{dna: dna_7, fitness: 14.0, age: 2, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_8 = Chromosome{dna: dna_8, fitness: 15.0, age: 2, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_9 = Chromosome{dna: dna_9, fitness: 16.0, age: 2, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_10 = Chromosome{dna: dna_10, fitness: 17.0, age: 2, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_11 = Chromosome{dna: dna_11, fitness: 18.0, age: 1, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_12 = Chromosome{dna: dna_12, fitness: 19.0, age: 1, fitness_fn: FitnessFnWrapper::default()};
 
 
     //We create the population and create the random mating
-    let mut population = vec![individual_1, individual_2, individual_3, individual_4, individual_5, individual_6,
-    individual_7, individual_8, individual_9, individual_10, individual_11, individual_12];
+    let mut population = vec![chromosome_1, chromosome_2, chromosome_3, chromosome_4, chromosome_5, chromosome_6,
+                              chromosome_7, chromosome_8, chromosome_9, chromosome_10, chromosome_11, chromosome_12];
 
     age::age_based(&mut population, 6);
 
-    //Tests that the population has 6 individuals
+    //Tests that the population has 6 chromosomes
     assert_eq!(population.len(), 6);
     assert_eq!(population[0].get_age(), 3);
     assert_eq!(population[1].get_age(), 3);
@@ -147,7 +147,7 @@ fn test_age_based_survivor(){
 #[test]
 fn test_survivor_fitness_fixed(){
 
-    //We create 12 fitnesss for 12 individuals
+    //We create 12 fitnesss for 12 chromosomes
     let dna_1 = vec![Gene{id:1}];
     let dna_2 = vec![Gene{id:1}];
     let dna_3 = vec![Gene{id:1}];
@@ -161,28 +161,28 @@ fn test_survivor_fitness_fixed(){
     let dna_11 = vec![Gene{id:1}];
     let dna_12 = vec![Gene{id:1}];
 
-    //We create the individuals
-    let individual_1 = Chromosome{dna: dna_1, fitness: 10.1, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_2 = Chromosome{dna: dna_2, fitness: 10.2, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_3 = Chromosome{dna: dna_3, fitness: 10.3, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_4 = Chromosome{dna: dna_4, fitness: 11.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_5 = Chromosome{dna: dna_5, fitness: 12.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_6 = Chromosome{dna: dna_6, fitness: 13.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_7 = Chromosome{dna: dna_7, fitness: 14.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_8 = Chromosome{dna: dna_8, fitness: 15.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_9 = Chromosome{dna: dna_9, fitness: 16.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_10 = Chromosome{dna: dna_10, fitness: 17.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_11 = Chromosome{dna: dna_11, fitness: 18.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let individual_12 = Chromosome{dna: dna_12, fitness: 19.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    //We create the chromosomes
+    let chromosome_1 = Chromosome{dna: dna_1, fitness: 10.1, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_2 = Chromosome{dna: dna_2, fitness: 10.2, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_3 = Chromosome{dna: dna_3, fitness: 10.3, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_4 = Chromosome{dna: dna_4, fitness: 11.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_5 = Chromosome{dna: dna_5, fitness: 12.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_6 = Chromosome{dna: dna_6, fitness: 13.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_7 = Chromosome{dna: dna_7, fitness: 14.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_8 = Chromosome{dna: dna_8, fitness: 15.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_9 = Chromosome{dna: dna_9, fitness: 16.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_10 = Chromosome{dna: dna_10, fitness: 17.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_11 = Chromosome{dna: dna_11, fitness: 18.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
+    let chromosome_12 = Chromosome{dna: dna_12, fitness: 19.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
 
 
     //We create the population and create the random mating
-    let mut population = vec![individual_1, individual_2, individual_3, individual_4, individual_5, individual_6,
-    individual_7, individual_8, individual_9, individual_10, individual_11, individual_12];
+    let mut population = vec![chromosome_1, chromosome_2, chromosome_3, chromosome_4, chromosome_5, chromosome_6,
+                              chromosome_7, chromosome_8, chromosome_9, chromosome_10, chromosome_11, chromosome_12];
 
     fitness::fitness_based(&mut population, 10,  LimitConfiguration{problem_solving: ProblemSolving::FixedFitness, fitness_target: Some(14.5), ..Default::default()});
 
-    //Tests that the population has 10 individuals
+    //Tests that the population has 10 chromosomes
     assert_eq!(population.len(), 10);
     assert_eq!(population[0].get_fitness(), 10.2);
     assert_eq!(population[9].get_fitness(), 15.0);

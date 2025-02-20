@@ -14,7 +14,7 @@ where
 U: ChromosomeT + Send + Sync + 'static + Clone,
 U::Gene: 'static,
 {
-    //1- We call the condition for checking the length of every individual
+    //1- We call the condition for checking the length of every chromosome
     if let Some(population) = population{
         chromosome_condition_checker::same_dna_length(population);
     }
@@ -50,12 +50,12 @@ U::Gene: 'static,
         }
 
         //2.5- Condition checkers for the default population
-        if population.is_none() || population.unwrap().individuals.is_empty(){
+        if population.is_none() || population.unwrap().chromosomes.is_empty(){
             chromosome_condition_checker::check_genes_per_chromosome_is_set(configuration);
             population_condition_checker::check_population_size_is_set(configuration);
 
             //If the Gene is not a BinaryGenotype, we check that the alleles are set
-            if TypeId::of::<U::Gene>() == TypeId::of::<Binary>() {
+            if TypeId::of::<U::Gene>() != TypeId::of::<Binary>() {
                 chromosome_condition_checker::check_alleles_are_set::<U>(alleles);
             }
         } 

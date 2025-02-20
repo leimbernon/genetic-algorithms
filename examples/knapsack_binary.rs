@@ -42,8 +42,8 @@ fn fitness_fn(dna: &[BinaryGenotype])->f64{
     total_value
 }
 
-fn report(generation: &i32, _population: &Population<BinaryChromosome>, termination_cause: TerminationCause){
-    println!("Generation: {} - Termination Cause: {:?}", generation, termination_cause);
+fn report(generation: &i32, population: &Population<BinaryChromosome>, termination_cause: TerminationCause){
+    println!("Generation: {} - Score: {} - Termination Cause: {:?}", generation, population.best_chromosome.fitness, termination_cause);
 }
 
 fn main(){

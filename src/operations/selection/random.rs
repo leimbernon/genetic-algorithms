@@ -4,18 +4,18 @@ use rand::Rng;
 use log::{trace, debug};
 
 /**
- * Function to make the random parent selection between the list of individuals
+ * Function to make the random parent selection between the list of chromosomes
  */
-pub fn random<U:ChromosomeT>(individuals: &Vec<U>) -> HashMap<usize, usize>{
+pub fn random<U:ChromosomeT>(chromosomes: &Vec<U>) -> HashMap<usize, usize>{
 
     let mut mating = HashMap::new();
     let mut indexes = Vec::new();
     let mut rng = rand::thread_rng();
     debug!(target="selection_events", method="random"; "Starting random selection");
 
-    //Setting the indexes of the individuals
+    //Setting the indexes of the chromosomes
     let mut i = 0;
-    while i < individuals.len() {
+    while i < chromosomes.len() {
         indexes.push(i);
         i += 1;
     }
@@ -23,7 +23,7 @@ pub fn random<U:ChromosomeT>(individuals: &Vec<U>) -> HashMap<usize, usize>{
     //In this loop we create the mating map
     while !indexes.is_empty() {
 
-        //Getting the individual 1
+        //Getting the chromosome 1
         //We must have at least 2 remaining elements
         if indexes.len() < 2 {
             break;
@@ -36,13 +36,13 @@ pub fn random<U:ChromosomeT>(individuals: &Vec<U>) -> HashMap<usize, usize>{
         mating.insert(index_value_1, 0);
         indexes.remove(random_index_1);
         
-        //Getting the individual 2
+        //Getting the chromosome 2
         let mut random_index_2 = 0;
         if indexes.len() > 1 {
             random_index_2 = rng.gen_range(0..indexes.len()-1);
         }
 
-        //Adding the two individuals in the hashmap
+        //Adding the two chromosome in the hashmap
         mating.insert(index_value_1, indexes[random_index_2]);
         indexes.remove(random_index_2);
 

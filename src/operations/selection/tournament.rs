@@ -8,17 +8,17 @@ use log::{trace, debug};
 /**
  * Main function for tournament selection
  */
-pub fn tournament<U>(individuals: &Vec<U>, couples: i32, number_of_threads: i32) -> HashMap<usize, usize>
+pub fn tournament<U>(chromosomes: &Vec<U>, couples: i32, number_of_threads: i32) -> HashMap<usize, usize>
 where
 U:ChromosomeT + Send + Sync + 'static + Clone
 {
     
     if number_of_threads == 1{
-        tournament_single_thread(individuals, couples)
+        tournament_single_thread(chromosomes, couples)
     }else{
         let number_of_threads_t = if number_of_threads > couples {couples}else{number_of_threads};
         let number_of_threads_t = if number_of_threads_t & 1 == 1 {number_of_threads_t-1}else{number_of_threads_t};
-        tournament_multithread(individuals, couples, number_of_threads_t)
+        tournament_multithread(chromosomes, couples, number_of_threads_t)
     }
 }
 
@@ -26,7 +26,7 @@ U:ChromosomeT + Send + Sync + 'static + Clone
 /**
  * Function for tournament selection in a single thread 
  */
-fn tournament_single_thread<U>(individuals: &Vec<U>, couples: i32) -> HashMap<usize, usize>
+fn tournament_single_thread<U>(chromosomes: &Vec<U>, couples: i32) -> HashMap<usize, usize>
 where
 U:ChromosomeT
 {
@@ -34,12 +34,12 @@ U:ChromosomeT
     debug!(target="selection_events", method="tournament"; "Starting tournament selection in single thread");
     let mut rng = rand::thread_rng();
     let mut mating = HashMap::new();
-    let individual_couples = couples*2;
+    let chromosome_couples = couples*2;
 
     let mut indexes = Vec::new();
 
     //Getting the list of indexes
-    for i in 0..individual_couples{
+    for i in 0..chromosome_couples {
         indexes.push(i);
     }
 
@@ -59,7 +59,7 @@ U:ChromosomeT
         let index_to_delete;
 
         //Fights between both parents
-        if individuals[final_index_1 as usize].get_fitness() >= individuals[final_index_2 as usize].get_fitness() {
+        if chromosomes[final_index_1 as usize].get_fitness() >= chromosomes[final_index_2 as usize].get_fitness() {
             final_index = final_index_1;
             index_to_delete = index_1;
         }else{
@@ -86,14 +86,14 @@ U:ChromosomeT
 /**
  * Function for tournament selection in multithread 
  */
-fn tournament_multithread<U>(individuals: &Vec<U>, couples: i32, number_of_threads: i32) -> HashMap<usize, usize>
+fn tournament_multithread<U>(chromosomes: &Vec<U>, couples: i32, number_of_threads: i32) -> HashMap<usize, usize>
 where
 U:ChromosomeT+ Send + Sync + 'static + Clone
 {
 
     debug!(target="selection_events", method="tournament"; "Starting tournament selection in multiple threads ({})", number_of_threads);
     let mut mating = HashMap::new();
-    let couples = if couples*2 > individuals.len() as i32 {(individuals.len() / 2) as i32}else{couples};
+    let couples = if couples*2 > chromosomes.len() as i32 {(chromosomes.len() / 2) as i32}else{couples};
 
     //Sets the indexes
     let mut indexes = Vec::new();
@@ -110,7 +110,7 @@ U:ChromosomeT+ Send + Sync + 'static + Clone
     //let indexes = Arc::new(Mutex::new(indexes));
     let mut start_index = 0;
     let jump = indexes.len() as i32 / number_of_threads;
-    let individuals = Arc::new(Mutex::new(Vec::from_iter(individuals[..].iter().cloned())));
+    let chromosomes = Arc::new(Mutex::new(Vec::from_iter(chromosomes[..].iter().cloned())));
     trace!(target="selection_events", method="tournament"; "start index: {}, jump: {}", start_index, jump);
 
     //Running the different threads
@@ -118,7 +118,7 @@ U:ChromosomeT+ Send + Sync + 'static + Clone
         
         //Copies of the variables
         let winners = if thread & 1 == 1 {Arc::clone(&left)}else{Arc::clone(&right)};
-        let individuals = Arc::clone(&individuals);
+        let chromosomes = Arc::clone(&chromosomes);
 
         let indexes_len = indexes.len();
         let end_index = if start_index + jump > indexes_len as i32 {indexes_len as i32}else{start_index + jump};
@@ -131,7 +131,7 @@ U:ChromosomeT+ Send + Sync + 'static + Clone
         let handle = thread::spawn(move || {
             
             let mut rng = rand::thread_rng();
-            let individuals_t = individuals.lock().unwrap().clone();
+            let chromosomes_t = chromosomes.lock().unwrap().clone();
             let mut indexes_t = indexes.lock().unwrap().clone();
 
             for _ in 0..indexes_t.len(){
@@ -144,8 +144,8 @@ U:ChromosomeT+ Send + Sync + 'static + Clone
                 let final_index_2 = indexes_t[index_2];
                 trace!(target="selection_events", method="tournament"; "Thread {} - indexes 1 {} - final index 1 {} - index 2 {} - final index 2 {} ", thread, index_1, final_index_1, index_2, final_index_2);
 
-                //Compare both individuals
-                if individuals_t[final_index_1 as usize].get_fitness() >= individuals_t[final_index_2 as usize].get_fitness(){
+                //Compare both chromosomes
+                if chromosomes_t[final_index_1 as usize].get_fitness() >= chromosomes_t[final_index_2 as usize].get_fitness(){
                     winners.lock().unwrap().push(final_index_1);
                     indexes_t.remove(index_1);
                 }else{

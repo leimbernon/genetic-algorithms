@@ -46,7 +46,7 @@ These traits are inside the `traits` module:
   - `get_dna()`: Must return the array of genes (`GeneT`).
   - `set_dna(dna: &[Self::Gene])`: Must set the array of genes (`GeneT`).
   - `set_gene(gene_index: usize, gene: Self::Gene)`: Optional. This method replaces a gene at the specified gene_index position.
-  - `calculate_fitness()`: Optional. This function must calculate the fitness of the individual (or the chromosome) in f64.
+  - `calculate_fitness()`: Optional. This function must calculate the fitness of the chromosome (or the chromosome) in f64.
   - `get_fitness()`: Returns the fitness previously calculated by `calculate_fitness()`.
   - `set_fitness(fitness: f64)`: Sets the fitness value.
   - `get_age()`: Returns the age of the chromosome.
@@ -75,7 +75,7 @@ Within the `operations` module we have the following operators:
 
 ### Population
 
-In genetic algorithms, operators are applied over a population of individuals, and over a set of rules (not yet implemented).
+In genetic algorithms, operators are applied over a population of chromosomes, and over a set of rules (not yet implemented).
 Within the `population` module, the `Population` structure will define the population.
 
 ### Runner
@@ -115,12 +115,12 @@ This structure has the following attributes:
 `LimitConfiguration`:
 - `problem_solving`: You can choose between a minimization problem and a maximization problem.
 - `max_generations`: If the result is not optimal, this attribute indicates the maximum number of generations to run before stopping.
-- `fitness_target`: Optional. The fitness of the best individual.
-- `get_best_individual_by_generation`: Optional. Tells the runner to return the best individual by generation.
+- `fitness_target`: Optional. The fitness of the best chromosome.
+- `get_best_chromosome_by_generation`: Optional. Tells the runner to return the best chromosome by generation.
 - `population_size`: Size of the population to be executed.
-- `genes_per_individual`: Number of genes that each individual must have.
+- `genes_per_chromosome`: Number of genes that each chromosome must have.
 - `needs_unique_ids`: Optional. Indicates whether each gene must have unique numbering.
-- `alleles_can_be_repeated`: Indicates whether the same allele can be repeated in an individual.
+- `alleles_can_be_repeated`: Indicates whether the same allele can be repeated in a chromosome.
 
 ## Example
 
@@ -211,7 +211,7 @@ let population = ga::Ga::new()
                     .with_mutation_method(Mutation::Swap)
                     .with_survivor_method(Survivor::Fitness)
                     .with_alleles(alleles)
-                    .with_genes_per_individual(6)
+                    .with_genes_per_chromosome(6)
                     .with_population_size(100)
                     .run();
 ```
@@ -231,7 +231,7 @@ let population = ga::Ga::new()
                     .with_mutation_method(Mutation::Swap)
                     .with_survivor_method(Survivor::Fitness)
                     .with_alleles(alleles)
-                    .with_genes_per_individual(6)
+                    .with_genes_per_chromosome(6)
                     .with_population_size(100)
                     .run_with_callback(Some(callback_function), 8);
 ```

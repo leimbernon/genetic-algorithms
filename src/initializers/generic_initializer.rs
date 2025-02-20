@@ -2,7 +2,7 @@ use rand::Rng;
 use crate::traits::{ChromosomeT, GeneT};
 
 /**
- * Function to initialize the dna of an individual
+ * Function to initialize the dna of an chromosome
  */
 pub fn generic_random_initialization<U>(genes_per_chromosome: i32, alleles: Option<&[U::Gene]>, needs_unique_ids: Option<bool>) ->Vec<U::Gene>
 where
@@ -36,7 +36,7 @@ where
 
 
 /**
- * Function to initialize the dna of an individual without repeating an array of alleles
+ * Function to initialize the dna of a chromosome without repeating an array of alleles
  */
 pub fn generic_random_initialization_without_repetitions<U>(genes_per_chromosome: i32, alleles: Option<&[U::Gene]>, needs_unique_ids: Option<bool>) ->Vec<U::Gene>
 where

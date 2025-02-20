@@ -70,14 +70,14 @@ impl ChromosomeT for SimpleChromosome {
 fn setup_population(population_size: usize, gene_length: usize) -> Vec<SimpleChromosome> {
     let mut rng = rand::thread_rng();
     
-    // Generate a single set of genes for all individuals
+    // Generate a single set of genes for all chromosomes
     let base_genes: Vec<Gene> = (0..gene_length)
         .map(|_| Gene { id: rng.gen_range(0..255) })
         .collect();
 
     (0..population_size)
         .map(|_| {
-            // Clone and shuffle base_genes to create individual DNA with the same genes in a different order
+            // Clone and shuffle base_genes to create chromosome DNA with the same genes in a different order
             let mut dna = base_genes.clone();
             dna.shuffle(&mut rng);
 
@@ -100,15 +100,15 @@ fn benchmark_crossover_methods(c: &mut Criterion) {
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     for &gene_length in &gene_lengths {
-        let individuals = setup_population(population_size, gene_length);
+        let chromosomes = setup_population(population_size, gene_length);
 
         // Benchmark for cycle crossover
         group.bench_with_input(
             BenchmarkId::new("cycle crossover", format!("genes_{}", gene_length)),
-            &individuals,
-            |b, individuals| {
-                let parent_1 = &individuals[0];
-                let parent_2 = &individuals[1];
+            &chromosomes,
+            |b, chromosomes| {
+                let parent_1 = &chromosomes[0];
+                let parent_2 = &chromosomes[1];
                 b.iter(|| {
                     let _ = cycle(parent_1, parent_2);
                 });
@@ -119,10 +119,10 @@ fn benchmark_crossover_methods(c: &mut Criterion) {
         for &points in &crossover_points {
             group.bench_with_input(
                 BenchmarkId::new("multipoint crossover", format!("genes_{}_points_{}", gene_length, points)),
-                &individuals,
-                |b, individuals| {
-                    let parent_1 = &individuals[0];
-                    let parent_2 = &individuals[1];
+                &chromosomes,
+                |b, chromosomes| {
+                    let parent_1 = &chromosomes[0];
+                    let parent_2 = &chromosomes[1];
                     b.iter(|| {
                         let _ = multipoint(parent_1, parent_2, &points);
                     });
@@ -133,10 +133,10 @@ fn benchmark_crossover_methods(c: &mut Criterion) {
         // Benchmark for uniform crossover
         group.bench_with_input(
             BenchmarkId::new("uniform crossover", format!("genes_{}", gene_length)),
-            &individuals,
-            |b, individuals| {
-                let parent_1 = &individuals[0];
-                let parent_2 = &individuals[1];
+            &chromosomes,
+            |b, chromosomes| {
+                let parent_1 = &chromosomes[0];
+                let parent_2 = &chromosomes[1];
                 b.iter(|| {
                     let _ = uniform(parent_1, parent_2);
                 });

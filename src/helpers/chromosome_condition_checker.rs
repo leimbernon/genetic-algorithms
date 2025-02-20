@@ -8,15 +8,15 @@ pub fn unique_gene_ids<U>(population: &Population<U>)
 where
     U:ChromosomeT + Send + Sync + 'static + Clone{
 
-    //We analyze individual by individual
-    for (individual_number, individual) in population.individuals.iter().enumerate(){
+    //We analyze chromosome by chromosome
+    for (chromosome_number, chromosome) in population.chromosomes.iter().enumerate(){
         //We check if the gene id is none or if it already exists in the dna
-        for(gene_number, gene) in individual.get_dna().iter().enumerate(){
-            for i in gene_number+1..individual.get_dna().len(){
+        for(gene_number, gene) in chromosome.get_dna().iter().enumerate(){
+            for i in gene_number+1..chromosome.get_dna().len(){
                 //If the gene id is equal to any other, we stop the run
-                if gene.get_id().eq(&individual.get_dna().get(i).unwrap().get_id()){
-                    panic!("Gene id must be unique within the DNA. The individual #{}, has same gene id at gene #{} and gene #{}",
-                           individual_number, gene_number, i);
+                if gene.get_id().eq(&chromosome.get_dna().get(i).unwrap().get_id()){
+                    panic!("Gene id must be unique within the DNA. The chromosome #{}, has same gene id at gene #{} and gene #{}",
+                           chromosome_number, gene_number, i);
                 }
             }
         }
@@ -35,17 +35,17 @@ pub fn fitness_target_is_some(configuration: &GaConfiguration, problem_type: Str
 }
 
 /**
- * Checks that all the individuals have the same dna length
+ * Checks that all the chromosomes have the same dna length
  */
 pub fn same_dna_length<U>(population: &Population<U>)
 where
     U:ChromosomeT + Send + Sync + 'static + Clone{
-    //We analyze individual by individual
-    for (individual_number, individual) in population.individuals.iter().enumerate(){
-        for i in individual_number+1..population.individuals.len(){
-            if individual.get_dna().len() != population.individuals.get(i).unwrap().get_dna().len(){
-                panic!("All the individuals must have the same dna length. Individual #{} has a dna with length {} and individual #{} has a dna with length {}.",
-                       individual_number, individual.get_dna().len(), i, population.individuals.get(i).unwrap().get_dna().len());
+    //We analyze chromosome by chromosome
+    for (chromosome_number, chromosome) in population.chromosomes.iter().enumerate(){
+        for i in chromosome_number +1..population.chromosomes.len(){
+            if chromosome.get_dna().len() != population.chromosomes.get(i).unwrap().get_dna().len(){
+                panic!("All the chromosomes must have the same dna length. Chromosome #{} has a dna with length {} and chromosome #{} has a dna with length {}.",
+                       chromosome_number, chromosome.get_dna().len(), i, population.chromosomes.get(i).unwrap().get_dna().len());
             }
         }
     }
