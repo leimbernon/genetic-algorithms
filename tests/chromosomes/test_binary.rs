@@ -1,6 +1,6 @@
 use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
 use genetic_algorithms::genotypes::Binary as BinaryGenotype;
-use genetic_algorithms::traits::ChromosomeT;
+use genetic_algorithms::traits::{ChromosomeT, GeneT};
 
 #[cfg(test)]
 
@@ -21,14 +21,14 @@ fn test_dna_from_string(){
     assert_eq!(binary_chromosome.get_dna()[6].value, true);
     assert_eq!(binary_chromosome.get_dna()[7].value, false);
 
-    assert_eq!(binary_chromosome.get_dna()[0].id, 0);
-    assert_eq!(binary_chromosome.get_dna()[1].id, 1);
-    assert_eq!(binary_chromosome.get_dna()[2].id, 2);
-    assert_eq!(binary_chromosome.get_dna()[3].id, 3);
-    assert_eq!(binary_chromosome.get_dna()[4].id, 4);
-    assert_eq!(binary_chromosome.get_dna()[5].id, 5);
-    assert_eq!(binary_chromosome.get_dna()[6].id, 6);
-    assert_eq!(binary_chromosome.get_dna()[7].id, 7);
+    assert_eq!(binary_chromosome.get_dna()[0].get_id(), 0);
+    assert_eq!(binary_chromosome.get_dna()[1].get_id(), 1);
+    assert_eq!(binary_chromosome.get_dna()[2].get_id(), 2);
+    assert_eq!(binary_chromosome.get_dna()[3].get_id(), 3);
+    assert_eq!(binary_chromosome.get_dna()[4].get_id(), 4);
+    assert_eq!(binary_chromosome.get_dna()[5].get_id(), 5);
+    assert_eq!(binary_chromosome.get_dna()[6].get_id(), 6);
+    assert_eq!(binary_chromosome.get_dna()[7].get_id(), 7);
 }
 
 #[test]
