@@ -37,7 +37,7 @@ pub struct SelectionConfiguration{
 impl Default for SelectionConfiguration{
     fn default() -> Self {
         SelectionConfiguration { 
-            number_of_couples: 1, 
+            number_of_couples: 0,
             method: Selection::Tournament 
         }
     }

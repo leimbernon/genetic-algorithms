@@ -46,7 +46,7 @@ fn fitness_fn(dna: &[BinaryGenotype])->f64{
 }
 
 fn report(generation: &i32, population: &Population<BinaryChromosome>, termination_cause: &TerminationCause){
-    println!("Generation: {} - Score: {} - Termination Cause: {:?}", generation, population.best_chromosome.fitness, termination_cause);
+    println!("Generation: {} - Best Score: {} - Termination Cause: {:?}", generation, population.best_chromosome.fitness, termination_cause);
 }
 
 fn main(){
@@ -55,7 +55,7 @@ fn main(){
     let mut binding = ga::Ga::new();
     let population = binding
         .with_genes_per_chromosome(10)
-        .with_population_size(1000)
+        .with_population_size(100)
         .with_initialization_fn(binary_random_initialization)
         .with_fitness_fn(fitness_fn)
         .with_selection_method(Selection::Tournament)
@@ -71,7 +71,7 @@ fn main(){
     let mut binding_fixed = ga::Ga::new();
     let population = binding_fixed
         .with_genes_per_chromosome(10)
-        .with_population_size(1000)
+        .with_population_size(10)
         .with_initialization_fn(binary_random_initialization)
         .with_fitness_fn(fitness_fn)
         .with_selection_method(Selection::Tournament)

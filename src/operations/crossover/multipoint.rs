@@ -8,8 +8,8 @@ pub fn multipoint<U: ChromosomeT>(parent_1: &U, parent_2: &U, crossover_number_o
         panic!("Parent 1 and parent 2 must have the same dna length. Parent 1 has a length of {} and parent 2 has a length of {}", parent_1.get_dna().len(), parent_2.get_dna().len());
     }
 
-    let mut child_1 = U::new();
-    let mut child_2 = U::new();
+    let mut child_1 = parent_1.clone();
+    let mut child_2 = parent_2.clone();
 
     let mut dna_child_1 = Vec::new();
     let mut dna_child_2 = Vec::new();

@@ -82,6 +82,12 @@ where
     }
     fn with_population_size(&mut self, population_size: i32) -> &mut Self {
         self.configuration.with_population_size(population_size);
+
+        // Setting the number of couples
+        self.configuration.selection_configuration.number_of_couples =
+            if self.configuration.selection_configuration.number_of_couples == 0 {((self.configuration.limit_configuration.population_size / 2) as f64).round() as i32}
+            else { self.configuration.selection_configuration.number_of_couples };
+
         self
     }
     fn with_genes_per_chromosome(&mut self, genes_per_chromosome: i32) -> &mut Self {
