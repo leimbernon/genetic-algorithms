@@ -21,9 +21,11 @@ impl Binary{
         self.value = value;
         self
     }
+    #[allow(dead_code)]
     fn get_value(&self) -> bool {
         self.value
     }
+    #[allow(dead_code)]
     fn set_value(&mut self, value: bool) -> &mut Self {
         self.value = value;
         self
