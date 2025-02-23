@@ -216,10 +216,10 @@ fn test_parent_crossover_without_repeating_alleles(){
     }
 }
 
-fn callback_function(generation_number: &i32, population: &Population<Chromosome>, termination_cause: TerminationCause){
+fn callback_function(generation_number: &i32, population: &Population<Chromosome>, termination_cause: &TerminationCause){
     assert!(*generation_number >= 7);
     assert_eq!(population.chromosomes.len(), 10);
-    assert!(termination_cause == TerminationCause::NotTerminated ||  termination_cause == TerminationCause::GenerationLimitReached);
+    assert!(termination_cause == &TerminationCause::NotTerminated ||  termination_cause == &TerminationCause::GenerationLimitReached);
 }
 
 #[test]

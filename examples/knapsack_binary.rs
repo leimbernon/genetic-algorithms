@@ -1,7 +1,7 @@
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::genotypes::Binary as BinaryGenotype;
 use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
-use genetic_algorithms::ga;
+use genetic_algorithms::ga::Ga;
 use genetic_algorithms::ga::TerminationCause;
 use genetic_algorithms::initializers::binary_random_initialization;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection};
@@ -52,7 +52,7 @@ fn report(generation: &i32, population: &Population<BinaryChromosome>, terminati
 fn main(){
 
     // For maximization problem
-    let mut binding = ga::Ga::new();
+    let mut binding = Ga::new();
     let population = binding
         .with_genes_per_chromosome(10)
         .with_population_size(100)
@@ -68,7 +68,7 @@ fn main(){
     println!("Best chromosome for maximization: {}", population.best_chromosome.phenotype());
 
     // For fixed fitness problem
-    let mut binding_fixed = ga::Ga::new();
+    let mut binding_fixed = Ga::new();
     let population = binding_fixed
         .with_genes_per_chromosome(10)
         .with_population_size(10)
