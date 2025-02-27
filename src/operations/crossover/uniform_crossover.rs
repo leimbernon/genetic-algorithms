@@ -9,7 +9,7 @@ pub fn uniform<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Option<Vec<U>>{
         panic!("parent 1 and parent 2 must have the same dna length. Currently parent 1 has a length of {} and parent 2 {}", parent_1.get_dna().len(), parent_2.get_dna().len());
     }
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     //Creation of the children DNA
     let mut dna_child_1 = vec![U::new_gene(); parent_1.get_dna().len()];
@@ -20,7 +20,7 @@ pub fn uniform<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Option<Vec<U>>{
     let mut child_2 = parent_2.clone();
 
     for i in 0..parent_1.get_dna().len() {
-        let crossover = rng.gen_range(0..2);
+        let crossover = rng.random_range(0..2);
         trace!(target="crossover_events", method="uniform"; "Random crossover number {}", crossover);
 
         //If crossover is 0, we take the genes from the corresponding parents

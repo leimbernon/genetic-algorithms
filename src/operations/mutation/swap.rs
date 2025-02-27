@@ -6,9 +6,9 @@ pub fn swap<U: ChromosomeT>(chromosome: &mut U){
 
     //Getting two random genes from the dna of the chromosome
     debug!(target="mutation_events", method="swap"; "Starting the swap mutation");
-    let mut rng = rand::thread_rng();
-    let index_1 = rng.gen_range(0..chromosome.get_dna().len());
-    let index_2 = rng.gen_range(0..chromosome.get_dna().len());
+    let mut rng = rand::rng();
+    let index_1 = rng.random_range(0..chromosome.get_dna().len());
+    let index_2 = rng.random_range(0..chromosome.get_dna().len());
     trace!(target="mutation_events", method="swap"; "Mutation index 1: {}, mutation index 2: {}", index_1, index_2);
 
     let gene_1 = chromosome.get_dna().get(index_1).cloned().unwrap();

@@ -10,7 +10,7 @@ pub fn random<U:ChromosomeT>(chromosomes: &Vec<U>) -> HashMap<usize, usize>{
 
     let mut mating = HashMap::new();
     let mut indexes = Vec::new();
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     debug!(target="selection_events", method="random"; "Starting random selection");
 
     //Setting the indexes of the chromosomes
@@ -30,7 +30,7 @@ pub fn random<U:ChromosomeT>(chromosomes: &Vec<U>) -> HashMap<usize, usize>{
         }
         let mut random_index_1 = 0;
         if indexes.len() > 1 {
-            random_index_1 = rng.gen_range(0..indexes.len()-1);
+            random_index_1 = rng.random_range(0..indexes.len()-1);
         }
         let index_value_1 = indexes[random_index_1];
         mating.insert(index_value_1, 0);
@@ -39,7 +39,7 @@ pub fn random<U:ChromosomeT>(chromosomes: &Vec<U>) -> HashMap<usize, usize>{
         //Getting the chromosome 2
         let mut random_index_2 = 0;
         if indexes.len() > 1 {
-            random_index_2 = rng.gen_range(0..indexes.len()-1);
+            random_index_2 = rng.random_range(0..indexes.len()-1);
         }
 
         //Adding the two chromosome in the hashmap

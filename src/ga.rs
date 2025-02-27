@@ -510,7 +510,7 @@ U:ChromosomeT + Send + Sync + 'static + Clone
         let handle = thread::spawn(move || {
 
             //Getting random numbers in this thread
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
 
             for(key, value) in parents_t.iter(){
                 //Getting the parent 1 and 2 for crossover                
@@ -518,7 +518,7 @@ U:ChromosomeT + Send + Sync + 'static + Clone
                 let parent_2 = chromosomes.get(*value).unwrap().clone();
 
                 //Making the crossover of the parents when the random number is below or equal to the given probability
-                let crossover_probability = rng.gen_range(0.0..1.0);
+                let crossover_probability = rng.random_range(0.0..1.0);
                 let crossover_probability_config = 
                     if crossover_probability_config.is_some(){
                         crossover_probability_config.unwrap()
@@ -528,7 +528,7 @@ U:ChromosomeT + Send + Sync + 'static + Clone
                 
 
                 //Making the mutation of each child when the random number is below or equal the given probability
-                let mut mutation_probability = rng.gen_range(0.0..1.0);
+                let mut mutation_probability = rng.random_range(0.0..1.0);
                 let mutation_probability_config = 
                     if mutation_probability_config.is_some(){
                         mutation_probability_config.unwrap()
@@ -558,7 +558,7 @@ U:ChromosomeT + Send + Sync + 'static + Clone
                     mutation::factory(configuration.mutation_configuration.method, &mut child_1);
                 }
 
-                mutation_probability = rng.gen_range(0.0..1.0);
+                mutation_probability = rng.random_range(0.0..1.0);
                 if mutation_probability <= mutation_probability_config {
                     mutation::factory(configuration.mutation_configuration.method, &mut child_2);
                 }
