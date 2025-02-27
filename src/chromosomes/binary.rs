@@ -2,24 +2,33 @@ use crate::fitness::FitnessFnWrapper;
 use crate::traits::ChromosomeT;
 use crate::genotypes::Binary as BinaryGenotype;
 
+/// A chromosome that uses a binary genotype.
+///
+/// This struct implements the `ChromosomeT` trait, allowing it to be used in genetic
+/// algorithms. The `dna` field represents the sequence of genes, while the `fitness`
+/// field represents the fitness score of the chromosome, and the `age` field represents
+/// the age of the chromosome.
+///
 #[derive(Clone, Debug, Default, PartialEq)]
-pub struct Binary{
+pub struct Binary {
     pub dna: Vec<BinaryGenotype>,
     pub fitness: f64,
     pub age: i32,
     pub fitness_fn: FitnessFnWrapper<BinaryGenotype>,
 }
 
-impl ChromosomeT for Binary{
+impl ChromosomeT for Binary {
     type Gene = BinaryGenotype;
 
     fn get_dna(&self) -> &[Self::Gene] {
         &self.dna
     }
+
     fn set_dna(&mut self, dna: &[Self::Gene]) -> &mut Self {
         self.dna = dna.to_vec();
         self
     }
+
     fn set_fitness_fn<F>(&mut self, fitness_fn: F) -> &mut Self
     where
         F: Fn(&[BinaryGenotype]) -> f64 + Send + Sync + 'static,
@@ -27,26 +36,36 @@ impl ChromosomeT for Binary{
         self.fitness_fn = FitnessFnWrapper::new(fitness_fn);
         self
     }
+
     fn calculate_fitness(&mut self) {
         self.fitness = self.fitness_fn.call(&self.dna);
     }
+
     fn get_fitness(&self) -> f64 {
         self.fitness
     }
+
     fn set_fitness(&mut self, fitness: f64) -> &mut Self {
         self.fitness = fitness;
         self
     }
+
     fn set_age(&mut self, age: i32) -> &mut Self {
         self.age = age;
         self
     }
+
     fn get_age(&self) -> i32 {
         self.age
     }
 }
-impl Binary {
 
+impl Binary {
+    /// Creates a new `Binary`.
+    ///
+    /// # Returns
+    ///
+    /// A new `Binary` with default values.
     pub fn new() -> Self {
         Self {
             dna: Vec::new(),
@@ -56,6 +75,11 @@ impl Binary {
         }
     }
 
+    /// Returns the phenotype of the chromosome as a string.
+    ///
+    /// # Returns
+    ///
+    /// A string representation of the chromosome's phenotype.
     pub fn phenotype(&self) -> String {
         self.dna
             .iter()
@@ -63,6 +87,16 @@ impl Binary {
             .collect()
     }
 
+    /// Sets the DNA of the chromosome from a string.
+    ///
+    /// # Arguments
+    ///
+    /// * `s` - A string representation of the DNA, where '1' represents a true value
+    /// and '0' represents a false value.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the string contains characters other than '1' or '0'.
     pub fn dna_from_string(&mut self, s: &str) {
         let mut dna = Vec::with_capacity(s.len());
 
