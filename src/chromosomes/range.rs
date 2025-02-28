@@ -10,6 +10,17 @@ use crate::traits::ChromosomeT;
 /// field represents the fitness score of the chromosome, and the `age` field represents
 /// the age of the chromosome.
 ///
+/// # Examples
+///
+/// ```
+/// use genetic_algorithms::chromosomes::Range;
+/// use genetic_algorithms::genotypes::Range as RangeGenotype;
+///
+/// let mut chromosome = Range::<i32>::new();
+/// chromosome.dna.push(RangeGenotype::new(0, 10));
+/// chromosome.calculate_fitness();
+/// println!("Fitness: {}", chromosome.get_fitness());
+/// ```
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Range<T: Sync + Send + Clone + Default + Debug> {
     pub dna: Vec<RangeGenotype<T>>,
@@ -24,6 +35,15 @@ impl<T: Sync + Send + Clone + Default + Debug> Range<T> {
     /// # Returns
     ///
     /// A new `Range` with default values.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use genetic_algorithms::chromosomes::Range;
+    ///
+    /// let chromosome = Range::<i32>::new();
+    /// println!("Chromosome: {:?}", chromosome);
+    /// ```
     pub fn new() -> Self {
         Self {
             dna: Vec::new(),
@@ -38,6 +58,18 @@ impl<T: Sync + Send + Clone + Default + Debug> Range<T> {
     /// # Returns
     ///
     /// A string representation of the chromosome's phenotype.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use genetic_algorithms::chromosomes::Range;
+    /// use genetic_algorithms::genotypes::Range as RangeGenotype;
+    ///
+    /// let mut chromosome = Range::<i32>::new();
+    /// chromosome.dna.push(RangeGenotype::new(0, 10));
+    /// let phenotype = chromosome.phenotype();
+    /// println!("Phenotype: {}", phenotype);
+    /// ```
     pub fn phenotype(&self) -> String {
         self.dna
             .iter()
@@ -53,6 +85,7 @@ impl<T: Sync + Send + Clone + Default + Debug + 'static> ChromosomeT for Range<T
     fn get_dna(&self) -> &[Self::Gene] {
         &self.dna
     }
+
     fn set_dna(&mut self, dna: &[Self::Gene]) -> &mut Self {
         self.dna = dna.to_vec();
         self
