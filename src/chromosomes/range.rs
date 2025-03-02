@@ -14,10 +14,11 @@ use crate::traits::ChromosomeT;
 ///
 /// ```
 /// use genetic_algorithms::chromosomes::Range;
+/// use crate::genetic_algorithms::traits::ChromosomeT;
 /// use genetic_algorithms::genotypes::Range as RangeGenotype;
 ///
 /// let mut chromosome = Range::<i32>::new();
-/// chromosome.dna.push(RangeGenotype::new(0, 10));
+/// chromosome.dna.push(RangeGenotype::new(0, vec![(0, 10)], 5));
 /// chromosome.calculate_fitness();
 /// println!("Fitness: {}", chromosome.get_fitness());
 /// ```
@@ -66,7 +67,7 @@ impl<T: Sync + Send + Clone + Default + Debug> Range<T> {
     /// use genetic_algorithms::genotypes::Range as RangeGenotype;
     ///
     /// let mut chromosome = Range::<i32>::new();
-    /// chromosome.dna.push(RangeGenotype::new(0, 10));
+    /// chromosome.dna.push(RangeGenotype::new(0, vec![(0, 10)], 5));
     /// let phenotype = chromosome.phenotype();
     /// println!("Phenotype: {}", phenotype);
     /// ```

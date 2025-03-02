@@ -61,11 +61,8 @@ impl<T: Clone + Default> Range<T> {
     /// # Returns
     ///
     /// A mutable reference to `self`.
-    pub fn new(&mut self, id: i32, ranges: Vec<(T, T)>, value: T) -> &mut Self {
-        self.id = id;
-        self.ranges = ranges;
-        self.value = value;
-        self
+    pub fn new(id: i32, ranges: Vec<(T, T)>, value: T) -> Self {
+        Self {id, ranges, value}
     }
 
     /// Returns the value of the gene.
