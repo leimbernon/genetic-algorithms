@@ -66,6 +66,7 @@ impl ChromosomeT for SimpleChromosome {
 }
 
 // Setup function to create a population with configurable size and gene length
+#[cfg(not(tarpaulin_include))]
 fn setup_population(population_size: usize, gene_length: usize) -> Vec<SimpleChromosome> {
     let mut rng = rand::thread_rng();
     (0..population_size)
@@ -81,6 +82,7 @@ fn setup_population(population_size: usize, gene_length: usize) -> Vec<SimpleChr
 }
 
 // Benchmark function with parameterized population and gene length
+#[cfg(not(tarpaulin_include))]
 fn benchmark_selection_methods(c: &mut Criterion) {
     let population_sizes = vec![10, 100, 1000];
     let gene_lengths = vec![10, 100, 1000];

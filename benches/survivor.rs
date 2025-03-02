@@ -66,6 +66,7 @@ impl ChromosomeT for SimpleChromosome {
     }
 }
 
+#[cfg(not(tarpaulin_include))]
 fn setup_population(population_size: usize, gene_length: usize) -> Vec<SimpleChromosome> {
     (0..population_size)
         .map(|_| SimpleChromosome {
@@ -80,6 +81,7 @@ fn setup_population(population_size: usize, gene_length: usize) -> Vec<SimpleChr
 }
 
 // Benchmark the survivor methods
+#[cfg(not(tarpaulin_include))]
 fn benchmark_survivor_methods(c: &mut Criterion) {
 
     let population_size = 1000;

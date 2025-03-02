@@ -66,6 +66,7 @@ impl ChromosomeT for SimpleChromosome {
     }
 }
 
+#[cfg(not(tarpaulin_include))]
 fn setup_chromosome(gene_length: usize) -> SimpleChromosome {
     SimpleChromosome {
         fitness: rand::thread_rng().gen_range(0.0..1.0),
@@ -77,6 +78,7 @@ fn setup_chromosome(gene_length: usize) -> SimpleChromosome {
     }
 }
 
+#[cfg(not(tarpaulin_include))]
 fn benchmark_mutation_methods(c: &mut Criterion) {
     let gene_lengths = vec![10, 100, 1000];
 

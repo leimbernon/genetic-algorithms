@@ -67,6 +67,7 @@ impl ChromosomeT for SimpleChromosome {
     }
 }
 
+#[cfg(not(tarpaulin_include))]
 fn setup_population(population_size: usize, gene_length: usize) -> Vec<SimpleChromosome> {
     let mut rng = rand::thread_rng();
     
@@ -91,6 +92,7 @@ fn setup_population(population_size: usize, gene_length: usize) -> Vec<SimpleChr
         .collect()
 }
 
+#[cfg(not(tarpaulin_include))]
 fn benchmark_crossover_methods(c: &mut Criterion) {
     let population_size = 2;
     let gene_lengths = vec![10, 100, 1000];
