@@ -2,8 +2,10 @@ use std::{sync::{mpsc::sync_channel, Mutex, Arc}, thread, collections::HashMap};
 use rand::Rng;
 use log::{trace, debug, info};
 use std::env;
-use crate::{configuration::{LimitConfiguration, LogLevel, ProblemSolving}, helpers::condition_checker_factory, operations::{crossover, mutation, selection, survivor}, population::Population, traits::{ChromosomeT, ConfigurationT}};
+use std::fmt::Debug;
+use crate::{configuration::{LimitConfiguration, LogLevel, ProblemSolving}, operations::{crossover, mutation, selection, survivor}, population::Population, traits::{ChromosomeT, ConfigurationT}};
 use crate::configuration::GaConfiguration;
+use crate::validators::validator_factory as ValidatorFactory;
 
 #[derive(Debug, PartialEq)]
 pub enum TerminationCause {
@@ -163,7 +165,8 @@ where
 
 impl<U>Ga<U>
 where
-    U:ChromosomeT + Send + Sync + 'static + Clone,
+    U:ChromosomeT + Send + Sync + 'static + Clone + Debug,
+    U::Gene: 'static + Debug,
 {
     /**
      * Function to set the alleles
@@ -222,7 +225,8 @@ where
         }
 
         //Before starting the run, we will check the conditions
-        condition_checker_factory::<U>(Some(&self.configuration), None, Some(&self.alleles));
+        ValidatorFactory::validate::<U>(Some(&self.configuration), None, Some(&self.alleles));
+
 
         info!("Initialization started");
         let (tx, rx) = sync_channel(self.configuration.number_of_threads as usize);
@@ -311,7 +315,7 @@ where
         F: Fn(&i32, &Population<U>, &TerminationCause)
     {
         //Before starting the run, we will check the conditions
-        condition_checker_factory::<U>(Some(&self.configuration), Some(&self.population), Some(&self.alleles));
+        ValidatorFactory::validate::<U>(Some(&self.configuration), None, Some(&self.alleles));
 
         //If we want to initialize the population randomly
         if self.population.size() == 0 && self.initialization_fn.is_some() {
@@ -362,21 +366,21 @@ where
             let mut offspring = parent_crossover(&mut parents, &self.population.chromosomes, &self.configuration, age, self.population.f_max, self.population.f_avg);
             debug!(target="ga_events", method="run"; "Offspring created");
 
-            //3- Sets the best chromosome
-            for child in &offspring{
-                self.population.decide_best_chromosome(child, self.configuration.limit_configuration.problem_solving);
-            }
-            debug!(target="ga_events", method="run"; "Best chromosome calculated - generation {}", i+1);
-
-            //4- Insert the children in the population
+            //3- Insert the children in the population
             self.population.add_chromosomes(&mut offspring);
 
-            //5- Survivor selection
+            //4- Survivor selection
             survivor::factory(self.configuration.survivor, &mut self.population.chromosomes, initial_population_size, self.configuration.limit_configuration);
             if self.configuration.adaptive_ga{
                 self.population.recalculate_aga();
             }
             debug!(target="ga_events", method="run"; "Survivors selected");
+
+            //5- Sets the best chromosome
+            for chromosome in &self.population.chromosomes.clone() {
+                self.population.decide_best_chromosome(chromosome, self.configuration.limit_configuration.problem_solving);
+            }
+            debug!(target="ga_events", method="run"; "Best chromosome calculated - generation {}", i+1);
 
             // If we want to perform a callback
             if let Some(func) = &callback {
