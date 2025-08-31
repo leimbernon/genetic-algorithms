@@ -47,13 +47,6 @@ where
             }
         }
 
-        //2.5 Condition checkers for the default population
-        /*if population.is_none() || population.unwrap().chromosomes.is_empty(){
-            check_genes_per_chromosome_is_set(configuration);
-            check_population_size_is_set(configuration);
-            check_alleles_are_set::<U>(alleles);
-        }*/
-
         //2.6 Condition checker for the couples
         number_of_couples_is_set(configuration);
     }
@@ -122,29 +115,6 @@ where
 }
 
 /**
-* Function to check that the number of genes per chromosome is set
-*/
-pub fn genes_per_chromosome_is_set(configuration: &GaConfiguration){
-    if configuration.limit_configuration.genes_per_chromosome <= 0 {
-        panic!("The number of genes per chromosome must be set.");
-    }
-}
-
-/**
-* Function to check that the alleles are set
-*/
-pub fn alleles_are_set<U>(alleles: Option<&[U::Gene]>)
-where U:ChromosomeT + Send + Sync + 'static + Clone{
-    if alleles.is_none() {
-        panic!("The alleles must be set.");
-    }else if let Some(alleles) = alleles{
-        if alleles.is_empty() {
-            panic!("The alleles must be set.");
-        }
-    }
-}
-
-/**
 * Checks that for adaptive crossover all the requirements are set
 */
 pub fn aga_crossover_probabilities(configuration: &GaConfiguration){
@@ -156,30 +126,10 @@ pub fn aga_crossover_probabilities(configuration: &GaConfiguration){
 }
 
 /**
- * Checks that for adaptive mutation all the requirements are set
- */
-pub fn aga_mutation_probabilities(configuration: GaConfiguration){
-    if configuration.mutation_configuration.probability_max.is_none() || configuration.mutation_configuration.probability_min.is_none(){
-        core::panic!("For Adaptive Genetic Algorithms, the probability_max and probability_min in the mutation_configuration are mandatory.");
-    }else if configuration.mutation_configuration.probability_max <= configuration.mutation_configuration.probability_min {
-        core::panic!("For Adaptive Genetic Algorithms, the probability_max must be greater than probability_min in the mutation_configuration.");
-    }
-}
-
-/**
  * Function to check that the number of couples is set
  */
 pub fn number_of_couples_is_set(configuration: &GaConfiguration){
     if configuration.selection_configuration.number_of_couples <= 0 {
         core::panic!("The number of couples must be set.");
-    }
-}
-
-/**
-* Function to check that the population size is set
-*/
-pub fn population_size_is_set(configuration: &GaConfiguration){
-    if configuration.limit_configuration.population_size <= 0 {
-        panic!("The population size must be set.");
     }
 }
