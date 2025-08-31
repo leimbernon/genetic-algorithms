@@ -1,5 +1,6 @@
 use genetic_algorithms::fitness::FitnessFnWrapper;
 use genetic_algorithms::traits::{GeneT, ChromosomeT};
+use std::borrow::Cow;
 
 //Structures definition
 #[derive(Debug, Copy, Clone, Default, PartialEq)]
@@ -51,7 +52,7 @@ impl ChromosomeT for Chromosome{
         self
     }
     fn calculate_fitness(&mut self) {
-        
+
         self.fitness = 0.0;
 
         for (i, gene) in self.dna.iter().enumerate() {
@@ -59,8 +60,11 @@ impl ChromosomeT for Chromosome{
             self.fitness += fitness;
         }
     }
-    fn set_dna(&mut self, dna: &[Self::Gene])->&mut Self{
-        self.dna = dna.to_vec();
+    fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
+        self.dna = match dna {
+            Cow::Borrowed(slice) => slice.to_vec(),
+            Cow::Owned(vec) => vec,
+        };
         self
     }
 }

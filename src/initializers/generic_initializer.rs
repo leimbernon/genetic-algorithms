@@ -15,12 +15,12 @@ where
     let alleles = alleles.unwrap();
     let needs_unique_ids = needs_unique_ids.unwrap();
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let mut dna = Vec::new();
 
     //Selects the genes randomly from the vector without repeating them
     for j in 0..genes_per_chromosome {
-        let index = rng.gen_range(0..alleles.len());
+        let index = rng.random_range(0..alleles.len());
         let mut gene = alleles.get(index).cloned().unwrap();
 
         //If we need unique ids
@@ -49,14 +49,14 @@ where
     let alleles = alleles.unwrap();
     let needs_unique_ids = needs_unique_ids.unwrap();
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let mut dna = Vec::new();
 
     let mut tmp_alleles = alleles.to_vec().clone();
 
     //Selects the genes randomly from the vector without repeating them
     for j in 0..genes_per_chromosome {
-        let index = rng.gen_range(0..tmp_alleles.len());
+        let index = rng.random_range(0..tmp_alleles.len());
         let mut gene = tmp_alleles.get(index).cloned().unwrap();
 
         //If we need unique ids

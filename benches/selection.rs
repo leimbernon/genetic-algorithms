@@ -2,6 +2,7 @@ use criterion::{criterion_group, criterion_main, AxisScale, BenchmarkId, Criteri
 use genetic_algorithms::fitness::FitnessFnWrapper;
 use rand::Rng;
 use pprof::criterion::{Output, PProfProfiler};
+use std::borrow::Cow;
 
 use genetic_algorithms::operations::selection::random::random;
 use genetic_algorithms::operations::selection::fitness_proportionate::roulette_wheel_selection;
@@ -49,8 +50,11 @@ impl ChromosomeT for SimpleChromosome {
     fn get_age(&self) -> i32 {
         self.age
     }
-    fn set_dna(&mut self, dna: &[Self::Gene]) -> &mut Self {
-        self.dna = dna.to_vec();
+    fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
+        self.dna = match dna {
+            Cow::Borrowed(slice) => slice.to_vec(),
+            Cow::Owned(vec) => vec,
+        };
         self
     }
     fn set_fitness_fn<F>(&mut self, fitness_fn: F) -> &mut Self
@@ -66,21 +70,23 @@ impl ChromosomeT for SimpleChromosome {
 }
 
 // Setup function to create a population with configurable size and gene length
+#[cfg(not(tarpaulin_include))]
 fn setup_population(population_size: usize, gene_length: usize) -> Vec<SimpleChromosome> {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     (0..population_size)
         .map(|_| SimpleChromosome {
-            fitness: rng.gen_range(0.0..=1.0),
+            fitness: rng.random_range(0.0..=1.0),
             dna: (0..gene_length)
-                .map(|_| Gene { id: rng.gen_range(0..255) })
+                .map(|_| Gene { id: rng.random_range(0..255) })
                 .collect(),
-            age: rng.gen_range(0..=100),
+            age: rng.random_range(0..=100),
             fitness_fn: FitnessFnWrapper::default(),
         })
         .collect()
 }
 
 // Benchmark function with parameterized population and gene length
+#[cfg(not(tarpaulin_include))]
 fn benchmark_selection_methods(c: &mut Criterion) {
     let population_sizes = vec![10, 100, 1000];
     let gene_lengths = vec![10, 100, 1000];

@@ -32,7 +32,7 @@ U:ChromosomeT
 {
 
     debug!(target="selection_events", method="tournament"; "Starting tournament selection in single thread");
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let mut mating = HashMap::new();
     let chromosome_couples = couples*2;
 
@@ -47,11 +47,11 @@ U:ChromosomeT
     let mut parent_1 = None;
 
     for _i in 0..indexes.len(){
-        let index_1 = rng.gen_range(0..indexes.len());
+        let index_1 = rng.random_range(0..indexes.len());
         let final_index_1 = indexes[index_1];
         trace!(target="selection_events", method="tournament"; "Index 1: {}, final index 1: {}", index_1, final_index_1);
 
-        let index_2 = rng.gen_range(0..indexes.len());
+        let index_2 = rng.random_range(0..indexes.len());
         let final_index_2 = indexes[index_2];
         trace!(target="selection_events", method="tournament"; "Index 2: {}, final index 2: {}", index_2, final_index_2);
 
@@ -137,17 +137,17 @@ U:ChromosomeT+ Send + Sync + 'static + Clone
         //Run the thread
         let handle = thread::spawn(move || {
             
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let chromosomes_t = chromosomes.lock().unwrap().clone();
             let mut indexes_t = indexes.lock().unwrap().clone();
 
             for _ in 0..indexes_t.len(){
 
                 //Gets the indexes for the tournament
-                let index_1 = rng.gen_range(0..indexes_t.len());
+                let index_1 = rng.random_range(0..indexes_t.len());
                 let final_index_1 = indexes_t[index_1];
 
-                let index_2 = rng.gen_range(0..indexes_t.len());
+                let index_2 = rng.random_range(0..indexes_t.len());
                 let final_index_2 = indexes_t[index_2];
                 trace!(target="selection_events", method="tournament"; "Thread {} - indexes 1 {} - final index 1 {} - index 2 {} - final index 2 {} ", thread, index_1, final_index_1, index_2, final_index_2);
 

@@ -2,9 +2,17 @@ use std::{sync::{mpsc::sync_channel, Mutex, Arc}, thread, collections::HashMap};
 use rand::Rng;
 use log::{trace, debug, info};
 use std::env;
-use crate::{configuration::{LimitConfiguration, LogLevel, ProblemSolving}, helpers::condition_checker_factory, operations::{crossover, mutation, selection, survivor}, population::Population, traits::{ChromosomeT, ConfigurationT}};
+use std::fmt::Debug;
+use std::borrow::Cow;
+use crate::{configuration::{LimitConfiguration, LogLevel, ProblemSolving}, operations::{crossover, mutation, selection, survivor}, population::Population, traits::{ChromosomeT, ConfigurationT}};
 use crate::configuration::GaConfiguration;
+use crate::validators::validator_factory as ValidatorFactory;
 
+/// Indicates why a GA run terminated.
+///
+/// - `GenerationLimitReached`: the maximum number of generations was reached.
+/// - `FitnessTargetReached`: a stopping criterion based on fitness was satisfied.
+/// - `NotTerminated`: internal state before the run finalizes or if a callback is invoked mid-run.
 #[derive(Debug, PartialEq)]
 pub enum TerminationCause {
     GenerationLimitReached,
@@ -12,16 +20,31 @@ pub enum TerminationCause {
     NotTerminated
 }
 
+/// Generic Genetic Algorithm orchestrator.
+///
+/// Type parameter:
+/// - `U`: Chromosome type implementing `ChromosomeT`.
+///
+/// Responsibilities:
+/// - Manage configuration, alleles, population and termination state.
+/// - Provide builder-like configuration methods (`ConfigurationT`) to compose the run.
+/// - Coordinate the GA cycle: initialization, selection, crossover, mutation, survivor, evaluation.
 pub struct Ga<U>
 where
     U:ChromosomeT
 {
+    /// Tunable GA configuration (limits, operators, logging, etc.).
     pub configuration: GaConfiguration,
+    /// Alleles template for initialization functions (optional).
     pub alleles: Vec<U::Gene>,
+    /// Current population.
     pub population: Population<U>,
+    /// Termination cause after `run` or `run_with_callback`.
     pub termination_cause: TerminationCause,
 
+    /// Initialization function to build chromosomes' DNA at startup.
     pub initialization_fn: Option<Arc<dyn Fn(i32, Option<&[U::Gene]>, Option<bool>) -> Vec<U::Gene> + Send + Sync>>,
+    /// Fitness function applied to chromosomes.
     pub fitness_fn: Option<Arc<dyn Fn(&[U::Gene]) -> f64 + Send + Sync>>,
 }
 
@@ -163,7 +186,8 @@ where
 
 impl<U>Ga<U>
 where
-    U:ChromosomeT + Send + Sync + 'static + Clone,
+    U:ChromosomeT + Send + Sync + 'static + Clone + Debug,
+    U::Gene: 'static + Debug,
 {
     /**
      * Function to set the alleles
@@ -209,9 +233,12 @@ where
         self
     }
 
-    /**
-     * Function to randomly initialize the population
-     */
+    /// Randomly initializes the population using the provided initialization function.
+    ///
+    /// Behavior:
+    /// - Validates configuration and alleles before starting.
+    /// - Spawns threads to create and evaluate chromosomes in parallel.
+    /// - Sets the internal `population` with the collected chromosomes.
     pub fn initialization(&mut self) -> &mut Self
     where U:ChromosomeT + Send + Sync + 'static + Clone
     {
@@ -222,7 +249,8 @@ where
         }
 
         //Before starting the run, we will check the conditions
-        condition_checker_factory::<U>(Some(&self.configuration), None, Some(&self.alleles));
+        ValidatorFactory::validate::<U>(Some(&self.configuration), None, Some(&self.alleles));
+
 
         info!("Initialization started");
         let (tx, rx) = sync_channel(self.configuration.number_of_threads as usize);
@@ -261,7 +289,7 @@ where
 
                     //Gets the dna randomly
                     let dna_chromosome = (initialization_fn_t)(genes_per_chromosome_t, Some(&alleles_t.lock().unwrap()), Some(needs_unique_ids_t));
-                    chromosome.set_dna(dna_chromosome.as_slice());
+                    chromosome.set_dna(Cow::Owned(dna_chromosome));
 
 
                     // Wrap the fitness function in a closure
@@ -298,20 +326,27 @@ where
 
     }
 
+    /// Runs the GA without callbacks and returns a reference to the final population.
+    ///
+    /// Equivalent to `run_with_callback(None, 0)`.
     pub fn run(&mut self)->&Population<U>{
         self.run_with_callback(None::<fn(&i32, &Population<U>, &TerminationCause)>, 0)
     }
 
-    /**
-     * Method for running the Genetic Algorithms with callback
-     */
+    /// Runs the GA and optionally invokes a callback every `generations_to_callback` generations.
+    ///
+    /// Execution cycle per generation:
+    /// 1) Selection of parents, 2) Crossover to produce offspring, 3) Mutation of offspring,
+    /// 4) Survivor selection to prune population, 5) Best chromosome update, 6) Stop check.
+    ///
+    /// Logging is controlled by configuration log level; adaptive GA updates use f_avg and f_max.
     pub fn run_with_callback<F>(&mut self, callback: Option<F>, generations_to_callback: i32)->&Population<U>
     where 
         U:ChromosomeT + Send + Sync + 'static + Clone,
         F: Fn(&i32, &Population<U>, &TerminationCause)
     {
         //Before starting the run, we will check the conditions
-        condition_checker_factory::<U>(Some(&self.configuration), Some(&self.population), Some(&self.alleles));
+        ValidatorFactory::validate::<U>(Some(&self.configuration), None, Some(&self.alleles));
 
         //If we want to initialize the population randomly
         if self.population.size() == 0 && self.initialization_fn.is_some() {
@@ -362,21 +397,21 @@ where
             let mut offspring = parent_crossover(&mut parents, &self.population.chromosomes, &self.configuration, age, self.population.f_max, self.population.f_avg);
             debug!(target="ga_events", method="run"; "Offspring created");
 
-            //3- Sets the best chromosome
-            for child in &offspring{
-                self.population.decide_best_chromosome(child, self.configuration.limit_configuration.problem_solving);
-            }
-            debug!(target="ga_events", method="run"; "Best chromosome calculated - generation {}", i+1);
-
-            //4- Insert the children in the population
+            //3- Insert the children in the population
             self.population.add_chromosomes(&mut offspring);
 
-            //5- Survivor selection
+            //4- Survivor selection
             survivor::factory(self.configuration.survivor, &mut self.population.chromosomes, initial_population_size, self.configuration.limit_configuration);
             if self.configuration.adaptive_ga{
                 self.population.recalculate_aga();
             }
             debug!(target="ga_events", method="run"; "Survivors selected");
+
+            //5- Sets the best chromosome
+            for chromosome in &self.population.chromosomes.clone() {
+                self.population.decide_best_chromosome(chromosome, self.configuration.limit_configuration.problem_solving);
+            }
+            debug!(target="ga_events", method="run"; "Best chromosome calculated - generation {}", i+1);
 
             // If we want to perform a callback
             if let Some(func) = &callback {
@@ -412,9 +447,10 @@ where
     }
 }
 
-/**
- * Function to identify if the limit has been reached or not in the current generation
- */
+/// Checks termination limits according to `LimitConfiguration`.
+///
+/// - For Minimization: stops when any chromosome has fitness exactly `0.0`.
+/// - For FixedFitness: stops when any chromosome has fitness exactly `fitness_target`.
 fn limit_reached<U>(limit: LimitConfiguration, chromosomes: &Vec<U>) ->bool
 where
 U:ChromosomeT
@@ -448,9 +484,12 @@ U:ChromosomeT
     result
 }
 
-/**
- * Function for parent crossover
- */
+/// Performs parent crossover using the configured crossover and mutation strategies.
+///
+/// Behavior:
+/// - Splits work among threads considering available parent pairs.
+/// - Computes adaptive probabilities when enabled; otherwise uses static ones.
+/// - Produces children, mutates them, computes their fitness, and returns the offspring.
 fn parent_crossover<U>(parents: &mut HashMap<usize, usize>, chromosomes: &Vec<U>, configuration: &GaConfiguration, age: i32, f_max: f64, f_avg: f64) -> Vec<U>
 where 
 U:ChromosomeT + Send + Sync + 'static + Clone
@@ -510,7 +549,7 @@ U:ChromosomeT + Send + Sync + 'static + Clone
         let handle = thread::spawn(move || {
 
             //Getting random numbers in this thread
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
 
             for(key, value) in parents_t.iter(){
                 //Getting the parent 1 and 2 for crossover                
@@ -518,7 +557,7 @@ U:ChromosomeT + Send + Sync + 'static + Clone
                 let parent_2 = chromosomes.get(*value).unwrap().clone();
 
                 //Making the crossover of the parents when the random number is below or equal to the given probability
-                let crossover_probability = rng.gen_range(0.0..1.0);
+                let crossover_probability = rng.random_range(0.0..1.0);
                 let crossover_probability_config = 
                     if crossover_probability_config.is_some(){
                         crossover_probability_config.unwrap()
@@ -528,7 +567,7 @@ U:ChromosomeT + Send + Sync + 'static + Clone
                 
 
                 //Making the mutation of each child when the random number is below or equal the given probability
-                let mut mutation_probability = rng.gen_range(0.0..1.0);
+                let mut mutation_probability = rng.random_range(0.0..1.0);
                 let mutation_probability_config = 
                     if mutation_probability_config.is_some(){
                         mutation_probability_config.unwrap()
@@ -558,7 +597,7 @@ U:ChromosomeT + Send + Sync + 'static + Clone
                     mutation::factory(configuration.mutation_configuration.method, &mut child_1);
                 }
 
-                mutation_probability = rng.gen_range(0.0..1.0);
+                mutation_probability = rng.random_range(0.0..1.0);
                 if mutation_probability <= mutation_probability_config {
                     mutation::factory(configuration.mutation_configuration.method, &mut child_2);
                 }

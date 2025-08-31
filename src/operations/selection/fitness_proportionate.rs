@@ -11,7 +11,7 @@ pub fn roulette_wheel_selection<U:ChromosomeT>(chromosomes: &Vec<U>) -> HashMap<
     debug!(target="selection_events", method="roulette_wheel_selection"; "Starting the roulette wheel selection");
     let total_fitness: f64 = chromosomes.iter().map(|ind| ind.get_fitness()).sum();
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     trace!(target="selection_events", method="roulette_wheel_selection"; "Total fitness: {}", total_fitness);
 
@@ -20,7 +20,7 @@ pub fn roulette_wheel_selection<U:ChromosomeT>(chromosomes: &Vec<U>) -> HashMap<
     for index in  0..chromosomes.len(){
 
         //We get the probability
-        if rng.gen_range(0.0..total_fitness) >= chromosomes.get(index).unwrap().get_fitness(){
+        if rng.random_range(0.0..total_fitness) >= chromosomes.get(index).unwrap().get_fitness(){
 
             if parent_1.is_none() {
                 //If parent 1 is not set, we set it
@@ -50,7 +50,7 @@ pub fn stochastic_universal_sampling<U:ChromosomeT>(chromosomes: &Vec<U>, couple
     let total: f64 = chromosomes.iter().map(|gen| gen.get_fitness()).sum();
     let mut last_selection_value = 0.0;
     let mut selection_probabilities = Vec::new();
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     trace!(target="selection_events", method="stochastic_universal_sampling"; "Total fitness: {}", total);
     for genotype in chromosomes {
@@ -62,7 +62,7 @@ pub fn stochastic_universal_sampling<U:ChromosomeT>(chromosomes: &Vec<U>, couple
 
     //2- Calculate the pointer distance and the starting point between 0 and the pointer distance
     let pointer_distance = 1.0 / chromosome_couples as f64;
-    let starting_point = rng.gen_range(0.0..pointer_distance);
+    let starting_point = rng.random_range(0.0..pointer_distance);
     trace!(target="selection_events", method="stochastic_universal_sampling"; "pointer distance {} - starting point {}", pointer_distance, starting_point);
 
     //3- Parent identification

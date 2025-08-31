@@ -1,5 +1,6 @@
 use crate::traits::{ChromosomeT, GeneT};
 use log::{trace, debug};
+use std::borrow::Cow;
 
 pub fn cycle<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Option<Vec<U>> {
     let dna_len = parent_1.get_dna().len();
@@ -42,8 +43,8 @@ pub fn cycle<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Option<Vec<U>> {
 
     let mut child_1 = parent_1.clone();
     let mut child_2 = parent_2.clone();
-    child_1.set_dna(&child_1_dna);
-    child_2.set_dna(&child_2_dna);
+    child_1.set_dna(Cow::Owned(child_1_dna));
+    child_2.set_dna(Cow::Owned(child_2_dna));
     debug!(target="crossover_events", method="cycle_crossover"; "Cycle crossover finished");
 
     Some(vec![child_1, child_2])
