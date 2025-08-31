@@ -6,24 +6,31 @@ use log::{debug, trace};
 use crate::configuration::ProblemSolving;
 use crate::traits::ChromosomeT;
 
+/// Population of chromosomes with aggregate statistics and best tracking.
+///
+/// Responsibilities:
+/// - Store the evolving set of chromosomes.
+/// - Maintain best chromosome according to the configured problem objective.
+/// - Compute average (f_avg) and maximum (f_max) fitness (used by adaptive GA).
+/// - Parallel fitness calculation to leverage multiple threads.
 pub struct Population<U>
 where
     U: ChromosomeT
 {
-    // The chromosomes or members of the population.
+    /// The chromosomes (members) of the population.
     pub chromosomes: Vec<U>,
 
-    // Best chromosome of the population
+    /// Best chromosome in the population (by fitness, according to `ProblemSolving`).
     pub best_chromosome: U,
     best_chromosome_is_set: bool,
 
-    //The numbers of the generation of this population
+    /// Generation numbers associated with this population (optional tracking).
     pub generation_numbers: Vec<i32>,
 
-    //Average fitness of the population
+    /// Average fitness across the population.
     pub f_avg: f64,
 
-    //Population largest fitness value
+    /// Largest fitness value in the population.
     pub f_max: f64,
 }
 
@@ -31,20 +38,20 @@ impl<U> Population<U>
 where
     U: ChromosomeT
 {
-    // Creates a new empty `Population`
+    /// Creates a new empty `Population`.
     pub fn new_empty() -> Population<U> {
         Population { chromosomes: vec![], generation_numbers: vec![], f_avg: 0.0, f_max: 0.0,
                      best_chromosome: U::new(), best_chromosome_is_set: false }
     }
 
-    // Creates a new `Population` with the given chromosomes as members.
+    /// Creates a `Population` with the given chromosomes as members.
     pub fn new(chromosomes: Vec<U>) -> Population<U> {
         Population {
             chromosomes, generation_numbers: vec![], f_avg: 0.0, f_max: 0.0,
                      best_chromosome: U::new(), best_chromosome_is_set: false }
     }
 
-    // Function to calculate f_avg and f_max
+    /// Recalculate `f_avg` and `f_max` (used by adaptive GA probabilities).
     pub fn recalculate_aga(& mut self){
         self.f_max = 0.0;
         self.f_avg = 0.0;
@@ -55,50 +62,55 @@ where
         self.f_avg /= self.chromosomes.len() as f64;
     }
 
-    //Function to add chromosomes in the list
+    /// Appends a list of chromosomes into the current population.
     pub fn add_chromosomes(&mut self, chromosomes: &mut Vec<U>){
         self.chromosomes.append(chromosomes);
     }
 
-    // Returns the number of chromosomes in the population.
+    /// Returns the number of chromosomes in the population.
     pub fn size(&self) -> usize {
         self.chromosomes.len()
     }
 
-    // Population fitness calculation
+    /// Computes fitness for all chromosomes in parallel and updates the best chromosome.
+    ///
+    /// Behavior:
+    /// - Spawns up to `number_of_threads` workers to compute fitness in batches.
+    /// - If a chromosome already has non-zero fitness, it's reused to avoid recomputation.
+    /// - Updates `best_chromosome` as results arrive.
     pub fn fitness_calculation(&mut self, number_of_threads: i32, problem_solving: ProblemSolving)
     {
         debug!(target="population_events", method="fitness_calculation"; "Started the population fitness calculation");
         let (tx, rx) = sync_channel(number_of_threads as usize);
 
-        //Division of the chromosomes in different threads
+        // Division of the chromosomes in different threads
         let number_of_threads = if number_of_threads > self.chromosomes.len() as i32 {self.chromosomes.len() as i32} else {number_of_threads};
 
-        //Setting the starting point and the jump
+        // Setting the starting point and the jump
         let mut start_index = 0;
         let mut jump = self.chromosomes.len() as i32 / number_of_threads;
 
-        //Cloning the chromosomes for multithreading
+        // Cloning the chromosomes for multithreading
         let chromosomes_t = Vec::from_iter(self.chromosomes[..].iter().cloned());
         let chromosomes_t = Arc::new(Mutex::new(chromosomes_t));
 
-        //Walking through the threads
+        // Walking through the threads
         for _ in 0..number_of_threads {
 
-            //We calculate the next jump
+            // We calculate the next jump
             if jump > self.chromosomes.len() as i32 - (start_index + jump) {
                 jump += self.chromosomes.len() as i32 - (start_index + jump);
             }
 
-            //Cloning the information from the main thread
+            // Cloning the information from the main thread
             let (start_index_t, tx, jump_t, chromosomes_t) = (start_index, tx.clone(), jump, Arc::clone(&chromosomes_t));
 
-            //Starting the thread management
+            // Starting the thread management
             thread::spawn(move || {
 
                 let mut fitness_map = HashMap::new();
 
-                //Calculates the fitness from the corresponding population
+                // Calculates the fitness from the corresponding population
                 for i in start_index_t..(start_index_t + jump_t){
 
                     // If the fitness is 0.0 (maybe it has not been already calculated)
@@ -108,7 +120,7 @@ where
                     fitness_map.insert(i as usize, chromosomes_t.lock().unwrap()[i as usize].get_fitness());
                 }
 
-                //Sending the result
+                // Sending the result
                 tx.send(fitness_map).unwrap();
             });
 
@@ -117,7 +129,7 @@ where
 
         drop(tx);
 
-        //We receive from the threads and set the fitness in chromosomes
+        // We receive from the threads and set the fitness in chromosomes
         for received in rx {
             for element in received{
                 self.chromosomes[element.0].set_fitness(element.1);
@@ -127,6 +139,7 @@ where
         debug!(target="ga_events", method="population_fitness_calculation"; "Population fitness calculation finished");
     }
 
+    /// Update the best chromosome given a candidate, according to the problem objective.
     pub fn decide_best_chromosome(&mut self, new_chromosome: &U, problem_solving: ProblemSolving)
     {
         debug!(target="population_events", method="decide_best_chromosome"; "Started the best chromosome method");

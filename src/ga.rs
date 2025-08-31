@@ -8,6 +8,11 @@ use crate::{configuration::{LimitConfiguration, LogLevel, ProblemSolving}, opera
 use crate::configuration::GaConfiguration;
 use crate::validators::validator_factory as ValidatorFactory;
 
+/// Indicates why a GA run terminated.
+///
+/// - `GenerationLimitReached`: the maximum number of generations was reached.
+/// - `FitnessTargetReached`: a stopping criterion based on fitness was satisfied.
+/// - `NotTerminated`: internal state before the run finalizes or if a callback is invoked mid-run.
 #[derive(Debug, PartialEq)]
 pub enum TerminationCause {
     GenerationLimitReached,
@@ -15,16 +20,31 @@ pub enum TerminationCause {
     NotTerminated
 }
 
+/// Generic Genetic Algorithm orchestrator.
+///
+/// Type parameter:
+/// - `U`: Chromosome type implementing `ChromosomeT`.
+///
+/// Responsibilities:
+/// - Manage configuration, alleles, population and termination state.
+/// - Provide builder-like configuration methods (`ConfigurationT`) to compose the run.
+/// - Coordinate the GA cycle: initialization, selection, crossover, mutation, survivor, evaluation.
 pub struct Ga<U>
 where
     U:ChromosomeT
 {
+    /// Tunable GA configuration (limits, operators, logging, etc.).
     pub configuration: GaConfiguration,
+    /// Alleles template for initialization functions (optional).
     pub alleles: Vec<U::Gene>,
+    /// Current population.
     pub population: Population<U>,
+    /// Termination cause after `run` or `run_with_callback`.
     pub termination_cause: TerminationCause,
 
+    /// Initialization function to build chromosomes' DNA at startup.
     pub initialization_fn: Option<Arc<dyn Fn(i32, Option<&[U::Gene]>, Option<bool>) -> Vec<U::Gene> + Send + Sync>>,
+    /// Fitness function applied to chromosomes.
     pub fitness_fn: Option<Arc<dyn Fn(&[U::Gene]) -> f64 + Send + Sync>>,
 }
 
@@ -213,9 +233,12 @@ where
         self
     }
 
-    /**
-     * Function to randomly initialize the population
-     */
+    /// Randomly initializes the population using the provided initialization function.
+    ///
+    /// Behavior:
+    /// - Validates configuration and alleles before starting.
+    /// - Spawns threads to create and evaluate chromosomes in parallel.
+    /// - Sets the internal `population` with the collected chromosomes.
     pub fn initialization(&mut self) -> &mut Self
     where U:ChromosomeT + Send + Sync + 'static + Clone
     {
@@ -303,13 +326,20 @@ where
 
     }
 
+    /// Runs the GA without callbacks and returns a reference to the final population.
+    ///
+    /// Equivalent to `run_with_callback(None, 0)`.
     pub fn run(&mut self)->&Population<U>{
         self.run_with_callback(None::<fn(&i32, &Population<U>, &TerminationCause)>, 0)
     }
 
-    /**
-     * Method for running the Genetic Algorithms with callback
-     */
+    /// Runs the GA and optionally invokes a callback every `generations_to_callback` generations.
+    ///
+    /// Execution cycle per generation:
+    /// 1) Selection of parents, 2) Crossover to produce offspring, 3) Mutation of offspring,
+    /// 4) Survivor selection to prune population, 5) Best chromosome update, 6) Stop check.
+    ///
+    /// Logging is controlled by configuration log level; adaptive GA updates use f_avg and f_max.
     pub fn run_with_callback<F>(&mut self, callback: Option<F>, generations_to_callback: i32)->&Population<U>
     where 
         U:ChromosomeT + Send + Sync + 'static + Clone,
@@ -417,9 +447,10 @@ where
     }
 }
 
-/**
- * Function to identify if the limit has been reached or not in the current generation
- */
+/// Checks termination limits according to `LimitConfiguration`.
+///
+/// - For Minimization: stops when any chromosome has fitness exactly `0.0`.
+/// - For FixedFitness: stops when any chromosome has fitness exactly `fitness_target`.
 fn limit_reached<U>(limit: LimitConfiguration, chromosomes: &Vec<U>) ->bool
 where
 U:ChromosomeT
@@ -453,9 +484,12 @@ U:ChromosomeT
     result
 }
 
-/**
- * Function for parent crossover
- */
+/// Performs parent crossover using the configured crossover and mutation strategies.
+///
+/// Behavior:
+/// - Splits work among threads considering available parent pairs.
+/// - Computes adaptive probabilities when enabled; otherwise uses static ones.
+/// - Produces children, mutates them, computes their fitness, and returns the offspring.
 fn parent_crossover<U>(parents: &mut HashMap<usize, usize>, chromosomes: &Vec<U>, configuration: &GaConfiguration, age: i32, f_max: f64, f_avg: f64) -> Vec<U>
 where 
 U:ChromosomeT + Send + Sync + 'static + Clone

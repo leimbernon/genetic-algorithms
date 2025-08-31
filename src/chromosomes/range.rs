@@ -88,6 +88,10 @@ impl<T: Sync + Send + Clone + Default + Debug + 'static> ChromosomeT for Range<T
         &self.dna
     }
 
+    /// Sets the chromosome DNA.
+    ///
+    /// - `Cow::Borrowed`: clones into internal storage.
+    /// - `Cow::Owned`: moves the provided vector into internal storage (no extra clone).
     fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
         self.dna = match dna {
             Cow::Borrowed(slice) => slice.to_vec(),
