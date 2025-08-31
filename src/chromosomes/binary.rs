@@ -1,6 +1,7 @@
 use crate::fitness::FitnessFnWrapper;
 use crate::traits::ChromosomeT;
 use crate::genotypes::Binary as BinaryGenotype;
+use std::borrow::Cow;
 
 /// A chromosome that uses a binary genotype.
 ///
@@ -24,8 +25,11 @@ impl ChromosomeT for Binary {
         &self.dna
     }
 
-    fn set_dna(&mut self, dna: &[Self::Gene]) -> &mut Self {
-        self.dna = dna.to_vec();
+    fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
+        self.dna = match dna {
+            Cow::Borrowed(slice) => slice.to_vec(),
+            Cow::Owned(vec) => vec,
+        };
         self
     }
 

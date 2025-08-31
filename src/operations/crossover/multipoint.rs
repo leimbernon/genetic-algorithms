@@ -47,8 +47,8 @@ pub fn multipoint<U: ChromosomeT>(parent_1: &U, parent_2: &U, crossover_number_o
     }
 
     //Sets the dna into the children and return them
-    child_1.set_dna(dna_child_1.as_slice());
-    child_2.set_dna(dna_child_2.as_slice());
+    child_1.set_dna(std::borrow::Cow::Owned(dna_child_1));
+    child_2.set_dna(std::borrow::Cow::Owned(dna_child_2));
     debug!(target="crossover_events", method="multipoint_crossover"; "Multipoint crossover finished");
 
     Some(vec![child_1, child_2])

@@ -20,8 +20,7 @@ fn fitness_fn(dna: &[RangeGenotype<i32>]) -> f64 {
             }
         }
     }
-
-    -conflicts as f64 // Minimize the number of conflicts
+    conflicts as f64 // Minimize the number of conflicts
 }
 
 fn report(generation: &i32, population: &Population<RangeChromosome<i32>>, termination_cause: &TerminationCause) {
@@ -40,9 +39,10 @@ fn main() {
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
         .with_mutation_method(Mutation::Swap)
-        .with_problem_solving(ProblemSolving::Maximization)
+        .with_problem_solving(ProblemSolving::Minimization)
         .with_survivor_method(Survivor::Fitness)
         .with_max_generations(5000)
+        .with_fitness_target(0.0)
         .run_with_callback(Some(report), 100);
 
     println!("Best chromosome for N-Queens: {}", population.best_chromosome.phenotype());

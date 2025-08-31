@@ -3,6 +3,7 @@ use rand::Rng;
 use log::{trace, debug, info};
 use std::env;
 use std::fmt::Debug;
+use std::borrow::Cow;
 use crate::{configuration::{LimitConfiguration, LogLevel, ProblemSolving}, operations::{crossover, mutation, selection, survivor}, population::Population, traits::{ChromosomeT, ConfigurationT}};
 use crate::configuration::GaConfiguration;
 use crate::validators::validator_factory as ValidatorFactory;
@@ -265,7 +266,7 @@ where
 
                     //Gets the dna randomly
                     let dna_chromosome = (initialization_fn_t)(genes_per_chromosome_t, Some(&alleles_t.lock().unwrap()), Some(needs_unique_ids_t));
-                    chromosome.set_dna(dna_chromosome.as_slice());
+                    chromosome.set_dna(Cow::Owned(dna_chromosome));
 
 
                     // Wrap the fitness function in a closure

@@ -1,4 +1,5 @@
 use crate::traits::GeneT;
+use std::borrow::Cow;
 
 pub trait ChromosomeT: Clone + Default + Send + Sync + 'static{
 
@@ -10,18 +11,24 @@ pub trait ChromosomeT: Clone + Default + Send + Sync + 'static{
     fn default(mut self) -> Self{
         self.set_fitness(0.0);
         self.set_age(0);
-        self.set_dna(Vec::new().as_slice());
+        self.set_dna(Cow::Borrowed(&[]));
         self
     }
     fn new_gene() -> Self::Gene{
         Self::Gene::new()
     }
     fn get_dna(&self) -> &[Self::Gene];
-    fn set_dna(&mut self, dna: &[Self::Gene])->&mut Self;
+
+    /// Sets the DNA using Cow to avoid unnecessary copies.
+    /// - Borrowed: stores a cloned Vec.
+    /// - Owned: moves the Vec into the chromosome.
+    fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self;
+
     fn set_gene(&mut self, gene_index: usize, gene: Self::Gene)->&mut Self{
         let mut dna_temp = self.get_dna().to_vec();
         dna_temp[gene_index] = gene;
-        self.set_dna(dna_temp.as_slice());
+        // Move the vector to avoid an extra clone
+        self.set_dna(Cow::Owned(dna_temp));
         self
     }
     fn set_fitness_fn<F>(&mut self, fitness_fn: F) -> &mut Self

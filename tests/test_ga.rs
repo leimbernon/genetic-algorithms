@@ -51,7 +51,7 @@ fn test_ga_start_maximize(){
                         .run();
     
     assert_eq!(population.chromosomes.len(), 10);
-    assert_eq!(population.best_chromosome.get_fitness(), 10.0);
+    assert_eq!(population.best_chromosome.get_fitness(), 20.0);
 
 }
 

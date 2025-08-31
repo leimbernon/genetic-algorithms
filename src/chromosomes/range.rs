@@ -1,4 +1,5 @@
 use std::fmt::Debug;
+use std::borrow::Cow;
 use crate::fitness::FitnessFnWrapper;
 use crate::genotypes::Range as RangeGenotype;
 use crate::traits::ChromosomeT;
@@ -87,8 +88,11 @@ impl<T: Sync + Send + Clone + Default + Debug + 'static> ChromosomeT for Range<T
         &self.dna
     }
 
-    fn set_dna(&mut self, dna: &[Self::Gene]) -> &mut Self {
-        self.dna = dna.to_vec();
+    fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
+        self.dna = match dna {
+            Cow::Borrowed(slice) => slice.to_vec(),
+            Cow::Owned(vec) => vec,
+        };
         self
     }
 

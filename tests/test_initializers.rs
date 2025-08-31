@@ -40,7 +40,8 @@ fn test_binary_random_initialization(){
     let genes = binary_random_initialization(100, None, None);
     let mut chromosome = Binary::new();
 
-    chromosome.set_dna(genes.as_slice());
+    use std::borrow::Cow;
+    chromosome.set_dna(Cow::Borrowed(genes.as_slice()));
     assert_eq!(100, chromosome.phenotype().len());
 }
 

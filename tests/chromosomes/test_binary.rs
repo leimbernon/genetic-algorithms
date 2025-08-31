@@ -38,6 +38,7 @@ fn test_phenotype(){
                    BinaryGenotype{id:5, value:false}];
 
     let mut binary_chromosome =  BinaryChromosome::new();
-    binary_chromosome.set_dna(&dna);
+    use std::borrow::Cow;
+    binary_chromosome.set_dna(Cow::Borrowed(&dna));
     assert_eq!(binary_chromosome.phenotype(), "01010");
 }

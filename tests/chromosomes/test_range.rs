@@ -23,7 +23,8 @@ fn test_set_dna() {
     let mut chromosome = Range::<i32>::new();
     let dna = vec![RangeGenotype{id: 10, ranges: vec![(0, 10)], value: 5},
                     RangeGenotype{id: 20, ranges: vec![(10, 20)], value: 15}];
-    chromosome.set_dna(&dna);
+    use std::borrow::Cow;
+    chromosome.set_dna(Cow::Borrowed(&dna));
     assert_eq!(chromosome.get_dna(), &dna[..]);
 }
 
@@ -35,7 +36,8 @@ fn test_set_fitness_fn() {
     assert_eq!(chromosome.get_fitness(), 0.0);
 
     let dna = vec![RangeGenotype::new(0, vec![(0, 10)], 0)];
-    chromosome.set_dna(&dna.as_slice());
+    use std::borrow::Cow;
+    chromosome.set_dna(Cow::Borrowed(dna.as_slice()));
     chromosome.calculate_fitness();
     assert_eq!(chromosome.get_fitness(), 1.0);
 }

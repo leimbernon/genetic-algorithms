@@ -1,6 +1,6 @@
 use std::any::TypeId;
 use crate::configuration::{GaConfiguration, ProblemSolving};
-use crate::genotypes::{Binary, Range};
+use crate::genotypes::Range;
 use crate::operations;
 use crate::population::Population;
 use crate::traits::{ChromosomeT, GeneT};

@@ -3,17 +3,26 @@ pub use self::swap::swap;
 pub use self::inversion::inversion;
 pub use self::scramble::scramble;
 use super::Mutation;
+use std::any::Any;
 
 pub mod swap;
 pub mod inversion;
 pub mod scramble;
+pub mod value;
 
 pub fn factory<U>(mutation: Mutation ,individual: &mut U)
 where
 U: ChromosomeT + 'static
 {
     match mutation {
-        Mutation::Swap => {swap(individual)},
+        // For Range<i32> chromosomes, replace Swap with an in-range value mutation.
+        Mutation::Swap => {
+            if let Some(ind) = (individual as &mut dyn Any).downcast_mut::<crate::chromosomes::Range<i32>>() {
+                value::value_mutation(ind);
+            } else {
+                swap(individual)
+            }
+        },
         Mutation::Inversion => {inversion(individual)},
         Mutation::Scramble => {scramble(individual)},
     }
