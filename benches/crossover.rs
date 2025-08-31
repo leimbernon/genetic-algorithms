@@ -4,6 +4,7 @@ use genetic_algorithms::fitness::FitnessFnWrapper;
 use rand::seq::SliceRandom;
 use rand::Rng;
 use pprof::criterion::{Output, PProfProfiler};
+use std::borrow::Cow;
 
 use genetic_algorithms::operations::crossover::multipoint;
 use genetic_algorithms::operations::crossover::uniform;
@@ -51,8 +52,11 @@ impl ChromosomeT for SimpleChromosome {
     fn get_age(&self) -> i32 {
         self.age
     }
-    fn set_dna(&mut self, dna: &[Self::Gene]) -> &mut Self {
-        self.dna = dna.to_vec();
+    fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
+        self.dna = match dna {
+            Cow::Borrowed(slice) => slice.to_vec(),
+            Cow::Owned(vec) => vec,
+        };
         self
     }
     fn set_fitness_fn<F>(&mut self, fitness_fn: F) -> &mut Self
@@ -69,11 +73,11 @@ impl ChromosomeT for SimpleChromosome {
 
 #[cfg(not(tarpaulin_include))]
 fn setup_population(population_size: usize, gene_length: usize) -> Vec<SimpleChromosome> {
-    let mut rng = rand::thread_rng();
-    
+    let mut rng = rand::rng();
+
     // Generate a single set of genes for all chromosomes
     let base_genes: Vec<Gene> = (0..gene_length)
-        .map(|_| Gene { id: rng.gen_range(0..255) })
+        .map(|_| Gene { id: rng.random_range(0..255) })
         .collect();
 
     (0..population_size)
@@ -83,9 +87,9 @@ fn setup_population(population_size: usize, gene_length: usize) -> Vec<SimpleChr
             dna.shuffle(&mut rng);
 
             SimpleChromosome {
-                fitness: rng.gen_range(0.0..1.0),
+                fitness: rng.random_range(0.0..1.0),
                 dna,
-                age: rng.gen_range(0..100),
+                age: rng.random_range(0..100),
                 fitness_fn: FitnessFnWrapper::default(),
             }
         })
