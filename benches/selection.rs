@@ -1,7 +1,6 @@
 use criterion::{criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion, PlotConfiguration, Throughput};
 use genetic_algorithms::fitness::FitnessFnWrapper;
 use rand::Rng;
-use pprof::criterion::{Output, PProfProfiler};
 use std::borrow::Cow;
 
 use genetic_algorithms::operations::selection::random::random;
@@ -152,11 +151,10 @@ fn benchmark_selection_methods(c: &mut Criterion) {
     group.finish();
 }
 
-// Create the benchmark group with profiling
+// Create the benchmark group (profiler removed due to criterion version mismatch with pprof)
 criterion_group! {
     name = selection_benchmarks;
-    config = Criterion::default()
-        .with_profiler(PProfProfiler::new(100, Output::Flamegraph(None)));
+    config = Criterion::default();
     targets = benchmark_selection_methods
 }
 

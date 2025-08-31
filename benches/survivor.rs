@@ -2,7 +2,6 @@ use criterion::{criterion_group, criterion_main, AxisScale, BenchmarkId, Criteri
 
 use genetic_algorithms::fitness::FitnessFnWrapper;
 use rand::Rng;
-use pprof::criterion::{Output, PProfProfiler};
 use std::borrow::Cow;
 
 use genetic_algorithms::traits::{GeneT, ChromosomeT};
@@ -88,7 +87,6 @@ fn setup_population(population_size: usize, gene_length: usize) -> Vec<SimpleChr
 // Benchmark the survivor methods
 #[cfg(not(tarpaulin_include))]
 fn benchmark_survivor_methods(c: &mut Criterion) {
-
     let population_size = 1000;
     let gene_lengths = vec![10, 100, 1000];
 
@@ -119,11 +117,10 @@ fn benchmark_survivor_methods(c: &mut Criterion) {
     group.finish();
 } 
 
-// Configure the benchmark group with Criterion and PProf
+// Grupo de benchmarks sin profiler externo (pprof removido por incompatibilidad de versiones)
 criterion_group! {
     name = survivor_benchmarks;
-    config = Criterion::default()
-        .with_profiler(PProfProfiler::new(100, Output::Flamegraph(None)));
+    config = Criterion::default();
     targets = benchmark_survivor_methods
 }
 

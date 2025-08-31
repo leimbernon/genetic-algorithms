@@ -3,7 +3,6 @@ use criterion::{criterion_group, criterion_main, AxisScale, BenchmarkId, Criteri
 use genetic_algorithms::fitness::FitnessFnWrapper;
 use rand::seq::SliceRandom;
 use rand::Rng;
-use pprof::criterion::{Output, PProfProfiler};
 use std::borrow::Cow;
 
 use genetic_algorithms::operations::crossover::multipoint;
@@ -152,11 +151,10 @@ fn benchmark_crossover_methods(c: &mut Criterion) {
     group.finish();
 }
 
-// Configure the benchmark group with Criterion and PProf
+// Grupo de benchmarks sin profiler externo (pprof removido por incompatibilidad de versiones)
 criterion_group! {
     name = crossover_benchmarks;
-    config = Criterion::default()
-        .with_profiler(PProfProfiler::new(100, Output::Flamegraph(None)));
+    config = Criterion::default();
     targets = benchmark_crossover_methods
 }
 
