@@ -1,250 +1,188 @@
-# RUST genetic algorithms library
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/a934b8668dbf4412b3c63a7b275ad949)](https://app.codacy.com/gh/leimbernon/rust_genetic_algorithms?utm_source=github.com&utm_medium=referral&utm_content=leimbernon/rust_genetic_algorithms&utm_campaign=Badge_Grade_Settings)
+# genetic_algorithms (v2.0.0)
+
 [![Rust Unit Tests](https://github.com/leimbernon/rust_genetic_algorithms/actions/workflows/rust-unit-tests.yml/badge.svg)](https://github.com/leimbernon/rust_genetic_algorithms/actions/workflows/rust-unit-tests.yml)
 
-## Description
-This library provides a simple framework for implementing [genetic algorithms (GA)](https://en.wikipedia.org/wiki/Genetic_algorithm) with Rust.
+Modular and concurrent Genetic Algorithms (GA) library for Rust featuring:
+- Clear abstractions (traits for genes, chromosomes, and configuration).
+- Composable operators (selection, crossover, mutation, survivor).
+- Multi-threaded execution (fitness evaluation, reproduction, mutation in parallel).
+- Adaptive GA mode (dynamic crossover and mutation probabilities based on population performance).
+- `Cow` for minimizing unnecessary DNA copies.
 
-This library also supports multithreading and adaptive genetic algorithms.
-
-## Table of content
-- [RUST genetic algorithms library](#rust-genetic-algorithms-library)
-  - [Description](#description)
-  - [Table of content](#table-of-content)
-  - [Documentation](#documentation)
-  - [Features](#features)
-    - [Traits](#traits)
-    - [Operators](#operators)
-    - [Population](#population)
-    - [Runner](#runner)
-    - [GA Configuration](#ga-configuration)
-  - [Example](#example)
-    - [Creation of the gene and chromosome structure](#creation-of-the-gene-and-chromosome-structure)
-    - [Other examples](#other-examples)
-  - [Usage](#usage)
+## Table of Contents
+- [Documentation](#documentation)
+- [Status & Key Changes 2.0.0](#status--key-changes-200)
+- [Features](#features)
+  - [Traits](#traits)
+  - [Included Genotypes & Chromosomes](#included-genotypes--chromosomes)
+  - [Initializers](#initializers)
+  - [Operators](#operators)
+  - [GA Configuration](#ga-configuration)
+  - [Adaptive GA](#adaptive-ga)
+  - [Multithreading & Performance](#multithreading--performance)
+- [Quick Example](#quick-example)
+- [Full Example (Range)](#full-example-range)
+- [Usage](#usage)
+- [Roadmap / Notes](#roadmap--notes)
+- [License](#license)
 
 ## Documentation
+Latest published docs: [docs.rs/genetic_algorithms](https://docs.rs/genetic_algorithms/latest/genetic_algorithms)
 
-See [docs.rs](https://docs.rs/genetic_algorithms/latest/genetic_algorithms)
+## Status & Key Changes 2.0.0
+Main differences vs 1.x:
+- Crate version: 2.0.0 (update your `Cargo.toml`).
+- `GeneT::get_id()` now returns `i32` directly.
+- `ChromosomeT::set_dna` now uses `Cow<'a, [Gene]>` to avoid redundant copies.
+- Added `Range<T>` genotype alongside `Binary` (supports numeric ranges).
+- Adaptive probability helpers: `aga_probability` for crossover & mutation.
+- Expanded configuration: `FixedFitness`, logging levels (`Off`..`Trace`), configurable `number_of_threads`.
+- Removed obsolete examples using old signatures (`set_dna(&[Gene])`).
+- Internal benchmarks use Criterion 0.7 (pprof integration removed due to version conflict).
 
 ## Features
-
 ### Traits
+- `GeneT`:
+  - Requires: `Default + Clone + Send + Sync`.
+  - Key methods: `new()`, `get_id() -> i32`, `set_id(i32)`.
+- `ChromosomeT`:
+  - Associated: `type Gene: GeneT`.
+  - Supports: `get_dna()`, `set_dna(Cow<[Gene]>)`, `set_gene(idx, gene)`, `set_fitness_fn(...)`, `calculate_fitness()`, `get_fitness()`, `set_fitness(f64)`, `get_age()`, `set_age(i32)`.
+  - Derived metric: `get_fitness_distance(&fitness_target)`.
+- `ConfigurationT`: builder-style API for `Ga` / `GaConfiguration`.
 
-This release uses traits for generic implementations.
+### Included Genotypes & Chromosomes
+- `genotypes::Binary` (boolean gene).
+- `genotypes::Range<T>` (values constrained to one or more `(min,max)` intervals).
+- `chromosomes::Range<T>` (chromosome built from `Range<T>` genes).
+- (Custom chromosomes can be added by implementing `ChromosomeT`).
 
-These traits are inside the `traits` module:
-
-- `GeneT`: This trait must be implemented on your own gene representation.
-  - `new()`: Optional. This is the constructor function.
-  - `get_id()`: Optional. This function must return the id of the gene.
-  - `set_id()`: Sets the id of the gene.
-- `ChromosomeT`: This trait must be implemented on your own chromosome representation.
-  - `Gene`: This is the `GeneT` associated type.
-  - `new()`: Optional. This is the constructor function.
-  - `new_gene()`: Optional. Must return `Self::Gene`.
-  - `get_dna()`: Must return the array of genes (`GeneT`).
-  - `set_dna(dna: &[Self::Gene])`: Must set the array of genes (`GeneT`).
-  - `set_gene(gene_index: usize, gene: Self::Gene)`: Optional. This method replaces a gene at the specified gene_index position.
-  - `calculate_fitness()`: Optional. This function must calculate the fitness of the chromosome (or the chromosome) in f64.
-  - `get_fitness()`: Returns the fitness previously calculated by `calculate_fitness()`.
-  - `set_fitness(fitness: f64)`: Sets the fitness value.
-  - `get_age()`: Returns the age of the chromosome.
-  - `set_age(age: i32)`: Sets the age of the chromosome.
+### Initializers
+- `initializers::binary_random_initialization`.
+- `initializers::range_random_initialization`.
+- `initializers::generic_random_initialization` (takes allele slice, optional unique IDs).
+- `initializers::generic_random_initialization_without_repetitions` (no allele repetition).
 
 ### Operators
-
-Within the `operations` module we have the following operators:
-
-- Crossover
-  - Cycle
-  - Multipoint
-  - Uniform
-- Mutation
-  - Swap
-  - Inversion
-  - Scramble
-- Selection
-  - Random
-  - Roulette Wheel
-  - Stochastic Universal Sampling
-  - Tournament
-- Survivor
-  - Fitness based
-  - Age based
-
-### Population
-
-In genetic algorithms, operators are applied over a population of chromosomes, and over a set of rules (not yet implemented).
-Within the `population` module, the `Population` structure will define the population.
-
-### Runner
-
-Since genetic algorithms run over several generations, there is a `run` function in this library within the `ga` module that facilitates the process.
-This function needs the `GaConfiguration` structure, which contains the operators to be used, the maximum number of generations, the problem solver (Maximization or Minimization), etc., and the `Population` structure, which is in the `population` module.
+- Selection: `Random`, `RouletteWheel`, `StochasticUniversalSampling`, `Tournament`.
+- Crossover: `Cycle`, `MultiPoint`, `Uniform`.
+- Mutation: `Swap`, `Inversion`, `Scramble`.
+- Survivor: `Fitness` (keep best), `Age` (prefer younger / age-based pruning).
 
 ### GA Configuration
+`GaConfiguration` (or the `Ga` builder) exposes:
+- Limits: `problem_solving` (`Minimization | Maximization | FixedFitness`), `max_generations`, `fitness_target`, `population_size`, `genes_per_chromosome`, `needs_unique_ids`, `alleles_can_be_repeated`.
+- Selection: `number_of_couples`, `method`.
+- Crossover: `number_of_points` (MultiPoint), `probability_min` / `probability_max` (required in adaptive mode), `method`.
+- Mutation: `probability_min` / `probability_max` (required in adaptive mode), `method`.
+- Survivor: `survivor`.
+- Infra: `adaptive_ga`, `number_of_threads`, `log_level`.
+- Progress (present but not yet wired): `save_progress_configuration` (future/experimental).
 
-Within this library, you can configure the way genetic algorithms are executed by using the configuration structure `GaConfiguration`.
-This structure has the following attributes:
-- `adaptive_ga`: Specifies if the Genetic Algorithms are adaptive or not.
-- `number_of_threads`: Optional. Indicates how many threads will be executed simultaneously.
-- `limit_configuration`: It configures the limits of the Genetic Algorithms with the `LimitConfiguration` structure.
-- `selection_configuration`: It configures the selection method with the `SelectionConfiguration` structure.
-- `crossover_configuration`: It configures the crossover method with the `CrossoverConfiguration` structure.
-- `mutation_configuration`: It configures the mutation method with the `MutationConfiguration` structure.
-- `survivor`: Specifies which survivor operator to use.
-- `log_level`: Optional. It configures the maximum log level we want to have. If this value is none, logs will be disabled.
+### Adaptive GA
+When `adaptive_ga = true`:
+- Crossover & mutation probabilities are recomputed per parent pair using relative fitness (`f_max`, `f_avg`).
+- You must set both `probability_min` and `probability_max` for crossover and mutation.
+When `adaptive_ga = false`:
+- If `probability_max` is absent, defaults to 1.0 (operator always applied).
 
-`SelectionConfiguration`:
-- `number_of_couples`: Optional. This attribute applies only to stochastic universal sampling. It specifies the number of pairs to select from the population. By defaultthe value will be the half of the population size.
-- `method`: Specifies which selection operator to use.
+### Multithreading & Performance
+- `with_threads(n)` divides selection, crossover, and mutation across threads.
+- Fitness evaluation is parallelized each generation.
+- `Cow` prevents needless cloning of DNA vectors.
 
-`CrossoverConfiguration`:
-- `number_of_points`: Optional. This attribute is only valid for crossover multipoint and indicates how many points are made within the DNA during crossover operations.
-- `probability_max`: Optional. Specifies the maximum probability that two parents are crossed. This number must be between 0.0 and 1.0, both inclusive. In case of adaptive genetic algorithms, this parameter is mandatory and must be greater than `probability_min`.
-- `probability_min`: Optional. Specifies the minimum probability that two parents are crossed. This number must be between 0.0 and 1.0, both inclusive. In case of adaptive genetic algorithms, this parameter is mandatory and must be lower than `probability_max`.
-- `method`: Specifies which crossover operator to use.
-
-`MutationConfiguration`:
-- `probability_max`: Optional. Specifies the maximum probability that a chromosome is mutated. This number must be between 0.0 and 1.0, both inclusive. In case of adaptive genetic algorithms, this parameter is mandatory and must be greater than `probability_min`.
-- `probability_min`: Optional. Specifies the minimum probability that a chromosome is mutated. This number must be between 0.0 and 1.0, both inclusive. In case of adaptive genetic algorithms, this parameter is mandatory and must be lower than `probability_max`.
-
-- `method`: Specifies which mutation operator to use.
-
-`LimitConfiguration`:
-- `problem_solving`: You can choose between a minimization problem and a maximization problem.
-- `max_generations`: If the result is not optimal, this attribute indicates the maximum number of generations to run before stopping.
-- `fitness_target`: Optional. The fitness of the best chromosome.
-- `get_best_chromosome_by_generation`: Optional. Tells the runner to return the best chromosome by generation.
-- `population_size`: Size of the population to be executed.
-- `genes_per_chromosome`: Number of genes that each chromosome must have.
-- `needs_unique_ids`: Optional. Indicates whether each gene must have unique numbering.
-- `alleles_can_be_repeated`: Indicates whether the same allele can be repeated in a chromosome.
-
-## Example
-
-A simple example of use could be minimizing a chromosome whose gene has only one id.
-### Creation of the gene and chromosome structure
-
-Use the traits.
-`use genetic_algorithms::{operations::{Selection, Crossover, Mutation, Survivor}, population::Population, traits::{ChromosomeT, ConfigurationT}, configuration::ProblemSolving, ga};`
-
-Define the gene structure.
-
+## Quick Example
+Minimal GA using `Range<i32>` chromosomes targeting fitness 0 (minimization):
 ```rust
-#[derive(Debug, Copy, Clone, Default, PartialEq)]
-pub struct Gene{
-    pub id: i32,
+use genetic_algorithms::ga::Ga;
+use genetic_algorithms::traits::ConfigurationT;
+use genetic_algorithms::configuration::ProblemSolving;
+use genetic_algorithms::operations::{Selection, Crossover, Mutation, Survivor};
+use genetic_algorithms::genotypes::Range as RangeGene;
+use genetic_algorithms::initializers::range_random_initialization;
+use genetic_algorithms::chromosomes::Range as RangeChromosome; // Chromosome type
+
+fn fitness_fn(dna: &[RangeGene<i32>]) -> f64 { // Replace with domain logic
+    dna.iter().map(|g| g.get_value() as f64).sum() // Simple example
 }
-impl GeneT for Gene{
-    fn get_id(&self) -> &i32{
-        return &self.id;
-    }
-    fn set_id(&mut self, id: i32)->&mut Self {
-        self.id = id;
-    }
-}
+
+let alleles = vec![RangeGene::new(0, vec![(0, 7)], 0)];
+let alleles_clone = alleles.clone();
+let mut ga = Ga::<RangeChromosome<i32>>::new();
+let _population = ga
+    .with_genes_per_chromosome(8)
+    .with_population_size(100)
+    .with_initialization_fn(move |genes, _, _| {
+        range_random_initialization(genes, Some(&alleles_clone), Some(false))
+    })
+    .with_fitness_fn(fitness_fn)
+    .with_selection_method(Selection::Tournament)
+    .with_crossover_method(Crossover::Uniform)
+    .with_mutation_method(Mutation::Swap)
+    .with_survivor_method(Survivor::Fitness)
+    .with_problem_solving(ProblemSolving::Minimization)
+    .with_max_generations(500)
+    .with_fitness_target(0.0)
+    .with_threads(4)
+    .run();
 ```
 
-Define the chromosome structure, and the fitness calculation.
-
+## Full Example (Range)
+Includes adaptive GA and probabilities:
 ```rust
-#[derive(Debug, Clone, Default, PartialEq)]
-pub struct Chromosome{
-    pub dna: Vec<Gene>,
-    pub fitness: f64,
-    pub age: i32,
+use genetic_algorithms::{ga::Ga, traits::ConfigurationT};
+use genetic_algorithms::configuration::ProblemSolving;
+use genetic_algorithms::operations::{Selection, Crossover, Mutation, Survivor};
+use genetic_algorithms::genotypes::Range as RangeGene;
+use genetic_algorithms::chromosomes::Range as RangeChromosome;
+use genetic_algorithms::initializers::range_random_initialization;
+
+fn fitness_fn(dna: &[RangeGene<i32>]) -> f64 {
+    // Penalize greater values: minimization goal
+    dna.iter().map(|g| g.get_value() as f64).sum()
 }
-impl ChromosomeT for Chromosome{
-    type Gene = Gene;
-    fn get_dna(&self) -> &[Self::Gene] {
-        &self.dna
-    }
-    fn get_fitness(&self) -> f64 {
-        return self.fitness;
-    }
-    fn set_fitness(&mut self, fitness: f64) ->&mut Self {
-        self.fitness = fitness;
-    }
-    fn set_age(&mut self, age:i32) ->&mut Self {
-        self.age = age;
-    }
-    fn get_age(&self) -> i32 {
-        self.age
-    }
-    fn calculate_fitness(&mut self) {
-        
-        self.fitness = 0.0;
-        let mut position = 0;
 
-        for i in &self.dna{
-            let fitness = f64::from(i.get_id()*position);
-            self.fitness += fitness;
-            position += 1;
-        }
-    }
-    fn set_dna(&mut self, dna: &[Self::Gene]) ->&mut Self{
-        self.dna = dna.to_vec();
-    }
-}
+let alleles = vec![RangeGene::new(0, vec![(0, 50)], 0)];
+let alleles_clone = alleles.clone();
+let mut ga = Ga::<RangeChromosome<i32>>::new();
+let population = ga
+    .with_adaptive_ga(true)
+    .with_genes_per_chromosome(16)
+    .with_population_size(200)
+    .with_initialization_fn(move |genes, _, _| {
+        range_random_initialization(genes, Some(&alleles_clone), Some(false))
+    })
+    .with_fitness_fn(fitness_fn)
+    .with_selection_method(Selection::StochasticUniversalSampling)
+    .with_crossover_method(Crossover::MultiPoint)
+    .with_crossover_number_of_points(3)
+    .with_crossover_probability_min(0.4)
+    .with_crossover_probability_max(0.9)
+    .with_mutation_method(Mutation::Inversion)
+    .with_mutation_probability_min(0.05)
+    .with_mutation_probability_max(0.3)
+    .with_survivor_method(Survivor::Fitness)
+    .with_problem_solving(ProblemSolving::Minimization)
+    .with_max_generations(2000)
+    .with_fitness_target(0.0)
+    .with_threads(8)
+    .with_logs(genetic_algorithms::configuration::LogLevel::Info)
+    .run();
+
+println!("Best fitness: {}", population.best_chromosome.as_ref().unwrap().get_fitness());
 ```
-
-Define the Alleles
-
-```rust
-  let binding =  vec![Gene{id:1}, Gene{id:2}, Gene{id:3}, Gene{id:4},
-                                   Gene{id:5}, Gene{id:6}, Gene{id:7}, Gene{id:8}];
-  let alleles = binding.as_slice();
-
-```
-
-Finally, configure and run the GA.
-
-```rust
-let population = ga::Ga::new()
-                    .with_threads(8)
-                    .with_problem_solving(ProblemSolving::Maximization)
-                    .with_selection_method(Selection::Tournament)
-                    .with_number_of_couples(10)
-                    .with_crossover_method(Crossover::Cycle)
-                    .with_mutation_method(Mutation::Swap)
-                    .with_survivor_method(Survivor::Fitness)
-                    .with_alleles(alleles)
-                    .with_genes_per_chromosome(6)
-                    .with_population_size(100)
-                    .run();
-```
-If you want to receive a notification every few generations and when the genetic algorithms have terminated and why, this is possible via a callback function. This function has to be of the form Fn(&i32,&Population<ChromosomeT>, TerminationCause);
-Following the previous case, an example could be the following:
-
-```rust
-fn callback_function(generation_number: &i32, population: &Population<Chromosome>, termination_cause: TerminationCause){
-  print!("Callback received");
-}
-let population = ga::Ga::new()
-                    .with_threads(8)
-                    .with_problem_solving(ProblemSolving::Maximization)
-                    .with_selection_method(Selection::Tournament)
-                    .with_number_of_couples(10)
-                    .with_crossover_method(Crossover::Cycle)
-                    .with_mutation_method(Mutation::Swap)
-                    .with_survivor_method(Survivor::Fitness)
-                    .with_alleles(alleles)
-                    .with_genes_per_chromosome(6)
-                    .with_population_size(100)
-                    .run_with_callback(Some(callback_function), 8);
-```
-
-### Other examples
-- Travelling salesman problem: [https://en.wikipedia.org/wiki/Travelling_salesman_problem](https://en.wikipedia.org/wiki/Travelling_salesman_problem)
-  - See [https://github.com/leimbernon/traveller_problem](https://github.com/leimbernon/traveller_problem)
 
 ## Usage
-
-Add this to your `Cargo.toml`:
-
+Add to your `Cargo.toml`:
 ```toml
 [dependencies]
-genetic_algorithms = "1.6.0"
+genetic_algorithms = "2.0.0"
 ```
+
+## Roadmap / Notes
+- `save_progress_configuration`: fields present but not wired into the main loop yet (future: periodic population / best chromosome persistence).
+- Optional flamegraph profiling integration removed to avoid Criterion version conflicts.
+- For heavy fitness functions consider external profiling tools.
+
+## License
+Apache-2.0. See LICENSE file.
