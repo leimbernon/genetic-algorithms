@@ -13,3 +13,7 @@
 # Built Visual Studio Code Extensions
 *.vsix
 .vscode
+
+# Python
+__pycache__/
+*.pyc
