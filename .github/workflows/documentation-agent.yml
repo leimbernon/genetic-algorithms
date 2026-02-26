@@ -13,14 +13,14 @@ permissions:
   models: read
 
 # AI model configuration — override per agent or set DEFAULT_MODEL for all.
-# Available models: openai/gpt-4.1, openai/gpt-4.1-mini, openai/gpt-4o, etc.
+# Available models: openai/gpt-5, openai/gpt-4.1, openai/gpt-4o, etc.
 env:
-  DEFAULT_MODEL: "openai/gpt-4.1"
-  # GUARD_MODEL: "openai/gpt-4.1"
-  # INITIALIZER_MODEL: "openai/gpt-4.1"
-  # ANALYST_MODEL: "openai/gpt-4.1"
-  # WRITER_MODEL: "openai/gpt-4.1"
-  # REVIEWER_MODEL: "openai/gpt-4.1"
+  DEFAULT_MODEL: "openai/gpt-5"
+  # GUARD_MODEL: "openai/gpt-5"
+  # INITIALIZER_MODEL: "openai/gpt-5"
+  # ANALYST_MODEL: "openai/gpt-5"
+  # WRITER_MODEL: "openai/gpt-5"
+  # REVIEWER_MODEL: "openai/gpt-5"
 
 jobs:
   # --------------------------------------------------------------------------
