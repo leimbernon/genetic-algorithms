@@ -13,6 +13,7 @@ import {
   getEnv,
   createClient,
   callModel,
+  resolveModel,
   readFileSafe,
   loadPrompt,
   stripMarkdownFences,
@@ -37,6 +38,7 @@ const MAX_REVIEW_ITERATIONS = 2;
  */
 async function generateDocument(
   client: OpenAI,
+  modelName: string,
   action: DocAction,
   sourceContents: Record<string, string>,
   existingContent: string,
@@ -91,7 +93,7 @@ async function generateDocument(
 
   const userPrompt = promptParts.join("\n");
 
-  return callModel(client, systemPrompt, userPrompt, 0.3);
+  return callModel(client, modelName, systemPrompt, userPrompt, 0.3);
 }
 
 // ---------------------------------------------------------------------------
@@ -104,6 +106,8 @@ async function generateDocument(
  */
 async function processAction(
   client: OpenAI,
+  writerModel: string,
+  reviewerModel: string,
   action: DocAction,
 ): Promise<void> {
   const docPath = action.path;
@@ -151,6 +155,7 @@ async function processAction(
     console.log("  [Writer] Generating documentation...");
     let content = await generateDocument(
       client,
+      writerModel,
       action,
       sourceContents,
       existingContent,
@@ -170,6 +175,7 @@ async function processAction(
     console.log("  [Reviewer] Evaluating documentation quality...");
     const review = await reviewDocument(
       client,
+      reviewerModel,
       content,
       action,
       sourceContents,
@@ -215,6 +221,11 @@ async function processAction(
 async function main(): Promise<void> {
   const apiKey = getEnv("MODELS_API_KEY");
   const client = createClient(apiKey);
+  const writerModel = resolveModel("WRITER");
+  const reviewerModel = resolveModel("REVIEWER");
+
+  console.log(`Writer model: ${writerModel}`);
+  console.log(`Reviewer model: ${reviewerModel}`);
 
   // Load the documentation plan
   const planPath = "doc-plan.json";
@@ -240,7 +251,7 @@ async function main(): Promise<void> {
   // Process each action
   for (let i = 0; i < actions.length; i++) {
     process.stdout.write(`\n[${i + 1}/${actions.length}] `);
-    await processAction(client, actions[i]);
+    await processAction(client, writerModel, reviewerModel, actions[i]);
   }
 
   console.log(`\n${"=".repeat(60)}`);

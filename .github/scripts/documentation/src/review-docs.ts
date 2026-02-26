@@ -35,6 +35,7 @@ const THRESHOLDS: Record<string, number> = {
  */
 export async function reviewDocument(
   client: OpenAI,
+  modelName: string,
   docContent: string,
   action: DocAction,
   sourceContents: Record<string, string>,
@@ -85,7 +86,7 @@ Respond with this exact JSON structure:
   "feedback": "Specific feedback for improvement (empty string if approved)"
 }`;
 
-  const rawResponse = await callModel(client, systemPrompt, userPrompt);
+  const rawResponse = await callModel(client, modelName, systemPrompt, userPrompt);
   const cleaned = stripMarkdownFences(rawResponse);
 
   let review: ReviewResult;

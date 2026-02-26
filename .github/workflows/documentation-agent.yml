@@ -11,6 +11,14 @@ permissions:
   contents: write
   pull-requests: write
 
+# AI model configuration — override per agent or set DEFAULT_MODEL for all.
+# Available models: claude-sonnet-4-5, claude-opus-4-5, etc.
+env:
+  DEFAULT_MODEL: "claude-sonnet-4-5"
+  # ANALYST_MODEL: "claude-sonnet-4-5"
+  # WRITER_MODEL: "claude-sonnet-4-5"
+  # REVIEWER_MODEL: "claude-sonnet-4-5"
+
 jobs:
   analyze:
     name: "Agent 1: Analyze Changes"
@@ -38,6 +46,8 @@ jobs:
         id: analyze
         env:
           MODELS_API_KEY: ${{ secrets.MODELS_API_KEY }}
+          DEFAULT_MODEL: ${{ env.DEFAULT_MODEL }}
+          ANALYST_MODEL: ${{ env.ANALYST_MODEL }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
@@ -88,6 +98,9 @@ jobs:
       - name: Run Writer Agent with Reviewer loop
         env:
           MODELS_API_KEY: ${{ secrets.MODELS_API_KEY }}
+          DEFAULT_MODEL: ${{ env.DEFAULT_MODEL }}
+          WRITER_MODEL: ${{ env.WRITER_MODEL }}
+          REVIEWER_MODEL: ${{ env.REVIEWER_MODEL }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}

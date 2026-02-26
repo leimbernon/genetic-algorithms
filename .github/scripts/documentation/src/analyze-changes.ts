@@ -14,6 +14,7 @@ import {
   setGitHubOutput,
   createClient,
   callModel,
+  resolveModel,
   getPRChangedFiles,
   collectExistingDocs,
   readFileSafe,
@@ -37,9 +38,11 @@ async function main(): Promise<void> {
   const repo = getEnv("REPO");
 
   const client = createClient(apiKey);
+  const modelName = resolveModel("ANALYST");
 
   // 1. Fetch changed files from the PR
   console.log(`Fetching changed files for PR #${prNumber} in ${repo}...`);
+  console.log(`Using model: ${modelName}`);
   const changedFiles = await getPRChangedFiles(repo, prNumber, token);
 
   // Filter to only analyzable paths
@@ -140,7 +143,7 @@ Respond with this exact JSON structure:
 
   // 5. Call the model
   console.log("Calling AI model to analyze changes...");
-  const rawResponse = await callModel(client, systemPrompt, userPrompt);
+  const rawResponse = await callModel(client, modelName, systemPrompt, userPrompt);
   const cleaned = stripMarkdownFences(rawResponse);
 
   // 6. Parse and validate

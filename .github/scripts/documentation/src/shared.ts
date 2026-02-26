@@ -15,9 +15,33 @@ import OpenAI from "openai";
 // ---------------------------------------------------------------------------
 
 export const MODELS_ENDPOINT = "https://models.inference.ai.azure.com";
-export const MODEL_NAME = "claude-sonnet-4-5";
+export const DEFAULT_MODEL = "claude-sonnet-4-5";
 export const MAX_RETRIES = 3;
 export const RETRY_DELAY_SECONDS = 5;
+
+/**
+ * Agent role identifiers used for per-agent model configuration.
+ * Each maps to an environment variable: `{ROLE}_MODEL` (e.g. `ANALYST_MODEL`).
+ */
+export type AgentRole = "ANALYST" | "WRITER" | "REVIEWER";
+
+/**
+ * Resolve the AI model name for a given agent role.
+ *
+ * Resolution order:
+ *   1. Agent-specific env var (e.g. `ANALYST_MODEL`)
+ *   2. Shared env var `DEFAULT_MODEL`
+ *   3. Hardcoded fallback (`claude-sonnet-4-5`)
+ */
+export function resolveModel(role: AgentRole): string {
+  const agentEnv = process.env[`${role}_MODEL`];
+  if (agentEnv) return agentEnv;
+
+  const defaultEnv = process.env["DEFAULT_MODEL"];
+  if (defaultEnv) return defaultEnv;
+
+  return DEFAULT_MODEL;
+}
 
 /** Only analyze files in these paths (relevant for public documentation). */
 export const ANALYZABLE_PREFIXES = ["src/", "examples/", "Cargo.toml"];
@@ -176,6 +200,7 @@ export function createClient(apiKey: string): OpenAI {
 /** Call the AI model with retry logic. */
 export async function callModel(
   client: OpenAI,
+  modelName: string,
   systemPrompt: string,
   userPrompt: string,
   temperature = 0.2,
@@ -183,7 +208,7 @@ export async function callModel(
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       const response = await client.chat.completions.create({
-        model: MODEL_NAME,
+        model: modelName,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
