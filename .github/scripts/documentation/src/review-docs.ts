@@ -6,7 +6,6 @@
  * also be used standalone.
  */
 
-import OpenAI from "openai";
 import {
   callModel,
   loadPrompt,
@@ -15,6 +14,7 @@ import {
   truncateToTokenBudget,
   type DocAction,
   type ReviewResult,
+  type AIClient,
 } from "./shared.js";
 
 // ---------------------------------------------------------------------------
@@ -36,7 +36,7 @@ const THRESHOLDS: Record<string, number> = {
  * Review a single documentation file and return a structured evaluation.
  */
 export async function reviewDocument(
-  client: OpenAI,
+  client: AIClient,
   modelName: string,
   docContent: string,
   action: DocAction,

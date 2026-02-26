@@ -36,9 +36,9 @@ import {
   REQUIRED_DOC_FILES,
   REPO_ROOT,
   type ReviewResult,
+  type AIClient,
 } from "./shared.js";
 import { reviewDocument } from "./review-docs.js";
-import type OpenAI from "openai";
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -163,7 +163,7 @@ function getRelevantSources(
  * Generate a single documentation file using the initializer agent.
  */
 async function generateDocFile(
-  client: OpenAI,
+  client: AIClient,
   initializerModel: string,
   reviewerModel: string,
   docPath: string,
