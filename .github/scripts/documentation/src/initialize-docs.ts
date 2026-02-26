@@ -32,6 +32,7 @@ import {
   buildSourceSection,
   estimateTokens,
   truncateToTokenBudget,
+  DailyRateLimitError,
   REQUIRED_DOC_FILES,
   REPO_ROOT,
   type ReviewResult,
@@ -43,7 +44,7 @@ import type OpenAI from "openai";
 // Configuration
 // ---------------------------------------------------------------------------
 
-const MAX_REVIEW_ITERATIONS = 2;
+const MAX_REVIEW_ITERATIONS = 5;
 
 /**
  * Mapping from documentation file paths to the source file glob patterns
@@ -318,8 +319,11 @@ async function main(): Promise<void> {
   // 3. Process each required doc file — only generate files that don't exist.
   //    The Writer agent handles updates to existing docs; the Initializer
   //    is responsible for bootstrapping missing files from scratch.
+  //    If a daily rate limit is hit, we stop gracefully — the docs already
+  //    written to disk are kept, and the next run will skip them.
   let created = 0;
   let skipped = 0;
+  let rateLimited = false;
 
   for (let i = 0; i < REQUIRED_DOC_FILES.length; i++) {
     const docPath = REQUIRED_DOC_FILES[i];
@@ -347,25 +351,43 @@ async function main(): Promise<void> {
     }
 
     console.log("  File does not exist. Creating from scratch.");
-    created++;
 
-    // Generate the documentation and validate with reviewer
-    await generateDocFile(
-      client,
-      initializerModel,
-      reviewerModel,
-      docPath,
-      sources,
-      structureDefinition,
-      "", // No existing content — always creating from scratch
-    );
+    try {
+      // Generate the documentation and validate with reviewer
+      await generateDocFile(
+        client,
+        initializerModel,
+        reviewerModel,
+        docPath,
+        sources,
+        structureDefinition,
+        "", // No existing content — always creating from scratch
+      );
+      created++;
+    } catch (err) {
+      if (err instanceof DailyRateLimitError) {
+        console.error(`\n::error::${err.message}`);
+        console.log(`  Documents already created (${created}) have been saved to disk.`);
+        console.log(`  Remaining ${REQUIRED_DOC_FILES.length - i} docs will be created on the next run.`);
+        rateLimited = true;
+        break;
+      }
+      throw err; // Re-throw non-rate-limit errors
+    }
   }
 
   console.log(`\n${"=".repeat(60)}`);
   console.log("Documentation Initialization Complete");
   console.log(`  Created:  ${created}`);
   console.log(`  Skipped (already exist): ${skipped}`);
+  if (rateLimited) {
+    console.log(`  Stopped early due to daily rate limit.`);
+  }
   console.log("=".repeat(60));
+
+  if (rateLimited) {
+    process.exit(1);
+  }
 }
 
 main().catch((err) => {

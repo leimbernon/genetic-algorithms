@@ -289,7 +289,49 @@ export function createClient(token: string): OpenAI {
   });
 }
 
-/** Call the AI model with retry logic. */
+/**
+ * Custom error thrown when the daily rate limit is exhausted.
+ * Callers should catch this to save progress and exit gracefully.
+ */
+export class DailyRateLimitError extends Error {
+  public retryAfterSeconds: number;
+  constructor(retryAfterSeconds: number) {
+    super(
+      `Daily rate limit reached. Retry after ${retryAfterSeconds}s (~${Math.round(retryAfterSeconds / 3600)}h).`,
+    );
+    this.name = "DailyRateLimitError";
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
+
+/**
+ * Simple rate limiter that enforces a minimum delay between API calls.
+ *
+ * Free tier: 15 req/min → ~4s between requests.
+ * We use 5s to add a small safety margin.
+ */
+const MIN_CALL_INTERVAL_MS = 5_000;
+let lastCallTimestamp = 0;
+
+async function waitForRateLimit(): Promise<void> {
+  const now = Date.now();
+  const elapsed = now - lastCallTimestamp;
+  if (lastCallTimestamp > 0 && elapsed < MIN_CALL_INTERVAL_MS) {
+    const waitMs = MIN_CALL_INTERVAL_MS - elapsed;
+    console.log(`  [Rate limit] Waiting ${Math.ceil(waitMs / 1000)}s before next API call...`);
+    await sleep(waitMs);
+  }
+  lastCallTimestamp = Date.now();
+}
+
+/**
+ * Call the AI model with retry logic and rate limit awareness.
+ *
+ * - Proactively waits between calls to avoid per-minute rate limits.
+ * - Detects daily rate limits (retry-after > 60s) and throws
+ *   `DailyRateLimitError` immediately so callers can save progress.
+ * - Retries transient 429s (per-minute) by waiting the retry-after period.
+ */
 export async function callModel(
   client: OpenAI,
   modelName: string,
@@ -299,6 +341,8 @@ export async function callModel(
 ): Promise<string> {
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
+      await waitForRateLimit();
+
       const response = await client.chat.completions.create({
         model: modelName,
         messages: [
@@ -308,7 +352,34 @@ export async function callModel(
         temperature,
       });
       return response.choices[0]?.message?.content?.trim() ?? "";
-    } catch (err) {
+    } catch (err: unknown) {
+      const status = (err as { status?: number }).status;
+      const headers = (err as { headers?: Record<string, string> }).headers;
+
+      // Handle rate limits
+      if (status === 429) {
+        const retryAfter = parseInt(headers?.["retry-after"] ?? "0", 10);
+        const limitType = headers?.["x-ratelimit-type"] ?? "unknown";
+
+        // Daily limit: retry-after is huge (> 60s) or type contains "Day"
+        if (retryAfter > 60 || limitType.includes("Day")) {
+          console.error(
+            `::error::Daily rate limit hit (type=${limitType}, retry-after=${retryAfter}s). Cannot continue.`,
+          );
+          throw new DailyRateLimitError(retryAfter);
+        }
+
+        // Per-minute limit: wait and retry
+        const waitSeconds = Math.max(retryAfter, RETRY_DELAY_SECONDS * attempt);
+        console.warn(
+          `::warning::Per-minute rate limit hit (attempt ${attempt}/${MAX_RETRIES}). ` +
+            `Waiting ${waitSeconds}s...`,
+        );
+        await sleep(waitSeconds * 1000);
+        continue;
+      }
+
+      // Non-rate-limit error
       console.warn(
         `::warning::Model call attempt ${attempt}/${MAX_RETRIES} failed: ${err}`,
       );

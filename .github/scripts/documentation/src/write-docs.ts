@@ -19,6 +19,7 @@ import {
   stripMarkdownFences,
   buildSourceSection,
   truncateToTokenBudget,
+  DailyRateLimitError,
   REPO_ROOT,
   type DocPlan,
   type DocAction,
@@ -30,7 +31,7 @@ import type OpenAI from "openai";
 // Configuration
 // ---------------------------------------------------------------------------
 
-const MAX_REVIEW_ITERATIONS = 2;
+const MAX_REVIEW_ITERATIONS = 3;
 
 // ---------------------------------------------------------------------------
 // Writer Agent
@@ -244,15 +245,37 @@ async function main(): Promise<void> {
     `Documentation Writer Agent - Processing ${actions.length} actions for PR #${prNumber}`,
   );
 
-  // Process each action
+  // Process each action — save progress on rate limit
+  let processed = 0;
+  let rateLimited = false;
+
   for (let i = 0; i < actions.length; i++) {
     process.stdout.write(`\n[${i + 1}/${actions.length}] `);
-    await processAction(client, writerModel, reviewerModel, actions[i]);
+    try {
+      await processAction(client, writerModel, reviewerModel, actions[i]);
+      processed++;
+    } catch (err) {
+      if (err instanceof DailyRateLimitError) {
+        console.error(`\n::error::${err.message}`);
+        console.log(`  Processed ${processed}/${actions.length} actions before rate limit.`);
+        console.log(`  Documents already written have been saved to disk.`);
+        rateLimited = true;
+        break;
+      }
+      throw err;
+    }
   }
 
   console.log(`\n${"=".repeat(60)}`);
-  console.log(`All ${actions.length} documentation actions processed.`);
+  console.log(`Processed ${processed}/${actions.length} documentation actions.`);
+  if (rateLimited) {
+    console.log("Stopped early due to daily rate limit.");
+  }
   console.log("=".repeat(60));
+
+  if (rateLimited) {
+    process.exit(1);
+  }
 }
 
 main().catch((err) => {
