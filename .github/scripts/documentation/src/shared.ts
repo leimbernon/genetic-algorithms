@@ -23,7 +23,7 @@ export const RETRY_DELAY_SECONDS = 5;
  * Agent role identifiers used for per-agent model configuration.
  * Each maps to an environment variable: `{ROLE}_MODEL` (e.g. `ANALYST_MODEL`).
  */
-export type AgentRole = "ANALYST" | "WRITER" | "REVIEWER";
+export type AgentRole = "GUARD" | "INITIALIZER" | "ANALYST" | "WRITER" | "REVIEWER";
 
 /**
  * Resolve the AI model name for a given agent role.
@@ -89,9 +89,67 @@ export function readFileSafe(filePath: string): string {
  * Returns the raw markdown content as a string.
  */
 export function loadPrompt(promptName: string): string {
-  const promptDir = join(import.meta.dirname!, "prompts");
+  const promptDir = join(import.meta.dirname!, "..", "prompts");
   const promptPath = join(promptDir, `${promptName}.md`);
   return readFileSafe(promptPath);
+}
+
+/**
+ * Load the DOCUMENTATION_STRUCTURE.md definition file.
+ */
+export function loadStructureDefinition(): string {
+  const structurePath = join(import.meta.dirname!, "..", "DOCUMENTATION_STRUCTURE.md");
+  return readFileSafe(structurePath);
+}
+
+/**
+ * The required documentation files as defined in DOCUMENTATION_STRUCTURE.md.
+ * This is the canonical list used by the guard agent to validate structure.
+ */
+export const REQUIRED_DOC_FILES: string[] = [
+  "docs/getting-started.md",
+  "docs/configuration.md",
+  "docs/chromosomes.md",
+  "docs/genotypes.md",
+  "docs/operators/selection.md",
+  "docs/operators/crossover.md",
+  "docs/operators/mutation.md",
+  "docs/operators/survivor.md",
+  "docs/fitness.md",
+  "docs/population.md",
+  "docs/traits.md",
+  "docs/validators.md",
+  "docs/examples.md",
+  "docs/api-reference.md",
+];
+
+/**
+ * Collect all Rust source files under a directory.
+ * Returns a mapping of relative path -> file content.
+ */
+export function collectSourceFiles(rootDir: string): Record<string, string> {
+  const sources: Record<string, string> = {};
+
+  function walk(dir: string): void {
+    if (!existsSync(dir)) return;
+    for (const entry of readdirSync(dir)) {
+      const fullPath = join(dir, entry);
+      const stat = statSync(fullPath);
+      if (stat.isDirectory()) {
+        walk(fullPath);
+      } else if (entry.endsWith(".rs")) {
+        const rel = relative(process.cwd(), fullPath);
+        try {
+          sources[rel] = readFileSync(fullPath, "utf-8");
+        } catch (e) {
+          console.warn(`::warning::Could not read ${fullPath}: ${e}`);
+        }
+      }
+    }
+  }
+
+  walk(rootDir);
+  return sources;
 }
 
 /**
