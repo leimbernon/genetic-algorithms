@@ -55,7 +55,7 @@ export type AgentRole = "GUARD" | "INITIALIZER" | "ANALYST" | "WRITER" | "REVIEW
  * Resolution order:
  *   1. Agent-specific env var (e.g. `ANALYST_MODEL`)
  *   2. Shared env var `DEFAULT_MODEL`
- *   3. Hardcoded fallback (`openai/gpt-4.1`)
+ *   3. Hardcoded fallback (`openai/gpt-5`)
  */
 export function resolveModel(role: AgentRole): string {
   const agentEnv = process.env[`${role}_MODEL`];
