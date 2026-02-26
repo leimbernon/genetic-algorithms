@@ -14,6 +14,9 @@
 *.vsix
 .vscode
 
-# Python
+# Node.js
+node_modules/
+
+# Python (legacy)
 __pycache__/
 *.pyc
