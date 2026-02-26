@@ -6,8 +6,9 @@
  */
 
 import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
-import { join, relative, resolve } from "node:path";
+import { join, relative, resolve, dirname as pathDirname } from "node:path";
 import { appendFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import OpenAI from "openai";
 
 // ---------------------------------------------------------------------------
@@ -32,7 +33,9 @@ export const REPO_ROOT: string = (() => {
     return process.env.GITHUB_WORKSPACE;
   }
   // Local dev: walk up from this file until we find Cargo.toml
-  let dir = resolve(import.meta.dirname!, "..");
+  // Use fileURLToPath for Node 18 compatibility (import.meta.dirname requires Node 21+)
+  const thisDir = import.meta.dirname ?? pathDirname(fileURLToPath(import.meta.url));
+  let dir = resolve(thisDir, "..");
   for (let i = 0; i < 10; i++) {
     if (existsSync(join(dir, "Cargo.toml"))) return dir;
     const parent = resolve(dir, "..");
@@ -108,12 +111,17 @@ export function readFileSafe(filePath: string): string {
   }
 }
 
+/** Resolve directory of this source file (Node 18+ compatible). */
+function thisFileDir(): string {
+  return import.meta.dirname ?? pathDirname(fileURLToPath(import.meta.url));
+}
+
 /**
  * Load a prompt from a markdown file inside the `prompts/` directory.
  * Returns the raw markdown content as a string.
  */
 export function loadPrompt(promptName: string): string {
-  const promptDir = join(import.meta.dirname!, "..", "prompts");
+  const promptDir = join(thisFileDir(), "..", "prompts");
   const promptPath = join(promptDir, `${promptName}.md`);
   return readFileSafe(promptPath);
 }
@@ -122,7 +130,7 @@ export function loadPrompt(promptName: string): string {
  * Load the DOCUMENTATION_STRUCTURE.md definition file.
  */
 export function loadStructureDefinition(): string {
-  const structurePath = join(import.meta.dirname!, "..", "DOCUMENTATION_STRUCTURE.md");
+  const structurePath = join(thisFileDir(), "..", "DOCUMENTATION_STRUCTURE.md");
   return readFileSafe(structurePath);
 }
 
@@ -325,6 +333,311 @@ export function stripMarkdownFences(text: string): string {
     cleaned = cleaned.split("\n").slice(0, -1).join("\n");
   }
   return cleaned.trim();
+}
+
+// ---------------------------------------------------------------------------
+// Token budget utilities
+// ---------------------------------------------------------------------------
+
+/**
+ * Estimate the number of tokens in a string.
+ *
+ * Uses a conservative heuristic of ~4 characters per token, which is a
+ * reasonable approximation for English/code text with GPT-family tokenizers.
+ */
+export function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4);
+}
+
+/**
+ * Extract the public API surface from a Rust source file.
+ *
+ * Keeps:
+ *   - Doc comments (`///`, `//!`)
+ *   - `pub` item signatures (structs, enums, traits, functions, type aliases)
+ *   - `impl` block headers
+ *   - Struct/enum fields and variant definitions
+ *   - `use` / `mod` declarations that are `pub`
+ *   - Derive and attribute macros on kept items
+ *
+ * Strips:
+ *   - Function/method bodies (replaced with `{ ... }`)
+ *   - Non-doc comments
+ *   - Private items
+ *   - Blank lines (collapsed)
+ */
+export function extractRustPublicAPI(source: string): string {
+  const lines = source.split("\n");
+  const output: string[] = [];
+  let braceDepth = 0;
+  let inFnBody = false;
+  let fnBraceStart = 0;
+  let pendingAttrs: string[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trimStart();
+
+    // Always keep module-level doc comments
+    if (trimmed.startsWith("//!")) {
+      output.push(line);
+      continue;
+    }
+
+    // Always keep doc comments (they precede pub items)
+    if (trimmed.startsWith("///")) {
+      pendingAttrs.push(line);
+      continue;
+    }
+
+    // Collect attributes (#[...]) — they may decorate a pub item
+    if (trimmed.startsWith("#[")) {
+      pendingAttrs.push(line);
+      continue;
+    }
+
+    // If we're inside a function body, just count braces to find the end
+    if (inFnBody) {
+      for (const ch of line) {
+        if (ch === "{") braceDepth++;
+        if (ch === "}") braceDepth--;
+      }
+      if (braceDepth <= fnBraceStart) {
+        inFnBody = false;
+        // We already emitted `{ ... }` when we entered the body
+      }
+      continue;
+    }
+
+    // Detect `pub` items and `impl` blocks
+    const isPubItem =
+      trimmed.startsWith("pub ") ||
+      trimmed.startsWith("pub(");
+    const isImplBlock =
+      trimmed.startsWith("impl ") || trimmed.startsWith("impl<");
+    const isUseOrMod =
+      trimmed.startsWith("use ") || trimmed.startsWith("mod ");
+
+    if (isPubItem || isImplBlock) {
+      // Flush pending doc comments / attributes
+      output.push(...pendingAttrs);
+      pendingAttrs = [];
+
+      // Determine if this is a function/method signature
+      const isFn =
+        trimmed.includes(" fn ") ||
+        trimmed.startsWith("pub fn ") ||
+        trimmed.startsWith("pub(crate) fn ") ||
+        trimmed.startsWith("pub(super) fn ");
+
+      if (isFn) {
+        // Emit the signature, replacing the body with `{ ... }`
+        const sigLine = extractFnSignature(line);
+        output.push(sigLine);
+
+        // Count braces to skip the body
+        const openCount = countChar(line, "{");
+        const closeCount = countChar(line, "}");
+        if (openCount > closeCount) {
+          inFnBody = true;
+          fnBraceStart = braceDepth; // remember the depth before entering
+          braceDepth += openCount - closeCount;
+        }
+        // If body is on same line (open+close equal), we're done
+        continue;
+      }
+
+      // For struct/enum/trait/impl — emit the header line
+      output.push(line);
+
+      // Track braces for struct/enum bodies — we KEEP field definitions
+      const openCount = countChar(line, "{");
+      const closeCount = countChar(line, "}");
+      braceDepth += openCount - closeCount;
+      continue;
+    }
+
+    // Inside a struct/enum/trait/impl body (braceDepth > 0)
+    if (braceDepth > 0) {
+      const openCount = countChar(line, "{");
+      const closeCount = countChar(line, "}");
+
+      // Keep doc comments, pub fields, method signatures, closing braces,
+      // variant definitions, type/const declarations
+      const isDocComment = trimmed.startsWith("///");
+      const isPubField = trimmed.startsWith("pub ");
+      const isVariant = /^\s*\w+/.test(line) && !trimmed.startsWith("//");
+      const isClosingBrace = trimmed.startsWith("}");
+      const isFnSig = trimmed.startsWith("fn ") || (isPubField && trimmed.includes(" fn "));
+      const isAttr = trimmed.startsWith("#[");
+      const isType = trimmed.startsWith("type ") || trimmed.startsWith("const ");
+
+      if (isDocComment || isAttr) {
+        pendingAttrs.push(line);
+        braceDepth += openCount - closeCount;
+        continue;
+      }
+
+      if (isFnSig || isPubField) {
+        // Flush pending attrs
+        output.push(...pendingAttrs);
+        pendingAttrs = [];
+
+        if (trimmed.includes(" fn ") || trimmed.startsWith("fn ")) {
+          const sigLine = extractFnSignature(line);
+          output.push(sigLine);
+          if (openCount > closeCount) {
+            inFnBody = true;
+            fnBraceStart = braceDepth;
+            braceDepth += openCount - closeCount;
+          }
+        } else {
+          output.push(line);
+          braceDepth += openCount - closeCount;
+        }
+        continue;
+      }
+
+      if (isClosingBrace || isType) {
+        output.push(...pendingAttrs);
+        pendingAttrs = [];
+        output.push(line);
+        braceDepth += openCount - closeCount;
+        continue;
+      }
+
+      // Inside an enum body, keep variant lines (they don't start with //)
+      if (isVariant && braceDepth === 1) {
+        output.push(...pendingAttrs);
+        pendingAttrs = [];
+        output.push(line);
+        braceDepth += openCount - closeCount;
+        continue;
+      }
+
+      braceDepth += openCount - closeCount;
+      // Discard other lines (private fields, inner logic)
+      pendingAttrs = [];
+      continue;
+    }
+
+    // Top-level non-pub items: discard (including private fns, use statements)
+    // But keep pub use/mod
+    if (isUseOrMod && isPubItem) {
+      output.push(...pendingAttrs);
+      pendingAttrs = [];
+      output.push(line);
+      continue;
+    }
+
+    // Discard pending attrs that don't attach to a pub item
+    pendingAttrs = [];
+  }
+
+  // Collapse consecutive blank lines
+  return output
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+/** Extract a function signature line, replacing the body with `{ ... }`. */
+function extractFnSignature(line: string): string {
+  const braceIdx = line.indexOf("{");
+  if (braceIdx === -1) {
+    // Signature continues on next line or is a trait method with `;`
+    return line;
+  }
+  return line.slice(0, braceIdx).trimEnd() + " { ... }";
+}
+
+/** Count occurrences of a character in a string. */
+function countChar(s: string, ch: string): number {
+  let count = 0;
+  for (let i = 0; i < s.length; i++) {
+    if (s[i] === ch) count++;
+  }
+  return count;
+}
+
+/**
+ * Build a source code section that fits within a token budget.
+ *
+ * For each source file, extracts the public API surface first. If the total
+ * still exceeds the budget, truncates proportionally across files.
+ *
+ * @param sources   Map of filepath -> full source content
+ * @param tokenBudget  Maximum tokens allowed for the source section
+ * @returns Formatted markdown string with source code blocks
+ */
+export function buildSourceSection(
+  sources: Record<string, string>,
+  tokenBudget: number,
+): string {
+  if (Object.keys(sources).length === 0) {
+    return "No source files available.";
+  }
+
+  // Step 1: Extract public API for each file
+  const extracted: Record<string, string> = {};
+  for (const [filepath, content] of Object.entries(sources)) {
+    if (filepath.endsWith(".rs")) {
+      extracted[filepath] = extractRustPublicAPI(content);
+    } else {
+      // Non-Rust files (Cargo.toml, etc.) — keep as-is but truncate
+      extracted[filepath] =
+        content.length > 2000
+          ? content.slice(0, 2000) + "\n... (truncated)"
+          : content;
+    }
+  }
+
+  // Step 2: Calculate total tokens after extraction
+  const parts: Array<{ filepath: string; content: string; tokens: number }> = [];
+  let totalTokens = 0;
+  for (const [filepath, content] of Object.entries(extracted)) {
+    // Account for markdown wrapper: ### filepath\n```rust\n...\n```
+    const wrapper = `### ${filepath}\n\`\`\`rust\n\`\`\`\n\n`;
+    const tokens = estimateTokens(content + wrapper);
+    parts.push({ filepath, content, tokens });
+    totalTokens += tokens;
+  }
+
+  // Step 3: If within budget, return everything
+  if (totalTokens <= tokenBudget) {
+    return parts
+      .map((p) => `### ${p.filepath}\n\`\`\`rust\n${p.content}\n\`\`\``)
+      .join("\n\n");
+  }
+
+  // Step 4: Proportionally truncate each file to fit the budget
+  const ratio = tokenBudget / totalTokens;
+  const truncatedParts: string[] = [];
+
+  for (const part of parts) {
+    const allowedChars = Math.floor(part.content.length * ratio);
+    const truncated =
+      allowedChars >= part.content.length
+        ? part.content
+        : part.content.slice(0, allowedChars) + "\n... (truncated to fit token budget)";
+    truncatedParts.push(
+      `### ${part.filepath}\n\`\`\`rust\n${truncated}\n\`\`\``,
+    );
+  }
+
+  return truncatedParts.join("\n\n");
+}
+
+/**
+ * Truncate a text string to fit within a token budget.
+ * Appends a truncation notice if the text was shortened.
+ */
+export function truncateToTokenBudget(text: string, tokenBudget: number): string {
+  const currentTokens = estimateTokens(text);
+  if (currentTokens <= tokenBudget) return text;
+
+  const allowedChars = tokenBudget * 4; // inverse of the 4-chars-per-token heuristic
+  return text.slice(0, allowedChars) + "\n... (truncated to fit token budget)";
 }
 
 // ---------------------------------------------------------------------------

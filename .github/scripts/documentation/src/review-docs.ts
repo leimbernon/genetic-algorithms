@@ -11,6 +11,8 @@ import {
   callModel,
   loadPrompt,
   stripMarkdownFences,
+  buildSourceSection,
+  truncateToTokenBudget,
   type DocAction,
   type ReviewResult,
 } from "./shared.js";
@@ -40,21 +42,13 @@ export async function reviewDocument(
   action: DocAction,
   sourceContents: Record<string, string>,
 ): Promise<ReviewResult> {
-  // Build source code reference
-  const sourceRefParts = Object.entries(sourceContents).map(
-    ([filepath, content]) => {
-      const truncated =
-        content.length > 10000
-          ? content.slice(0, 10000) + "\n... (truncated)"
-          : content;
-      return `### ${filepath}\n\`\`\`rust\n${truncated}\n\`\`\``;
-    },
-  );
+  // Token budget: 8K total limit, reserve ~1500 for system prompt,
+  // ~1000 for doc content + metadata, ~500 for task instructions.
+  // That leaves ~5000 tokens for source reference.
+  const SOURCE_TOKEN_BUDGET = 3000;
 
-  const sourceReference =
-    sourceRefParts.length > 0
-      ? sourceRefParts.join("\n\n")
-      : "No source files available.";
+  // Build source code reference with token budget and API extraction
+  const sourceReference = buildSourceSection(sourceContents, SOURCE_TOKEN_BUDGET);
 
   const systemPrompt = loadPrompt("reviewer");
 
@@ -67,7 +61,7 @@ export async function reviewDocument(
 
 ### Generated Documentation
 \`\`\`markdown
-${docContent}
+${truncateToTokenBudget(docContent, 1500)}
 \`\`\`
 
 ### Reference Source Code

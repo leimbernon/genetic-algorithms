@@ -21,6 +21,9 @@ import {
   readFileSafe,
   loadPrompt,
   stripMarkdownFences,
+  estimateTokens,
+  truncateToTokenBudget,
+  extractRustPublicAPI,
   ANALYZABLE_PREFIXES,
   REPO_ROOT,
   type DocPlan,
@@ -61,7 +64,11 @@ async function main(): Promise<void> {
 
   console.log(`Found ${relevantFiles.length} relevant changed files.`);
 
-  // 2. Build a summary of changes
+  // 2. Build a summary of changes (with token budgeting)
+  // Reserve ~2000 tokens for changes, ~1500 for existing docs, rest for prompt structure
+  const CHANGES_TOKEN_BUDGET = 2000;
+  const DOCS_TOKEN_BUDGET = 1500;
+
   const changesSummary = relevantFiles.map((f) => {
     const fileInfo: Record<string, unknown> = {
       filename: f.filename,
@@ -70,22 +77,31 @@ async function main(): Promise<void> {
       deletions: f.deletions ?? 0,
     };
 
-    // Include the patch (diff) if available and not too large
+    // Include the patch (diff) if available — limit size
     const patch = f.patch ?? "";
     fileInfo.patch =
-      patch.length < 8000 ? patch : patch.slice(0, 8000) + "\n... (truncated)";
+      patch.length < 3000 ? patch : patch.slice(0, 3000) + "\n... (truncated)";
 
-    // Read current file content for added/modified files
+    // Read current file content for added/modified files — extract public API only
     if (f.status === "added" || f.status === "modified") {
       const content = readFileSafe(resolve(REPO_ROOT, f.filename));
-      fileInfo.current_content =
-        content.length < 12000
-          ? content
-          : content.slice(0, 12000) + "\n... (truncated)";
+      if (content) {
+        const extracted = f.filename.endsWith(".rs")
+          ? extractRustPublicAPI(content)
+          : content;
+        fileInfo.current_content =
+          extracted.length < 4000
+            ? extracted
+            : extracted.slice(0, 4000) + "\n... (truncated)";
+      }
     }
 
     return fileInfo;
   });
+
+  // Truncate the serialized changes if they exceed budget
+  let changesJson = JSON.stringify(changesSummary, null, 2);
+  changesJson = truncateToTokenBudget(changesJson, CHANGES_TOKEN_BUDGET);
 
   // 3. Collect existing documentation
   const existingDocs = collectExistingDocs("docs");
@@ -94,12 +110,12 @@ async function main(): Promise<void> {
   if (Object.keys(existingDocs).length > 0) {
     const parts = Object.entries(existingDocs).map(([path, content]) => {
       const preview =
-        content.length > 2000
-          ? content.slice(0, 2000) + "\n... (truncated)"
+        content.length > 500
+          ? content.slice(0, 500) + "\n... (truncated)"
           : content;
       return `### ${path}\n\`\`\`markdown\n${preview}\n\`\`\``;
     });
-    docsListing = parts.join("\n\n");
+    docsListing = truncateToTokenBudget(parts.join("\n\n"), DOCS_TOKEN_BUDGET);
   }
 
   // 4. Build the prompt
@@ -108,11 +124,11 @@ async function main(): Promise<void> {
   const userPrompt = `## Pull Request Information
 - **PR Number:** #${prNumber}
 - **Title:** ${prTitle}
-- **Description:** ${prBody || "No description provided."}
+- **Description:** ${truncateToTokenBudget(prBody || "No description provided.", 200)}
 
 ## Changed Files
 \`\`\`json
-${JSON.stringify(changesSummary, null, 2)}
+${changesJson}
 \`\`\`
 
 ## Existing Documentation in /docs

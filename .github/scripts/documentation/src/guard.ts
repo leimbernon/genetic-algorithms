@@ -23,6 +23,7 @@ import {
   loadPrompt,
   loadStructureDefinition,
   stripMarkdownFences,
+  truncateToTokenBudget,
   REQUIRED_DOC_FILES,
   REPO_ROOT,
 } from "./shared.js";
@@ -110,13 +111,17 @@ async function main(): Promise<void> {
   let docsListing: string;
   if (existingPaths.length > 0) {
     const parts = Object.entries(existingDocs).map(([path, content]) => {
+      // Only include a short preview of each doc
       const preview =
-        content.length > 3000
-          ? content.slice(0, 3000) + "\n... (truncated)"
+        content.length > 500
+          ? content.slice(0, 500) + "\n... (truncated)"
           : content;
       return `### ${path}\n\`\`\`markdown\n${preview}\n\`\`\``;
     });
-    docsListing = parts.join("\n\n");
+    // Token budget: 8K total, reserve ~1500 for system prompt,
+    // ~800 for structure definition, ~500 for other prompt parts.
+    // That leaves ~5200 for docs listing.
+    docsListing = truncateToTokenBudget(parts.join("\n\n"), 3000);
   } else {
     docsListing = "No documentation files found.";
   }
@@ -124,7 +129,7 @@ async function main(): Promise<void> {
   const userPrompt = `## Structure Definition
 
 \`\`\`markdown
-${structureDefinition}
+${truncateToTokenBudget(structureDefinition, 800)}
 \`\`\`
 
 ## Existing Documentation in /docs
