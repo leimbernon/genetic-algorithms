@@ -6,7 +6,7 @@
  */
 
 import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, resolve } from "node:path";
 import { appendFileSync } from "node:fs";
 import OpenAI from "openai";
 
@@ -14,10 +14,34 @@ import OpenAI from "openai";
 // Configuration
 // ---------------------------------------------------------------------------
 
-export const MODELS_ENDPOINT = "https://models.inference.ai.azure.com";
-export const DEFAULT_MODEL = "claude-sonnet-4-5";
+export const MODELS_ENDPOINT = "https://models.github.ai/inference";
+export const DEFAULT_MODEL = "openai/gpt-5";
 export const MAX_RETRIES = 3;
 export const RETRY_DELAY_SECONDS = 5;
+
+/**
+ * Resolve the repository root directory.
+ *
+ * In GitHub Actions the scripts run with working-directory set to
+ * `.github/scripts/documentation/`, so `process.cwd()` points there instead
+ * of the repo root. We use `GITHUB_WORKSPACE` when available (CI), otherwise
+ * walk up from this file's directory until we find `Cargo.toml`.
+ */
+export const REPO_ROOT: string = (() => {
+  if (process.env.GITHUB_WORKSPACE) {
+    return process.env.GITHUB_WORKSPACE;
+  }
+  // Local dev: walk up from this file until we find Cargo.toml
+  let dir = resolve(import.meta.dirname!, "..");
+  for (let i = 0; i < 10; i++) {
+    if (existsSync(join(dir, "Cargo.toml"))) return dir;
+    const parent = resolve(dir, "..");
+    if (parent === dir) break; // reached filesystem root
+    dir = parent;
+  }
+  // Fallback to cwd
+  return process.cwd();
+})();
 
 /**
  * Agent role identifiers used for per-agent model configuration.
@@ -31,7 +55,7 @@ export type AgentRole = "GUARD" | "INITIALIZER" | "ANALYST" | "WRITER" | "REVIEW
  * Resolution order:
  *   1. Agent-specific env var (e.g. `ANALYST_MODEL`)
  *   2. Shared env var `DEFAULT_MODEL`
- *   3. Hardcoded fallback (`claude-sonnet-4-5`)
+ *   3. Hardcoded fallback (`openai/gpt-4.1`)
  */
 export function resolveModel(role: AgentRole): string {
   const agentEnv = process.env[`${role}_MODEL`];
@@ -124,11 +148,12 @@ export const REQUIRED_DOC_FILES: string[] = [
 ];
 
 /**
- * Collect all Rust source files under a directory.
- * Returns a mapping of relative path -> file content.
+ * Collect all Rust source files under a directory (relative to REPO_ROOT).
+ * Returns a mapping of relative path (from repo root) -> file content.
  */
 export function collectSourceFiles(rootDir: string): Record<string, string> {
   const sources: Record<string, string> = {};
+  const absRoot = resolve(REPO_ROOT, rootDir);
 
   function walk(dir: string): void {
     if (!existsSync(dir)) return;
@@ -138,7 +163,7 @@ export function collectSourceFiles(rootDir: string): Record<string, string> {
       if (stat.isDirectory()) {
         walk(fullPath);
       } else if (entry.endsWith(".rs")) {
-        const rel = relative(process.cwd(), fullPath);
+        const rel = relative(REPO_ROOT, fullPath);
         try {
           sources[rel] = readFileSync(fullPath, "utf-8");
         } catch (e) {
@@ -148,17 +173,18 @@ export function collectSourceFiles(rootDir: string): Record<string, string> {
     }
   }
 
-  walk(rootDir);
+  walk(absRoot);
   return sources;
 }
 
 /**
  * Walk the docs/ directory and return a mapping of
- * relative path -> file content for all .md files.
+ * relative path (from repo root) -> file content for all .md files.
  */
 export function collectExistingDocs(docsDir: string): Record<string, string> {
+  const absDocsDir = resolve(REPO_ROOT, docsDir);
   const docs: Record<string, string> = {};
-  if (!existsSync(docsDir)) return docs;
+  if (!existsSync(absDocsDir)) return docs;
 
   function walk(dir: string): void {
     for (const entry of readdirSync(dir)) {
@@ -167,7 +193,7 @@ export function collectExistingDocs(docsDir: string): Record<string, string> {
       if (stat.isDirectory()) {
         walk(fullPath);
       } else if (entry.endsWith(".md")) {
-        const rel = relative(join(docsDir, ".."), fullPath); // e.g. docs/traits.md
+        const rel = relative(REPO_ROOT, fullPath); // e.g. docs/traits.md
         try {
           docs[rel] = readFileSync(fullPath, "utf-8");
         } catch (e) {
@@ -177,7 +203,7 @@ export function collectExistingDocs(docsDir: string): Record<string, string> {
     }
   }
 
-  walk(docsDir);
+  walk(absDocsDir);
   return docs;
 }
 
@@ -247,11 +273,11 @@ export interface GitHubFile {
 // AI Model helpers
 // ---------------------------------------------------------------------------
 
-/** Create an OpenAI client configured for Azure AI Models. */
-export function createClient(apiKey: string): OpenAI {
+/** Create an OpenAI-compatible client configured for GitHub Models API. */
+export function createClient(token: string): OpenAI {
   return new OpenAI({
     baseURL: MODELS_ENDPOINT,
-    apiKey,
+    apiKey: token,
   });
 }
 
