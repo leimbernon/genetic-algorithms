@@ -12,9 +12,48 @@ permissions:
   pull-requests: write
   models: read
 
-# AI model configuration — override per agent or set DEFAULT_MODEL for all.
-# Available models: openai/gpt-4.1, openai/gpt-4.1-mini, openai/gpt-4o, etc.
+# AI provider configuration — set to "github" (default) or "anthropic".
+# GitHub provider uses GITHUB_TOKEN; Anthropic provider requires ANTHROPIC_API_KEY secret.
+#
+# Model configuration — override per agent or set DEFAULT_MODEL for all.
+#
+# ┌─────────────────────────────────────────────────────────────────────┐
+# │ GitHub Models (AI_PROVIDER: "github")                              │
+# │ Endpoint: https://models.github.ai/inference                      │
+# │ Auth: GITHUB_TOKEN (needs models:read permission)                  │
+# │                                                                    │
+# │ OpenAI models:                                                     │
+# │   openai/gpt-4.1           — flagship, best quality (default)     │
+# │   openai/gpt-4.1-mini      — smaller, faster, cheaper             │
+# │   openai/gpt-4.1-nano      — smallest, fastest                    │
+# │   openai/gpt-4o            — multimodal                           │
+# │   openai/gpt-4o-mini       — affordable multimodal                │
+# │   openai/o4-mini           — reasoning, efficient                  │
+# │   openai/o3                — reasoning, advanced                   │
+# │   openai/o3-mini           — reasoning, cost-efficient             │
+# │   openai/o1                — reasoning                             │
+# │   openai/o1-mini           — reasoning, compact                    │
+# │                                                                    │
+# │ Note: Free tier limits — 15 req/min, 150 req/day,                 │
+# │       8K input tokens, 4K output tokens per request.               │
+# ├─────────────────────────────────────────────────────────────────────┤
+# │ Anthropic (AI_PROVIDER: "anthropic")                               │
+# │ Auth: ANTHROPIC_API_KEY secret                                     │
+# │                                                                    │
+# │ Current models:                                                    │
+# │   claude-sonnet-4-6             — fast + smart (recommended)       │
+# │   claude-opus-4-6              — most intelligent, agents/coding   │
+# │   claude-haiku-4-5-20251001   — fastest, near-frontier             │
+# │                                                                    │
+# │ Legacy models:                                                     │
+# │   claude-sonnet-4-20250514    — previous default                   │
+# │   claude-sonnet-4-5-20250929  — previous generation                │
+# │   claude-opus-4-20250514      — previous Opus                      │
+# │   claude-opus-4-5-20251101    — previous Opus generation           │
+# │   claude-opus-4-1-20250805    — Opus 4.1                           │
+# └─────────────────────────────────────────────────────────────────────┘
 env:
+  # AI_PROVIDER: "anthropic"  # Uncomment to use Anthropic instead of GitHub Models
   DEFAULT_MODEL: "openai/gpt-4.1"
   # GUARD_MODEL: "openai/gpt-4.1"
   # INITIALIZER_MODEL: "openai/gpt-4.1"
@@ -53,6 +92,8 @@ jobs:
         id: guard
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AI_PROVIDER: ${{ env.AI_PROVIDER }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           DEFAULT_MODEL: ${{ env.DEFAULT_MODEL }}
           GUARD_MODEL: ${{ env.GUARD_MODEL }}
         run: npx tsx src/guard.ts
@@ -90,6 +131,8 @@ jobs:
       - name: Run Initializer Agent
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AI_PROVIDER: ${{ env.AI_PROVIDER }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           DEFAULT_MODEL: ${{ env.DEFAULT_MODEL }}
           INITIALIZER_MODEL: ${{ env.INITIALIZER_MODEL }}
           REVIEWER_MODEL: ${{ env.REVIEWER_MODEL }}
@@ -166,6 +209,8 @@ jobs:
         env:
           DEFAULT_MODEL: ${{ env.DEFAULT_MODEL }}
           ANALYST_MODEL: ${{ env.ANALYST_MODEL }}
+          AI_PROVIDER: ${{ env.AI_PROVIDER }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
@@ -236,6 +281,8 @@ jobs:
           DEFAULT_MODEL: ${{ env.DEFAULT_MODEL }}
           WRITER_MODEL: ${{ env.WRITER_MODEL }}
           REVIEWER_MODEL: ${{ env.REVIEWER_MODEL }}
+          AI_PROVIDER: ${{ env.AI_PROVIDER }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}

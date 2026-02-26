@@ -23,9 +23,9 @@ import {
   REPO_ROOT,
   type DocPlan,
   type DocAction,
+  type AIClient,
 } from "./shared.js";
 import { reviewDocument } from "./review-docs.js";
-import type OpenAI from "openai";
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -41,7 +41,7 @@ const MAX_REVIEW_ITERATIONS = 3;
  * Generate or update a documentation file using the AI model.
  */
 async function generateDocument(
-  client: OpenAI,
+  client: AIClient,
   modelName: string,
   action: DocAction,
   sourceContents: Record<string, string>,
@@ -101,7 +101,7 @@ async function generateDocument(
  * and retry if needed (up to MAX_REVIEW_ITERATIONS).
  */
 async function processAction(
-  client: OpenAI,
+  client: AIClient,
   writerModel: string,
   reviewerModel: string,
   action: DocAction,

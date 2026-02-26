@@ -10,15 +10,32 @@ import { join, relative, resolve, dirname as pathDirname } from "node:path";
 import { appendFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 
 // ---------------------------------------------------------------------------
 // Configuration
 // ---------------------------------------------------------------------------
 
-export const MODELS_ENDPOINT = "https://models.github.ai/inference";
-export const DEFAULT_MODEL = "openai/gpt-4.1";
+/** Supported AI providers. Set via `AI_PROVIDER` env var. */
+export type AIProvider = "github" | "anthropic";
+
+export const GITHUB_MODELS_ENDPOINT = "https://models.github.ai/inference";
+export const DEFAULT_GITHUB_MODEL = "openai/gpt-4.1";
+export const DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-6";
 export const MAX_RETRIES = 3;
 export const RETRY_DELAY_SECONDS = 5;
+
+/**
+ * Resolve which AI provider to use.
+ *
+ * Set `AI_PROVIDER=anthropic` to use the Anthropic API directly.
+ * Defaults to `"github"` (GitHub Models API).
+ */
+export function resolveProvider(): AIProvider {
+  const env = (process.env.AI_PROVIDER ?? "").toLowerCase().trim();
+  if (env === "anthropic") return "anthropic";
+  return "github";
+}
 
 /**
  * Resolve the repository root directory.
@@ -58,7 +75,7 @@ export type AgentRole = "GUARD" | "INITIALIZER" | "ANALYST" | "WRITER" | "REVIEW
  * Resolution order:
  *   1. Agent-specific env var (e.g. `ANALYST_MODEL`)
  *   2. Shared env var `DEFAULT_MODEL`
- *   3. Hardcoded fallback (`openai/gpt-4.1`)
+ *   3. Hardcoded fallback (depends on provider)
  */
 export function resolveModel(role: AgentRole): string {
   const agentEnv = process.env[`${role}_MODEL`];
@@ -67,7 +84,8 @@ export function resolveModel(role: AgentRole): string {
   const defaultEnv = process.env["DEFAULT_MODEL"];
   if (defaultEnv) return defaultEnv;
 
-  return DEFAULT_MODEL;
+  const provider = resolveProvider();
+  return provider === "anthropic" ? DEFAULT_ANTHROPIC_MODEL : DEFAULT_GITHUB_MODEL;
 }
 
 /** Only analyze files in these paths (relevant for public documentation). */
@@ -281,12 +299,51 @@ export interface GitHubFile {
 // AI Model helpers
 // ---------------------------------------------------------------------------
 
-/** Create an OpenAI-compatible client configured for GitHub Models API. */
-export function createClient(token: string): OpenAI {
-  return new OpenAI({
-    baseURL: MODELS_ENDPOINT,
-    apiKey: token,
-  });
+/**
+ * Provider-agnostic AI client wrapper.
+ *
+ * Agents receive this from `createClient()` and pass it to `callModel()`.
+ * They never need to know which provider is being used.
+ */
+export interface AIClient {
+  provider: AIProvider;
+  openai?: OpenAI;
+  anthropic?: Anthropic;
+}
+
+/**
+ * Create an AI client based on the configured provider.
+ *
+ * - `github` (default): Uses the OpenAI SDK pointed at GitHub Models API.
+ *   Authenticated with `GITHUB_TOKEN`.
+ * - `anthropic`: Uses the Anthropic SDK directly.
+ *   Authenticated with `ANTHROPIC_API_KEY`.
+ */
+export function createClient(token: string): AIClient {
+  const provider = resolveProvider();
+
+  if (provider === "anthropic") {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      console.error(
+        "::error::AI_PROVIDER is set to 'anthropic' but ANTHROPIC_API_KEY is not set.",
+      );
+      process.exit(1);
+    }
+    return {
+      provider,
+      anthropic: new Anthropic({ apiKey }),
+    };
+  }
+
+  // Default: GitHub Models (OpenAI-compatible)
+  return {
+    provider,
+    openai: new OpenAI({
+      baseURL: GITHUB_MODELS_ENDPOINT,
+      apiKey: token,
+    }),
+  };
 }
 
 /**
@@ -307,8 +364,8 @@ export class DailyRateLimitError extends Error {
 /**
  * Simple rate limiter that enforces a minimum delay between API calls.
  *
- * Free tier: 15 req/min → ~4s between requests.
- * We use 5s to add a small safety margin.
+ * GitHub Models free tier: 15 req/min → ~4s between requests.
+ * Anthropic: generous limits, but a small delay avoids bursts.
  */
 const MIN_CALL_INTERVAL_MS = 5_000;
 let lastCallTimestamp = 0;
@@ -325,15 +382,62 @@ async function waitForRateLimit(): Promise<void> {
 }
 
 /**
+ * Call the AI model via the Anthropic Messages API.
+ */
+async function callAnthropic(
+  client: Anthropic,
+  modelName: string,
+  systemPrompt: string,
+  userPrompt: string,
+  temperature: number,
+): Promise<string> {
+  const response = await client.messages.create({
+    model: modelName,
+    max_tokens: 8192,
+    system: systemPrompt,
+    messages: [{ role: "user", content: userPrompt }],
+    temperature,
+  });
+
+  // Extract text from content blocks
+  const textBlocks = response.content.filter(
+    (block): block is Anthropic.TextBlock => block.type === "text",
+  );
+  return textBlocks.map((b) => b.text).join("").trim();
+}
+
+/**
+ * Call the AI model via the OpenAI-compatible API (GitHub Models).
+ */
+async function callOpenAI(
+  client: OpenAI,
+  modelName: string,
+  systemPrompt: string,
+  userPrompt: string,
+  temperature: number,
+): Promise<string> {
+  const response = await client.chat.completions.create({
+    model: modelName,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+    temperature,
+  });
+  return response.choices[0]?.message?.content?.trim() ?? "";
+}
+
+/**
  * Call the AI model with retry logic and rate limit awareness.
  *
+ * Works with both GitHub Models (OpenAI-compatible) and Anthropic providers.
+ *
  * - Proactively waits between calls to avoid per-minute rate limits.
- * - Detects daily rate limits (retry-after > 60s) and throws
- *   `DailyRateLimitError` immediately so callers can save progress.
- * - Retries transient 429s (per-minute) by waiting the retry-after period.
+ * - Detects daily rate limits (GitHub) and throws `DailyRateLimitError`.
+ * - Retries transient errors with exponential backoff.
  */
 export async function callModel(
-  client: OpenAI,
+  client: AIClient,
   modelName: string,
   systemPrompt: string,
   userPrompt: string,
@@ -343,25 +447,40 @@ export async function callModel(
     try {
       await waitForRateLimit();
 
-      const response = await client.chat.completions.create({
-        model: modelName,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        temperature,
-      });
-      return response.choices[0]?.message?.content?.trim() ?? "";
+      if (client.provider === "anthropic" && client.anthropic) {
+        return await callAnthropic(
+          client.anthropic,
+          modelName,
+          systemPrompt,
+          userPrompt,
+          temperature,
+        );
+      }
+
+      if (client.openai) {
+        return await callOpenAI(
+          client.openai,
+          modelName,
+          systemPrompt,
+          userPrompt,
+          temperature,
+        );
+      }
+
+      throw new Error("AI client not properly initialized.");
     } catch (err: unknown) {
+      // Re-throw our own errors
+      if (err instanceof DailyRateLimitError) throw err;
+
       const status = (err as { status?: number }).status;
       const headers = (err as { headers?: Record<string, string> }).headers;
 
-      // Handle rate limits
+      // Handle rate limits (both providers return 429)
       if (status === 429) {
         const retryAfter = parseInt(headers?.["retry-after"] ?? "0", 10);
         const limitType = headers?.["x-ratelimit-type"] ?? "unknown";
 
-        // Daily limit: retry-after is huge (> 60s) or type contains "Day"
+        // GitHub daily limit: retry-after is huge (> 60s) or type contains "Day"
         if (retryAfter > 60 || limitType.includes("Day")) {
           console.error(
             `::error::Daily rate limit hit (type=${limitType}, retry-after=${retryAfter}s). Cannot continue.`,
@@ -372,7 +491,18 @@ export async function callModel(
         // Per-minute limit: wait and retry
         const waitSeconds = Math.max(retryAfter, RETRY_DELAY_SECONDS * attempt);
         console.warn(
-          `::warning::Per-minute rate limit hit (attempt ${attempt}/${MAX_RETRIES}). ` +
+          `::warning::Rate limit hit (attempt ${attempt}/${MAX_RETRIES}). ` +
+            `Waiting ${waitSeconds}s...`,
+        );
+        await sleep(waitSeconds * 1000);
+        continue;
+      }
+
+      // Anthropic overloaded (529)
+      if (status === 529) {
+        const waitSeconds = RETRY_DELAY_SECONDS * attempt;
+        console.warn(
+          `::warning::Anthropic API overloaded (attempt ${attempt}/${MAX_RETRIES}). ` +
             `Waiting ${waitSeconds}s...`,
         );
         await sleep(waitSeconds * 1000);
