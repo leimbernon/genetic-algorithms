@@ -8,7 +8,7 @@
  */
 
 import { readFileSync, writeFileSync, unlinkSync, mkdirSync, existsSync } from "node:fs";
-import { dirname } from "node:path";
+import { dirname, resolve } from "node:path";
 import {
   getEnv,
   createClient,
@@ -17,6 +17,7 @@ import {
   readFileSafe,
   loadPrompt,
   stripMarkdownFences,
+  REPO_ROOT,
   type DocPlan,
   type DocAction,
 } from "./shared.js";
@@ -111,6 +112,7 @@ async function processAction(
   action: DocAction,
 ): Promise<void> {
   const docPath = action.path;
+  const absDocPath = resolve(REPO_ROOT, docPath);
   const actionType = action.action;
 
   console.log(`\n${"=".repeat(60)}`);
@@ -120,8 +122,8 @@ async function processAction(
 
   // Handle DELETE actions
   if (actionType === "DELETE") {
-    if (existsSync(docPath)) {
-      unlinkSync(docPath);
+    if (existsSync(absDocPath)) {
+      unlinkSync(absDocPath);
       console.log(`  Deleted: ${docPath}`);
     } else {
       console.log(`  File already does not exist: ${docPath}`);
@@ -132,7 +134,7 @@ async function processAction(
   // Read relevant source files
   const sourceContents: Record<string, string> = {};
   for (const srcFile of action.relevant_source_files ?? []) {
-    const content = readFileSafe(srcFile);
+    const content = readFileSafe(resolve(REPO_ROOT, srcFile));
     if (content) {
       sourceContents[srcFile] = content;
     }
@@ -140,8 +142,8 @@ async function processAction(
 
   // Read existing content (for UPDATE)
   let existingContent = "";
-  if (actionType === "UPDATE" && existsSync(docPath)) {
-    existingContent = readFileSync(docPath, "utf-8");
+  if (actionType === "UPDATE" && existsSync(absDocPath)) {
+    existingContent = readFileSync(absDocPath, "utf-8");
   }
 
   // Write + Review loop
@@ -167,8 +169,8 @@ async function processAction(
     finalContent = content;
 
     // Ensure parent directories exist and write the file
-    mkdirSync(dirname(docPath), { recursive: true });
-    writeFileSync(docPath, content + "\n", "utf-8");
+    mkdirSync(dirname(absDocPath), { recursive: true });
+    writeFileSync(absDocPath, content + "\n", "utf-8");
     console.log(`  [Writer] Wrote ${content.length} chars to ${docPath}`);
 
     // Reviewer Agent
@@ -209,8 +211,8 @@ async function processAction(
   }
 
   // Ensure the final content is written
-  mkdirSync(dirname(docPath), { recursive: true });
-  writeFileSync(docPath, finalContent + "\n", "utf-8");
+  mkdirSync(dirname(absDocPath), { recursive: true });
+  writeFileSync(absDocPath, finalContent + "\n", "utf-8");
   console.log(`  Final document saved: ${docPath}`);
 }
 
@@ -219,8 +221,8 @@ async function processAction(
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
-  const apiKey = getEnv("MODELS_API_KEY");
-  const client = createClient(apiKey);
+  const token = getEnv("GITHUB_TOKEN");
+  const client = createClient(token);
   const writerModel = resolveModel("WRITER");
   const reviewerModel = resolveModel("REVIEWER");
 

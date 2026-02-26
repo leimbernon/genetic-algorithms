@@ -18,7 +18,7 @@ import {
   mkdirSync,
   existsSync,
 } from "node:fs";
-import { dirname } from "node:path";
+import { dirname, resolve } from "node:path";
 import {
   getEnv,
   createClient,
@@ -30,6 +30,7 @@ import {
   collectSourceFiles,
   stripMarkdownFences,
   REQUIRED_DOC_FILES,
+  REPO_ROOT,
   type ReviewResult,
 } from "./shared.js";
 import { reviewDocument } from "./review-docs.js";
@@ -234,8 +235,9 @@ async function generateDocFile(
     finalContent = content;
 
     // Write to disk
-    mkdirSync(dirname(docPath), { recursive: true });
-    writeFileSync(docPath, content + "\n", "utf-8");
+    const absDocPath = resolve(REPO_ROOT, docPath);
+    mkdirSync(dirname(absDocPath), { recursive: true });
+    writeFileSync(absDocPath, content + "\n", "utf-8");
     console.log(`  [Initializer] Wrote ${content.length} chars to ${docPath}`);
 
     // Review
@@ -284,8 +286,8 @@ async function generateDocFile(
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
-  const apiKey = getEnv("MODELS_API_KEY");
-  const client = createClient(apiKey);
+  const token = getEnv("GITHUB_TOKEN");
+  const client = createClient(token);
   const initializerModel = resolveModel("INITIALIZER");
   const reviewerModel = resolveModel("REVIEWER");
 
@@ -303,7 +305,7 @@ async function main(): Promise<void> {
   Object.assign(allSources, exampleSources);
 
   // Read Cargo.toml as well
-  const cargoToml = readFileSafe("Cargo.toml");
+  const cargoToml = readFileSafe(resolve(REPO_ROOT, "Cargo.toml"));
   if (cargoToml) {
     allSources["Cargo.toml"] = cargoToml;
   }
@@ -330,8 +332,9 @@ async function main(): Promise<void> {
     console.log("=".repeat(60));
 
     // Skip files that already exist — the Writer agent handles updates
-    if (existsSync(docPath)) {
-      const existing = readFileSync(docPath, "utf-8").trim();
+    const absPath = resolve(REPO_ROOT, docPath);
+    if (existsSync(absPath)) {
+      const existing = readFileSync(absPath, "utf-8").trim();
       if (existing.length > 0) {
         console.log(`  File already exists (${existing.length} chars). Skipping — Writer handles updates.`);
         skipped++;

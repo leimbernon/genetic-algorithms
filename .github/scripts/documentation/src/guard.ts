@@ -12,6 +12,7 @@
  */
 
 import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import {
   getEnv,
   setGitHubOutput,
@@ -23,6 +24,7 @@ import {
   loadStructureDefinition,
   stripMarkdownFences,
   REQUIRED_DOC_FILES,
+  REPO_ROOT,
 } from "./shared.js";
 
 // ---------------------------------------------------------------------------
@@ -48,8 +50,8 @@ interface GuardResult {
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
-  const apiKey = getEnv("MODELS_API_KEY");
-  const client = createClient(apiKey);
+  const token = getEnv("GITHUB_TOKEN");
+  const client = createClient(token);
   const modelName = resolveModel("GUARD");
 
   console.log("Documentation Guard Agent");
@@ -59,7 +61,7 @@ async function main(): Promise<void> {
   // 1. Programmatic check: which required files are missing?
   const missingFiles: string[] = [];
   for (const requiredFile of REQUIRED_DOC_FILES) {
-    if (!existsSync(requiredFile)) {
+    if (!existsSync(resolve(REPO_ROOT, requiredFile))) {
       missingFiles.push(requiredFile);
     }
   }

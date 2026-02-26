@@ -9,6 +9,7 @@
  */
 
 import { writeFileSync } from "node:fs";
+import { resolve } from "node:path";
 import {
   getEnv,
   setGitHubOutput,
@@ -21,6 +22,7 @@ import {
   loadPrompt,
   stripMarkdownFences,
   ANALYZABLE_PREFIXES,
+  REPO_ROOT,
   type DocPlan,
 } from "./shared.js";
 
@@ -30,14 +32,13 @@ import {
 
 async function main(): Promise<void> {
   // Read environment
-  const apiKey = getEnv("MODELS_API_KEY");
+  const token = getEnv("GITHUB_TOKEN");
   const prNumber = getEnv("PR_NUMBER");
   const prTitle = getEnv("PR_TITLE");
   const prBody = getEnv("PR_BODY", false);
-  const token = getEnv("GITHUB_TOKEN");
   const repo = getEnv("REPO");
 
-  const client = createClient(apiKey);
+  const client = createClient(token);
   const modelName = resolveModel("ANALYST");
 
   // 1. Fetch changed files from the PR
@@ -76,7 +77,7 @@ async function main(): Promise<void> {
 
     // Read current file content for added/modified files
     if (f.status === "added" || f.status === "modified") {
-      const content = readFileSafe(f.filename);
+      const content = readFileSafe(resolve(REPO_ROOT, f.filename));
       fileInfo.current_content =
         content.length < 12000
           ? content
