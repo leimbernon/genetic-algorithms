@@ -15,7 +15,7 @@ import OpenAI from "openai";
 // ---------------------------------------------------------------------------
 
 export const MODELS_ENDPOINT = "https://models.github.ai/inference";
-export const DEFAULT_MODEL = "openai/gpt-5";
+export const DEFAULT_MODEL = "openai/gpt-4.1";
 export const MAX_RETRIES = 3;
 export const RETRY_DELAY_SECONDS = 5;
 
@@ -55,7 +55,7 @@ export type AgentRole = "GUARD" | "INITIALIZER" | "ANALYST" | "WRITER" | "REVIEW
  * Resolution order:
  *   1. Agent-specific env var (e.g. `ANALYST_MODEL`)
  *   2. Shared env var `DEFAULT_MODEL`
- *   3. Hardcoded fallback (`openai/gpt-5`)
+ *   3. Hardcoded fallback (`openai/gpt-4.1`)
  */
 export function resolveModel(role: AgentRole): string {
   const agentEnv = process.env[`${role}_MODEL`];
