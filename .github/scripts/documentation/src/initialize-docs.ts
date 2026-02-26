@@ -317,9 +317,10 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  // 3. Process each required doc file
+  // 3. Process each required doc file — only generate files that don't exist.
+  //    The Writer agent handles updates to existing docs; the Initializer
+  //    is responsible for bootstrapping missing files from scratch.
   let created = 0;
-  let adapted = 0;
   let skipped = 0;
 
   for (let i = 0; i < REQUIRED_DOC_FILES.length; i++) {
@@ -328,28 +329,28 @@ async function main(): Promise<void> {
     console.log(`[${i + 1}/${REQUIRED_DOC_FILES.length}] ${docPath}`);
     console.log("=".repeat(60));
 
-    // Get relevant source files for this doc
-    const sources = getRelevantSources(docPath, allSources);
-    if (Object.keys(sources).length === 0) {
-      console.log("  No relevant source files found. Skipping.");
-      skipped++;
-      continue;
-    }
-
-    console.log(`  Relevant sources: ${Object.keys(sources).join(", ")}`);
-
-    // Check if file already exists
-    let existingContent = "";
+    // Skip files that already exist — the Writer agent handles updates
     if (existsSync(docPath)) {
-      existingContent = readFileSync(docPath, "utf-8");
-      console.log(`  Existing file found (${existingContent.length} chars). Adapting.`);
-      adapted++;
-    } else {
-      console.log("  File does not exist. Creating from scratch.");
-      created++;
+      const existing = readFileSync(docPath, "utf-8").trim();
+      if (existing.length > 0) {
+        console.log(`  File already exists (${existing.length} chars). Skipping — Writer handles updates.`);
+        skipped++;
+        continue;
+      }
     }
 
-    // Generate the documentation
+    // Get relevant source files for this doc (may be empty for some docs)
+    const sources = getRelevantSources(docPath, allSources);
+    if (Object.keys(sources).length > 0) {
+      console.log(`  Relevant sources: ${Object.keys(sources).join(", ")}`);
+    } else {
+      console.log("  No specific source files mapped. Will generate from general project context.");
+    }
+
+    console.log("  File does not exist. Creating from scratch.");
+    created++;
+
+    // Generate the documentation and validate with reviewer
     await generateDocFile(
       client,
       initializerModel,
@@ -357,15 +358,14 @@ async function main(): Promise<void> {
       docPath,
       sources,
       structureDefinition,
-      existingContent,
+      "", // No existing content — always creating from scratch
     );
   }
 
   console.log(`\n${"=".repeat(60)}`);
   console.log("Documentation Initialization Complete");
   console.log(`  Created:  ${created}`);
-  console.log(`  Adapted:  ${adapted}`);
-  console.log(`  Skipped:  ${skipped}`);
+  console.log(`  Skipped (already exist): ${skipped}`);
   console.log("=".repeat(60));
 }
 
