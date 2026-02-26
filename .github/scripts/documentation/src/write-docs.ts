@@ -17,6 +17,8 @@ import {
   readFileSafe,
   loadPrompt,
   stripMarkdownFences,
+  buildSourceSection,
+  truncateToTokenBudget,
   REPO_ROOT,
   type DocPlan,
   type DocAction,
@@ -45,21 +47,13 @@ async function generateDocument(
   existingContent: string,
   feedback: string,
 ): Promise<string> {
-  // Build source code section
-  const sourceParts = Object.entries(sourceContents).map(
-    ([filepath, content]) => {
-      const truncated =
-        content.length > 15000
-          ? content.slice(0, 15000) + "\n... (truncated)"
-          : content;
-      return `### ${filepath}\n\`\`\`rust\n${truncated}\n\`\`\``;
-    },
-  );
+  // Token budget: 8K total limit, reserve ~1500 for system prompt,
+  // ~500 for task/metadata, ~500 for existing content, ~500 for feedback.
+  // That leaves ~5000 tokens for source code.
+  const SOURCE_TOKEN_BUDGET = 5000;
 
-  const sourceSection =
-    sourceParts.length > 0
-      ? sourceParts.join("\n\n")
-      : "No source files available.";
+  // Build source code section with token budget and API extraction
+  const sourceSection = buildSourceSection(sourceContents, SOURCE_TOKEN_BUDGET);
 
   const systemPrompt = loadPrompt("writer");
 
@@ -78,7 +72,7 @@ async function generateDocument(
     promptParts.push(
       "",
       "## Current Documentation (to be updated)",
-      `\`\`\`markdown\n${existingContent}\n\`\`\``,
+      `\`\`\`markdown\n${truncateToTokenBudget(existingContent, 500)}\n\`\`\``,
     );
   }
 

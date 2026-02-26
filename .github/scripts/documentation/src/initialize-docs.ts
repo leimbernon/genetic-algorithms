@@ -29,6 +29,9 @@ import {
   loadStructureDefinition,
   collectSourceFiles,
   stripMarkdownFences,
+  buildSourceSection,
+  estimateTokens,
+  truncateToTokenBudget,
   REQUIRED_DOC_FILES,
   REPO_ROOT,
   type ReviewResult,
@@ -169,21 +172,14 @@ async function generateDocFile(
 ): Promise<string> {
   const systemPrompt = loadPrompt("initializer");
 
-  // Build source code section
-  const sourceParts = Object.entries(sourceContents).map(
-    ([filepath, content]) => {
-      const truncated =
-        content.length > 15000
-          ? content.slice(0, 15000) + "\n... (truncated)"
-          : content;
-      return `### ${filepath}\n\`\`\`rust\n${truncated}\n\`\`\``;
-    },
-  );
+  // Token budget: 8K total limit, reserve ~1500 for system prompt,
+  // ~500 for structure definition overhead, ~500 for other prompt parts.
+  // That leaves ~5500 tokens for source code + structure definition content.
+  const structTokens = estimateTokens(structureDefinition);
+  const SOURCE_TOKEN_BUDGET = Math.max(1000, 5500 - structTokens);
 
-  const sourceSection =
-    sourceParts.length > 0
-      ? sourceParts.join("\n\n")
-      : "No source files available.";
+  // Build source code section with token budget and API extraction
+  const sourceSection = buildSourceSection(sourceContents, SOURCE_TOKEN_BUDGET);
 
   let feedback = "";
   let finalContent = "";
@@ -196,7 +192,7 @@ async function generateDocFile(
       `## Target File: ${docPath}`,
       "",
       "## Structure Definition",
-      `\`\`\`markdown\n${structureDefinition}\n\`\`\``,
+      `\`\`\`markdown\n${truncateToTokenBudget(structureDefinition, 800)}\n\`\`\``,
       "",
       "## Relevant Source Code",
       sourceSection,
@@ -206,7 +202,7 @@ async function generateDocFile(
       promptParts.push(
         "",
         "## Existing Content (to be adapted)",
-        `\`\`\`markdown\n${existingContent}\n\`\`\``,
+        `\`\`\`markdown\n${truncateToTokenBudget(existingContent, 500)}\n\`\`\``,
       );
     }
 
