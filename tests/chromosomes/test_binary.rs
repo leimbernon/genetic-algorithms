@@ -8,7 +8,7 @@ use genetic_algorithms::traits::{ChromosomeT, GeneT};
 fn test_dna_from_string(){
     let dna = "11010010";
     let mut binary_chromosome =  BinaryChromosome::new();
-    binary_chromosome.dna_from_string(dna);
+    binary_chromosome.dna_from_string(dna).unwrap();
 
     assert_eq!(binary_chromosome.get_dna().len(), 8);
 

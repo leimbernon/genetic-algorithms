@@ -81,6 +81,7 @@ examples/                      # Runnable examples (knapsack, n-queens)
 ### 2.3 Traits and Generics
 - New gene types **must** implement `GeneT` (defined in `src/traits/gene.rs`).
 - New chromosome types **must** implement `ChromosomeT` (defined in `src/traits/chromosome.rs`).
+- New chromosome types **must** implement `ValueMutable` (defined in `src/operations/mutation.rs`). The default implementation falls back to swap mutation — override it only for types that support real value mutation (e.g., `Range<T>`).
 - Use `Cow<[Gene]>` in `set_dna` to avoid unnecessary clones (established pattern).
 - Use `Arc` for functions shared across threads (like `FitnessFnWrapper`).
 
@@ -92,13 +93,14 @@ examples/                      # Runnable examples (knapsack, n-queens)
 - Add the corresponding builder method in `ConfigurationT` (trait) and in `GaConfiguration` (impl).
 
 ### 2.5 Error Handling
-- Operator functions currently use `panic!` for validation errors.
-- If migrating to `Result<T, GaError>`, follow that pattern in all new code.
+- All operator factories return `Result<T, GaError>`. Follow this pattern in all new code.
+- **Never** use `panic!` in library code. Use `Result<T, GaError>` instead.
+- Initializers use `expect()` because they are behind `Fn() -> Vec<Gene>` closures that cannot return `Result`.
 - **Never** use `unwrap()` in new code without a comment justifying why it is safe.
 
 ### 2.6 Parallelism
-- The project uses `std::thread` + `sync_channel` + `Arc<Mutex<>>` for parallelism.
-- If migrating to `rayon`, use `par_iter`/`par_chunks` following the new pattern.
+- The project uses **rayon** (`par_iter`, `into_par_iter`, `par_chunks_mut`) for parallelism.
+- **Do not** use `std::thread::spawn`, `Arc<Mutex<>>`, or `sync_channel` manually.
 - Every structure shared across threads must be `Send + Sync`.
 
 ---

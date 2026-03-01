@@ -1,4 +1,6 @@
+use crate::error::GaError;
 use crate::fitness::FitnessFnWrapper;
+use crate::operations::mutation::ValueMutable;
 use crate::traits::ChromosomeT;
 use crate::genotypes::Binary as BinaryGenotype;
 use std::borrow::Cow;
@@ -102,10 +104,11 @@ impl Binary {
     /// * `s` - A string representation of the DNA, where '1' represents a true value
     /// and '0' represents a false value.
     ///
-    /// # Panics
+    /// # Returns
     ///
-    /// Panics if the string contains characters other than '1' or '0'.
-    pub fn dna_from_string(&mut self, s: &str) {
+    /// `Ok(())` if the string was parsed successfully, or `Err(GaError::ValidationError)`
+    /// if the string contains characters other than '1' or '0'.
+    pub fn dna_from_string(&mut self, s: &str) -> Result<(), GaError> {
         let mut dna = Vec::with_capacity(s.len());
 
         for (index, char) in s.chars().enumerate() {
@@ -113,12 +116,16 @@ impl Binary {
                 '1' => dna.push(BinaryGenotype { id: index as i32, value: true }),
                 '0' => dna.push(BinaryGenotype { id: index as i32, value: false }),
                 _ => {
-                    panic!("Invalid character '{}' at position {}; only '1' and '0' are allowed",
-                           char, index);
+                    return Err(GaError::ValidationError(
+                        format!("Invalid character '{}' at position {}; only '1' and '0' are allowed", char, index),
+                    ));
                 }
             }
         }
 
         self.dna = dna;
+        Ok(())
     }
 }
+
+impl ValueMutable for Binary {}

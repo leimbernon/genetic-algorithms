@@ -188,7 +188,7 @@ where
 
 impl<U>Ga<U>
 where
-    U:ChromosomeT + Send + Sync + 'static + Clone + Debug,
+    U:ChromosomeT + Send + Sync + 'static + Clone + Debug + mutation::ValueMutable,
     U::Gene: 'static + Debug,
 {
     /**
@@ -354,18 +354,18 @@ where
             age += 1;
 
             //1- Parent selection for reproduction
-            let parents = selection::factory(&self.population.chromosomes, self.configuration.selection_configuration, self.configuration.number_of_threads);
+            let parents = selection::factory(&self.population.chromosomes, self.configuration.selection_configuration, self.configuration.number_of_threads)?;
             debug!(target="ga_events", method="run"; "Parents selected for reproduction");
 
             //2- Getting the offspring
-            let mut offspring = parent_crossover(&parents, &self.population.chromosomes, &self.configuration, age, self.population.f_max, self.population.f_avg);
+            let mut offspring = parent_crossover(&parents, &self.population.chromosomes, &self.configuration, age, self.population.f_max, self.population.f_avg)?;
             debug!(target="ga_events", method="run"; "Offspring created");
 
             //3- Insert the children in the population
             self.population.add_chromosomes(&mut offspring);
 
             //4- Survivor selection
-            survivor::factory(self.configuration.survivor, &mut self.population.chromosomes, initial_population_size, self.configuration.limit_configuration);
+            survivor::factory(self.configuration.survivor, &mut self.population.chromosomes, initial_population_size, self.configuration.limit_configuration)?;
             if self.configuration.adaptive_ga{
                 self.population.recalculate_aga();
             }
@@ -454,9 +454,9 @@ U:ChromosomeT
 /// - Splits work among threads considering available parent pairs.
 /// - Computes adaptive probabilities when enabled; otherwise uses static ones.
 /// - Produces children, mutates them, computes their fitness, and returns the offspring.
-fn parent_crossover<U>(parents: &[(usize, usize)], chromosomes: &Vec<U>, configuration: &GaConfiguration, age: i32, f_max: f64, f_avg: f64) -> Vec<U>
+fn parent_crossover<U>(parents: &[(usize, usize)], chromosomes: &Vec<U>, configuration: &GaConfiguration, age: i32, f_max: f64, f_avg: f64) -> Result<Vec<U>, GaError>
 where
-U:ChromosomeT + Send + Sync + 'static + Clone
+U:ChromosomeT + Send + Sync + 'static + Clone + mutation::ValueMutable
 {
     debug!(target="ga_events", method="parent_crossover"; "Started the parent crossover");
 
@@ -483,9 +483,9 @@ U:ChromosomeT + Send + Sync + 'static + Clone
             };
 
     // Use rayon to process parent pairs in parallel
-    let offspring: Vec<U> = parents
+    let results: Vec<Result<Vec<U>, GaError>> = parents
         .par_iter()
-        .flat_map(|(key, value)| {
+        .map(|(key, value)| {
             let mut rng = rand::rng();
 
             // Getting the parent 1 and 2 for crossover
@@ -516,7 +516,7 @@ U:ChromosomeT + Send + Sync + 'static + Clone
             let mut child_2: U;
 
             if crossover_probability <= effective_crossover_prob {
-                let mut children = crossover::factory(&parent_1, &parent_2, configuration.crossover_configuration).unwrap();
+                let mut children = crossover::factory(&parent_1, &parent_2, configuration.crossover_configuration)?;
                 child_2 = children.pop().unwrap();
                 child_1 = children.pop().unwrap();
             } else {
@@ -527,12 +527,12 @@ U:ChromosomeT + Send + Sync + 'static + Clone
             debug!(target="ga_events", method="parent_crossover"; "mutation_probability_config {} - mutation probability {}", effective_mutation_prob, mutation_probability);
 
             if mutation_probability < effective_mutation_prob {
-                mutation::factory(configuration.mutation_configuration.method, &mut child_1);
+                mutation::factory(configuration.mutation_configuration.method, &mut child_1)?;
             }
 
             mutation_probability = rng.random_range(0.0..1.0);
             if mutation_probability <= effective_mutation_prob {
-                mutation::factory(configuration.mutation_configuration.method, &mut child_2);
+                mutation::factory(configuration.mutation_configuration.method, &mut child_2)?;
             }
 
             // Calculate the fitness of both children and set their age
@@ -542,10 +542,16 @@ U:ChromosomeT + Send + Sync + 'static + Clone
             child_1.set_age(age);
             child_2.set_age(age);
 
-            vec![child_1, child_2]
+            Ok(vec![child_1, child_2])
         })
         .collect();
 
+    // Check for any errors and flatten the results
+    let mut offspring = Vec::new();
+    for result in results {
+        offspring.extend(result?);
+    }
+
     debug!(target="ga_events", method="parent_crossover"; "Parent crossover finished");
-    offspring
+    Ok(offspring)
 }

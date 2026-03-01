@@ -3,17 +3,17 @@ use rand::distr::uniform::SampleUniform;
 use crate::chromosomes::Range as RangeChromosome;
 use crate::traits::ChromosomeT;
 use std::borrow::Cow;
-use std::any::Any;
 use std::fmt::Debug;
 
 use super::ValueMutable;
-use super::swap::swap;
 
 /// Value mutation for Range<T> chromosomes.
+///
 /// - Randomly selects a gene from the DNA.
 /// - Picks one of its ranges and assigns a new value uniformly within that range.
 /// - Writes back the mutated gene into the individual's DNA.
-/// If the chromosome has no genes or the gene has no ranges, it does nothing.
+///
+/// If the chromosome has no genes or the selected gene has no ranges, it does nothing.
 pub fn value_mutation<T>(individual: &mut RangeChromosome<T>)
 where
     T: Sync + Send + Clone + Default + Debug + PartialOrd + SampleUniform + Copy + 'static,
@@ -75,23 +75,3 @@ impl ValueMutable for RangeChromosome<f64> {
     }
 }
 
-/// Attempts value mutation on a chromosome. If the concrete type implements
-/// `ValueMutable`, it performs value mutation. Otherwise, falls back to swap mutation.
-///
-/// Uses `Any` internally only as a dispatch mechanism to check known concrete types,
-/// rather than coupling the factory to a single type.
-pub fn try_value_mutation<U: ChromosomeT + 'static>(individual: &mut U) {
-    let any = individual as &mut dyn Any;
-    if let Some(r) = any.downcast_mut::<RangeChromosome<i32>>() {
-        r.value_mutate();
-    } else if let Some(r) = any.downcast_mut::<RangeChromosome<i64>>() {
-        r.value_mutate();
-    } else if let Some(r) = any.downcast_mut::<RangeChromosome<f32>>() {
-        r.value_mutate();
-    } else if let Some(r) = any.downcast_mut::<RangeChromosome<f64>>() {
-        r.value_mutate();
-    } else {
-        // Fallback to swap mutation for types that don't support value mutation
-        swap(individual);
-    }
-}

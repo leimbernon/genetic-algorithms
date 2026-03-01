@@ -35,18 +35,15 @@ where
 {
     let mut genes = Vec::new();
     let mut rng = rand::rng();
+    let alleles = alleles.expect("At least 1 allele must be provided for range genotype");
     for i in 0..genes_per_chromosome {
-        if let Some(alleles) = alleles {
-            // Pick a random allele from the provided list
-            let allele = alleles[rng.random_range(0..alleles.len())].clone();
-            // Pick a random range from the allele
-            let range = allele.ranges[rng.random_range(0..allele.ranges.len())].clone();
-            // Generate a new gene with a random value from the selected range
-            let gene = RangeGenotype::new(i, vec![range], rng.random_range(range.0..range.1));
-            genes.push(gene);
-        } else {
-            panic!("At least 1 allele must be provided for range genotype");
-        }
+        // Pick a random allele from the provided list
+        let allele = alleles[rng.random_range(0..alleles.len())].clone();
+        // Pick a random range from the allele
+        let range = allele.ranges[rng.random_range(0..allele.ranges.len())].clone();
+        // Generate a new gene with a random value from the selected range
+        let gene = RangeGenotype::new(i, vec![range], rng.random_range(range.0..range.1));
+        genes.push(gene);
     }
     genes
 }

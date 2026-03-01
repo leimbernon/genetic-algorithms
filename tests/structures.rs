@@ -1,4 +1,5 @@
 use genetic_algorithms::fitness::FitnessFnWrapper;
+use genetic_algorithms::operations::mutation::ValueMutable;
 use genetic_algorithms::traits::{GeneT, ChromosomeT};
 use std::borrow::Cow;
 
@@ -68,3 +69,4 @@ impl ChromosomeT for Chromosome{
         self
     }
 }
+impl ValueMutable for Chromosome {}

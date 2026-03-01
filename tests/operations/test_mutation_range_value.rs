@@ -24,7 +24,7 @@ fn value_mutation_keeps_value_within_range_and_can_change() {
     let mut changed = false;
     for _ in 0..200 {
         let before = c.get_dna().to_vec();
-        mutation::factory(Mutation::Value, &mut c);
+        mutation::factory(Mutation::Value, &mut c).unwrap();
         let after = c.get_dna();
 
         // Check all genes stay within declared ranges
@@ -49,7 +49,7 @@ fn value_mutation_changes_at_most_one_gene() {
     let mut c = build_range_chromosome(n);
 
     let before = c.get_dna().to_vec();
-    mutation::factory(Mutation::Value, &mut c);
+    mutation::factory(Mutation::Value, &mut c).unwrap();
     let after = c.get_dna();
 
     // Count genes that differ by value
