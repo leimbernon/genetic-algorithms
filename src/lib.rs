@@ -75,5 +75,6 @@ pub mod genotypes;
 pub mod initializers;
 pub mod operations;
 pub mod population;
+pub mod stats;
 pub mod traits;
 mod validators;

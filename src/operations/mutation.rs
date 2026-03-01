@@ -5,6 +5,7 @@ use super::Mutation;
 use crate::error::GaError;
 use crate::traits::ChromosomeT;
 
+pub mod bit_flip;
 pub mod inversion;
 pub mod scramble;
 pub mod swap;
@@ -23,6 +24,14 @@ pub trait ValueMutable: ChromosomeT {
     ///
     /// The default implementation falls back to swap mutation.
     fn value_mutate(&mut self) {
+        swap(self);
+    }
+
+    /// Performs bit flip mutation on this chromosome in-place.
+    ///
+    /// The default implementation falls back to swap mutation.
+    /// Override this for Binary chromosomes to flip a random gene's boolean value.
+    fn bit_flip_mutate(&mut self) {
         swap(self);
     }
 }
@@ -47,6 +56,11 @@ where
         Mutation::Inversion => inversion(individual),
         Mutation::Scramble => scramble(individual),
         Mutation::Value => individual.value_mutate(),
+        Mutation::BitFlip => {
+            // BitFlip is handled via the BitFlipMutable trait.
+            // The default implementation falls back to swap.
+            individual.bit_flip_mutate();
+        }
     }
     Ok(())
 }
@@ -64,16 +78,28 @@ where
     U: ChromosomeT + 'static,
 {
     match mutation {
-        Mutation::Swap => { swap(individual); Ok(()) },
-        Mutation::Inversion => { inversion(individual); Ok(()) },
-        Mutation::Scramble => { scramble(individual); Ok(()) },
-        Mutation::Value => {
-            Err(GaError::MutationError(
-                "Mutation::Value requires the chromosome type to implement ValueMutable. \
+        Mutation::Swap => {
+            swap(individual);
+            Ok(())
+        }
+        Mutation::Inversion => {
+            inversion(individual);
+            Ok(())
+        }
+        Mutation::Scramble => {
+            scramble(individual);
+            Ok(())
+        }
+        Mutation::Value => Err(GaError::MutationError(
+            "Mutation::Value requires the chromosome type to implement ValueMutable. \
                  Use Swap, Inversion, or Scramble instead, or implement ValueMutable for your type."
-                    .to_string(),
-            ))
-        },
+                .to_string(),
+        )),
+        Mutation::BitFlip => Err(GaError::MutationError(
+            "Mutation::BitFlip requires a Binary chromosome type. \
+                 Use Swap, Inversion, or Scramble instead."
+                .to_string(),
+        )),
     }
 }
 

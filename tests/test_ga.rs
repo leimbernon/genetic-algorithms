@@ -695,3 +695,59 @@ fn test_callback_function() {
 
     assert_eq!(population.chromosomes.len(), 10);
 }
+
+#[test]
+fn test_elitism_preserves_best_individual() {
+    // Create a population where one individual has clearly the best fitness
+    let mut chromosomes: Vec<Chromosome> = Vec::new();
+    for i in 0..10 {
+        let dna = vec![
+            Gene { id: 1 + i },
+            Gene { id: 2 + i },
+            Gene { id: 3 + i },
+            Gene { id: 4 + i },
+        ];
+        let mut chromosome = Chromosome {
+            dna,
+            fitness: 0.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        };
+        chromosome.set_fitness_fn(|genes: &[Gene]| genes.iter().map(|g| g.id as f64).sum::<f64>());
+        chromosome.calculate_fitness();
+        chromosomes.push(chromosome);
+    }
+
+    let best_fitness_before = chromosomes
+        .iter()
+        .map(|c| c.fitness)
+        .fold(f64::NEG_INFINITY, f64::max);
+
+    let population = Population::new(chromosomes);
+    let mut ga = Ga::new();
+    let result = ga
+        .with_problem_solving(ProblemSolving::Maximization)
+        .with_selection_method(Selection::Tournament)
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::Swap)
+        .with_survivor_method(Survivor::Fitness)
+        .with_population(population)
+        .with_max_generations(20)
+        .with_elitism(2)
+        .run()
+        .unwrap();
+
+    // With elitism, the best fitness should never decrease
+    let best_fitness_after = result
+        .chromosomes
+        .iter()
+        .map(|c| c.get_fitness())
+        .fold(f64::NEG_INFINITY, f64::max);
+
+    assert!(
+        best_fitness_after >= best_fitness_before,
+        "Elitism should preserve or improve the best fitness. Before: {}, After: {}",
+        best_fitness_before,
+        best_fitness_after
+    );
+}

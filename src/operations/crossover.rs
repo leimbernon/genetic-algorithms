@@ -1,5 +1,7 @@
 pub use self::cycle::cycle;
 pub use self::multipoint::multipoint;
+pub use self::order::order;
+pub use self::single_point::single_point;
 pub use self::uniform_crossover::uniform;
 pub(crate) use super::Crossover;
 use crate::configuration::CrossoverConfiguration;
@@ -8,6 +10,8 @@ use crate::traits::ChromosomeT;
 
 pub mod cycle;
 pub mod multipoint;
+pub mod order;
+pub mod single_point;
 pub mod uniform_crossover;
 
 pub fn factory<U: ChromosomeT>(
@@ -21,6 +25,8 @@ pub fn factory<U: ChromosomeT>(
             multipoint(parent_1, parent_2, &configuration.number_of_points.unwrap())
         }
         Crossover::Uniform => uniform(parent_1, parent_2),
+        Crossover::SinglePoint => single_point(parent_1, parent_2),
+        Crossover::Order => order(parent_1, parent_2),
     }
 }
 

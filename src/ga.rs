@@ -209,6 +209,11 @@ where
             .with_save_progress_path(save_progress_path);
         self
     }
+
+    fn with_elitism(&mut self, elitism_count: usize) -> &mut Self {
+        self.configuration.with_elitism(elitism_count);
+        self
+    }
 }
 
 impl<U> Ga<U>
@@ -414,6 +419,17 @@ where
             //3- Insert the children in the population
             self.population.add_chromosomes(&mut offspring);
 
+            //3.5- Elitism: preserve the top N individuals
+            let elite = if self.configuration.elitism_count > 0 {
+                extract_elite(
+                    &self.population.chromosomes,
+                    self.configuration.elitism_count,
+                    self.configuration.limit_configuration.problem_solving,
+                )
+            } else {
+                Vec::new()
+            };
+
             //4- Survivor selection
             survivor::factory(
                 self.configuration.survivor,
@@ -421,6 +437,15 @@ where
                 initial_population_size,
                 self.configuration.limit_configuration,
             )?;
+
+            // Reinsert elite individuals, replacing the worst survivors if needed
+            if !elite.is_empty() {
+                reinsert_elite(
+                    &mut self.population.chromosomes,
+                    elite,
+                    self.configuration.limit_configuration.problem_solving,
+                );
+            }
             if self.configuration.adaptive_ga {
                 self.population.recalculate_aga();
             }
@@ -640,4 +665,53 @@ where
 
     debug!(target="ga_events", method="parent_crossover"; "Parent crossover finished");
     Ok(offspring)
+}
+
+/// Extracts the top `count` individuals from the population by fitness.
+fn extract_elite<U: ChromosomeT>(
+    chromosomes: &[U],
+    count: usize,
+    problem_solving: ProblemSolving,
+) -> Vec<U> {
+    let mut sorted: Vec<U> = chromosomes.to_vec();
+    sorted.sort_by(|a, b| {
+        let cmp = a
+            .get_fitness()
+            .partial_cmp(&b.get_fitness())
+            .unwrap_or(std::cmp::Ordering::Equal);
+        match problem_solving {
+            ProblemSolving::Maximization => cmp.reverse(),
+            _ => cmp,
+        }
+    });
+    sorted.truncate(count);
+    sorted
+}
+
+/// Reinserts elite individuals into the population, replacing the worst if already at capacity.
+fn reinsert_elite<U: ChromosomeT>(
+    chromosomes: &mut [U],
+    elite: Vec<U>,
+    problem_solving: ProblemSolving,
+) {
+    // Sort population so worst are at the end
+    chromosomes.sort_by(|a, b| {
+        let cmp = a
+            .get_fitness()
+            .partial_cmp(&b.get_fitness())
+            .unwrap_or(std::cmp::Ordering::Equal);
+        match problem_solving {
+            ProblemSolving::Maximization => cmp.reverse(),
+            _ => cmp,
+        }
+    });
+
+    // Replace the worst individuals with elite
+    let pop_len = chromosomes.len();
+    for (i, elite_individual) in elite.into_iter().enumerate() {
+        let replace_idx = pop_len - 1 - i;
+        if replace_idx < pop_len {
+            chromosomes[replace_idx] = elite_individual;
+        }
+    }
 }

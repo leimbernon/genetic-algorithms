@@ -36,4 +36,7 @@ pub trait ConfigurationT {
     fn with_save_progress(&mut self, save_progress: bool) -> &mut Self;
     fn with_save_progress_interval(&mut self, save_progress_interval: i32) -> &mut Self;
     fn with_save_progress_path(&mut self, save_progress_path: String) -> &mut Self;
+
+    //Elitism
+    fn with_elitism(&mut self, elitism_count: usize) -> &mut Self;
 }
