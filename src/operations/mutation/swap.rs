@@ -1,9 +1,8 @@
-pub(crate) use rand::Rng;
 use crate::traits::ChromosomeT;
-use log::{trace, debug};
+use log::{debug, trace};
+pub(crate) use rand::Rng;
 
-pub fn swap<U: ChromosomeT>(chromosome: &mut U){
-
+pub fn swap<U: ChromosomeT>(chromosome: &mut U) {
     //Getting two random genes from the dna of the chromosome
     debug!(target="mutation_events", method="swap"; "Starting the swap mutation");
     let mut rng = rand::rng();

@@ -1,7 +1,7 @@
-use std::fmt::Debug;
+use crate::genotypes::Range as RangeGenotype;
 use rand::distr::uniform::SampleUniform;
 use rand::Rng;
-use crate::genotypes::Range as RangeGenotype;
+use std::fmt::Debug;
 
 /// Initializes a vector of `RangeGenotype` with random values.
 ///
@@ -29,7 +29,11 @@ use crate::genotypes::Range as RangeGenotype;
 /// let genes = range_random_initialization(10, Some(&alleles), Some(false));
 /// assert_eq!(genes.len(), 10);
 /// ```
-pub fn range_random_initialization<T>(genes_per_chromosome: i32, alleles: Option<&[RangeGenotype<T>]>, _needs_unique_ids: Option<bool>) -> Vec<RangeGenotype<T>>
+pub fn range_random_initialization<T>(
+    genes_per_chromosome: i32,
+    alleles: Option<&[RangeGenotype<T>]>,
+    _needs_unique_ids: Option<bool>,
+) -> Vec<RangeGenotype<T>>
 where
     T: Sync + Send + Clone + Default + Debug + 'static + PartialOrd + SampleUniform + Copy,
 {
@@ -40,7 +44,7 @@ where
         // Pick a random allele from the provided list
         let allele = alleles[rng.random_range(0..alleles.len())].clone();
         // Pick a random range from the allele
-        let range = allele.ranges[rng.random_range(0..allele.ranges.len())].clone();
+        let range = allele.ranges[rng.random_range(0..allele.ranges.len())];
         // Generate a new gene with a random value from the selected range
         let gene = RangeGenotype::new(i, vec![range], rng.random_range(range.0..range.1));
         genes.push(gene);

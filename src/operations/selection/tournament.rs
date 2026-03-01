@@ -1,28 +1,35 @@
 use crate::traits::ChromosomeT;
-use rayon::prelude::*;
+use log::{debug, trace};
 use rand::Rng;
-use log::{trace, debug};
+use rayon::prelude::*;
 
 /**
  * Main function for tournament selection
  */
-pub fn tournament<U>(chromosomes: &Vec<U>, couples: i32, _number_of_threads: i32) -> Vec<(usize, usize)>
+pub fn tournament<U>(
+    chromosomes: &[U],
+    couples: i32,
+    _number_of_threads: i32,
+) -> Vec<(usize, usize)>
 where
-U:ChromosomeT + Send + Sync + 'static + Clone
+    U: ChromosomeT + Send + Sync + 'static + Clone,
 {
     tournament_impl(chromosomes, couples)
 }
 
-
 /**
  * Tournament selection implementation using rayon for parallelism.
  */
-fn tournament_impl<U>(chromosomes: &Vec<U>, couples: i32) -> Vec<(usize, usize)>
+fn tournament_impl<U>(chromosomes: &[U], couples: i32) -> Vec<(usize, usize)>
 where
-U:ChromosomeT + Send + Sync + 'static + Clone
+    U: ChromosomeT + Send + Sync + 'static + Clone,
 {
     debug!(target="selection_events", method="tournament"; "Starting tournament selection");
-    let couples = if couples*2 > chromosomes.len() as i32 {(chromosomes.len() / 2) as i32} else {couples};
+    let couples = if couples * 2 > chromosomes.len() as i32 {
+        (chromosomes.len() / 2) as i32
+    } else {
+        couples
+    };
 
     // Generate all indexes needed for the tournament
     let total_contestants = (couples * 2) as usize;

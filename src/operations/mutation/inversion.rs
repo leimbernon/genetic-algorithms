@@ -1,16 +1,20 @@
 pub(crate) use crate::traits::ChromosomeT;
+use log::{debug, trace};
 use rand::Rng;
-use log::{trace, debug};
 
 pub fn inversion<U: ChromosomeT>(individual: &mut U) {
     // Starting the inversion mutation and obtaining two random indices
     debug!(target="mutation_events", method="inversion"; "Starting the inversion mutation");
     let mut rng = rand::rng();
     let len = individual.get_dna().len();
-    
+
     // Select two distinct random indices
     let (index_1, index_2) = (rng.random_range(0..len), rng.random_range(0..len));
-    let (lower_index, higher_index) = if index_1 < index_2 { (index_1, index_2) } else { (index_2, index_1) };
+    let (lower_index, higher_index) = if index_1 < index_2 {
+        (index_1, index_2)
+    } else {
+        (index_2, index_1)
+    };
 
     trace!(target="mutation_events", method="inversion"; "Mutation lower index: {}, mutation higher index: {}", lower_index, higher_index);
 

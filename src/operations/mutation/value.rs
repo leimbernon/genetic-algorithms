@@ -1,7 +1,7 @@
-use rand::Rng;
-use rand::distr::uniform::SampleUniform;
 use crate::chromosomes::Range as RangeChromosome;
 use crate::traits::ChromosomeT;
+use rand::distr::uniform::SampleUniform;
+use rand::Rng;
 use std::borrow::Cow;
 use std::fmt::Debug;
 
@@ -74,4 +74,3 @@ impl ValueMutable for RangeChromosome<f64> {
         value_mutation(self);
     }
 }
-

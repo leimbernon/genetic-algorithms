@@ -1,13 +1,14 @@
-use criterion::{criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion, PlotConfiguration};
+use criterion::{
+    criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion, PlotConfiguration,
+};
 
 use genetic_algorithms::fitness::FitnessFnWrapper;
 use rand::Rng;
 use std::borrow::Cow;
 
-use genetic_algorithms::traits::{GeneT, ChromosomeT};
 use genetic_algorithms::operations::survivor::age::age_based;
 use genetic_algorithms::operations::survivor::fitness::fitness_based;
-
+use genetic_algorithms::traits::{ChromosomeT, GeneT};
 
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Gene {
@@ -76,7 +77,9 @@ fn setup_population(population_size: usize, gene_length: usize) -> Vec<SimpleChr
         .map(|_| SimpleChromosome {
             fitness: rng.random_range(0.0..1.0),
             dna: (0..gene_length)
-                .map(|_| Gene { id: rng.random_range(0..255) })
+                .map(|_| Gene {
+                    id: rng.random_range(0..255),
+                })
                 .collect(),
             age: rng.random_range(0..100),
             fitness_fn: FitnessFnWrapper::default(),
@@ -97,25 +100,34 @@ fn benchmark_survivor_methods(c: &mut Criterion) {
         let chromosomes = setup_population(population_size, gene_length);
 
         // Benchmark for age survivor
-        group.bench_with_input(BenchmarkId::new("age survivor", format!("genes_{}", gene_length)), &gene_length, |b, _| {
-            b.iter(|| {
-                let mut chromosomes = chromosomes.clone();
-                age_based(&mut chromosomes, population_size);
-            });
-        });
+        group.bench_with_input(
+            BenchmarkId::new("age survivor", format!("genes_{}", gene_length)),
+            &gene_length,
+            |b, _| {
+                b.iter(|| {
+                    let mut chromosomes = chromosomes.clone();
+                    age_based(&mut chromosomes, population_size);
+                });
+            },
+        );
 
-         // Benchmark for fitness survivor
-        group.bench_with_input(BenchmarkId::new("fitness survivor", format!("genes_{}", gene_length)), &gene_length, |b, _| {
-            b.iter(|| {
-                let mut chromosomes = chromosomes.clone();
-                let limit_configuration = genetic_algorithms::configuration::LimitConfiguration::default();
-                fitness_based(&mut chromosomes, population_size, limit_configuration);
-            });
-        });
-    } 
+        // Benchmark for fitness survivor
+        group.bench_with_input(
+            BenchmarkId::new("fitness survivor", format!("genes_{}", gene_length)),
+            &gene_length,
+            |b, _| {
+                b.iter(|| {
+                    let mut chromosomes = chromosomes.clone();
+                    let limit_configuration =
+                        genetic_algorithms::configuration::LimitConfiguration::default();
+                    fitness_based(&mut chromosomes, population_size, limit_configuration);
+                });
+            },
+        );
+    }
 
     group.finish();
-} 
+}
 
 // Grupo de benchmarks sin profiler externo (pprof removido por incompatibilidad de versiones)
 criterion_group! {

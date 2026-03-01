@@ -1,13 +1,16 @@
-use criterion::{criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion, PlotConfiguration, Throughput};
+use criterion::{
+    criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion, PlotConfiguration,
+    Throughput,
+};
 use genetic_algorithms::fitness::FitnessFnWrapper;
 use rand::Rng;
 use std::borrow::Cow;
 
-use genetic_algorithms::operations::selection::random::random;
 use genetic_algorithms::operations::selection::fitness_proportionate::roulette_wheel_selection;
 use genetic_algorithms::operations::selection::fitness_proportionate::stochastic_universal_sampling;
+use genetic_algorithms::operations::selection::random::random;
 use genetic_algorithms::operations::selection::tournament::tournament;
-use genetic_algorithms::traits::{GeneT, ChromosomeT};
+use genetic_algorithms::traits::{ChromosomeT, GeneT};
 
 #[derive(Debug, Copy, Clone, Default, PartialEq)]
 pub struct Gene {
@@ -76,7 +79,9 @@ fn setup_population(population_size: usize, gene_length: usize) -> Vec<SimpleChr
         .map(|_| SimpleChromosome {
             fitness: rng.random_range(0.0..=1.0),
             dna: (0..gene_length)
-                .map(|_| Gene { id: rng.random_range(0..255) })
+                .map(|_| Gene {
+                    id: rng.random_range(0..255),
+                })
                 .collect(),
             age: rng.random_range(0..=100),
             fitness_fn: FitnessFnWrapper::default(),
@@ -97,12 +102,15 @@ fn benchmark_selection_methods(c: &mut Criterion) {
     for &population_size in &population_sizes {
         for &gene_length in &gene_lengths {
             let chromosomes = setup_population(population_size, gene_length);
-            
+
             group.throughput(Throughput::Elements(population_size as u64));
-            
+
             // Benchmark random selection
             group.bench_with_input(
-                BenchmarkId::new("random selection", format!("population_{}_genes_{}", population_size, gene_length)),
+                BenchmarkId::new(
+                    "random selection",
+                    format!("population_{}_genes_{}", population_size, gene_length),
+                ),
                 &chromosomes,
                 |b, chromosomes| {
                     b.iter(|| {
@@ -113,7 +121,10 @@ fn benchmark_selection_methods(c: &mut Criterion) {
 
             // Benchmark roulette wheel selection
             group.bench_with_input(
-                BenchmarkId::new("roulette wheel selection", format!("population_{}_genes_{}", population_size, gene_length)),
+                BenchmarkId::new(
+                    "roulette wheel selection",
+                    format!("population_{}_genes_{}", population_size, gene_length),
+                ),
                 &chromosomes,
                 |b, chromosomes| {
                     b.iter(|| {
@@ -124,7 +135,10 @@ fn benchmark_selection_methods(c: &mut Criterion) {
 
             // Benchmark stochastic universal sampling
             group.bench_with_input(
-                BenchmarkId::new("stochastic universal sampling", format!("population_{}_genes_{}", population_size, gene_length)),
+                BenchmarkId::new(
+                    "stochastic universal sampling",
+                    format!("population_{}_genes_{}", population_size, gene_length),
+                ),
                 &chromosomes,
                 |b, chromosomes| {
                     b.iter(|| {
@@ -136,7 +150,10 @@ fn benchmark_selection_methods(c: &mut Criterion) {
             // Benchmarks for tournament selection with different threads
             for &threads in &tournament_threads {
                 group.bench_with_input(
-                    BenchmarkId::new(format!("tournament {} threads", threads), format!("population_{}_genes_{}", population_size, gene_length)),
+                    BenchmarkId::new(
+                        format!("tournament {} threads", threads),
+                        format!("population_{}_genes_{}", population_size, gene_length),
+                    ),
                     &chromosomes,
                     |b, chromosomes| {
                         b.iter(|| {
@@ -145,7 +162,6 @@ fn benchmark_selection_methods(c: &mut Criterion) {
                     },
                 );
             }
-
         }
     }
     group.finish();

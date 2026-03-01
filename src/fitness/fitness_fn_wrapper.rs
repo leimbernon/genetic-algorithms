@@ -1,7 +1,10 @@
-use std::sync::Arc;
 use crate::traits::GeneT;
+use std::sync::Arc;
 
-pub struct FitnessFnWrapper<G: GeneT>(Arc<dyn Fn(&[G]) -> f64 + Send + Sync>);
+/// Type alias for the fitness function trait object.
+type FitnessFnTrait<G> = dyn Fn(&[G]) -> f64 + Send + Sync;
+
+pub struct FitnessFnWrapper<G: GeneT>(Arc<FitnessFnTrait<G>>);
 
 impl<G: GeneT> Clone for FitnessFnWrapper<G> {
     fn clone(&self) -> Self {

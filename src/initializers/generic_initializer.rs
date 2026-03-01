@@ -1,15 +1,20 @@
-use rand::Rng;
 use crate::traits::{ChromosomeT, GeneT};
+use rand::Rng;
 
 /**
  * Function to initialize the dna of an chromosome
  */
-pub fn generic_random_initialization<U>(genes_per_chromosome: i32, alleles: Option<&[U::Gene]>, needs_unique_ids: Option<bool>) ->Vec<U::Gene>
+pub fn generic_random_initialization<U>(
+    genes_per_chromosome: i32,
+    alleles: Option<&[U::Gene]>,
+    needs_unique_ids: Option<bool>,
+) -> Vec<U::Gene>
 where
-    U: ChromosomeT + Send + Sync + 'static + Clone{
-
+    U: ChromosomeT + Send + Sync + 'static + Clone,
+{
     let alleles = alleles.expect("Alleles must be provided for generic_random_initialization");
-    let needs_unique_ids = needs_unique_ids.expect("needs_unique_ids must be provided for generic_random_initialization");
+    let needs_unique_ids = needs_unique_ids
+        .expect("needs_unique_ids must be provided for generic_random_initialization");
 
     let mut rng = rand::rng();
     let mut dna = Vec::new();
@@ -30,16 +35,22 @@ where
     dna
 }
 
-
 /**
  * Function to initialize the dna of a chromosome without repeating an array of alleles
  */
-pub fn generic_random_initialization_without_repetitions<U>(genes_per_chromosome: i32, alleles: Option<&[U::Gene]>, needs_unique_ids: Option<bool>) ->Vec<U::Gene>
+pub fn generic_random_initialization_without_repetitions<U>(
+    genes_per_chromosome: i32,
+    alleles: Option<&[U::Gene]>,
+    needs_unique_ids: Option<bool>,
+) -> Vec<U::Gene>
 where
-    U: ChromosomeT + Send + Sync + 'static + Clone{
-
-    let alleles = alleles.expect("Alleles must be provided for generic_random_initialization_without_repetitions");
-    let needs_unique_ids = needs_unique_ids.expect("needs_unique_ids must be provided for generic_random_initialization_without_repetitions");
+    U: ChromosomeT + Send + Sync + 'static + Clone,
+{
+    let alleles = alleles
+        .expect("Alleles must be provided for generic_random_initialization_without_repetitions");
+    let needs_unique_ids = needs_unique_ids.expect(
+        "needs_unique_ids must be provided for generic_random_initialization_without_repetitions",
+    );
 
     let mut rng = rand::rng();
     let mut dna = Vec::new();

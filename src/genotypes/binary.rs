@@ -19,11 +19,10 @@
 ///
 /// The binary gene can be used in mutation and crossover operations to
 /// evolve populations in a genetic algorithm.
-
 use crate::traits::GeneT;
 
 #[derive(Debug, Copy, Clone, Default, PartialEq)]
-pub struct Binary{
+pub struct Binary {
     pub id: i32,
     pub value: bool,
 }
@@ -37,7 +36,7 @@ impl GeneT for Binary {
     }
 }
 
-impl Binary{
+impl Binary {
     /// Creates a new `Binary` gene with the given identifier and value.
     ///
     /// # Arguments
