@@ -1,11 +1,14 @@
+use crate::error::GaError;
 use crate::traits::ChromosomeT;
 use log::{trace, debug};
 
-pub fn multipoint<U: ChromosomeT>(parent_1: &U, parent_2: &U, crossover_number_of_points: &i32) -> Option<Vec<U>>{
+pub fn multipoint<U: ChromosomeT>(parent_1: &U, parent_2: &U, crossover_number_of_points: &i32) -> Result<Vec<U>, GaError>{
 
     //Before doing the operation, we check that the dna in parent 1 has the same length of the dna in parent 2
     if parent_1.get_dna().len() != parent_2.get_dna().len() {
-        panic!("Parent 1 and parent 2 must have the same dna length. Parent 1 has a length of {} and parent 2 has a length of {}", parent_1.get_dna().len(), parent_2.get_dna().len());
+        return Err(GaError::CrossoverError(format!(
+            "Parent 1 and parent 2 must have the same dna length. Parent 1 has a length of {} and parent 2 has a length of {}",
+            parent_1.get_dna().len(), parent_2.get_dna().len())));
     }
 
     let mut child_1 = parent_1.clone();
@@ -51,5 +54,5 @@ pub fn multipoint<U: ChromosomeT>(parent_1: &U, parent_2: &U, crossover_number_o
     child_2.set_dna(std::borrow::Cow::Owned(dna_child_2));
     debug!(target="crossover_events", method="multipoint_crossover"; "Multipoint crossover finished");
 
-    Some(vec![child_1, child_2])
+    Ok(vec![child_1, child_2])
 }

@@ -11,13 +11,20 @@ fn test_swap_mutation(){
     Gene{id:30}, Gene{id:31}, Gene{id:32}, Gene{id:33}, Gene{id:34}, Gene{id:35}, Gene{id:36}, Gene{id:37}, Gene{id:38}, Gene{id:39}, Gene{id:40}, Gene{id:41}, Gene{id:42}, Gene{id:43}, Gene{id:44}, Gene{id:45},
     Gene{id:46}, Gene{id:47}, Gene{id:48}, Gene{id:49}, Gene{id:50}]; 
 
-    //We create the chromosomes
-    let mut chromosome_1 = Chromosome{dna: dna_1, fitness: 0.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let chromosome_1_copy = chromosome_1.clone();
+    let chromosome_1_copy = Chromosome{dna: dna_1, fitness: 0.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
 
-    //We mutate the dna
-    swap::swap(&mut chromosome_1);
-    assert_ne!(chromosome_1, chromosome_1_copy);
+    // Swap is stochastic — may pick the same index twice, leaving DNA unchanged.
+    let mut mutated = false;
+    for _ in 0..10 {
+        let mut chromosome_1 = chromosome_1_copy.clone();
+        swap::swap(&mut chromosome_1);
+        assert_eq!(chromosome_1.dna.len(), chromosome_1_copy.dna.len());
+        if chromosome_1 != chromosome_1_copy {
+            mutated = true;
+            break;
+        }
+    }
+    assert!(mutated, "swap mutation did not change the chromosome after 10 attempts");
 }
 
 #[test]
@@ -29,13 +36,20 @@ fn test_inversion_mutation(){
     Gene{id:30}, Gene{id:31}, Gene{id:32}, Gene{id:33}, Gene{id:34}, Gene{id:35}, Gene{id:36}, Gene{id:37}, Gene{id:38}, Gene{id:39}, Gene{id:40}, Gene{id:41}, Gene{id:42}, Gene{id:43}, Gene{id:44}, Gene{id:45},
     Gene{id:46}, Gene{id:47}, Gene{id:48}, Gene{id:49}, Gene{id:50}]; 
 
-    //We create the chromosomes
-    let mut chromosome_1 = Chromosome{dna: dna_1, fitness: 0.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let chromosome_1_copy = chromosome_1.clone();
+    let chromosome_1_copy = Chromosome{dna: dna_1, fitness: 0.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
 
-    //We mutate the dna
-    inversion::inversion(&mut chromosome_1);
-    assert_ne!(chromosome_1, chromosome_1_copy);
+    // Inversion is stochastic — may pick the same index twice (or adjacent), leaving DNA unchanged.
+    let mut mutated = false;
+    for _ in 0..10 {
+        let mut chromosome_1 = chromosome_1_copy.clone();
+        inversion::inversion(&mut chromosome_1);
+        assert_eq!(chromosome_1.dna.len(), chromosome_1_copy.dna.len());
+        if chromosome_1 != chromosome_1_copy {
+            mutated = true;
+            break;
+        }
+    }
+    assert!(mutated, "inversion mutation did not change the chromosome after 10 attempts");
 }
 
 #[test]
@@ -48,12 +62,23 @@ fn test_scramble_mutation(){
     Gene{id:46}, Gene{id:47}, Gene{id:48}, Gene{id:49}, Gene{id:50}]; 
 
     //We create the chromosomes
-    let mut chromosome_1 = Chromosome{dna: dna_1, fitness: 0.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
-    let chromosome_1_copy = chromosome_1.clone();
+    let chromosome_1_copy = Chromosome{dna: dna_1.clone(), fitness: 0.0, age: 0, fitness_fn: FitnessFnWrapper::default()};
 
-    //We mutate the dna
-    scramble::scramble(&mut chromosome_1);
-    assert_ne!(chromosome_1, chromosome_1_copy);
+    // Scramble is stochastic — it may rarely leave DNA unchanged when random indices
+    // happen to swap genes back to their original positions. We retry a few times to
+    // avoid flaky failures while still verifying the mutation works.
+    let mut mutated = false;
+    for _ in 0..10 {
+        let mut chromosome_1 = chromosome_1_copy.clone();
+        scramble::scramble(&mut chromosome_1);
+        // Invariant: DNA length must be preserved
+        assert_eq!(chromosome_1.dna.len(), chromosome_1_copy.dna.len());
+        if chromosome_1 != chromosome_1_copy {
+            mutated = true;
+            break;
+        }
+    }
+    assert!(mutated, "scramble mutation did not change the chromosome after 10 attempts");
 }
 
 #[test]

@@ -1,5 +1,6 @@
 pub(crate) use super::Crossover;
 use crate::configuration::CrossoverConfiguration;
+use crate::error::GaError;
 use crate::traits::ChromosomeT;
 pub use self::cycle::cycle;
 pub use self::multipoint::multipoint;
@@ -10,7 +11,7 @@ pub mod multipoint;
 pub mod uniform_crossover;
 
 
-pub fn factory<U: ChromosomeT>(parent_1: &U, parent_2: &U, configuration: CrossoverConfiguration) -> Option<Vec<U>>{
+pub fn factory<U: ChromosomeT>(parent_1: &U, parent_2: &U, configuration: CrossoverConfiguration) -> Result<Vec<U>, GaError>{
     match configuration.method {
         Crossover::Cycle => {cycle(parent_1, parent_2)},
         Crossover::MultiPoint => { multipoint(parent_1, parent_2, &configuration.number_of_points.unwrap())},

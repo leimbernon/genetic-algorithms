@@ -23,6 +23,7 @@ Modular and concurrent Genetic Algorithms (GA) library for Rust featuring:
 - [Quick Example](#quick-example)
 - [Full Example (Range)](#full-example-range)
 - [Usage](#usage)
+- [Development](#development)
 - [Roadmap / Notes](#roadmap--notes)
 - [License](#license)
 
@@ -177,6 +178,47 @@ Add to your `Cargo.toml`:
 ```toml
 [dependencies]
 genetic_algorithms = "2.0.0"
+```
+
+## Development
+
+### Build
+```bash
+cargo build            # Debug build
+cargo build --release  # Optimized release build
+```
+
+### Run Tests
+```bash
+cargo test                        # Run all tests (unit + integration + doc-tests)
+cargo test test_ga                # Run only tests matching "test_ga"
+cargo test -- --nocapture         # Run tests with visible stdout/stderr
+cargo test --doc                  # Run doc-tests only
+```
+
+### Run Benchmarks
+Benchmarks use [Criterion](https://github.com/bheisler/criterion.rs) and are located in `benches/`.
+```bash
+cargo bench                       # Run all benchmarks
+cargo bench --bench crossover     # Run only crossover benchmarks
+cargo bench --bench mutation      # Run only mutation benchmarks
+cargo bench --bench selection     # Run only selection benchmarks
+cargo bench --bench survivor      # Run only survivor benchmarks
+cargo bench --no-run              # Only compile benchmarks (useful for CI)
+```
+Reports are generated in `target/criterion/` and can be viewed in a browser.
+
+### Run Examples
+```bash
+cargo run --example knapsack_binary   # 0/1 Knapsack problem using Binary chromosomes
+cargo run --example nqueens_range     # N-Queens problem using Range<i32> chromosomes
+```
+
+### Code Quality
+```bash
+cargo fmt --check   # Check formatting (no changes)
+cargo fmt           # Auto-format code
+cargo clippy        # Run linter
 ```
 
 ## Roadmap / Notes

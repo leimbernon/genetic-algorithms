@@ -5,7 +5,6 @@ use genetic_algorithms::{configuration::ProblemSolving, fitness::FitnessFnWrappe
 use genetic_algorithms::ga::TerminationCause;
 use crate::structures::{Gene, Chromosome};
 use genetic_algorithms::ga::Ga;
-extern crate num_cpus;
 
 fn fitness_fn(_dna: &[Gene]) -> f64 {
     0.0
@@ -48,8 +47,9 @@ fn test_ga_start_maximize(){
                         .with_mutation_method(Mutation::Swap)
                         .with_survivor_method(Survivor::Fitness)
                         .with_population(population)
-                        .run();
-    
+                        .run()
+                        .unwrap();
+
     assert_eq!(population.chromosomes.len(), 10);
     assert_eq!(population.best_chromosome.get_fitness(), 20.0);
 
@@ -93,8 +93,9 @@ fn test_ga_run_minimize(){
                     .with_mutation_probability_max(0.2)
                     .with_survivor_method(Survivor::Fitness)
                     .with_population(population)
-                    .run();
-    
+                    .run()
+                    .unwrap();
+
     assert_eq!(population.chromosomes.len(), 10);
     assert_eq!(population.best_chromosome.get_fitness(), 1.0);
 
@@ -140,10 +141,11 @@ fn test_ga_run(){
                     .with_mutation_method(Mutation::Swap)
                     .with_survivor_method(Survivor::Fitness)
                     .with_population(population)
-                    .run();
-    
+                    .run()
+                    .unwrap();
+
     assert_eq!(population.chromosomes.len(), 10);
-    
+
 }
 
 #[test]
@@ -161,7 +163,7 @@ fn test_parent_crossover_repeating_alleles(){
 
 
     let mut ga_instance = Ga::new();
-    let ga: &mut Ga<Chromosome> = &mut ga_instance
+    let ga: &mut Ga<Chromosome> = ga_instance
                     .with_threads(NUMBER_OF_THREADS)
                     .with_fitness_fn(fitness_fn)
                     .with_population_size(POPULATION_SIZE)
@@ -170,7 +172,8 @@ fn test_parent_crossover_repeating_alleles(){
                     .with_alleles_can_be_repeated(ALLELES_CAN_BE_REPEATED)
                     .with_alleles(alleles.to_vec())
                     .with_initialization_fn(genetic_algorithms::initializers::generic_random_initialization::<Chromosome>)
-                    .initialization();
+                    .initialization()
+                    .unwrap();
 
     //Once population has been initialized, we check for each chromosome in the population the number of genes in the dna
     for chromosome in &ga.population.chromosomes {
@@ -192,7 +195,7 @@ fn test_parent_crossover_without_repeating_alleles(){
     static NUMBER_OF_THREADS: i32 = 8;
 
     let mut ga_instance = Ga::new();
-    let ga: &mut Ga<Chromosome> = &mut ga_instance
+    let ga: &mut Ga<Chromosome> = ga_instance
                     .with_threads(NUMBER_OF_THREADS)
                     .with_fitness_fn(fitness_fn)
                     .with_population_size(POPULATION_SIZE)
@@ -201,7 +204,8 @@ fn test_parent_crossover_without_repeating_alleles(){
                     .with_alleles_can_be_repeated(ALLELES_CAN_BE_REPEATED)
                     .with_alleles(alleles.to_vec())
                     .with_initialization_fn(genetic_algorithms::initializers::generic_random_initialization_without_repetitions::<Chromosome>)
-                    .initialization();
+                    .initialization()
+                    .unwrap();
 
     //Once population has been initialized, we check for each chromosome we check that genes are not repeated
     for chromosome in &ga.population.chromosomes {
@@ -261,7 +265,8 @@ fn test_callback_function(){
         .with_survivor_method(Survivor::Fitness)
         .with_population(population)
         .with_max_generations(10)
-        .run_with_callback(Some(callback_function), 8);
+        .run_with_callback(Some(callback_function), 8)
+        .unwrap();
 
     assert_eq!(population.chromosomes.len(), 10);
 }

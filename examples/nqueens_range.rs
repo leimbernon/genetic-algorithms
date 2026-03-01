@@ -38,12 +38,13 @@ fn main() {
         .with_fitness_fn(fitness_fn)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
-        .with_mutation_method(Mutation::Swap)
+        .with_mutation_method(Mutation::Value)
         .with_problem_solving(ProblemSolving::Minimization)
         .with_survivor_method(Survivor::Fitness)
         .with_max_generations(5000)
         .with_fitness_target(0.0)
-        .run_with_callback(Some(report), 100);
+        .run_with_callback(Some(report), 100)
+        .unwrap();
 
     println!("Best chromosome for N-Queens: {}", population.best_chromosome.phenotype());
     println!("Starting generation of random chromosome");

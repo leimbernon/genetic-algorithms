@@ -8,12 +8,8 @@ pub fn generic_random_initialization<U>(genes_per_chromosome: i32, alleles: Opti
 where
     U: ChromosomeT + Send + Sync + 'static + Clone{
 
-    if alleles.is_none() || needs_unique_ids.is_none(){
-        panic!("Alleles and needs_unique_ids must be provided");
-    }
-
-    let alleles = alleles.unwrap();
-    let needs_unique_ids = needs_unique_ids.unwrap();
+    let alleles = alleles.expect("Alleles must be provided for generic_random_initialization");
+    let needs_unique_ids = needs_unique_ids.expect("needs_unique_ids must be provided for generic_random_initialization");
 
     let mut rng = rand::rng();
     let mut dna = Vec::new();
@@ -42,12 +38,8 @@ pub fn generic_random_initialization_without_repetitions<U>(genes_per_chromosome
 where
     U: ChromosomeT + Send + Sync + 'static + Clone{
 
-    if alleles.is_none() || needs_unique_ids.is_none(){
-        panic!("Alleles and needs_unique_ids must be provided");
-    }
-
-    let alleles = alleles.unwrap();
-    let needs_unique_ids = needs_unique_ids.unwrap();
+    let alleles = alleles.expect("Alleles must be provided for generic_random_initialization_without_repetitions");
+    let needs_unique_ids = needs_unique_ids.expect("needs_unique_ids must be provided for generic_random_initialization_without_repetitions");
 
     let mut rng = rand::rng();
     let mut dna = Vec::new();

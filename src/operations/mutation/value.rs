@@ -1,14 +1,23 @@
 use rand::Rng;
+use rand::distr::uniform::SampleUniform;
 use crate::chromosomes::Range as RangeChromosome;
-use std::borrow::Cow;
 use crate::traits::ChromosomeT;
+use std::borrow::Cow;
+use std::fmt::Debug;
 
-/// Value mutation for Range<i32> chromosomes.
+use super::ValueMutable;
+
+/// Value mutation for Range<T> chromosomes.
+///
 /// - Randomly selects a gene from the DNA.
-/// - Picks one of its ranges and assigns a new integer value uniformly within that range.
+/// - Picks one of its ranges and assigns a new value uniformly within that range.
 /// - Writes back the mutated gene into the individual's DNA.
-/// If the chromosome has no genes or the gene has no ranges, it does nothing.
-pub fn value_mutation(individual: &mut RangeChromosome<i32>) {
+///
+/// If the chromosome has no genes or the selected gene has no ranges, it does nothing.
+pub fn value_mutation<T>(individual: &mut RangeChromosome<T>)
+where
+    T: Sync + Send + Clone + Default + Debug + PartialOrd + SampleUniform + Copy + 'static,
+{
     let len = individual.get_dna().len();
     if len == 0 {
         return;
@@ -28,7 +37,7 @@ pub fn value_mutation(individual: &mut RangeChromosome<i32>) {
     let range_idx = rng.random_range(0..gene.ranges.len());
     let (lo, hi) = gene.ranges[range_idx];
 
-    // Generate a new integer value uniformly in [lo, hi]
+    // Generate a new value uniformly in [lo, hi]
     let new_val = rng.random_range(lo..=hi);
 
     gene.value = new_val;
@@ -37,3 +46,32 @@ pub fn value_mutation(individual: &mut RangeChromosome<i32>) {
     // Set the new DNA into the individual (move to avoid cloning)
     individual.set_dna(Cow::Owned(dna));
 }
+
+/// Implement ValueMutable for Range<i32>
+impl ValueMutable for RangeChromosome<i32> {
+    fn value_mutate(&mut self) {
+        value_mutation(self);
+    }
+}
+
+/// Implement ValueMutable for Range<i64>
+impl ValueMutable for RangeChromosome<i64> {
+    fn value_mutate(&mut self) {
+        value_mutation(self);
+    }
+}
+
+/// Implement ValueMutable for Range<f32>
+impl ValueMutable for RangeChromosome<f32> {
+    fn value_mutate(&mut self) {
+        value_mutation(self);
+    }
+}
+
+/// Implement ValueMutable for Range<f64>
+impl ValueMutable for RangeChromosome<f64> {
+    fn value_mutate(&mut self) {
+        value_mutation(self);
+    }
+}
+

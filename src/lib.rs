@@ -75,4 +75,5 @@ pub mod genotypes;
 pub mod chromosomes;
 pub mod fitness;
 pub mod initializers;
+pub mod error;
 mod validators;

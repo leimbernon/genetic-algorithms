@@ -63,7 +63,8 @@ fn main(){
         .with_mutation_method(Mutation::Swap)
         .with_problem_solving(ProblemSolving::Maximization)
         .with_max_generations(5000)
-        .run_with_callback(Some(report), 100);
+        .run_with_callback(Some(report), 100)
+        .unwrap();
 
     println!("Best chromosome for maximization: {}", population.best_chromosome.phenotype());
 
@@ -80,7 +81,8 @@ fn main(){
         .with_problem_solving(ProblemSolving::FixedFitness)
         .with_fitness_target(1270.0)
         .with_max_generations(5000)
-        .run_with_callback(Some(report), 100);
+        .run_with_callback(Some(report), 100)
+        .unwrap();
 
     println!("Best chromosome for fixed fitness: {}", population.best_chromosome.phenotype());
 }
