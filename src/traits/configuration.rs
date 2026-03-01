@@ -1,4 +1,4 @@
-use crate::configuration::{LogLevel, ProblemSolving};
+use crate::configuration::{LogLevel, ProblemSolving, StoppingCriteria};
 use crate::operations::{Crossover, Mutation, Selection, Survivor};
 
 pub trait ConfigurationT {
@@ -26,11 +26,19 @@ pub trait ConfigurationT {
     fn with_crossover_probability_max(&mut self, probability_max: f64) -> &mut Self;
     fn with_crossover_probability_min(&mut self, probability_min: f64) -> &mut Self;
     fn with_crossover_method(&mut self, method: Crossover) -> &mut Self;
+    /// Sets the distribution index (eta) for SBX crossover.
+    fn with_sbx_eta(&mut self, eta: f64) -> &mut Self;
+    /// Sets the alpha parameter for BLX-α crossover.
+    fn with_blend_alpha(&mut self, alpha: f64) -> &mut Self;
 
     //Mutation configuration
     fn with_mutation_probability_max(&mut self, probability_max: f64) -> &mut Self;
     fn with_mutation_probability_min(&mut self, probability_min: f64) -> &mut Self;
     fn with_mutation_method(&mut self, method: Mutation) -> &mut Self;
+    /// Sets the step size for Creep mutation.
+    fn with_mutation_step(&mut self, step: f64) -> &mut Self;
+    /// Sets the sigma for Gaussian mutation.
+    fn with_mutation_sigma(&mut self, sigma: f64) -> &mut Self;
 
     //Save progress configuration
     fn with_save_progress(&mut self, save_progress: bool) -> &mut Self;
@@ -39,4 +47,9 @@ pub trait ConfigurationT {
 
     //Elitism
     fn with_elitism(&mut self, elitism_count: usize) -> &mut Self;
+
+    //Compound stopping criteria
+    /// Sets compound stopping criteria. These are checked in addition to
+    /// max_generations and fitness_target.
+    fn with_stopping_criteria(&mut self, criteria: StoppingCriteria) -> &mut Self;
 }

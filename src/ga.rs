@@ -14,16 +14,23 @@ use std::borrow::Cow;
 use std::env;
 use std::fmt::Debug;
 use std::sync::Arc;
+use std::time::Instant;
 
 /// Indicates why a GA run terminated.
 ///
 /// - `GenerationLimitReached`: the maximum number of generations was reached.
 /// - `FitnessTargetReached`: a stopping criterion based on fitness was satisfied.
+/// - `StagnationReached`: no fitness improvement for N consecutive generations.
+/// - `ConvergenceReached`: fitness standard deviation dropped below threshold.
+/// - `TimeLimitReached`: elapsed wall-clock time exceeded the configured limit.
 /// - `NotTerminated`: internal state before the run finalizes or if a callback is invoked mid-run.
 #[derive(Debug, PartialEq)]
 pub enum TerminationCause {
     GenerationLimitReached,
     FitnessTargetReached,
+    StagnationReached,
+    ConvergenceReached,
+    TimeLimitReached,
     NotTerminated,
 }
 
@@ -177,6 +184,14 @@ where
         self.configuration.with_crossover_method(method);
         self
     }
+    fn with_sbx_eta(&mut self, eta: f64) -> &mut Self {
+        self.configuration.with_sbx_eta(eta);
+        self
+    }
+    fn with_blend_alpha(&mut self, alpha: f64) -> &mut Self {
+        self.configuration.with_blend_alpha(alpha);
+        self
+    }
 
     //Mutation configuration
     fn with_mutation_probability_max(&mut self, probability_max: f64) -> &mut Self {
@@ -191,6 +206,14 @@ where
     }
     fn with_mutation_method(&mut self, method: crate::operations::Mutation) -> &mut Self {
         self.configuration.with_mutation_method(method);
+        self
+    }
+    fn with_mutation_step(&mut self, step: f64) -> &mut Self {
+        self.configuration.with_mutation_step(step);
+        self
+    }
+    fn with_mutation_sigma(&mut self, sigma: f64) -> &mut Self {
+        self.configuration.with_mutation_sigma(sigma);
         self
     }
 
@@ -212,6 +235,11 @@ where
 
     fn with_elitism(&mut self, elitism_count: usize) -> &mut Self {
         self.configuration.with_elitism(elitism_count);
+        self
+    }
+
+    fn with_stopping_criteria(&mut self, criteria: crate::configuration::StoppingCriteria) -> &mut Self {
+        self.configuration.with_stopping_criteria(criteria);
         self
     }
 }
@@ -392,6 +420,11 @@ where
         // Starting counting the generations for the callback
         let mut generation_callback_count = 0;
 
+        // Compound stopping criteria tracking
+        let start_time = Instant::now();
+        let mut best_fitness_so_far = self.population.best_chromosome.get_fitness();
+        let mut stagnation_count: i32 = 0;
+
         //We start the cycles
         for i in 0..self.configuration.limit_configuration.max_generations {
             info!(target="ga_events", method="run"; "Generation number: {}", i+1);
@@ -475,12 +508,68 @@ where
                 self.configuration.limit_configuration,
                 &self.population.chromosomes,
             ) {
-                // If we want to perform a callback
+                self.termination_cause = TerminationCause::FitnessTargetReached;
                 if let Some(func) = &callback {
-                    self.termination_cause = TerminationCause::FitnessTargetReached;
                     func(&i, &self.population, &self.termination_cause);
                 }
                 break;
+            }
+
+            //7- Compound stopping criteria
+            // Stagnation check
+            let current_best = self.population.best_chromosome.get_fitness();
+            let improved = match self.configuration.limit_configuration.problem_solving {
+                ProblemSolving::Maximization => current_best > best_fitness_so_far,
+                ProblemSolving::Minimization => current_best < best_fitness_so_far,
+                _ => (current_best - best_fitness_so_far).abs() > f64::EPSILON,
+            };
+            if improved {
+                best_fitness_so_far = current_best;
+                stagnation_count = 0;
+            } else {
+                stagnation_count += 1;
+            }
+
+            if let Some(max_stagnation) = self.configuration.stopping_criteria.stagnation_generations {
+                if stagnation_count >= max_stagnation {
+                    self.termination_cause = TerminationCause::StagnationReached;
+                    if let Some(func) = &callback {
+                        func(&i, &self.population, &self.termination_cause);
+                    }
+                    break;
+                }
+            }
+
+            // Convergence check (fitness std dev below threshold)
+            if let Some(threshold) = self.configuration.stopping_criteria.convergence_threshold {
+                let fitness_values: Vec<f64> = self.population.chromosomes
+                    .iter()
+                    .map(|c| c.get_fitness())
+                    .collect();
+                let n = fitness_values.len() as f64;
+                if n > 0.0 {
+                    let avg = fitness_values.iter().sum::<f64>() / n;
+                    let variance = fitness_values.iter().map(|f| (f - avg).powi(2)).sum::<f64>() / n;
+                    let std_dev = variance.sqrt();
+                    if std_dev < threshold {
+                        self.termination_cause = TerminationCause::ConvergenceReached;
+                        if let Some(func) = &callback {
+                            func(&i, &self.population, &self.termination_cause);
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // Time limit check
+            if let Some(max_secs) = self.configuration.stopping_criteria.max_duration_secs {
+                if start_time.elapsed().as_secs_f64() >= max_secs {
+                    self.termination_cause = TerminationCause::TimeLimitReached;
+                    if let Some(func) = &callback {
+                        func(&i, &self.population, &self.termination_cause);
+                    }
+                    break;
+                }
             }
         }
 
@@ -638,12 +727,22 @@ where
             debug!(target="ga_events", method="parent_crossover"; "mutation_probability_config {} - mutation probability {}", effective_mutation_prob, mutation_probability);
 
             if mutation_probability < effective_mutation_prob {
-                mutation::factory(configuration.mutation_configuration.method, &mut child_1)?;
+                mutation::factory_with_params(
+                    configuration.mutation_configuration.method,
+                    &mut child_1,
+                    configuration.mutation_configuration.step,
+                    configuration.mutation_configuration.sigma,
+                )?;
             }
 
             mutation_probability = rng.random_range(0.0..1.0);
             if mutation_probability <= effective_mutation_prob {
-                mutation::factory(configuration.mutation_configuration.method, &mut child_2)?;
+                mutation::factory_with_params(
+                    configuration.mutation_configuration.method,
+                    &mut child_2,
+                    configuration.mutation_configuration.step,
+                    configuration.mutation_configuration.sigma,
+                )?;
             }
 
             // Calculate the fitness of both children and set their age

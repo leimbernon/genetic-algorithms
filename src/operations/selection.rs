@@ -5,12 +5,14 @@ use crate::traits::ChromosomeT;
 pub use self::fitness_proportionate::roulette_wheel_selection;
 pub use self::fitness_proportionate::stochastic_universal_sampling;
 pub use self::random::random;
+pub use self::rank::rank_selection;
 pub use self::tournament::tournament;
 
 use super::Selection;
 
 pub mod fitness_proportionate;
 pub mod random;
+pub mod rank;
 pub mod tournament;
 
 /// Dispatches parent selection according to the configured method.
@@ -45,6 +47,7 @@ where
             configuration.number_of_couples,
             number_of_threads,
         ),
+        Selection::Rank => rank_selection(chromosomes, configuration.number_of_couples),
     };
 
     Ok(pairs)

@@ -6,6 +6,8 @@ use crate::error::GaError;
 use crate::traits::ChromosomeT;
 
 pub mod bit_flip;
+pub mod creep;
+pub mod gaussian;
 pub mod inversion;
 pub mod scramble;
 pub mod swap;
@@ -34,6 +36,22 @@ pub trait ValueMutable: ChromosomeT {
     fn bit_flip_mutate(&mut self) {
         swap(self);
     }
+
+    /// Performs creep mutation on this chromosome in-place.
+    ///
+    /// The default implementation falls back to swap mutation.
+    /// Override this for Range<T> chromosomes to apply small uniform perturbation.
+    fn creep_mutate(&mut self, _step: f64) {
+        swap(self);
+    }
+
+    /// Performs gaussian mutation on this chromosome in-place.
+    ///
+    /// The default implementation falls back to swap mutation.
+    /// Override this for Range<T> chromosomes to apply gaussian perturbation.
+    fn gaussian_mutate(&mut self, _sigma: f64) {
+        swap(self);
+    }
 }
 
 /// Applies the specified mutation operator to the given individual.
@@ -51,15 +69,41 @@ pub fn factory<U>(mutation: Mutation, individual: &mut U) -> Result<(), GaError>
 where
     U: ChromosomeT + ValueMutable + 'static,
 {
+    factory_with_params(mutation, individual, None, None)
+}
+
+/// Applies the specified mutation operator with optional parameters for Creep/Gaussian.
+///
+/// # Arguments
+///
+/// * `mutation` - The mutation variant to apply.
+/// * `individual` - Mutable reference to the chromosome to mutate.
+/// * `step` - Optional step size for Creep mutation.
+/// * `sigma` - Optional sigma for Gaussian mutation.
+pub fn factory_with_params<U>(
+    mutation: Mutation,
+    individual: &mut U,
+    step: Option<f64>,
+    sigma: Option<f64>,
+) -> Result<(), GaError>
+where
+    U: ChromosomeT + ValueMutable + 'static,
+{
     match mutation {
         Mutation::Swap => swap(individual),
         Mutation::Inversion => inversion(individual),
         Mutation::Scramble => scramble(individual),
         Mutation::Value => individual.value_mutate(),
         Mutation::BitFlip => {
-            // BitFlip is handled via the BitFlipMutable trait.
-            // The default implementation falls back to swap.
             individual.bit_flip_mutate();
+        }
+        Mutation::Creep => {
+            let s = step.unwrap_or(1.0);
+            individual.creep_mutate(s);
+        }
+        Mutation::Gaussian => {
+            let s = sigma.unwrap_or(1.0);
+            individual.gaussian_mutate(s);
         }
     }
     Ok(())
@@ -98,6 +142,16 @@ where
         Mutation::BitFlip => Err(GaError::MutationError(
             "Mutation::BitFlip requires a Binary chromosome type. \
                  Use Swap, Inversion, or Scramble instead."
+                .to_string(),
+        )),
+        Mutation::Creep => Err(GaError::MutationError(
+            "Mutation::Creep requires the chromosome type to implement ValueMutable. \
+                 Use Swap, Inversion, or Scramble instead, or implement ValueMutable for your type."
+                .to_string(),
+        )),
+        Mutation::Gaussian => Err(GaError::MutationError(
+            "Mutation::Gaussian requires the chromosome type to implement ValueMutable. \
+                 Use Swap, Inversion, or Scramble instead, or implement ValueMutable for your type."
                 .to_string(),
         )),
     }

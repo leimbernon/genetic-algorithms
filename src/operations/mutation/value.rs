@@ -52,12 +52,24 @@ impl ValueMutable for RangeChromosome<i32> {
     fn value_mutate(&mut self) {
         value_mutation(self);
     }
+    fn creep_mutate(&mut self, step: f64) {
+        super::creep::creep_mutation(self, step as i32);
+    }
+    fn gaussian_mutate(&mut self, sigma: f64) {
+        super::gaussian::gaussian_mutation(self, sigma);
+    }
 }
 
 /// Implement ValueMutable for Range<i64>
 impl ValueMutable for RangeChromosome<i64> {
     fn value_mutate(&mut self) {
         value_mutation(self);
+    }
+    fn creep_mutate(&mut self, step: f64) {
+        super::creep::creep_mutation(self, step as i64);
+    }
+    fn gaussian_mutate(&mut self, sigma: f64) {
+        super::gaussian::gaussian_mutation(self, sigma);
     }
 }
 
@@ -66,11 +78,23 @@ impl ValueMutable for RangeChromosome<f32> {
     fn value_mutate(&mut self) {
         value_mutation(self);
     }
+    fn creep_mutate(&mut self, step: f64) {
+        super::creep::creep_mutation(self, step as f32);
+    }
+    fn gaussian_mutate(&mut self, sigma: f64) {
+        super::gaussian::gaussian_mutation(self, sigma);
+    }
 }
 
 /// Implement ValueMutable for Range<f64>
 impl ValueMutable for RangeChromosome<f64> {
     fn value_mutate(&mut self) {
         value_mutation(self);
+    }
+    fn creep_mutate(&mut self, step: f64) {
+        super::creep::creep_mutation(self, step);
+    }
+    fn gaussian_mutate(&mut self, sigma: f64) {
+        super::gaussian::gaussian_mutation(self, sigma);
     }
 }
