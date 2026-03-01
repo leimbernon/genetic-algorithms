@@ -135,4 +135,8 @@ impl Binary {
     }
 }
 
-impl ValueMutable for Binary {}
+impl ValueMutable for Binary {
+    fn bit_flip_mutate(&mut self) {
+        crate::operations::mutation::bit_flip::bit_flip(self);
+    }
+}

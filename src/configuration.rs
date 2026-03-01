@@ -121,6 +121,9 @@ pub struct GaConfiguration {
     pub survivor: Survivor,
     pub log_level: LogLevel,
     pub save_progress_configuration: SaveProgressConfiguration,
+    /// Number of best individuals to preserve unchanged between generations (elitism).
+    /// Default is 0 (no elitism).
+    pub elitism_count: usize,
 }
 impl Default for GaConfiguration {
     fn default() -> Self {
@@ -144,6 +147,7 @@ impl Default for GaConfiguration {
             save_progress_configuration: SaveProgressConfiguration {
                 ..Default::default()
             },
+            elitism_count: 0,
         }
     }
 }
@@ -253,6 +257,11 @@ impl ConfigurationT for GaConfiguration {
     }
     fn with_save_progress_path(&mut self, save_progress_path: String) -> &mut Self {
         self.save_progress_configuration.save_progress_path = save_progress_path;
+        self
+    }
+
+    fn with_elitism(&mut self, elitism_count: usize) -> &mut Self {
+        self.elitism_count = elitism_count;
         self
     }
 }

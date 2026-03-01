@@ -15,6 +15,8 @@ pub enum Crossover {
     Cycle,
     MultiPoint,
     Uniform,
+    SinglePoint,
+    Order,
 }
 #[derive(Copy, Clone)]
 pub enum Mutation {
@@ -22,6 +24,7 @@ pub enum Mutation {
     Inversion,
     Scramble,
     Value,
+    BitFlip,
 }
 #[derive(Copy, Clone)]
 pub enum Survivor {
