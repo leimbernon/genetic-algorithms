@@ -1,9 +1,12 @@
 use crate::error::GaError;
 use crate::traits::ChromosomeT;
-use log::{trace, debug};
+use log::{debug, trace};
 
-pub fn multipoint<U: ChromosomeT>(parent_1: &U, parent_2: &U, crossover_number_of_points: &i32) -> Result<Vec<U>, GaError>{
-
+pub fn multipoint<U: ChromosomeT>(
+    parent_1: &U,
+    parent_2: &U,
+    crossover_number_of_points: &i32,
+) -> Result<Vec<U>, GaError> {
     //Before doing the operation, we check that the dna in parent 1 has the same length of the dna in parent 2
     if parent_1.get_dna().len() != parent_2.get_dna().len() {
         return Err(GaError::CrossoverError(format!(
@@ -19,7 +22,12 @@ pub fn multipoint<U: ChromosomeT>(parent_1: &U, parent_2: &U, crossover_number_o
     debug!(target="crossover_events", method="multipoint_crossover"; "Starting the  multipoint crossover");
 
     //We check if the number of points are higher than the dna, we take the dna lenght
-    let number_of_blocks = if (*crossover_number_of_points as usize) + 1 > parent_1.get_dna().len(){parent_1.get_dna().len()}else{(*crossover_number_of_points as usize) + 1};
+    let number_of_blocks = if (*crossover_number_of_points as usize) + 1 > parent_1.get_dna().len()
+    {
+        parent_1.get_dna().len()
+    } else {
+        (*crossover_number_of_points as usize) + 1
+    };
     trace!(target="crossover_events", method="multipoint_crossover"; "Number of blocks {}", number_of_blocks);
 
     //We get the number of genes per block
@@ -29,13 +37,12 @@ pub fn multipoint<U: ChromosomeT>(parent_1: &U, parent_2: &U, crossover_number_o
     trace!(target="crossover_events", method="multipoint_crossover"; "Number of genes per block {}", number_of_genes_per_block);
 
     //Here we set the genes to the children
-    for gn in 0..parent_1.get_dna().len(){
-        
+    for gn in 0..parent_1.get_dna().len() {
         //Sets the genes of the children
         if !crossed {
             dna_child_1.push(parent_1.get_dna().get(gn).cloned().unwrap());
             dna_child_2.push(parent_2.get_dna().get(gn).cloned().unwrap());
-        }else{
+        } else {
             dna_child_1.push(parent_2.get_dna().get(gn).cloned().unwrap());
             dna_child_2.push(parent_1.get_dna().get(gn).cloned().unwrap());
         }
@@ -44,7 +51,7 @@ pub fn multipoint<U: ChromosomeT>(parent_1: &U, parent_2: &U, crossover_number_o
         if gene_number >= number_of_genes_per_block - 1 {
             crossed = !crossed;
             gene_number = 0;
-        }else{
+        } else {
             gene_number += 1;
         }
     }

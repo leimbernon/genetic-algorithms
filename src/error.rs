@@ -34,4 +34,3 @@ impl fmt::Display for GaError {
 }
 
 impl std::error::Error for GaError {}
-

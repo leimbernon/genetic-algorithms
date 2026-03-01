@@ -1,13 +1,15 @@
-use criterion::{criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion, PlotConfiguration};
+use criterion::{
+    criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion, PlotConfiguration,
+};
 
 use genetic_algorithms::fitness::FitnessFnWrapper;
 use rand::Rng;
 use std::borrow::Cow;
 
-use genetic_algorithms::traits::{GeneT, ChromosomeT};
-use genetic_algorithms::operations::mutation::swap::swap;
 use genetic_algorithms::operations::mutation::inversion::inversion;
 use genetic_algorithms::operations::mutation::scramble::scramble;
+use genetic_algorithms::operations::mutation::swap::swap;
+use genetic_algorithms::traits::{ChromosomeT, GeneT};
 
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Gene {
@@ -75,7 +77,9 @@ fn setup_chromosome(gene_length: usize) -> SimpleChromosome {
     SimpleChromosome {
         fitness: rng.random_range(0.0..1.0),
         dna: (0..gene_length)
-            .map(|_| Gene { id: rng.random_range(0..255) })
+            .map(|_| Gene {
+                id: rng.random_range(0..255),
+            })
             .collect(),
         age: rng.random_range(0..100),
         fitness_fn: FitnessFnWrapper::default(),
@@ -98,7 +102,7 @@ fn benchmark_mutation_methods(c: &mut Criterion) {
             &chromosome,
             |b, chromosome| {
                 b.iter(|| {
-                    let _ = swap(&mut chromosome.clone());
+                    swap(&mut chromosome.clone());
                 });
             },
         );
@@ -109,24 +113,24 @@ fn benchmark_mutation_methods(c: &mut Criterion) {
             &chromosome,
             |b, chromosome| {
                 b.iter(|| {
-                    let _ = inversion(&mut chromosome.clone());
+                    inversion(&mut chromosome.clone());
                 });
             },
         );
 
-         // Benchmark for scramble mutation
-         group.bench_with_input(
-             BenchmarkId::new("scramble mutation", format!("genes_{}", gene_length)),
-             &chromosome,
-             |b, chromosome| {
+        // Benchmark for scramble mutation
+        group.bench_with_input(
+            BenchmarkId::new("scramble mutation", format!("genes_{}", gene_length)),
+            &chromosome,
+            |b, chromosome| {
                 b.iter(|| {
-                    let _ = scramble(&mut chromosome.clone());
+                    scramble(&mut chromosome.clone());
                 });
             },
         );
     }
-     group.finish();
-} 
+    group.finish();
+}
 
 // Grupo de benchmarks sin profiler externo (pprof removido por incompatibilidad de versiones)
 criterion_group! {

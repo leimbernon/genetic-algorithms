@@ -1,8 +1,8 @@
 use crate::error::GaError;
 use crate::fitness::FitnessFnWrapper;
+use crate::genotypes::Binary as BinaryGenotype;
 use crate::operations::mutation::ValueMutable;
 use crate::traits::ChromosomeT;
-use crate::genotypes::Binary as BinaryGenotype;
 use std::borrow::Cow;
 
 /// A chromosome that uses a binary genotype.
@@ -102,7 +102,7 @@ impl Binary {
     /// # Arguments
     ///
     /// * `s` - A string representation of the DNA, where '1' represents a true value
-    /// and '0' represents a false value.
+    ///   and '0' represents a false value.
     ///
     /// # Returns
     ///
@@ -113,12 +113,19 @@ impl Binary {
 
         for (index, char) in s.chars().enumerate() {
             match char {
-                '1' => dna.push(BinaryGenotype { id: index as i32, value: true }),
-                '0' => dna.push(BinaryGenotype { id: index as i32, value: false }),
+                '1' => dna.push(BinaryGenotype {
+                    id: index as i32,
+                    value: true,
+                }),
+                '0' => dna.push(BinaryGenotype {
+                    id: index as i32,
+                    value: false,
+                }),
                 _ => {
-                    return Err(GaError::ValidationError(
-                        format!("Invalid character '{}' at position {}; only '1' and '0' are allowed", char, index),
-                    ));
+                    return Err(GaError::ValidationError(format!(
+                        "Invalid character '{}' at position {}; only '1' and '0' are allowed",
+                        char, index
+                    )));
                 }
             }
         }

@@ -1,4 +1,4 @@
-mod operations{
+mod operations {
     mod test_crossover;
     mod test_crossover_uniform;
     mod test_mutation;

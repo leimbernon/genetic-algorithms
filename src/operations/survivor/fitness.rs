@@ -1,15 +1,25 @@
-pub(crate) use crate::{traits::ChromosomeT, configuration::{ProblemSolving, LimitConfiguration}};
-use log::{trace, debug};
+pub(crate) use crate::{
+    configuration::{LimitConfiguration, ProblemSolving},
+    traits::ChromosomeT,
+};
+use log::{debug, trace};
 
-pub fn fitness_based<U:ChromosomeT>(chromosomes: &mut Vec<U>, population_size: usize, limit_configuration: LimitConfiguration)
-{
+pub fn fitness_based<U: ChromosomeT>(
+    chromosomes: &mut Vec<U>,
+    population_size: usize,
+    limit_configuration: LimitConfiguration,
+) {
     debug!(target="survivor_events", method="fitness_based"; "Starting fitness based survivor method");
     if limit_configuration.problem_solving != ProblemSolving::FixedFitness {
         //We sort the chromosomes by their fitness if there is not a fixed fitness problem
         chromosomes.sort_by(|a, b| b.get_fitness().partial_cmp(&a.get_fitness()).unwrap());
-    }else{
+    } else {
         //We sort the chromosomes by their distance with the fitness target in a fixed fitness problem
-        chromosomes.sort_by(|a, b| b.get_fitness_distance(&limit_configuration.fitness_target.unwrap()).partial_cmp(&a.get_fitness_distance(&limit_configuration.fitness_target.unwrap())).unwrap());
+        chromosomes.sort_by(|a, b| {
+            b.get_fitness_distance(&limit_configuration.fitness_target.unwrap())
+                .partial_cmp(&a.get_fitness_distance(&limit_configuration.fitness_target.unwrap()))
+                .unwrap()
+        });
     }
 
     //If there is more chromosomes than the defined population number
@@ -22,17 +32,17 @@ pub fn fitness_based<U:ChromosomeT>(chromosomes: &mut Vec<U>, population_size: u
                 for _i in 0..chromosomes_to_remove {
                     chromosomes.remove(chromosomes.len() - 1);
                 }
-            },
+            }
             ProblemSolving::Minimization => {
                 for _i in 0..chromosomes_to_remove {
                     chromosomes.remove(0);
                 }
-            },
+            }
             ProblemSolving::FixedFitness => {
                 for _i in 0..chromosomes_to_remove {
                     chromosomes.remove(0);
                 }
-            },
+            }
         }
     }
 

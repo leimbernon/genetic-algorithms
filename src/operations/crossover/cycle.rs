@@ -1,6 +1,6 @@
 use crate::error::GaError;
 use crate::traits::{ChromosomeT, GeneT};
-use log::{trace, debug};
+use log::{debug, trace};
 use std::borrow::Cow;
 
 pub fn cycle<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
@@ -40,10 +40,18 @@ pub fn cycle<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaErr
 
             let next_gene_id = parent_2.get_dna()[idx].get_id();
             trace!(target="crossover_events", method="cycle_crossover"; "Next gene id {}", next_gene_id);
-            match parent_1.get_dna().iter().position(|gene| gene.get_id() == next_gene_id) {
+            match parent_1
+                .get_dna()
+                .iter()
+                .position(|gene| gene.get_id() == next_gene_id)
+            {
                 Some(pos) => idx = pos,
-                None => return Err(GaError::CrossoverError(format!(
-                    "Cycle crossover failed: gene id {} from parent 2 not found in parent 1", next_gene_id))),
+                None => {
+                    return Err(GaError::CrossoverError(format!(
+                        "Cycle crossover failed: gene id {} from parent 2 not found in parent 1",
+                        next_gene_id
+                    )))
+                }
             }
         }
     }

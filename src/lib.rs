@@ -66,14 +66,14 @@
 //! - Parallel evaluation leverages threads to scale fitness computation.
 extern crate core;
 
-pub mod operations;
-pub mod traits;
-pub mod population;
-pub mod ga;
-pub mod configuration;
-pub mod genotypes;
 pub mod chromosomes;
-pub mod fitness;
-pub mod initializers;
+pub mod configuration;
 pub mod error;
+pub mod fitness;
+pub mod ga;
+pub mod genotypes;
+pub mod initializers;
+pub mod operations;
+pub mod population;
+pub mod traits;
 mod validators;

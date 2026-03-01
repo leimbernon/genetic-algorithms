@@ -11,18 +11,17 @@ use std::borrow::Cow;
 /// - `set_dna(Cow<[Gene]>)` enables zero-copy moves when the caller owns the DNA,
 ///   and minimal-copy behavior when passing a borrowed slice.
 /// - Prefer editing DNA in-place when possible, or using `set_gene` for single-gene changes.
-pub trait ChromosomeT: Clone + Default + Send + Sync + 'static{
-
+pub trait ChromosomeT: Clone + Default + Send + Sync + 'static {
     /// Gene type used by this chromosome.
     type Gene: GeneT;
 
     /// Constructs a new chromosome using `Default`.
-    fn new() -> Self{
+    fn new() -> Self {
         Default::default()
     }
 
     /// Resets common chromosome state (fitness, age, DNA).
-    fn default(mut self) -> Self{
+    fn default(mut self) -> Self {
         self.set_fitness(0.0);
         self.set_age(0);
         self.set_dna(Cow::Borrowed(&[]));
@@ -30,7 +29,7 @@ pub trait ChromosomeT: Clone + Default + Send + Sync + 'static{
     }
 
     /// Creates a new default-initialized gene for this chromosome.
-    fn new_gene() -> Self::Gene{
+    fn new_gene() -> Self::Gene {
         Self::Gene::new()
     }
 
@@ -53,7 +52,7 @@ pub trait ChromosomeT: Clone + Default + Send + Sync + 'static{
     /// Implementation detail:
     /// - Builds a temporary owned `Vec<Gene>` from the current DNA and moves it back using `Cow::Owned`.
     /// - Implementors may override this with a more efficient in-place edit if their storage allows.
-    fn set_gene(&mut self, gene_index: usize, gene: Self::Gene)->&mut Self{
+    fn set_gene(&mut self, gene_index: usize, gene: Self::Gene) -> &mut Self {
         let mut dna_temp = self.get_dna().to_vec();
         dna_temp[gene_index] = gene;
         // Move the vector to avoid an extra clone
@@ -73,10 +72,10 @@ pub trait ChromosomeT: Clone + Default + Send + Sync + 'static{
     fn get_fitness(&self) -> f64;
 
     /// Sets the fitness value. Useful for caching or test scaffolding.
-    fn set_fitness(&mut self, fitness: f64)->&mut Self;
+    fn set_fitness(&mut self, fitness: f64) -> &mut Self;
 
     /// Sets the age (usually, generation count since creation).
-    fn set_age(&mut self, age: i32)->&mut Self;
+    fn set_age(&mut self, age: i32) -> &mut Self;
 
     /// Returns the age.
     fn get_age(&self) -> i32;

@@ -1,14 +1,16 @@
-use criterion::{criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion, PlotConfiguration};
+use criterion::{
+    criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion, PlotConfiguration,
+};
 
 use genetic_algorithms::fitness::FitnessFnWrapper;
 use rand::seq::SliceRandom;
 use rand::Rng;
 use std::borrow::Cow;
 
+use genetic_algorithms::operations::crossover::cycle;
 use genetic_algorithms::operations::crossover::multipoint;
 use genetic_algorithms::operations::crossover::uniform;
-use genetic_algorithms::operations::crossover::cycle;
-use genetic_algorithms::traits::{GeneT, ChromosomeT};
+use genetic_algorithms::traits::{ChromosomeT, GeneT};
 
 #[derive(Debug, Copy, Clone, Default, PartialEq)]
 pub struct Gene {
@@ -76,7 +78,9 @@ fn setup_population(population_size: usize, gene_length: usize) -> Vec<SimpleChr
 
     // Generate a single set of genes for all chromosomes
     let base_genes: Vec<Gene> = (0..gene_length)
-        .map(|_| Gene { id: rng.random_range(0..255) })
+        .map(|_| Gene {
+            id: rng.random_range(0..255),
+        })
         .collect();
 
     (0..population_size)
@@ -123,7 +127,10 @@ fn benchmark_crossover_methods(c: &mut Criterion) {
         // Benchmark for multipoint crossover
         for &points in &crossover_points {
             group.bench_with_input(
-                BenchmarkId::new("multipoint crossover", format!("genes_{}_points_{}", gene_length, points)),
+                BenchmarkId::new(
+                    "multipoint crossover",
+                    format!("genes_{}_points_{}", gene_length, points),
+                ),
                 &chromosomes,
                 |b, chromosomes| {
                     let parent_1 = &chromosomes[0];

@@ -1,13 +1,13 @@
-use crate::error::GaError;
-use crate::traits::ChromosomeT;
-pub use self::swap::swap;
 pub use self::inversion::inversion;
 pub use self::scramble::scramble;
+pub use self::swap::swap;
 use super::Mutation;
+use crate::error::GaError;
+use crate::traits::ChromosomeT;
 
-pub mod swap;
 pub mod inversion;
 pub mod scramble;
+pub mod swap;
 pub mod value;
 
 /// Trait for chromosomes that support value mutation.
@@ -43,10 +43,10 @@ where
     U: ChromosomeT + ValueMutable + 'static,
 {
     match mutation {
-        Mutation::Swap => { swap(individual) },
-        Mutation::Inversion => { inversion(individual) },
-        Mutation::Scramble => { scramble(individual) },
-        Mutation::Value => { individual.value_mutate() },
+        Mutation::Swap => swap(individual),
+        Mutation::Inversion => inversion(individual),
+        Mutation::Scramble => scramble(individual),
+        Mutation::Value => individual.value_mutate(),
     }
     Ok(())
 }
@@ -90,7 +90,13 @@ where
 /// # Returns
 ///
 /// The adapted mutation probability.
-pub fn aga_probability<U: ChromosomeT>(parent_1: &U, parent_2: &U, f_avg: f64, probability_max: f64, probability_min: f64) -> f64 {
+pub fn aga_probability<U: ChromosomeT>(
+    parent_1: &U,
+    parent_2: &U,
+    f_avg: f64,
+    probability_max: f64,
+    probability_min: f64,
+) -> f64 {
     let larger_f = if parent_1.get_fitness() > parent_2.get_fitness() {
         parent_1.get_fitness()
     } else {
@@ -102,5 +108,4 @@ pub fn aga_probability<U: ChromosomeT>(parent_1: &U, parent_2: &U, f_avg: f64, p
     } else {
         probability_max
     }
-
 }

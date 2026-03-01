@@ -30,17 +30,29 @@ fn value_mutation_keeps_value_within_range_and_can_change() {
         // Check all genes stay within declared ranges
         for (gene_idx, gene) in after.iter().enumerate() {
             let (lo, hi) = after[gene_idx].ranges[0];
-            assert!(gene.value >= lo && gene.value <= hi, "Gene {} value out of range: {}", gene_idx, gene.value);
+            assert!(
+                gene.value >= lo && gene.value <= hi,
+                "Gene {} value out of range: {}",
+                gene_idx,
+                gene.value
+            );
         }
 
         // Detect if any gene changed its value
-        if before.iter().zip(after.iter()).any(|(b, a)| b.value != a.value) {
+        if before
+            .iter()
+            .zip(after.iter())
+            .any(|(b, a)| b.value != a.value)
+        {
             changed = true;
             break;
         }
     }
 
-    assert!(changed, "Value mutation did not change any gene value across attempts; randomness too unlucky?");
+    assert!(
+        changed,
+        "Value mutation did not change any gene value across attempts; randomness too unlucky?"
+    );
 }
 
 #[test]
@@ -53,6 +65,14 @@ fn value_mutation_changes_at_most_one_gene() {
     let after = c.get_dna();
 
     // Count genes that differ by value
-    let diff_count = before.iter().zip(after.iter()).filter(|(b, a)| b.value != a.value).count();
-    assert!(diff_count <= 1, "More than one gene changed value: {}", diff_count);
+    let diff_count = before
+        .iter()
+        .zip(after.iter())
+        .filter(|(b, a)| b.value != a.value)
+        .count();
+    assert!(
+        diff_count <= 1,
+        "More than one gene changed value: {}",
+        diff_count
+    );
 }

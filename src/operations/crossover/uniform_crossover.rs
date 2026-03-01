@@ -1,11 +1,10 @@
-use rand::Rng;
 use crate::error::GaError;
 use crate::traits::ChromosomeT;
-use log::{trace, debug};
+use log::{debug, trace};
+use rand::Rng;
 use std::borrow::Cow;
 
-pub fn uniform<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError>{
-
+pub fn uniform<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
     //Before doing the operation, we check that the dna in the parent 1 has the same length of the dna in the parent 2
     if parent_1.get_dna().len() != parent_2.get_dna().len() {
         return Err(GaError::CrossoverError(format!(
@@ -28,10 +27,10 @@ pub fn uniform<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaE
         let crossover = rng.random_range(0..2);
         trace!(target="crossover_events", method="uniform"; "Random crossover number {}", crossover);
 
-        if crossover == 0{
+        if crossover == 0 {
             dna_child_1.push(parent_1.get_dna().get(i).cloned().unwrap());
             dna_child_2.push(parent_2.get_dna().get(i).cloned().unwrap());
-        }else{
+        } else {
             dna_child_1.push(parent_2.get_dna().get(i).cloned().unwrap());
             dna_child_2.push(parent_1.get_dna().get(i).cloned().unwrap());
         }

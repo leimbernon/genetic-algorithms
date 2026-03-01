@@ -1,6 +1,6 @@
-pub mod selection;
 pub mod crossover;
 pub mod mutation;
+pub mod selection;
 pub mod survivor;
 
 #[derive(Copy, Clone)]
@@ -8,7 +8,7 @@ pub enum Selection {
     Random,
     RouletteWheel,
     StochasticUniversalSampling,
-    Tournament
+    Tournament,
 }
 #[derive(Copy, Clone, PartialEq)]
 pub enum Crossover {

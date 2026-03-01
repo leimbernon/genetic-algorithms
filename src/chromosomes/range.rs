@@ -1,8 +1,8 @@
-use std::fmt::Debug;
-use std::borrow::Cow;
 use crate::fitness::FitnessFnWrapper;
 use crate::genotypes::Range as RangeGenotype;
 use crate::traits::ChromosomeT;
+use std::borrow::Cow;
+use std::fmt::Debug;
 
 /// A chromosome that uses a range genotype.
 ///

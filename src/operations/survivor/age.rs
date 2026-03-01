@@ -1,9 +1,7 @@
 pub(crate) use crate::traits::ChromosomeT;
-use log::{trace, debug};
+use log::{debug, trace};
 
-pub fn age_based<U:ChromosomeT>(chromosomes: &mut Vec<U>, population_size: usize)
-{
-
+pub fn age_based<U: ChromosomeT>(chromosomes: &mut Vec<U>, population_size: usize) {
     //We first sort the chromosomes by their fitness
     debug!(target="survivor_events", method="age_based"; "Starting age based survivor method");
     chromosomes.sort_by_key(|a| std::cmp::Reverse(a.get_age()));
