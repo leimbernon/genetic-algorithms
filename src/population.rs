@@ -1,7 +1,4 @@
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
-use std::sync::mpsc::sync_channel;
-use std::thread;
+use rayon::prelude::*;
 use log::{debug, trace};
 use crate::configuration::ProblemSolving;
 use crate::traits::ChromosomeT;
@@ -74,68 +71,25 @@ where
 
     /// Computes fitness for all chromosomes in parallel and updates the best chromosome.
     ///
-    /// Behavior:
-    /// - Spawns up to `number_of_threads` workers to compute fitness in batches.
-    /// - If a chromosome already has non-zero fitness, it's reused to avoid recomputation.
-    /// - Updates `best_chromosome` as results arrive.
-    pub fn fitness_calculation(&mut self, number_of_threads: i32, problem_solving: ProblemSolving)
+    /// Uses rayon's parallel iterators for efficient work distribution.
+    /// If a chromosome already has non-zero fitness, it is reused.
+    pub fn fitness_calculation(&mut self, _number_of_threads: i32, problem_solving: ProblemSolving)
     {
         debug!(target="population_events", method="fitness_calculation"; "Started the population fitness calculation");
-        let (tx, rx) = sync_channel(number_of_threads as usize);
 
-        // Division of the chromosomes in different threads
-        let number_of_threads = if number_of_threads > self.chromosomes.len() as i32 {self.chromosomes.len() as i32} else {number_of_threads};
-
-        // Setting the starting point and the jump
-        let mut start_index = 0;
-        let mut jump = self.chromosomes.len() as i32 / number_of_threads;
-
-        // Cloning the chromosomes for multithreading
-        let chromosomes_t = Vec::from_iter(self.chromosomes[..].iter().cloned());
-        let chromosomes_t = Arc::new(Mutex::new(chromosomes_t));
-
-        // Walking through the threads
-        for _ in 0..number_of_threads {
-
-            // We calculate the next jump
-            if jump > self.chromosomes.len() as i32 - (start_index + jump) {
-                jump += self.chromosomes.len() as i32 - (start_index + jump);
+        // Calculate fitness in parallel for chromosomes with fitness == 0.0
+        self.chromosomes.par_iter_mut().for_each(|chromosome| {
+            if chromosome.get_fitness() == 0.0 {
+                chromosome.calculate_fitness();
             }
+        });
 
-            // Cloning the information from the main thread
-            let (start_index_t, tx, jump_t, chromosomes_t) = (start_index, tx.clone(), jump, Arc::clone(&chromosomes_t));
-
-            // Starting the thread management
-            thread::spawn(move || {
-
-                let mut fitness_map = HashMap::new();
-
-                // Calculates the fitness from the corresponding population
-                for i in start_index_t..(start_index_t + jump_t){
-
-                    // If the fitness is 0.0 (maybe it has not been already calculated)
-                    if chromosomes_t.lock().unwrap()[i as usize].get_fitness() == 0.0 {
-                        chromosomes_t.lock().unwrap()[i as usize].calculate_fitness();
-                    }
-                    fitness_map.insert(i as usize, chromosomes_t.lock().unwrap()[i as usize].get_fitness());
-                }
-
-                // Sending the result
-                tx.send(fitness_map).unwrap();
-            });
-
-            start_index += jump;
+        // Update best chromosome sequentially (needs &mut self)
+        for i in 0..self.chromosomes.len() {
+            let chromosome = self.chromosomes[i].clone();
+            self.decide_best_chromosome(&chromosome, problem_solving);
         }
 
-        drop(tx);
-
-        // We receive from the threads and set the fitness in chromosomes
-        for received in rx {
-            for element in received{
-                self.chromosomes[element.0].set_fitness(element.1);
-                self.decide_best_chromosome(&self.chromosomes[element.0].clone(), problem_solving);
-            }
-        }
         debug!(target="ga_events", method="population_fitness_calculation"; "Population fitness calculation finished");
     }
 

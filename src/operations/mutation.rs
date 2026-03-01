@@ -3,28 +3,35 @@ pub use self::swap::swap;
 pub use self::inversion::inversion;
 pub use self::scramble::scramble;
 use super::Mutation;
-use std::any::Any;
 
 pub mod swap;
 pub mod inversion;
 pub mod scramble;
 pub mod value;
 
-pub fn factory<U>(mutation: Mutation ,individual: &mut U)
+/// Trait for chromosomes that support value mutation.
+///
+/// Implementing this trait allows a chromosome to be used with `Mutation::Value`.
+/// It is automatically implemented for `Range<T>` chromosomes where T supports
+/// the necessary numeric operations.
+pub trait ValueMutable {
+    fn value_mutate(&mut self);
+}
+
+pub fn factory<U>(mutation: Mutation, individual: &mut U)
 where
 U: ChromosomeT + 'static
 {
     match mutation {
-        // For Range<i32> chromosomes, replace Swap with an in-range value mutation.
-        Mutation::Swap => {
-            if let Some(ind) = (individual as &mut dyn Any).downcast_mut::<crate::chromosomes::Range<i32>>() {
-                value::value_mutation(ind);
-            } else {
-                swap(individual)
-            }
+        Mutation::Swap => { swap(individual) },
+        Mutation::Inversion => { inversion(individual) },
+        Mutation::Scramble => { scramble(individual) },
+        Mutation::Value => {
+            // Value mutation requires ValueMutable trait — handled at compile time
+            // by the caller. If a type doesn't support value mutation, Swap is used
+            // as a fallback. This is dispatched via value::try_value_mutation.
+            value::try_value_mutation(individual);
         },
-        Mutation::Inversion => {inversion(individual)},
-        Mutation::Scramble => {scramble(individual)},
     }
 }
 

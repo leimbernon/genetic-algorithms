@@ -1,5 +1,3 @@
-pub(crate) use std::collections::HashMap;
-
 use crate::configuration::SelectionConfiguration;
 use crate::traits::ChromosomeT;
 
@@ -14,7 +12,7 @@ pub mod random;
 pub mod fitness_proportionate;
 pub mod tournament;
 
-pub fn factory<U>(chromosomes: &Vec<U>, configuration: SelectionConfiguration, number_of_threads: i32) -> HashMap<usize, usize>
+pub fn factory<U>(chromosomes: &Vec<U>, configuration: SelectionConfiguration, number_of_threads: i32) -> Vec<(usize, usize)>
 where
 U: ChromosomeT + Sync + Send + 'static + Clone
 {

@@ -1,4 +1,5 @@
-use std::{sync::{mpsc::sync_channel, Mutex, Arc}, thread, collections::HashMap};
+use std::sync::Arc;
+use rayon::prelude::*;
 use rand::Rng;
 use log::{trace, debug, info};
 use std::env;
@@ -6,6 +7,7 @@ use std::fmt::Debug;
 use std::borrow::Cow;
 use crate::{configuration::{LimitConfiguration, LogLevel, ProblemSolving}, operations::{crossover, mutation, selection, survivor}, population::Population, traits::{ChromosomeT, ConfigurationT}};
 use crate::configuration::GaConfiguration;
+use crate::error::GaError;
 use crate::validators::validator_factory as ValidatorFactory;
 
 /// Indicates why a GA run terminated.
@@ -239,97 +241,59 @@ where
     /// - Validates configuration and alleles before starting.
     /// - Spawns threads to create and evaluate chromosomes in parallel.
     /// - Sets the internal `population` with the collected chromosomes.
-    pub fn initialization(&mut self) -> &mut Self
+    pub fn initialization(&mut self) -> Result<&mut Self, GaError>
     where U:ChromosomeT + Send + Sync + 'static + Clone
     {
 
         // Before starting initialization, we should verify that initializer is set
         if self.initialization_fn.is_none(){
-            panic!("No initialization function set");
+            return Err(GaError::InitializationError("No initialization function set".to_string()));
         }
 
         //Before starting the run, we will check the conditions
-        ValidatorFactory::validate::<U>(Some(&self.configuration), None, Some(&self.alleles));
-
+        ValidatorFactory::validate::<U>(Some(&self.configuration), None, Some(&self.alleles))?;
 
         info!("Initialization started");
-        let (tx, rx) = sync_channel(self.configuration.number_of_threads as usize);
 
-        //Setting the number of chromosomes per thread
-        let chromosomes_per_thread = self.configuration.limit_configuration.population_size / self.configuration.number_of_threads;
+        let population_size = self.configuration.limit_configuration.population_size;
+        let genes_per_chromosome = self.configuration.limit_configuration.genes_per_chromosome;
+        let needs_unique_ids = self.configuration.limit_configuration.needs_unique_ids;
+        let initialization_fn = self.initialization_fn.clone().unwrap();
+        let fitness_fn = self.fitness_fn.clone().unwrap();
+        let alleles = self.alleles.clone();
 
-        //Cloning the chromosomes and fitness function for multithreading
-        let alleles_t = Arc::new(Mutex::new(self.alleles.clone()));
+        // Use rayon to initialize chromosomes in parallel
+        let chromosomes: Vec<U> = (0..population_size)
+            .into_par_iter()
+            .map(|_| {
+                let mut chromosome = U::new();
 
-        //Walking through the threads
-        for _ in 0..self.configuration.number_of_threads {
+                // Gets the dna randomly
+                let dna_chromosome = (initialization_fn)(genes_per_chromosome, Some(&alleles), Some(needs_unique_ids));
+                chromosome.set_dna(Cow::Owned(dna_chromosome));
 
-            //Cloning the information from the main thread
-            let (tx,
-            alleles_t,
-            genes_per_chromosome_t,
-            chromosomes_per_thread_t,
-            needs_unique_ids_t,
-            initialization_fn_t,
-            fitness_fn_t) = (tx.clone(), Arc::clone(&alleles_t),
-                             self.configuration.limit_configuration.genes_per_chromosome,
-                             chromosomes_per_thread,
-                             self.configuration.limit_configuration.needs_unique_ids,
-                             self.initialization_fn.clone().unwrap(),
-                             self.fitness_fn.clone().unwrap());
+                // Wrap the fitness function in a closure
+                let fitness_fn_clone = fitness_fn.clone();
+                let fitness_closure = move |genes: &[U::Gene]| (fitness_fn_clone)(genes);
 
-            //Starting the thread management
-            thread::spawn(move || {
+                // Sets the dna of the chromosome, the age, sets the fitness fn and calculates fitness
+                chromosome.set_age(0);
+                chromosome.set_fitness_fn(fitness_closure);
+                chromosome.calculate_fitness();
 
-                let mut chromosomes = Vec::new();
-
-                for _ in 0..chromosomes_per_thread_t {
-
-                    let mut chromosome = U::new();
-
-                    //Gets the dna randomly
-                    let dna_chromosome = (initialization_fn_t)(genes_per_chromosome_t, Some(&alleles_t.lock().unwrap()), Some(needs_unique_ids_t));
-                    chromosome.set_dna(Cow::Owned(dna_chromosome));
-
-
-                    // Wrap the fitness function in a closure
-                    let fitness_fn = {
-                        let fitness_fn_t = fitness_fn_t.clone();
-                        move |genes: &[U::Gene]| (fitness_fn_t)(genes)
-                    };
-
-                    //Sets the dna of the chromosome, the age, sets the fitness fn and calculates fitness
-                    chromosome.set_age(0);
-                    chromosome.set_fitness_fn(fitness_fn);
-                    chromosome.calculate_fitness();
-
-                    //Adds the chromosome in the vector
-                    chromosomes.push(chromosome);
-
-                }
-
-                //we send the chromosomes randomly initialized
-                tx.send(chromosomes).unwrap();
-            });
-        }
-
-        drop(tx);
-
-        // We receive from the threads and add them into chromosomes
-        let mut chromosomes = Vec::new();
-        for mut received in rx {
-            chromosomes.append(&mut received);
-        }
+                chromosome
+            })
+            .collect();
 
         self.with_population(Population::new(chromosomes));
-        self
+        Ok(self)
 
     }
 
     /// Runs the GA without callbacks and returns a reference to the final population.
     ///
     /// Equivalent to `run_with_callback(None, 0)`.
-    pub fn run(&mut self)->&Population<U>{
+    pub fn run(&mut self)->Result<&Population<U>, GaError>{
         self.run_with_callback(None::<fn(&i32, &Population<U>, &TerminationCause)>, 0)
     }
 
@@ -340,19 +304,19 @@ where
     /// 4) Survivor selection to prune population, 5) Best chromosome update, 6) Stop check.
     ///
     /// Logging is controlled by configuration log level; adaptive GA updates use f_avg and f_max.
-    pub fn run_with_callback<F>(&mut self, callback: Option<F>, generations_to_callback: i32)->&Population<U>
+    pub fn run_with_callback<F>(&mut self, callback: Option<F>, generations_to_callback: i32)->Result<&Population<U>, GaError>
     where 
         U:ChromosomeT + Send + Sync + 'static + Clone,
         F: Fn(&i32, &Population<U>, &TerminationCause)
     {
         //Before starting the run, we will check the conditions
-        ValidatorFactory::validate::<U>(Some(&self.configuration), None, Some(&self.alleles));
+        ValidatorFactory::validate::<U>(Some(&self.configuration), None, Some(&self.alleles))?;
 
         //If we want to initialize the population randomly
         if self.population.size() == 0 && self.initialization_fn.is_some() {
-            self.initialization();
+            self.initialization()?;
         } else if self.population.size() == 0 && self.initialization_fn.is_none() {
-            panic!("No initialization function set");
+            return Err(GaError::InitializationError("No initialization function set".to_string()));
         }
 
         //We set the environment variable from the configuration value
@@ -390,11 +354,11 @@ where
             age += 1;
 
             //1- Parent selection for reproduction
-            let mut parents = selection::factory(&self.population.chromosomes, self.configuration.selection_configuration, self.configuration.number_of_threads);
+            let parents = selection::factory(&self.population.chromosomes, self.configuration.selection_configuration, self.configuration.number_of_threads);
             debug!(target="ga_events", method="run"; "Parents selected for reproduction");
 
             //2- Getting the offspring
-            let mut offspring = parent_crossover(&mut parents, &self.population.chromosomes, &self.configuration, age, self.population.f_max, self.population.f_avg);
+            let mut offspring = parent_crossover(&parents, &self.population.chromosomes, &self.configuration, age, self.population.f_max, self.population.f_avg);
             debug!(target="ga_events", method="run"; "Offspring created");
 
             //3- Insert the children in the population
@@ -443,7 +407,7 @@ where
             }
         }
 
-        &self.population
+        Ok(&self.population)
     }
 }
 
@@ -490,18 +454,11 @@ U:ChromosomeT
 /// - Splits work among threads considering available parent pairs.
 /// - Computes adaptive probabilities when enabled; otherwise uses static ones.
 /// - Produces children, mutates them, computes their fitness, and returns the offspring.
-fn parent_crossover<U>(parents: &mut HashMap<usize, usize>, chromosomes: &Vec<U>, configuration: &GaConfiguration, age: i32, f_max: f64, f_avg: f64) -> Vec<U>
-where 
+fn parent_crossover<U>(parents: &[(usize, usize)], chromosomes: &Vec<U>, configuration: &GaConfiguration, age: i32, f_max: f64, f_avg: f64) -> Vec<U>
+where
 U:ChromosomeT + Send + Sync + 'static + Clone
 {
-    //Setting the control variables
     debug!(target="ga_events", method="parent_crossover"; "Started the parent crossover");
-    let number_of_threads = if configuration.number_of_threads < parents.len() as i32 {parents.len() as i32}
-        else if configuration.number_of_threads > 0 {configuration.number_of_threads} else {1};
-    let jump = parents.len() / number_of_threads as usize;
-
-    let mut handles = Vec::new();
-    let offspring = Arc::new(Mutex::new(Vec::new()));
 
     /*
         Gets the static crossover probability config and the static mutation probability config
@@ -513,7 +470,7 @@ U:ChromosomeT + Send + Sync + 'static + Clone
             }else if !configuration.adaptive_ga{
                 Some(configuration.crossover_configuration.probability_max.unwrap())
             }else{
-                    None
+                None
             };
 
     let mutation_probability_config =
@@ -525,107 +482,70 @@ U:ChromosomeT + Send + Sync + 'static + Clone
                 None
             };
 
-    //Run all the threads
-    for t in 0..number_of_threads{
-
-        //We copy the parents that we want to crossover inside the thread
-        let (chromosomes, configuration, offspring, crossover_probability_config, mutation_probability_config) = (chromosomes.clone(), configuration.clone(), Arc::clone(&offspring), crossover_probability_config, mutation_probability_config);
-        let mut parents_t = HashMap::new();
-        let parents_c = parents.clone();
-
-        for (index, i) in parents_c.keys().enumerate(){
-
-            //If we reach the number of crossovers / thread
-            if t < number_of_threads - 1 && index >= jump {
-                break;
-            }
-
-            let key = *parents.get_key_value(i).unwrap().0;
-            parents_t.insert(key, *parents.get_key_value(i).unwrap().1);
-            parents.remove(&key);
-        }
-
-        //Starts the thread
-        let handle = thread::spawn(move || {
-
-            //Getting random numbers in this thread
+    // Use rayon to process parent pairs in parallel
+    let offspring: Vec<U> = parents
+        .par_iter()
+        .flat_map(|(key, value)| {
             let mut rng = rand::rng();
 
-            for(key, value) in parents_t.iter(){
-                //Getting the parent 1 and 2 for crossover                
-                let parent_1 = chromosomes.get(*key).unwrap().clone();
-                let parent_2 = chromosomes.get(*value).unwrap().clone();
+            // Getting the parent 1 and 2 for crossover
+            let parent_1 = chromosomes.get(*key).unwrap().clone();
+            let parent_2 = chromosomes.get(*value).unwrap().clone();
 
-                //Making the crossover of the parents when the random number is below or equal to the given probability
-                let crossover_probability = rng.random_range(0.0..1.0);
-                let crossover_probability_config = 
-                    if crossover_probability_config.is_some(){
-                        crossover_probability_config.unwrap()
-                    }else{
-                        crossover::aga_probability(&parent_1, &parent_2, f_max, f_avg, configuration.crossover_configuration.probability_max.unwrap(), configuration.crossover_configuration.probability_min.unwrap())
-                    };
-                
+            // Making the crossover of the parents when the random number is below or equal to the given probability
+            let crossover_probability = rng.random_range(0.0..1.0);
+            let effective_crossover_prob = 
+                if let Some(p) = crossover_probability_config {
+                    p
+                } else {
+                    crossover::aga_probability(&parent_1, &parent_2, f_max, f_avg, configuration.crossover_configuration.probability_max.unwrap(), configuration.crossover_configuration.probability_min.unwrap())
+                };
 
-                //Making the mutation of each child when the random number is below or equal the given probability
-                let mut mutation_probability = rng.random_range(0.0..1.0);
-                let mutation_probability_config = 
-                    if mutation_probability_config.is_some(){
-                        mutation_probability_config.unwrap()
-                    }else{
-                        mutation::aga_probability(&parent_1, &parent_2, f_avg, configuration.mutation_configuration.probability_max.unwrap(), configuration.mutation_configuration.probability_min.unwrap())
-                    };
+            // Making the mutation of each child when the random number is below or equal the given probability
+            let mut mutation_probability = rng.random_range(0.0..1.0);
+            let effective_mutation_prob = 
+                if let Some(p) = mutation_probability_config {
+                    p
+                } else {
+                    mutation::aga_probability(&parent_1, &parent_2, f_avg, configuration.mutation_configuration.probability_max.unwrap(), configuration.mutation_configuration.probability_min.unwrap())
+                };
 
-                debug!(target="ga_events", method="parent_crossover"; "Started the parent crossover");
+            debug!(target="ga_events", method="parent_crossover"; "Processing parent pair");
 
-                let mut child_1: U;
-                let mut child_2: U;
-                let mut offspring_t: Vec<U> = vec![];
+            let mut child_1: U;
+            let mut child_2: U;
 
-                if crossover_probability <= crossover_probability_config {
-                    offspring_t = crossover::factory(&parent_1, &parent_2, configuration.crossover_configuration).unwrap();
-                    child_1 = offspring_t.pop().unwrap();
-                    child_2 = offspring_t.pop().unwrap();
-                }else{
-                    child_1 = parent_1;
-                    child_2 = parent_2;
-                }
-                
-                if configuration.mutation_configuration.probability_max.is_none(){1.0}else{configuration.mutation_configuration.probability_max.unwrap()};
-                debug!(target="ga_events", method="parent_crossover"; "mutation_probability_config {} - mutation probability {}", mutation_probability_config, mutation_probability);
-
-                if mutation_probability < mutation_probability_config {
-                    mutation::factory(configuration.mutation_configuration.method, &mut child_1);
-                }
-
-                mutation_probability = rng.random_range(0.0..1.0);
-                if mutation_probability <= mutation_probability_config {
-                    mutation::factory(configuration.mutation_configuration.method, &mut child_2);
-                }
-
-                //Calculate the fitness of both children and set their age
-                child_1.calculate_fitness();
-                child_2.calculate_fitness();
-
-                child_1.set_age(age);
-                child_2.set_age(age);
-
-                //Adds the children in the offspring
-                offspring_t.push(child_1);
-                offspring_t.push(child_2);
-                
-                //Then sets the offspring in the result vector
-                offspring.lock().unwrap().append(&mut offspring_t);
+            if crossover_probability <= effective_crossover_prob {
+                let mut children = crossover::factory(&parent_1, &parent_2, configuration.crossover_configuration).unwrap();
+                child_2 = children.pop().unwrap();
+                child_1 = children.pop().unwrap();
+            } else {
+                child_1 = parent_1;
+                child_2 = parent_2;
             }
-            
-        });
-        handles.push(handle);
-    }
 
-    //Joining all the threads
-    for handle in handles{
-        handle.join().unwrap();
-    }
+            debug!(target="ga_events", method="parent_crossover"; "mutation_probability_config {} - mutation probability {}", effective_mutation_prob, mutation_probability);
+
+            if mutation_probability < effective_mutation_prob {
+                mutation::factory(configuration.mutation_configuration.method, &mut child_1);
+            }
+
+            mutation_probability = rng.random_range(0.0..1.0);
+            if mutation_probability <= effective_mutation_prob {
+                mutation::factory(configuration.mutation_configuration.method, &mut child_2);
+            }
+
+            // Calculate the fitness of both children and set their age
+            child_1.calculate_fitness();
+            child_2.calculate_fitness();
+
+            child_1.set_age(age);
+            child_2.set_age(age);
+
+            vec![child_1, child_2]
+        })
+        .collect();
 
     debug!(target="ga_events", method="parent_crossover"; "Parent crossover finished");
-    return offspring.lock().unwrap().to_vec();
+    offspring
 }

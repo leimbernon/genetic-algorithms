@@ -21,6 +21,7 @@ pub enum Mutation {
     Swap,
     Inversion,
     Scramble,
+    Value,
 }
 #[derive(Copy, Clone)]
 pub enum Survivor {

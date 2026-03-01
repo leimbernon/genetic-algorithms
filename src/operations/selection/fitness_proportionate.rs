@@ -1,11 +1,10 @@
 use crate::traits::ChromosomeT;
-use std::collections::HashMap;
 use rand::Rng;
 use log::{trace, debug};
 
-pub fn roulette_wheel_selection<U:ChromosomeT>(chromosomes: &Vec<U>) -> HashMap<usize, usize>{
+pub fn roulette_wheel_selection<U:ChromosomeT>(chromosomes: &Vec<U>) -> Vec<(usize, usize)>{
 
-    let mut mating = HashMap::new();
+    let mut mating = Vec::new();
 
     //1- Calculate the sum of all fitnesses
     debug!(target="selection_events", method="roulette_wheel_selection"; "Starting the roulette wheel selection");
@@ -27,7 +26,7 @@ pub fn roulette_wheel_selection<U:ChromosomeT>(chromosomes: &Vec<U>) -> HashMap<
                 parent_1 = Some(index);
             }else{
                 //If parent 1 is set, we set the mating
-                mating.insert(parent_1.unwrap(), index);
+                mating.push((parent_1.unwrap(), index));
                 parent_1 = None;
             }
 
@@ -39,10 +38,10 @@ pub fn roulette_wheel_selection<U:ChromosomeT>(chromosomes: &Vec<U>) -> HashMap<
 }
 
 
-pub fn stochastic_universal_sampling<U:ChromosomeT>(chromosomes: &Vec<U>, couples: i32) -> HashMap<usize, usize>{
+pub fn stochastic_universal_sampling<U:ChromosomeT>(chromosomes: &Vec<U>, couples: i32) -> Vec<(usize, usize)>{
     
     debug!(target="selection_events", method="stochastic_universal_sampling"; "Starting the stochastic universal sampling selection");
-    let mut mating = HashMap::new();
+    let mut mating = Vec::new();
     let chromosome_couples = (couples*2) as usize;
     trace!(target="selection_events", method="stochastic_universal_sampling"; "Chromosome couples: {}", chromosome_couples);
 
@@ -87,7 +86,7 @@ pub fn stochastic_universal_sampling<U:ChromosomeT>(chromosomes: &Vec<U>, couple
             current_point < selection_probabilities[next_chromosome] {
 
             if couple_completed {
-                mating.insert(first_mate, i);
+                mating.push((first_mate, i));
             }else{
                 first_mate = i;
             }
@@ -97,7 +96,7 @@ pub fn stochastic_universal_sampling<U:ChromosomeT>(chromosomes: &Vec<U>, couple
 
         } else if end_of_chromosomes && current_point >= selection_probabilities[i] {
             if couple_completed {
-                mating.insert(first_mate, i);
+                mating.push((first_mate, i));
                 couple_completed = !couple_completed;
             }else{
                 first_mate = i;

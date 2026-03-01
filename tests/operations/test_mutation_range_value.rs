@@ -2,6 +2,7 @@ use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::operations::mutation;
 use genetic_algorithms::operations::Mutation;
+use genetic_algorithms::traits::ChromosomeT;
 
 /// Helper to build a Range chromosome with N genes in [0, n-1], initial value = 0.
 fn build_range_chromosome(n: i32) -> RangeChromosome<i32> {
@@ -23,7 +24,7 @@ fn value_mutation_keeps_value_within_range_and_can_change() {
     let mut changed = false;
     for _ in 0..200 {
         let before = c.get_dna().to_vec();
-        mutation::factory(Mutation::Swap, &mut c); // Swap is mapped to value mutation for Range<i32>
+        mutation::factory(Mutation::Value, &mut c);
         let after = c.get_dna();
 
         // Check all genes stay within declared ranges
@@ -48,7 +49,7 @@ fn value_mutation_changes_at_most_one_gene() {
     let mut c = build_range_chromosome(n);
 
     let before = c.get_dna().to_vec();
-    mutation::factory(Mutation::Swap, &mut c);
+    mutation::factory(Mutation::Value, &mut c);
     let after = c.get_dna();
 
     // Count genes that differ by value
