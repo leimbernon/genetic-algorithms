@@ -11,6 +11,7 @@ Modular and concurrent Genetic Algorithms (GA) library for Rust featuring:
 
 ## Table of Contents
 - [Documentation](#documentation)
+- [Changelog](CHANGELOG.md)
 - [Status & Key Changes 2.0.0](#status--key-changes-200)
 - [Features](#features)
   - [Traits](#traits)
