@@ -28,6 +28,8 @@ fn uniform_crossover_preserves_length_and_values_from_parents() {
         probability_max: None,
         probability_min: None,
         method: Crossover::Uniform,
+        sbx_eta: None,
+        blend_alpha: None,
     };
 
     let children = crossover::factory(&p1, &p2, cfg).expect("Crossover should succeed");

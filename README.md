@@ -5,8 +5,10 @@
 Modular and concurrent Genetic Algorithms (GA) library for Rust featuring:
 - Clear abstractions (traits for genes, chromosomes, and configuration).
 - Composable operators (selection, crossover, mutation, survivor).
-- Multi-threaded execution (fitness evaluation, reproduction, mutation in parallel).
+- Multi-threaded execution via `rayon` (fitness evaluation, reproduction, mutation in parallel).
 - Adaptive GA mode (dynamic crossover and mutation probabilities based on population performance).
+- Elitism support (preserve top N individuals across generations).
+- Compound stopping criteria (stagnation, convergence, time limit).
 - `Cow` for minimizing unnecessary DNA copies.
 
 ## Table of Contents
@@ -34,12 +36,17 @@ Latest published docs: [docs.rs/genetic_algorithms](https://docs.rs/genetic_algo
 ## Status & Key Changes 2.0.0
 Main differences vs 1.x:
 - Crate version: 2.0.0 (update your `Cargo.toml`).
+- Structured error handling: all operators return `Result<T, GaError>` instead of panicking.
+- Parallelism via `rayon` replacing manual thread management.
 - `GeneT::get_id()` now returns `i32` directly.
 - `ChromosomeT::set_dna` now uses `Cow<'a, [Gene]>` to avoid redundant copies.
 - Added `Range<T>` genotype alongside `Binary` (supports numeric ranges).
+- New operators: `SinglePoint`, `Order` (OX), `BitFlip`, `Value`, `Creep`, `Gaussian` mutations; `SBX`, `BlendAlpha` crossovers; `Rank` selection.
+- Elitism: `with_elitism(n)` preserves the top N individuals across generations.
+- Compound stopping criteria: stagnation detection, convergence threshold, time limit.
+- Per-generation statistics tracking via `GenerationStats`.
 - Adaptive probability helpers: `aga_probability` for crossover & mutation.
-- Expanded configuration: `FixedFitness`, logging levels (`Off`..`Trace`), configurable `number_of_threads`.
-- Removed obsolete examples using old signatures (`set_dna(&[Gene])`).
+- Expanded configuration: `FixedFitness`, logging levels (`Off`..`Trace`), configurable threads.
 - Internal benchmarks use Criterion 0.7 (pprof integration removed due to version conflict).
 
 ## Features
@@ -66,20 +73,22 @@ Main differences vs 1.x:
 - `initializers::generic_random_initialization_without_repetitions` (no allele repetition).
 
 ### Operators
-- Selection: `Random`, `RouletteWheel`, `StochasticUniversalSampling`, `Tournament`.
-- Crossover: `Cycle`, `MultiPoint`, `Uniform`.
-- Mutation: `Swap`, `Inversion`, `Scramble`.
-- Survivor: `Fitness` (keep best), `Age` (prefer younger / age-based pruning).
+- **Selection:** `Random`, `RouletteWheel`, `StochasticUniversalSampling`, `Tournament`, `Rank`.
+- **Crossover:** `Cycle`, `MultiPoint`, `Uniform`, `SinglePoint`, `Order` (OX), `Sbx` (Simulated Binary), `BlendAlpha` (BLX-α).
+- **Mutation:** `Swap`, `Inversion`, `Scramble`, `Value` (Range<T>), `BitFlip` (Binary), `Creep` (uniform perturbation), `Gaussian` (normal perturbation).
+- **Survivor:** `Fitness` (keep best), `Age` (prefer younger / age-based pruning).
 
 ### GA Configuration
 `GaConfiguration` (or the `Ga` builder) exposes:
-- Limits: `problem_solving` (`Minimization | Maximization | FixedFitness`), `max_generations`, `fitness_target`, `population_size`, `genes_per_chromosome`, `needs_unique_ids`, `alleles_can_be_repeated`.
-- Selection: `number_of_couples`, `method`.
-- Crossover: `number_of_points` (MultiPoint), `probability_min` / `probability_max` (required in adaptive mode), `method`.
-- Mutation: `probability_min` / `probability_max` (required in adaptive mode), `method`.
-- Survivor: `survivor`.
-- Infra: `adaptive_ga`, `number_of_threads`, `log_level`.
-- Progress (present but not yet wired): `save_progress_configuration` (future/experimental).
+- **Limits:** `problem_solving` (`Minimization | Maximization | FixedFitness`), `max_generations`, `fitness_target`, `population_size`, `genes_per_chromosome`, `needs_unique_ids`, `alleles_can_be_repeated`.
+- **Selection:** `number_of_couples`, `method`.
+- **Crossover:** `number_of_points` (MultiPoint), `probability_min` / `probability_max`, `method`, `sbx_eta` (SBX distribution index), `blend_alpha` (BLX-α alpha parameter).
+- **Mutation:** `probability_min` / `probability_max`, `method`, `step` (Creep step size), `sigma` (Gaussian standard deviation).
+- **Survivor:** `survivor`.
+- **Elitism:** `elitism_count` — preserve the top N individuals unchanged across generations.
+- **Stopping criteria:** `StoppingCriteria` with `stagnation_generations`, `convergence_threshold`, `max_duration_secs`. The GA stops when **any** enabled criterion is met.
+- **Infra:** `adaptive_ga`, `number_of_threads`, `log_level`.
+- **Progress** (present but not yet wired): `save_progress_configuration` (future/experimental).
 
 ### Adaptive GA
 When `adaptive_ga = true`:
@@ -89,8 +98,8 @@ When `adaptive_ga = false`:
 - If `probability_max` is absent, defaults to 1.0 (operator always applied).
 
 ### Multithreading & Performance
-- `with_threads(n)` divides selection, crossover, and mutation across threads.
-- Fitness evaluation is parallelized each generation.
+- `with_threads(n)` configures parallelism (internally uses `rayon`).
+- Selection, crossover, mutation, and fitness evaluation are parallelized each generation.
 - `Cow` prevents needless cloning of DNA vectors.
 
 ## Quick Example
@@ -171,7 +180,7 @@ let population = ga
     .with_logs(genetic_algorithms::configuration::LogLevel::Info)
     .run();
 
-println!("Best fitness: {}", population.best_chromosome.as_ref().unwrap().get_fitness());
+println!("Best fitness: {}", population.unwrap().best_chromosome.get_fitness());
 ```
 
 ## Usage

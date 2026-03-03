@@ -2,6 +2,7 @@
 mod structures;
 
 use crate::structures::{Chromosome, Gene};
+use genetic_algorithms::configuration::StoppingCriteria;
 use genetic_algorithms::ga::Ga;
 use genetic_algorithms::ga::TerminationCause;
 use genetic_algorithms::{
@@ -749,5 +750,171 @@ fn test_elitism_preserves_best_individual() {
         "Elitism should preserve or improve the best fitness. Before: {}, After: {}",
         best_fitness_before,
         best_fitness_after
+    );
+}
+
+#[test]
+fn test_stagnation_stopping_criterion() {
+    // Create a population where fitness is constant (no improvement possible)
+    let mut chromosomes: Vec<Chromosome> = Vec::new();
+    for i in 0..10 {
+        let dna = vec![Gene { id: 1 + i }, Gene { id: 2 + i }];
+        let mut chromosome = Chromosome {
+            dna,
+            fitness: 0.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        };
+        chromosome.set_fitness_fn(|_genes: &[Gene]| 42.0); // constant fitness
+        chromosome.calculate_fitness();
+        chromosomes.push(chromosome);
+    }
+
+    let population = Population::new(chromosomes);
+    let mut ga = Ga::new();
+    let _result = ga
+        .with_problem_solving(ProblemSolving::Maximization)
+        .with_selection_method(Selection::Tournament)
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::Swap)
+        .with_survivor_method(Survivor::Fitness)
+        .with_population(population)
+        .with_max_generations(1000)
+        .with_stopping_criteria(StoppingCriteria {
+            stagnation_generations: Some(5),
+            convergence_threshold: None,
+            max_duration_secs: None,
+        })
+        .run()
+        .unwrap();
+
+    assert_eq!(
+        ga.termination_cause,
+        TerminationCause::StagnationReached,
+        "GA should have terminated due to stagnation"
+    );
+}
+
+#[test]
+fn test_convergence_stopping_criterion() {
+    // Create a population where all fitnesses are identical (std_dev = 0)
+    let mut chromosomes: Vec<Chromosome> = Vec::new();
+    for i in 0..10 {
+        let dna = vec![Gene { id: 1 + i }, Gene { id: 2 + i }];
+        let mut chromosome = Chromosome {
+            dna,
+            fitness: 0.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        };
+        chromosome.set_fitness_fn(|_genes: &[Gene]| 100.0); // constant fitness
+        chromosome.calculate_fitness();
+        chromosomes.push(chromosome);
+    }
+
+    let population = Population::new(chromosomes);
+    let mut ga = Ga::new();
+    let _result = ga
+        .with_problem_solving(ProblemSolving::Maximization)
+        .with_selection_method(Selection::Tournament)
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::Swap)
+        .with_survivor_method(Survivor::Fitness)
+        .with_population(population)
+        .with_max_generations(1000)
+        .with_stopping_criteria(StoppingCriteria {
+            stagnation_generations: None,
+            convergence_threshold: Some(0.01),
+            max_duration_secs: None,
+        })
+        .run()
+        .unwrap();
+
+    assert_eq!(
+        ga.termination_cause,
+        TerminationCause::ConvergenceReached,
+        "GA should have terminated due to convergence"
+    );
+}
+
+#[test]
+fn test_time_limit_stopping_criterion() {
+    // Create a normal population with a very short time limit
+    let mut chromosomes: Vec<Chromosome> = Vec::new();
+    for i in 0..10 {
+        let dna = vec![Gene { id: 1 + i }, Gene { id: 2 + i }];
+        let mut chromosome = Chromosome {
+            dna,
+            fitness: 0.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        };
+        chromosome.set_fitness_fn(|genes: &[Gene]| genes.iter().map(|g| g.id as f64).sum::<f64>());
+        chromosome.calculate_fitness();
+        chromosomes.push(chromosome);
+    }
+
+    let population = Population::new(chromosomes);
+    let mut ga = Ga::new();
+    let _result = ga
+        .with_problem_solving(ProblemSolving::Maximization)
+        .with_selection_method(Selection::Tournament)
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::Swap)
+        .with_survivor_method(Survivor::Fitness)
+        .with_population(population)
+        .with_max_generations(1_000_000) // Very high to ensure time limit triggers first
+        .with_stopping_criteria(StoppingCriteria {
+            stagnation_generations: None,
+            convergence_threshold: None,
+            max_duration_secs: Some(0.001), // 1 millisecond
+        })
+        .run()
+        .unwrap();
+
+    assert_eq!(
+        ga.termination_cause,
+        TerminationCause::TimeLimitReached,
+        "GA should have terminated due to time limit"
+    );
+}
+
+#[test]
+fn test_rank_selection_in_ga() {
+    let mut chromosomes: Vec<Chromosome> = Vec::new();
+    for i in 0..10 {
+        let dna = vec![
+            Gene { id: 1 + i },
+            Gene { id: 2 + i },
+            Gene { id: 3 + i },
+            Gene { id: 4 + i },
+        ];
+        let mut chromosome = Chromosome {
+            dna,
+            fitness: 0.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        };
+        chromosome.set_fitness_fn(|genes: &[Gene]| genes.iter().map(|g| g.id as f64).sum::<f64>());
+        chromosome.calculate_fitness();
+        chromosomes.push(chromosome);
+    }
+
+    let population = Population::new(chromosomes);
+    let mut ga = Ga::new();
+    let result = ga
+        .with_problem_solving(ProblemSolving::Maximization)
+        .with_selection_method(Selection::Rank)
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::Swap)
+        .with_survivor_method(Survivor::Fitness)
+        .with_population(population)
+        .with_max_generations(10)
+        .run()
+        .unwrap();
+
+    assert!(
+        !result.chromosomes.is_empty(),
+        "Population should not be empty after running with Rank selection"
     );
 }

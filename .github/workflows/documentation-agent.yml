@@ -107,6 +107,11 @@ jobs:
     needs: guard
     if: needs.guard.outputs.needs_initialization == 'true'
     runs-on: ubuntu-latest
+    concurrency:
+      group: docs-initialization
+      cancel-in-progress: false
+    outputs:
+      initialization_complete: ${{ steps.init.outputs.initialization_complete }}
 
     steps:
       - name: Checkout repository
@@ -129,6 +134,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Run Initializer Agent
+        id: init
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AI_PROVIDER: ${{ env.AI_PROVIDER }}
@@ -136,29 +142,10 @@ jobs:
           DEFAULT_MODEL: ${{ env.DEFAULT_MODEL }}
           INITIALIZER_MODEL: ${{ env.INITIALIZER_MODEL }}
           REVIEWER_MODEL: ${{ env.REVIEWER_MODEL }}
+          REPO: ${{ github.repository }}
+          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
         run: npx tsx src/initialize-docs.ts
         working-directory: .github/scripts/documentation
-
-      - name: Commit initialized documentation
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
-        run: |
-          BRANCH="docs/update-from-pr-${PR_NUMBER}"
-
-          git checkout -b "$BRANCH"
-          git add docs/
-
-          if ! git diff --cached --quiet; then
-            git commit -m "docs: initialize documentation structure from PR #${PR_NUMBER}"
-            git push origin "$BRANCH"
-          else
-            echo "No documentation changes from initialization."
-          fi
-
-      - name: Upload initialized docs branch name
-        run: echo "initialized=true" >> "$GITHUB_OUTPUT"
-        id: init_result
 
   # --------------------------------------------------------------------------
   # Agent 1: Analyst — analyze PR changes for doc updates
@@ -166,13 +153,12 @@ jobs:
   analyze:
     name: "Agent 1: Analyze Changes"
     needs: [guard, initialize]
-    # Run if:
-    #   - guard completed (always true at this point since it's a dependency)
-    #   - initialize was skipped (structure was valid) OR initialize succeeded
+    # Skip analysis during initialization — the initializer handles everything.
+    # Analyze only runs when initialization is not needed or is already complete.
     if: |
       always() &&
       needs.guard.result == 'success' &&
-      (needs.initialize.result == 'skipped' || needs.initialize.result == 'success')
+      needs.guard.outputs.needs_initialization != 'true'
     runs-on: ubuntu-latest
     outputs:
       has_changes: ${{ steps.analyze.outputs.has_changes }}
@@ -182,18 +168,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      # If initialize ran and pushed a branch, pull those changes
-      - name: Pull initialized docs (if available)
-        if: needs.initialize.result == 'success'
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          BRANCH="docs/update-from-pr-${PR_NUMBER}"
-          if git ls-remote --exit-code origin "$BRANCH" &>/dev/null; then
-            git fetch origin "$BRANCH"
-            git checkout "$BRANCH" -- docs/ 2>/dev/null || true
-          fi
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -244,17 +218,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      # If initialize ran and pushed a branch, start from that
-      - name: Checkout docs branch (if exists)
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          BRANCH="docs/update-from-pr-${PR_NUMBER}"
-          if git ls-remote --exit-code origin "$BRANCH" &>/dev/null; then
-            git fetch origin "$BRANCH"
-            git checkout "$BRANCH"
-          fi
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

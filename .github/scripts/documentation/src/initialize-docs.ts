@@ -18,6 +18,7 @@ import {
   mkdirSync,
   existsSync,
 } from "node:fs";
+import { execSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import {
   getEnv,
@@ -32,6 +33,8 @@ import {
   buildSourceSection,
   estimateTokens,
   truncateToTokenBudget,
+  setGitHubOutput,
+  githubApiGet,
   DailyRateLimitError,
   REQUIRED_DOC_FILES,
   REPO_ROOT,
@@ -124,6 +127,228 @@ const DOC_SOURCE_MAP: Record<string, string[]> = {
     "src/lib.rs",
   ],
 };
+
+// ---------------------------------------------------------------------------
+// Git & PR helpers for incremental initialization
+// ---------------------------------------------------------------------------
+
+const INIT_BRANCH = "docs/initialization";
+
+/** Execute a git command in the repo root and return trimmed stdout. */
+function git(command: string): string {
+  return execSync(`git ${command}`, {
+    cwd: REPO_ROOT,
+    encoding: "utf-8",
+    stdio: ["pipe", "pipe", "pipe"],
+  }).trim();
+}
+
+/** Check if a branch exists on origin. */
+function remoteBranchExists(branch: string): boolean {
+  try {
+    git(`ls-remote --exit-code origin refs/heads/${branch}`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Set up the local initialization branch.
+ *
+ * Strategy: start from HEAD (which has the latest code and scripts from
+ * the base branch checkout), then carry forward any docs that already
+ * exist on the remote initialization branch.
+ */
+function setupInitBranch(baseBranch: string): void {
+  git("fetch origin");
+
+  // If the remote init branch exists, carry forward its docs/ directory
+  if (remoteBranchExists(INIT_BRANCH)) {
+    console.log(`Remote branch ${INIT_BRANCH} exists. Pulling existing docs...`);
+    git(`fetch origin ${INIT_BRANCH}`);
+
+    // Overlay docs/ from the remote branch onto the current working tree
+    try {
+      git(`checkout origin/${INIT_BRANCH} -- docs/`);
+      console.log("Carried forward existing docs from remote init branch.");
+    } catch {
+      console.log("No docs/ directory on remote init branch yet.");
+    }
+  } else {
+    console.log(`Remote branch ${INIT_BRANCH} does not exist yet. Starting fresh.`);
+  }
+
+  // Create (or reset) the local init branch from the current state
+  try {
+    git(`branch -D ${INIT_BRANCH}`);
+  } catch {
+    // Branch didn't exist locally — that's fine
+  }
+  git(`checkout -b ${INIT_BRANCH}`);
+
+  // If we carried forward docs, commit them as the base of this branch
+  const docsDir = resolve(REPO_ROOT, "docs");
+  if (existsSync(docsDir)) {
+    try {
+      git("add docs/");
+      git("diff --cached --quiet");
+    } catch {
+      // diff --cached exits 1 when there ARE staged changes — commit them
+      git('commit -m "docs: carry forward existing documentation from previous run"');
+      console.log("Committed carried-forward docs as branch base.");
+    }
+  }
+}
+
+/** Stage and commit a single documentation file. */
+function commitSingleDoc(docPath: string): void {
+  const absPath = resolve(REPO_ROOT, docPath);
+  git(`add "${absPath}"`);
+  git(`commit -m "docs: initialize ${docPath}"`);
+  console.log(`  [Git] Committed ${docPath}`);
+}
+
+/** Force-push the initialization branch to origin. */
+function pushInitBranch(): void {
+  git(`push origin ${INIT_BRANCH} --force`);
+  console.log(`  [Git] Pushed ${INIT_BRANCH} to origin.`);
+}
+
+/** Build a PR body with a progress checklist. */
+function buildInitPRBody(
+  existingDocs: string[],
+  missingDocs: string[],
+  allDone: boolean,
+): string {
+  const lines: string[] = [
+    "## Documentation Initialization",
+    "",
+    "This PR is automatically managed by the **Documentation Initializer Agent**.",
+    "It bootstraps the full documentation structure incrementally across multiple workflow runs.",
+    "",
+    "### Progress",
+    "",
+  ];
+
+  for (const doc of REQUIRED_DOC_FILES) {
+    const done = existingDocs.includes(doc);
+    lines.push(`- [${done ? "x" : " "}] \`${doc}\``);
+  }
+
+  lines.push("");
+  if (allDone) {
+    lines.push("> **All documents have been initialized.** This PR is ready for review.");
+  } else {
+    lines.push(
+      `> **${existingDocs.length}/${REQUIRED_DOC_FILES.length}** documents completed. ` +
+        `Remaining: ${missingDocs.length}. The next workflow run will continue where this left off.`,
+    );
+  }
+
+  lines.push("");
+  lines.push("### Review checklist");
+  lines.push("- [ ] Documentation accurately reflects the current codebase");
+  lines.push("- [ ] Examples are correct and runnable");
+  lines.push("- [ ] Language is clear and accessible to external developers");
+  lines.push("");
+  lines.push("---");
+  lines.push("*Generated automatically by the Documentation Agent workflow.*");
+
+  return lines.join("\n");
+}
+
+/**
+ * Create a new PR or update the existing one for the initialization branch.
+ * Returns the PR number.
+ */
+async function createOrUpdatePR(
+  repo: string,
+  token: string,
+  baseBranch: string,
+  title: string,
+  body: string,
+): Promise<number> {
+  // Search for an existing open PR from the init branch
+  interface PRNode {
+    number: number;
+  }
+  const searchResult = await githubApiGet<PRNode[]>(
+    `https://api.github.com/repos/${repo}/pulls?head=${repo.split("/")[0]}:${INIT_BRANCH}&state=open&per_page=5`,
+    token,
+  );
+
+  if (searchResult.length > 0) {
+    const prNumber = searchResult[0].number;
+    console.log(`Updating existing PR #${prNumber}...`);
+
+    // Update title and body
+    const res = await fetch(
+      `https://api.github.com/repos/${repo}/pulls/${prNumber}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/vnd.github+json",
+          "X-GitHub-Api-Version": "2022-11-28",
+        },
+        body: JSON.stringify({ title, body }),
+      },
+    );
+    if (!res.ok) {
+      console.error(`Failed to update PR #${prNumber}: ${res.status} ${res.statusText}`);
+    }
+    return prNumber;
+  }
+
+  // Create new PR
+  console.log("Creating new initialization PR...");
+  const res = await fetch(
+    `https://api.github.com/repos/${repo}/pulls`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+      body: JSON.stringify({
+        title,
+        body,
+        head: INIT_BRANCH,
+        base: baseBranch,
+      }),
+    },
+  );
+
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`Failed to create PR: ${res.status} ${res.statusText}\n${errBody}`);
+  }
+
+  const pr = (await res.json()) as { number: number };
+  console.log(`Created PR #${pr.number}.`);
+
+  // Try to add the "documentation" label (non-fatal if it fails)
+  try {
+    await fetch(
+      `https://api.github.com/repos/${repo}/issues/${pr.number}/labels`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/vnd.github+json",
+          "X-GitHub-Api-Version": "2022-11-28",
+        },
+        body: JSON.stringify({ labels: ["documentation"] }),
+      },
+    );
+  } catch {
+    console.log("Could not add 'documentation' label (non-fatal).");
+  }
+
+  return pr.number;
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -284,6 +509,8 @@ async function generateDocFile(
 
 async function main(): Promise<void> {
   const token = getEnv("GITHUB_TOKEN");
+  const repo = getEnv("REPO");
+  const baseBranch = process.env.BASE_BRANCH ?? "main";
   const client = createClient(token);
   const initializerModel = resolveModel("INITIALIZER");
   const reviewerModel = resolveModel("REVIEWER");
@@ -291,7 +518,12 @@ async function main(): Promise<void> {
   console.log("Documentation Initializer Agent");
   console.log(`Initializer model: ${initializerModel}`);
   console.log(`Reviewer model:    ${reviewerModel}`);
+  console.log(`Base branch:       ${baseBranch}`);
   console.log("=".repeat(60));
+
+  // 0. Set up the incremental initialization branch
+  console.log("\nSetting up initialization branch...");
+  setupInitBranch(baseBranch);
 
   // 1. Collect all source files
   console.log("\nCollecting source files...");
@@ -317,13 +549,12 @@ async function main(): Promise<void> {
   }
 
   // 3. Process each required doc file — only generate files that don't exist.
-  //    The Writer agent handles updates to existing docs; the Initializer
-  //    is responsible for bootstrapping missing files from scratch.
-  //    If a daily rate limit is hit, we stop gracefully — the docs already
-  //    written to disk are kept, and the next run will skip them.
+  //    After each successful generation, commit and push individually so
+  //    progress is preserved even if the workflow is killed or rate-limited.
   let created = 0;
   let skipped = 0;
   let rateLimited = false;
+  let prNumber: number | undefined;
 
   for (let i = 0; i < REQUIRED_DOC_FILES.length; i++) {
     const docPath = REQUIRED_DOC_FILES[i];
@@ -364,10 +595,27 @@ async function main(): Promise<void> {
         "", // No existing content — always creating from scratch
       );
       created++;
+
+      // Commit this doc individually and push to preserve progress
+      commitSingleDoc(docPath);
+      pushInitBranch();
+
+      // Create or update the PR after the first doc is pushed
+      const existingDocs = REQUIRED_DOC_FILES.filter((d) => {
+        const p = resolve(REPO_ROOT, d);
+        return existsSync(p) && readFileSync(p, "utf-8").trim().length > 0;
+      });
+      const missingDocs = REQUIRED_DOC_FILES.filter((d) => !existingDocs.includes(d));
+      const allDone = missingDocs.length === 0;
+      const title = allDone
+        ? "[Documentation] initialization complete"
+        : `[Documentation] initialization in progress (${existingDocs.length}/${REQUIRED_DOC_FILES.length})`;
+      const body = buildInitPRBody(existingDocs, missingDocs, allDone);
+      prNumber = await createOrUpdatePR(repo, token, baseBranch, title, body);
     } catch (err) {
       if (err instanceof DailyRateLimitError) {
-        console.error(`\n::error::${err.message}`);
-        console.log(`  Documents already created (${created}) have been saved to disk.`);
+        console.error(`\n::warning::${err.message}`);
+        console.log(`  Documents already created (${created}) have been committed and pushed.`);
         console.log(`  Remaining ${REQUIRED_DOC_FILES.length - i} docs will be created on the next run.`);
         rateLimited = true;
         break;
@@ -376,17 +624,43 @@ async function main(): Promise<void> {
     }
   }
 
+  // 4. Final summary and PR update
+  const existingDocs = REQUIRED_DOC_FILES.filter((d) => {
+    const p = resolve(REPO_ROOT, d);
+    return existsSync(p) && readFileSync(p, "utf-8").trim().length > 0;
+  });
+  const missingDocs = REQUIRED_DOC_FILES.filter((d) => !existingDocs.includes(d));
+  const allDone = missingDocs.length === 0;
+
   console.log(`\n${"=".repeat(60)}`);
-  console.log("Documentation Initialization Complete");
-  console.log(`  Created:  ${created}`);
+  console.log("Documentation Initialization Summary");
+  console.log(`  Created this run:  ${created}`);
   console.log(`  Skipped (already exist): ${skipped}`);
+  console.log(`  Total complete: ${existingDocs.length}/${REQUIRED_DOC_FILES.length}`);
   if (rateLimited) {
-    console.log(`  Stopped early due to daily rate limit.`);
+    console.log("  Stopped early due to daily rate limit.");
   }
   console.log("=".repeat(60));
 
-  if (rateLimited) {
-    process.exit(1);
+  // Update PR with final state (if we pushed anything or if we're just updating status)
+  if (prNumber != null || (created === 0 && skipped > 0)) {
+    const title = allDone
+      ? "[Documentation] initialization complete"
+      : `[Documentation] initialization in progress (${existingDocs.length}/${REQUIRED_DOC_FILES.length})`;
+    const body = buildInitPRBody(existingDocs, missingDocs, allDone);
+
+    if (prNumber != null) {
+      await createOrUpdatePR(repo, token, baseBranch, title, body);
+    }
+  }
+
+  // 5. Set output for downstream jobs
+  setGitHubOutput("initialization_complete", allDone ? "true" : "false");
+
+  if (allDone) {
+    console.log("\nAll documentation files have been initialized!");
+  } else {
+    console.log(`\n${missingDocs.length} documents remaining. Next workflow run will continue.`);
   }
 }
 

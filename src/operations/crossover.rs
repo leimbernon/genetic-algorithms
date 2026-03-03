@@ -8,9 +8,11 @@ use crate::configuration::CrossoverConfiguration;
 use crate::error::GaError;
 use crate::traits::ChromosomeT;
 
+pub mod blend_alpha;
 pub mod cycle;
 pub mod multipoint;
 pub mod order;
+pub mod sbx;
 pub mod single_point;
 pub mod uniform_crossover;
 
@@ -27,6 +29,16 @@ pub fn factory<U: ChromosomeT>(
         Crossover::Uniform => uniform(parent_1, parent_2),
         Crossover::SinglePoint => single_point(parent_1, parent_2),
         Crossover::Order => order(parent_1, parent_2),
+        Crossover::Sbx => Err(GaError::CrossoverError(
+            "SBX crossover requires Range<T> chromosomes. Use crossover::sbx::sbx() directly \
+             or ensure your chromosome type supports SBX."
+                .to_string(),
+        )),
+        Crossover::BlendAlpha => Err(GaError::CrossoverError(
+            "BLX-α crossover requires Range<T> chromosomes. Use crossover::blend_alpha::blend_alpha() \
+             directly or ensure your chromosome type supports BLX-α."
+                .to_string(),
+        )),
     }
 }
 

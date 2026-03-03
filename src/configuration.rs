@@ -51,6 +51,12 @@ pub struct CrossoverConfiguration {
     pub probability_max: Option<f64>,
     pub probability_min: Option<f64>,
     pub method: Crossover,
+    /// Distribution index for SBX crossover. Higher values produce children
+    /// closer to parents. Typical range: 2–20. Default is 2.0.
+    pub sbx_eta: Option<f64>,
+    /// Alpha parameter for BLX-α crossover. Controls exploration range.
+    /// Typical value: 0.5. Default is 0.5.
+    pub blend_alpha: Option<f64>,
 }
 impl Default for CrossoverConfiguration {
     fn default() -> Self {
@@ -59,6 +65,8 @@ impl Default for CrossoverConfiguration {
             probability_max: None,
             probability_min: None,
             method: Crossover::Uniform,
+            sbx_eta: None,
+            blend_alpha: None,
         }
     }
 }
@@ -68,6 +76,12 @@ pub struct MutationConfiguration {
     pub probability_max: Option<f64>,
     pub probability_min: Option<f64>,
     pub method: Mutation,
+    /// Step size for Creep mutation. Only used when method is `Mutation::Creep`.
+    /// Default is 1.0.
+    pub step: Option<f64>,
+    /// Standard deviation for Gaussian mutation. Only used when method is `Mutation::Gaussian`.
+    /// Default is 1.0.
+    pub sigma: Option<f64>,
 }
 impl Default for MutationConfiguration {
     fn default() -> Self {
@@ -75,6 +89,8 @@ impl Default for MutationConfiguration {
             probability_max: None,
             probability_min: None,
             method: Mutation::Swap,
+            step: None,
+            sigma: None,
         }
     }
 }
@@ -110,6 +126,22 @@ pub struct SaveProgressConfiguration {
     pub save_progress_path: String,
 }
 
+/// Compound stopping criteria for the GA.
+///
+/// Multiple criteria can be enabled simultaneously. The GA stops when **any** of them is met.
+#[derive(Clone, Debug, Default)]
+pub struct StoppingCriteria {
+    /// Stop after N generations without fitness improvement.
+    /// `None` means this criterion is disabled.
+    pub stagnation_generations: Option<i32>,
+    /// Stop when the fitness standard deviation drops below this threshold.
+    /// `None` means this criterion is disabled.
+    pub convergence_threshold: Option<f64>,
+    /// Stop after the specified elapsed time (in seconds).
+    /// `None` means this criterion is disabled.
+    pub max_duration_secs: Option<f64>,
+}
+
 #[derive(Clone)]
 pub struct GaConfiguration {
     pub adaptive_ga: bool,
@@ -124,6 +156,9 @@ pub struct GaConfiguration {
     /// Number of best individuals to preserve unchanged between generations (elitism).
     /// Default is 0 (no elitism).
     pub elitism_count: usize,
+    /// Compound stopping criteria. These are checked in addition to
+    /// max_generations and fitness_target.
+    pub stopping_criteria: StoppingCriteria,
 }
 impl Default for GaConfiguration {
     fn default() -> Self {
@@ -148,6 +183,7 @@ impl Default for GaConfiguration {
                 ..Default::default()
             },
             elitism_count: 0,
+            stopping_criteria: StoppingCriteria::default(),
         }
     }
 }
@@ -231,6 +267,14 @@ impl ConfigurationT for GaConfiguration {
         self.crossover_configuration.method = method;
         self
     }
+    fn with_sbx_eta(&mut self, eta: f64) -> &mut Self {
+        self.crossover_configuration.sbx_eta = Some(eta);
+        self
+    }
+    fn with_blend_alpha(&mut self, alpha: f64) -> &mut Self {
+        self.crossover_configuration.blend_alpha = Some(alpha);
+        self
+    }
 
     //Mutation configuration
     fn with_mutation_probability_max(&mut self, probability_max: f64) -> &mut Self {
@@ -243,6 +287,14 @@ impl ConfigurationT for GaConfiguration {
     }
     fn with_mutation_method(&mut self, method: Mutation) -> &mut Self {
         self.mutation_configuration.method = method;
+        self
+    }
+    fn with_mutation_step(&mut self, step: f64) -> &mut Self {
+        self.mutation_configuration.step = Some(step);
+        self
+    }
+    fn with_mutation_sigma(&mut self, sigma: f64) -> &mut Self {
+        self.mutation_configuration.sigma = Some(sigma);
         self
     }
 
@@ -262,6 +314,11 @@ impl ConfigurationT for GaConfiguration {
 
     fn with_elitism(&mut self, elitism_count: usize) -> &mut Self {
         self.elitism_count = elitism_count;
+        self
+    }
+
+    fn with_stopping_criteria(&mut self, criteria: StoppingCriteria) -> &mut Self {
+        self.stopping_criteria = criteria;
         self
     }
 }
