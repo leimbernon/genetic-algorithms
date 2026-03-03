@@ -2,7 +2,10 @@
  * Development Agent — Handle PR Merge
  *
  * Triggered when a pull request is closed and merged.
- * Finds the linked issue, swaps "in review" → "done", and closes the issue.
+ * Finds the linked issue and swaps the label "in review" → "done".
+ *
+ * The issue itself is NOT closed here — the PR body contains "Closes #N",
+ * so GitHub closes it automatically when the PR is merged.
  *
  * Outputs:
  *   - merge_handled: "true" | "false"
@@ -15,7 +18,6 @@ import {
   getPullRequest,
   parseLinkedIssueNumber,
   swapLabels,
-  closeIssue,
   LABELS,
 } from "./shared.js";
 
@@ -61,23 +63,15 @@ async function main(): Promise<void> {
 
   if (!hasInReview) {
     console.log(`Issue #${issueNumber} does not have "${LABELS.IN_REVIEW}" label. Skipping label swap.`);
-    // Still close the issue if it's open
-    if (issue.state === "open") {
-      await closeIssue(repo, issueNumber, token);
-    }
     setGitHubOutput("merge_handled", "true");
     return;
   }
 
   // 4. Swap labels: "in review" → "done"
+  //    The issue is closed automatically by GitHub via "Closes #N" in the PR body.
   await swapLabels(repo, issueNumber, LABELS.IN_REVIEW, LABELS.DONE, token);
 
-  // 5. Close the issue
-  if (issue.state === "open") {
-    await closeIssue(repo, issueNumber, token);
-  }
-
-  console.log(`\nIssue #${issueNumber} marked as "${LABELS.DONE}" and closed.`);
+  console.log(`\nIssue #${issueNumber} marked as "${LABELS.DONE}".`);
   setGitHubOutput("merge_handled", "true");
 }
 
