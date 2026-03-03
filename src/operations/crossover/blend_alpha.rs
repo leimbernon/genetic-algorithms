@@ -181,7 +181,9 @@ mod tests {
                     assert!(
                         gene.value >= lo && gene.value <= hi,
                         "Gene value {} out of range [{}, {}]",
-                        gene.value, lo, hi
+                        gene.value,
+                        lo,
+                        hi
                     );
                 }
             }
@@ -192,7 +194,11 @@ mod tests {
     fn blend_alpha_error_on_different_lengths() {
         let mut p1 = RangeChromosome::<f64>::new();
         let mut p2 = RangeChromosome::<f64>::new();
-        p1.set_dna(Cow::Owned(vec![RangeGenotype::new(0, vec![(0.0, 10.0)], 5.0)]));
+        p1.set_dna(Cow::Owned(vec![RangeGenotype::new(
+            0,
+            vec![(0.0, 10.0)],
+            5.0,
+        )]));
         p2.set_dna(Cow::Owned(vec![
             RangeGenotype::new(0, vec![(0.0, 10.0)], 5.0),
             RangeGenotype::new(1, vec![(0.0, 10.0)], 5.0),
@@ -232,9 +238,3 @@ mod tests {
         }
     }
 }
-
-
-
-
-
-

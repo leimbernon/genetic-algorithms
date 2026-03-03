@@ -110,12 +110,19 @@ mod tests {
         for _ in 0..200 {
             let before = c.get_dna().to_vec();
             creep_mutation(&mut c, 10.0);
-            if before.iter().zip(c.get_dna()).any(|(b, a)| b.value != a.value) {
+            if before
+                .iter()
+                .zip(c.get_dna())
+                .any(|(b, a)| b.value != a.value)
+            {
                 changed = true;
                 break;
             }
         }
-        assert!(changed, "Creep mutation did not change any value after 200 attempts");
+        assert!(
+            changed,
+            "Creep mutation did not change any value after 200 attempts"
+        );
     }
 
     #[test]
@@ -128,7 +135,11 @@ mod tests {
             .zip(c.get_dna())
             .filter(|(b, a)| b.value != a.value)
             .count();
-        assert!(diff_count <= 1, "More than one gene changed: {}", diff_count);
+        assert!(
+            diff_count <= 1,
+            "More than one gene changed: {}",
+            diff_count
+        );
     }
 
     #[test]
@@ -157,4 +168,3 @@ mod tests {
         assert_eq!(c.get_dna().len(), 0);
     }
 }
-

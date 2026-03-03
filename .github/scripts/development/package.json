@@ -1,0 +1,27 @@
+{
+  "name": "development-agents",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI-powered development agents for the genetic-algorithms library",
+  "type": "module",
+  "scripts": {
+    "triage": "tsx src/triage.ts",
+    "prepare-branch": "tsx src/prepare-branch.ts",
+    "architect": "tsx src/architect.ts",
+    "writer": "tsx src/writer.ts",
+    "reviewer": "tsx src/reviewer.ts",
+    "pull-request": "tsx src/pull-request.ts",
+    "handle-review": "tsx src/handle-review.ts",
+    "handle-merge": "tsx src/handle-merge.ts",
+    "pipeline": "tsx src/pipeline.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "openai": "^4.73.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

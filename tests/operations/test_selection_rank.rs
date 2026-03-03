@@ -1,9 +1,6 @@
 #[cfg(test)]
 use crate::structures::{Chromosome, Gene};
-use genetic_algorithms::{
-    fitness::FitnessFnWrapper,
-    operations::selection::rank::rank_selection,
-};
+use genetic_algorithms::{fitness::FitnessFnWrapper, operations::selection::rank::rank_selection};
 
 #[test]
 fn test_rank_selection_produces_correct_pairs() {
@@ -63,8 +60,12 @@ fn test_rank_selection_favors_higher_fitness() {
         let pairs = rank_selection(&population, 5);
         for (a, b) in &pairs {
             // Indices 15-19 are the fittest
-            if *a >= 15 { high_fitness_count += 1; }
-            if *b >= 15 { high_fitness_count += 1; }
+            if *a >= 15 {
+                high_fitness_count += 1;
+            }
+            if *b >= 15 {
+                high_fitness_count += 1;
+            }
         }
     }
     // Should appear more than uniform random (5/20 = 25%)
@@ -75,4 +76,3 @@ fn test_rank_selection_favors_higher_fitness() {
         high_fitness_count
     );
 }
-

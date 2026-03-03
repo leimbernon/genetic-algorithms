@@ -187,7 +187,9 @@ mod tests {
                     assert!(
                         gene.value >= lo && gene.value <= hi,
                         "Gene value {} out of range [{}, {}]",
-                        gene.value, lo, hi
+                        gene.value,
+                        lo,
+                        hi
                     );
                 }
             }
@@ -198,7 +200,11 @@ mod tests {
     fn sbx_error_on_different_lengths() {
         let mut p1 = RangeChromosome::<f64>::new();
         let mut p2 = RangeChromosome::<f64>::new();
-        p1.set_dna(Cow::Owned(vec![RangeGenotype::new(0, vec![(0.0, 10.0)], 5.0)]));
+        p1.set_dna(Cow::Owned(vec![RangeGenotype::new(
+            0,
+            vec![(0.0, 10.0)],
+            5.0,
+        )]));
         p2.set_dna(Cow::Owned(vec![
             RangeGenotype::new(0, vec![(0.0, 10.0)], 5.0),
             RangeGenotype::new(1, vec![(0.0, 10.0)], 5.0),
@@ -222,7 +228,8 @@ mod tests {
                 assert!(
                     (gene.value - 50.0).abs() < 1e-10,
                     "Gene {} should be 50.0, got {}",
-                    i, gene.value
+                    i,
+                    gene.value
                 );
             }
         }
@@ -248,7 +255,9 @@ mod tests {
                 assert!(
                     gene.value >= lo && gene.value <= hi,
                     "Gene value {} out of range [{}, {}]",
-                    gene.value, lo, hi
+                    gene.value,
+                    lo,
+                    hi
                 );
             }
         }
@@ -271,12 +280,9 @@ mod tests {
                 close_count += 1;
             }
         }
-        assert!(close_count > 90, "High eta should keep children close to parents");
+        assert!(
+            close_count > 90,
+            "High eta should keep children close to parents"
+        );
     }
 }
-
-
-
-
-
-

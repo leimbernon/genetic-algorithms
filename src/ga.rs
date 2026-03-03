@@ -238,7 +238,10 @@ where
         self
     }
 
-    fn with_stopping_criteria(&mut self, criteria: crate::configuration::StoppingCriteria) -> &mut Self {
+    fn with_stopping_criteria(
+        &mut self,
+        criteria: crate::configuration::StoppingCriteria,
+    ) -> &mut Self {
         self.configuration.with_stopping_criteria(criteria);
         self
     }
@@ -530,7 +533,9 @@ where
                 stagnation_count += 1;
             }
 
-            if let Some(max_stagnation) = self.configuration.stopping_criteria.stagnation_generations {
+            if let Some(max_stagnation) =
+                self.configuration.stopping_criteria.stagnation_generations
+            {
                 if stagnation_count >= max_stagnation {
                     self.termination_cause = TerminationCause::StagnationReached;
                     if let Some(func) = &callback {
@@ -542,14 +547,20 @@ where
 
             // Convergence check (fitness std dev below threshold)
             if let Some(threshold) = self.configuration.stopping_criteria.convergence_threshold {
-                let fitness_values: Vec<f64> = self.population.chromosomes
+                let fitness_values: Vec<f64> = self
+                    .population
+                    .chromosomes
                     .iter()
                     .map(|c| c.get_fitness())
                     .collect();
                 let n = fitness_values.len() as f64;
                 if n > 0.0 {
                     let avg = fitness_values.iter().sum::<f64>() / n;
-                    let variance = fitness_values.iter().map(|f| (f - avg).powi(2)).sum::<f64>() / n;
+                    let variance = fitness_values
+                        .iter()
+                        .map(|f| (f - avg).powi(2))
+                        .sum::<f64>()
+                        / n;
                     let std_dev = variance.sqrt();
                     if std_dev < threshold {
                         self.termination_cause = TerminationCause::ConvergenceReached;

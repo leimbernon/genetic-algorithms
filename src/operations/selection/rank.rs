@@ -22,10 +22,7 @@ use rand::Rng;
 /// # Returns
 ///
 /// A vector of `(usize, usize)` parent index pairs.
-pub fn rank_selection<U: ChromosomeT>(
-    chromosomes: &[U],
-    couples: i32,
-) -> Vec<(usize, usize)> {
+pub fn rank_selection<U: ChromosomeT>(chromosomes: &[U], couples: i32) -> Vec<(usize, usize)> {
     debug!(target="selection_events", method="rank_selection"; "Starting rank-based selection");
 
     let n = chromosomes.len();
@@ -99,18 +96,15 @@ mod tests {
 
     #[test]
     fn rank_selection_produces_correct_number_of_pairs() {
-        let pop: Vec<BinaryChromosome> = (0..10)
-            .map(|i| make_chromosome(i as f64 * 10.0))
-            .collect();
+        let pop: Vec<BinaryChromosome> =
+            (0..10).map(|i| make_chromosome(i as f64 * 10.0)).collect();
         let pairs = rank_selection(&pop, 3);
         assert_eq!(pairs.len(), 3);
     }
 
     #[test]
     fn rank_selection_returns_valid_indices() {
-        let pop: Vec<BinaryChromosome> = (0..6)
-            .map(|i| make_chromosome(i as f64))
-            .collect();
+        let pop: Vec<BinaryChromosome> = (0..6).map(|i| make_chromosome(i as f64)).collect();
         let pairs = rank_selection(&pop, 3);
         for (a, b) in &pairs {
             assert!(*a < pop.len(), "Index {} out of bounds", a);
@@ -128,9 +122,7 @@ mod tests {
     #[test]
     fn rank_selection_favors_fitter_individuals() {
         // Create population where the last individual has highest fitness
-        let pop: Vec<BinaryChromosome> = (0..20)
-            .map(|i| make_chromosome(i as f64))
-            .collect();
+        let pop: Vec<BinaryChromosome> = (0..20).map(|i| make_chromosome(i as f64)).collect();
 
         // Run many selections and count how often the fittest (index 19) appears
         let mut fittest_count = 0;
@@ -156,5 +148,3 @@ mod tests {
         );
     }
 }
-
-

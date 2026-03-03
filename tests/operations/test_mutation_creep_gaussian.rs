@@ -32,12 +32,19 @@ fn creep_mutation_via_factory_changes_value() {
     for _ in 0..200 {
         let before = c.get_dna().to_vec();
         mutation::factory_with_params(Mutation::Creep, &mut c, Some(10.0), None).unwrap();
-        if before.iter().zip(c.get_dna()).any(|(b, a)| b.value != a.value) {
+        if before
+            .iter()
+            .zip(c.get_dna())
+            .any(|(b, a)| b.value != a.value)
+        {
             changed = true;
             break;
         }
     }
-    assert!(changed, "Creep mutation via factory did not change any value");
+    assert!(
+        changed,
+        "Creep mutation via factory did not change any value"
+    );
 }
 
 #[test]
@@ -50,7 +57,9 @@ fn creep_mutation_via_factory_stays_in_range() {
             assert!(
                 gene.value >= lo && gene.value <= hi,
                 "Creep: value {} out of range [{}, {}]",
-                gene.value, lo, hi
+                gene.value,
+                lo,
+                hi
             );
         }
     }
@@ -63,12 +72,19 @@ fn creep_mutation_i32_via_factory() {
     for _ in 0..200 {
         let before = c.get_dna().to_vec();
         mutation::factory_with_params(Mutation::Creep, &mut c, Some(5.0), None).unwrap();
-        if before.iter().zip(c.get_dna()).any(|(b, a)| b.value != a.value) {
+        if before
+            .iter()
+            .zip(c.get_dna())
+            .any(|(b, a)| b.value != a.value)
+        {
             changed = true;
             break;
         }
     }
-    assert!(changed, "Creep mutation i32 via factory did not change any value");
+    assert!(
+        changed,
+        "Creep mutation i32 via factory did not change any value"
+    );
 }
 
 // --- Gaussian mutation tests ---
@@ -80,12 +96,19 @@ fn gaussian_mutation_via_factory_changes_value() {
     for _ in 0..200 {
         let before = c.get_dna().to_vec();
         mutation::factory_with_params(Mutation::Gaussian, &mut c, None, Some(10.0)).unwrap();
-        if before.iter().zip(c.get_dna()).any(|(b, a)| b.value != a.value) {
+        if before
+            .iter()
+            .zip(c.get_dna())
+            .any(|(b, a)| b.value != a.value)
+        {
             changed = true;
             break;
         }
     }
-    assert!(changed, "Gaussian mutation via factory did not change any value");
+    assert!(
+        changed,
+        "Gaussian mutation via factory did not change any value"
+    );
 }
 
 #[test]
@@ -98,7 +121,9 @@ fn gaussian_mutation_via_factory_stays_in_range() {
             assert!(
                 gene.value >= lo && gene.value <= hi,
                 "Gaussian: value {} out of range [{}, {}]",
-                gene.value, lo, hi
+                gene.value,
+                lo,
+                hi
             );
         }
     }
@@ -111,11 +136,17 @@ fn gaussian_mutation_i32_via_factory() {
     for _ in 0..200 {
         let before = c.get_dna().to_vec();
         mutation::factory_with_params(Mutation::Gaussian, &mut c, None, Some(5.0)).unwrap();
-        if before.iter().zip(c.get_dna()).any(|(b, a)| b.value != a.value) {
+        if before
+            .iter()
+            .zip(c.get_dna())
+            .any(|(b, a)| b.value != a.value)
+        {
             changed = true;
             break;
         }
     }
-    assert!(changed, "Gaussian mutation i32 via factory did not change any value");
+    assert!(
+        changed,
+        "Gaussian mutation i32 via factory did not change any value"
+    );
 }
-

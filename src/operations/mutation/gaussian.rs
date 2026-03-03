@@ -17,15 +17,7 @@ use std::fmt::Debug;
 /// * `sigma` - The standard deviation of the Gaussian perturbation.
 pub fn gaussian_mutation<T>(individual: &mut RangeChromosome<T>, sigma: f64)
 where
-    T: Sync
-        + Send
-        + Clone
-        + Default
-        + Debug
-        + PartialOrd
-        + Copy
-        + 'static
-        + GaussianConvertible,
+    T: Sync + Send + Clone + Default + Debug + PartialOrd + Copy + 'static + GaussianConvertible,
 {
     let len = individual.get_dna().len();
     if len == 0 {
@@ -147,12 +139,19 @@ mod tests {
         for _ in 0..200 {
             let before = c.get_dna().to_vec();
             gaussian_mutation(&mut c, 10.0);
-            if before.iter().zip(c.get_dna()).any(|(b, a)| b.value != a.value) {
+            if before
+                .iter()
+                .zip(c.get_dna())
+                .any(|(b, a)| b.value != a.value)
+            {
                 changed = true;
                 break;
             }
         }
-        assert!(changed, "Gaussian mutation did not change any value after 200 attempts");
+        assert!(
+            changed,
+            "Gaussian mutation did not change any value after 200 attempts"
+        );
     }
 
     #[test]
@@ -165,7 +164,11 @@ mod tests {
             .zip(c.get_dna())
             .filter(|(b, a)| b.value != a.value)
             .count();
-        assert!(diff_count <= 1, "More than one gene changed: {}", diff_count);
+        assert!(
+            diff_count <= 1,
+            "More than one gene changed: {}",
+            diff_count
+        );
     }
 
     #[test]
@@ -219,7 +222,3 @@ mod tests {
         }
     }
 }
-
-
-
-

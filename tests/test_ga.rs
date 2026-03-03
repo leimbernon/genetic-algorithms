@@ -918,4 +918,3 @@ fn test_rank_selection_in_ga() {
         "Population should not be empty after running with Rank selection"
     );
 }
-
