@@ -1,5 +1,6 @@
 use std::fmt;
 
+use crate::niching::configuration::NichingConfiguration;
 use crate::{
     operations::{Crossover, Mutation, Selection, Survivor},
     traits::ConfigurationT,
@@ -159,6 +160,8 @@ pub struct GaConfiguration {
     /// Compound stopping criteria. These are checked in addition to
     /// max_generations and fitness_target.
     pub stopping_criteria: StoppingCriteria,
+    /// Optional niching / fitness sharing configuration.
+    pub niching_configuration: Option<NichingConfiguration>,
 }
 impl Default for GaConfiguration {
     fn default() -> Self {
@@ -184,6 +187,7 @@ impl Default for GaConfiguration {
             },
             elitism_count: 0,
             stopping_criteria: StoppingCriteria::default(),
+            niching_configuration: None,
         }
     }
 }
@@ -319,6 +323,27 @@ impl ConfigurationT for GaConfiguration {
 
     fn with_stopping_criteria(&mut self, criteria: StoppingCriteria) -> &mut Self {
         self.stopping_criteria = criteria;
+        self
+    }
+
+    fn with_niching_enabled(&mut self, enabled: bool) -> &mut Self {
+        self.niching_configuration
+            .get_or_insert_with(NichingConfiguration::default)
+            .enabled = enabled;
+        self
+    }
+
+    fn with_niching_sigma_share(&mut self, sigma_share: f64) -> &mut Self {
+        self.niching_configuration
+            .get_or_insert_with(NichingConfiguration::default)
+            .sigma_share = sigma_share;
+        self
+    }
+
+    fn with_niching_alpha(&mut self, alpha: f64) -> &mut Self {
+        self.niching_configuration
+            .get_or_insert_with(NichingConfiguration::default)
+            .alpha = alpha;
         self
     }
 }

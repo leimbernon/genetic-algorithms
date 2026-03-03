@@ -245,6 +245,21 @@ where
         self.configuration.with_stopping_criteria(criteria);
         self
     }
+
+    fn with_niching_enabled(&mut self, enabled: bool) -> &mut Self {
+        self.configuration.with_niching_enabled(enabled);
+        self
+    }
+
+    fn with_niching_sigma_share(&mut self, sigma_share: f64) -> &mut Self {
+        self.configuration.with_niching_sigma_share(sigma_share);
+        self
+    }
+
+    fn with_niching_alpha(&mut self, alpha: f64) -> &mut Self {
+        self.configuration.with_niching_alpha(alpha);
+        self
+    }
 }
 
 impl<U> Ga<U>

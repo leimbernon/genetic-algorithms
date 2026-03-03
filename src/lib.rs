@@ -78,3 +78,7 @@ pub mod population;
 pub mod stats;
 pub mod traits;
 mod validators;
+
+pub mod island;
+pub mod niching;
+pub mod nsga2;
