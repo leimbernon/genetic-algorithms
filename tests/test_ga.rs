@@ -148,16 +148,14 @@ fn test_ga_start_maximize() {
     ];
 
     let population = Population::new(chromosomes);
-    let mut binding = Ga::new();
-    let population = binding
+    let mut ga = Ga::new()
         .with_problem_solving(ProblemSolving::Maximization)
         .with_selection_method(Selection::Random)
         .with_crossover_method(Crossover::Cycle)
         .with_mutation_method(Mutation::Swap)
         .with_survivor_method(Survivor::Fitness)
-        .with_population(population)
-        .run()
-        .unwrap();
+        .with_population(population);
+    let population = ga.run().unwrap();
 
     assert_eq!(population.chromosomes.len(), 10);
     assert_eq!(population.best_chromosome.fitness(), 20.0);
@@ -291,17 +289,15 @@ fn test_ga_run_minimize() {
     ];
 
     let population = Population::new(chromosomes);
-    let mut binding = Ga::new();
-    let population = binding
+    let mut ga = Ga::new()
         .with_problem_solving(ProblemSolving::Minimization)
         .with_selection_method(Selection::Random)
         .with_crossover_method(Crossover::Cycle)
         .with_mutation_method(Mutation::Swap)
         .with_mutation_probability_max(0.2)
         .with_survivor_method(Survivor::Fitness)
-        .with_population(population)
-        .run()
-        .unwrap();
+        .with_population(population);
+    let population = ga.run().unwrap();
 
     assert_eq!(population.chromosomes.len(), 10);
     assert_eq!(population.best_chromosome.fitness(), 1.0);
@@ -435,8 +431,7 @@ fn test_ga_run() {
     ];
 
     let population = Population::new(chromosomes);
-    let mut binding = Ga::new();
-    let population = binding
+    let mut ga = Ga::new()
         .with_threads(8)
         .with_problem_solving(ProblemSolving::Maximization)
         .with_selection_method(Selection::Tournament)
@@ -444,9 +439,8 @@ fn test_ga_run() {
         .with_crossover_method(Crossover::Cycle)
         .with_mutation_method(Mutation::Swap)
         .with_survivor_method(Survivor::Fitness)
-        .with_population(population)
-        .run()
-        .unwrap();
+        .with_population(population);
+    let population = ga.run().unwrap();
 
     assert_eq!(population.chromosomes.len(), 10);
 }
@@ -471,8 +465,7 @@ fn test_parent_crossover_repeating_alleles() {
     static ALLELES_CAN_BE_REPEATED: bool = true;
     static NUMBER_OF_THREADS: usize = 8;
 
-    let mut ga_instance = Ga::new();
-    let ga: &mut Ga<Chromosome> = ga_instance
+    let mut ga: Ga<Chromosome> = Ga::new()
         .with_threads(NUMBER_OF_THREADS)
         .with_fitness_fn(fitness_fn)
         .with_population_size(POPULATION_SIZE)
@@ -482,9 +475,8 @@ fn test_parent_crossover_repeating_alleles() {
         .with_alleles(alleles.to_vec())
         .with_initialization_fn(
             genetic_algorithms::initializers::generic_random_initialization::<Chromosome>,
-        )
-        .initialization()
-        .unwrap();
+        );
+    ga.initialization().unwrap();
 
     //Once population has been initialized, we check for each chromosome in the population the number of genes in the dna
     for chromosome in &ga.population.chromosomes {
@@ -512,8 +504,7 @@ fn test_parent_crossover_without_repeating_alleles() {
     static ALLELES_CAN_BE_REPEATED: bool = false;
     static NUMBER_OF_THREADS: usize = 8;
 
-    let mut ga_instance = Ga::new();
-    let ga: &mut Ga<Chromosome> = ga_instance
+    let mut ga: Ga<Chromosome> = Ga::new()
         .with_threads(NUMBER_OF_THREADS)
         .with_fitness_fn(fitness_fn)
         .with_population_size(POPULATION_SIZE)
@@ -525,9 +516,8 @@ fn test_parent_crossover_without_repeating_alleles() {
             genetic_algorithms::initializers::generic_random_initialization_without_repetitions::<
                 Chromosome,
             >,
-        )
-        .initialization()
-        .unwrap();
+        );
+    ga.initialization().unwrap();
 
     //Once population has been initialized, we check for each chromosome we check that genes are not repeated
     for chromosome in &ga.population.chromosomes {
@@ -683,8 +673,7 @@ fn test_callback_function() {
     ];
 
     let population = Population::new(chromosome);
-    let mut binding = Ga::new();
-    let population = binding
+    let mut ga = Ga::new()
         .with_threads(8)
         .with_problem_solving(ProblemSolving::Maximization)
         .with_selection_method(Selection::Tournament)
@@ -693,9 +682,8 @@ fn test_callback_function() {
         .with_mutation_method(Mutation::Swap)
         .with_survivor_method(Survivor::Fitness)
         .with_population(population)
-        .with_max_generations(10)
-        .run_with_callback(Some(callback_function), 8)
-        .unwrap();
+        .with_max_generations(10);
+    let population = ga.run_with_callback(Some(callback_function), 8).unwrap();
 
     assert_eq!(population.chromosomes.len(), 10);
 }
@@ -728,8 +716,7 @@ fn test_elitism_preserves_best_individual() {
         .fold(f64::NEG_INFINITY, f64::max);
 
     let population = Population::new(chromosomes);
-    let mut ga = Ga::new();
-    let result = ga
+    let mut ga = Ga::new()
         .with_problem_solving(ProblemSolving::Maximization)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
@@ -737,9 +724,8 @@ fn test_elitism_preserves_best_individual() {
         .with_survivor_method(Survivor::Fitness)
         .with_population(population)
         .with_max_generations(20)
-        .with_elitism(2)
-        .run()
-        .unwrap();
+        .with_elitism(2);
+    let result = ga.run().unwrap();
 
     // With elitism, the best fitness should never decrease
     let best_fitness_after = result
@@ -774,8 +760,7 @@ fn test_stagnation_stopping_criterion() {
     }
 
     let population = Population::new(chromosomes);
-    let mut ga = Ga::new();
-    let _result = ga
+    let mut ga = Ga::new()
         .with_problem_solving(ProblemSolving::Maximization)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
@@ -787,9 +772,8 @@ fn test_stagnation_stopping_criterion() {
             stagnation_generations: Some(5),
             convergence_threshold: None,
             max_duration_secs: None,
-        })
-        .run()
-        .unwrap();
+        });
+    ga.run().unwrap();
 
     assert_eq!(
         ga.termination_cause,
@@ -816,8 +800,7 @@ fn test_convergence_stopping_criterion() {
     }
 
     let population = Population::new(chromosomes);
-    let mut ga = Ga::new();
-    let _result = ga
+    let mut ga = Ga::new()
         .with_problem_solving(ProblemSolving::Maximization)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
@@ -829,9 +812,8 @@ fn test_convergence_stopping_criterion() {
             stagnation_generations: None,
             convergence_threshold: Some(0.01),
             max_duration_secs: None,
-        })
-        .run()
-        .unwrap();
+        });
+    ga.run().unwrap();
 
     assert_eq!(
         ga.termination_cause,
@@ -858,8 +840,7 @@ fn test_time_limit_stopping_criterion() {
     }
 
     let population = Population::new(chromosomes);
-    let mut ga = Ga::new();
-    let _result = ga
+    let mut ga = Ga::new()
         .with_problem_solving(ProblemSolving::Maximization)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
@@ -871,9 +852,8 @@ fn test_time_limit_stopping_criterion() {
             stagnation_generations: None,
             convergence_threshold: None,
             max_duration_secs: Some(0.001), // 1 millisecond
-        })
-        .run()
-        .unwrap();
+        });
+    ga.run().unwrap();
 
     assert_eq!(
         ga.termination_cause,
@@ -904,17 +884,15 @@ fn test_rank_selection_in_ga() {
     }
 
     let population = Population::new(chromosomes);
-    let mut ga = Ga::new();
-    let result = ga
+    let mut ga = Ga::new()
         .with_problem_solving(ProblemSolving::Maximization)
         .with_selection_method(Selection::Rank)
         .with_crossover_method(Crossover::Uniform)
         .with_mutation_method(Mutation::Swap)
         .with_survivor_method(Survivor::Fitness)
         .with_population(population)
-        .with_max_generations(10)
-        .run()
-        .unwrap();
+        .with_max_generations(10);
+    let result = ga.run().unwrap();
 
     assert!(
         !result.chromosomes.is_empty(),
@@ -967,8 +945,7 @@ fn test_ga_with_niching_enabled() {
     }
 
     let population = Population::new(chromosomes);
-    let mut ga = Ga::new();
-    let result = ga
+    let mut ga = Ga::new()
         .with_problem_solving(ProblemSolving::Maximization)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Cycle)
@@ -978,9 +955,8 @@ fn test_ga_with_niching_enabled() {
         .with_max_generations(5)
         .with_niching_enabled(true)
         .with_niching_sigma_share(3.0) // sigma > 0, catches identical (distance=0) and close
-        .with_niching_alpha(1.0)
-        .run()
-        .unwrap();
+        .with_niching_alpha(1.0);
+    let result = ga.run().unwrap();
 
     // Population should still have correct size
     assert_eq!(result.chromosomes.len(), 10);
@@ -1006,8 +982,7 @@ fn test_ga_with_niching_disabled() {
         .collect();
 
     let population = Population::new(chromosomes);
-    let mut ga = Ga::new();
-    let result = ga
+    let mut ga = Ga::new()
         .with_problem_solving(ProblemSolving::Maximization)
         .with_selection_method(Selection::Random)
         .with_crossover_method(Crossover::Uniform)
@@ -1015,9 +990,8 @@ fn test_ga_with_niching_disabled() {
         .with_survivor_method(Survivor::Fitness)
         .with_population(population)
         .with_max_generations(3)
-        .with_niching_enabled(false)
-        .run()
-        .unwrap();
+        .with_niching_enabled(false);
+    let result = ga.run().unwrap();
 
     assert_eq!(result.chromosomes.len(), 10);
 }
@@ -1074,17 +1048,15 @@ fn test_termination_cause_set_without_callback() {
         .collect();
 
     let population = Population::new(chromosomes);
-    let mut ga = Ga::new();
-    let _result = ga
+    let mut ga = Ga::new()
         .with_problem_solving(ProblemSolving::Maximization)
         .with_selection_method(Selection::Random)
         .with_crossover_method(Crossover::Uniform)
         .with_mutation_method(Mutation::Swap)
         .with_survivor_method(Survivor::Fitness)
         .with_population(population)
-        .with_max_generations(3)
-        .run()
-        .unwrap();
+        .with_max_generations(3);
+    ga.run().unwrap();
 
     assert_eq!(
         ga.termination_cause,
@@ -1116,8 +1088,7 @@ fn test_elitism_count_exceeding_population_does_not_panic() {
         .collect();
 
     let population = Population::new(chromosomes);
-    let mut ga = Ga::new();
-    let result = ga
+    let mut ga = Ga::new()
         .with_problem_solving(ProblemSolving::Maximization)
         .with_selection_method(Selection::Random)
         .with_crossover_method(Crossover::Uniform)
@@ -1125,9 +1096,8 @@ fn test_elitism_count_exceeding_population_does_not_panic() {
         .with_survivor_method(Survivor::Fitness)
         .with_population(population)
         .with_max_generations(3)
-        .with_elitism(100) // Much larger than population size of 4
-        .run()
-        .unwrap();
+        .with_elitism(100); // Much larger than population size of 4
+    let result = ga.run().unwrap();
 
     assert!(
         !result.chromosomes.is_empty(),
@@ -1152,8 +1122,7 @@ fn test_validator_accepts_builtin_chromosome_type() {
         Gene { id: 6 },
     ];
 
-    let mut ga_instance: Ga<Chromosome> = Ga::new();
-    let result = ga_instance
+    let mut ga: Ga<Chromosome> = Ga::new()
         .with_fitness_fn(fitness_fn)
         .with_population_size(10)
         .with_genes_per_chromosome(4)
@@ -1162,8 +1131,8 @@ fn test_validator_accepts_builtin_chromosome_type() {
         .with_alleles(alleles)
         .with_initialization_fn(
             genetic_algorithms::initializers::generic_random_initialization::<Chromosome>,
-        )
-        .initialization();
+        );
+    let result = ga.initialization();
 
     assert!(
         result.is_ok(),

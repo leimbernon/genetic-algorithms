@@ -32,8 +32,7 @@
 //!
 //! let alleles = vec![RangeGene::new(0, vec![(0, N - 1)], 0)];
 //! let alleles_clone = alleles.clone();
-//! let mut ga = Ga::new();
-//! let _population = ga
+//! let mut ga = Ga::new()
 //!     .with_genes_per_chromosome(N)
 //!     .with_population_size(100)
 //!     .with_initialization_fn(move |genes_per_chromosome, _, _| {
@@ -46,8 +45,8 @@
 //!     .with_problem_solving(ProblemSolving::Minimization)
 //!     .with_survivor_method(Survivor::Fitness)
 //!     .with_max_generations(5000)
-//!     .with_fitness_target(0.0)
-//!     .run();
+//!     .with_fitness_target(0.0);
+//! let _population = ga.run();
 //! ```
 //!
 //! Modules of interest:

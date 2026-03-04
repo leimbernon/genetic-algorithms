@@ -96,8 +96,7 @@ fn report(
 
 fn main() {
     // For maximization problem
-    let mut binding = Ga::new();
-    let population = binding
+    let mut ga = Ga::new()
         .with_genes_per_chromosome(10)
         .with_population_size(100)
         .with_initialization_fn(binary_random_initialization)
@@ -106,9 +105,8 @@ fn main() {
         .with_crossover_method(Crossover::Uniform)
         .with_mutation_method(Mutation::Swap)
         .with_problem_solving(ProblemSolving::Maximization)
-        .with_max_generations(5000)
-        .run_with_callback(Some(report), 100)
-        .unwrap();
+        .with_max_generations(5000);
+    let population = ga.run_with_callback(Some(report), 100).unwrap();
 
     println!(
         "Best chromosome for maximization: {}",
@@ -116,8 +114,7 @@ fn main() {
     );
 
     // For fixed fitness problem
-    let mut binding_fixed = Ga::new();
-    let population = binding_fixed
+    let mut ga_fixed = Ga::new()
         .with_genes_per_chromosome(10)
         .with_population_size(10)
         .with_initialization_fn(binary_random_initialization)
@@ -127,9 +124,8 @@ fn main() {
         .with_mutation_method(Mutation::Swap)
         .with_problem_solving(ProblemSolving::FixedFitness)
         .with_fitness_target(1270.0)
-        .with_max_generations(5000)
-        .run_with_callback(Some(report), 100)
-        .unwrap();
+        .with_max_generations(5000);
+    let population = ga_fixed.run_with_callback(Some(report), 100).unwrap();
 
     println!(
         "Best chromosome for fixed fitness: {}",

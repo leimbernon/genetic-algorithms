@@ -92,15 +92,12 @@ impl<U> SelectionConfig for Ga<U>
 where
     U: ChromosomeT,
 {
-    fn with_number_of_couples(&mut self, number_of_couples: usize) -> &mut Self {
-        self.configuration.with_number_of_couples(number_of_couples);
+    fn with_number_of_couples(mut self, number_of_couples: usize) -> Self {
+        self.configuration.selection_configuration.number_of_couples = number_of_couples;
         self
     }
-    fn with_selection_method(
-        &mut self,
-        selection_method: crate::operations::Selection,
-    ) -> &mut Self {
-        self.configuration.with_selection_method(selection_method);
+    fn with_selection_method(mut self, selection_method: crate::operations::Selection) -> Self {
+        self.configuration.selection_configuration.method = selection_method;
         self
     }
 }
@@ -109,31 +106,28 @@ impl<U> CrossoverConfig for Ga<U>
 where
     U: ChromosomeT,
 {
-    fn with_crossover_number_of_points(&mut self, number_of_points: usize) -> &mut Self {
-        self.configuration
-            .with_crossover_number_of_points(number_of_points);
+    fn with_crossover_number_of_points(mut self, number_of_points: usize) -> Self {
+        self.configuration.crossover_configuration.number_of_points = Some(number_of_points);
         self
     }
-    fn with_crossover_probability_max(&mut self, probability_max: f64) -> &mut Self {
-        self.configuration
-            .with_crossover_probability_max(probability_max);
+    fn with_crossover_probability_max(mut self, probability_max: f64) -> Self {
+        self.configuration.crossover_configuration.probability_max = Some(probability_max);
         self
     }
-    fn with_crossover_probability_min(&mut self, probability_min: f64) -> &mut Self {
-        self.configuration
-            .with_crossover_probability_min(probability_min);
+    fn with_crossover_probability_min(mut self, probability_min: f64) -> Self {
+        self.configuration.crossover_configuration.probability_min = Some(probability_min);
         self
     }
-    fn with_crossover_method(&mut self, method: crossover::Crossover) -> &mut Self {
-        self.configuration.with_crossover_method(method);
+    fn with_crossover_method(mut self, method: crossover::Crossover) -> Self {
+        self.configuration.crossover_configuration.method = method;
         self
     }
-    fn with_sbx_eta(&mut self, eta: f64) -> &mut Self {
-        self.configuration.with_sbx_eta(eta);
+    fn with_sbx_eta(mut self, eta: f64) -> Self {
+        self.configuration.crossover_configuration.sbx_eta = Some(eta);
         self
     }
-    fn with_blend_alpha(&mut self, alpha: f64) -> &mut Self {
-        self.configuration.with_blend_alpha(alpha);
+    fn with_blend_alpha(mut self, alpha: f64) -> Self {
+        self.configuration.crossover_configuration.blend_alpha = Some(alpha);
         self
     }
 }
@@ -142,26 +136,24 @@ impl<U> MutationConfig for Ga<U>
 where
     U: ChromosomeT,
 {
-    fn with_mutation_probability_max(&mut self, probability_max: f64) -> &mut Self {
-        self.configuration
-            .with_mutation_probability_max(probability_max);
+    fn with_mutation_probability_max(mut self, probability_max: f64) -> Self {
+        self.configuration.mutation_configuration.probability_max = Some(probability_max);
         self
     }
-    fn with_mutation_probability_min(&mut self, probability_min: f64) -> &mut Self {
-        self.configuration
-            .with_mutation_probability_min(probability_min);
+    fn with_mutation_probability_min(mut self, probability_min: f64) -> Self {
+        self.configuration.mutation_configuration.probability_min = Some(probability_min);
         self
     }
-    fn with_mutation_method(&mut self, method: crate::operations::Mutation) -> &mut Self {
-        self.configuration.with_mutation_method(method);
+    fn with_mutation_method(mut self, method: crate::operations::Mutation) -> Self {
+        self.configuration.mutation_configuration.method = method;
         self
     }
-    fn with_mutation_step(&mut self, step: f64) -> &mut Self {
-        self.configuration.with_mutation_step(step);
+    fn with_mutation_step(mut self, step: f64) -> Self {
+        self.configuration.mutation_configuration.step = Some(step);
         self
     }
-    fn with_mutation_sigma(&mut self, sigma: f64) -> &mut Self {
-        self.configuration.with_mutation_sigma(sigma);
+    fn with_mutation_sigma(mut self, sigma: f64) -> Self {
+        self.configuration.mutation_configuration.sigma = Some(sigma);
         self
     }
 }
@@ -170,19 +162,16 @@ impl<U> StoppingConfig for Ga<U>
 where
     U: ChromosomeT,
 {
-    fn with_max_generations(&mut self, max_generations: usize) -> &mut Self {
-        self.configuration.with_max_generations(max_generations);
+    fn with_max_generations(mut self, max_generations: usize) -> Self {
+        self.configuration.limit_configuration.max_generations = max_generations;
         self
     }
-    fn with_fitness_target(&mut self, fitness_target: f64) -> &mut Self {
-        self.configuration.with_fitness_target(fitness_target);
+    fn with_fitness_target(mut self, fitness_target: f64) -> Self {
+        self.configuration.limit_configuration.fitness_target = Some(fitness_target);
         self
     }
-    fn with_stopping_criteria(
-        &mut self,
-        criteria: crate::configuration::StoppingCriteria,
-    ) -> &mut Self {
-        self.configuration.with_stopping_criteria(criteria);
+    fn with_stopping_criteria(mut self, criteria: crate::configuration::StoppingCriteria) -> Self {
+        self.configuration.stopping_criteria = criteria;
         self
     }
 }
@@ -191,16 +180,25 @@ impl<U> NichingConfig for Ga<U>
 where
     U: ChromosomeT,
 {
-    fn with_niching_enabled(&mut self, enabled: bool) -> &mut Self {
-        self.configuration.with_niching_enabled(enabled);
+    fn with_niching_enabled(mut self, enabled: bool) -> Self {
+        self.configuration
+            .niching_configuration
+            .get_or_insert_with(crate::niching::configuration::NichingConfiguration::default)
+            .enabled = enabled;
         self
     }
-    fn with_niching_sigma_share(&mut self, sigma_share: f64) -> &mut Self {
-        self.configuration.with_niching_sigma_share(sigma_share);
+    fn with_niching_sigma_share(mut self, sigma_share: f64) -> Self {
+        self.configuration
+            .niching_configuration
+            .get_or_insert_with(crate::niching::configuration::NichingConfiguration::default)
+            .sigma_share = sigma_share;
         self
     }
-    fn with_niching_alpha(&mut self, alpha: f64) -> &mut Self {
-        self.configuration.with_niching_alpha(alpha);
+    fn with_niching_alpha(mut self, alpha: f64) -> Self {
+        self.configuration
+            .niching_configuration
+            .get_or_insert_with(crate::niching::configuration::NichingConfiguration::default)
+            .alpha = alpha;
         self
     }
 }
@@ -209,8 +207,8 @@ impl<U> ElitismConfig for Ga<U>
 where
     U: ChromosomeT,
 {
-    fn with_elitism(&mut self, elitism_count: usize) -> &mut Self {
-        self.configuration.with_elitism(elitism_count);
+    fn with_elitism(mut self, elitism_count: usize) -> Self {
+        self.configuration.elitism_count = elitism_count;
         self
     }
 }
@@ -222,30 +220,30 @@ where
     fn new() -> Self {
         Self::default()
     }
-    fn with_adaptive_ga(&mut self, adaptive_ga: bool) -> &mut Self {
-        self.configuration.with_adaptive_ga(adaptive_ga);
+    fn with_adaptive_ga(mut self, adaptive_ga: bool) -> Self {
+        self.configuration.adaptive_ga = adaptive_ga;
         self
     }
-    fn with_threads(&mut self, number_of_threads: usize) -> &mut Self {
-        self.configuration.with_threads(number_of_threads);
+    fn with_threads(mut self, number_of_threads: usize) -> Self {
+        self.configuration.number_of_threads = number_of_threads;
         self
     }
-    fn with_logs(&mut self, log_level: LogLevel) -> &mut Self {
-        self.configuration.with_logs(log_level);
+    fn with_logs(mut self, log_level: LogLevel) -> Self {
+        self.configuration.log_level = log_level;
         self
     }
-    fn with_survivor_method(&mut self, method: crate::operations::Survivor) -> &mut Self {
-        self.configuration.with_survivor_method(method);
+    fn with_survivor_method(mut self, method: crate::operations::Survivor) -> Self {
+        self.configuration.survivor = method;
         self
     }
 
     //Limit configuration
-    fn with_problem_solving(&mut self, problem_solving: ProblemSolving) -> &mut Self {
-        self.configuration.with_problem_solving(problem_solving);
+    fn with_problem_solving(mut self, problem_solving: ProblemSolving) -> Self {
+        self.configuration.limit_configuration.problem_solving = problem_solving;
         self
     }
-    fn with_population_size(&mut self, population_size: usize) -> &mut Self {
-        self.configuration.with_population_size(population_size);
+    fn with_population_size(mut self, population_size: usize) -> Self {
+        self.configuration.limit_configuration.population_size = population_size;
 
         // Setting the number of couples
         self.configuration.selection_configuration.number_of_couples =
@@ -257,34 +255,36 @@ where
 
         self
     }
-    fn with_genes_per_chromosome(&mut self, genes_per_chromosome: usize) -> &mut Self {
-        self.configuration
-            .with_genes_per_chromosome(genes_per_chromosome);
+    fn with_genes_per_chromosome(mut self, genes_per_chromosome: usize) -> Self {
+        self.configuration.limit_configuration.genes_per_chromosome = genes_per_chromosome;
         self
     }
-    fn with_needs_unique_ids(&mut self, needs_unique_ids: bool) -> &mut Self {
-        self.configuration.with_needs_unique_ids(needs_unique_ids);
+    fn with_needs_unique_ids(mut self, needs_unique_ids: bool) -> Self {
+        self.configuration.limit_configuration.needs_unique_ids = needs_unique_ids;
         self
     }
-    fn with_alleles_can_be_repeated(&mut self, alleles_can_be_repeated: bool) -> &mut Self {
+    fn with_alleles_can_be_repeated(mut self, alleles_can_be_repeated: bool) -> Self {
         self.configuration
-            .with_alleles_can_be_repeated(alleles_can_be_repeated);
+            .limit_configuration
+            .alleles_can_be_repeated = alleles_can_be_repeated;
         self
     }
 
     //Save progress configuration
-    fn with_save_progress(&mut self, save_progress: bool) -> &mut Self {
-        self.configuration.with_save_progress(save_progress);
+    fn with_save_progress(mut self, save_progress: bool) -> Self {
+        self.configuration.save_progress_configuration.save_progress = save_progress;
         self
     }
-    fn with_save_progress_interval(&mut self, save_progress_interval: usize) -> &mut Self {
+    fn with_save_progress_interval(mut self, save_progress_interval: usize) -> Self {
         self.configuration
-            .with_save_progress_interval(save_progress_interval);
+            .save_progress_configuration
+            .save_progress_interval = save_progress_interval;
         self
     }
-    fn with_save_progress_path(&mut self, save_progress_path: String) -> &mut Self {
+    fn with_save_progress_path(mut self, save_progress_path: String) -> Self {
         self.configuration
-            .with_save_progress_path(save_progress_path);
+            .save_progress_configuration
+            .save_progress_path = save_progress_path;
         self
     }
 }
@@ -297,7 +297,7 @@ where
     /**
      * Function to set the alleles
      */
-    pub fn with_alleles(&mut self, alleles: Vec<U::Gene>) -> &mut Self {
+    pub fn with_alleles(mut self, alleles: Vec<U::Gene>) -> Self {
         self.alleles = alleles;
         self
     }
@@ -305,21 +305,19 @@ where
     /**
      * Function to set the population
      */
-    pub fn with_population(&mut self, population: Population<U>) -> &mut Self {
-        self.population = population;
-
+    pub fn with_population(mut self, population: Population<U>) -> Self {
         //Checks if the number of couples is 0, sets the number of couples to the half of the population
         if self.configuration.selection_configuration.number_of_couples == 0 {
-            self.configuration.selection_configuration.number_of_couples =
-                self.population.size() / 2;
+            self.configuration.selection_configuration.number_of_couples = population.size() / 2;
         }
+        self.population = population;
         self
     }
 
     /**
      * Function to set the fitness function
      */
-    pub fn with_fitness_fn<F>(&mut self, fitness_fn: F) -> &mut Self
+    pub fn with_fitness_fn<F>(mut self, fitness_fn: F) -> Self
     where
         F: Fn(&[U::Gene]) -> f64 + Send + Sync + 'static,
     {
@@ -330,7 +328,7 @@ where
     /**
      * Sets the initialization function
      */
-    pub fn with_initialization_fn<F>(&mut self, initialization_fn: F) -> &mut Self
+    pub fn with_initialization_fn<F>(mut self, initialization_fn: F) -> Self
     where
         U: ChromosomeT + Send + Sync + 'static + Clone,
         F: Fn(usize, Option<&[U::Gene]>, Option<bool>) -> Vec<U::Gene> + Send + Sync + 'static,
@@ -395,7 +393,13 @@ where
             })
             .collect();
 
-        self.with_population(Population::new(chromosomes));
+        // Set population directly (with_population is consuming, so we assign inline)
+        let new_population = Population::new(chromosomes);
+        if self.configuration.selection_configuration.number_of_couples == 0 {
+            self.configuration.selection_configuration.number_of_couples =
+                new_population.size() / 2;
+        }
+        self.population = new_population;
         Ok(self)
     }
 

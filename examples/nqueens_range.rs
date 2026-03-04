@@ -44,8 +44,7 @@ fn report(
 fn main() {
     let alleles = vec![RangeGenotype::new(0, vec![(0, N as i32 - 1)], 0)];
     let alleles_clone = alleles.clone();
-    let mut ga = Ga::new();
-    let population = ga
+    let mut ga = Ga::new()
         .with_genes_per_chromosome(N)
         .with_population_size(100)
         .with_initialization_fn(move |genes_per_chromosome, _, _| {
@@ -58,9 +57,8 @@ fn main() {
         .with_problem_solving(ProblemSolving::Minimization)
         .with_survivor_method(Survivor::Fitness)
         .with_max_generations(5000)
-        .with_fitness_target(0.0)
-        .run_with_callback(Some(report), 100)
-        .unwrap();
+        .with_fitness_target(0.0);
+    let population = ga.run_with_callback(Some(report), 100).unwrap();
 
     println!(
         "Best chromosome for N-Queens: {}",

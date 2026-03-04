@@ -196,95 +196,95 @@ impl Default for GaConfiguration {
 }
 
 impl SelectionConfig for GaConfiguration {
-    fn with_number_of_couples(&mut self, number_of_couples: usize) -> &mut Self {
+    fn with_number_of_couples(mut self, number_of_couples: usize) -> Self {
         self.selection_configuration.number_of_couples = number_of_couples;
         self
     }
-    fn with_selection_method(&mut self, selection_method: Selection) -> &mut Self {
+    fn with_selection_method(mut self, selection_method: Selection) -> Self {
         self.selection_configuration.method = selection_method;
         self
     }
 }
 
 impl CrossoverConfig for GaConfiguration {
-    fn with_crossover_number_of_points(&mut self, number_of_points: usize) -> &mut Self {
+    fn with_crossover_number_of_points(mut self, number_of_points: usize) -> Self {
         self.crossover_configuration.number_of_points = Some(number_of_points);
         self
     }
-    fn with_crossover_probability_max(&mut self, probability_max: f64) -> &mut Self {
+    fn with_crossover_probability_max(mut self, probability_max: f64) -> Self {
         self.crossover_configuration.probability_max = Some(probability_max);
         self
     }
-    fn with_crossover_probability_min(&mut self, probability_min: f64) -> &mut Self {
+    fn with_crossover_probability_min(mut self, probability_min: f64) -> Self {
         self.crossover_configuration.probability_min = Some(probability_min);
         self
     }
-    fn with_crossover_method(&mut self, method: Crossover) -> &mut Self {
+    fn with_crossover_method(mut self, method: Crossover) -> Self {
         self.crossover_configuration.method = method;
         self
     }
-    fn with_sbx_eta(&mut self, eta: f64) -> &mut Self {
+    fn with_sbx_eta(mut self, eta: f64) -> Self {
         self.crossover_configuration.sbx_eta = Some(eta);
         self
     }
-    fn with_blend_alpha(&mut self, alpha: f64) -> &mut Self {
+    fn with_blend_alpha(mut self, alpha: f64) -> Self {
         self.crossover_configuration.blend_alpha = Some(alpha);
         self
     }
 }
 
 impl MutationConfig for GaConfiguration {
-    fn with_mutation_probability_max(&mut self, probability_max: f64) -> &mut Self {
+    fn with_mutation_probability_max(mut self, probability_max: f64) -> Self {
         self.mutation_configuration.probability_max = Some(probability_max);
         self
     }
-    fn with_mutation_probability_min(&mut self, probability_min: f64) -> &mut Self {
+    fn with_mutation_probability_min(mut self, probability_min: f64) -> Self {
         self.mutation_configuration.probability_min = Some(probability_min);
         self
     }
-    fn with_mutation_method(&mut self, method: Mutation) -> &mut Self {
+    fn with_mutation_method(mut self, method: Mutation) -> Self {
         self.mutation_configuration.method = method;
         self
     }
-    fn with_mutation_step(&mut self, step: f64) -> &mut Self {
+    fn with_mutation_step(mut self, step: f64) -> Self {
         self.mutation_configuration.step = Some(step);
         self
     }
-    fn with_mutation_sigma(&mut self, sigma: f64) -> &mut Self {
+    fn with_mutation_sigma(mut self, sigma: f64) -> Self {
         self.mutation_configuration.sigma = Some(sigma);
         self
     }
 }
 
 impl StoppingConfig for GaConfiguration {
-    fn with_max_generations(&mut self, max_generations: usize) -> &mut Self {
+    fn with_max_generations(mut self, max_generations: usize) -> Self {
         self.limit_configuration.max_generations = max_generations;
         self
     }
-    fn with_fitness_target(&mut self, fitness_target: f64) -> &mut Self {
+    fn with_fitness_target(mut self, fitness_target: f64) -> Self {
         self.limit_configuration.fitness_target = Some(fitness_target);
         self
     }
-    fn with_stopping_criteria(&mut self, criteria: StoppingCriteria) -> &mut Self {
+    fn with_stopping_criteria(mut self, criteria: StoppingCriteria) -> Self {
         self.stopping_criteria = criteria;
         self
     }
 }
 
 impl NichingConfig for GaConfiguration {
-    fn with_niching_enabled(&mut self, enabled: bool) -> &mut Self {
+    fn with_niching_enabled(mut self, enabled: bool) -> Self {
         self.niching_configuration
             .get_or_insert_with(NichingConfiguration::default)
             .enabled = enabled;
         self
     }
-    fn with_niching_sigma_share(&mut self, sigma_share: f64) -> &mut Self {
+    fn with_niching_sigma_share(mut self, sigma_share: f64) -> Self {
         self.niching_configuration
             .get_or_insert_with(NichingConfiguration::default)
             .sigma_share = sigma_share;
         self
     }
-    fn with_niching_alpha(&mut self, alpha: f64) -> &mut Self {
+    fn with_niching_alpha(mut self, alpha: f64) -> Self {
         self.niching_configuration
             .get_or_insert_with(NichingConfiguration::default)
             .alpha = alpha;
@@ -293,7 +293,7 @@ impl NichingConfig for GaConfiguration {
 }
 
 impl ElitismConfig for GaConfiguration {
-    fn with_elitism(&mut self, elitism_count: usize) -> &mut Self {
+    fn with_elitism(mut self, elitism_count: usize) -> Self {
         self.elitism_count = elitism_count;
         self
     }
@@ -303,55 +303,55 @@ impl ConfigurationT for GaConfiguration {
     fn new() -> Self {
         Self::default()
     }
-    fn with_adaptive_ga(&mut self, adaptive_ga: bool) -> &mut Self {
+    fn with_adaptive_ga(mut self, adaptive_ga: bool) -> Self {
         self.adaptive_ga = adaptive_ga;
         self
     }
-    fn with_threads(&mut self, number_of_threads: usize) -> &mut Self {
+    fn with_threads(mut self, number_of_threads: usize) -> Self {
         self.number_of_threads = number_of_threads;
         self
     }
-    fn with_logs(&mut self, log_level: LogLevel) -> &mut Self {
+    fn with_logs(mut self, log_level: LogLevel) -> Self {
         self.log_level = log_level;
         self
     }
-    fn with_survivor_method(&mut self, method: Survivor) -> &mut Self {
+    fn with_survivor_method(mut self, method: Survivor) -> Self {
         self.survivor = method;
         self
     }
 
     //Limit configuration
-    fn with_problem_solving(&mut self, problem_solving: ProblemSolving) -> &mut Self {
+    fn with_problem_solving(mut self, problem_solving: ProblemSolving) -> Self {
         self.limit_configuration.problem_solving = problem_solving;
         self
     }
-    fn with_population_size(&mut self, population_size: usize) -> &mut Self {
+    fn with_population_size(mut self, population_size: usize) -> Self {
         self.limit_configuration.population_size = population_size;
         self
     }
-    fn with_genes_per_chromosome(&mut self, genes_per_chromosome: usize) -> &mut Self {
+    fn with_genes_per_chromosome(mut self, genes_per_chromosome: usize) -> Self {
         self.limit_configuration.genes_per_chromosome = genes_per_chromosome;
         self
     }
-    fn with_needs_unique_ids(&mut self, needs_unique_ids: bool) -> &mut Self {
+    fn with_needs_unique_ids(mut self, needs_unique_ids: bool) -> Self {
         self.limit_configuration.needs_unique_ids = needs_unique_ids;
         self
     }
-    fn with_alleles_can_be_repeated(&mut self, alleles_can_be_repeated: bool) -> &mut Self {
+    fn with_alleles_can_be_repeated(mut self, alleles_can_be_repeated: bool) -> Self {
         self.limit_configuration.alleles_can_be_repeated = alleles_can_be_repeated;
         self
     }
 
     //Save progress configuration
-    fn with_save_progress(&mut self, save_progress: bool) -> &mut Self {
+    fn with_save_progress(mut self, save_progress: bool) -> Self {
         self.save_progress_configuration.save_progress = save_progress;
         self
     }
-    fn with_save_progress_interval(&mut self, save_progress_interval: usize) -> &mut Self {
+    fn with_save_progress_interval(mut self, save_progress_interval: usize) -> Self {
         self.save_progress_configuration.save_progress_interval = save_progress_interval;
         self
     }
-    fn with_save_progress_path(&mut self, save_progress_path: String) -> &mut Self {
+    fn with_save_progress_path(mut self, save_progress_path: String) -> Self {
         self.save_progress_configuration.save_progress_path = save_progress_path;
         self
     }
