@@ -3,7 +3,7 @@ pub use self::scramble::scramble;
 pub use self::swap::swap;
 use super::Mutation;
 use crate::error::GaError;
-use crate::traits::ChromosomeT;
+use crate::traits::{ChromosomeT, MutationOperator};
 use log::warn;
 
 pub mod bit_flip;
@@ -77,6 +77,35 @@ pub trait ValueMutable: ChromosomeT {
     }
 }
 
+impl MutationOperator for Mutation {
+    fn mutate<U>(
+        &self,
+        individual: &mut U,
+        step: Option<f64>,
+        sigma: Option<f64>,
+    ) -> Result<(), GaError>
+    where
+        U: ChromosomeT + ValueMutable + 'static,
+    {
+        match self {
+            Mutation::Swap => swap(individual),
+            Mutation::Inversion => inversion(individual),
+            Mutation::Scramble => scramble(individual),
+            Mutation::Value => individual.value_mutate(),
+            Mutation::BitFlip => individual.bit_flip_mutate(),
+            Mutation::Creep => {
+                let s = step.unwrap_or(1.0);
+                individual.creep_mutate(s);
+            }
+            Mutation::Gaussian => {
+                let s = sigma.unwrap_or(1.0);
+                individual.gaussian_mutate(s);
+            }
+        }
+        Ok(())
+    }
+}
+
 /// Applies the specified mutation operator to the given individual.
 ///
 /// # Arguments
@@ -112,24 +141,7 @@ pub fn factory_with_params<U>(
 where
     U: ChromosomeT + ValueMutable + 'static,
 {
-    match mutation {
-        Mutation::Swap => swap(individual),
-        Mutation::Inversion => inversion(individual),
-        Mutation::Scramble => scramble(individual),
-        Mutation::Value => individual.value_mutate(),
-        Mutation::BitFlip => {
-            individual.bit_flip_mutate();
-        }
-        Mutation::Creep => {
-            let s = step.unwrap_or(1.0);
-            individual.creep_mutate(s);
-        }
-        Mutation::Gaussian => {
-            let s = sigma.unwrap_or(1.0);
-            individual.gaussian_mutate(s);
-        }
-    }
-    Ok(())
+    mutation.mutate(individual, step, sigma)
 }
 
 /// Applies a non-value mutation operator to the given individual.

@@ -1,6 +1,6 @@
 use crate::configuration::SelectionConfiguration;
 use crate::error::GaError;
-use crate::traits::ChromosomeT;
+use crate::traits::{ChromosomeT, SelectionOperator};
 
 pub use self::fitness_proportionate::roulette_wheel_selection;
 pub use self::fitness_proportionate::stochastic_universal_sampling;
@@ -14,6 +14,28 @@ pub mod fitness_proportionate;
 pub mod random;
 pub mod rank;
 pub mod tournament;
+
+impl SelectionOperator for Selection {
+    fn select<U>(
+        &self,
+        chromosomes: &[U],
+        number_of_couples: usize,
+        number_of_threads: usize,
+    ) -> Vec<(usize, usize)>
+    where
+        U: ChromosomeT + Sync + Send + 'static + Clone,
+    {
+        match self {
+            Selection::Random => random(chromosomes),
+            Selection::RouletteWheel => roulette_wheel_selection(chromosomes),
+            Selection::StochasticUniversalSampling => {
+                stochastic_universal_sampling(chromosomes, number_of_couples)
+            }
+            Selection::Tournament => tournament(chromosomes, number_of_couples, number_of_threads),
+            Selection::Rank => rank_selection(chromosomes, number_of_couples),
+        }
+    }
+}
 
 /// Dispatches parent selection according to the configured method.
 ///
@@ -46,19 +68,11 @@ where
         }
     }
 
-    let pairs = match configuration.method {
-        Selection::Random => random(chromosomes),
-        Selection::RouletteWheel => roulette_wheel_selection(chromosomes),
-        Selection::StochasticUniversalSampling => {
-            stochastic_universal_sampling(chromosomes, configuration.number_of_couples)
-        }
-        Selection::Tournament => tournament(
-            chromosomes,
-            configuration.number_of_couples,
-            number_of_threads,
-        ),
-        Selection::Rank => rank_selection(chromosomes, configuration.number_of_couples),
-    };
+    let pairs = configuration.method.select(
+        chromosomes,
+        configuration.number_of_couples,
+        number_of_threads,
+    );
 
     Ok(pairs)
 }

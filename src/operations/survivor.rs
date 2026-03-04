@@ -2,11 +2,26 @@ pub use self::age::age_based;
 pub use self::fitness::fitness_based;
 pub(crate) use crate::configuration::LimitConfiguration;
 use crate::error::GaError;
-use crate::traits::ChromosomeT;
+use crate::traits::{ChromosomeT, SurvivorOperator};
 
 use super::Survivor;
 pub mod age;
 pub mod fitness;
+
+impl SurvivorOperator for Survivor {
+    fn select_survivors<U: ChromosomeT>(
+        &self,
+        chromosomes: &mut Vec<U>,
+        population_size: usize,
+        limit_configuration: LimitConfiguration,
+    ) -> Result<(), GaError> {
+        match self {
+            Survivor::Fitness => fitness_based(chromosomes, population_size, limit_configuration),
+            Survivor::Age => age_based(chromosomes, population_size),
+        }
+        Ok(())
+    }
+}
 
 /// Dispatches survivor selection according to the configured method.
 ///
@@ -29,9 +44,5 @@ pub fn factory<U: ChromosomeT>(
         }
     }
 
-    match survivor {
-        Survivor::Fitness => fitness_based(chromosomes, population_size, limit_configuration),
-        Survivor::Age => age_based(chromosomes, population_size),
-    }
-    Ok(())
+    survivor.select_survivors(chromosomes, population_size, limit_configuration)
 }
