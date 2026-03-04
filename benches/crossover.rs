@@ -9,6 +9,8 @@ use std::borrow::Cow;
 
 use genetic_algorithms::operations::crossover::cycle;
 use genetic_algorithms::operations::crossover::multipoint;
+use genetic_algorithms::operations::crossover::order;
+use genetic_algorithms::operations::crossover::single_point;
 use genetic_algorithms::operations::crossover::uniform;
 use genetic_algorithms::traits::{ChromosomeT, GeneT};
 
@@ -75,85 +77,117 @@ impl ChromosomeT for SimpleChromosome {
     }
 }
 
+/// Creates a pair of chromosomes that share the same set of gene IDs (permutations),
+/// which is required for cycle and order crossover.
 #[cfg(not(tarpaulin_include))]
-fn setup_population(population_size: usize, gene_length: usize) -> Vec<SimpleChromosome> {
+fn setup_permutation_pair(gene_length: usize) -> (SimpleChromosome, SimpleChromosome) {
     let mut rng = rand::rng();
 
-    // Generate a single set of genes for all chromosomes
-    let base_genes: Vec<Gene> = (0..gene_length)
-        .map(|_| Gene {
-            id: rng.random_range(0..255),
-        })
-        .collect();
+    let base_genes: Vec<Gene> = (0..gene_length as i32).map(|i| Gene { id: i }).collect();
 
-    (0..population_size)
-        .map(|_| {
-            // Clone and shuffle base_genes to create chromosome DNA with the same genes in a different order
-            let mut dna = base_genes.clone();
-            dna.shuffle(&mut rng);
+    let mut dna1 = base_genes.clone();
+    let mut dna2 = base_genes;
+    dna1.shuffle(&mut rng);
+    dna2.shuffle(&mut rng);
 
-            SimpleChromosome {
-                fitness: rng.random_range(0.0..1.0),
-                dna,
-                age: rng.random_range(0..100),
-                fitness_fn: FitnessFnWrapper::default(),
-            }
-        })
-        .collect()
+    let mut make = |dna: Vec<Gene>| SimpleChromosome {
+        fitness: rng.random_range(0.0..1.0),
+        dna,
+        age: rng.random_range(0..100),
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+
+    (make(dna1), make(dna2))
+}
+
+/// Creates a pair of chromosomes with random (non-permutation) gene IDs,
+/// suitable for multipoint, single-point, and uniform crossover.
+#[cfg(not(tarpaulin_include))]
+fn setup_random_pair(gene_length: usize) -> (SimpleChromosome, SimpleChromosome) {
+    let mut rng = rand::rng();
+
+    let mut make = || SimpleChromosome {
+        fitness: rng.random_range(0.0..1.0),
+        dna: (0..gene_length)
+            .map(|_| Gene {
+                id: rng.random_range(0..255),
+            })
+            .collect(),
+        age: rng.random_range(0..100),
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+
+    (make(), make())
 }
 
 #[cfg(not(tarpaulin_include))]
 fn benchmark_crossover_methods(c: &mut Criterion) {
-    let population_size = 2;
     let gene_lengths = vec![10, 100, 1000];
-    let crossover_points = vec![1, 2, 3]; // Different points for `multipoint_crossover`
+    let crossover_points = vec![1, 2, 3];
 
     let mut group = c.benchmark_group("crossover_methods");
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     for &gene_length in &gene_lengths {
-        let chromosomes = setup_population(population_size, gene_length);
+        let (perm_p1, perm_p2) = setup_permutation_pair(gene_length);
+        let (rand_p1, rand_p2) = setup_random_pair(gene_length);
 
-        // Benchmark for cycle crossover
+        // Cycle crossover (requires permutation parents)
         group.bench_with_input(
-            BenchmarkId::new("cycle crossover", format!("genes_{}", gene_length)),
-            &chromosomes,
-            |b, chromosomes| {
-                let parent_1 = &chromosomes[0];
-                let parent_2 = &chromosomes[1];
+            BenchmarkId::new("cycle", format!("genes_{}", gene_length)),
+            &gene_length,
+            |b, _| {
                 b.iter(|| {
-                    let _ = cycle(parent_1, parent_2);
+                    let _ = cycle(&perm_p1, &perm_p2);
                 });
             },
         );
 
-        // Benchmark for multipoint crossover
+        // Order crossover (requires permutation parents)
+        group.bench_with_input(
+            BenchmarkId::new("order", format!("genes_{}", gene_length)),
+            &gene_length,
+            |b, _| {
+                b.iter(|| {
+                    let _ = order(&perm_p1, &perm_p2);
+                });
+            },
+        );
+
+        // Single-point crossover
+        group.bench_with_input(
+            BenchmarkId::new("single_point", format!("genes_{}", gene_length)),
+            &gene_length,
+            |b, _| {
+                b.iter(|| {
+                    let _ = single_point(&rand_p1, &rand_p2);
+                });
+            },
+        );
+
+        // Multipoint crossover (various point counts)
         for &points in &crossover_points {
             group.bench_with_input(
                 BenchmarkId::new(
-                    "multipoint crossover",
+                    "multipoint",
                     format!("genes_{}_points_{}", gene_length, points),
                 ),
-                &chromosomes,
-                |b, chromosomes| {
-                    let parent_1 = &chromosomes[0];
-                    let parent_2 = &chromosomes[1];
+                &gene_length,
+                |b, _| {
                     b.iter(|| {
-                        let _ = multipoint(parent_1, parent_2, points);
+                        let _ = multipoint(&rand_p1, &rand_p2, points);
                     });
                 },
             );
         }
 
-        // Benchmark for uniform crossover
+        // Uniform crossover
         group.bench_with_input(
-            BenchmarkId::new("uniform crossover", format!("genes_{}", gene_length)),
-            &chromosomes,
-            |b, chromosomes| {
-                let parent_1 = &chromosomes[0];
-                let parent_2 = &chromosomes[1];
+            BenchmarkId::new("uniform", format!("genes_{}", gene_length)),
+            &gene_length,
+            |b, _| {
                 b.iter(|| {
-                    let _ = uniform(parent_1, parent_2);
+                    let _ = uniform(&rand_p1, &rand_p2);
                 });
             },
         );
@@ -161,7 +195,6 @@ fn benchmark_crossover_methods(c: &mut Criterion) {
     group.finish();
 }
 
-// Grupo de benchmarks sin profiler externo (pprof removido por incompatibilidad de versiones)
 criterion_group! {
     name = crossover_benchmarks;
     config = Criterion::default();

@@ -1,5 +1,6 @@
 use criterion::{
-    criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion, PlotConfiguration,
+    criterion_group, criterion_main, AxisScale, BatchSize, BenchmarkId, Criterion,
+    PlotConfiguration,
 };
 
 use genetic_algorithms::fitness::FitnessFnWrapper;
@@ -102,29 +103,33 @@ fn benchmark_survivor_methods(c: &mut Criterion) {
     for &gene_length in &gene_lengths {
         let chromosomes = setup_population(population_size, gene_length);
 
-        // Benchmark for age survivor
+        // Benchmark for age survivor — clone moved to iter_batched setup
         group.bench_with_input(
             BenchmarkId::new("age survivor", format!("genes_{}", gene_length)),
-            &gene_length,
-            |b, _| {
-                b.iter(|| {
-                    let mut chromosomes = chromosomes.clone();
-                    age_based(&mut chromosomes, population_size);
-                });
+            &chromosomes,
+            |b, chromosomes| {
+                b.iter_batched(
+                    || chromosomes.clone(),
+                    |mut chromosomes| age_based(&mut chromosomes, population_size),
+                    BatchSize::SmallInput,
+                );
             },
         );
 
-        // Benchmark for fitness survivor
+        // Benchmark for fitness survivor — clone moved to iter_batched setup
         group.bench_with_input(
             BenchmarkId::new("fitness survivor", format!("genes_{}", gene_length)),
-            &gene_length,
-            |b, _| {
-                b.iter(|| {
-                    let mut chromosomes = chromosomes.clone();
-                    let limit_configuration =
-                        genetic_algorithms::configuration::LimitConfiguration::default();
-                    fitness_based(&mut chromosomes, population_size, limit_configuration);
-                });
+            &chromosomes,
+            |b, chromosomes| {
+                b.iter_batched(
+                    || chromosomes.clone(),
+                    |mut chromosomes| {
+                        let limit_configuration =
+                            genetic_algorithms::configuration::LimitConfiguration::default();
+                        fitness_based(&mut chromosomes, population_size, limit_configuration);
+                    },
+                    BatchSize::SmallInput,
+                );
             },
         );
     }
@@ -132,7 +137,7 @@ fn benchmark_survivor_methods(c: &mut Criterion) {
     group.finish();
 }
 
-// Grupo de benchmarks sin profiler externo (pprof removido por incompatibilidad de versiones)
+// Benchmark group (profiler removed due to criterion version mismatch with pprof)
 criterion_group! {
     name = survivor_benchmarks;
     config = Criterion::default();

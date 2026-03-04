@@ -9,6 +9,7 @@ use std::borrow::Cow;
 use genetic_algorithms::operations::selection::fitness_proportionate::roulette_wheel_selection;
 use genetic_algorithms::operations::selection::fitness_proportionate::stochastic_universal_sampling;
 use genetic_algorithms::operations::selection::random::random;
+use genetic_algorithms::operations::selection::rank::rank_selection;
 use genetic_algorithms::operations::selection::tournament::tournament;
 use genetic_algorithms::traits::{ChromosomeT, GeneT};
 
@@ -97,7 +98,6 @@ fn setup_population(population_size: usize, gene_length: usize) -> Vec<SimpleChr
 fn benchmark_selection_methods(c: &mut Criterion) {
     let population_sizes = vec![10, 100, 1000];
     let gene_lengths = vec![10, 100, 1000];
-    let tournament_threads = vec![1, 2, 4, 8];
 
     let mut group = c.benchmark_group("selection_methods");
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
@@ -105,6 +105,7 @@ fn benchmark_selection_methods(c: &mut Criterion) {
     for &population_size in &population_sizes {
         for &gene_length in &gene_lengths {
             let chromosomes = setup_population(population_size, gene_length);
+            let couples = population_size / 2;
 
             group.throughput(Throughput::Elements(population_size as u64));
 
@@ -145,26 +146,38 @@ fn benchmark_selection_methods(c: &mut Criterion) {
                 &chromosomes,
                 |b, chromosomes| {
                     b.iter(|| {
-                        let _ = stochastic_universal_sampling(chromosomes, 50);
+                        let _ = stochastic_universal_sampling(chromosomes, couples);
                     });
                 },
             );
 
-            // Benchmarks for tournament selection with different threads
-            for &threads in &tournament_threads {
-                group.bench_with_input(
-                    BenchmarkId::new(
-                        format!("tournament {} threads", threads),
-                        format!("population_{}_genes_{}", population_size, gene_length),
-                    ),
-                    &chromosomes,
-                    |b, chromosomes| {
-                        b.iter(|| {
-                            let _ = tournament(chromosomes, 5, threads);
-                        });
-                    },
-                );
-            }
+            // Benchmark rank-based selection
+            group.bench_with_input(
+                BenchmarkId::new(
+                    "rank selection",
+                    format!("population_{}_genes_{}", population_size, gene_length),
+                ),
+                &chromosomes,
+                |b, chromosomes| {
+                    b.iter(|| {
+                        let _ = rank_selection(chromosomes, couples);
+                    });
+                },
+            );
+
+            // Benchmark tournament selection (single config; thread param is unused)
+            group.bench_with_input(
+                BenchmarkId::new(
+                    "tournament",
+                    format!("population_{}_genes_{}", population_size, gene_length),
+                ),
+                &chromosomes,
+                |b, chromosomes| {
+                    b.iter(|| {
+                        let _ = tournament(chromosomes, couples, 1);
+                    });
+                },
+            );
         }
     }
     group.finish();
