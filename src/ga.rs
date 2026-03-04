@@ -620,12 +620,30 @@ where
 
             debug!(target="ga_events", method="run"; "Survivors selected");
 
-            //5- Sets the best chromosome
-            for chromosome in &self.population.chromosomes.clone() {
-                self.population.decide_best_chromosome(
-                    chromosome,
-                    self.configuration.limit_configuration.problem_solving,
-                );
+            //5- Sets the best chromosome (scan by index, clone only the winner)
+            {
+                let ps = self.configuration.limit_configuration.problem_solving;
+                let chromosomes = &self.population.chromosomes;
+                if let Some(best_idx) = best_chromosome_index(chromosomes, ps) {
+                    if !self.population.best_chromosome_is_set {
+                        self.population.best_chromosome =
+                            self.population.chromosomes[best_idx].clone();
+                        self.population.best_chromosome_is_set = true;
+                    } else {
+                        let candidate = self.population.chromosomes[best_idx].fitness();
+                        let current = self.population.best_chromosome.fitness();
+                        let better = match ps {
+                            ProblemSolving::Maximization | ProblemSolving::FixedFitness => {
+                                candidate > current
+                            }
+                            ProblemSolving::Minimization => candidate < current,
+                        };
+                        if better {
+                            self.population.best_chromosome =
+                                self.population.chromosomes[best_idx].clone();
+                        }
+                    }
+                }
             }
             debug!(target="ga_events", method="run"; "Best chromosome calculated - generation {}", i+1);
 
@@ -978,4 +996,30 @@ fn reinsert_elite<U: ChromosomeT>(
         let replace_idx = pop_len - 1 - i;
         chromosomes[replace_idx] = elite_individual;
     }
+}
+
+/// Finds the index of the best chromosome according to the problem objective.
+///
+/// Returns `None` for an empty slice.
+fn best_chromosome_index<U: ChromosomeT>(
+    chromosomes: &[U],
+    problem_solving: ProblemSolving,
+) -> Option<usize> {
+    if chromosomes.is_empty() {
+        return None;
+    }
+    let mut best = 0;
+    let mut best_fit = chromosomes[0].fitness();
+    for (i, c) in chromosomes.iter().enumerate().skip(1) {
+        let f = c.fitness();
+        let is_better = match problem_solving {
+            ProblemSolving::Maximization | ProblemSolving::FixedFitness => f > best_fit,
+            ProblemSolving::Minimization => f < best_fit,
+        };
+        if is_better {
+            best = i;
+            best_fit = f;
+        }
+    }
+    Some(best)
 }

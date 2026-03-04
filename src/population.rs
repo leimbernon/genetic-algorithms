@@ -19,7 +19,7 @@ where
 
     /// Best chromosome in the population (by fitness, according to `ProblemSolving`).
     pub best_chromosome: U,
-    best_chromosome_is_set: bool,
+    pub(crate) best_chromosome_is_set: bool,
 
     /// Generation numbers associated with this population (optional tracking).
     pub generation_numbers: Vec<usize>,
