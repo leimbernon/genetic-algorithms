@@ -1,8 +1,10 @@
 #[cfg(test)]
 use crate::structures::{Chromosome, Gene};
 use genetic_algorithms::{
+    configuration::CrossoverConfiguration,
     fitness::FitnessFnWrapper,
-    operations::crossover::{aga_probability, cycle, multipoint, uniform_crossover},
+    operations::crossover::{self, aga_probability, cycle, multipoint, uniform_crossover},
+    operations::Crossover,
 };
 
 #[test]
@@ -608,4 +610,42 @@ fn test_xover_aga_probability_all_same_high_fitness() {
     };
     let prob = aga_probability(&parent_1, &parent_2, 100.0, 100.0, 0.8, 0.2);
     assert_eq!(prob, 0.8);
+}
+
+// ==================== Phase 2 new tests ====================
+
+// --- Task 2.1: MultiPoint crossover requires number_of_points ---
+
+#[test]
+fn test_multipoint_crossover_missing_number_of_points() {
+    let parent_1 = Chromosome {
+        dna: vec![Gene { id: 1 }, Gene { id: 2 }, Gene { id: 3 }],
+        fitness: 0.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+    let parent_2 = Chromosome {
+        dna: vec![Gene { id: 4 }, Gene { id: 5 }, Gene { id: 6 }],
+        fitness: 0.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+
+    let config = CrossoverConfiguration {
+        method: Crossover::MultiPoint,
+        number_of_points: None,
+        ..Default::default()
+    };
+
+    let result = crossover::factory(&parent_1, &parent_2, config);
+    assert!(
+        result.is_err(),
+        "MultiPoint crossover without number_of_points should return Err"
+    );
+    let err_msg = format!("{}", result.unwrap_err());
+    assert!(
+        err_msg.contains("number_of_points"),
+        "Error should mention number_of_points, got: {}",
+        err_msg
+    );
 }

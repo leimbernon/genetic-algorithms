@@ -1,10 +1,8 @@
-use crate::chromosomes::{Binary, Range};
 use crate::configuration::GaConfiguration;
 use crate::error::GaError;
 use crate::population::Population;
 use crate::traits::ChromosomeT;
 use crate::validators::generic_validator as GenericValidator;
-use std::any::TypeId;
 use std::fmt::Debug;
 
 pub fn validate<U>(
@@ -16,11 +14,8 @@ where
     U: ChromosomeT + Send + Sync + 'static + Clone,
     U::Gene: 'static + Debug,
 {
-    if TypeId::of::<U::Gene>() == TypeId::of::<Binary>()
-        || TypeId::of::<U::Gene>() == TypeId::of::<Range<U::Gene>>()
-    {
-        Err(GaError::ValidationError("Not yet implemented".to_string()))
-    } else {
-        GenericValidator::validate(configuration, population, alleles)
-    }
+    // All chromosome types (including Binary and Range) use the generic validator.
+    // The previous type-gating that returned "Not yet implemented" for built-in types
+    // has been removed — there is no reason to reject the library's own types.
+    GenericValidator::validate(configuration, population, alleles)
 }

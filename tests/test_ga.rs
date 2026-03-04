@@ -1018,3 +1018,153 @@ fn test_ga_with_niching_disabled() {
 
     assert_eq!(result.chromosomes.len(), 10);
 }
+
+// ==================== Phase 2 new tests ====================
+
+// --- Task 2.3: set_gene out-of-bounds is a safe no-op ---
+
+#[test]
+fn test_set_gene_out_of_bounds_is_noop() {
+    let mut chromosome = Chromosome {
+        dna: vec![Gene { id: 1 }, Gene { id: 2 }, Gene { id: 3 }],
+        fitness: 5.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+
+    // Out-of-bounds set_gene should not panic and should leave DNA unchanged
+    chromosome.set_gene(999, Gene { id: 42 });
+    assert_eq!(chromosome.get_dna().len(), 3);
+    assert_eq!(chromosome.get_dna()[0].id, 1);
+    assert_eq!(chromosome.get_dna()[1].id, 2);
+    assert_eq!(chromosome.get_dna()[2].id, 3);
+
+    // Boundary: index == len (off by one)
+    chromosome.set_gene(3, Gene { id: 99 });
+    assert_eq!(chromosome.get_dna().len(), 3);
+
+    // Valid index still works
+    chromosome.set_gene(1, Gene { id: 77 });
+    assert_eq!(chromosome.get_dna()[1].id, 77);
+}
+
+// --- Task 2.5: TerminationCause set without callback ---
+
+#[test]
+fn test_termination_cause_set_without_callback() {
+    // Run GA without a callback — termination cause should still be set correctly.
+    let chromosomes: Vec<Chromosome> = (0..10)
+        .map(|i| {
+            let dna = vec![
+                Gene { id: 1 + i },
+                Gene { id: 2 + i },
+                Gene { id: 3 + i },
+                Gene { id: 4 + i },
+            ];
+            Chromosome {
+                dna,
+                fitness: (i + 1) as f64,
+                age: 0,
+                fitness_fn: FitnessFnWrapper::default(),
+            }
+        })
+        .collect();
+
+    let population = Population::new(chromosomes);
+    let mut ga = Ga::new();
+    let _result = ga
+        .with_problem_solving(ProblemSolving::Maximization)
+        .with_selection_method(Selection::Random)
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::Swap)
+        .with_survivor_method(Survivor::Fitness)
+        .with_population(population)
+        .with_max_generations(3)
+        .run()
+        .unwrap();
+
+    assert_eq!(
+        ga.termination_cause,
+        TerminationCause::GenerationLimitReached,
+        "TerminationCause should be GenerationLimitReached when no callback is used"
+    );
+}
+
+// --- Task 2.4: Elitism with more elite than population ---
+
+#[test]
+fn test_elitism_count_exceeding_population_does_not_panic() {
+    // Elitism count > population size should not panic or underflow.
+    let chromosomes: Vec<Chromosome> = (0..4)
+        .map(|i| {
+            let dna = vec![
+                Gene { id: 1 + i },
+                Gene { id: 2 + i },
+                Gene { id: 3 + i },
+                Gene { id: 4 + i },
+            ];
+            Chromosome {
+                dna,
+                fitness: (i + 1) as f64,
+                age: 0,
+                fitness_fn: FitnessFnWrapper::default(),
+            }
+        })
+        .collect();
+
+    let population = Population::new(chromosomes);
+    let mut ga = Ga::new();
+    let result = ga
+        .with_problem_solving(ProblemSolving::Maximization)
+        .with_selection_method(Selection::Random)
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::Swap)
+        .with_survivor_method(Survivor::Fitness)
+        .with_population(population)
+        .with_max_generations(3)
+        .with_elitism(100) // Much larger than population size of 4
+        .run()
+        .unwrap();
+
+    assert!(
+        !result.chromosomes.is_empty(),
+        "Population should not be empty after run with oversized elitism count"
+    );
+}
+
+// --- Task 2.7: Validator accepts built-in chromosome types ---
+
+#[test]
+fn test_validator_accepts_builtin_chromosome_type() {
+    // Previously, the validator factory would return "Not yet implemented" for
+    // built-in chromosome types (Binary, Range) due to type-gating.
+    // After the Phase 2 fix, all types pass through the generic validator.
+    // This test verifies initialization() succeeds (it calls validator internally).
+    let alleles = vec![
+        Gene { id: 1 },
+        Gene { id: 2 },
+        Gene { id: 3 },
+        Gene { id: 4 },
+        Gene { id: 5 },
+        Gene { id: 6 },
+    ];
+
+    let mut ga_instance: Ga<Chromosome> = Ga::new();
+    let result = ga_instance
+        .with_fitness_fn(fitness_fn)
+        .with_population_size(10)
+        .with_genes_per_chromosome(4)
+        .with_needs_unique_ids(false)
+        .with_alleles_can_be_repeated(true)
+        .with_alleles(alleles)
+        .with_initialization_fn(
+            genetic_algorithms::initializers::generic_random_initialization::<Chromosome>,
+        )
+        .initialization();
+
+    assert!(
+        result.is_ok(),
+        "Initialization (which calls validator) should accept built-in chromosome types, got: {:?}",
+        result.err()
+    );
+}

@@ -49,11 +49,21 @@ pub trait ChromosomeT: Clone + Default + Send + Sync + 'static {
 
     /// Replaces the gene at `gene_index` with `gene`.
     ///
+    /// If `gene_index` is out of bounds, this is a no-op and a warning is logged.
+    ///
     /// Implementation detail:
     /// - Builds a temporary owned `Vec<Gene>` from the current DNA and moves it back using `Cow::Owned`.
     /// - Implementors may override this with a more efficient in-place edit if their storage allows.
     fn set_gene(&mut self, gene_index: usize, gene: Self::Gene) -> &mut Self {
         let mut dna_temp = self.get_dna().to_vec();
+        if gene_index >= dna_temp.len() {
+            log::warn!(
+                "set_gene: index {} is out of bounds (DNA length {}), ignoring",
+                gene_index,
+                dna_temp.len()
+            );
+            return self;
+        }
         dna_temp[gene_index] = gene;
         // Move the vector to avoid an extra clone
         self.set_dna(Cow::Owned(dna_temp));

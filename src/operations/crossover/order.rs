@@ -91,5 +91,17 @@ fn ox_build_child<G: crate::traits::GeneT>(
         child_pos = (child_pos + 1) % len;
     }
 
-    child.into_iter().map(|g| g.unwrap()).collect()
+    child
+        .into_iter()
+        .enumerate()
+        .map(|(i, g)| {
+            g.unwrap_or_else(|| {
+                panic!(
+                    "Order crossover: child position {} was not filled. \
+                     This indicates non-unique gene IDs in the parents.",
+                    i
+                )
+            })
+        })
+        .collect()
 }

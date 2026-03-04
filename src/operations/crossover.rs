@@ -24,7 +24,12 @@ pub fn factory<U: ChromosomeT>(
     match configuration.method {
         Crossover::Cycle => cycle(parent_1, parent_2),
         Crossover::MultiPoint => {
-            multipoint(parent_1, parent_2, &configuration.number_of_points.unwrap())
+            let points = configuration.number_of_points.ok_or_else(|| {
+                GaError::ConfigurationError(
+                    "MultiPoint crossover requires number_of_points to be set".to_string(),
+                )
+            })?;
+            multipoint(parent_1, parent_2, &points)
         }
         Crossover::Uniform => uniform(parent_1, parent_2),
         Crossover::SinglePoint => single_point(parent_1, parent_2),

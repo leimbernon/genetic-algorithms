@@ -36,6 +36,16 @@ where
         )));
     }
 
+    // Guard: reject NaN fitness values which corrupt selection logic
+    for (i, chromosome) in chromosomes.iter().enumerate() {
+        if chromosome.get_fitness().is_nan() {
+            return Err(GaError::SelectionError(format!(
+                "Chromosome at index {} has NaN fitness. All chromosomes must have valid fitness before selection.",
+                i
+            )));
+        }
+    }
+
     let pairs = match configuration.method {
         Selection::Random => random(chromosomes),
         Selection::RouletteWheel => roulette_wheel_selection(chromosomes),

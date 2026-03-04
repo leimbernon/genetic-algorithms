@@ -19,6 +19,16 @@ pub fn factory<U: ChromosomeT>(
     population_size: usize,
     limit_configuration: LimitConfiguration,
 ) -> Result<(), GaError> {
+    // Guard: reject NaN fitness values which cause panics in sorting
+    for (i, chromosome) in chromosomes.iter().enumerate() {
+        if chromosome.get_fitness().is_nan() {
+            return Err(GaError::SelectionError(format!(
+                "Chromosome at index {} has NaN fitness. All chromosomes must have valid fitness before survivor selection.",
+                i
+            )));
+        }
+    }
+
     match survivor {
         Survivor::Fitness => fitness_based(chromosomes, population_size, limit_configuration),
         Survivor::Age => age_based(chromosomes, population_size),

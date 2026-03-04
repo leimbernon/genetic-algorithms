@@ -11,7 +11,6 @@ use log::{debug, info, trace};
 use rand::Rng;
 use rayon::prelude::*;
 use std::borrow::Cow;
-use std::env;
 use std::fmt::Debug;
 use std::sync::Arc;
 use std::time::Instant;
@@ -407,8 +406,7 @@ where
             ));
         }
 
-        //We set the environment variable from the configuration value
-        let key = "RUST_LOG";
+        //We initialize the logger programmatically (no env::set_var, which is UB in multi-threaded context)
         let log_level = match self.configuration.log_level {
             LogLevel::Off => log::LevelFilter::Off,
             LogLevel::Error => log::LevelFilter::Error,
@@ -417,8 +415,9 @@ where
             LogLevel::Debug => log::LevelFilter::Debug,
             LogLevel::Trace => log::LevelFilter::Trace,
         };
-        env::set_var(key, log_level.as_str());
-        let _ = env_logger::try_init();
+        let _ = env_logger::Builder::from_default_env()
+            .filter_level(log_level)
+            .try_init();
 
         //Initialize the adaptive ga
         if self.configuration.adaptive_ga {
@@ -659,10 +658,14 @@ where
             }
         }
 
-        // If we want to perform a callback and the fitness target is not reached
+        // Set termination cause when generation limit is reached (regardless of callback)
+        if self.termination_cause == TerminationCause::NotTerminated {
+            self.termination_cause = TerminationCause::GenerationLimitReached;
+        }
+
+        // If we want to perform a callback and the generation limit was just reached
         if let Some(func) = &callback {
-            if self.termination_cause == TerminationCause::NotTerminated {
-                self.termination_cause = TerminationCause::GenerationLimitReached;
+            if self.termination_cause == TerminationCause::GenerationLimitReached {
                 func(
                     &self.configuration.limit_configuration.max_generations,
                     &self.population,
@@ -697,11 +700,13 @@ where
         }
     } else if limit.problem_solving == ProblemSolving::FixedFitness {
         //If the problem-solving is a fixed fitness
-        for chromosome in chromosomes {
-            if chromosome.get_fitness() == limit.fitness_target.unwrap() {
-                trace!(target="ga_events", method="limit_reached"; "limit reached for fixed fitness");
-                result = true;
-                break;
+        if let Some(target) = limit.fitness_target {
+            for chromosome in chromosomes {
+                if chromosome.get_fitness() == target {
+                    trace!(target="ga_events", method="limit_reached"; "limit reached for fixed fitness");
+                    result = true;
+                    break;
+                }
             }
         }
     }
@@ -762,8 +767,20 @@ where
             let mut rng = rand::rng();
 
             // Getting the parent 1 and 2 for crossover
-            let parent_1 = chromosomes.get(*key).unwrap().clone();
-            let parent_2 = chromosomes.get(*value).unwrap().clone();
+            let parent_1 = chromosomes.get(*key).ok_or_else(|| {
+                GaError::SelectionError(format!(
+                    "Selection returned out-of-bounds index {} (population size {})",
+                    key,
+                    chromosomes.len()
+                ))
+            })?.clone();
+            let parent_2 = chromosomes.get(*value).ok_or_else(|| {
+                GaError::SelectionError(format!(
+                    "Selection returned out-of-bounds index {} (population size {})",
+                    value,
+                    chromosomes.len()
+                ))
+            })?.clone();
 
             // Making the crossover of the parents when the random number is below or equal to the given probability
             let crossover_probability = rng.random_range(0.0..1.0);
@@ -776,8 +793,8 @@ where
                         &parent_2,
                         f_max,
                         f_avg,
-                        configuration.crossover_configuration.probability_max.unwrap(),
-                        configuration.crossover_configuration.probability_min.unwrap(),
+                        configuration.crossover_configuration.probability_max.unwrap_or(1.0),
+                        configuration.crossover_configuration.probability_min.unwrap_or(0.0),
                     )
                 };
 
@@ -791,8 +808,8 @@ where
                         &parent_1,
                         &parent_2,
                         f_avg,
-                        configuration.mutation_configuration.probability_max.unwrap(),
-                        configuration.mutation_configuration.probability_min.unwrap(),
+                        configuration.mutation_configuration.probability_max.unwrap_or(1.0),
+                        configuration.mutation_configuration.probability_min.unwrap_or(0.0),
                     )
                 };
 
@@ -803,8 +820,12 @@ where
 
             if crossover_probability <= effective_crossover_prob {
                 let mut children = crossover::factory(&parent_1, &parent_2, configuration.crossover_configuration)?;
-                child_2 = children.pop().unwrap();
-                child_1 = children.pop().unwrap();
+                child_2 = children.pop().ok_or_else(|| {
+                    GaError::CrossoverError("Crossover returned fewer than 2 children".to_string())
+                })?;
+                child_1 = children.pop().ok_or_else(|| {
+                    GaError::CrossoverError("Crossover returned fewer than 2 children".to_string())
+                })?;
             } else {
                 child_1 = parent_1;
                 child_2 = parent_2;
@@ -891,12 +912,11 @@ fn reinsert_elite<U: ChromosomeT>(
         }
     });
 
-    // Replace the worst individuals with elite
+    // Replace the worst individuals with elite (guard against more elite than population)
     let pop_len = chromosomes.len();
-    for (i, elite_individual) in elite.into_iter().enumerate() {
+    let count = elite.len().min(pop_len);
+    for (i, elite_individual) in elite.into_iter().take(count).enumerate() {
         let replace_idx = pop_len - 1 - i;
-        if replace_idx < pop_len {
-            chromosomes[replace_idx] = elite_individual;
-        }
+        chromosomes[replace_idx] = elite_individual;
     }
 }

@@ -3,7 +3,8 @@ use crate::structures::{Chromosome, Gene};
 use genetic_algorithms::{
     configuration::{LimitConfiguration, ProblemSolving},
     fitness::FitnessFnWrapper,
-    operations::survivor::{age, fitness},
+    operations::survivor::{self, age, fitness},
+    operations::Survivor,
     traits::ChromosomeT,
 };
 
@@ -487,4 +488,80 @@ fn test_survivor_fitness_fixed() {
     assert_eq!(population.len(), 10);
     assert_eq!(population[0].get_fitness(), 10.2);
     assert_eq!(population[9].get_fitness(), 15.0);
+}
+
+// ==================== Phase 2 new tests ====================
+
+// --- Task 2.6: NaN fitness guard in survivor factory ---
+
+#[test]
+fn test_survivor_factory_rejects_nan_fitness() {
+    let mut chromosomes: Vec<Chromosome> = vec![
+        Chromosome {
+            dna: vec![Gene { id: 1 }],
+            fitness: 10.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        },
+        Chromosome {
+            dna: vec![Gene { id: 2 }],
+            fitness: f64::NAN,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        },
+        Chromosome {
+            dna: vec![Gene { id: 3 }],
+            fitness: 20.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        },
+    ];
+
+    let result = survivor::factory(
+        Survivor::Fitness,
+        &mut chromosomes,
+        2,
+        LimitConfiguration {
+            problem_solving: ProblemSolving::Maximization,
+            ..Default::default()
+        },
+    );
+    assert!(
+        result.is_err(),
+        "Survivor factory should reject NaN fitness"
+    );
+    let err_msg = format!("{}", result.unwrap_err());
+    assert!(
+        err_msg.contains("NaN fitness"),
+        "Error should mention NaN fitness, got: {}",
+        err_msg
+    );
+}
+
+#[test]
+fn test_survivor_factory_accepts_valid_fitness() {
+    let mut chromosomes: Vec<Chromosome> = (0..5)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: 10.0 + i as f64,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+
+    let result = survivor::factory(
+        Survivor::Fitness,
+        &mut chromosomes,
+        3,
+        LimitConfiguration {
+            problem_solving: ProblemSolving::Maximization,
+            ..Default::default()
+        },
+    );
+    assert!(
+        result.is_ok(),
+        "Survivor factory should accept valid fitness, got: {:?}",
+        result.err()
+    );
+    assert_eq!(chromosomes.len(), 3);
 }

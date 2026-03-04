@@ -1,8 +1,10 @@
 #[cfg(test)]
 use crate::structures::{Chromosome, Gene};
 use genetic_algorithms::{
+    configuration::SelectionConfiguration,
     fitness::FitnessFnWrapper,
-    operations::selection::{fitness_proportionate, random, tournament},
+    operations::selection::{self, fitness_proportionate, random, tournament},
+    operations::Selection,
 };
 
 #[test]
@@ -647,5 +649,76 @@ fn test_random_selection_single_chromosome() {
     assert!(
         pairs.is_empty(),
         "Random selection with 1 chromosome should produce no pairs"
+    );
+}
+
+// ==================== Phase 2 new tests ====================
+
+// --- Task 2.6: NaN fitness guard in selection factory ---
+
+#[test]
+fn test_selection_factory_rejects_nan_fitness() {
+    // A population where one chromosome has NaN fitness should be rejected by the factory.
+    let chromosomes: Vec<Chromosome> = vec![
+        Chromosome {
+            dna: vec![Gene { id: 1 }],
+            fitness: 10.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        },
+        Chromosome {
+            dna: vec![Gene { id: 2 }],
+            fitness: f64::NAN,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        },
+        Chromosome {
+            dna: vec![Gene { id: 3 }],
+            fitness: 20.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        },
+    ];
+
+    let config = SelectionConfiguration {
+        method: Selection::Random,
+        number_of_couples: 1,
+    };
+
+    let result = selection::factory(&chromosomes, config, 1);
+    assert!(
+        result.is_err(),
+        "Selection factory should reject NaN fitness"
+    );
+    let err_msg = format!("{}", result.unwrap_err());
+    assert!(
+        err_msg.contains("NaN fitness"),
+        "Error should mention NaN fitness, got: {}",
+        err_msg
+    );
+}
+
+#[test]
+fn test_selection_factory_accepts_valid_fitness() {
+    // All chromosomes have valid fitness — factory should succeed.
+    let chromosomes: Vec<Chromosome> = (0..6)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: 10.0 + i as f64,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+
+    let config = SelectionConfiguration {
+        method: Selection::Random,
+        number_of_couples: 2,
+    };
+
+    let result = selection::factory(&chromosomes, config, 1);
+    assert!(
+        result.is_ok(),
+        "Selection factory should accept valid fitness, got: {:?}",
+        result.err()
     );
 }

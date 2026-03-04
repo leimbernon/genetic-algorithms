@@ -12,13 +12,18 @@ pub fn fitness_based<U: ChromosomeT>(
     debug!(target="survivor_events", method="fitness_based"; "Starting fitness based survivor method");
     if limit_configuration.problem_solving != ProblemSolving::FixedFitness {
         //We sort the chromosomes by their fitness if there is not a fixed fitness problem
-        chromosomes.sort_by(|a, b| b.get_fitness().partial_cmp(&a.get_fitness()).unwrap());
+        chromosomes.sort_by(|a, b| {
+            b.get_fitness()
+                .partial_cmp(&a.get_fitness())
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
     } else {
         //We sort the chromosomes by their distance with the fitness target in a fixed fitness problem
+        let target = limit_configuration.fitness_target.unwrap_or(0.0);
         chromosomes.sort_by(|a, b| {
-            b.get_fitness_distance(&limit_configuration.fitness_target.unwrap())
-                .partial_cmp(&a.get_fitness_distance(&limit_configuration.fitness_target.unwrap()))
-                .unwrap()
+            b.get_fitness_distance(&target)
+                .partial_cmp(&a.get_fitness_distance(&target))
+                .unwrap_or(std::cmp::Ordering::Equal)
         });
     }
 
