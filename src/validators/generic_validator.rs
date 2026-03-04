@@ -5,6 +5,7 @@ use crate::operations;
 use crate::population::Population;
 use crate::traits::{ChromosomeT, GeneT};
 use std::any::TypeId;
+use std::collections::HashSet;
 
 pub fn validate<U>(
     configuration: Option<&GaConfiguration>,
@@ -67,22 +68,21 @@ where
     Ok(())
 }
 
-/// Checks that every chromosome has unique id's within their dna
+/// Checks that every chromosome has unique id's within their dna.
+///
+/// Uses a `HashSet` for O(N) per chromosome instead of O(N²) nested loop.
 pub fn unique_gene_ids<U>(population: &Population<U>) -> Result<(), GaError>
 where
     U: ChromosomeT + Send + Sync + 'static + Clone,
 {
-    //We analyze chromosome by chromosome
     for (chromosome_number, chromosome) in population.chromosomes.iter().enumerate() {
-        //We check if the gene id is none or if it already exists in the dna
+        let mut seen = HashSet::with_capacity(chromosome.dna().len());
         for (gene_number, gene) in chromosome.dna().iter().enumerate() {
-            for i in gene_number + 1..chromosome.dna().len() {
-                //If the gene id is equal to any other, we stop the run
-                if gene.id().eq(&chromosome.dna().get(i).unwrap().id()) {
-                    return Err(GaError::ValidationError(format!(
-                        "Gene id must be unique within the DNA. The chromosome #{}, has same gene id at gene #{} and gene #{}",
-                        chromosome_number, gene_number, i)));
-                }
+            if !seen.insert(gene.id()) {
+                return Err(GaError::ValidationError(format!(
+                    "Gene id must be unique within the DNA. The chromosome #{} has a duplicate gene id {} at gene #{}",
+                    chromosome_number, gene.id(), gene_number
+                )));
             }
         }
     }
@@ -103,18 +103,24 @@ pub fn fitness_target_is_some(
     Ok(())
 }
 
-/// Checks that all the chromosomes have the same dna length
+/// Checks that all the chromosomes have the same dna length.
+///
+/// Compares each chromosome to the first one in O(N) instead of O(N²).
 pub fn same_dna_length<U>(population: &Population<U>) -> Result<(), GaError>
 where
     U: ChromosomeT + Send + Sync + 'static + Clone,
 {
-    for (chromosome_number, chromosome) in population.chromosomes.iter().enumerate() {
-        for i in chromosome_number + 1..population.chromosomes.len() {
-            if chromosome.dna().len() != population.chromosomes.get(i).unwrap().dna().len() {
-                return Err(GaError::ValidationError(format!(
-                    "All the chromosomes must have the same dna length. Chromosome #{} has a dna with length {} and chromosome #{} has a dna with length {}.",
-                    chromosome_number, chromosome.dna().len(), i, population.chromosomes.get(i).unwrap().dna().len())));
-            }
+    let Some(first) = population.chromosomes.first() else {
+        return Ok(());
+    };
+    let expected_len = first.dna().len();
+    for (i, chromosome) in population.chromosomes.iter().enumerate().skip(1) {
+        let len = chromosome.dna().len();
+        if len != expected_len {
+            return Err(GaError::ValidationError(format!(
+                "All the chromosomes must have the same dna length. Chromosome #0 has a dna with length {} and chromosome #{} has a dna with length {}.",
+                expected_len, i, len
+            )));
         }
     }
     Ok(())
