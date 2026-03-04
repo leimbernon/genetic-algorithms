@@ -32,7 +32,7 @@ where
         + std::ops::Add<Output = T>
         + std::ops::Sub<Output = T>,
 {
-    let len = individual.get_dna().len();
+    let len = individual.dna().len();
     if len == 0 {
         return;
     }
@@ -40,7 +40,7 @@ where
     let mut rng = rand::rng();
     let idx = rng.random_range(0..len);
 
-    let mut dna = individual.get_dna().to_vec();
+    let mut dna = individual.dna().to_vec();
     let mut gene = dna[idx].clone();
 
     if gene.ranges.is_empty() {
@@ -90,7 +90,7 @@ mod tests {
         let mut c = build_f64_chromosome(5);
         for _ in 0..100 {
             creep_mutation(&mut c, 5.0);
-            for gene in c.get_dna() {
+            for gene in c.dna() {
                 let (lo, hi) = gene.ranges[0];
                 assert!(
                     gene.value >= lo && gene.value <= hi,
@@ -108,11 +108,11 @@ mod tests {
         let mut c = build_f64_chromosome(5);
         let mut changed = false;
         for _ in 0..200 {
-            let before = c.get_dna().to_vec();
+            let before = c.dna().to_vec();
             creep_mutation(&mut c, 10.0);
             if before
                 .iter()
-                .zip(c.get_dna())
+                .zip(c.dna())
                 .any(|(b, a)| b.value != a.value)
             {
                 changed = true;
@@ -128,11 +128,11 @@ mod tests {
     #[test]
     fn creep_mutation_changes_at_most_one_gene() {
         let mut c = build_f64_chromosome(8);
-        let before = c.get_dna().to_vec();
+        let before = c.dna().to_vec();
         creep_mutation(&mut c, 5.0);
         let diff_count = before
             .iter()
-            .zip(c.get_dna())
+            .zip(c.dna())
             .filter(|(b, a)| b.value != a.value)
             .count();
         assert!(
@@ -150,9 +150,9 @@ mod tests {
         c.set_dna(Cow::Owned(dna));
 
         for _ in 0..100 {
-            let before_val = c.get_dna()[0].value;
+            let before_val = c.dna()[0].value;
             creep_mutation(&mut c, 1.0);
-            let after_val = c.get_dna()[0].value;
+            let after_val = c.dna()[0].value;
             assert!(
                 (after_val - before_val).abs() <= 1.0 + f64::EPSILON,
                 "Perturbation {} exceeded step 1.0",
@@ -165,6 +165,6 @@ mod tests {
     fn creep_mutation_empty_dna_does_nothing() {
         let mut c = RangeChromosome::<f64>::new();
         creep_mutation(&mut c, 5.0);
-        assert_eq!(c.get_dna().len(), 0);
+        assert_eq!(c.dna().len(), 0);
     }
 }

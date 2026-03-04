@@ -4,7 +4,7 @@ use log::{debug, trace};
 pub fn age_based<U: ChromosomeT>(chromosomes: &mut Vec<U>, population_size: usize) {
     //We first sort the chromosomes by their fitness
     debug!(target="survivor_events", method="age_based"; "Starting age based survivor method");
-    chromosomes.sort_by_key(|a| std::cmp::Reverse(a.get_age()));
+    chromosomes.sort_by_key(|a| std::cmp::Reverse(a.age()));
 
     //If there is more chromosomes than the defined population number
     trace!(target="survivor_events", method="age_based"; "Chromosomes length {} - population size {}", chromosomes.len(), population_size);

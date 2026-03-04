@@ -18,7 +18,7 @@ pub fn value_mutation<T>(individual: &mut RangeChromosome<T>)
 where
     T: Sync + Send + Clone + Default + Debug + PartialOrd + SampleUniform + Copy + 'static,
 {
-    let len = individual.get_dna().len();
+    let len = individual.dna().len();
     if len == 0 {
         return;
     }
@@ -26,7 +26,7 @@ where
     let mut rng = rand::rng();
     let idx = rng.random_range(0..len);
 
-    let mut dna = individual.get_dna().to_vec();
+    let mut dna = individual.dna().to_vec();
     let mut gene = dna[idx].clone();
 
     if gene.ranges.is_empty() {

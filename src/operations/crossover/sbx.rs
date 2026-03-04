@@ -33,20 +33,20 @@ pub fn sbx<T>(
 where
     T: Sync + Send + Clone + Default + Debug + PartialOrd + Copy + 'static + SbxConvertible,
 {
-    let len = parent_1.get_dna().len();
-    if len != parent_2.get_dna().len() {
+    let len = parent_1.dna().len();
+    if len != parent_2.dna().len() {
         return Err(GaError::CrossoverError(format!(
             "Parents must have the same DNA length. Parent 1: {}, Parent 2: {}",
             len,
-            parent_2.get_dna().len()
+            parent_2.dna().len()
         )));
     }
 
     debug!(target="crossover_events", method="sbx"; "Starting SBX crossover with eta={}", eta);
 
     let mut rng = rand::rng();
-    let dna1 = parent_1.get_dna();
-    let dna2 = parent_2.get_dna();
+    let dna1 = parent_1.dna();
+    let dna2 = parent_2.dna();
 
     let mut child_dna_1 = Vec::with_capacity(len);
     let mut child_dna_2 = Vec::with_capacity(len);
@@ -172,8 +172,8 @@ mod tests {
         let (p1, p2) = build_parents();
         let children = sbx(&p1, &p2, 2.0).unwrap();
         assert_eq!(children.len(), 2);
-        assert_eq!(children[0].get_dna().len(), 3);
-        assert_eq!(children[1].get_dna().len(), 3);
+        assert_eq!(children[0].dna().len(), 3);
+        assert_eq!(children[1].dna().len(), 3);
     }
 
     #[test]
@@ -182,7 +182,7 @@ mod tests {
         for _ in 0..100 {
             let children = sbx(&p1, &p2, 2.0).unwrap();
             for child in &children {
-                for gene in child.get_dna() {
+                for gene in child.dna() {
                     let (lo, hi) = gene.ranges[0];
                     assert!(
                         gene.value >= lo && gene.value <= hi,
@@ -224,7 +224,7 @@ mod tests {
         let p2 = p1.clone();
         let children = sbx(&p1, &p2, 10.0).unwrap();
         for child in &children {
-            for (i, gene) in child.get_dna().iter().enumerate() {
+            for (i, gene) in child.dna().iter().enumerate() {
                 assert!(
                     (gene.value - 50.0).abs() < 1e-10,
                     "Gene {} should be 50.0, got {}",
@@ -250,7 +250,7 @@ mod tests {
         let children = sbx(&p1, &p2, 2.0).unwrap();
         assert_eq!(children.len(), 2);
         for child in &children {
-            for gene in child.get_dna() {
+            for gene in child.dna() {
                 let (lo, hi) = gene.ranges[0];
                 assert!(
                     gene.value >= lo && gene.value <= hi,
@@ -270,9 +270,9 @@ mod tests {
         let mut close_count = 0;
         for _ in 0..100 {
             let children = sbx(&p1, &p2, 100.0).unwrap();
-            let c1_val = children[0].get_dna()[0].value;
-            let p1_val = p1.get_dna()[0].value;
-            let p2_val = p2.get_dna()[0].value;
+            let c1_val = children[0].dna()[0].value;
+            let p1_val = p1.dna()[0].value;
+            let p2_val = p2.dna()[0].value;
             let midpoint = (p1_val + p2_val) / 2.0;
             let range = (p1_val - p2_val).abs();
             // Children should be within parent range

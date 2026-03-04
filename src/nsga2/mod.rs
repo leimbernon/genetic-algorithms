@@ -294,7 +294,7 @@ where
     fn evaluate_objectives(&self, chromosome: &U) -> Vec<f64> {
         self.objective_fns
             .iter()
-            .map(|f| f(chromosome.get_dna()))
+            .map(|f| f(chromosome.dna()))
             .collect()
     }
 

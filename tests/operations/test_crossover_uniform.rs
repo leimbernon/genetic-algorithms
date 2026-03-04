@@ -35,11 +35,11 @@ fn uniform_crossover_preserves_length_and_values_from_parents() {
     let children = crossover::factory(&p1, &p2, cfg).expect("Crossover should succeed");
     assert_eq!(children.len(), 2);
     for child in children.iter() {
-        assert_eq!(child.get_dna().len(), p1.get_dna().len());
-        for (i, gene) in child.get_dna().iter().enumerate() {
+        assert_eq!(child.dna().len(), p1.dna().len());
+        for (i, gene) in child.dna().iter().enumerate() {
             let v = gene.value;
-            let v1 = p1.get_dna()[i].value;
-            let v2 = p2.get_dna()[i].value;
+            let v1 = p1.dna()[i].value;
+            let v2 = p2.dna()[i].value;
             assert!(
                 v == v1 || v == v2,
                 "Child gene {} value {} not taken from parents {} or {}",

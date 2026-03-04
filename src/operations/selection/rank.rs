@@ -34,7 +34,7 @@ pub fn rank_selection<U: ChromosomeT>(chromosomes: &[U], couples: usize) -> Vec<
     let mut indexed: Vec<(usize, f64)> = chromosomes
         .iter()
         .enumerate()
-        .map(|(i, c)| (i, c.get_fitness()))
+        .map(|(i, c)| (i, c.fitness()))
         .collect();
     indexed.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
 

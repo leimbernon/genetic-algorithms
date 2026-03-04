@@ -212,7 +212,7 @@ where
     }
 
     /// Returns the best chromosome across all islands.
-    fn get_global_best(&self, problem_solving: ProblemSolving) -> U {
+    fn global_best(&self, problem_solving: ProblemSolving) -> U {
         let mut best: Option<&U> = None;
 
         for island in &self.islands {
@@ -221,10 +221,10 @@ where
                     None => true,
                     Some(current_best) => match problem_solving {
                         ProblemSolving::Minimization | ProblemSolving::FixedFitness => {
-                            chrom.get_fitness() < current_best.get_fitness()
+                            chrom.fitness() < current_best.fitness()
                         }
                         ProblemSolving::Maximization => {
-                            chrom.get_fitness() > current_best.get_fitness()
+                            chrom.fitness() > current_best.fitness()
                         }
                     },
                 };
@@ -274,8 +274,8 @@ where
 
             // Check fitness target
             if let Some(target) = fitness_target {
-                let best = self.get_global_best(problem_solving);
-                let dist = (best.get_fitness() - target).abs();
+                let best = self.global_best(problem_solving);
+                let dist = (best.fitness() - target).abs();
                 if dist < 1e-10 {
                     info!(
                         target: "island_events",
@@ -298,7 +298,7 @@ where
             }
         }
 
-        Ok(self.get_global_best(problem_solving))
+        Ok(self.global_best(problem_solving))
     }
 
     /// Performs one generation of evolution on each island.

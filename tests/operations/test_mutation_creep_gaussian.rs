@@ -30,11 +30,11 @@ fn creep_mutation_via_factory_changes_value() {
     let mut c = build_f64_chromosome(5);
     let mut changed = false;
     for _ in 0..200 {
-        let before = c.get_dna().to_vec();
+        let before = c.dna().to_vec();
         mutation::factory_with_params(Mutation::Creep, &mut c, Some(10.0), None).unwrap();
         if before
             .iter()
-            .zip(c.get_dna())
+            .zip(c.dna())
             .any(|(b, a)| b.value != a.value)
         {
             changed = true;
@@ -52,7 +52,7 @@ fn creep_mutation_via_factory_stays_in_range() {
     let mut c = build_f64_chromosome(8);
     for _ in 0..100 {
         mutation::factory_with_params(Mutation::Creep, &mut c, Some(5.0), None).unwrap();
-        for gene in c.get_dna() {
+        for gene in c.dna() {
             let (lo, hi) = gene.ranges[0];
             assert!(
                 gene.value >= lo && gene.value <= hi,
@@ -70,11 +70,11 @@ fn creep_mutation_i32_via_factory() {
     let mut c = build_i32_chromosome(5);
     let mut changed = false;
     for _ in 0..200 {
-        let before = c.get_dna().to_vec();
+        let before = c.dna().to_vec();
         mutation::factory_with_params(Mutation::Creep, &mut c, Some(5.0), None).unwrap();
         if before
             .iter()
-            .zip(c.get_dna())
+            .zip(c.dna())
             .any(|(b, a)| b.value != a.value)
         {
             changed = true;
@@ -94,11 +94,11 @@ fn gaussian_mutation_via_factory_changes_value() {
     let mut c = build_f64_chromosome(5);
     let mut changed = false;
     for _ in 0..200 {
-        let before = c.get_dna().to_vec();
+        let before = c.dna().to_vec();
         mutation::factory_with_params(Mutation::Gaussian, &mut c, None, Some(10.0)).unwrap();
         if before
             .iter()
-            .zip(c.get_dna())
+            .zip(c.dna())
             .any(|(b, a)| b.value != a.value)
         {
             changed = true;
@@ -116,7 +116,7 @@ fn gaussian_mutation_via_factory_stays_in_range() {
     let mut c = build_f64_chromosome(8);
     for _ in 0..200 {
         mutation::factory_with_params(Mutation::Gaussian, &mut c, None, Some(20.0)).unwrap();
-        for gene in c.get_dna() {
+        for gene in c.dna() {
             let (lo, hi) = gene.ranges[0];
             assert!(
                 gene.value >= lo && gene.value <= hi,
@@ -134,11 +134,11 @@ fn gaussian_mutation_i32_via_factory() {
     let mut c = build_i32_chromosome(5);
     let mut changed = false;
     for _ in 0..200 {
-        let before = c.get_dna().to_vec();
+        let before = c.dna().to_vec();
         mutation::factory_with_params(Mutation::Gaussian, &mut c, None, Some(5.0)).unwrap();
         if before
             .iter()
-            .zip(c.get_dna())
+            .zip(c.dna())
             .any(|(b, a)| b.value != a.value)
         {
             changed = true;

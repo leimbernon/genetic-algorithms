@@ -56,10 +56,10 @@ pub fn aga_probability<U: ChromosomeT>(
     probability_max: f64,
     probability_min: f64,
 ) -> f64 {
-    let larger_f = if parent_1.get_fitness() > parent_2.get_fitness() {
-        parent_1.get_fitness()
+    let larger_f = if parent_1.fitness() > parent_2.fitness() {
+        parent_1.fitness()
     } else {
-        parent_2.get_fitness()
+        parent_2.fitness()
     };
 
     if larger_f >= f_avg {

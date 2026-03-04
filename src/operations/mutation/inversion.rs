@@ -5,11 +5,11 @@ use rand::Rng;
 pub fn inversion<U: ChromosomeT>(individual: &mut U) {
     // Starting the inversion mutation and obtaining two random indices
     debug!(target="mutation_events", method="inversion"; "Starting the inversion mutation");
-    if individual.get_dna().len() < 2 {
+    if individual.dna().len() < 2 {
         return;
     }
     let mut rng = rand::rng();
-    let len = individual.get_dna().len();
+    let len = individual.dna().len();
 
     // Select two distinct random indices
     let (index_1, index_2) = (rng.random_range(0..len), rng.random_range(0..len));
@@ -24,8 +24,8 @@ pub fn inversion<U: ChromosomeT>(individual: &mut U) {
     // Swap genes between the selected indices
     for i in 0..(higher_index - lower_index) / 2 {
         // Retrieve genes at both ends
-        let gene_start = individual.get_dna()[lower_index + i].clone();
-        let gene_end = individual.get_dna()[higher_index - i].clone();
+        let gene_start = individual.dna()[lower_index + i].clone();
+        let gene_end = individual.dna()[higher_index - i].clone();
 
         // Swap the genes using `set_gene` directly
         individual.set_gene(lower_index + i, gene_end);

@@ -9,10 +9,10 @@ pub fn multipoint<U: ChromosomeT>(
     crossover_number_of_points: usize,
 ) -> Result<Vec<U>, GaError> {
     //Before doing the operation, we check that the dna in parent 1 has the same length of the dna in parent 2
-    if parent_1.get_dna().len() != parent_2.get_dna().len() {
+    if parent_1.dna().len() != parent_2.dna().len() {
         return Err(GaError::CrossoverError(format!(
             "Parent 1 and parent 2 must have the same dna length. Parent 1 has a length of {} and parent 2 has a length of {}",
-            parent_1.get_dna().len(), parent_2.get_dna().len())));
+            parent_1.dna().len(), parent_2.dna().len())));
     }
 
     let mut child_1 = parent_1.clone();
@@ -22,7 +22,7 @@ pub fn multipoint<U: ChromosomeT>(
     let mut dna_child_2 = Vec::new();
     debug!(target="crossover_events", method="multipoint_crossover"; "Starting the  multipoint crossover");
 
-    let dna_len = parent_1.get_dna().len();
+    let dna_len = parent_1.dna().len();
 
     // Clamp the number of crossover points: at most dna_len - 1
     let n = {
@@ -58,11 +58,11 @@ pub fn multipoint<U: ChromosomeT>(
         }
 
         if !crossed {
-            dna_child_1.push(parent_1.get_dna().get(gn).cloned().unwrap());
-            dna_child_2.push(parent_2.get_dna().get(gn).cloned().unwrap());
+            dna_child_1.push(parent_1.dna().get(gn).cloned().unwrap());
+            dna_child_2.push(parent_2.dna().get(gn).cloned().unwrap());
         } else {
-            dna_child_1.push(parent_2.get_dna().get(gn).cloned().unwrap());
-            dna_child_2.push(parent_1.get_dna().get(gn).cloned().unwrap());
+            dna_child_1.push(parent_2.dna().get(gn).cloned().unwrap());
+            dna_child_2.push(parent_1.dna().get(gn).cloned().unwrap());
         }
     }
 

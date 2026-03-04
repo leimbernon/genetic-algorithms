@@ -6,16 +6,16 @@ use std::borrow::Cow;
 
 pub fn uniform<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
     //Before doing the operation, we check that the dna in the parent 1 has the same length of the dna in the parent 2
-    if parent_1.get_dna().len() != parent_2.get_dna().len() {
+    if parent_1.dna().len() != parent_2.dna().len() {
         return Err(GaError::CrossoverError(format!(
             "parent 1 and parent 2 must have the same dna length. Currently parent 1 has a length of {} and parent 2 {}",
-            parent_1.get_dna().len(), parent_2.get_dna().len())));
+            parent_1.dna().len(), parent_2.dna().len())));
     }
 
     let mut rng = rand::rng();
 
     //Creation of the children DNA using reserve + push to avoid redundant initialization
-    let len = parent_1.get_dna().len();
+    let len = parent_1.dna().len();
     let mut dna_child_1 = Vec::with_capacity(len);
     let mut dna_child_2 = Vec::with_capacity(len);
     debug!(target="crossover_events", method="uniform"; "Starting the  uniform crossover");
@@ -28,11 +28,11 @@ pub fn uniform<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaE
         trace!(target="crossover_events", method="uniform"; "Random crossover number {}", crossover);
 
         if crossover == 0 {
-            dna_child_1.push(parent_1.get_dna().get(i).cloned().unwrap());
-            dna_child_2.push(parent_2.get_dna().get(i).cloned().unwrap());
+            dna_child_1.push(parent_1.dna().get(i).cloned().unwrap());
+            dna_child_2.push(parent_2.dna().get(i).cloned().unwrap());
         } else {
-            dna_child_1.push(parent_2.get_dna().get(i).cloned().unwrap());
-            dna_child_2.push(parent_1.get_dna().get(i).cloned().unwrap());
+            dna_child_1.push(parent_2.dna().get(i).cloned().unwrap());
+            dna_child_2.push(parent_1.dna().get(i).cloned().unwrap());
         }
     }
 

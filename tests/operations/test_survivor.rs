@@ -125,8 +125,8 @@ fn test_fitness_survivor_minization() {
 
     //Tests that the population has 10 chromosomes
     assert_eq!(population.len(), 10);
-    assert_eq!(population[0].get_fitness(), 17.0);
-    assert_eq!(population[9].get_fitness(), 10.1);
+    assert_eq!(population[0].fitness(), 17.0);
+    assert_eq!(population[9].fitness(), 10.1);
 }
 
 #[test]
@@ -246,8 +246,8 @@ fn test_fitness_survivor_maximization() {
 
     //Tests that the population has 10 chromosomes
     assert_eq!(population.len(), 10);
-    assert_eq!(population[0].get_fitness(), 19.0);
-    assert_eq!(population[9].get_fitness(), 10.3);
+    assert_eq!(population[0].fitness(), 19.0);
+    assert_eq!(population[9].fitness(), 10.3);
 }
 
 #[test]
@@ -360,12 +360,12 @@ fn test_age_based_survivor() {
 
     //Tests that the population has 6 chromosomes
     assert_eq!(population.len(), 6);
-    assert_eq!(population[0].get_age(), 3);
-    assert_eq!(population[1].get_age(), 3);
-    assert_eq!(population[2].get_age(), 2);
-    assert_eq!(population[3].get_age(), 2);
-    assert_eq!(population[4].get_age(), 2);
-    assert_eq!(population[5].get_age(), 2);
+    assert_eq!(population[0].age(), 3);
+    assert_eq!(population[1].age(), 3);
+    assert_eq!(population[2].age(), 2);
+    assert_eq!(population[3].age(), 2);
+    assert_eq!(population[4].age(), 2);
+    assert_eq!(population[5].age(), 2);
 }
 
 #[test]
@@ -486,8 +486,8 @@ fn test_survivor_fitness_fixed() {
 
     //Tests that the population has 10 chromosomes
     assert_eq!(population.len(), 10);
-    assert_eq!(population[0].get_fitness(), 10.2);
-    assert_eq!(population[9].get_fitness(), 15.0);
+    assert_eq!(population[0].fitness(), 10.2);
+    assert_eq!(population[9].fitness(), 15.0);
 }
 
 // ==================== Phase 2 new tests ====================

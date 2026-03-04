@@ -28,7 +28,7 @@ fn bit_flip_changes_exactly_one_gene() {
 
         bit_flip(&mut chromosome);
 
-        let result = chromosome.get_dna();
+        let result = chromosome.dna();
         let mut diff_count = 0;
         for i in 0..dna.len() {
             if result[i].value != dna[i].value {
@@ -53,7 +53,7 @@ fn bit_flip_flips_the_value() {
 
     bit_flip(&mut chromosome);
 
-    let result = chromosome.get_dna();
+    let result = chromosome.dna();
     let false_count = result.iter().filter(|g| !g.value).count();
     assert_eq!(false_count, 1, "One gene should have been flipped to false");
 }
@@ -78,7 +78,7 @@ fn bit_flip_preserves_length_and_ids() {
 
     bit_flip(&mut chromosome);
 
-    let result = chromosome.get_dna();
+    let result = chromosome.dna();
     assert_eq!(result.len(), 4);
     for i in 0..4 {
         assert_eq!(result[i].id, dna[i].id, "IDs should be preserved");

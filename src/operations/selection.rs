@@ -38,7 +38,7 @@ where
 
     // Guard: reject NaN fitness values which corrupt selection logic
     for (i, chromosome) in chromosomes.iter().enumerate() {
-        if chromosome.get_fitness().is_nan() {
+        if chromosome.fitness().is_nan() {
             return Err(GaError::SelectionError(format!(
                 "Chromosome at index {} has NaN fitness. All chromosomes must have valid fitness before selection.",
                 i

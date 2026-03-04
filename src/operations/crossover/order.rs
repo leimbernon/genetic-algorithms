@@ -14,12 +14,12 @@ use std::borrow::Cow;
 /// 3. Fill the remaining positions with genes from parent 2, in order, skipping duplicates.
 /// 4. Repeat symmetrically for child 2.
 pub fn order<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
-    let len = parent_1.get_dna().len();
-    if len != parent_2.get_dna().len() {
+    let len = parent_1.dna().len();
+    if len != parent_2.dna().len() {
         return Err(GaError::CrossoverError(format!(
             "Parents must have the same DNA length. Parent 1: {}, Parent 2: {}",
             len,
-            parent_2.get_dna().len()
+            parent_2.dna().len()
         )));
     }
     if len < 3 {
@@ -40,8 +40,8 @@ pub fn order<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaErr
         std::mem::swap(&mut p1, &mut p2);
     }
 
-    let child_dna_1 = ox_build_child(parent_1.get_dna(), parent_2.get_dna(), p1, p2);
-    let child_dna_2 = ox_build_child(parent_2.get_dna(), parent_1.get_dna(), p1, p2);
+    let child_dna_1 = ox_build_child(parent_1.dna(), parent_2.dna(), p1, p2);
+    let child_dna_2 = ox_build_child(parent_2.dna(), parent_1.dna(), p1, p2);
 
     let mut child_1 = parent_1.clone();
     let mut child_2 = parent_2.clone();
@@ -67,13 +67,13 @@ fn ox_build_child<G: crate::traits::GeneT>(
     }
 
     // Collect gene IDs in the segment to detect duplicates
-    let segment_ids: Vec<i32> = (p1..=p2).map(|i| donor[i].get_id()).collect();
+    let segment_ids: Vec<i32> = (p1..=p2).map(|i| donor[i].id()).collect();
 
     // Collect filler genes not in the segment, starting from position after p2
     let mut filler_genes: Vec<G> = Vec::new();
     let mut pos = (p2 + 1) % len;
     for _ in 0..len {
-        if !segment_ids.contains(&filler[pos].get_id()) {
+        if !segment_ids.contains(&filler[pos].id()) {
             filler_genes.push(filler[pos].clone());
         }
         pos = (pos + 1) % len;

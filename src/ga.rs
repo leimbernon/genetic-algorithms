@@ -439,7 +439,7 @@ where
 
         // Compound stopping criteria tracking
         let start_time = Instant::now();
-        let mut best_fitness_so_far = self.population.best_chromosome.get_fitness();
+        let mut best_fitness_so_far = self.population.best_chromosome.fitness();
         let mut stagnation_count: usize = 0;
 
         //We start the cycles
@@ -508,7 +508,7 @@ where
                         .population
                         .chromosomes
                         .iter()
-                        .map(|c| c.get_fitness())
+                        .map(|c| c.fitness())
                         .collect();
 
                     // Extract DNA slices for distance computation
@@ -516,7 +516,7 @@ where
                         .population
                         .chromosomes
                         .iter()
-                        .map(|c| c.get_dna())
+                        .map(|c| c.dna())
                         .collect();
 
                     // Compute distance matrix using gene ID comparison
@@ -529,8 +529,8 @@ where
                             }
                             let mut diff = 0usize;
                             for idx in 0..max_len {
-                                let id_a = dna_a.get(idx).map(|g| g.get_id()).unwrap_or(-1);
-                                let id_b = dna_b.get(idx).map(|g| g.get_id()).unwrap_or(-1);
+                                let id_a = dna_a.get(idx).map(|g| g.id()).unwrap_or(-1);
+                                let id_b = dna_b.get(idx).map(|g| g.id()).unwrap_or(-1);
                                 if id_a != id_b {
                                     diff += 1;
                                 }
@@ -594,7 +594,7 @@ where
 
             //7- Compound stopping criteria
             // Stagnation check
-            let current_best = self.population.best_chromosome.get_fitness();
+            let current_best = self.population.best_chromosome.fitness();
             let improved = match self.configuration.limit_configuration.problem_solving {
                 ProblemSolving::Maximization => current_best > best_fitness_so_far,
                 ProblemSolving::Minimization => current_best < best_fitness_so_far,
@@ -625,7 +625,7 @@ where
                     .population
                     .chromosomes
                     .iter()
-                    .map(|c| c.get_fitness())
+                    .map(|c| c.fitness())
                     .collect();
                 let n = fitness_values.len() as f64;
                 if n > 0.0 {
@@ -692,7 +692,7 @@ where
     if limit.problem_solving == ProblemSolving::Minimization {
         //If the problem-solving is minimization, fitness must be 0
         for chromosome in chromosomes {
-            if chromosome.get_fitness() == 0.0 {
+            if chromosome.fitness() == 0.0 {
                 trace!(target="ga_events", method="limit_reached"; "limit reached for minimization");
                 result = true;
                 break;
@@ -702,7 +702,7 @@ where
         //If the problem-solving is a fixed fitness
         if let Some(target) = limit.fitness_target {
             for chromosome in chromosomes {
-                if chromosome.get_fitness() == target {
+                if chromosome.fitness() == target {
                     trace!(target="ga_events", method="limit_reached"; "limit reached for fixed fitness");
                     result = true;
                     break;
@@ -882,8 +882,8 @@ fn extract_elite<U: ChromosomeT>(
     let mut sorted: Vec<U> = chromosomes.to_vec();
     sorted.sort_by(|a, b| {
         let cmp = a
-            .get_fitness()
-            .partial_cmp(&b.get_fitness())
+            .fitness()
+            .partial_cmp(&b.fitness())
             .unwrap_or(std::cmp::Ordering::Equal);
         match problem_solving {
             ProblemSolving::Maximization => cmp.reverse(),
@@ -903,8 +903,8 @@ fn reinsert_elite<U: ChromosomeT>(
     // Sort population so worst are at the end
     chromosomes.sort_by(|a, b| {
         let cmp = a
-            .get_fitness()
-            .partial_cmp(&b.get_fitness())
+            .fitness()
+            .partial_cmp(&b.fitness())
             .unwrap_or(std::cmp::Ordering::Equal);
         match problem_solving {
             ProblemSolving::Maximization => cmp.reverse(),

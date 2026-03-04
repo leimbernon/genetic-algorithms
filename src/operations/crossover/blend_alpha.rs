@@ -38,20 +38,20 @@ pub fn blend_alpha<T>(
 where
     T: Sync + Send + Clone + Default + Debug + PartialOrd + Copy + 'static + BlendConvertible,
 {
-    let len = parent_1.get_dna().len();
-    if len != parent_2.get_dna().len() {
+    let len = parent_1.dna().len();
+    if len != parent_2.dna().len() {
         return Err(GaError::CrossoverError(format!(
             "Parents must have the same DNA length. Parent 1: {}, Parent 2: {}",
             len,
-            parent_2.get_dna().len()
+            parent_2.dna().len()
         )));
     }
 
     debug!(target="crossover_events", method="blend_alpha"; "Starting BLX-α crossover with alpha={}", alpha);
 
     let mut rng = rand::rng();
-    let dna1 = parent_1.get_dna();
-    let dna2 = parent_2.get_dna();
+    let dna1 = parent_1.dna();
+    let dna2 = parent_2.dna();
 
     let mut child_dna_1 = Vec::with_capacity(len);
     let mut child_dna_2 = Vec::with_capacity(len);
@@ -166,8 +166,8 @@ mod tests {
         let (p1, p2) = build_parents();
         let children = blend_alpha(&p1, &p2, 0.5).unwrap();
         assert_eq!(children.len(), 2);
-        assert_eq!(children[0].get_dna().len(), 2);
-        assert_eq!(children[1].get_dna().len(), 2);
+        assert_eq!(children[0].dna().len(), 2);
+        assert_eq!(children[1].dna().len(), 2);
     }
 
     #[test]
@@ -176,7 +176,7 @@ mod tests {
         for _ in 0..200 {
             let children = blend_alpha(&p1, &p2, 0.5).unwrap();
             for child in &children {
-                for gene in child.get_dna() {
+                for gene in child.dna() {
                     let (lo, hi) = gene.ranges[0];
                     assert!(
                         gene.value >= lo && gene.value <= hi,
@@ -214,7 +214,7 @@ mod tests {
         for _ in 0..100 {
             let children = blend_alpha(&p1, &p2, 0.0).unwrap();
             for child in &children {
-                let val = child.get_dna()[0].value;
+                let val = child.dna()[0].value;
                 assert!(
                     (30.0..=60.0).contains(&val),
                     "With alpha=0, value {} should be between 30 and 60",
@@ -233,8 +233,8 @@ mod tests {
         let children = blend_alpha(&p1, &p2, 0.5).unwrap();
         assert_eq!(children.len(), 2);
         for child in &children {
-            let (lo, hi) = child.get_dna()[0].ranges[0];
-            assert!(child.get_dna()[0].value >= lo && child.get_dna()[0].value <= hi);
+            let (lo, hi) = child.dna()[0].ranges[0];
+            assert!(child.dna()[0].value >= lo && child.dna()[0].value <= hi);
         }
     }
 }

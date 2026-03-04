@@ -84,21 +84,21 @@ where
     let mut sum_sq = 0.0f64;
 
     for i in 0..min_len {
-        let a_val: f64 = dna_a[i].get_value().into();
-        let b_val: f64 = dna_b[i].get_value().into();
+        let a_val: f64 = dna_a[i].value().into();
+        let b_val: f64 = dna_b[i].value().into();
         sum_sq += (a_val - b_val).powi(2);
     }
 
     // Extra genes in the longer sequence: treat missing as 0.0
     if dna_a.len() > min_len {
         for gene in &dna_a[min_len..] {
-            let v: f64 = gene.get_value().into();
+            let v: f64 = gene.value().into();
             sum_sq += v.powi(2);
         }
     }
     if dna_b.len() > min_len {
         for gene in &dna_b[min_len..] {
-            let v: f64 = gene.get_value().into();
+            let v: f64 = gene.value().into();
             sum_sq += v.powi(2);
         }
     }

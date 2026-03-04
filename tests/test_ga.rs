@@ -157,7 +157,7 @@ fn test_ga_start_maximize() {
         .unwrap();
 
     assert_eq!(population.chromosomes.len(), 10);
-    assert_eq!(population.best_chromosome.get_fitness(), 20.0);
+    assert_eq!(population.best_chromosome.fitness(), 20.0);
 }
 
 #[test]
@@ -301,7 +301,7 @@ fn test_ga_run_minimize() {
         .unwrap();
 
     assert_eq!(population.chromosomes.len(), 10);
-    assert_eq!(population.best_chromosome.get_fitness(), 1.0);
+    assert_eq!(population.best_chromosome.fitness(), 1.0);
 }
 
 #[test]
@@ -742,7 +742,7 @@ fn test_elitism_preserves_best_individual() {
     let best_fitness_after = result
         .chromosomes
         .iter()
-        .map(|c| c.get_fitness())
+        .map(|c| c.fitness())
         .fold(f64::NEG_INFINITY, f64::max);
 
     assert!(
@@ -1034,18 +1034,18 @@ fn test_set_gene_out_of_bounds_is_noop() {
 
     // Out-of-bounds set_gene should not panic and should leave DNA unchanged
     chromosome.set_gene(999, Gene { id: 42 });
-    assert_eq!(chromosome.get_dna().len(), 3);
-    assert_eq!(chromosome.get_dna()[0].id, 1);
-    assert_eq!(chromosome.get_dna()[1].id, 2);
-    assert_eq!(chromosome.get_dna()[2].id, 3);
+    assert_eq!(chromosome.dna().len(), 3);
+    assert_eq!(chromosome.dna()[0].id, 1);
+    assert_eq!(chromosome.dna()[1].id, 2);
+    assert_eq!(chromosome.dna()[2].id, 3);
 
     // Boundary: index == len (off by one)
     chromosome.set_gene(3, Gene { id: 99 });
-    assert_eq!(chromosome.get_dna().len(), 3);
+    assert_eq!(chromosome.dna().len(), 3);
 
     // Valid index still works
     chromosome.set_gene(1, Gene { id: 77 });
-    assert_eq!(chromosome.get_dna()[1].id, 77);
+    assert_eq!(chromosome.dna()[1].id, 77);
 }
 
 // --- Task 2.5: TerminationCause set without callback ---

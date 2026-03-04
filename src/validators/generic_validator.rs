@@ -75,12 +75,12 @@ where
     //We analyze chromosome by chromosome
     for (chromosome_number, chromosome) in population.chromosomes.iter().enumerate() {
         //We check if the gene id is none or if it already exists in the dna
-        for (gene_number, gene) in chromosome.get_dna().iter().enumerate() {
-            for i in gene_number + 1..chromosome.get_dna().len() {
+        for (gene_number, gene) in chromosome.dna().iter().enumerate() {
+            for i in gene_number + 1..chromosome.dna().len() {
                 //If the gene id is equal to any other, we stop the run
                 if gene
-                    .get_id()
-                    .eq(&chromosome.get_dna().get(i).unwrap().get_id())
+                    .id()
+                    .eq(&chromosome.dna().get(i).unwrap().id())
                 {
                     return Err(GaError::ValidationError(format!(
                         "Gene id must be unique within the DNA. The chromosome #{}, has same gene id at gene #{} and gene #{}",
@@ -113,11 +113,11 @@ where
 {
     for (chromosome_number, chromosome) in population.chromosomes.iter().enumerate() {
         for i in chromosome_number + 1..population.chromosomes.len() {
-            if chromosome.get_dna().len() != population.chromosomes.get(i).unwrap().get_dna().len()
+            if chromosome.dna().len() != population.chromosomes.get(i).unwrap().dna().len()
             {
                 return Err(GaError::ValidationError(format!(
                     "All the chromosomes must have the same dna length. Chromosome #{} has a dna with length {} and chromosome #{} has a dna with length {}.",
-                    chromosome_number, chromosome.get_dna().len(), i, population.chromosomes.get(i).unwrap().get_dna().len())));
+                    chromosome_number, chromosome.dna().len(), i, population.chromosomes.get(i).unwrap().dna().len())));
             }
         }
     }

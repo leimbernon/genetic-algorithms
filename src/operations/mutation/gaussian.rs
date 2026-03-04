@@ -19,7 +19,7 @@ pub fn gaussian_mutation<T>(individual: &mut RangeChromosome<T>, sigma: f64)
 where
     T: Sync + Send + Clone + Default + Debug + PartialOrd + Copy + 'static + GaussianConvertible,
 {
-    let len = individual.get_dna().len();
+    let len = individual.dna().len();
     if len == 0 {
         return;
     }
@@ -27,7 +27,7 @@ where
     let mut rng = rand::rng();
     let idx = rng.random_range(0..len);
 
-    let mut dna = individual.get_dna().to_vec();
+    let mut dna = individual.dna().to_vec();
     let mut gene = dna[idx].clone();
 
     if gene.ranges.is_empty() {
@@ -119,7 +119,7 @@ mod tests {
         let mut c = build_f64_chromosome(5);
         for _ in 0..200 {
             gaussian_mutation(&mut c, 10.0);
-            for gene in c.get_dna() {
+            for gene in c.dna() {
                 let (lo, hi) = gene.ranges[0];
                 assert!(
                     gene.value >= lo && gene.value <= hi,
@@ -137,11 +137,11 @@ mod tests {
         let mut c = build_f64_chromosome(5);
         let mut changed = false;
         for _ in 0..200 {
-            let before = c.get_dna().to_vec();
+            let before = c.dna().to_vec();
             gaussian_mutation(&mut c, 10.0);
             if before
                 .iter()
-                .zip(c.get_dna())
+                .zip(c.dna())
                 .any(|(b, a)| b.value != a.value)
             {
                 changed = true;
@@ -157,11 +157,11 @@ mod tests {
     #[test]
     fn gaussian_mutation_changes_at_most_one_gene() {
         let mut c = build_f64_chromosome(8);
-        let before = c.get_dna().to_vec();
+        let before = c.dna().to_vec();
         gaussian_mutation(&mut c, 5.0);
         let diff_count = before
             .iter()
-            .zip(c.get_dna())
+            .zip(c.dna())
             .filter(|(b, a)| b.value != a.value)
             .count();
         assert!(
@@ -175,7 +175,7 @@ mod tests {
     fn gaussian_mutation_empty_dna_does_nothing() {
         let mut c = RangeChromosome::<f64>::new();
         gaussian_mutation(&mut c, 5.0);
-        assert_eq!(c.get_dna().len(), 0);
+        assert_eq!(c.dna().len(), 0);
     }
 
     #[test]
@@ -189,7 +189,7 @@ mod tests {
 
         for _ in 0..100 {
             gaussian_mutation(&mut c, 5.0);
-            for gene in c.get_dna() {
+            for gene in c.dna() {
                 let (lo, hi) = gene.ranges[0];
                 assert!(
                     gene.value >= lo && gene.value <= hi,
@@ -210,9 +210,9 @@ mod tests {
 
         // With sigma=0.001, perturbations should be very small
         for _ in 0..100 {
-            let before_val = c.get_dna()[0].value;
+            let before_val = c.dna()[0].value;
             gaussian_mutation(&mut c, 0.001);
-            let after_val = c.get_dna()[0].value;
+            let after_val = c.dna()[0].value;
             // 6-sigma bound: very unlikely to exceed 0.006
             assert!(
                 (after_val - before_val).abs() < 1.0,

@@ -21,7 +21,7 @@ use std::fmt::Debug;
 /// let mut chromosome = Range::<i32>::new();
 /// chromosome.dna.push(RangeGenotype::new(0, vec![(0, 10)], 5));
 /// chromosome.calculate_fitness();
-/// println!("Fitness: {}", chromosome.get_fitness());
+/// println!("Fitness: {}", chromosome.fitness());
 /// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct Range<T: Sync + Send + Clone + Default + Debug> {
@@ -86,7 +86,7 @@ impl<T: Sync + Send + Clone + Default + Debug> Range<T> {
     pub fn phenotype(&self) -> String {
         self.dna
             .iter()
-            .map(|gene| format!("{:?}", gene.get_value()))
+            .map(|gene| format!("{:?}", gene.value()))
             .collect::<Vec<_>>()
             .join(", ")
     }
@@ -95,7 +95,7 @@ impl<T: Sync + Send + Clone + Default + Debug> Range<T> {
 impl<T: Sync + Send + Clone + Default + Debug + 'static> ChromosomeT for Range<T> {
     type Gene = RangeGenotype<T>;
 
-    fn get_dna(&self) -> &[Self::Gene] {
+    fn dna(&self) -> &[Self::Gene] {
         &self.dna
     }
 
@@ -123,7 +123,7 @@ impl<T: Sync + Send + Clone + Default + Debug + 'static> ChromosomeT for Range<T
         self.fitness = self.fitness_fn.call(&self.dna);
     }
 
-    fn get_fitness(&self) -> f64 {
+    fn fitness(&self) -> f64 {
         self.fitness
     }
 
@@ -137,7 +137,7 @@ impl<T: Sync + Send + Clone + Default + Debug + 'static> ChromosomeT for Range<T
         self
     }
 
-    fn get_age(&self) -> usize {
+    fn age(&self) -> usize {
         self.age
     }
 }

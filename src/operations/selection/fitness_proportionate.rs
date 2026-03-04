@@ -7,7 +7,7 @@ pub fn roulette_wheel_selection<U: ChromosomeT>(chromosomes: &[U]) -> Vec<(usize
 
     //1- Calculate the sum of all fitnesses
     debug!(target="selection_events", method="roulette_wheel_selection"; "Starting the roulette wheel selection");
-    let total_fitness: f64 = chromosomes.iter().map(|ind| ind.get_fitness()).sum();
+    let total_fitness: f64 = chromosomes.iter().map(|ind| ind.fitness()).sum();
 
     let mut rng = rand::rng();
 
@@ -23,7 +23,7 @@ pub fn roulette_wheel_selection<U: ChromosomeT>(chromosomes: &[U]) -> Vec<(usize
     let mut cumulative_fitness = Vec::with_capacity(chromosomes.len());
     let mut running_sum = 0.0;
     for chromosome in chromosomes.iter() {
-        running_sum += chromosome.get_fitness();
+        running_sum += chromosome.fitness();
         cumulative_fitness.push(running_sum);
     }
 
@@ -65,7 +65,7 @@ pub fn stochastic_universal_sampling<U: ChromosomeT>(
     trace!(target="selection_events", method="stochastic_universal_sampling"; "Chromosome couples: {}", num_selections);
 
     //1- Calculate total fitness and build cumulative fitness array
-    let total: f64 = chromosomes.iter().map(|gen| gen.get_fitness()).sum();
+    let total: f64 = chromosomes.iter().map(|gen| gen.fitness()).sum();
     trace!(target="selection_events", method="stochastic_universal_sampling"; "Total fitness: {}", total);
 
     if total <= 0.0 {
@@ -75,7 +75,7 @@ pub fn stochastic_universal_sampling<U: ChromosomeT>(
     let mut cumulative_fitness = Vec::with_capacity(chromosomes.len());
     let mut cumulative = 0.0;
     for genotype in chromosomes {
-        cumulative += genotype.get_fitness();
+        cumulative += genotype.fitness();
         cumulative_fitness.push(cumulative);
         trace!(target="selection_events", method="stochastic_universal_sampling"; "Selection probability {}", cumulative / total);
     }

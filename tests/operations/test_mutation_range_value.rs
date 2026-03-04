@@ -23,9 +23,9 @@ fn value_mutation_keeps_value_within_range_and_can_change() {
     // Try multiple times to increase the chance of value change due to randomness
     let mut changed = false;
     for _ in 0..200 {
-        let before = c.get_dna().to_vec();
+        let before = c.dna().to_vec();
         mutation::factory(Mutation::Value, &mut c).unwrap();
-        let after = c.get_dna();
+        let after = c.dna();
 
         // Check all genes stay within declared ranges
         for (gene_idx, gene) in after.iter().enumerate() {
@@ -60,9 +60,9 @@ fn value_mutation_changes_at_most_one_gene() {
     let n = 8;
     let mut c = build_range_chromosome(n);
 
-    let before = c.get_dna().to_vec();
+    let before = c.dna().to_vec();
     mutation::factory(Mutation::Value, &mut c).unwrap();
-    let after = c.get_dna();
+    let after = c.dna();
 
     // Count genes that differ by value
     let diff_count = before

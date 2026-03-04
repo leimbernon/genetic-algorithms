@@ -64,12 +64,12 @@ where
         self.f_max = f64::NEG_INFINITY;
         self.f_avg = 0.0;
         for chromosome in self.chromosomes.as_slice() {
-            self.f_max = if chromosome.get_fitness() > self.f_max {
-                chromosome.get_fitness()
+            self.f_max = if chromosome.fitness() > self.f_max {
+                chromosome.fitness()
             } else {
                 self.f_max
             };
-            self.f_avg += chromosome.get_fitness();
+            self.f_avg += chromosome.fitness();
         }
         self.f_avg /= self.chromosomes.len() as f64;
     }
@@ -98,7 +98,7 @@ where
         // Calculate fitness in parallel for chromosomes that have not yet been evaluated.
         // NaN fitness indicates a chromosome whose fitness has never been computed.
         self.chromosomes.par_iter_mut().for_each(|chromosome| {
-            if chromosome.get_fitness().is_nan() {
+            if chromosome.fitness().is_nan() {
                 chromosome.calculate_fitness();
             }
         });
@@ -121,16 +121,16 @@ where
             self.best_chromosome_is_set = true;
         } else {
             trace!(target="population_events", method="decide_best_chromosome"; "Best chromosome fitness: {} - New chromosome fitness: {}",
-                self.best_chromosome.get_fitness(), new_chromosome.get_fitness());
+                self.best_chromosome.fitness(), new_chromosome.fitness());
 
             let is_self_better = match problem_solving {
                 ProblemSolving::Maximization => {
-                    self.best_chromosome.get_fitness() >= new_chromosome.get_fitness()
+                    self.best_chromosome.fitness() >= new_chromosome.fitness()
                 }
                 ProblemSolving::Minimization => {
-                    self.best_chromosome.get_fitness() < new_chromosome.get_fitness()
+                    self.best_chromosome.fitness() < new_chromosome.fitness()
                 }
-                _ => self.best_chromosome.get_fitness() >= new_chromosome.get_fitness(),
+                _ => self.best_chromosome.fitness() >= new_chromosome.fitness(),
             };
 
             if !is_self_better {

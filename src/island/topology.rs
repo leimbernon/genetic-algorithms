@@ -24,7 +24,7 @@ pub enum MigrationTopology {
 /// # Returns
 ///
 /// A vector of island indices that are neighbors of `island_index`.
-pub fn get_neighbors(
+pub fn neighbors(
     island_index: usize,
     num_islands: usize,
     topology: &MigrationTopology,
@@ -48,41 +48,41 @@ mod tests {
 
     #[test]
     fn test_topology_ring_neighbors() {
-        let neighbors = get_neighbors(0, 4, &MigrationTopology::Ring);
-        assert_eq!(neighbors, vec![1]);
+        let result = neighbors(0, 4, &MigrationTopology::Ring);
+        assert_eq!(result, vec![1]);
 
-        let neighbors = get_neighbors(3, 4, &MigrationTopology::Ring);
-        assert_eq!(neighbors, vec![0]);
+        let result = neighbors(3, 4, &MigrationTopology::Ring);
+        assert_eq!(result, vec![0]);
 
-        let neighbors = get_neighbors(2, 4, &MigrationTopology::Ring);
-        assert_eq!(neighbors, vec![3]);
+        let result = neighbors(2, 4, &MigrationTopology::Ring);
+        assert_eq!(result, vec![3]);
     }
 
     #[test]
     fn test_topology_fully_connected_neighbors() {
-        let neighbors = get_neighbors(0, 4, &MigrationTopology::FullyConnected);
-        assert_eq!(neighbors, vec![1, 2, 3]);
+        let result = neighbors(0, 4, &MigrationTopology::FullyConnected);
+        assert_eq!(result, vec![1, 2, 3]);
 
-        let neighbors = get_neighbors(2, 4, &MigrationTopology::FullyConnected);
-        assert_eq!(neighbors, vec![0, 1, 3]);
+        let result = neighbors(2, 4, &MigrationTopology::FullyConnected);
+        assert_eq!(result, vec![0, 1, 3]);
     }
 
     #[test]
     fn test_topology_single_island() {
-        let neighbors = get_neighbors(0, 1, &MigrationTopology::Ring);
-        assert!(neighbors.is_empty());
+        let result = neighbors(0, 1, &MigrationTopology::Ring);
+        assert!(result.is_empty());
 
-        let neighbors = get_neighbors(0, 1, &MigrationTopology::FullyConnected);
-        assert!(neighbors.is_empty());
+        let result = neighbors(0, 1, &MigrationTopology::FullyConnected);
+        assert!(result.is_empty());
     }
 
     #[test]
     fn test_topology_two_islands_ring() {
-        let neighbors = get_neighbors(0, 2, &MigrationTopology::Ring);
-        assert_eq!(neighbors, vec![1]);
+        let result = neighbors(0, 2, &MigrationTopology::Ring);
+        assert_eq!(result, vec![1]);
 
-        let neighbors = get_neighbors(1, 2, &MigrationTopology::Ring);
-        assert_eq!(neighbors, vec![0]);
+        let result = neighbors(1, 2, &MigrationTopology::Ring);
+        assert_eq!(result, vec![0]);
     }
 
     #[test]

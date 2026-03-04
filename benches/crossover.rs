@@ -17,7 +17,7 @@ pub struct Gene {
     pub id: i32,
 }
 impl GeneT for Gene {
-    fn get_id(&self) -> i32 {
+    fn id(&self) -> i32 {
         self.id
     }
     fn set_id(&mut self, id: i32) -> &mut Self {
@@ -36,10 +36,10 @@ struct SimpleChromosome {
 impl ChromosomeT for SimpleChromosome {
     type Gene = Gene;
 
-    fn get_dna(&self) -> &[Self::Gene] {
+    fn dna(&self) -> &[Self::Gene] {
         &self.dna
     }
-    fn get_fitness(&self) -> f64 {
+    fn fitness(&self) -> f64 {
         self.fitness
     }
     fn set_fitness(&mut self, fitness: f64) -> &mut Self {
@@ -50,7 +50,7 @@ impl ChromosomeT for SimpleChromosome {
         self.age = age;
         self
     }
-    fn get_age(&self) -> usize {
+    fn age(&self) -> usize {
         self.age
     }
     fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {

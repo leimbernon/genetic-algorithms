@@ -34,7 +34,7 @@ pub trait ChromosomeT: Clone + Default + Send + Sync + 'static {
     }
 
     /// Returns the DNA as an immutable slice.
-    fn get_dna(&self) -> &[Self::Gene];
+    fn dna(&self) -> &[Self::Gene];
 
     /// Sets the DNA using `Cow` to avoid unnecessary copies.
     ///
@@ -55,7 +55,7 @@ pub trait ChromosomeT: Clone + Default + Send + Sync + 'static {
     /// - Builds a temporary owned `Vec<Gene>` from the current DNA and moves it back using `Cow::Owned`.
     /// - Implementors may override this with a more efficient in-place edit if their storage allows.
     fn set_gene(&mut self, gene_index: usize, gene: Self::Gene) -> &mut Self {
-        let mut dna_temp = self.get_dna().to_vec();
+        let mut dna_temp = self.dna().to_vec();
         if gene_index >= dna_temp.len() {
             log::warn!(
                 "set_gene: index {} is out of bounds (DNA length {}), ignoring",
@@ -79,7 +79,7 @@ pub trait ChromosomeT: Clone + Default + Send + Sync + 'static {
     fn calculate_fitness(&mut self);
 
     /// Returns the latest fitness value.
-    fn get_fitness(&self) -> f64;
+    fn fitness(&self) -> f64;
 
     /// Sets the fitness value. Useful for caching or test scaffolding.
     fn set_fitness(&mut self, fitness: f64) -> &mut Self;
@@ -88,10 +88,10 @@ pub trait ChromosomeT: Clone + Default + Send + Sync + 'static {
     fn set_age(&mut self, age: usize) -> &mut Self;
 
     /// Returns the age.
-    fn get_age(&self) -> usize;
+    fn age(&self) -> usize;
 
     /// Absolute distance to a target fitness, helpful for stopping criteria or diagnostics.
-    fn get_fitness_distance(&self, fitness_target: &f64) -> f64 {
-        (fitness_target - self.get_fitness()).abs()
+    fn fitness_distance(&self, fitness_target: &f64) -> f64 {
+        (fitness_target - self.fitness()).abs()
     }
 }

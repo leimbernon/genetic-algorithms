@@ -45,7 +45,7 @@ where
 
             trace!(target="selection_events", method="tournament"; "Tournament between {} and {}", index_1, index_2);
 
-            if chromosomes[index_1].get_fitness() >= chromosomes[index_2].get_fitness() {
+            if chromosomes[index_1].fitness() >= chromosomes[index_2].fitness() {
                 index_1
             } else {
                 index_2

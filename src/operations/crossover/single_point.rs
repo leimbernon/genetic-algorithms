@@ -13,12 +13,12 @@ use std::borrow::Cow;
 ///
 /// Returns `Err(GaError::CrossoverError)` if parents have different DNA lengths.
 pub fn single_point<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
-    let len = parent_1.get_dna().len();
-    if len != parent_2.get_dna().len() {
+    let len = parent_1.dna().len();
+    if len != parent_2.dna().len() {
         return Err(GaError::CrossoverError(format!(
             "Parents must have the same DNA length. Parent 1: {}, Parent 2: {}",
             len,
-            parent_2.get_dna().len()
+            parent_2.dna().len()
         )));
     }
     if len < 2 {
@@ -32,8 +32,8 @@ pub fn single_point<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>
     // Crossover point: between 1 and len-1 (exclusive bounds ensure both parts are non-empty)
     let point = rng.random_range(1..len);
 
-    let dna1 = parent_1.get_dna();
-    let dna2 = parent_2.get_dna();
+    let dna1 = parent_1.dna();
+    let dna2 = parent_2.dna();
 
     let mut child_dna_1 = Vec::with_capacity(len);
     let mut child_dna_2 = Vec::with_capacity(len);

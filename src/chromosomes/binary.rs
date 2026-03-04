@@ -23,7 +23,7 @@ pub struct Binary {
 impl ChromosomeT for Binary {
     type Gene = BinaryGenotype;
 
-    fn get_dna(&self) -> &[Self::Gene] {
+    fn dna(&self) -> &[Self::Gene] {
         &self.dna
     }
 
@@ -51,7 +51,7 @@ impl ChromosomeT for Binary {
         self.fitness = self.fitness_fn.call(&self.dna);
     }
 
-    fn get_fitness(&self) -> f64 {
+    fn fitness(&self) -> f64 {
         self.fitness
     }
 
@@ -65,7 +65,7 @@ impl ChromosomeT for Binary {
         self
     }
 
-    fn get_age(&self) -> usize {
+    fn age(&self) -> usize {
         self.age
     }
 }

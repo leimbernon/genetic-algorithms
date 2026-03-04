@@ -16,8 +16,8 @@ use crate::traits::GeneT;
 /// let mut gene = <Range<i32> as Default>::default();
 /// gene.set_id(1);
 /// gene.set_value(5);
-/// assert_eq!(gene.get_id(), 1);
-/// assert_eq!(gene.get_value(), 5);
+/// assert_eq!(gene.id(), 1);
+/// assert_eq!(gene.value(), 5);
 /// ```
 ///
 /// The range gene can be used in mutation and crossover operations to
@@ -40,7 +40,7 @@ impl<T: Default> Default for Range<T> {
 }
 
 impl<T: Sync + Send + Clone + Default> GeneT for Range<T> {
-    fn get_id(&self) -> i32 {
+    fn id(&self) -> i32 {
         self.id
     }
     fn set_id(&mut self, id: i32) -> &mut Self {
@@ -66,7 +66,7 @@ impl<T: Clone + Default> Range<T> {
     }
 
     /// Returns the value of the gene.
-    pub fn get_value(&self) -> T {
+    pub fn value(&self) -> T {
         self.value.clone()
     }
 

@@ -13,8 +13,8 @@
 /// let mut gene = <Binary as Default>::default();
 /// gene.set_id(1);
 /// gene.set_value(true);
-/// assert_eq!(gene.get_id(), 1);
-/// assert_eq!(gene.get_value(), true);
+/// assert_eq!(gene.id(), 1);
+/// assert_eq!(gene.value(), true);
 /// ```
 ///
 /// The binary gene can be used in mutation and crossover operations to
@@ -27,7 +27,7 @@ pub struct Binary {
     pub value: bool,
 }
 impl GeneT for Binary {
-    fn get_id(&self) -> i32 {
+    fn id(&self) -> i32 {
         self.id
     }
     fn set_id(&mut self, id: i32) -> &mut Self {
@@ -54,7 +54,7 @@ impl Binary {
     }
 
     /// Returns the binary value of the gene.
-    pub fn get_value(&self) -> bool {
+    pub fn value(&self) -> bool {
         self.value
     }
 

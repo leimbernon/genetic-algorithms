@@ -1,6 +1,6 @@
 use crate::configuration::ProblemSolving;
 use crate::island::configuration::IslandConfiguration;
-use crate::island::topology::get_neighbors;
+use crate::island::topology::neighbors;
 use crate::population::Population;
 use crate::traits::ChromosomeT;
 use log::debug;
@@ -62,7 +62,7 @@ where
 
     // Distribute migrants to neighbors
     for (source_idx, source_migrants) in all_migrants.iter().enumerate() {
-        let neighbors = get_neighbors(source_idx, num_islands, &config.topology);
+        let neighbors = neighbors(source_idx, num_islands, &config.topology);
         for &dest_idx in &neighbors {
             let migrants = source_migrants.clone();
             replace_worst(&mut islands[dest_idx], &migrants, problem_solving);
@@ -90,8 +90,8 @@ where
 {
     let mut indices: Vec<usize> = (0..population.size()).collect();
     indices.sort_by(|&a, &b| {
-        let fa = population.chromosomes[a].get_fitness();
-        let fb = population.chromosomes[b].get_fitness();
+        let fa = population.chromosomes[a].fitness();
+        let fb = population.chromosomes[b].fitness();
         match problem_solving {
             ProblemSolving::Minimization | ProblemSolving::FixedFitness => {
                 fa.partial_cmp(&fb).unwrap_or(std::cmp::Ordering::Equal)
@@ -120,8 +120,8 @@ where
     let mut indices: Vec<usize> = (0..population.size()).collect();
     // Sort by worst first
     indices.sort_by(|&a, &b| {
-        let fa = population.chromosomes[a].get_fitness();
-        let fb = population.chromosomes[b].get_fitness();
+        let fa = population.chromosomes[a].fitness();
+        let fb = population.chromosomes[b].fitness();
         match problem_solving {
             ProblemSolving::Minimization | ProblemSolving::FixedFitness => {
                 fb.partial_cmp(&fa).unwrap_or(std::cmp::Ordering::Equal)
@@ -154,7 +154,7 @@ mod tests {
     }
 
     impl crate::traits::GeneT for TestGene {
-        fn get_id(&self) -> i32 {
+        fn id(&self) -> i32 {
             self.id
         }
         fn set_id(&mut self, id: i32) -> &mut Self {
@@ -174,7 +174,7 @@ mod tests {
     impl ChromosomeT for MigrationTestChromosome {
         type Gene = TestGene;
 
-        fn get_dna(&self) -> &[Self::Gene] {
+        fn dna(&self) -> &[Self::Gene] {
             &self.dna
         }
 
@@ -192,7 +192,7 @@ mod tests {
 
         fn calculate_fitness(&mut self) {}
 
-        fn get_fitness(&self) -> f64 {
+        fn fitness(&self) -> f64 {
             self.fitness
         }
 
@@ -206,7 +206,7 @@ mod tests {
             self
         }
 
-        fn get_age(&self) -> usize {
+        fn age(&self) -> usize {
             self.age
         }
     }
@@ -278,7 +278,7 @@ mod tests {
         let island1_fitnesses: Vec<f64> = islands[1]
             .chromosomes
             .iter()
-            .map(|c| c.get_fitness())
+            .map(|c| c.fitness())
             .collect();
         assert!(
             island1_fitnesses.contains(&10.0),

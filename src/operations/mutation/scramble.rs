@@ -5,20 +5,20 @@ pub(crate) use rand::Rng;
 pub fn scramble<U: ChromosomeT>(chromosome: &mut U) {
     //Getting two random genes from the dna of the chromosome
     debug!(target="mutation_events", method="scramble"; "Starting the scramble mutation");
-    if chromosome.get_dna().len() < 2 {
+    if chromosome.dna().len() < 2 {
         return;
     }
     let mut rng = rand::rng();
-    let index_1 = rng.random_range(0..chromosome.get_dna().len() - 1);
-    let index_2 = rng.random_range(index_1 + 1..chromosome.get_dna().len());
+    let index_1 = rng.random_range(0..chromosome.dna().len() - 1);
+    let index_2 = rng.random_range(index_1 + 1..chromosome.dna().len());
     trace!(target="mutation_events", method="scramble"; "Mutation index 1: {}, mutation index 2: {}", index_1, index_2);
 
     //We scramble genes
     for i in index_1..index_2 {
         let random_index = rng.random_range(index_1..index_2);
 
-        let current_gene = chromosome.get_dna().get(i).cloned().unwrap();
-        let random_gene = chromosome.get_dna().get(random_index).cloned().unwrap();
+        let current_gene = chromosome.dna().get(i).cloned().unwrap();
+        let random_gene = chromosome.dna().get(random_index).cloned().unwrap();
 
         chromosome.set_gene(i, random_gene);
         chromosome.set_gene(random_index, current_gene);
