@@ -61,10 +61,10 @@ where
     }
 
     // Distribute migrants to neighbors
-    for source_idx in 0..num_islands {
+    for (source_idx, source_migrants) in all_migrants.iter().enumerate() {
         let neighbors = get_neighbors(source_idx, num_islands, &config.topology);
         for &dest_idx in &neighbors {
-            let migrants = all_migrants[source_idx].clone();
+            let migrants = source_migrants.clone();
             replace_worst(&mut islands[dest_idx], &migrants, problem_solving);
             debug!(
                 target: "island_events",

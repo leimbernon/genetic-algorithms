@@ -30,11 +30,14 @@ pub fn assign_crowding_distance(objectives: &[Vec<f64>], crowding: &mut [f64]) {
     let num_objectives = objectives[0].len();
 
     for m in 0..num_objectives {
+        // Extract values for objective m
+        let obj_col: Vec<f64> = objectives.iter().map(|o| o[m]).collect();
+
         // Sort indices by objective m
         let mut sorted_indices: Vec<usize> = (0..n).collect();
         sorted_indices.sort_by(|&a, &b| {
-            objectives[a][m]
-                .partial_cmp(&objectives[b][m])
+            obj_col[a]
+                .partial_cmp(&obj_col[b])
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
 
@@ -43,8 +46,8 @@ pub fn assign_crowding_distance(objectives: &[Vec<f64>], crowding: &mut [f64]) {
         crowding[sorted_indices[n - 1]] = f64::INFINITY;
 
         // Objective range for normalization
-        let obj_min = objectives[sorted_indices[0]][m];
-        let obj_max = objectives[sorted_indices[n - 1]][m];
+        let obj_min = obj_col[sorted_indices[0]];
+        let obj_max = obj_col[sorted_indices[n - 1]];
         let range = obj_max - obj_min;
 
         if range < f64::EPSILON {
@@ -57,7 +60,7 @@ pub fn assign_crowding_distance(objectives: &[Vec<f64>], crowding: &mut [f64]) {
             let next = sorted_indices[k + 1];
             let idx = sorted_indices[k];
             if crowding[idx].is_finite() {
-                crowding[idx] += (objectives[next][m] - objectives[prev][m]) / range;
+                crowding[idx] += (obj_col[next] - obj_col[prev]) / range;
             }
         }
     }

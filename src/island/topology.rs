@@ -2,20 +2,15 @@
 ///
 /// Determines how islands are connected and which islands exchange individuals
 /// during migration events.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum MigrationTopology {
     /// Ring topology: each island sends migrants to the next island in a circular arrangement.
     ///
     /// Island `i` migrates to island `(i + 1) % num_islands`.
+    #[default]
     Ring,
     /// Fully connected topology: each island sends migrants to every other island.
     FullyConnected,
-}
-
-impl Default for MigrationTopology {
-    fn default() -> Self {
-        MigrationTopology::Ring
-    }
 }
 
 /// Returns the list of neighbor island indices for a given island under the specified topology.
