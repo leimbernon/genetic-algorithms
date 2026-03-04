@@ -12,7 +12,7 @@ use super::pareto::dominates;
 /// # Returns
 ///
 /// `Vec<Vec<usize>>` — fronts ordered by dominance rank.
-pub fn non_dominated_sort(objectives: &[Vec<f64>]) -> Vec<Vec<usize>> {
+pub fn non_dominated_sort(objectives: &[&[f64]]) -> Vec<Vec<usize>> {
     let n = objectives.len();
     if n == 0 {
         return vec![];
@@ -25,10 +25,10 @@ pub fn non_dominated_sort(objectives: &[Vec<f64>]) -> Vec<Vec<usize>> {
     // Build domination relationships
     for i in 0..n {
         for j in (i + 1)..n {
-            if dominates(&objectives[i], &objectives[j]) {
+            if dominates(objectives[i], objectives[j]) {
                 dominated_set[i].push(j);
                 domination_count[j] += 1;
-            } else if dominates(&objectives[j], &objectives[i]) {
+            } else if dominates(objectives[j], objectives[i]) {
                 dominated_set[j].push(i);
                 domination_count[i] += 1;
             }
@@ -78,8 +78,9 @@ mod tests {
     #[test]
     fn test_non_dominated_sort_single_front() {
         // Three non-dominated points
-        let objectives = vec![vec![1.0, 3.0], vec![2.0, 2.0], vec![3.0, 1.0]];
-        let fronts = non_dominated_sort(&objectives);
+        let objectives: Vec<Vec<f64>> = vec![vec![1.0, 3.0], vec![2.0, 2.0], vec![3.0, 1.0]];
+        let refs: Vec<&[f64]> = objectives.iter().map(|v| v.as_slice()).collect();
+        let fronts = non_dominated_sort(&refs);
         assert_eq!(fronts.len(), 1);
         assert_eq!(fronts[0].len(), 3);
     }
@@ -88,13 +89,14 @@ mod tests {
     fn test_non_dominated_sort_two_fronts() {
         // [1,4], [2,2], [4,1] are mutually non-dominated (front 0).
         // [3,3] is dominated by [2,2] (front 1).
-        let objectives = vec![
+        let objectives: Vec<Vec<f64>> = vec![
             vec![1.0, 4.0], // front 0
             vec![3.0, 3.0], // front 1 — dominated by [2,2]
             vec![2.0, 2.0], // front 0
             vec![4.0, 1.0], // front 0
         ];
-        let fronts = non_dominated_sort(&objectives);
+        let refs: Vec<&[f64]> = objectives.iter().map(|v| v.as_slice()).collect();
+        let fronts = non_dominated_sort(&refs);
         assert_eq!(fronts.len(), 2);
         assert_eq!(fronts[0].len(), 3);
         assert_eq!(fronts[1].len(), 1);
@@ -103,7 +105,7 @@ mod tests {
 
     #[test]
     fn test_non_dominated_sort_empty() {
-        let objectives: Vec<Vec<f64>> = vec![];
+        let objectives: Vec<&[f64]> = vec![];
         let fronts = non_dominated_sort(&objectives);
         assert!(fronts.is_empty());
     }

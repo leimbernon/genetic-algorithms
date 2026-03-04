@@ -262,9 +262,9 @@ where
 
     /// Performs non-dominated sorting and crowding distance assignment on a population.
     fn rank_and_crowd(population: &mut [ParetoIndividual<U>]) {
-        let all_objectives: Vec<Vec<f64>> = population
+        let all_objectives: Vec<&[f64]> = population
             .iter()
-            .map(|ind| ind.objectives.clone())
+            .map(|ind| ind.objectives.as_slice())
             .collect();
         let fronts = non_dominated_sort(&all_objectives);
 
@@ -275,9 +275,9 @@ where
         }
 
         for front in &fronts {
-            let front_objectives: Vec<Vec<f64>> = front
+            let front_objectives: Vec<&[f64]> = front
                 .iter()
-                .map(|&idx| population[idx].objectives.clone())
+                .map(|&idx| population[idx].objectives.as_slice())
                 .collect();
             let mut front_crowding = vec![0.0; front.len()];
             assign_crowding_distance(&front_objectives, &mut front_crowding);

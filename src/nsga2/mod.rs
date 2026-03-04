@@ -182,9 +182,9 @@ where
 
         for gen in 0..max_gens {
             // Non-dominated sorting
-            let all_objectives: Vec<Vec<f64>> = population
+            let all_objectives: Vec<&[f64]> = population
                 .iter()
-                .map(|ind| ind.objectives.clone())
+                .map(|ind| ind.objectives.as_slice())
                 .collect();
             let fronts = non_dominated_sort(&all_objectives);
 
@@ -197,9 +197,9 @@ where
 
             // Assign crowding distance per front
             for front in &fronts {
-                let front_objectives: Vec<Vec<f64>> = front
+                let front_objectives: Vec<&[f64]> = front
                     .iter()
-                    .map(|&idx| population[idx].objectives.clone())
+                    .map(|&idx| population[idx].objectives.as_slice())
                     .collect();
                 let mut front_crowding = vec![0.0; front.len()];
                 assign_crowding_distance(&front_objectives, &mut front_crowding);
@@ -216,9 +216,9 @@ where
 
             // Environmental selection: sort by (rank asc, crowding_distance desc), truncate
             // Re-evaluate ranks and crowding for combined population
-            let combined_objectives: Vec<Vec<f64>> = population
+            let combined_objectives: Vec<&[f64]> = population
                 .iter()
-                .map(|ind| ind.objectives.clone())
+                .map(|ind| ind.objectives.as_slice())
                 .collect();
             let combined_fronts = non_dominated_sort(&combined_objectives);
 
@@ -229,9 +229,9 @@ where
             }
 
             for front in &combined_fronts {
-                let front_objectives: Vec<Vec<f64>> = front
+                let front_objectives: Vec<&[f64]> = front
                     .iter()
-                    .map(|&idx| population[idx].objectives.clone())
+                    .map(|&idx| population[idx].objectives.as_slice())
                     .collect();
                 let mut front_crowding = vec![0.0; front.len()];
                 assign_crowding_distance(&front_objectives, &mut front_crowding);
