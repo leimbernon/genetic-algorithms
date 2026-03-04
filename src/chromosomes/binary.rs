@@ -27,6 +27,10 @@ impl ChromosomeT for Binary {
         &self.dna
     }
 
+    fn dna_mut(&mut self) -> &mut [Self::Gene] {
+        &mut self.dna
+    }
+
     /// Sets the chromosome DNA.
     ///
     /// - `Cow::Borrowed`: clones into internal storage.

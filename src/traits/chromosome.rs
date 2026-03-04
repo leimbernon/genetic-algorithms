@@ -36,6 +36,11 @@ pub trait ChromosomeT: Clone + Default + Send + Sync + 'static {
     /// Returns the DNA as an immutable slice.
     fn dna(&self) -> &[Self::Gene];
 
+    /// Returns the DNA as a mutable slice for in-place edits.
+    ///
+    /// This avoids the full-DNA clone that the default `set_gene` would otherwise need.
+    fn dna_mut(&mut self) -> &mut [Self::Gene];
+
     /// Sets the DNA using `Cow` to avoid unnecessary copies.
     ///
     /// Semantics:
@@ -51,22 +56,18 @@ pub trait ChromosomeT: Clone + Default + Send + Sync + 'static {
     ///
     /// If `gene_index` is out of bounds, this is a no-op and a warning is logged.
     ///
-    /// Implementation detail:
-    /// - Builds a temporary owned `Vec<Gene>` from the current DNA and moves it back using `Cow::Owned`.
-    /// - Implementors may override this with a more efficient in-place edit if their storage allows.
+    /// Uses `dna_mut()` for an in-place edit, avoiding a full DNA clone.
     fn set_gene(&mut self, gene_index: usize, gene: Self::Gene) -> &mut Self {
-        let mut dna_temp = self.dna().to_vec();
-        if gene_index >= dna_temp.len() {
+        let len = self.dna().len();
+        if gene_index >= len {
             log::warn!(
                 "set_gene: index {} is out of bounds (DNA length {}), ignoring",
                 gene_index,
-                dna_temp.len()
+                len
             );
             return self;
         }
-        dna_temp[gene_index] = gene;
-        // Move the vector to avoid an extra clone
-        self.set_dna(Cow::Owned(dna_temp));
+        self.dna_mut()[gene_index] = gene;
         self
     }
 

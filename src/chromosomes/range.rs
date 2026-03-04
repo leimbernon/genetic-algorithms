@@ -99,6 +99,10 @@ impl<T: Sync + Send + Clone + Default + Debug + 'static> ChromosomeT for Range<T
         &self.dna
     }
 
+    fn dna_mut(&mut self) -> &mut [Self::Gene] {
+        &mut self.dna
+    }
+
     /// Sets the chromosome DNA.
     ///
     /// - `Cow::Borrowed`: clones into internal storage.

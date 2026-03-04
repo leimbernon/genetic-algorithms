@@ -39,6 +39,9 @@ impl ChromosomeT for SimpleChromosome {
     fn dna(&self) -> &[Self::Gene] {
         &self.dna
     }
+    fn dna_mut(&mut self) -> &mut [Self::Gene] {
+        &mut self.dna
+    }
     fn fitness(&self) -> f64 {
         self.fitness
     }

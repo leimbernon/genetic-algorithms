@@ -644,6 +644,9 @@ mod tests {
             fn dna(&self) -> &[Self::Gene] {
                 &self.dna
             }
+            fn dna_mut(&mut self) -> &mut [Self::Gene] {
+                &mut self.dna
+            }
             fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
                 self.dna = dna.into_owned();
                 self
