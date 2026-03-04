@@ -22,7 +22,7 @@ use rand::Rng;
 /// # Returns
 ///
 /// A vector of `(usize, usize)` parent index pairs.
-pub fn rank_selection<U: ChromosomeT>(chromosomes: &[U], couples: i32) -> Vec<(usize, usize)> {
+pub fn rank_selection<U: ChromosomeT>(chromosomes: &[U], couples: usize) -> Vec<(usize, usize)> {
     debug!(target="selection_events", method="rank_selection"; "Starting rank-based selection");
 
     let n = chromosomes.len();
@@ -54,7 +54,7 @@ pub fn rank_selection<U: ChromosomeT>(chromosomes: &[U], couples: i32) -> Vec<(u
 
     // Select parents via roulette on ranks
     let mut rng = rand::rng();
-    let total_parents = (couples * 2) as usize;
+    let total_parents = couples * 2;
     let mut selected = Vec::with_capacity(total_parents);
 
     for _ in 0..total_parents {

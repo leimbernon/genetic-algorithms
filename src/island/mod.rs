@@ -35,7 +35,7 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 /// Type alias for the initialization function signature.
-type InitializationFn<G> = dyn Fn(i32, Option<&[G]>, Option<bool>) -> Vec<G> + Send + Sync;
+type InitializationFn<G> = dyn Fn(usize, Option<&[G]>, Option<bool>) -> Vec<G> + Send + Sync;
 
 /// Type alias for the fitness function signature.
 type FitnessFn<G> = dyn Fn(&[G]) -> f64 + Send + Sync;
@@ -99,7 +99,7 @@ where
     /// Sets the initialization function.
     pub fn with_initialization_fn<F>(mut self, f: F) -> Self
     where
-        F: Fn(i32, Option<&[U::Gene]>, Option<bool>) -> Vec<U::Gene> + Send + Sync + 'static,
+        F: Fn(usize, Option<&[U::Gene]>, Option<bool>) -> Vec<U::Gene> + Send + Sync + 'static,
     {
         self.initialization_fn = Some(Arc::new(f));
         self
@@ -149,7 +149,7 @@ where
                 "fitness_fn is required".to_string(),
             ));
         }
-        let pop_size = self.ga_config.limit_configuration.population_size as usize;
+        let pop_size = self.ga_config.limit_configuration.population_size;
         if self.island_config.migration_count >= pop_size {
             return Err(GaError::InvalidIslandConfiguration(format!(
                 "migration_count ({}) must be < population_size ({})",
@@ -181,7 +181,7 @@ where
         self.islands = Vec::with_capacity(num_islands);
 
         for island_idx in 0..num_islands {
-            let mut chromosomes: Vec<U> = Vec::with_capacity(pop_size as usize);
+            let mut chromosomes: Vec<U> = Vec::with_capacity(pop_size);
 
             for _ in 0..pop_size {
                 let dna = init_fn(
@@ -288,7 +288,7 @@ where
             // Migration
             if gen > 0
                 && self.island_config.migration_interval > 0
-                && gen as usize % self.island_config.migration_interval == 0
+                && gen % self.island_config.migration_interval == 0
             {
                 migrate(&mut self.islands, &self.island_config, problem_solving)?;
                 debug!(
@@ -317,7 +317,7 @@ where
         let mutation_config = self.ga_config.mutation_configuration;
         let survivor_method = self.ga_config.survivor;
         let limit_config = self.ga_config.limit_configuration;
-        let pop_size = limit_config.population_size as usize;
+        let pop_size = limit_config.population_size;
         let fitness_fn = self
             .fitness_fn
             .as_ref()

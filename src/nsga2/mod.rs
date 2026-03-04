@@ -46,7 +46,7 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 /// Type alias for the initialization function signature.
-type InitializationFn<G> = dyn Fn(i32, Option<&[G]>, Option<bool>) -> Vec<G> + Send + Sync;
+type InitializationFn<G> = dyn Fn(usize, Option<&[G]>, Option<bool>) -> Vec<G> + Send + Sync;
 
 /// Type alias for a single objective function.
 pub type ObjectiveFn<G> = dyn Fn(&[G]) -> f64 + Send + Sync;
@@ -96,7 +96,7 @@ where
     /// Sets the initialization function.
     pub fn with_initialization_fn<F>(mut self, f: F) -> Self
     where
-        F: Fn(i32, Option<&[U::Gene]>, Option<bool>) -> Vec<U::Gene> + Send + Sync + 'static,
+        F: Fn(usize, Option<&[U::Gene]>, Option<bool>) -> Vec<U::Gene> + Send + Sync + 'static,
     {
         self.initialization_fn = Some(Arc::new(f));
         self

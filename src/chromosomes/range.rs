@@ -27,7 +27,7 @@ use std::fmt::Debug;
 pub struct Range<T: Sync + Send + Clone + Default + Debug> {
     pub dna: Vec<RangeGenotype<T>>,
     pub fitness: f64,
-    pub age: i32,
+    pub age: usize,
     pub fitness_fn: FitnessFnWrapper<RangeGenotype<T>>,
 }
 
@@ -132,12 +132,12 @@ impl<T: Sync + Send + Clone + Default + Debug + 'static> ChromosomeT for Range<T
         self
     }
 
-    fn set_age(&mut self, age: i32) -> &mut Self {
+    fn set_age(&mut self, age: usize) -> &mut Self {
         self.age = age;
         self
     }
 
-    fn get_age(&self) -> i32 {
+    fn get_age(&self) -> usize {
         self.age
     }
 }

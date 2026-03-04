@@ -8,8 +8,8 @@ use rayon::prelude::*;
  */
 pub fn tournament<U>(
     chromosomes: &[U],
-    couples: i32,
-    _number_of_threads: i32,
+    couples: usize,
+    _number_of_threads: usize,
 ) -> Vec<(usize, usize)>
 where
     U: ChromosomeT + Send + Sync + 'static + Clone,
@@ -20,19 +20,19 @@ where
 /**
  * Tournament selection implementation using rayon for parallelism.
  */
-fn tournament_impl<U>(chromosomes: &[U], couples: i32) -> Vec<(usize, usize)>
+fn tournament_impl<U>(chromosomes: &[U], couples: usize) -> Vec<(usize, usize)>
 where
     U: ChromosomeT + Send + Sync + 'static + Clone,
 {
     debug!(target="selection_events", method="tournament"; "Starting tournament selection");
-    let couples = if couples * 2 > chromosomes.len() as i32 {
-        (chromosomes.len() / 2) as i32
+    let couples = if couples * 2 > chromosomes.len() {
+        chromosomes.len() / 2
     } else {
         couples
     };
 
     // Generate all indexes needed for the tournament
-    let total_contestants = (couples * 2) as usize;
+    let total_contestants = couples * 2;
 
     // Use rayon to run tournaments in parallel — each iteration picks 2 random contestants
     // and the winner goes to a results vector. We collect 2*couples winners and pair them.

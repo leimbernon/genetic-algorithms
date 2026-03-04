@@ -4,7 +4,7 @@
 #[derive(Debug, Clone)]
 pub struct GenerationStats {
     /// Generation number (0-based).
-    pub generation: i32,
+    pub generation: usize,
     /// Best (minimum or maximum depending on problem) fitness in this generation.
     pub best_fitness: f64,
     /// Worst fitness in this generation.
@@ -22,7 +22,7 @@ impl GenerationStats {
     ///
     /// `is_maximization` controls which value is "best" vs "worst".
     pub fn from_fitness_values(
-        generation: i32,
+        generation: usize,
         fitness_values: &[f64],
         is_maximization: bool,
     ) -> Self {

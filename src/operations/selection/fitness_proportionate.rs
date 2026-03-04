@@ -52,16 +52,16 @@ pub fn roulette_wheel_selection<U: ChromosomeT>(chromosomes: &[U]) -> Vec<(usize
 
 pub fn stochastic_universal_sampling<U: ChromosomeT>(
     chromosomes: &[U],
-    couples: i32,
+    couples: usize,
 ) -> Vec<(usize, usize)> {
     debug!(target="selection_events", method="stochastic_universal_sampling"; "Starting the stochastic universal sampling selection");
     let mut mating = Vec::new();
 
-    if chromosomes.is_empty() || couples <= 0 {
+    if chromosomes.is_empty() || couples == 0 {
         return mating;
     }
 
-    let num_selections = (couples * 2) as usize;
+    let num_selections = couples * 2;
     trace!(target="selection_events", method="stochastic_universal_sampling"; "Chromosome couples: {}", num_selections);
 
     //1- Calculate total fitness and build cumulative fitness array

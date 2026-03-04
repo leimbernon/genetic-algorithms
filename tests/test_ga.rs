@@ -462,11 +462,11 @@ fn test_parent_crossover_repeating_alleles() {
         Gene { id: 8 },
     ];
     let alleles = binding.as_slice();
-    static GENES_PER_CHROMOSOME: i32 = 6;
-    static POPULATION_SIZE: i32 = 100;
+    static GENES_PER_CHROMOSOME: usize = 6;
+    static POPULATION_SIZE: usize = 100;
     static NEEDS_UNIQUE_IDS: bool = false;
     static ALLELES_CAN_BE_REPEATED: bool = true;
-    static NUMBER_OF_THREADS: i32 = 8;
+    static NUMBER_OF_THREADS: usize = 8;
 
     let mut ga_instance = Ga::new();
     let ga: &mut Ga<Chromosome> = ga_instance
@@ -485,7 +485,7 @@ fn test_parent_crossover_repeating_alleles() {
 
     //Once population has been initialized, we check for each chromosome in the population the number of genes in the dna
     for chromosome in &ga.population.chromosomes {
-        assert!(chromosome.dna.len() == GENES_PER_CHROMOSOME.try_into().unwrap());
+        assert!(chromosome.dna.len() == GENES_PER_CHROMOSOME);
     }
 }
 
@@ -503,11 +503,11 @@ fn test_parent_crossover_without_repeating_alleles() {
         Gene { id: 8 },
     ];
     let alleles = binding.as_slice();
-    static GENES_PER_CHROMOSOME: i32 = 6;
-    static POPULATION_SIZE: i32 = 100;
+    static GENES_PER_CHROMOSOME: usize = 6;
+    static POPULATION_SIZE: usize = 100;
     static NEEDS_UNIQUE_IDS: bool = false;
     static ALLELES_CAN_BE_REPEATED: bool = false;
-    static NUMBER_OF_THREADS: i32 = 8;
+    static NUMBER_OF_THREADS: usize = 8;
 
     let mut ga_instance = Ga::new();
     let ga: &mut Ga<Chromosome> = ga_instance
@@ -540,7 +540,7 @@ fn test_parent_crossover_without_repeating_alleles() {
 }
 
 fn callback_function(
-    generation_number: &i32,
+    generation_number: &usize,
     population: &Population<Chromosome>,
     termination_cause: &TerminationCause,
 ) {

@@ -85,10 +85,10 @@ pub trait ChromosomeT: Clone + Default + Send + Sync + 'static {
     fn set_fitness(&mut self, fitness: f64) -> &mut Self;
 
     /// Sets the age (usually, generation count since creation).
-    fn set_age(&mut self, age: i32) -> &mut Self;
+    fn set_age(&mut self, age: usize) -> &mut Self;
 
     /// Returns the age.
-    fn get_age(&self) -> i32;
+    fn get_age(&self) -> usize;
 
     /// Absolute distance to a target fitness, helpful for stopping criteria or diagnostics.
     fn get_fitness_distance(&self, fitness_target: &f64) -> f64 {

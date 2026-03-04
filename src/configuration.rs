@@ -34,7 +34,7 @@ pub enum LogLevel {
 
 #[derive(Copy, Clone)]
 pub struct SelectionConfiguration {
-    pub number_of_couples: i32,
+    pub number_of_couples: usize,
     pub method: Selection,
 }
 impl Default for SelectionConfiguration {
@@ -48,7 +48,7 @@ impl Default for SelectionConfiguration {
 
 #[derive(Copy, Clone)]
 pub struct CrossoverConfiguration {
-    pub number_of_points: Option<i32>,
+    pub number_of_points: Option<usize>,
     pub probability_max: Option<f64>,
     pub probability_min: Option<f64>,
     pub method: Crossover,
@@ -99,10 +99,10 @@ impl Default for MutationConfiguration {
 #[derive(Copy, Clone)]
 pub struct LimitConfiguration {
     pub problem_solving: ProblemSolving,
-    pub max_generations: i32,
+    pub max_generations: usize,
     pub fitness_target: Option<f64>,
-    pub population_size: i32,
-    pub genes_per_chromosome: i32,
+    pub population_size: usize,
+    pub genes_per_chromosome: usize,
     pub needs_unique_ids: bool,
     pub alleles_can_be_repeated: bool,
 }
@@ -123,7 +123,7 @@ impl Default for LimitConfiguration {
 #[derive(Clone, Default)]
 pub struct SaveProgressConfiguration {
     pub save_progress: bool,
-    pub save_progress_interval: i32,
+    pub save_progress_interval: usize,
     pub save_progress_path: String,
 }
 
@@ -134,7 +134,7 @@ pub struct SaveProgressConfiguration {
 pub struct StoppingCriteria {
     /// Stop after N generations without fitness improvement.
     /// `None` means this criterion is disabled.
-    pub stagnation_generations: Option<i32>,
+    pub stagnation_generations: Option<usize>,
     /// Stop when the fitness standard deviation drops below this threshold.
     /// `None` means this criterion is disabled.
     pub convergence_threshold: Option<f64>,
@@ -146,7 +146,7 @@ pub struct StoppingCriteria {
 #[derive(Clone)]
 pub struct GaConfiguration {
     pub adaptive_ga: bool,
-    pub number_of_threads: i32,
+    pub number_of_threads: usize,
     pub limit_configuration: LimitConfiguration,
     pub selection_configuration: SelectionConfiguration,
     pub crossover_configuration: CrossoverConfiguration,
@@ -200,7 +200,7 @@ impl ConfigurationT for GaConfiguration {
         self.adaptive_ga = adaptive_ga;
         self
     }
-    fn with_threads(&mut self, number_of_threads: i32) -> &mut Self {
+    fn with_threads(&mut self, number_of_threads: usize) -> &mut Self {
         self.number_of_threads = number_of_threads;
         self
     }
@@ -218,7 +218,7 @@ impl ConfigurationT for GaConfiguration {
         self.limit_configuration.problem_solving = problem_solving;
         self
     }
-    fn with_max_generations(&mut self, max_generations: i32) -> &mut Self {
+    fn with_max_generations(&mut self, max_generations: usize) -> &mut Self {
         self.limit_configuration.max_generations = max_generations;
         self
     }
@@ -227,11 +227,11 @@ impl ConfigurationT for GaConfiguration {
         self
     }
 
-    fn with_population_size(&mut self, population_size: i32) -> &mut Self {
+    fn with_population_size(&mut self, population_size: usize) -> &mut Self {
         self.limit_configuration.population_size = population_size;
         self
     }
-    fn with_genes_per_chromosome(&mut self, genes_per_chromosome: i32) -> &mut Self {
+    fn with_genes_per_chromosome(&mut self, genes_per_chromosome: usize) -> &mut Self {
         self.limit_configuration.genes_per_chromosome = genes_per_chromosome;
         self
     }
@@ -245,7 +245,7 @@ impl ConfigurationT for GaConfiguration {
     }
 
     //Selection configuration
-    fn with_number_of_couples(&mut self, number_of_couples: i32) -> &mut Self {
+    fn with_number_of_couples(&mut self, number_of_couples: usize) -> &mut Self {
         self.selection_configuration.number_of_couples = number_of_couples;
         self
     }
@@ -255,7 +255,7 @@ impl ConfigurationT for GaConfiguration {
     }
 
     //Crossover configuration
-    fn with_crossover_number_of_points(&mut self, number_of_points: i32) -> &mut Self {
+    fn with_crossover_number_of_points(&mut self, number_of_points: usize) -> &mut Self {
         self.crossover_configuration.number_of_points = Some(number_of_points);
         self
     }
@@ -307,7 +307,7 @@ impl ConfigurationT for GaConfiguration {
         self.save_progress_configuration.save_progress = save_progress;
         self
     }
-    fn with_save_progress_interval(&mut self, save_progress_interval: i32) -> &mut Self {
+    fn with_save_progress_interval(&mut self, save_progress_interval: usize) -> &mut Self {
         self.save_progress_configuration.save_progress_interval = save_progress_interval;
         self
     }

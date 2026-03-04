@@ -5,7 +5,7 @@ use rand::Rng;
  * Function to initialize the dna of an chromosome
  */
 pub fn generic_random_initialization<U>(
-    genes_per_chromosome: i32,
+    genes_per_chromosome: usize,
     alleles: Option<&[U::Gene]>,
     needs_unique_ids: Option<bool>,
 ) -> Vec<U::Gene>
@@ -26,7 +26,7 @@ where
 
         //If we need unique ids
         if needs_unique_ids {
-            gene.set_id(j);
+            gene.set_id(j as i32);
         }
 
         dna.push(gene);
@@ -39,7 +39,7 @@ where
  * Function to initialize the dna of a chromosome without repeating an array of alleles
  */
 pub fn generic_random_initialization_without_repetitions<U>(
-    genes_per_chromosome: i32,
+    genes_per_chromosome: usize,
     alleles: Option<&[U::Gene]>,
     needs_unique_ids: Option<bool>,
 ) -> Vec<U::Gene>
@@ -64,7 +64,7 @@ where
 
         //If we need unique ids
         if needs_unique_ids {
-            gene.set_id(j);
+            gene.set_id(j as i32);
         }
 
         tmp_alleles.remove(index);

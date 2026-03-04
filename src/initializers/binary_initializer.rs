@@ -23,7 +23,7 @@ use rand::Rng;
 /// assert_eq!(genes.len(), 100);
 /// ```
 pub fn binary_random_initialization(
-    genes_per_chromosome: i32,
+    genes_per_chromosome: usize,
     _alleles: Option<&[BinaryGenotype]>,
     _needs_unique_ids: Option<bool>,
 ) -> Vec<BinaryGenotype> {
@@ -31,7 +31,7 @@ pub fn binary_random_initialization(
     let mut rng = rand::rng();
     for i in 0..genes_per_chromosome {
         let gene = BinaryGenotype {
-            id: i,
+            id: i as i32,
             value: rng.random_bool(0.5),
         };
         genes.push(gene);

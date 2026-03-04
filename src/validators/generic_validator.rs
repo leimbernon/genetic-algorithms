@@ -127,12 +127,12 @@ where
 /// Function to check that the chromosome length is not bigger than the alleles
 pub fn chromosome_length_not_bigger_than_alleles<U>(
     alleles: &[U::Gene],
-    genes_per_chromosome: i32,
+    genes_per_chromosome: usize,
 ) -> Result<(), GaError>
 where
     U: ChromosomeT + Send + Sync + 'static + Clone,
 {
-    if genes_per_chromosome as usize > alleles.len() {
+    if genes_per_chromosome > alleles.len() {
         return Err(GaError::ConfigurationError(
             "The number of genes within a chromosome should not be higher than the different alleles.".to_string()));
     }
@@ -163,7 +163,7 @@ pub fn aga_crossover_probabilities(configuration: &GaConfiguration) -> Result<()
 
 /// Function to check that the number of couples is set
 pub fn number_of_couples_is_set(configuration: &GaConfiguration) -> Result<(), GaError> {
-    if configuration.selection_configuration.number_of_couples <= 0 {
+    if configuration.selection_configuration.number_of_couples == 0 {
         return Err(GaError::ConfigurationError(
             "The number of couples must be set.".to_string(),
         ));

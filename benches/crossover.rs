@@ -30,7 +30,7 @@ impl GeneT for Gene {
 struct SimpleChromosome {
     dna: Vec<Gene>,
     pub fitness: f64,
-    pub age: i32,
+    pub age: usize,
     pub fitness_fn: FitnessFnWrapper<Gene>,
 }
 impl ChromosomeT for SimpleChromosome {
@@ -46,11 +46,11 @@ impl ChromosomeT for SimpleChromosome {
         self.fitness = fitness;
         self
     }
-    fn set_age(&mut self, age: i32) -> &mut Self {
+    fn set_age(&mut self, age: usize) -> &mut Self {
         self.age = age;
         self
     }
-    fn get_age(&self) -> i32 {
+    fn get_age(&self) -> usize {
         self.age
     }
     fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
@@ -136,7 +136,7 @@ fn benchmark_crossover_methods(c: &mut Criterion) {
                     let parent_1 = &chromosomes[0];
                     let parent_2 = &chromosomes[1];
                     b.iter(|| {
-                        let _ = multipoint(parent_1, parent_2, &points);
+                        let _ = multipoint(parent_1, parent_2, points);
                     });
                 },
             );

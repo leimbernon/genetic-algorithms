@@ -30,7 +30,7 @@ use std::fmt::Debug;
 /// assert_eq!(genes.len(), 10);
 /// ```
 pub fn range_random_initialization<T>(
-    genes_per_chromosome: i32,
+    genes_per_chromosome: usize,
     alleles: Option<&[RangeGenotype<T>]>,
     _needs_unique_ids: Option<bool>,
 ) -> Vec<RangeGenotype<T>>
@@ -46,7 +46,7 @@ where
         // Pick a random range from the allele
         let range = allele.ranges[rng.random_range(0..allele.ranges.len())];
         // Generate a new gene with a random value from the selected range
-        let gene = RangeGenotype::new(i, vec![range], rng.random_range(range.0..range.1));
+        let gene = RangeGenotype::new(i as i32, vec![range], rng.random_range(range.0..range.1));
         genes.push(gene);
     }
     genes

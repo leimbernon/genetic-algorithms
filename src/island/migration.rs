@@ -168,7 +168,7 @@ mod tests {
     struct MigrationTestChromosome {
         dna: Vec<TestGene>,
         fitness: f64,
-        age: i32,
+        age: usize,
     }
 
     impl ChromosomeT for MigrationTestChromosome {
@@ -201,12 +201,12 @@ mod tests {
             self
         }
 
-        fn set_age(&mut self, age: i32) -> &mut Self {
+        fn set_age(&mut self, age: usize) -> &mut Self {
             self.age = age;
             self
         }
 
-        fn get_age(&self) -> i32 {
+        fn get_age(&self) -> usize {
             self.age
         }
     }

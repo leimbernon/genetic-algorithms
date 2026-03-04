@@ -22,7 +22,7 @@ impl GeneT for Gene {
 pub struct Chromosome {
     pub dna: Vec<Gene>,
     pub fitness: f64,
-    pub age: i32,
+    pub age: usize,
     pub fitness_fn: FitnessFnWrapper<Gene>,
 }
 
@@ -38,11 +38,11 @@ impl ChromosomeT for Chromosome {
         self.fitness = fitness;
         self
     }
-    fn set_age(&mut self, age: i32) -> &mut Self {
+    fn set_age(&mut self, age: usize) -> &mut Self {
         self.age = age;
         self
     }
-    fn get_age(&self) -> i32 {
+    fn get_age(&self) -> usize {
         self.age
     }
     fn set_fitness_fn<F>(&mut self, fitness_fn: F) -> &mut Self

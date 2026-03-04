@@ -29,7 +29,7 @@ pub fn factory<U: ChromosomeT>(
                     "MultiPoint crossover requires number_of_points to be set".to_string(),
                 )
             })?;
-            multipoint(parent_1, parent_2, &points)
+            multipoint(parent_1, parent_2, points)
         }
         Crossover::Uniform => uniform(parent_1, parent_2),
         Crossover::SinglePoint => single_point(parent_1, parent_2),

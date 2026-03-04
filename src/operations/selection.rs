@@ -24,7 +24,7 @@ pub mod tournament;
 pub fn factory<U>(
     chromosomes: &[U],
     configuration: SelectionConfiguration,
-    number_of_threads: i32,
+    number_of_threads: usize,
 ) -> Result<Vec<(usize, usize)>, GaError>
 where
     U: ChromosomeT + Sync + Send + 'static + Clone,

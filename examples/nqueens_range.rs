@@ -8,15 +8,15 @@ use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::population::Population;
 use genetic_algorithms::traits::ConfigurationT;
 
-const N: i32 = 8; // Size of the chessboard (N-Queens problem)
+const N: usize = 8; // Size of the chessboard (N-Queens problem)
 
 fn fitness_fn(dna: &[RangeGenotype<i32>]) -> f64 {
     let mut conflicts = 0;
 
     for i in 0..N {
         for j in (i + 1)..N {
-            if dna[i as usize].value == dna[j as usize].value
-                || (dna[i as usize].value - dna[j as usize].value).abs() == (i - j).abs()
+            if dna[i].value == dna[j].value
+                || (dna[i].value - dna[j].value).abs() == (i as i32 - j as i32).abs()
             {
                 conflicts += 1;
             }
@@ -26,7 +26,7 @@ fn fitness_fn(dna: &[RangeGenotype<i32>]) -> f64 {
 }
 
 fn report(
-    generation: &i32,
+    generation: &usize,
     population: &Population<RangeChromosome<i32>>,
     termination_cause: &TerminationCause,
 ) {
@@ -40,7 +40,7 @@ fn report(
 }
 
 fn main() {
-    let alleles = vec![RangeGenotype::new(0, vec![(0, N - 1)], 0)];
+    let alleles = vec![RangeGenotype::new(0, vec![(0, N as i32 - 1)], 0)];
     let alleles_clone = alleles.clone();
     let mut ga = Ga::new();
     let population = ga

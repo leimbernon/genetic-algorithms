@@ -95,7 +95,7 @@ fn test_multipoint_crossover_2_points() {
     };
 
     //Getting the offspring
-    let mut offspring = multipoint(&parent_1, &parent_2, &2).unwrap();
+    let mut offspring = multipoint(&parent_1, &parent_2, 2).unwrap();
 
     //Setting the child
     let child_2 = offspring.pop().unwrap();
@@ -192,7 +192,7 @@ fn test_multipoint_crossover_4_points() {
     };
 
     //Getting the offspring
-    let mut offspring = multipoint(&parent_1, &parent_2, &4).unwrap();
+    let mut offspring = multipoint(&parent_1, &parent_2, 4).unwrap();
 
     //Setting the child
     let child_2 = offspring.pop().unwrap();
@@ -487,7 +487,7 @@ fn test_multipoint_crossover_1_point() {
         fitness_fn: FitnessFnWrapper::default(),
     };
 
-    let mut offspring = multipoint(&parent_1, &parent_2, &1).unwrap();
+    let mut offspring = multipoint(&parent_1, &parent_2, 1).unwrap();
     let child_2 = offspring.pop().unwrap();
     let child_1 = offspring.pop().unwrap();
 
@@ -535,7 +535,7 @@ fn test_multipoint_crossover_children_complementary() {
     };
 
     for _ in 0..20 {
-        let mut offspring = multipoint(&parent_1, &parent_2, &3).unwrap();
+        let mut offspring = multipoint(&parent_1, &parent_2, 3).unwrap();
         let child_2 = offspring.pop().unwrap();
         let child_1 = offspring.pop().unwrap();
 

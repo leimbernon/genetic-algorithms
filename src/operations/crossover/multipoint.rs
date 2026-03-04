@@ -6,7 +6,7 @@ use rand::Rng;
 pub fn multipoint<U: ChromosomeT>(
     parent_1: &U,
     parent_2: &U,
-    crossover_number_of_points: &i32,
+    crossover_number_of_points: usize,
 ) -> Result<Vec<U>, GaError> {
     //Before doing the operation, we check that the dna in parent 1 has the same length of the dna in parent 2
     if parent_1.get_dna().len() != parent_2.get_dna().len() {
@@ -26,11 +26,10 @@ pub fn multipoint<U: ChromosomeT>(
 
     // Clamp the number of crossover points: at most dna_len - 1
     let n = {
-        let requested = *crossover_number_of_points as usize;
-        if requested >= dna_len {
+        if crossover_number_of_points >= dna_len {
             dna_len - 1
         } else {
-            requested
+            crossover_number_of_points
         }
     };
     trace!(target="crossover_events", method="multipoint_crossover"; "Number of crossover points {}", n);

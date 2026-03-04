@@ -22,7 +22,7 @@ where
     best_chromosome_is_set: bool,
 
     /// Generation numbers associated with this population (optional tracking).
-    pub generation_numbers: Vec<i32>,
+    pub generation_numbers: Vec<usize>,
 
     /// Average fitness across the population.
     pub f_avg: f64,
@@ -90,7 +90,7 @@ where
     /// A chromosome is considered unevaluated if its fitness is `NaN`.
     pub fn fitness_calculation(
         &mut self,
-        _number_of_threads: i32,
+        _number_of_threads: usize,
         problem_solving: ProblemSolving,
     ) {
         debug!(target="population_events", method="fitness_calculation"; "Started the population fitness calculation");

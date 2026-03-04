@@ -34,7 +34,7 @@ pub enum TerminationCause {
 }
 
 /// Type alias for the initialization function signature.
-type InitializationFn<G> = dyn Fn(i32, Option<&[G]>, Option<bool>) -> Vec<G> + Send + Sync;
+type InitializationFn<G> = dyn Fn(usize, Option<&[G]>, Option<bool>) -> Vec<G> + Send + Sync;
 
 /// Type alias for the fitness function signature.
 type FitnessFn<G> = dyn Fn(&[G]) -> f64 + Send + Sync;
@@ -96,7 +96,7 @@ where
         self.configuration.with_adaptive_ga(adaptive_ga);
         self
     }
-    fn with_threads(&mut self, number_of_threads: i32) -> &mut Self {
+    fn with_threads(&mut self, number_of_threads: usize) -> &mut Self {
         self.configuration.with_threads(number_of_threads);
         self
     }
@@ -114,7 +114,7 @@ where
         self.configuration.with_problem_solving(problem_solving);
         self
     }
-    fn with_max_generations(&mut self, max_generations: i32) -> &mut Self {
+    fn with_max_generations(&mut self, max_generations: usize) -> &mut Self {
         self.configuration.with_max_generations(max_generations);
         self
     }
@@ -122,20 +122,20 @@ where
         self.configuration.with_fitness_target(fitness_target);
         self
     }
-    fn with_population_size(&mut self, population_size: i32) -> &mut Self {
+    fn with_population_size(&mut self, population_size: usize) -> &mut Self {
         self.configuration.with_population_size(population_size);
 
         // Setting the number of couples
         self.configuration.selection_configuration.number_of_couples =
             if self.configuration.selection_configuration.number_of_couples == 0 {
-                ((self.configuration.limit_configuration.population_size / 2) as f64).round() as i32
+                self.configuration.limit_configuration.population_size / 2
             } else {
                 self.configuration.selection_configuration.number_of_couples
             };
 
         self
     }
-    fn with_genes_per_chromosome(&mut self, genes_per_chromosome: i32) -> &mut Self {
+    fn with_genes_per_chromosome(&mut self, genes_per_chromosome: usize) -> &mut Self {
         self.configuration
             .with_genes_per_chromosome(genes_per_chromosome);
         self
@@ -151,7 +151,7 @@ where
     }
 
     //Selection configuration
-    fn with_number_of_couples(&mut self, number_of_couples: i32) -> &mut Self {
+    fn with_number_of_couples(&mut self, number_of_couples: usize) -> &mut Self {
         self.configuration.with_number_of_couples(number_of_couples);
         self
     }
@@ -164,7 +164,7 @@ where
     }
 
     //Crossover configuration
-    fn with_crossover_number_of_points(&mut self, number_of_points: i32) -> &mut Self {
+    fn with_crossover_number_of_points(&mut self, number_of_points: usize) -> &mut Self {
         self.configuration
             .with_crossover_number_of_points(number_of_points);
         self
@@ -221,7 +221,7 @@ where
         self.configuration.with_save_progress(save_progress);
         self
     }
-    fn with_save_progress_interval(&mut self, save_progress_interval: i32) -> &mut Self {
+    fn with_save_progress_interval(&mut self, save_progress_interval: usize) -> &mut Self {
         self.configuration
             .with_save_progress_interval(save_progress_interval);
         self
@@ -283,7 +283,7 @@ where
         //Checks if the number of couples is 0, sets the number of couples to the half of the population
         if self.configuration.selection_configuration.number_of_couples == 0 {
             self.configuration.selection_configuration.number_of_couples =
-                ((self.population.size() / 2) as f64).round() as i32;
+                self.population.size() / 2;
         }
         self
     }
@@ -305,7 +305,7 @@ where
     pub fn with_initialization_fn<F>(&mut self, initialization_fn: F) -> &mut Self
     where
         U: ChromosomeT + Send + Sync + 'static + Clone,
-        F: Fn(i32, Option<&[U::Gene]>, Option<bool>) -> Vec<U::Gene> + Send + Sync + 'static,
+        F: Fn(usize, Option<&[U::Gene]>, Option<bool>) -> Vec<U::Gene> + Send + Sync + 'static,
     {
         self.initialization_fn = Some(Arc::new(initialization_fn));
         self
@@ -375,7 +375,7 @@ where
     ///
     /// Equivalent to `run_with_callback(None, 0)`.
     pub fn run(&mut self) -> Result<&Population<U>, GaError> {
-        self.run_with_callback(None::<fn(&i32, &Population<U>, &TerminationCause)>, 0)
+        self.run_with_callback(None::<fn(&usize, &Population<U>, &TerminationCause)>, 0)
     }
 
     /// Runs the GA and optionally invokes a callback every `generations_to_callback` generations.
@@ -388,11 +388,11 @@ where
     pub fn run_with_callback<F>(
         &mut self,
         callback: Option<F>,
-        generations_to_callback: i32,
+        generations_to_callback: usize,
     ) -> Result<&Population<U>, GaError>
     where
         U: ChromosomeT + Send + Sync + 'static + Clone,
-        F: Fn(&i32, &Population<U>, &TerminationCause),
+        F: Fn(&usize, &Population<U>, &TerminationCause),
     {
         //Before starting the run, we will check the conditions
         ValidatorFactory::validate::<U>(Some(&self.configuration), None, Some(&self.alleles))?;
@@ -426,7 +426,7 @@ where
 
         //Best chromosome within the generations and population returned
         let initial_population_size = self.population.size();
-        let mut age = 0;
+        let mut age = 0usize;
 
         //Calculation of the fitness and the best chromosome
         self.population.fitness_calculation(
@@ -435,12 +435,12 @@ where
         );
 
         // Starting counting the generations for the callback
-        let mut generation_callback_count = 0;
+        let mut generation_callback_count = 0usize;
 
         // Compound stopping criteria tracking
         let start_time = Instant::now();
         let mut best_fitness_so_far = self.population.best_chromosome.get_fitness();
-        let mut stagnation_count: i32 = 0;
+        let mut stagnation_count: usize = 0;
 
         //We start the cycles
         for i in 0..self.configuration.limit_configuration.max_generations {
@@ -725,7 +725,7 @@ fn parent_crossover<U>(
     parents: &[(usize, usize)],
     chromosomes: &[U],
     configuration: &GaConfiguration,
-    age: i32,
+    age: usize,
     f_max: f64,
     f_avg: f64,
 ) -> Result<Vec<U>, GaError>

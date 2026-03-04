@@ -82,7 +82,7 @@ fn fitness_fn(dna: &[BinaryGenotype]) -> f64 {
 }
 
 fn report(
-    generation: &i32,
+    generation: &usize,
     population: &Population<BinaryChromosome>,
     termination_cause: &TerminationCause,
 ) {
