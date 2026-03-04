@@ -722,3 +722,345 @@ fn test_selection_factory_accepts_valid_fitness() {
         result.err()
     );
 }
+
+// ==================== Phase 5 edge-case tests ====================
+
+// --- Selection factory with empty and tiny populations ---
+
+#[test]
+fn test_selection_factory_empty_population() {
+    let chromosomes: Vec<Chromosome> = vec![];
+    let config = SelectionConfiguration {
+        method: Selection::Random,
+        number_of_couples: 1,
+    };
+    let result = selection::factory(&chromosomes, config, 1);
+    assert!(
+        result.is_err(),
+        "Selection factory should reject empty population"
+    );
+}
+
+#[test]
+fn test_selection_factory_single_chromosome() {
+    let chromosomes = vec![Chromosome {
+        dna: vec![Gene { id: 0 }],
+        fitness: 10.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    }];
+    let config = SelectionConfiguration {
+        method: Selection::Random,
+        number_of_couples: 1,
+    };
+    let result = selection::factory(&chromosomes, config, 1);
+    assert!(
+        result.is_err(),
+        "Selection factory should reject population of size 1"
+    );
+}
+
+#[test]
+fn test_selection_factory_two_chromosomes_random() {
+    let chromosomes: Vec<Chromosome> = (0..2)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: 10.0 + i as f64,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+    let config = SelectionConfiguration {
+        method: Selection::Random,
+        number_of_couples: 1,
+    };
+    let result = selection::factory(&chromosomes, config, 1);
+    assert!(
+        result.is_ok(),
+        "Two chromosomes should be valid for selection"
+    );
+    let pairs = result.unwrap();
+    assert_eq!(pairs.len(), 1);
+}
+
+// --- Selection factory with all methods ---
+
+#[test]
+fn test_selection_factory_roulette_wheel() {
+    let chromosomes: Vec<Chromosome> = (0..6)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: 10.0 + i as f64,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+    let config = SelectionConfiguration {
+        method: Selection::RouletteWheel,
+        number_of_couples: 2,
+    };
+    let result = selection::factory(&chromosomes, config, 1);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_selection_factory_sus() {
+    let chromosomes: Vec<Chromosome> = (0..6)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: 10.0 + i as f64,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+    let config = SelectionConfiguration {
+        method: Selection::StochasticUniversalSampling,
+        number_of_couples: 2,
+    };
+    let result = selection::factory(&chromosomes, config, 1);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_selection_factory_tournament() {
+    let chromosomes: Vec<Chromosome> = (0..6)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: 10.0 + i as f64,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+    let config = SelectionConfiguration {
+        method: Selection::Tournament,
+        number_of_couples: 2,
+    };
+    let result = selection::factory(&chromosomes, config, 1);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_selection_factory_rank() {
+    let chromosomes: Vec<Chromosome> = (0..6)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: 10.0 + i as f64,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+    let config = SelectionConfiguration {
+        method: Selection::Rank,
+        number_of_couples: 2,
+    };
+    let result = selection::factory(&chromosomes, config, 1);
+    assert!(result.is_ok());
+}
+
+// --- Tournament edge cases ---
+
+#[test]
+fn test_tournament_couples_zero() {
+    let chromosomes: Vec<Chromosome> = (0..5)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: 10.0 + i as f64,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+    let pairs = tournament::tournament(&chromosomes, 0, 1);
+    assert!(
+        pairs.is_empty(),
+        "Tournament with 0 couples should return empty"
+    );
+}
+
+#[test]
+fn test_tournament_couples_exceed_population() {
+    // Requesting more couples than population allows should clamp
+    let chromosomes: Vec<Chromosome> = (0..4)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: 10.0 + i as f64,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+    let pairs = tournament::tournament(&chromosomes, 10, 1);
+    // Can produce at most 2 pairs from 4 chromosomes (clamped to len/2)
+    assert!(pairs.len() <= 2, "Should clamp couples to population/2");
+}
+
+#[test]
+fn test_tournament_population_of_two() {
+    let chromosomes: Vec<Chromosome> = (0..2)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: 10.0 + i as f64,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+    let pairs = tournament::tournament(&chromosomes, 1, 1);
+    assert_eq!(pairs.len(), 1);
+}
+
+#[test]
+fn test_tournament_all_equal_fitness() {
+    let chromosomes: Vec<Chromosome> = (0..6)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: 50.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+    let pairs = tournament::tournament(&chromosomes, 3, 1);
+    assert_eq!(pairs.len(), 3);
+    for (a, b) in &pairs {
+        assert!(*a < 6);
+        assert!(*b < 6);
+    }
+}
+
+// --- Random selection edge cases ---
+
+#[test]
+fn test_random_selection_empty_population() {
+    let chromosomes: Vec<Chromosome> = vec![];
+    let pairs = random::random(&chromosomes);
+    assert!(
+        pairs.is_empty(),
+        "Random selection with empty population should return empty"
+    );
+}
+
+// --- Roulette wheel edge cases ---
+
+#[test]
+fn test_roulette_wheel_single_chromosome() {
+    let chromosomes = vec![Chromosome {
+        dna: vec![Gene { id: 0 }],
+        fitness: 50.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    }];
+    // 1 chromosome => 1 selection => 0 pairs (odd count, last dropped)
+    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes);
+    assert!(
+        pairs.is_empty(),
+        "Roulette wheel with 1 chromosome should return 0 pairs"
+    );
+}
+
+#[test]
+fn test_roulette_wheel_two_chromosomes() {
+    let chromosomes: Vec<Chromosome> = (0..2)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: 10.0 + i as f64,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes);
+    assert_eq!(pairs.len(), 1);
+}
+
+// --- SUS edge cases ---
+
+#[test]
+fn test_sus_single_chromosome() {
+    let chromosomes = vec![Chromosome {
+        dna: vec![Gene { id: 0 }],
+        fitness: 50.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    }];
+    let pairs = fitness_proportionate::stochastic_universal_sampling(&chromosomes, 1);
+    assert_eq!(
+        pairs.len(),
+        1,
+        "SUS with 1 chromosome and 1 couple should select it twice"
+    );
+}
+
+#[test]
+fn test_sus_negative_fitness() {
+    let chromosomes: Vec<Chromosome> = (0..4)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: -10.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+    let pairs = fitness_proportionate::stochastic_universal_sampling(&chromosomes, 2);
+    assert!(
+        pairs.is_empty(),
+        "SUS should return empty for negative total fitness"
+    );
+}
+
+// --- Rank selection edge cases ---
+
+#[test]
+fn test_rank_selection_empty_population() {
+    let pop: Vec<Chromosome> = vec![];
+    let pairs = genetic_algorithms::operations::selection::rank::rank_selection(&pop, 3);
+    assert!(
+        pairs.is_empty(),
+        "Rank selection with empty population should return empty"
+    );
+}
+
+#[test]
+fn test_rank_selection_couples_zero() {
+    let pop: Vec<Chromosome> = (0..5)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: 10.0 + i as f64,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+    let pairs = genetic_algorithms::operations::selection::rank::rank_selection(&pop, 0);
+    assert!(
+        pairs.is_empty(),
+        "Rank selection with 0 couples should return empty"
+    );
+}
+
+#[test]
+fn test_rank_selection_all_equal_fitness() {
+    let pop: Vec<Chromosome> = (0..6)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: 42.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+    let pairs = genetic_algorithms::operations::selection::rank::rank_selection(&pop, 3);
+    assert_eq!(pairs.len(), 3);
+    for (a, b) in &pairs {
+        assert!(*a < 6);
+        assert!(*b < 6);
+    }
+}
+
+#[test]
+fn test_rank_selection_single_chromosome() {
+    let pop = vec![Chromosome {
+        dna: vec![Gene { id: 0 }],
+        fitness: 42.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    }];
+    let pairs = genetic_algorithms::operations::selection::rank::rank_selection(&pop, 1);
+    assert!(
+        pairs.is_empty(),
+        "Rank selection with 1 chromosome should return empty"
+    );
+}

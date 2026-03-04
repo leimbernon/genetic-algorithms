@@ -565,3 +565,301 @@ fn test_survivor_factory_accepts_valid_fitness() {
     );
     assert_eq!(chromosomes.len(), 3);
 }
+
+// ==================== Phase 5 edge-case tests ====================
+
+// --- Empty population ---
+
+#[test]
+fn test_fitness_survivor_empty_population_maximization() {
+    let mut population: Vec<Chromosome> = vec![];
+    fitness::fitness_based(
+        &mut population,
+        5,
+        LimitConfiguration {
+            problem_solving: ProblemSolving::Maximization,
+            ..Default::default()
+        },
+    );
+    assert!(population.is_empty());
+}
+
+#[test]
+fn test_fitness_survivor_empty_population_minimization() {
+    let mut population: Vec<Chromosome> = vec![];
+    fitness::fitness_based(
+        &mut population,
+        5,
+        LimitConfiguration {
+            problem_solving: ProblemSolving::Minimization,
+            ..Default::default()
+        },
+    );
+    assert!(population.is_empty());
+}
+
+#[test]
+fn test_age_survivor_empty_population() {
+    let mut population: Vec<Chromosome> = vec![];
+    age::age_based(&mut population, 5);
+    assert!(population.is_empty());
+}
+
+// --- Population already at or below target size ---
+
+#[test]
+fn test_fitness_survivor_at_target_size() {
+    let mut population: Vec<Chromosome> = (0..5)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: 10.0 + i as f64,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+    fitness::fitness_based(
+        &mut population,
+        5,
+        LimitConfiguration {
+            problem_solving: ProblemSolving::Maximization,
+            ..Default::default()
+        },
+    );
+    assert_eq!(population.len(), 5);
+}
+
+#[test]
+fn test_fitness_survivor_below_target_size() {
+    let mut population: Vec<Chromosome> = (0..3)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: 10.0 + i as f64,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+    fitness::fitness_based(
+        &mut population,
+        10,
+        LimitConfiguration {
+            problem_solving: ProblemSolving::Maximization,
+            ..Default::default()
+        },
+    );
+    // Should not add individuals; population stays at 3
+    assert_eq!(population.len(), 3);
+}
+
+#[test]
+fn test_age_survivor_at_target_size() {
+    let mut population: Vec<Chromosome> = (0..5)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: 10.0,
+            age: i as usize,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+    age::age_based(&mut population, 5);
+    assert_eq!(population.len(), 5);
+}
+
+#[test]
+fn test_age_survivor_below_target_size() {
+    let mut population: Vec<Chromosome> = (0..2)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: 10.0,
+            age: i as usize,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+    age::age_based(&mut population, 10);
+    assert_eq!(population.len(), 2);
+}
+
+// --- population_size == 0 ---
+
+#[test]
+fn test_fitness_survivor_target_zero() {
+    let mut population: Vec<Chromosome> = (0..5)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: 10.0 + i as f64,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+    fitness::fitness_based(
+        &mut population,
+        0,
+        LimitConfiguration {
+            problem_solving: ProblemSolving::Maximization,
+            ..Default::default()
+        },
+    );
+    assert!(
+        population.is_empty(),
+        "Target size 0 should empty the population"
+    );
+}
+
+#[test]
+fn test_age_survivor_target_zero() {
+    let mut population: Vec<Chromosome> = (0..5)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: 10.0,
+            age: i as usize,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+    age::age_based(&mut population, 0);
+    assert!(
+        population.is_empty(),
+        "Target size 0 should empty the population"
+    );
+}
+
+// --- population_size == 1 ---
+
+#[test]
+fn test_fitness_survivor_target_one_maximization() {
+    let mut population: Vec<Chromosome> = (0..5)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: 10.0 + i as f64,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+    fitness::fitness_based(
+        &mut population,
+        1,
+        LimitConfiguration {
+            problem_solving: ProblemSolving::Maximization,
+            ..Default::default()
+        },
+    );
+    assert_eq!(population.len(), 1);
+    assert_eq!(population[0].fitness(), 14.0); // Highest fitness
+}
+
+#[test]
+fn test_fitness_survivor_target_one_minimization() {
+    let mut population: Vec<Chromosome> = (0..5)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: 10.0 + i as f64,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+    fitness::fitness_based(
+        &mut population,
+        1,
+        LimitConfiguration {
+            problem_solving: ProblemSolving::Minimization,
+            ..Default::default()
+        },
+    );
+    assert_eq!(population.len(), 1);
+    assert_eq!(population[0].fitness(), 10.0); // Lowest fitness
+}
+
+#[test]
+fn test_age_survivor_target_one() {
+    let mut population: Vec<Chromosome> = (0..5)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: 10.0,
+            age: i as usize,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+    age::age_based(&mut population, 1);
+    assert_eq!(population.len(), 1);
+    assert_eq!(population[0].age(), 4); // Oldest
+}
+
+// --- Age-based with all same age ---
+
+#[test]
+fn test_age_survivor_all_same_age() {
+    let mut population: Vec<Chromosome> = (0..6)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: 10.0 + i as f64,
+            age: 5,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+    age::age_based(&mut population, 3);
+    assert_eq!(population.len(), 3);
+    // All have same age, so which ones survive is stable-sort order dependent
+    for c in &population {
+        assert_eq!(c.age(), 5);
+    }
+}
+
+// --- Survivor factory with both methods ---
+
+#[test]
+fn test_survivor_factory_fitness_method() {
+    let mut chromosomes: Vec<Chromosome> = (0..5)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: 10.0 + i as f64,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+    let result = survivor::factory(
+        Survivor::Fitness,
+        &mut chromosomes,
+        3,
+        LimitConfiguration {
+            problem_solving: ProblemSolving::Minimization,
+            ..Default::default()
+        },
+    );
+    assert!(result.is_ok());
+    assert_eq!(chromosomes.len(), 3);
+}
+
+#[test]
+fn test_survivor_factory_age_method() {
+    let mut chromosomes: Vec<Chromosome> = (0..5)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: 10.0 + i as f64,
+            age: i as usize,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+    let result = survivor::factory(
+        Survivor::Age,
+        &mut chromosomes,
+        3,
+        LimitConfiguration::default(),
+    );
+    assert!(result.is_ok());
+    assert_eq!(chromosomes.len(), 3);
+}
+
+#[test]
+fn test_survivor_factory_empty_population() {
+    let mut chromosomes: Vec<Chromosome> = vec![];
+    let result = survivor::factory(
+        Survivor::Fitness,
+        &mut chromosomes,
+        5,
+        LimitConfiguration {
+            problem_solving: ProblemSolving::Maximization,
+            ..Default::default()
+        },
+    );
+    // Empty population has no NaN, so should succeed
+    assert!(result.is_ok());
+    assert!(chromosomes.is_empty());
+}

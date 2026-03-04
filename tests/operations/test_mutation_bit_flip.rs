@@ -84,3 +84,50 @@ fn bit_flip_preserves_length_and_ids() {
         assert_eq!(result[i].id, dna[i].id, "IDs should be preserved");
     }
 }
+
+// ==================== Phase 5 edge-case tests ====================
+
+#[test]
+fn bit_flip_empty_chromosome_no_panic() {
+    let mut chromosome = BinaryChromosome::new();
+    chromosome.set_dna(Cow::Owned(vec![]));
+    bit_flip(&mut chromosome);
+    assert_eq!(chromosome.dna().len(), 0);
+}
+
+#[test]
+fn bit_flip_single_gene_flips_it() {
+    let dna = vec![BinaryGenotype { id: 0, value: true }];
+    let mut chromosome = BinaryChromosome::new();
+    chromosome.set_dna(Cow::Owned(dna));
+
+    bit_flip(&mut chromosome);
+
+    // Only gene must be flipped
+    assert!(!chromosome.dna()[0].value, "Single gene should be flipped");
+}
+
+#[test]
+fn bit_flip_all_false_flips_one_to_true() {
+    let dna = vec![
+        BinaryGenotype {
+            id: 0,
+            value: false,
+        },
+        BinaryGenotype {
+            id: 1,
+            value: false,
+        },
+        BinaryGenotype {
+            id: 2,
+            value: false,
+        },
+    ];
+    let mut chromosome = BinaryChromosome::new();
+    chromosome.set_dna(Cow::Owned(dna));
+
+    bit_flip(&mut chromosome);
+
+    let true_count = chromosome.dna().iter().filter(|g| g.value).count();
+    assert_eq!(true_count, 1, "One gene should have been flipped to true");
+}

@@ -2,7 +2,8 @@
 use crate::structures::{Chromosome, Gene};
 use genetic_algorithms::{
     fitness::FitnessFnWrapper,
-    operations::mutation::{aga_probability, inversion, scramble, swap},
+    operations::mutation::{self, aga_probability, inversion, scramble, swap},
+    operations::Mutation,
 };
 
 #[test]
@@ -439,4 +440,180 @@ fn test_scramble_two_genes() {
     let mut ids: Vec<i32> = chromosome.dna.iter().map(|g| g.id).collect();
     ids.sort();
     assert_eq!(ids, vec![1, 2]);
+}
+
+// ==================== Phase 5 edge-case tests ====================
+
+// --- Mutation factory paths for all variants ---
+
+#[test]
+fn test_mutation_factory_swap() {
+    let mut chromosome = Chromosome {
+        dna: vec![Gene { id: 1 }, Gene { id: 2 }, Gene { id: 3 }],
+        fitness: 0.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+    let result = mutation::factory(Mutation::Swap, &mut chromosome);
+    assert!(result.is_ok());
+    assert_eq!(chromosome.dna.len(), 3);
+}
+
+#[test]
+fn test_mutation_factory_inversion() {
+    let mut chromosome = Chromosome {
+        dna: vec![Gene { id: 1 }, Gene { id: 2 }, Gene { id: 3 }],
+        fitness: 0.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+    let result = mutation::factory(Mutation::Inversion, &mut chromosome);
+    assert!(result.is_ok());
+    assert_eq!(chromosome.dna.len(), 3);
+}
+
+#[test]
+fn test_mutation_factory_scramble() {
+    let mut chromosome = Chromosome {
+        dna: vec![Gene { id: 1 }, Gene { id: 2 }, Gene { id: 3 }],
+        fitness: 0.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+    let result = mutation::factory(Mutation::Scramble, &mut chromosome);
+    assert!(result.is_ok());
+    assert_eq!(chromosome.dna.len(), 3);
+}
+
+// --- factory_non_value error paths ---
+
+#[test]
+fn test_factory_non_value_swap() {
+    let mut chromosome = Chromosome {
+        dna: vec![Gene { id: 1 }, Gene { id: 2 }],
+        fitness: 0.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+    let result = mutation::factory_non_value(Mutation::Swap, &mut chromosome);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_factory_non_value_inversion() {
+    let mut chromosome = Chromosome {
+        dna: vec![Gene { id: 1 }, Gene { id: 2 }],
+        fitness: 0.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+    let result = mutation::factory_non_value(Mutation::Inversion, &mut chromosome);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_factory_non_value_scramble() {
+    let mut chromosome = Chromosome {
+        dna: vec![Gene { id: 1 }, Gene { id: 2 }],
+        fitness: 0.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+    let result = mutation::factory_non_value(Mutation::Scramble, &mut chromosome);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_factory_non_value_value_returns_error() {
+    let mut chromosome = Chromosome {
+        dna: vec![Gene { id: 1 }],
+        fitness: 0.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+    let result = mutation::factory_non_value(Mutation::Value, &mut chromosome);
+    assert!(
+        result.is_err(),
+        "factory_non_value should reject Mutation::Value"
+    );
+}
+
+#[test]
+fn test_factory_non_value_bitflip_returns_error() {
+    let mut chromosome = Chromosome {
+        dna: vec![Gene { id: 1 }],
+        fitness: 0.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+    let result = mutation::factory_non_value(Mutation::BitFlip, &mut chromosome);
+    assert!(
+        result.is_err(),
+        "factory_non_value should reject Mutation::BitFlip"
+    );
+}
+
+#[test]
+fn test_factory_non_value_creep_returns_error() {
+    let mut chromosome = Chromosome {
+        dna: vec![Gene { id: 1 }],
+        fitness: 0.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+    let result = mutation::factory_non_value(Mutation::Creep, &mut chromosome);
+    assert!(
+        result.is_err(),
+        "factory_non_value should reject Mutation::Creep"
+    );
+}
+
+#[test]
+fn test_factory_non_value_gaussian_returns_error() {
+    let mut chromosome = Chromosome {
+        dna: vec![Gene { id: 1 }],
+        fitness: 0.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+    let result = mutation::factory_non_value(Mutation::Gaussian, &mut chromosome);
+    assert!(
+        result.is_err(),
+        "factory_non_value should reject Mutation::Gaussian"
+    );
+}
+
+// --- Mutation AGA probability edge cases ---
+
+#[test]
+fn test_mutation_aga_probability_at_avg() {
+    // When larger_f == f_avg exactly
+    let parent_1 = Chromosome {
+        dna: vec![],
+        fitness: 50.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+    let parent_2 = Chromosome {
+        dna: vec![],
+        fitness: 50.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+    let prob = aga_probability(&parent_1, &parent_2, 50.0, 0.9, 0.1);
+    // larger_f (50) >= f_avg (50) => probability_min
+    assert_eq!(prob, 0.1);
+}
+
+#[test]
+fn test_mutation_aga_probability_equal_parents_below_avg() {
+    let parent = Chromosome {
+        dna: vec![],
+        fitness: 25.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+    let prob = aga_probability(&parent, &parent, 50.0, 0.9, 0.1);
+    // larger_f = 25 < f_avg = 50 => probability_max
+    assert_eq!(prob, 0.9);
 }
