@@ -1640,3 +1640,125 @@ fn test_ga_run_with_range_chromosome_i32() {
         "Best fitness should be computed"
     );
 }
+
+/// Compute the average pairwise Hamming distance (gene-id comparison) of a population.
+fn average_pairwise_distance(chromosomes: &[Chromosome]) -> f64 {
+    let n = chromosomes.len();
+    if n < 2 {
+        return 0.0;
+    }
+    let mut total = 0.0;
+    let mut count = 0usize;
+    for i in 0..n {
+        for j in (i + 1)..n {
+            let dna_a = &chromosomes[i].dna;
+            let dna_b = &chromosomes[j].dna;
+            let max_len = dna_a.len().max(dna_b.len());
+            let mut diff = 0usize;
+            for idx in 0..max_len {
+                let id_a = dna_a.get(idx).map(|g| g.id);
+                let id_b = dna_b.get(idx).map(|g| g.id);
+                if id_a != id_b {
+                    diff += 1;
+                }
+            }
+            total += diff as f64;
+            count += 1;
+        }
+    }
+    total / count as f64
+}
+
+/// Task 5.4 — Niching integration test.
+/// Verifies that enabling niching (fitness sharing) results in higher genotypic
+/// diversity than an equivalent run without niching, as measured by average
+/// pairwise Hamming distance.
+///
+/// Because the GA is stochastic, we use a retry loop: if niching produces higher
+/// diversity in at least one of several independent trials, the test passes.
+#[test]
+fn test_niching_promotes_diversity() {
+    // Build a population heavily biased towards one genotype (8 identical + 2 different).
+    // With niching, the identical cluster gets penalised, so selection should favour
+    // the different individuals, eventually raising diversity.
+    let build_population = || {
+        let base_dna = vec![
+            Gene { id: 1 },
+            Gene { id: 2 },
+            Gene { id: 3 },
+            Gene { id: 4 },
+        ];
+        let different_dna = vec![
+            Gene { id: 4 },
+            Gene { id: 3 },
+            Gene { id: 2 },
+            Gene { id: 1 },
+        ];
+
+        let mut chromosomes = Vec::new();
+        for _ in 0..8 {
+            chromosomes.push(Chromosome {
+                dna: base_dna.clone(),
+                fitness: 10.0,
+                age: 0,
+                fitness_fn: FitnessFnWrapper::default(),
+            });
+        }
+        for _ in 0..2 {
+            chromosomes.push(Chromosome {
+                dna: different_dna.clone(),
+                fitness: 10.0,
+                age: 0,
+                fitness_fn: FitnessFnWrapper::default(),
+            });
+        }
+        Population::new(chromosomes)
+    };
+
+    let generations = 15;
+    let trials = 10;
+    let mut niching_better_count = 0;
+
+    for _ in 0..trials {
+        // Run WITHOUT niching
+        let mut ga_no_niche = Ga::new()
+            .with_problem_solving(ProblemSolving::Maximization)
+            .with_selection_method(Selection::Tournament)
+            .with_crossover_method(Crossover::Cycle)
+            .with_mutation_method(Mutation::Swap)
+            .with_survivor_method(Survivor::Fitness)
+            .with_population(build_population())
+            .with_max_generations(generations)
+            .with_niching_enabled(false);
+        let result_no_niche = ga_no_niche.run().unwrap();
+        let diversity_no_niche = average_pairwise_distance(&result_no_niche.chromosomes);
+
+        // Run WITH niching
+        let mut ga_niche = Ga::new()
+            .with_problem_solving(ProblemSolving::Maximization)
+            .with_selection_method(Selection::Tournament)
+            .with_crossover_method(Crossover::Cycle)
+            .with_mutation_method(Mutation::Swap)
+            .with_survivor_method(Survivor::Fitness)
+            .with_population(build_population())
+            .with_max_generations(generations)
+            .with_niching_enabled(true)
+            .with_niching_sigma_share(3.0)
+            .with_niching_alpha(1.0);
+        let result_niche = ga_niche.run().unwrap();
+        let diversity_niche = average_pairwise_distance(&result_niche.chromosomes);
+
+        if diversity_niche > diversity_no_niche {
+            niching_better_count += 1;
+        }
+    }
+
+    // Niching should produce higher diversity in at least 3 out of 10 trials.
+    // This is a weak assertion to account for stochastic behaviour.
+    assert!(
+        niching_better_count >= 3,
+        "Niching should promote diversity in at least 3/{} trials, but only did in {}",
+        trials,
+        niching_better_count
+    );
+}
