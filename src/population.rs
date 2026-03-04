@@ -103,10 +103,26 @@ where
             }
         });
 
-        // Update best chromosome sequentially (needs &mut self)
-        for i in 0..self.chromosomes.len() {
-            let chromosome = self.chromosomes[i].clone();
-            self.decide_best_chromosome(&chromosome, problem_solving);
+        // Update best chromosome: scan for the best fitness among all
+        // chromosomes and clone only the winner (instead of cloning every
+        // chromosome in the loop).
+        if let Some(best_idx) = find_best_index(&self.chromosomes, problem_solving) {
+            if !self.best_chromosome_is_set {
+                self.best_chromosome = self.chromosomes[best_idx].clone();
+                self.best_chromosome_is_set = true;
+            } else {
+                let candidate_fitness = self.chromosomes[best_idx].fitness();
+                let current_fitness = self.best_chromosome.fitness();
+                let candidate_is_better = match problem_solving {
+                    ProblemSolving::Maximization | ProblemSolving::FixedFitness => {
+                        candidate_fitness > current_fitness
+                    }
+                    ProblemSolving::Minimization => candidate_fitness < current_fitness,
+                };
+                if candidate_is_better {
+                    self.best_chromosome = self.chromosomes[best_idx].clone();
+                }
+            }
         }
 
         debug!(target="ga_events", method="population_fitness_calculation"; "Population fitness calculation finished");
@@ -140,4 +156,30 @@ where
 
         debug!(target="chromosome_events", method="get_best_chromosome"; "Best chromosome method finished");
     }
+}
+
+/// Finds the index of the best chromosome in a slice according to `problem_solving`.
+///
+/// Returns `None` for an empty slice.
+fn find_best_index<U: ChromosomeT>(
+    chromosomes: &[U],
+    problem_solving: ProblemSolving,
+) -> Option<usize> {
+    if chromosomes.is_empty() {
+        return None;
+    }
+    let mut best_idx = 0;
+    let mut best_fit = chromosomes[0].fitness();
+    for (i, c) in chromosomes.iter().enumerate().skip(1) {
+        let fit = c.fitness();
+        let is_better = match problem_solving {
+            ProblemSolving::Maximization | ProblemSolving::FixedFitness => fit > best_fit,
+            ProblemSolving::Minimization => fit < best_fit,
+        };
+        if is_better {
+            best_idx = i;
+            best_fit = fit;
+        }
+    }
+    Some(best_idx)
 }
