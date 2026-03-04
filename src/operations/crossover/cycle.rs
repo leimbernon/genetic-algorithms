@@ -2,6 +2,7 @@ use crate::error::GaError;
 use crate::traits::{ChromosomeT, GeneT};
 use log::{debug, trace};
 use std::borrow::Cow;
+use std::collections::HashMap;
 
 pub fn cycle<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
     let dna_len = parent_1.dna().len();
@@ -12,6 +13,15 @@ pub fn cycle<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaErr
             "Parent 1 and parent 2 must have the same dna length. Parent 1 has a length of {} and parent 2 has a length of {}",
             parent_1.dna().len(), parent_2.dna().len())));
     }
+
+    // Pre-build gene-id → index map for parent_1 so each lookup is O(1)
+    // instead of O(N) linear scan.
+    let p1_id_to_idx: HashMap<i32, usize> = parent_1
+        .dna()
+        .iter()
+        .enumerate()
+        .map(|(i, gene)| (gene.id(), i))
+        .collect();
 
     let mut child_1_dna = parent_1.dna().to_vec();
     let mut child_2_dna = parent_2.dna().to_vec();
@@ -41,12 +51,8 @@ pub fn cycle<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaErr
 
             let next_gene_id = parent_2.dna()[idx].id();
             trace!(target="crossover_events", method="cycle_crossover"; "Next gene id {}", next_gene_id);
-            match parent_1
-                .dna()
-                .iter()
-                .position(|gene| gene.id() == next_gene_id)
-            {
-                Some(pos) => idx = pos,
+            match p1_id_to_idx.get(&next_gene_id) {
+                Some(&pos) => idx = pos,
                 None => {
                     return Err(GaError::CrossoverError(format!(
                         "Cycle crossover failed: gene id {} from parent 2 not found in parent 1",
