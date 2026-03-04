@@ -52,4 +52,12 @@ pub trait ConfigurationT {
     /// Sets compound stopping criteria. These are checked in addition to
     /// max_generations and fitness_target.
     fn with_stopping_criteria(&mut self, criteria: StoppingCriteria) -> &mut Self;
+
+    //Niching / fitness sharing configuration
+    /// Enables or disables fitness sharing (niching).
+    fn with_niching_enabled(&mut self, enabled: bool) -> &mut Self;
+    /// Sets the sharing radius for fitness sharing.
+    fn with_niching_sigma_share(&mut self, sigma_share: f64) -> &mut Self;
+    /// Sets the alpha parameter for the sharing function shape.
+    fn with_niching_alpha(&mut self, alpha: f64) -> &mut Self;
 }

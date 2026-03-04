@@ -18,6 +18,14 @@ pub enum GaError {
     InitializationError(String),
     /// A selection operation failed.
     SelectionError(String),
+    /// An island model configuration parameter is invalid.
+    InvalidIslandConfiguration(String),
+    /// A niching / fitness sharing configuration parameter is invalid.
+    InvalidNichingConfiguration(String),
+    /// An NSGA-II configuration parameter is invalid.
+    InvalidNsga2Configuration(String),
+    /// A migration operation between islands failed.
+    MigrationError(String),
 }
 
 impl fmt::Display for GaError {
@@ -29,6 +37,16 @@ impl fmt::Display for GaError {
             GaError::MutationError(msg) => write!(f, "Mutation error: {}", msg),
             GaError::InitializationError(msg) => write!(f, "Initialization error: {}", msg),
             GaError::SelectionError(msg) => write!(f, "Selection error: {}", msg),
+            GaError::InvalidIslandConfiguration(msg) => {
+                write!(f, "Invalid island configuration: {}", msg)
+            }
+            GaError::InvalidNichingConfiguration(msg) => {
+                write!(f, "Invalid niching configuration: {}", msg)
+            }
+            GaError::InvalidNsga2Configuration(msg) => {
+                write!(f, "Invalid NSGA-II configuration: {}", msg)
+            }
+            GaError::MigrationError(msg) => write!(f, "Migration error: {}", msg),
         }
     }
 }
