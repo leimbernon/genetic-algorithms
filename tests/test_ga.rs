@@ -1298,3 +1298,345 @@ fn test_island_nsga2_migration_improves_diversity() {
     let front = result.unwrap();
     assert!(!front.is_empty(), "Should produce a non-empty Pareto front");
 }
+
+// ============================================================================
+// Task 5.2: End-to-end NSGA-II run() integration test
+// ============================================================================
+
+#[test]
+fn test_nsga2_run_returns_pareto_front() {
+    use genetic_algorithms::configuration::GaConfiguration;
+    use genetic_algorithms::nsga2::configuration::Nsga2Configuration;
+    use genetic_algorithms::nsga2::Nsga2Ga;
+    use genetic_algorithms::operations::{Crossover, Mutation};
+    use genetic_algorithms::traits::{CrossoverConfig, MutationConfig};
+
+    let alleles = vec![
+        Gene { id: 0 },
+        Gene { id: 1 },
+        Gene { id: 2 },
+        Gene { id: 3 },
+        Gene { id: 4 },
+    ];
+    let alleles_clone = alleles.clone();
+
+    let nsga2_config = Nsga2Configuration::new()
+        .with_num_objectives(2)
+        .with_population_size(20)
+        .with_max_generations(15);
+
+    let ga_config = GaConfiguration::default()
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::Swap);
+
+    let mut nsga2 = Nsga2Ga::<Chromosome>::new(nsga2_config, ga_config)
+        .with_alleles(alleles)
+        .with_initialization_fn(move |genes_per_chrom, _alleles, _repeat| {
+            use rand::Rng;
+            let mut rng = rand::rng();
+            (0..genes_per_chrom)
+                .map(|_| {
+                    let idx = rng.random_range(0..alleles_clone.len());
+                    alleles_clone[idx]
+                })
+                .collect()
+        })
+        .with_objective_fns(vec![
+            // Objective 1: sum of gene IDs
+            Box::new(|dna: &[Gene]| dna.iter().map(|g| g.id as f64).sum()),
+            // Objective 2: negative sum (conflicting)
+            Box::new(|dna: &[Gene]| -(dna.iter().map(|g| g.id as f64).sum::<f64>())),
+        ]);
+
+    let result = nsga2.run();
+    assert!(result.is_ok(), "NSGA-II run should succeed");
+
+    let front = result.unwrap();
+    assert!(
+        !front.is_empty(),
+        "Pareto front should contain at least one individual"
+    );
+
+    // All individuals in the front should have rank 0
+    for ind in &front.individuals {
+        assert_eq!(ind.rank, 0, "All front individuals should have rank 0");
+        assert_eq!(
+            ind.objectives.len(),
+            2,
+            "Each individual should have 2 objectives"
+        );
+    }
+
+    // Population size should be respected
+    assert!(
+        front.individuals.len() <= 20,
+        "Front should not exceed population size"
+    );
+}
+
+#[test]
+fn test_nsga2_three_objectives() {
+    use genetic_algorithms::configuration::GaConfiguration;
+    use genetic_algorithms::nsga2::configuration::Nsga2Configuration;
+    use genetic_algorithms::nsga2::Nsga2Ga;
+    use genetic_algorithms::operations::{Crossover, Mutation};
+    use genetic_algorithms::traits::{CrossoverConfig, MutationConfig};
+
+    let alleles = vec![
+        Gene { id: 0 },
+        Gene { id: 1 },
+        Gene { id: 2 },
+        Gene { id: 3 },
+    ];
+    let alleles_clone = alleles.clone();
+
+    let nsga2_config = Nsga2Configuration::new()
+        .with_num_objectives(3)
+        .with_population_size(30)
+        .with_max_generations(10);
+
+    let ga_config = GaConfiguration::default()
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::Swap);
+
+    let mut nsga2 = Nsga2Ga::<Chromosome>::new(nsga2_config, ga_config)
+        .with_alleles(alleles)
+        .with_initialization_fn(move |genes_per_chrom, _alleles, _repeat| {
+            use rand::Rng;
+            let mut rng = rand::rng();
+            (0..genes_per_chrom)
+                .map(|_| alleles_clone[rng.random_range(0..alleles_clone.len())])
+                .collect()
+        })
+        .with_objective_fns(vec![
+            Box::new(|dna: &[Gene]| dna.iter().map(|g| g.id as f64).sum()),
+            Box::new(|dna: &[Gene]| -(dna.iter().map(|g| g.id as f64).sum::<f64>())),
+            Box::new(|dna: &[Gene]| dna.iter().map(|g| (g.id as f64 - 2.0).powi(2)).sum::<f64>()),
+        ]);
+
+    let result = nsga2.run();
+    assert!(result.is_ok(), "NSGA-II with 3 objectives should succeed");
+
+    let front = result.unwrap();
+    assert!(!front.is_empty());
+    for ind in &front.individuals {
+        assert_eq!(ind.objectives.len(), 3);
+    }
+}
+
+// ============================================================================
+// Task 5.3: End-to-end Island Model GA run() integration test
+// ============================================================================
+
+#[test]
+fn test_island_ga_run_returns_best_chromosome() {
+    use genetic_algorithms::configuration::GaConfiguration;
+    use genetic_algorithms::island::configuration::IslandConfiguration;
+    use genetic_algorithms::island::topology::MigrationTopology;
+    use genetic_algorithms::island::IslandGa;
+    use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+    use genetic_algorithms::traits::{
+        ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+    };
+
+    let alleles = vec![
+        Gene { id: 0 },
+        Gene { id: 1 },
+        Gene { id: 2 },
+        Gene { id: 3 },
+        Gene { id: 4 },
+        Gene { id: 5 },
+    ];
+    let alleles_clone = alleles.clone();
+
+    let island_config = IslandConfiguration::new()
+        .with_num_islands(3)
+        .with_migration_interval(5)
+        .with_migration_count(1)
+        .with_topology(MigrationTopology::Ring);
+
+    let ga_config = GaConfiguration::new()
+        .with_population_size(20)
+        .with_genes_per_chromosome(4)
+        .with_max_generations(15)
+        .with_selection_method(Selection::Tournament)
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::Swap)
+        .with_survivor_method(Survivor::Fitness)
+        .with_problem_solving(ProblemSolving::Maximization);
+
+    let mut ga = IslandGa::<Chromosome>::new(island_config, ga_config)
+        .with_alleles(alleles)
+        .with_initialization_fn(move |genes_per_chrom, _alleles, _repeat| {
+            use rand::Rng;
+            let mut rng = rand::rng();
+            (0..genes_per_chrom)
+                .map(|_| alleles_clone[rng.random_range(0..alleles_clone.len())])
+                .collect()
+        })
+        .with_fitness_fn(|dna: &[Gene]| dna.iter().map(|g| g.id as f64).sum())
+        .build()
+        .expect("IslandGa configuration should be valid");
+
+    let result = ga.run();
+    assert!(result.is_ok(), "Island GA run should succeed");
+
+    let best = result.unwrap();
+    // Fitness should be a real number (not NaN)
+    assert!(
+        !best.fitness().is_nan(),
+        "Best chromosome fitness should be a real number"
+    );
+}
+
+#[test]
+fn test_island_ga_minimization() {
+    use genetic_algorithms::configuration::GaConfiguration;
+    use genetic_algorithms::island::configuration::IslandConfiguration;
+    use genetic_algorithms::island::topology::MigrationTopology;
+    use genetic_algorithms::island::IslandGa;
+    use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+    use genetic_algorithms::traits::{
+        ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+    };
+
+    let alleles = vec![
+        Gene { id: 0 },
+        Gene { id: 1 },
+        Gene { id: 2 },
+        Gene { id: 3 },
+    ];
+    let alleles_clone = alleles.clone();
+
+    let island_config = IslandConfiguration::new()
+        .with_num_islands(2)
+        .with_migration_interval(3)
+        .with_migration_count(1)
+        .with_topology(MigrationTopology::FullyConnected);
+
+    let ga_config = GaConfiguration::new()
+        .with_population_size(15)
+        .with_genes_per_chromosome(3)
+        .with_max_generations(10)
+        .with_selection_method(Selection::Random)
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::Swap)
+        .with_survivor_method(Survivor::Fitness)
+        .with_problem_solving(ProblemSolving::Minimization);
+
+    let mut ga = IslandGa::<Chromosome>::new(island_config, ga_config)
+        .with_alleles(alleles)
+        .with_initialization_fn(move |genes_per_chrom, _alleles, _repeat| {
+            use rand::Rng;
+            let mut rng = rand::rng();
+            (0..genes_per_chrom)
+                .map(|_| alleles_clone[rng.random_range(0..alleles_clone.len())])
+                .collect()
+        })
+        .with_fitness_fn(|dna: &[Gene]| dna.iter().map(|g| g.id as f64).sum())
+        .build()
+        .expect("IslandGa configuration should be valid");
+
+    let result = ga.run();
+    assert!(result.is_ok(), "Island GA minimization should succeed");
+
+    let best = result.unwrap();
+    assert!(
+        !best.fitness().is_nan(),
+        "Best chromosome fitness should not be NaN"
+    );
+}
+
+// ============================================================================
+// Task 5.5: Range chromosome GA run integration test
+// ============================================================================
+
+#[test]
+fn test_ga_run_with_range_chromosome_f64() {
+    use genetic_algorithms::chromosomes::Range as RangeChromosome;
+    use genetic_algorithms::ga::Ga;
+    use genetic_algorithms::genotypes::Range as RangeGene;
+    use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+    use genetic_algorithms::traits::{
+        ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig,
+        StoppingConfig,
+    };
+
+    // Alleles define the search space: each gene has range [0.0, 10.0]
+    let alleles = vec![RangeGene::new(0, vec![(0.0_f64, 10.0_f64)], 0.0)];
+
+    let mut ga: Ga<RangeChromosome<f64>> = Ga::new()
+        .with_population_size(20)
+        .with_genes_per_chromosome(3)
+        .with_max_generations(20)
+        .with_problem_solving(ProblemSolving::Minimization)
+        .with_selection_method(Selection::Tournament)
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::Swap)
+        .with_survivor_method(Survivor::Fitness)
+        .with_alleles(alleles)
+        .with_initialization_fn(
+            genetic_algorithms::initializers::range_random_initialization::<f64>,
+        )
+        .with_fitness_fn(|dna: &[RangeGene<f64>]| {
+            // Sphere function: sum of values squared (minimum at 0)
+            dna.iter().map(|g| g.value() * g.value()).sum()
+        });
+
+    let result = ga.run();
+    assert!(
+        result.is_ok(),
+        "GA with Range<f64> chromosome should succeed, got: {:?}",
+        result.err()
+    );
+
+    let pop = result.unwrap();
+    assert_eq!(pop.chromosomes.len(), 20);
+    assert!(
+        !pop.best_chromosome.fitness().is_nan(),
+        "Best fitness should be computed"
+    );
+}
+
+#[test]
+fn test_ga_run_with_range_chromosome_i32() {
+    use genetic_algorithms::chromosomes::Range as RangeChromosome;
+    use genetic_algorithms::ga::Ga;
+    use genetic_algorithms::genotypes::Range as RangeGene;
+    use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+    use genetic_algorithms::traits::{
+        ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig,
+        StoppingConfig,
+    };
+
+    let alleles = vec![RangeGene::new(0, vec![(0_i32, 50_i32)], 0)];
+
+    let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
+        .with_population_size(15)
+        .with_genes_per_chromosome(4)
+        .with_max_generations(10)
+        .with_problem_solving(ProblemSolving::Maximization)
+        .with_selection_method(Selection::Random)
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::Swap)
+        .with_survivor_method(Survivor::Fitness)
+        .with_alleles(alleles)
+        .with_initialization_fn(
+            genetic_algorithms::initializers::range_random_initialization::<i32>,
+        )
+        .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum());
+
+    let result = ga.run();
+    assert!(
+        result.is_ok(),
+        "GA with Range<i32> chromosome should succeed, got: {:?}",
+        result.err()
+    );
+
+    let pop = result.unwrap();
+    assert!(!pop.chromosomes.is_empty());
+    assert!(
+        !pop.best_chromosome.fitness().is_nan(),
+        "Best fitness should be computed"
+    );
+}
