@@ -3,46 +3,37 @@ use log::{debug, trace};
 use rand::Rng;
 
 /**
- * Function to make the random parent selection between the list of chromosomes
+ * Function to make the random parent selection between the list of chromosomes.
+ *
+ * Uses a Fisher-Yates partial shuffle so each pick is O(1) (swap-to-end)
+ * instead of O(N) (`Vec::remove` shifting). Total cost: O(N).
  */
 pub fn random<U: ChromosomeT>(chromosomes: &[U]) -> Vec<(usize, usize)> {
-    let mut mating = Vec::new();
-    let mut indexes = Vec::new();
+    let n = chromosomes.len();
+    let pair_count = n / 2;
+    let mut mating = Vec::with_capacity(pair_count);
+    let mut indexes: Vec<usize> = (0..n).collect();
     let mut rng = rand::rng();
+    let mut remaining = n;
     debug!(target="selection_events", method="random"; "Starting random selection");
 
-    //Setting the indexes of the chromosomes
-    let mut i = 0;
-    while i < chromosomes.len() {
-        indexes.push(i);
-        i += 1;
-    }
+    // Pick pairs via Fisher-Yates: swap chosen element with the last
+    // unprocessed element and shrink the working range.
+    while remaining >= 2 {
+        // Pick first parent
+        let r1 = rng.random_range(0..remaining);
+        let index_value_1 = indexes[r1];
+        remaining -= 1;
+        indexes.swap(r1, remaining);
 
-    //In this loop we create the mating vector
-    while !indexes.is_empty() {
-        //Getting the chromosome 1
-        //We must have at least 2 remaining elements
-        if indexes.len() < 2 {
-            break;
-        }
-        let mut random_index_1 = 0;
-        if indexes.len() > 1 {
-            random_index_1 = rng.random_range(0..indexes.len());
-        }
-        let index_value_1 = indexes[random_index_1];
-        indexes.remove(random_index_1);
+        // Pick second parent
+        let r2 = rng.random_range(0..remaining);
+        let index_value_2 = indexes[r2];
+        remaining -= 1;
+        indexes.swap(r2, remaining);
 
-        //Getting the chromosome 2
-        let mut random_index_2 = 0;
-        if indexes.len() > 1 {
-            random_index_2 = rng.random_range(0..indexes.len());
-        }
-
-        //Adding the two chromosomes as a pair
-        mating.push((index_value_1, indexes[random_index_2]));
-        indexes.remove(random_index_2);
-
-        trace!(target="selection_events", method="random"; "Mating index 1 {} with index 2 {}", index_value_1, random_index_2);
+        mating.push((index_value_1, index_value_2));
+        trace!(target="selection_events", method="random"; "Mating index 1 {} with index 2 {}", index_value_1, index_value_2);
     }
 
     mating
