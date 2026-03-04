@@ -4,6 +4,7 @@ pub use self::swap::swap;
 use super::Mutation;
 use crate::error::GaError;
 use crate::traits::ChromosomeT;
+use log::warn;
 
 pub mod bit_flip;
 pub mod creep;
@@ -13,43 +14,65 @@ pub mod scramble;
 pub mod swap;
 pub mod value;
 
-/// Trait for chromosomes that support value mutation.
+/// Trait for chromosomes that support specialized mutation operators.
 ///
-/// Implementing this trait allows a chromosome to be used with `Mutation::Value`.
-/// It is automatically implemented for `Range<T>` chromosomes where T supports
-/// the necessary numeric operations.
+/// Implementing this trait allows a chromosome to be used with `Mutation::Value`,
+/// `Mutation::BitFlip`, `Mutation::Creep`, and `Mutation::Gaussian`.
 ///
-/// The default implementation falls back to swap mutation, so chromosome types
-/// that don't support value mutation can still be used with the GA orchestrator.
+/// The default implementations log a warning and fall back to swap mutation.
+/// Override the methods relevant to your chromosome type:
+/// - **Binary chromosomes**: override `bit_flip_mutate`
+/// - **Range chromosomes**: override `value_mutate`, `creep_mutate`, `gaussian_mutate`
 pub trait ValueMutable: ChromosomeT {
     /// Performs value mutation on this chromosome in-place.
     ///
-    /// The default implementation falls back to swap mutation.
+    /// The default implementation logs a warning and falls back to swap mutation.
+    /// Override this for chromosome types that have a meaningful value range per gene.
     fn value_mutate(&mut self) {
+        warn!(
+            "value_mutate() not overridden for this chromosome type; \
+             falling back to swap mutation. Implement ValueMutable::value_mutate() \
+             for proper value mutation behavior."
+        );
         swap(self);
     }
 
     /// Performs bit flip mutation on this chromosome in-place.
     ///
-    /// The default implementation falls back to swap mutation.
+    /// The default implementation logs a warning and falls back to swap mutation.
     /// Override this for Binary chromosomes to flip a random gene's boolean value.
     fn bit_flip_mutate(&mut self) {
+        warn!(
+            "bit_flip_mutate() not overridden for this chromosome type; \
+             falling back to swap mutation. Implement ValueMutable::bit_flip_mutate() \
+             for proper bit-flip behavior."
+        );
         swap(self);
     }
 
     /// Performs creep mutation on this chromosome in-place.
     ///
-    /// The default implementation falls back to swap mutation.
+    /// The default implementation logs a warning and falls back to swap mutation.
     /// Override this for Range<T> chromosomes to apply small uniform perturbation.
     fn creep_mutate(&mut self, _step: f64) {
+        warn!(
+            "creep_mutate() not overridden for this chromosome type; \
+             falling back to swap mutation. Implement ValueMutable::creep_mutate() \
+             for proper creep mutation behavior."
+        );
         swap(self);
     }
 
     /// Performs gaussian mutation on this chromosome in-place.
     ///
-    /// The default implementation falls back to swap mutation.
+    /// The default implementation logs a warning and falls back to swap mutation.
     /// Override this for Range<T> chromosomes to apply gaussian perturbation.
     fn gaussian_mutate(&mut self, _sigma: f64) {
+        warn!(
+            "gaussian_mutate() not overridden for this chromosome type; \
+             falling back to swap mutation. Implement ValueMutable::gaussian_mutate() \
+             for proper gaussian mutation behavior."
+        );
         swap(self);
     }
 }

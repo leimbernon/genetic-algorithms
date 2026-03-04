@@ -110,11 +110,7 @@ mod tests {
         for _ in 0..200 {
             let before = c.dna().to_vec();
             creep_mutation(&mut c, 10.0);
-            if before
-                .iter()
-                .zip(c.dna())
-                .any(|(b, a)| b.value != a.value)
-            {
+            if before.iter().zip(c.dna()).any(|(b, a)| b.value != a.value) {
                 changed = true;
                 break;
             }
