@@ -1,5 +1,6 @@
 use crate::configuration::GaConfiguration;
 use crate::error::GaError;
+use crate::traits::{FitnessFn, InitializationFn};
 use crate::validators::validator_factory as ValidatorFactory;
 use crate::{
     configuration::{LimitConfiguration, LogLevel, ProblemSolving},
@@ -13,7 +14,6 @@ use crate::{
 use log::{debug, info, trace};
 use rand::Rng;
 use rayon::prelude::*;
-use std::borrow::Cow;
 use std::fmt::Debug;
 use std::sync::Arc;
 use std::time::Instant;
@@ -35,12 +35,6 @@ pub enum TerminationCause {
     TimeLimitReached,
     NotTerminated,
 }
-
-/// Type alias for the initialization function signature.
-type InitializationFn<G> = dyn Fn(usize, Option<&[G]>, Option<bool>) -> Vec<G> + Send + Sync;
-
-/// Type alias for the fitness function signature.
-type FitnessFn<G> = dyn Fn(&[G]) -> f64 + Send + Sync;
 
 /// Generic Genetic Algorithm orchestrator.
 ///
@@ -388,7 +382,7 @@ where
     ///
     /// Behavior:
     /// - Validates configuration and alleles before starting.
-    /// - Spawns threads to create and evaluate chromosomes in parallel.
+    /// - Creates and evaluates chromosomes in parallel using rayon.
     /// - Sets the internal `population` with the collected chromosomes.
     pub fn initialization(&mut self) -> Result<&mut Self, GaError>
     where
@@ -409,36 +403,22 @@ where
         let population_size = self.configuration.limit_configuration.population_size;
         let genes_per_chromosome = self.configuration.limit_configuration.genes_per_chromosome;
         let needs_unique_ids = self.configuration.limit_configuration.needs_unique_ids;
-        let initialization_fn = self.initialization_fn.clone().unwrap();
-        let fitness_fn = self.fitness_fn.clone().unwrap();
-        let alleles = self.alleles.clone();
+        let init_fn = self.initialization_fn.as_ref().unwrap();
+        let fitness_fn = self.fitness_fn.as_ref().unwrap();
 
-        // Use rayon to initialize chromosomes in parallel
-        let chromosomes: Vec<U> = (0..population_size)
-            .into_par_iter()
-            .map(|_| {
-                let mut chromosome = U::new();
-
-                // Gets the dna randomly
-                let dna_chromosome = (initialization_fn)(
-                    genes_per_chromosome,
-                    Some(&alleles),
-                    Some(needs_unique_ids),
-                );
-                chromosome.set_dna(Cow::Owned(dna_chromosome));
-
-                // Wrap the fitness function in a closure
-                let fitness_fn_clone = fitness_fn.clone();
-                let fitness_closure = move |genes: &[U::Gene]| (fitness_fn_clone)(genes);
-
-                // Sets the dna of the chromosome, the age, sets the fitness fn and calculates fitness
-                chromosome.set_age(0);
-                chromosome.set_fitness_fn(fitness_closure);
-                chromosome.calculate_fitness();
-
-                chromosome
-            })
-            .collect();
+        let chromosomes = crate::traits::initialize_chromosomes_par::<U>(
+            population_size,
+            genes_per_chromosome,
+            if self.alleles.is_empty() {
+                None
+            } else {
+                Some(&self.alleles)
+            },
+            Some(needs_unique_ids),
+            init_fn,
+            Some(fitness_fn),
+            0,
+        );
 
         // Set population directly (with_population is consuming, so we assign inline)
         let new_population = Population::new(chromosomes);

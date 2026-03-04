@@ -39,14 +39,10 @@ use crate::nsga2::crowding_distance::assign_crowding_distance;
 use crate::nsga2::non_dominated_sort::{assign_ranks, non_dominated_sort};
 use crate::nsga2::pareto::{ParetoFront, ParetoIndividual};
 use crate::operations::mutation;
-use crate::traits::ChromosomeT;
+use crate::traits::{ChromosomeT, InitializationFn};
 use log::{debug, info};
 use rand::Rng;
-use std::borrow::Cow;
 use std::sync::Arc;
-
-/// Type alias for the initialization function signature.
-type InitializationFn<G> = dyn Fn(usize, Option<&[G]>, Option<bool>) -> Vec<G> + Send + Sync;
 
 /// Type alias for a single objective function.
 pub type ObjectiveFn<G> = dyn Fn(&[G]) -> f64 + Send + Sync;
@@ -280,24 +276,31 @@ where
         let genes_per_chrom = self.ga_config.limit_configuration.genes_per_chromosome;
         let alleles_can_repeat = self.ga_config.limit_configuration.alleles_can_be_repeated;
 
-        let mut population = Vec::with_capacity(pop_size);
+        let alleles = if self.alleles.is_empty() {
+            None
+        } else {
+            Some(self.alleles.as_slice())
+        };
 
-        for _ in 0..pop_size {
-            let dna = init_fn(
-                genes_per_chrom,
-                if self.alleles.is_empty() {
-                    None
-                } else {
-                    Some(&self.alleles)
-                },
-                Some(alleles_can_repeat),
-            );
-            let mut chromosome = U::new();
-            chromosome.set_dna(Cow::Owned(dna));
+        // Create chromosomes without a single fitness fn (NSGA-II uses multiple objectives)
+        let chromosomes: Vec<U> = crate::traits::initialize_chromosomes(
+            pop_size,
+            genes_per_chrom,
+            alleles,
+            Some(alleles_can_repeat),
+            init_fn,
+            None,
+            0,
+        );
 
-            let objectives = self.evaluate_objectives(&chromosome);
-            population.push(ParetoIndividual::new(chromosome, objectives));
-        }
+        // Wrap each chromosome in a ParetoIndividual with evaluated objectives
+        let population = chromosomes
+            .into_iter()
+            .map(|chrom| {
+                let objectives = self.evaluate_objectives(&chrom);
+                ParetoIndividual::new(chrom, objectives)
+            })
+            .collect();
 
         Ok(population)
     }

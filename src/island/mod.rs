@@ -29,16 +29,9 @@ use crate::island::configuration::IslandConfiguration;
 use crate::island::migration::migrate;
 use crate::operations::mutation;
 use crate::population::Population;
-use crate::traits::ChromosomeT;
+use crate::traits::{ChromosomeT, FitnessFn, InitializationFn};
 use log::{debug, info};
-use std::borrow::Cow;
 use std::sync::Arc;
-
-/// Type alias for the initialization function signature.
-type InitializationFn<G> = dyn Fn(usize, Option<&[G]>, Option<bool>) -> Vec<G> + Send + Sync;
-
-/// Type alias for the fitness function signature.
-type FitnessFn<G> = dyn Fn(&[G]) -> f64 + Send + Sync;
 
 /// Island Model Genetic Algorithm orchestrator.
 ///
@@ -190,28 +183,24 @@ where
         let genes_per_chrom = self.ga_config.limit_configuration.genes_per_chromosome;
         let alleles_can_repeat = self.ga_config.limit_configuration.alleles_can_be_repeated;
 
+        let alleles = if self.alleles.is_empty() {
+            None
+        } else {
+            Some(self.alleles.as_slice())
+        };
+
         self.islands = Vec::with_capacity(num_islands);
 
         for island_idx in 0..num_islands {
-            let mut chromosomes: Vec<U> = Vec::with_capacity(pop_size);
-
-            for _ in 0..pop_size {
-                let dna = init_fn(
-                    genes_per_chrom,
-                    if self.alleles.is_empty() {
-                        None
-                    } else {
-                        Some(&self.alleles)
-                    },
-                    Some(alleles_can_repeat),
-                );
-                let mut chromosome = U::new();
-                chromosome.set_dna(Cow::Owned(dna));
-                let ff = Arc::clone(fitness_fn);
-                chromosome.set_fitness_fn(move |genes| ff(genes));
-                chromosome.calculate_fitness();
-                chromosomes.push(chromosome);
-            }
+            let chromosomes = crate::traits::initialize_chromosomes::<U>(
+                pop_size,
+                genes_per_chrom,
+                alleles,
+                Some(alleles_can_repeat),
+                init_fn,
+                Some(fitness_fn),
+                0,
+            );
 
             self.islands.push(Population::new(chromosomes));
             debug!(
