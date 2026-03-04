@@ -6,7 +6,9 @@ use genetic_algorithms::genotypes::Binary as BinaryGenotype;
 use genetic_algorithms::initializers::binary_random_initialization;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection};
 use genetic_algorithms::population::Population;
-use genetic_algorithms::traits::ConfigurationT;
+use genetic_algorithms::traits::{
+    ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+};
 
 // see https://en.wikipedia.org/wiki/Knapsack_problem
 // With 10 items the optimal value is 1270.

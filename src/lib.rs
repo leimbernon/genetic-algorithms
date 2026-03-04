@@ -21,7 +21,7 @@
 //! use genetic_algorithms::ga::Ga;
 //! use genetic_algorithms::initializers::range_random_initialization;
 //! use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
-//! use genetic_algorithms::traits::ConfigurationT;
+//! use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig};
 //!
 //! const N: i32 = 8;
 //!

@@ -223,9 +223,7 @@ where
                         ProblemSolving::Minimization | ProblemSolving::FixedFitness => {
                             chrom.fitness() < current_best.fitness()
                         }
-                        ProblemSolving::Maximization => {
-                            chrom.fitness() > current_best.fitness()
-                        }
+                        ProblemSolving::Maximization => chrom.fitness() > current_best.fitness(),
                     },
                 };
                 if is_better {

@@ -3,7 +3,10 @@ use std::fmt;
 use crate::niching::configuration::NichingConfiguration;
 use crate::{
     operations::{Crossover, Mutation, Selection, Survivor},
-    traits::ConfigurationT,
+    traits::{
+        ConfigurationT, CrossoverConfig, ElitismConfig, MutationConfig, NichingConfig,
+        SelectionConfig, StoppingConfig,
+    },
 };
 
 #[derive(Copy, Clone, PartialEq)]
@@ -192,6 +195,110 @@ impl Default for GaConfiguration {
     }
 }
 
+impl SelectionConfig for GaConfiguration {
+    fn with_number_of_couples(&mut self, number_of_couples: usize) -> &mut Self {
+        self.selection_configuration.number_of_couples = number_of_couples;
+        self
+    }
+    fn with_selection_method(&mut self, selection_method: Selection) -> &mut Self {
+        self.selection_configuration.method = selection_method;
+        self
+    }
+}
+
+impl CrossoverConfig for GaConfiguration {
+    fn with_crossover_number_of_points(&mut self, number_of_points: usize) -> &mut Self {
+        self.crossover_configuration.number_of_points = Some(number_of_points);
+        self
+    }
+    fn with_crossover_probability_max(&mut self, probability_max: f64) -> &mut Self {
+        self.crossover_configuration.probability_max = Some(probability_max);
+        self
+    }
+    fn with_crossover_probability_min(&mut self, probability_min: f64) -> &mut Self {
+        self.crossover_configuration.probability_min = Some(probability_min);
+        self
+    }
+    fn with_crossover_method(&mut self, method: Crossover) -> &mut Self {
+        self.crossover_configuration.method = method;
+        self
+    }
+    fn with_sbx_eta(&mut self, eta: f64) -> &mut Self {
+        self.crossover_configuration.sbx_eta = Some(eta);
+        self
+    }
+    fn with_blend_alpha(&mut self, alpha: f64) -> &mut Self {
+        self.crossover_configuration.blend_alpha = Some(alpha);
+        self
+    }
+}
+
+impl MutationConfig for GaConfiguration {
+    fn with_mutation_probability_max(&mut self, probability_max: f64) -> &mut Self {
+        self.mutation_configuration.probability_max = Some(probability_max);
+        self
+    }
+    fn with_mutation_probability_min(&mut self, probability_min: f64) -> &mut Self {
+        self.mutation_configuration.probability_min = Some(probability_min);
+        self
+    }
+    fn with_mutation_method(&mut self, method: Mutation) -> &mut Self {
+        self.mutation_configuration.method = method;
+        self
+    }
+    fn with_mutation_step(&mut self, step: f64) -> &mut Self {
+        self.mutation_configuration.step = Some(step);
+        self
+    }
+    fn with_mutation_sigma(&mut self, sigma: f64) -> &mut Self {
+        self.mutation_configuration.sigma = Some(sigma);
+        self
+    }
+}
+
+impl StoppingConfig for GaConfiguration {
+    fn with_max_generations(&mut self, max_generations: usize) -> &mut Self {
+        self.limit_configuration.max_generations = max_generations;
+        self
+    }
+    fn with_fitness_target(&mut self, fitness_target: f64) -> &mut Self {
+        self.limit_configuration.fitness_target = Some(fitness_target);
+        self
+    }
+    fn with_stopping_criteria(&mut self, criteria: StoppingCriteria) -> &mut Self {
+        self.stopping_criteria = criteria;
+        self
+    }
+}
+
+impl NichingConfig for GaConfiguration {
+    fn with_niching_enabled(&mut self, enabled: bool) -> &mut Self {
+        self.niching_configuration
+            .get_or_insert_with(NichingConfiguration::default)
+            .enabled = enabled;
+        self
+    }
+    fn with_niching_sigma_share(&mut self, sigma_share: f64) -> &mut Self {
+        self.niching_configuration
+            .get_or_insert_with(NichingConfiguration::default)
+            .sigma_share = sigma_share;
+        self
+    }
+    fn with_niching_alpha(&mut self, alpha: f64) -> &mut Self {
+        self.niching_configuration
+            .get_or_insert_with(NichingConfiguration::default)
+            .alpha = alpha;
+        self
+    }
+}
+
+impl ElitismConfig for GaConfiguration {
+    fn with_elitism(&mut self, elitism_count: usize) -> &mut Self {
+        self.elitism_count = elitism_count;
+        self
+    }
+}
+
 impl ConfigurationT for GaConfiguration {
     fn new() -> Self {
         Self::default()
@@ -218,15 +325,6 @@ impl ConfigurationT for GaConfiguration {
         self.limit_configuration.problem_solving = problem_solving;
         self
     }
-    fn with_max_generations(&mut self, max_generations: usize) -> &mut Self {
-        self.limit_configuration.max_generations = max_generations;
-        self
-    }
-    fn with_fitness_target(&mut self, fitness_target: f64) -> &mut Self {
-        self.limit_configuration.fitness_target = Some(fitness_target);
-        self
-    }
-
     fn with_population_size(&mut self, population_size: usize) -> &mut Self {
         self.limit_configuration.population_size = population_size;
         self
@@ -244,64 +342,6 @@ impl ConfigurationT for GaConfiguration {
         self
     }
 
-    //Selection configuration
-    fn with_number_of_couples(&mut self, number_of_couples: usize) -> &mut Self {
-        self.selection_configuration.number_of_couples = number_of_couples;
-        self
-    }
-    fn with_selection_method(&mut self, selection_method: Selection) -> &mut Self {
-        self.selection_configuration.method = selection_method;
-        self
-    }
-
-    //Crossover configuration
-    fn with_crossover_number_of_points(&mut self, number_of_points: usize) -> &mut Self {
-        self.crossover_configuration.number_of_points = Some(number_of_points);
-        self
-    }
-    fn with_crossover_probability_max(&mut self, probability_max: f64) -> &mut Self {
-        self.crossover_configuration.probability_max = Some(probability_max);
-        self
-    }
-    fn with_crossover_probability_min(&mut self, probability_min: f64) -> &mut Self {
-        self.crossover_configuration.probability_min = Some(probability_min);
-        self
-    }
-    fn with_crossover_method(&mut self, method: Crossover) -> &mut Self {
-        self.crossover_configuration.method = method;
-        self
-    }
-    fn with_sbx_eta(&mut self, eta: f64) -> &mut Self {
-        self.crossover_configuration.sbx_eta = Some(eta);
-        self
-    }
-    fn with_blend_alpha(&mut self, alpha: f64) -> &mut Self {
-        self.crossover_configuration.blend_alpha = Some(alpha);
-        self
-    }
-
-    //Mutation configuration
-    fn with_mutation_probability_max(&mut self, probability_max: f64) -> &mut Self {
-        self.mutation_configuration.probability_max = Some(probability_max);
-        self
-    }
-    fn with_mutation_probability_min(&mut self, probability_min: f64) -> &mut Self {
-        self.mutation_configuration.probability_min = Some(probability_min);
-        self
-    }
-    fn with_mutation_method(&mut self, method: Mutation) -> &mut Self {
-        self.mutation_configuration.method = method;
-        self
-    }
-    fn with_mutation_step(&mut self, step: f64) -> &mut Self {
-        self.mutation_configuration.step = Some(step);
-        self
-    }
-    fn with_mutation_sigma(&mut self, sigma: f64) -> &mut Self {
-        self.mutation_configuration.sigma = Some(sigma);
-        self
-    }
-
     //Save progress configuration
     fn with_save_progress(&mut self, save_progress: bool) -> &mut Self {
         self.save_progress_configuration.save_progress = save_progress;
@@ -313,37 +353,6 @@ impl ConfigurationT for GaConfiguration {
     }
     fn with_save_progress_path(&mut self, save_progress_path: String) -> &mut Self {
         self.save_progress_configuration.save_progress_path = save_progress_path;
-        self
-    }
-
-    fn with_elitism(&mut self, elitism_count: usize) -> &mut Self {
-        self.elitism_count = elitism_count;
-        self
-    }
-
-    fn with_stopping_criteria(&mut self, criteria: StoppingCriteria) -> &mut Self {
-        self.stopping_criteria = criteria;
-        self
-    }
-
-    fn with_niching_enabled(&mut self, enabled: bool) -> &mut Self {
-        self.niching_configuration
-            .get_or_insert_with(NichingConfiguration::default)
-            .enabled = enabled;
-        self
-    }
-
-    fn with_niching_sigma_share(&mut self, sigma_share: f64) -> &mut Self {
-        self.niching_configuration
-            .get_or_insert_with(NichingConfiguration::default)
-            .sigma_share = sigma_share;
-        self
-    }
-
-    fn with_niching_alpha(&mut self, alpha: f64) -> &mut Self {
-        self.niching_configuration
-            .get_or_insert_with(NichingConfiguration::default)
-            .alpha = alpha;
         self
     }
 }

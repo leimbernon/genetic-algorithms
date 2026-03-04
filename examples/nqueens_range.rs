@@ -6,7 +6,9 @@ use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::initializers::range_random_initialization;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::population::Population;
-use genetic_algorithms::traits::ConfigurationT;
+use genetic_algorithms::traits::{
+    ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+};
 
 const N: usize = 8; // Size of the chessboard (N-Queens problem)
 

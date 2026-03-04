@@ -5,7 +5,10 @@ use crate::{
     configuration::{LimitConfiguration, LogLevel, ProblemSolving},
     operations::{crossover, mutation, selection, survivor},
     population::Population,
-    traits::{ChromosomeT, ConfigurationT, GeneT},
+    traits::{
+        ChromosomeT, ConfigurationT, CrossoverConfig, ElitismConfig, GeneT, MutationConfig,
+        NichingConfig, SelectionConfig, StoppingConfig,
+    },
 };
 use log::{debug, info, trace};
 use rand::Rng;
@@ -85,6 +88,133 @@ where
     }
 }
 
+impl<U> SelectionConfig for Ga<U>
+where
+    U: ChromosomeT,
+{
+    fn with_number_of_couples(&mut self, number_of_couples: usize) -> &mut Self {
+        self.configuration.with_number_of_couples(number_of_couples);
+        self
+    }
+    fn with_selection_method(
+        &mut self,
+        selection_method: crate::operations::Selection,
+    ) -> &mut Self {
+        self.configuration.with_selection_method(selection_method);
+        self
+    }
+}
+
+impl<U> CrossoverConfig for Ga<U>
+where
+    U: ChromosomeT,
+{
+    fn with_crossover_number_of_points(&mut self, number_of_points: usize) -> &mut Self {
+        self.configuration
+            .with_crossover_number_of_points(number_of_points);
+        self
+    }
+    fn with_crossover_probability_max(&mut self, probability_max: f64) -> &mut Self {
+        self.configuration
+            .with_crossover_probability_max(probability_max);
+        self
+    }
+    fn with_crossover_probability_min(&mut self, probability_min: f64) -> &mut Self {
+        self.configuration
+            .with_crossover_probability_min(probability_min);
+        self
+    }
+    fn with_crossover_method(&mut self, method: crossover::Crossover) -> &mut Self {
+        self.configuration.with_crossover_method(method);
+        self
+    }
+    fn with_sbx_eta(&mut self, eta: f64) -> &mut Self {
+        self.configuration.with_sbx_eta(eta);
+        self
+    }
+    fn with_blend_alpha(&mut self, alpha: f64) -> &mut Self {
+        self.configuration.with_blend_alpha(alpha);
+        self
+    }
+}
+
+impl<U> MutationConfig for Ga<U>
+where
+    U: ChromosomeT,
+{
+    fn with_mutation_probability_max(&mut self, probability_max: f64) -> &mut Self {
+        self.configuration
+            .with_mutation_probability_max(probability_max);
+        self
+    }
+    fn with_mutation_probability_min(&mut self, probability_min: f64) -> &mut Self {
+        self.configuration
+            .with_mutation_probability_min(probability_min);
+        self
+    }
+    fn with_mutation_method(&mut self, method: crate::operations::Mutation) -> &mut Self {
+        self.configuration.with_mutation_method(method);
+        self
+    }
+    fn with_mutation_step(&mut self, step: f64) -> &mut Self {
+        self.configuration.with_mutation_step(step);
+        self
+    }
+    fn with_mutation_sigma(&mut self, sigma: f64) -> &mut Self {
+        self.configuration.with_mutation_sigma(sigma);
+        self
+    }
+}
+
+impl<U> StoppingConfig for Ga<U>
+where
+    U: ChromosomeT,
+{
+    fn with_max_generations(&mut self, max_generations: usize) -> &mut Self {
+        self.configuration.with_max_generations(max_generations);
+        self
+    }
+    fn with_fitness_target(&mut self, fitness_target: f64) -> &mut Self {
+        self.configuration.with_fitness_target(fitness_target);
+        self
+    }
+    fn with_stopping_criteria(
+        &mut self,
+        criteria: crate::configuration::StoppingCriteria,
+    ) -> &mut Self {
+        self.configuration.with_stopping_criteria(criteria);
+        self
+    }
+}
+
+impl<U> NichingConfig for Ga<U>
+where
+    U: ChromosomeT,
+{
+    fn with_niching_enabled(&mut self, enabled: bool) -> &mut Self {
+        self.configuration.with_niching_enabled(enabled);
+        self
+    }
+    fn with_niching_sigma_share(&mut self, sigma_share: f64) -> &mut Self {
+        self.configuration.with_niching_sigma_share(sigma_share);
+        self
+    }
+    fn with_niching_alpha(&mut self, alpha: f64) -> &mut Self {
+        self.configuration.with_niching_alpha(alpha);
+        self
+    }
+}
+
+impl<U> ElitismConfig for Ga<U>
+where
+    U: ChromosomeT,
+{
+    fn with_elitism(&mut self, elitism_count: usize) -> &mut Self {
+        self.configuration.with_elitism(elitism_count);
+        self
+    }
+}
+
 impl<U> ConfigurationT for Ga<U>
 where
     U: ChromosomeT,
@@ -112,14 +242,6 @@ where
     //Limit configuration
     fn with_problem_solving(&mut self, problem_solving: ProblemSolving) -> &mut Self {
         self.configuration.with_problem_solving(problem_solving);
-        self
-    }
-    fn with_max_generations(&mut self, max_generations: usize) -> &mut Self {
-        self.configuration.with_max_generations(max_generations);
-        self
-    }
-    fn with_fitness_target(&mut self, fitness_target: f64) -> &mut Self {
-        self.configuration.with_fitness_target(fitness_target);
         self
     }
     fn with_population_size(&mut self, population_size: usize) -> &mut Self {
@@ -150,72 +272,6 @@ where
         self
     }
 
-    //Selection configuration
-    fn with_number_of_couples(&mut self, number_of_couples: usize) -> &mut Self {
-        self.configuration.with_number_of_couples(number_of_couples);
-        self
-    }
-    fn with_selection_method(
-        &mut self,
-        selection_method: crate::operations::Selection,
-    ) -> &mut Self {
-        self.configuration.with_selection_method(selection_method);
-        self
-    }
-
-    //Crossover configuration
-    fn with_crossover_number_of_points(&mut self, number_of_points: usize) -> &mut Self {
-        self.configuration
-            .with_crossover_number_of_points(number_of_points);
-        self
-    }
-    fn with_crossover_probability_max(&mut self, probability_max: f64) -> &mut Self {
-        self.configuration
-            .with_crossover_probability_max(probability_max);
-        self
-    }
-    fn with_crossover_probability_min(&mut self, probability_min: f64) -> &mut Self {
-        self.configuration
-            .with_crossover_probability_min(probability_min);
-        self
-    }
-    fn with_crossover_method(&mut self, method: crossover::Crossover) -> &mut Self {
-        self.configuration.with_crossover_method(method);
-        self
-    }
-    fn with_sbx_eta(&mut self, eta: f64) -> &mut Self {
-        self.configuration.with_sbx_eta(eta);
-        self
-    }
-    fn with_blend_alpha(&mut self, alpha: f64) -> &mut Self {
-        self.configuration.with_blend_alpha(alpha);
-        self
-    }
-
-    //Mutation configuration
-    fn with_mutation_probability_max(&mut self, probability_max: f64) -> &mut Self {
-        self.configuration
-            .with_mutation_probability_max(probability_max);
-        self
-    }
-    fn with_mutation_probability_min(&mut self, probability_min: f64) -> &mut Self {
-        self.configuration
-            .with_mutation_probability_min(probability_min);
-        self
-    }
-    fn with_mutation_method(&mut self, method: crate::operations::Mutation) -> &mut Self {
-        self.configuration.with_mutation_method(method);
-        self
-    }
-    fn with_mutation_step(&mut self, step: f64) -> &mut Self {
-        self.configuration.with_mutation_step(step);
-        self
-    }
-    fn with_mutation_sigma(&mut self, sigma: f64) -> &mut Self {
-        self.configuration.with_mutation_sigma(sigma);
-        self
-    }
-
     //Save progress configuration
     fn with_save_progress(&mut self, save_progress: bool) -> &mut Self {
         self.configuration.with_save_progress(save_progress);
@@ -229,34 +285,6 @@ where
     fn with_save_progress_path(&mut self, save_progress_path: String) -> &mut Self {
         self.configuration
             .with_save_progress_path(save_progress_path);
-        self
-    }
-
-    fn with_elitism(&mut self, elitism_count: usize) -> &mut Self {
-        self.configuration.with_elitism(elitism_count);
-        self
-    }
-
-    fn with_stopping_criteria(
-        &mut self,
-        criteria: crate::configuration::StoppingCriteria,
-    ) -> &mut Self {
-        self.configuration.with_stopping_criteria(criteria);
-        self
-    }
-
-    fn with_niching_enabled(&mut self, enabled: bool) -> &mut Self {
-        self.configuration.with_niching_enabled(enabled);
-        self
-    }
-
-    fn with_niching_sigma_share(&mut self, sigma_share: f64) -> &mut Self {
-        self.configuration.with_niching_sigma_share(sigma_share);
-        self
-    }
-
-    fn with_niching_alpha(&mut self, alpha: f64) -> &mut Self {
-        self.configuration.with_niching_alpha(alpha);
         self
     }
 }

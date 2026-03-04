@@ -10,7 +10,10 @@ use genetic_algorithms::{
     fitness::FitnessFnWrapper,
     operations::{Crossover, Mutation, Selection, Survivor},
     population::Population,
-    traits::{ChromosomeT, ConfigurationT},
+    traits::{
+        ChromosomeT, ConfigurationT, CrossoverConfig, ElitismConfig, MutationConfig, NichingConfig,
+        SelectionConfig, StoppingConfig,
+    },
 };
 
 fn fitness_fn(_dna: &[Gene]) -> f64 {

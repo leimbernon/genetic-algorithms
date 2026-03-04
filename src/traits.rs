@@ -3,5 +3,8 @@ pub mod configuration;
 pub mod gene;
 
 pub use chromosome::ChromosomeT;
-pub use configuration::ConfigurationT;
+pub use configuration::{
+    ConfigurationT, CrossoverConfig, ElitismConfig, MutationConfig, NichingConfig, SelectionConfig,
+    StoppingConfig,
+};
 pub use gene::GeneT;

@@ -78,10 +78,7 @@ where
         for (gene_number, gene) in chromosome.dna().iter().enumerate() {
             for i in gene_number + 1..chromosome.dna().len() {
                 //If the gene id is equal to any other, we stop the run
-                if gene
-                    .id()
-                    .eq(&chromosome.dna().get(i).unwrap().id())
-                {
+                if gene.id().eq(&chromosome.dna().get(i).unwrap().id()) {
                     return Err(GaError::ValidationError(format!(
                         "Gene id must be unique within the DNA. The chromosome #{}, has same gene id at gene #{} and gene #{}",
                         chromosome_number, gene_number, i)));
@@ -113,8 +110,7 @@ where
 {
     for (chromosome_number, chromosome) in population.chromosomes.iter().enumerate() {
         for i in chromosome_number + 1..population.chromosomes.len() {
-            if chromosome.dna().len() != population.chromosomes.get(i).unwrap().dna().len()
-            {
+            if chromosome.dna().len() != population.chromosomes.get(i).unwrap().dna().len() {
                 return Err(GaError::ValidationError(format!(
                     "All the chromosomes must have the same dna length. Chromosome #{} has a dna with length {} and chromosome #{} has a dna with length {}.",
                     chromosome_number, chromosome.dna().len(), i, population.chromosomes.get(i).unwrap().dna().len())));

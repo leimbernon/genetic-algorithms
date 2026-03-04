@@ -275,11 +275,8 @@ mod tests {
 
         // After migration, island 1 should have received the best from island 0 (fitness 10.0)
         // It should replace the worst in island 1 (fitness 300.0)
-        let island1_fitnesses: Vec<f64> = islands[1]
-            .chromosomes
-            .iter()
-            .map(|c| c.fitness())
-            .collect();
+        let island1_fitnesses: Vec<f64> =
+            islands[1].chromosomes.iter().map(|c| c.fitness()).collect();
         assert!(
             island1_fitnesses.contains(&10.0),
             "Island 1 should contain migrated individual with fitness 10.0"
