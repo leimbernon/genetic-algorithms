@@ -40,3 +40,15 @@ harness = false
 [[bench]]
 name = "survivor"
 harness = false
+
+[[bench]]
+name = "ga_run"
+harness = false
+
+[[bench]]
+name = "nsga2"
+harness = false
+
+[[bench]]
+name = "island_ga"
+harness = false
