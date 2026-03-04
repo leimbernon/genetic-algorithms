@@ -105,7 +105,9 @@ fn main() {
         .with_crossover_method(Crossover::Uniform)
         .with_mutation_method(Mutation::Swap)
         .with_problem_solving(ProblemSolving::Maximization)
-        .with_max_generations(5000);
+        .with_max_generations(5000)
+        .build()
+        .expect("Invalid GA configuration");
     let population = ga.run_with_callback(Some(report), 100).unwrap();
 
     println!(
@@ -124,7 +126,9 @@ fn main() {
         .with_mutation_method(Mutation::Swap)
         .with_problem_solving(ProblemSolving::FixedFitness)
         .with_fitness_target(1270.0)
-        .with_max_generations(5000);
+        .with_max_generations(5000)
+        .build()
+        .expect("Invalid GA configuration");
     let population = ga_fixed.run_with_callback(Some(report), 100).unwrap();
 
     println!(

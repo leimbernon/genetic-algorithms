@@ -294,6 +294,53 @@ where
     U: ChromosomeT + Send + Sync + 'static + Clone + Debug + mutation::ValueMutable,
     U::Gene: 'static + Debug,
 {
+    /// Validates configuration and adjusts defaults, returning a ready-to-run instance.
+    ///
+    /// Call this after setting all builder options and before calling `run()` or
+    /// `initialization()`. It performs the following checks:
+    ///
+    /// - Auto-sets `number_of_couples` to `population_size / 2` if not explicitly set.
+    /// - Validates that `FixedFitness` mode has a `fitness_target`.
+    /// - Validates that adaptive GA has proper crossover probabilities.
+    /// - Validates alleles vs chromosome length when alleles can be repeated.
+    ///
+    /// # Errors
+    ///
+    /// Returns `GaError::ConfigurationError` if any validation check fails.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let mut ga = Ga::new()
+    ///     .with_population_size(100)
+    ///     .with_genes_per_chromosome(8)
+    ///     // ... other settings ...
+    ///     .build()?;
+    /// ga.run()?;
+    /// ```
+    pub fn build(mut self) -> Result<Self, GaError> {
+        // Auto-set number_of_couples from population_size if not explicitly configured
+        if self.configuration.selection_configuration.number_of_couples == 0
+            && self.configuration.limit_configuration.population_size > 0
+        {
+            self.configuration.selection_configuration.number_of_couples =
+                self.configuration.limit_configuration.population_size / 2;
+        }
+
+        // Validate configuration using the existing validator (config-only checks)
+        ValidatorFactory::validate::<U>(
+            Some(&self.configuration),
+            None,
+            if self.alleles.is_empty() {
+                None
+            } else {
+                Some(&self.alleles)
+            },
+        )?;
+
+        Ok(self)
+    }
+
     /**
      * Function to set the alleles
      */

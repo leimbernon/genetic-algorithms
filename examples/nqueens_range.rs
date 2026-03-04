@@ -57,7 +57,9 @@ fn main() {
         .with_problem_solving(ProblemSolving::Minimization)
         .with_survivor_method(Survivor::Fitness)
         .with_max_generations(5000)
-        .with_fitness_target(0.0);
+        .with_fitness_target(0.0)
+        .build()
+        .expect("Invalid GA configuration");
     let population = ga.run_with_callback(Some(report), 100).unwrap();
 
     println!(

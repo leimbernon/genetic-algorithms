@@ -110,6 +110,18 @@ where
         self
     }
 
+    /// Validates configuration and returns a ready-to-run instance.
+    ///
+    /// Call this after setting all builder options and before calling `run()`.
+    ///
+    /// # Errors
+    ///
+    /// Returns `GaError` if validation fails (see [`validate`](Self::validate)).
+    pub fn build(self) -> Result<Self, GaError> {
+        self.validate()?;
+        Ok(self)
+    }
+
     /// Validates the NSGA-II configuration.
     ///
     /// # Errors
