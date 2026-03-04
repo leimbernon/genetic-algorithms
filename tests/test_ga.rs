@@ -824,7 +824,9 @@ fn test_convergence_stopping_criterion() {
 
 #[test]
 fn test_time_limit_stopping_criterion() {
-    // Create a normal population with a very short time limit
+    // Create a normal population with a short but reliable time limit.
+    // 0.1s is long enough that the GA loop enters at least one generation even on
+    // slow CI, but short enough that it triggers well before 1_000_000 generations.
     let mut chromosomes: Vec<Chromosome> = Vec::new();
     for i in 0..10 {
         let dna = vec![Gene { id: 1 + i }, Gene { id: 2 + i }];
@@ -851,7 +853,7 @@ fn test_time_limit_stopping_criterion() {
         .with_stopping_criteria(StoppingCriteria {
             stagnation_generations: None,
             convergence_threshold: None,
-            max_duration_secs: Some(0.001), // 1 millisecond
+            max_duration_secs: Some(0.1), // 100 ms — reliable on slow CI
         });
     ga.run().unwrap();
 
