@@ -1762,3 +1762,151 @@ fn test_niching_promotes_diversity() {
         niching_better_count
     );
 }
+
+/// Task 5.6 — Adaptive GA (AGA) integration test.
+/// Runs the GA with `with_adaptive_ga(true)` and crossover/mutation probability
+/// ranges, verifying that the AGA path completes without errors and produces a
+/// valid population.
+#[test]
+fn test_adaptive_ga_runs_without_error() {
+    // Build a population with varying fitness values so f_avg != f_max,
+    // exercising the non-trivial AGA probability branches.
+    let mut chromosomes: Vec<Chromosome> = Vec::new();
+    for i in 0..10 {
+        let dna = vec![
+            Gene { id: 1 + i },
+            Gene { id: 2 + i },
+            Gene { id: 3 + i },
+            Gene { id: 4 + i },
+        ];
+        let mut chromosome = Chromosome {
+            dna,
+            fitness: 0.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        };
+        chromosome.set_fitness_fn(|genes: &[Gene]| genes.iter().map(|g| g.id as f64).sum::<f64>());
+        chromosome.calculate_fitness();
+        chromosomes.push(chromosome);
+    }
+
+    let population = Population::new(chromosomes);
+    let mut ga = Ga::new()
+        .with_problem_solving(ProblemSolving::Maximization)
+        .with_selection_method(Selection::Tournament)
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::Swap)
+        .with_survivor_method(Survivor::Fitness)
+        .with_population(population)
+        .with_max_generations(20)
+        .with_adaptive_ga(true)
+        .with_crossover_probability_max(0.9)
+        .with_crossover_probability_min(0.3)
+        .with_mutation_probability_max(0.5)
+        .with_mutation_probability_min(0.1);
+
+    let result = ga.run();
+    assert!(
+        result.is_ok(),
+        "AGA run should succeed, got: {:?}",
+        result.err()
+    );
+
+    let pop = result.unwrap();
+    assert_eq!(
+        pop.chromosomes.len(),
+        10,
+        "Population size should be preserved"
+    );
+    assert!(
+        !pop.best_chromosome.fitness().is_nan(),
+        "Best chromosome should have valid fitness"
+    );
+}
+
+/// Task 5.6 — Adaptive GA with minimization.
+/// Ensures AGA works with both problem solving directions.
+#[test]
+fn test_adaptive_ga_minimization() {
+    let mut chromosomes: Vec<Chromosome> = Vec::new();
+    for i in 0..10 {
+        let dna = vec![
+            Gene { id: 1 + i },
+            Gene { id: 2 + i },
+            Gene { id: 3 + i },
+            Gene { id: 4 + i },
+        ];
+        let mut chromosome = Chromosome {
+            dna,
+            fitness: 0.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        };
+        chromosome.set_fitness_fn(|genes: &[Gene]| genes.iter().map(|g| g.id as f64).sum::<f64>());
+        chromosome.calculate_fitness();
+        chromosomes.push(chromosome);
+    }
+
+    let population = Population::new(chromosomes);
+    let mut ga = Ga::new()
+        .with_problem_solving(ProblemSolving::Minimization)
+        .with_selection_method(Selection::Tournament)
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::Swap)
+        .with_survivor_method(Survivor::Fitness)
+        .with_population(population)
+        .with_max_generations(20)
+        .with_adaptive_ga(true)
+        .with_crossover_probability_max(0.9)
+        .with_crossover_probability_min(0.3)
+        .with_mutation_probability_max(0.5)
+        .with_mutation_probability_min(0.1);
+
+    let result = ga.run();
+    assert!(
+        result.is_ok(),
+        "AGA minimization run should succeed, got: {:?}",
+        result.err()
+    );
+
+    let pop = result.unwrap();
+    assert_eq!(pop.chromosomes.len(), 10);
+}
+
+/// Task 5.6 — Test FitnessTargetReached termination with minimization.
+/// Verifies that the GA terminates with `FitnessTargetReached` when fitness hits 0
+/// in minimization mode.
+#[test]
+fn test_fitness_target_reached_minimization() {
+    // The test Chromosome's calculate_fitness computes sum(gene.id * index).
+    // A chromosome with all gene IDs == 0 has fitness 0.0, which triggers the
+    // minimization limit. We create a population where all chromosomes have id=0
+    // so the GA finds the target immediately.
+    let mut chromosomes: Vec<Chromosome> = Vec::new();
+    for _ in 0..10 {
+        let dna = vec![Gene { id: 0 }, Gene { id: 0 }];
+        chromosomes.push(Chromosome {
+            dna,
+            fitness: 0.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        });
+    }
+
+    let population = Population::new(chromosomes);
+    let mut ga = Ga::new()
+        .with_problem_solving(ProblemSolving::Minimization)
+        .with_selection_method(Selection::Random)
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::Swap)
+        .with_survivor_method(Survivor::Fitness)
+        .with_population(population)
+        .with_max_generations(100);
+
+    ga.run().unwrap();
+    assert_eq!(
+        ga.termination_cause,
+        TerminationCause::FitnessTargetReached,
+        "GA should terminate due to fitness target reached (fitness == 0 in minimization)"
+    );
+}
