@@ -27,26 +27,20 @@ pub fn fitness_based<U: ChromosomeT>(
         });
     }
 
-    //If there is more chromosomes than the defined population number
+    // Drop surplus individuals in a single bulk operation instead of
+    // one-by-one Vec::remove calls (which are O(N) each).
     trace!(target="survivor_events", method="fitness_based"; "Chromosomes length {} - population size {}", chromosomes.len(), population_size);
     if chromosomes.len() > population_size {
-        let chromosomes_to_remove = chromosomes.len() - population_size;
-
         match limit_configuration.problem_solving {
+            // Sorted descending: best (highest) at front, worst at tail.
             ProblemSolving::Maximization => {
-                for _i in 0..chromosomes_to_remove {
-                    chromosomes.remove(chromosomes.len() - 1);
-                }
+                chromosomes.truncate(population_size);
             }
-            ProblemSolving::Minimization => {
-                for _i in 0..chromosomes_to_remove {
-                    chromosomes.remove(0);
-                }
-            }
-            ProblemSolving::FixedFitness => {
-                for _i in 0..chromosomes_to_remove {
-                    chromosomes.remove(0);
-                }
+            // Sorted descending: worst (highest) at front.
+            // Drain the excess from the front in one O(N) shift.
+            ProblemSolving::Minimization | ProblemSolving::FixedFitness => {
+                let excess = chromosomes.len() - population_size;
+                chromosomes.drain(0..excess);
             }
         }
     }
