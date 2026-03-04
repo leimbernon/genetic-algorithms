@@ -951,24 +951,35 @@ where
 }
 
 /// Extracts the top `count` individuals from the population by fitness.
+///
+/// Only clones the selected elite individuals instead of the whole population.
 fn extract_elite<U: ChromosomeT>(
     chromosomes: &[U],
     count: usize,
     problem_solving: ProblemSolving,
 ) -> Vec<U> {
-    let mut sorted: Vec<U> = chromosomes.to_vec();
-    sorted.sort_by(|a, b| {
-        let cmp = a
+    if count == 0 || chromosomes.is_empty() {
+        return Vec::new();
+    }
+    let k = count.min(chromosomes.len());
+
+    // Build index array and partially sort so the best `k` are at the front.
+    let mut indices: Vec<usize> = (0..chromosomes.len()).collect();
+    let cmp_fn = |a: &usize, b: &usize| {
+        let cmp = chromosomes[*a]
             .fitness()
-            .partial_cmp(&b.fitness())
+            .partial_cmp(&chromosomes[*b].fitness())
             .unwrap_or(std::cmp::Ordering::Equal);
         match problem_solving {
             ProblemSolving::Maximization => cmp.reverse(),
             _ => cmp,
         }
-    });
-    sorted.truncate(count);
-    sorted
+    };
+    indices.select_nth_unstable_by(k - 1, cmp_fn);
+    // The first `k` elements are the best (unordered among themselves).
+    indices.truncate(k);
+
+    indices.iter().map(|&i| chromosomes[i].clone()).collect()
 }
 
 /// Reinserts elite individuals into the population, replacing the worst if already at capacity.
