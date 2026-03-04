@@ -1,6 +1,7 @@
 use crate::configuration::ProblemSolving;
 use crate::island::configuration::IslandConfiguration;
 use crate::island::topology::neighbors;
+use crate::nsga2::pareto::ParetoIndividual;
 use crate::population::Population;
 use crate::traits::ChromosomeT;
 use log::debug;
@@ -138,11 +139,132 @@ where
     }
 }
 
+/// Performs Pareto-aware migration between islands of `ParetoIndividual`s.
+///
+/// Selects the best `migration_count` individuals from each island (lowest rank,
+/// breaking ties by highest crowding distance) and copies them to neighbor islands
+/// according to the configured topology. Migrants replace the worst individuals
+/// (highest rank, breaking ties by lowest crowding distance) in the destination.
+///
+/// # Arguments
+///
+/// * `islands` - Mutable slice of island populations (each a `Vec<ParetoIndividual<U>>`).
+/// * `config` - Island configuration with topology and migration parameters.
+///
+/// # Errors
+///
+/// Returns `GaError::MigrationError` if an island is empty or migration count exceeds
+/// the island population size.
+pub fn migrate_pareto<U>(
+    islands: &mut [Vec<ParetoIndividual<U>>],
+    config: &IslandConfiguration,
+) -> Result<(), crate::error::GaError>
+where
+    U: ChromosomeT,
+{
+    let num_islands = islands.len();
+    if num_islands <= 1 {
+        return Ok(());
+    }
+
+    for island in islands.iter() {
+        if island.is_empty() {
+            return Err(crate::error::GaError::MigrationError(
+                "Cannot migrate from an empty island".to_string(),
+            ));
+        }
+        if config.migration_count > island.len() {
+            return Err(crate::error::GaError::MigrationError(format!(
+                "Migration count ({}) exceeds island population size ({})",
+                config.migration_count,
+                island.len()
+            )));
+        }
+    }
+
+    // Collect migrants from each island (best M by Pareto rank / crowding distance)
+    let mut all_migrants: Vec<Vec<ParetoIndividual<U>>> = Vec::with_capacity(num_islands);
+    for island in islands.iter() {
+        let migrants = select_best_pareto(island, config.migration_count);
+        all_migrants.push(migrants);
+    }
+
+    // Distribute migrants to neighbors
+    for (source_idx, source_migrants) in all_migrants.iter().enumerate() {
+        let dest_indices = neighbors(source_idx, num_islands, &config.topology);
+        for &dest_idx in &dest_indices {
+            let migrants = source_migrants.clone();
+            replace_worst_pareto(&mut islands[dest_idx], &migrants);
+            debug!(
+                target: "island_events",
+                "Pareto migration: {} individuals from island {} to island {}",
+                migrants.len(),
+                source_idx,
+                dest_idx
+            );
+        }
+    }
+
+    Ok(())
+}
+
+/// Selects the best `count` Pareto individuals from an island.
+///
+/// "Best" means lowest rank first, then highest crowding distance to break ties.
+fn select_best_pareto<U>(island: &[ParetoIndividual<U>], count: usize) -> Vec<ParetoIndividual<U>>
+where
+    U: ChromosomeT,
+{
+    let mut indices: Vec<usize> = (0..island.len()).collect();
+    indices.sort_by(|&a, &b| {
+        island[a].rank.cmp(&island[b].rank).then_with(|| {
+            island[b]
+                .crowding_distance
+                .partial_cmp(&island[a].crowding_distance)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        })
+    });
+    indices
+        .into_iter()
+        .take(count)
+        .map(|i| island[i].clone())
+        .collect()
+}
+
+/// Replaces the worst `migrants.len()` Pareto individuals in an island with the migrants.
+///
+/// "Worst" means highest rank first, then lowest crowding distance to break ties.
+fn replace_worst_pareto<U>(island: &mut [ParetoIndividual<U>], migrants: &[ParetoIndividual<U>])
+where
+    U: ChromosomeT,
+{
+    if migrants.is_empty() || island.is_empty() {
+        return;
+    }
+
+    let mut indices: Vec<usize> = (0..island.len()).collect();
+    // Sort by worst first: highest rank, then lowest crowding distance
+    indices.sort_by(|&a, &b| {
+        island[b].rank.cmp(&island[a].rank).then_with(|| {
+            island[a]
+                .crowding_distance
+                .partial_cmp(&island[b].crowding_distance)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        })
+    });
+
+    let replace_count = migrants.len().min(island.len());
+    for (m_idx, &worst_idx) in indices.iter().take(replace_count).enumerate() {
+        island[worst_idx] = migrants[m_idx].clone();
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::island::configuration::IslandConfiguration;
     use crate::island::topology::MigrationTopology;
+    use crate::nsga2::pareto::ParetoIndividual;
     use crate::population::Population;
     use crate::traits::ChromosomeT;
     use std::borrow::Cow;
@@ -280,6 +402,126 @@ mod tests {
         assert!(
             island1_fitnesses.contains(&10.0),
             "Island 1 should contain migrated individual with fitness 10.0"
+        );
+    }
+
+    // ---- Pareto migration tests ----
+
+    fn make_pareto_individual(
+        rank: usize,
+        crowding: f64,
+    ) -> ParetoIndividual<MigrationTestChromosome> {
+        let mut ind = ParetoIndividual::new(
+            MigrationTestChromosome {
+                dna: vec![],
+                fitness: 0.0,
+                age: 0,
+            },
+            vec![],
+        );
+        ind.rank = rank;
+        ind.crowding_distance = crowding;
+        ind
+    }
+
+    #[test]
+    fn test_migrate_pareto_single_island_noop() {
+        let mut islands = vec![vec![make_pareto_individual(0, 1.0)]];
+        let config = IslandConfiguration::new()
+            .with_num_islands(1)
+            .with_migration_count(1);
+
+        let result = migrate_pareto(&mut islands, &config);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_migrate_pareto_empty_island_error() {
+        let mut islands: Vec<Vec<ParetoIndividual<MigrationTestChromosome>>> =
+            vec![vec![make_pareto_individual(0, 1.0)], vec![]];
+        let config = IslandConfiguration::new()
+            .with_num_islands(2)
+            .with_migration_count(1);
+
+        let result = migrate_pareto(&mut islands, &config);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_migrate_pareto_count_exceeds_size_error() {
+        let mut islands = vec![
+            vec![make_pareto_individual(0, 1.0)],
+            vec![make_pareto_individual(1, 0.5)],
+        ];
+        let config = IslandConfiguration::new()
+            .with_num_islands(2)
+            .with_migration_count(5);
+
+        let result = migrate_pareto(&mut islands, &config);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_migrate_pareto_ring_transfers_best() {
+        // Island 0: rank 0 (best) individuals
+        // Island 1: rank 2 (worst) individuals
+        let mut islands = vec![
+            vec![
+                make_pareto_individual(0, 2.0), // best: rank 0, high crowding
+                make_pareto_individual(1, 1.0),
+                make_pareto_individual(2, 0.5),
+            ],
+            vec![
+                make_pareto_individual(2, 0.1), // worst
+                make_pareto_individual(2, 0.2),
+                make_pareto_individual(2, 0.3),
+            ],
+        ];
+        let config = IslandConfiguration::new()
+            .with_num_islands(2)
+            .with_migration_count(1)
+            .with_topology(MigrationTopology::Ring);
+
+        let result = migrate_pareto(&mut islands, &config);
+        assert!(result.is_ok());
+
+        // After migration, island 1 should now contain an individual with rank 0
+        let has_rank_0 = islands[1].iter().any(|ind| ind.rank == 0);
+        assert!(
+            has_rank_0,
+            "Island 1 should contain a migrated rank-0 individual"
+        );
+    }
+
+    #[test]
+    fn test_migrate_pareto_replaces_worst() {
+        // Island 0: one rank-0 individual with high crowding
+        // Island 1: three individuals with varying ranks
+        let mut islands = vec![
+            vec![
+                make_pareto_individual(0, 10.0),
+                make_pareto_individual(0, 5.0),
+                make_pareto_individual(1, 1.0),
+            ],
+            vec![
+                make_pareto_individual(0, 3.0),  // should survive
+                make_pareto_individual(1, 2.0),  // should survive
+                make_pareto_individual(3, 0.01), // worst — should be replaced
+            ],
+        ];
+        let config = IslandConfiguration::new()
+            .with_num_islands(2)
+            .with_migration_count(1)
+            .with_topology(MigrationTopology::Ring);
+
+        let result = migrate_pareto(&mut islands, &config);
+        assert!(result.is_ok());
+
+        // The worst individual (rank 3) in island 1 should have been replaced
+        let has_rank_3 = islands[1].iter().any(|ind| ind.rank == 3);
+        assert!(
+            !has_rank_3,
+            "Island 1 should no longer contain the rank-3 individual"
         );
     }
 }

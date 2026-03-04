@@ -1140,3 +1140,161 @@ fn test_validator_accepts_builtin_chromosome_type() {
         result.err()
     );
 }
+
+// ============================================================================
+// Island-NSGA-II integration tests
+// ============================================================================
+
+#[test]
+fn test_island_nsga2_run_returns_pareto_front() {
+    use genetic_algorithms::configuration::GaConfiguration;
+    use genetic_algorithms::island::configuration::IslandConfiguration;
+    use genetic_algorithms::island::nsga2::IslandNsga2Ga;
+    use genetic_algorithms::island::topology::MigrationTopology;
+    use genetic_algorithms::nsga2::configuration::Nsga2Configuration;
+    use genetic_algorithms::operations::{Crossover, Mutation};
+    use genetic_algorithms::traits::{CrossoverConfig, MutationConfig};
+
+    let alleles = vec![
+        Gene { id: 0 },
+        Gene { id: 1 },
+        Gene { id: 2 },
+        Gene { id: 3 },
+    ];
+    let alleles_clone = alleles.clone();
+
+    let island_config = IslandConfiguration::new()
+        .with_num_islands(2)
+        .with_migration_interval(5)
+        .with_migration_count(1)
+        .with_topology(MigrationTopology::Ring);
+
+    let nsga2_config = Nsga2Configuration::new()
+        .with_num_objectives(2)
+        .with_population_size(20)
+        .with_max_generations(10);
+
+    let ga_config = GaConfiguration::default()
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::Swap);
+
+    let mut ga = IslandNsga2Ga::<Chromosome>::new(island_config, nsga2_config, ga_config)
+        .with_alleles(alleles)
+        .with_initialization_fn(move |genes_per_chrom, _alleles, _repeat| {
+            // Simple random initialization: assign random IDs from alleles
+            use rand::Rng;
+            let mut rng = rand::rng();
+            (0..genes_per_chrom)
+                .map(|_| {
+                    let idx = rng.random_range(0..alleles_clone.len());
+                    alleles_clone[idx]
+                })
+                .collect()
+        })
+        .with_objective_fns(vec![
+            // Objective 1: sum of gene IDs (minimize)
+            Box::new(|dna: &[Gene]| dna.iter().map(|g| g.id as f64).sum()),
+            // Objective 2: negative sum (conflicting with obj 1)
+            Box::new(|dna: &[Gene]| -(dna.iter().map(|g| g.id as f64).sum::<f64>())),
+        ])
+        .build()
+        .expect("Configuration should be valid");
+
+    let result = ga.run();
+    assert!(result.is_ok(), "Island-NSGA-II run should succeed");
+
+    let front = result.unwrap();
+    assert!(
+        !front.is_empty(),
+        "Pareto front should contain at least one individual"
+    );
+
+    // All individuals in the front should have rank 0
+    for ind in &front.individuals {
+        assert_eq!(ind.rank, 0, "All front individuals should have rank 0");
+        assert_eq!(
+            ind.objectives.len(),
+            2,
+            "Each individual should have 2 objectives"
+        );
+    }
+}
+
+#[test]
+fn test_island_nsga2_build_validates() {
+    use genetic_algorithms::configuration::GaConfiguration;
+    use genetic_algorithms::island::configuration::IslandConfiguration;
+    use genetic_algorithms::island::nsga2::IslandNsga2Ga;
+    use genetic_algorithms::nsga2::configuration::Nsga2Configuration;
+
+    // Missing initialization function should fail build
+    let island_config = IslandConfiguration::new().with_num_islands(2);
+    let nsga2_config = Nsga2Configuration::new().with_num_objectives(2);
+    let ga_config = GaConfiguration::default();
+
+    let result = IslandNsga2Ga::<Chromosome>::new(island_config, nsga2_config, ga_config)
+        .with_objective_fns(vec![Box::new(|_: &[Gene]| 0.0), Box::new(|_: &[Gene]| 0.0)])
+        .build();
+
+    assert!(
+        result.is_err(),
+        "build() should fail without initialization_fn"
+    );
+}
+
+#[test]
+fn test_island_nsga2_migration_improves_diversity() {
+    use genetic_algorithms::configuration::GaConfiguration;
+    use genetic_algorithms::island::configuration::IslandConfiguration;
+    use genetic_algorithms::island::nsga2::IslandNsga2Ga;
+    use genetic_algorithms::island::topology::MigrationTopology;
+    use genetic_algorithms::nsga2::configuration::Nsga2Configuration;
+    use genetic_algorithms::operations::{Crossover, Mutation};
+    use genetic_algorithms::traits::{CrossoverConfig, MutationConfig};
+
+    let alleles = vec![Gene { id: 0 }, Gene { id: 1 }, Gene { id: 2 }];
+    let alleles_clone = alleles.clone();
+
+    let island_config = IslandConfiguration::new()
+        .with_num_islands(3)
+        .with_migration_interval(3)
+        .with_migration_count(2)
+        .with_topology(MigrationTopology::FullyConnected);
+
+    let nsga2_config = Nsga2Configuration::new()
+        .with_num_objectives(2)
+        .with_population_size(15)
+        .with_max_generations(15);
+
+    let ga_config = GaConfiguration::default()
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::Swap);
+
+    let mut ga = IslandNsga2Ga::<Chromosome>::new(island_config, nsga2_config, ga_config)
+        .with_alleles(alleles)
+        .with_initialization_fn(move |genes_per_chrom, _alleles, _repeat| {
+            use rand::Rng;
+            let mut rng = rand::rng();
+            (0..genes_per_chrom)
+                .map(|_| {
+                    let idx = rng.random_range(0..alleles_clone.len());
+                    alleles_clone[idx]
+                })
+                .collect()
+        })
+        .with_objective_fns(vec![
+            Box::new(|dna: &[Gene]| dna.iter().map(|g| g.id as f64).sum()),
+            Box::new(|dna: &[Gene]| dna.iter().map(|g| (g.id as f64 - 1.5).powi(2)).sum::<f64>()),
+        ])
+        .build()
+        .expect("Configuration should be valid");
+
+    let result = ga.run();
+    assert!(
+        result.is_ok(),
+        "Island-NSGA-II with FullyConnected should succeed"
+    );
+
+    let front = result.unwrap();
+    assert!(!front.is_empty(), "Should produce a non-empty Pareto front");
+}

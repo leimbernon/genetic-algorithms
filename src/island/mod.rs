@@ -21,6 +21,7 @@
 
 pub mod configuration;
 pub mod migration;
+pub mod nsga2;
 pub mod topology;
 
 use crate::configuration::{GaConfiguration, ProblemSolving};
