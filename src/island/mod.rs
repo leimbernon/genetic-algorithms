@@ -311,6 +311,7 @@ where
     ) -> Result<(), GaError> {
         use crate::operations::{crossover, mutation, selection, survivor};
         use rand::Rng;
+        use rayon::prelude::*;
 
         let selection_config = self.ga_config.selection_configuration;
         let crossover_config = self.ga_config.crossover_configuration;
@@ -323,13 +324,13 @@ where
             .as_ref()
             .ok_or_else(|| GaError::ConfigurationError("No fitness function set".to_string()))?;
 
-        for island in self.islands.iter_mut() {
+        let fitness_fn = Arc::clone(fitness_fn);
+        let num_threads = self.ga_config.number_of_threads;
+
+        self.islands.par_iter_mut().try_for_each(|island| {
             // Selection: returns Vec<(usize, usize)> parent index pairs
-            let parent_pairs = selection::factory(
-                &island.chromosomes,
-                selection_config,
-                self.ga_config.number_of_threads,
-            )?;
+            let parent_pairs =
+                selection::factory(&island.chromosomes, selection_config, num_threads)?;
 
             // Crossover: iterate over parent pairs
             let mut rng = rand::rng();
@@ -367,7 +368,7 @@ where
 
             // Assign fitness to offspring
             for child in offspring.iter_mut() {
-                let ff = Arc::clone(fitness_fn);
+                let ff = Arc::clone(&fitness_fn);
                 child.set_fitness_fn(move |genes| ff(genes));
                 child.calculate_fitness();
             }
@@ -382,9 +383,9 @@ where
                 pop_size,
                 limit_config,
             )?;
-        }
 
-        Ok(())
+            Ok(())
+        })
     }
 }
 

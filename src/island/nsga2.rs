@@ -326,8 +326,11 @@ where
         );
 
         // Initial ranking for all islands
-        for island in self.islands.iter_mut() {
-            Self::rank_and_crowd(island);
+        {
+            use rayon::prelude::*;
+            self.islands
+                .par_iter_mut()
+                .for_each(|island| Self::rank_and_crowd(island));
         }
 
         for gen in 0..max_gens {
@@ -360,13 +363,15 @@ where
     /// 4. Environmental selection: sort by (rank asc, crowding desc), truncate to `pop_size`.
     fn evolve_islands_one_generation(&mut self, pop_size: usize) -> Result<(), GaError> {
         use crate::operations::{crossover, mutation};
+        use rayon::prelude::*;
 
         let crossover_config = self.ga_config.crossover_configuration;
         let mutation_config = self.ga_config.mutation_configuration;
         let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
         let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
+        let objective_fns = &self.objective_fns;
 
-        for island in self.islands.iter_mut() {
+        self.islands.par_iter_mut().try_for_each(|island| {
             let mut rng = rand::rng();
             let mut offspring: Vec<ParetoIndividual<U>> = Vec::with_capacity(pop_size);
 
@@ -405,7 +410,7 @@ where
                 // Evaluate objectives and wrap in ParetoIndividual
                 for child in children {
                     let objectives: Vec<f64> =
-                        self.objective_fns.iter().map(|f| f(child.dna())).collect();
+                        objective_fns.iter().map(|f| f(child.dna())).collect();
                     offspring.push(ParetoIndividual::new(child, objectives));
                     if offspring.len() >= pop_size {
                         break;
@@ -429,9 +434,9 @@ where
             });
 
             island.truncate(pop_size);
-        }
 
-        Ok(())
+            Ok(())
+        })
     }
 
     /// Merges all islands and returns the global Pareto front (rank-0 individuals).
