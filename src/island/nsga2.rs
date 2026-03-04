@@ -56,6 +56,7 @@ use crate::operations::mutation;
 use crate::traits::{ChromosomeT, InitializationFn};
 use log::{debug, info};
 use rand::Rng;
+use rayon::prelude::*;
 use std::sync::Arc;
 
 /// Island Model + NSGA-II multi-objective genetic algorithm orchestrator.
@@ -233,11 +234,13 @@ where
                 0,
             );
 
-            // Wrap in ParetoIndividual and evaluate objectives
+            // Wrap in ParetoIndividual and evaluate objectives in parallel
+            let objective_fns = &self.objective_fns;
             let population: Vec<ParetoIndividual<U>> = chromosomes
-                .into_iter()
+                .into_par_iter()
                 .map(|chrom| {
-                    let objectives = self.evaluate_objectives(&chrom);
+                    let objectives: Vec<f64> =
+                        objective_fns.iter().map(|f| f(chrom.dna())).collect();
                     ParetoIndividual::new(chrom, objectives)
                 })
                 .collect();
@@ -250,14 +253,6 @@ where
         }
 
         Ok(())
-    }
-
-    /// Evaluates all objective functions for a chromosome.
-    fn evaluate_objectives(&self, chromosome: &U) -> Vec<f64> {
-        self.objective_fns
-            .iter()
-            .map(|f| f(chromosome.dna()))
-            .collect()
     }
 
     /// Performs non-dominated sorting and crowding distance assignment on a population.

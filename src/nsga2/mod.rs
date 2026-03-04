@@ -42,6 +42,7 @@ use crate::operations::mutation;
 use crate::traits::{ChromosomeT, InitializationFn};
 use log::{debug, info};
 use rand::Rng;
+use rayon::prelude::*;
 use std::sync::Arc;
 
 /// Type alias for a single objective function.
@@ -294,23 +295,16 @@ where
         );
 
         // Wrap each chromosome in a ParetoIndividual with evaluated objectives
+        let objective_fns = &self.objective_fns;
         let population = chromosomes
-            .into_iter()
+            .into_par_iter()
             .map(|chrom| {
-                let objectives = self.evaluate_objectives(&chrom);
+                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
 
         Ok(population)
-    }
-
-    /// Evaluates all objective functions for a chromosome.
-    fn evaluate_objectives(&self, chromosome: &U) -> Vec<f64> {
-        self.objective_fns
-            .iter()
-            .map(|f| f(chromosome.dna()))
-            .collect()
     }
 
     /// Creates offspring via binary tournament selection, crossover, and mutation.
@@ -327,9 +321,9 @@ where
         let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
 
         let mut rng = rand::rng();
-        let mut offspring: Vec<ParetoIndividual<U>> = Vec::with_capacity(pop_size);
+        let mut raw_offspring: Vec<U> = Vec::with_capacity(pop_size);
 
-        while offspring.len() < pop_size {
+        while raw_offspring.len() < pop_size {
             // Binary tournament selection
             let parent_a = self.binary_tournament(population, &mut rng);
             let parent_b = self.binary_tournament(population, &mut rng);
@@ -361,15 +355,23 @@ where
                 }
             }
 
-            // Evaluate objectives and wrap
             for child in children {
-                let objectives = self.evaluate_objectives(&child);
-                offspring.push(ParetoIndividual::new(child, objectives));
-                if offspring.len() >= pop_size {
+                raw_offspring.push(child);
+                if raw_offspring.len() >= pop_size {
                     break;
                 }
             }
         }
+
+        // Evaluate objectives in parallel
+        let objective_fns = &self.objective_fns;
+        let offspring = raw_offspring
+            .into_par_iter()
+            .map(|chrom| {
+                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
+                ParetoIndividual::new(chrom, objectives)
+            })
+            .collect();
 
         Ok(offspring)
     }
