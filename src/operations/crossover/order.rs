@@ -3,6 +3,7 @@ use crate::traits::ChromosomeT;
 use log::debug;
 use rand::Rng;
 use std::borrow::Cow;
+use std::collections::HashSet;
 
 /// Order Crossover (OX): preserves the relative order of genes.
 ///
@@ -66,8 +67,8 @@ fn ox_build_child<G: crate::traits::GeneT>(
         child[i] = Some(donor[i].clone());
     }
 
-    // Collect gene IDs in the segment to detect duplicates
-    let segment_ids: Vec<i32> = (p1..=p2).map(|i| donor[i].id()).collect();
+    // Collect gene IDs in the segment to detect duplicates (O(1) lookup)
+    let segment_ids: HashSet<i32> = (p1..=p2).map(|i| donor[i].id()).collect();
 
     // Collect filler genes not in the segment, starting from position after p2
     let mut filler_genes: Vec<G> = Vec::new();
