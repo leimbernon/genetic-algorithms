@@ -12,7 +12,7 @@ use std::borrow::Cow;
 /// field represents the fitness score of the chromosome, and the `age` field represents
 /// the age of the chromosome.
 ///
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Binary {
     pub dna: Vec<BinaryGenotype>,
     pub fitness: f64,
@@ -70,6 +70,17 @@ impl ChromosomeT for Binary {
     }
 }
 
+impl Default for Binary {
+    fn default() -> Self {
+        Self {
+            dna: Vec::new(),
+            fitness: f64::NAN,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        }
+    }
+}
+
 impl Binary {
     /// Creates a new `Binary`.
     ///
@@ -79,7 +90,7 @@ impl Binary {
     pub fn new() -> Self {
         Self {
             dna: Vec::new(),
-            fitness: 0.0,
+            fitness: f64::NAN,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
         }

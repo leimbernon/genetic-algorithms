@@ -13,20 +13,37 @@ pub fn roulette_wheel_selection<U: ChromosomeT>(chromosomes: &[U]) -> Vec<(usize
 
     trace!(target="selection_events", method="roulette_wheel_selection"; "Total fitness: {}", total_fitness);
 
-    //2- Identifies what chromosomes will be parents
-    let mut parent_1 = None;
-    for index in 0..chromosomes.len() {
-        //We get the probability
-        if rng.random_range(0.0..total_fitness) >= chromosomes.get(index).unwrap().get_fitness() {
-            if parent_1.is_none() {
-                //If parent 1 is not set, we set it
-                parent_1 = Some(index);
-            } else {
-                //If parent 1 is set, we set the mating
-                mating.push((parent_1.unwrap(), index));
-                parent_1 = None;
-            }
-        }
+    // Guard against zero or negative total fitness
+    if total_fitness <= 0.0 {
+        debug!(target="selection_events", method="roulette_wheel_selection"; "Roulette wheel selection finished");
+        return mating;
+    }
+
+    //2- Build cumulative fitness array
+    let mut cumulative_fitness = Vec::with_capacity(chromosomes.len());
+    let mut running_sum = 0.0;
+    for chromosome in chromosomes.iter() {
+        running_sum += chromosome.get_fitness();
+        cumulative_fitness.push(running_sum);
+    }
+
+    //3- Select chromosomes.len() parents using the roulette wheel
+    let num_selections = chromosomes.len();
+    let mut selected = Vec::with_capacity(num_selections);
+
+    for _ in 0..num_selections {
+        let spin = rng.random_range(0.0..total_fitness);
+        // Find the first chromosome whose cumulative fitness exceeds the spin value
+        let chosen = cumulative_fitness.partition_point(|&cumulative| cumulative <= spin);
+        // Clamp to valid index range in case of floating point edge cases
+        let chosen = chosen.min(chromosomes.len() - 1);
+        selected.push(chosen);
+        trace!(target="selection_events", method="roulette_wheel_selection"; "Selected chromosome {} with spin {}", chosen, spin);
+    }
+
+    //4- Pair selected parents into couples
+    for pair in selected.chunks_exact(2) {
+        mating.push((pair[0], pair[1]));
     }
 
     debug!(target="selection_events", method="roulette_wheel_selection"; "Roulette wheel selection finished");
@@ -39,67 +56,56 @@ pub fn stochastic_universal_sampling<U: ChromosomeT>(
 ) -> Vec<(usize, usize)> {
     debug!(target="selection_events", method="stochastic_universal_sampling"; "Starting the stochastic universal sampling selection");
     let mut mating = Vec::new();
-    let chromosome_couples = (couples * 2) as usize;
-    trace!(target="selection_events", method="stochastic_universal_sampling"; "Chromosome couples: {}", chromosome_couples);
 
-    //1- Calculate the selection probabilities
+    if chromosomes.is_empty() || couples <= 0 {
+        return mating;
+    }
+
+    let num_selections = (couples * 2) as usize;
+    trace!(target="selection_events", method="stochastic_universal_sampling"; "Chromosome couples: {}", num_selections);
+
+    //1- Calculate total fitness and build cumulative fitness array
     let total: f64 = chromosomes.iter().map(|gen| gen.get_fitness()).sum();
-    let mut last_selection_value = 0.0;
-    let mut selection_probabilities = Vec::new();
-    let mut rng = rand::rng();
-
     trace!(target="selection_events", method="stochastic_universal_sampling"; "Total fitness: {}", total);
+
+    if total <= 0.0 {
+        return mating;
+    }
+
+    let mut cumulative_fitness = Vec::with_capacity(chromosomes.len());
+    let mut cumulative = 0.0;
     for genotype in chromosomes {
-        let selection_probability = (genotype.get_fitness() / total) + last_selection_value;
-        last_selection_value = selection_probability;
-        selection_probabilities.push(selection_probability);
-        trace!(target="selection_events", method="stochastic_universal_sampling"; "Selection probability {}", selection_probability);
+        cumulative += genotype.get_fitness();
+        cumulative_fitness.push(cumulative);
+        trace!(target="selection_events", method="stochastic_universal_sampling"; "Selection probability {}", cumulative / total);
     }
 
     //2- Calculate the pointer distance and the starting point between 0 and the pointer distance
-    let pointer_distance = 1.0 / chromosome_couples as f64;
+    let pointer_distance = total / num_selections as f64;
+    let mut rng = rand::rng();
     let starting_point = rng.random_range(0.0..pointer_distance);
     trace!(target="selection_events", method="stochastic_universal_sampling"; "pointer distance {} - starting point {}", pointer_distance, starting_point);
 
-    //3- Parent identification
-    let mut current_point = starting_point;
-    let mut next_chromosome = 1;
+    //3- Walk pointers and select individuals
+    let mut selected = Vec::with_capacity(num_selections);
+    let mut cumulative_idx = 0;
 
-    let mut end_of_chromosomes = false;
-    let mut couple_completed = false;
-    let mut first_mate = 0;
-
-    for i in 0..chromosome_couples {
-        //We check that there are enough chromosomes
-        if i >= chromosomes.len() {
-            break;
-        } else if next_chromosome >= chromosomes.len() {
-            end_of_chromosomes = true;
-        }
-
-        //We check if the pointer is between the current and the next chromosome
-        if !end_of_chromosomes
-            && current_point >= selection_probabilities[i]
-            && current_point < selection_probabilities[next_chromosome]
+    for pointer_num in 0..num_selections {
+        let pointer = starting_point + (pointer_num as f64) * pointer_distance;
+        // Advance through the cumulative fitness array until we find the chromosome
+        // that this pointer lands on
+        while cumulative_idx < chromosomes.len() - 1 && cumulative_fitness[cumulative_idx] < pointer
         {
-            if couple_completed {
-                mating.push((first_mate, i));
-            } else {
-                first_mate = i;
-            }
-
-            couple_completed = !couple_completed;
-            current_point += pointer_distance;
-        } else if end_of_chromosomes && current_point >= selection_probabilities[i] {
-            if couple_completed {
-                mating.push((first_mate, i));
-                couple_completed = !couple_completed;
-            } else {
-                first_mate = i;
-            }
+            cumulative_idx += 1;
         }
+        selected.push(cumulative_idx);
+    }
 
-        next_chromosome += 1;
+    //4- Pair the selected indices into couples
+    for pair in selected.chunks(2) {
+        if pair.len() == 2 {
+            mating.push((pair[0], pair[1]));
+        }
     }
 
     debug!(target="mutation_events", method="stochastic_universal_sampling"; "Stochastic universal sampling finished");

@@ -58,7 +58,11 @@ pub fn aga_probability<U: ChromosomeT>(
     };
 
     if larger_f >= f_avg {
-        probability_max * ((f_max - larger_f) / (f_max - f_avg))
+        if (f_max - f_avg).abs() < f64::EPSILON {
+            probability_max
+        } else {
+            probability_max * ((f_max - larger_f) / (f_max - f_avg))
+        }
     } else {
         probability_min
     }

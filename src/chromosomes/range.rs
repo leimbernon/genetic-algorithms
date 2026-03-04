@@ -23,12 +23,23 @@ use std::fmt::Debug;
 /// chromosome.calculate_fitness();
 /// println!("Fitness: {}", chromosome.get_fitness());
 /// ```
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Range<T: Sync + Send + Clone + Default + Debug> {
     pub dna: Vec<RangeGenotype<T>>,
     pub fitness: f64,
     pub age: i32,
     pub fitness_fn: FitnessFnWrapper<RangeGenotype<T>>,
+}
+
+impl<T: Sync + Send + Clone + Default + Debug> Default for Range<T> {
+    fn default() -> Self {
+        Self {
+            dna: Vec::new(),
+            fitness: f64::NAN,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        }
+    }
 }
 
 impl<T: Sync + Send + Clone + Default + Debug> Range<T> {
@@ -49,7 +60,7 @@ impl<T: Sync + Send + Clone + Default + Debug> Range<T> {
     pub fn new() -> Self {
         Self {
             dna: Vec::new(),
-            fitness: 0.0,
+            fitness: f64::NAN,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
         }

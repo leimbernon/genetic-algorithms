@@ -1,6 +1,7 @@
 use crate::error::GaError;
 use crate::traits::ChromosomeT;
 use log::{debug, trace};
+use rand::Rng;
 
 pub fn multipoint<U: ChromosomeT>(
     parent_1: &U,
@@ -21,38 +22,48 @@ pub fn multipoint<U: ChromosomeT>(
     let mut dna_child_2 = Vec::new();
     debug!(target="crossover_events", method="multipoint_crossover"; "Starting the  multipoint crossover");
 
-    //We check if the number of points are higher than the dna, we take the dna lenght
-    let number_of_blocks = if (*crossover_number_of_points as usize) + 1 > parent_1.get_dna().len()
-    {
-        parent_1.get_dna().len()
-    } else {
-        (*crossover_number_of_points as usize) + 1
+    let dna_len = parent_1.get_dna().len();
+
+    // Clamp the number of crossover points: at most dna_len - 1
+    let n = {
+        let requested = *crossover_number_of_points as usize;
+        if requested >= dna_len {
+            dna_len - 1
+        } else {
+            requested
+        }
     };
-    trace!(target="crossover_events", method="multipoint_crossover"; "Number of blocks {}", number_of_blocks);
+    trace!(target="crossover_events", method="multipoint_crossover"; "Number of crossover points {}", n);
 
-    //We get the number of genes per block
-    let number_of_genes_per_block = (parent_1.get_dna().len() / number_of_blocks) as i64;
-    let mut gene_number = 0;
+    // Generate N random, sorted, unique crossover point indices within 1..dna_len
+    // Using Fisher-Yates partial shuffle on the range to pick N unique values
+    let mut candidates: Vec<usize> = (1..dna_len).collect();
+    let mut rng = rand::rng();
+    for i in 0..n {
+        let j = rng.random_range(i..candidates.len());
+        candidates.swap(i, j);
+    }
+    let mut crossover_points: Vec<usize> = candidates[..n].to_vec();
+    crossover_points.sort();
+    trace!(target="crossover_events", method="multipoint_crossover"; "Crossover points {:?}", crossover_points);
+
+    // Walk through the DNA, alternating parent source at each crossover point
     let mut crossed = false;
-    trace!(target="crossover_events", method="multipoint_crossover"; "Number of genes per block {}", number_of_genes_per_block);
+    let mut cp_idx = 0;
 
-    //Here we set the genes to the children
-    for gn in 0..parent_1.get_dna().len() {
-        //Sets the genes of the children
+    for gn in 0..dna_len {
+        // Check if we've reached the next crossover point
+        if cp_idx < crossover_points.len() && gn == crossover_points[cp_idx] {
+            crossed = !crossed;
+            cp_idx += 1;
+        }
+
         if !crossed {
             dna_child_1.push(parent_1.get_dna().get(gn).cloned().unwrap());
             dna_child_2.push(parent_2.get_dna().get(gn).cloned().unwrap());
         } else {
             dna_child_1.push(parent_2.get_dna().get(gn).cloned().unwrap());
             dna_child_2.push(parent_1.get_dna().get(gn).cloned().unwrap());
-        }
-
-        //Sets the point change
-        if gene_number >= number_of_genes_per_block - 1 {
-            crossed = !crossed;
-            gene_number = 0;
-        } else {
-            gene_number += 1;
         }
     }
 

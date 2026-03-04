@@ -310,3 +310,133 @@ fn test_mutation_aga_probability_under_avg() {
     //We verify the result of the aga mutation probability
     assert_eq!(aga_mutation_probability, probability_max);
 }
+
+// ==================== Phase 1 new tests ====================
+
+// --- Task 1.10: Mutation operators don't panic on empty or single-gene DNA ---
+
+#[test]
+fn test_swap_empty_dna_no_panic() {
+    let mut chromosome = Chromosome {
+        dna: vec![],
+        fitness: 0.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+    // Should return early without panicking
+    swap::swap(&mut chromosome);
+    assert!(chromosome.dna.is_empty());
+}
+
+#[test]
+fn test_swap_single_gene_no_panic() {
+    let mut chromosome = Chromosome {
+        dna: vec![Gene { id: 42 }],
+        fitness: 0.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+    swap::swap(&mut chromosome);
+    assert_eq!(chromosome.dna.len(), 1);
+    assert_eq!(chromosome.dna[0].id, 42);
+}
+
+#[test]
+fn test_inversion_empty_dna_no_panic() {
+    let mut chromosome = Chromosome {
+        dna: vec![],
+        fitness: 0.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+    inversion::inversion(&mut chromosome);
+    assert!(chromosome.dna.is_empty());
+}
+
+#[test]
+fn test_inversion_single_gene_no_panic() {
+    let mut chromosome = Chromosome {
+        dna: vec![Gene { id: 99 }],
+        fitness: 0.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+    inversion::inversion(&mut chromosome);
+    assert_eq!(chromosome.dna.len(), 1);
+    assert_eq!(chromosome.dna[0].id, 99);
+}
+
+#[test]
+fn test_scramble_empty_dna_no_panic() {
+    let mut chromosome = Chromosome {
+        dna: vec![],
+        fitness: 0.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+    scramble::scramble(&mut chromosome);
+    assert!(chromosome.dna.is_empty());
+}
+
+#[test]
+fn test_scramble_single_gene_no_panic() {
+    let mut chromosome = Chromosome {
+        dna: vec![Gene { id: 7 }],
+        fitness: 0.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+    scramble::scramble(&mut chromosome);
+    assert_eq!(chromosome.dna.len(), 1);
+    assert_eq!(chromosome.dna[0].id, 7);
+}
+
+#[test]
+fn test_swap_two_genes() {
+    // Minimum viable swap: 2 genes. Should either swap or stay same (both valid).
+    let original = Chromosome {
+        dna: vec![Gene { id: 1 }, Gene { id: 2 }],
+        fitness: 0.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+    let mut chromosome = original.clone();
+    swap::swap(&mut chromosome);
+    assert_eq!(chromosome.dna.len(), 2);
+    // Genes should still be the same set
+    let mut ids: Vec<i32> = chromosome.dna.iter().map(|g| g.id).collect();
+    ids.sort();
+    assert_eq!(ids, vec![1, 2]);
+}
+
+#[test]
+fn test_inversion_two_genes() {
+    let original = Chromosome {
+        dna: vec![Gene { id: 1 }, Gene { id: 2 }],
+        fitness: 0.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+    let mut chromosome = original.clone();
+    inversion::inversion(&mut chromosome);
+    assert_eq!(chromosome.dna.len(), 2);
+    let mut ids: Vec<i32> = chromosome.dna.iter().map(|g| g.id).collect();
+    ids.sort();
+    assert_eq!(ids, vec![1, 2]);
+}
+
+#[test]
+fn test_scramble_two_genes() {
+    let original = Chromosome {
+        dna: vec![Gene { id: 1 }, Gene { id: 2 }],
+        fitness: 0.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+    let mut chromosome = original.clone();
+    scramble::scramble(&mut chromosome);
+    assert_eq!(chromosome.dna.len(), 2);
+    let mut ids: Vec<i32> = chromosome.dna.iter().map(|g| g.id).collect();
+    ids.sort();
+    assert_eq!(ids, vec![1, 2]);
+}

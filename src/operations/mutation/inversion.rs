@@ -5,6 +5,9 @@ use rand::Rng;
 pub fn inversion<U: ChromosomeT>(individual: &mut U) {
     // Starting the inversion mutation and obtaining two random indices
     debug!(target="mutation_events", method="inversion"; "Starting the inversion mutation");
+    if individual.get_dna().len() < 2 {
+        return;
+    }
     let mut rng = rand::rng();
     let len = individual.get_dna().len();
 

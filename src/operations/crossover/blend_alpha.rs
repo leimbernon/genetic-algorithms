@@ -216,7 +216,7 @@ mod tests {
             for child in &children {
                 let val = child.get_dna()[0].value;
                 assert!(
-                    val >= 30.0 && val <= 60.0,
+                    (30.0..=60.0).contains(&val),
                     "With alpha=0, value {} should be between 30 and 60",
                     val
                 );

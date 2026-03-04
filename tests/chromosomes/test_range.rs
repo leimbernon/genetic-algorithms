@@ -6,7 +6,10 @@ use genetic_algorithms::traits::ChromosomeT;
 fn test_new_range() {
     let chromosome = Range::<i32>::new();
     assert_eq!(chromosome.dna.len(), 0);
-    assert_eq!(chromosome.fitness, 0.0);
+    assert!(
+        chromosome.fitness.is_nan(),
+        "New chromosome fitness should be NaN (uninitialized)"
+    );
     assert_eq!(chromosome.age, 0);
 }
 

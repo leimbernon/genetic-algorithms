@@ -22,7 +22,7 @@ pub trait ChromosomeT: Clone + Default + Send + Sync + 'static {
 
     /// Resets common chromosome state (fitness, age, DNA).
     fn default(mut self) -> Self {
-        self.set_fitness(0.0);
+        self.set_fitness(f64::NAN);
         self.set_age(0);
         self.set_dna(Cow::Borrowed(&[]));
         self

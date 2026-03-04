@@ -27,7 +27,7 @@ pub fn random<U: ChromosomeT>(chromosomes: &[U]) -> Vec<(usize, usize)> {
         }
         let mut random_index_1 = 0;
         if indexes.len() > 1 {
-            random_index_1 = rng.random_range(0..indexes.len() - 1);
+            random_index_1 = rng.random_range(0..indexes.len());
         }
         let index_value_1 = indexes[random_index_1];
         indexes.remove(random_index_1);
@@ -35,7 +35,7 @@ pub fn random<U: ChromosomeT>(chromosomes: &[U]) -> Vec<(usize, usize)> {
         //Getting the chromosome 2
         let mut random_index_2 = 0;
         if indexes.len() > 1 {
-            random_index_2 = rng.random_range(0..indexes.len() - 1);
+            random_index_2 = rng.random_range(0..indexes.len());
         }
 
         //Adding the two chromosomes as a pair

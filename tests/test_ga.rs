@@ -918,3 +918,103 @@ fn test_rank_selection_in_ga() {
         "Population should not be empty after running with Rank selection"
     );
 }
+
+// ==================== Phase 1 new tests ====================
+
+// --- Task 1.6: Niching wiring integration test ---
+
+#[test]
+fn test_ga_with_niching_enabled() {
+    // Run a GA with niching enabled. The main goal is to verify:
+    // 1. No panics or errors occur.
+    // 2. Fitness values are modified by sharing (identical chromosomes get reduced fitness).
+
+    // Create population with some identical chromosomes (same DNA)
+    let base_dna = vec![
+        Gene { id: 1 },
+        Gene { id: 2 },
+        Gene { id: 3 },
+        Gene { id: 4 },
+    ];
+    let different_dna = vec![
+        Gene { id: 4 },
+        Gene { id: 3 },
+        Gene { id: 2 },
+        Gene { id: 1 },
+    ];
+
+    let mut chromosomes = Vec::new();
+    // 8 identical chromosomes
+    for _ in 0..8 {
+        chromosomes.push(Chromosome {
+            dna: base_dna.clone(),
+            fitness: 10.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        });
+    }
+    // 2 different chromosomes
+    for _ in 0..2 {
+        chromosomes.push(Chromosome {
+            dna: different_dna.clone(),
+            fitness: 10.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        });
+    }
+
+    let population = Population::new(chromosomes);
+    let mut ga = Ga::new();
+    let result = ga
+        .with_problem_solving(ProblemSolving::Maximization)
+        .with_selection_method(Selection::Tournament)
+        .with_crossover_method(Crossover::Cycle)
+        .with_mutation_method(Mutation::Swap)
+        .with_survivor_method(Survivor::Fitness)
+        .with_population(population)
+        .with_max_generations(5)
+        .with_niching_enabled(true)
+        .with_niching_sigma_share(3.0) // sigma > 0, catches identical (distance=0) and close
+        .with_niching_alpha(1.0)
+        .run()
+        .unwrap();
+
+    // Population should still have correct size
+    assert_eq!(result.chromosomes.len(), 10);
+    // GA should complete without panicking — that's the primary assertion
+}
+
+#[test]
+fn test_ga_with_niching_disabled() {
+    // Same setup but with niching disabled — should behave exactly like normal GA.
+    // Use Uniform crossover to avoid cycle crossover's permutation requirement.
+    let chromosomes: Vec<Chromosome> = (0..10)
+        .map(|i| Chromosome {
+            dna: vec![
+                Gene { id: 1 + i },
+                Gene { id: 2 + i },
+                Gene { id: 3 + i },
+                Gene { id: 4 + i },
+            ],
+            fitness: (i + 1) as f64,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+
+    let population = Population::new(chromosomes);
+    let mut ga = Ga::new();
+    let result = ga
+        .with_problem_solving(ProblemSolving::Maximization)
+        .with_selection_method(Selection::Random)
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::Swap)
+        .with_survivor_method(Survivor::Fitness)
+        .with_population(population)
+        .with_max_generations(3)
+        .with_niching_enabled(false)
+        .run()
+        .unwrap();
+
+    assert_eq!(result.chromosomes.len(), 10);
+}

@@ -61,7 +61,7 @@ where
 
     /// Recalculate `f_avg` and `f_max` (used by adaptive GA probabilities).
     pub fn recalculate_aga(&mut self) {
-        self.f_max = 0.0;
+        self.f_max = f64::NEG_INFINITY;
         self.f_avg = 0.0;
         for chromosome in self.chromosomes.as_slice() {
             self.f_max = if chromosome.get_fitness() > self.f_max {
@@ -84,10 +84,10 @@ where
         self.chromosomes.len()
     }
 
-    /// Computes fitness for all chromosomes in parallel and updates the best chromosome.
+    /// Computes fitness for unevaluated chromosomes in parallel and updates the best chromosome.
     ///
     /// Uses rayon's parallel iterators for efficient work distribution.
-    /// If a chromosome already has non-zero fitness, it is reused.
+    /// A chromosome is considered unevaluated if its fitness is `NaN`.
     pub fn fitness_calculation(
         &mut self,
         _number_of_threads: i32,
@@ -95,9 +95,10 @@ where
     ) {
         debug!(target="population_events", method="fitness_calculation"; "Started the population fitness calculation");
 
-        // Calculate fitness in parallel for chromosomes with fitness == 0.0
+        // Calculate fitness in parallel for chromosomes that have not yet been evaluated.
+        // NaN fitness indicates a chromosome whose fitness has never been computed.
         self.chromosomes.par_iter_mut().for_each(|chromosome| {
-            if chromosome.get_fitness() == 0.0 {
+            if chromosome.get_fitness().is_nan() {
                 chromosome.calculate_fitness();
             }
         });

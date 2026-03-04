@@ -18,13 +18,14 @@ pub fn cycle<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaErr
     let mut visited = vec![false; dna_len];
 
     debug!(target="crossover_events", method="cycle_crossover"; "Starting the cycle crossover");
+    let mut cycle_count: usize = 0;
     for start in 0..dna_len {
         if visited[start] {
             continue;
         }
 
         let mut idx = start;
-        let use_parent_1 = idx % 2 == 0;
+        let use_parent_1 = cycle_count % 2 == 0;
 
         while !visited[idx] {
             trace!(target="crossover_events", method="cycle_crossover"; "Index {} not yet visited", idx);
@@ -54,6 +55,7 @@ pub fn cycle<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaErr
                 }
             }
         }
+        cycle_count += 1;
     }
 
     let mut child_1 = parent_1.clone();

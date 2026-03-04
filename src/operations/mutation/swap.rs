@@ -5,6 +5,9 @@ pub(crate) use rand::Rng;
 pub fn swap<U: ChromosomeT>(chromosome: &mut U) {
     //Getting two random genes from the dna of the chromosome
     debug!(target="mutation_events", method="swap"; "Starting the swap mutation");
+    if chromosome.get_dna().len() < 2 {
+        return;
+    }
     let mut rng = rand::rng();
     let index_1 = rng.random_range(0..chromosome.get_dna().len());
     let index_2 = rng.random_range(0..chromosome.get_dna().len());

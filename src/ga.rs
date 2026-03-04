@@ -5,7 +5,7 @@ use crate::{
     configuration::{LimitConfiguration, LogLevel, ProblemSolving},
     operations::{crossover, mutation, selection, survivor},
     population::Population,
-    traits::{ChromosomeT, ConfigurationT},
+    traits::{ChromosomeT, ConfigurationT, GeneT},
 };
 use log::{debug, info, trace};
 use rand::Rng;
@@ -500,6 +500,66 @@ where
             if self.configuration.adaptive_ga {
                 self.population.recalculate_aga();
             }
+
+            // Apply niching / fitness sharing if configured
+            if let Some(ref niching_config) = self.configuration.niching_configuration {
+                if niching_config.enabled {
+                    // Extract fitness values
+                    let mut fitness_values: Vec<f64> = self
+                        .population
+                        .chromosomes
+                        .iter()
+                        .map(|c| c.get_fitness())
+                        .collect();
+
+                    // Extract DNA slices for distance computation
+                    let dna_slices: Vec<&[U::Gene]> = self
+                        .population
+                        .chromosomes
+                        .iter()
+                        .map(|c| c.get_dna())
+                        .collect();
+
+                    // Compute distance matrix using gene ID comparison
+                    let distances = crate::niching::sharing::compute_distance_matrix(
+                        &dna_slices,
+                        |dna_a: &[U::Gene], dna_b: &[U::Gene]| {
+                            let max_len = dna_a.len().max(dna_b.len());
+                            if max_len == 0 {
+                                return 0.0;
+                            }
+                            let mut diff = 0usize;
+                            for idx in 0..max_len {
+                                let id_a = dna_a.get(idx).map(|g| g.get_id()).unwrap_or(-1);
+                                let id_b = dna_b.get(idx).map(|g| g.get_id()).unwrap_or(-1);
+                                if id_a != id_b {
+                                    diff += 1;
+                                }
+                            }
+                            diff as f64
+                        },
+                    );
+
+                    // Apply fitness sharing
+                    crate::niching::sharing::apply_fitness_sharing(
+                        &mut fitness_values,
+                        &distances,
+                        niching_config.sigma_share,
+                        niching_config.alpha,
+                    );
+
+                    // Write adjusted fitness back
+                    for (chromosome, &shared_fitness) in self
+                        .population
+                        .chromosomes
+                        .iter_mut()
+                        .zip(fitness_values.iter())
+                    {
+                        chromosome.set_fitness(shared_fitness);
+                    }
+                }
+            }
+
             debug!(target="ga_events", method="run"; "Survivors selected");
 
             //5- Sets the best chromosome
