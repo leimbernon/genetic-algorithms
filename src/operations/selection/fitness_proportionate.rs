@@ -9,7 +9,7 @@ pub fn roulette_wheel_selection<U: ChromosomeT>(chromosomes: &[U]) -> Vec<(usize
     debug!(target="selection_events", method="roulette_wheel_selection"; "Starting the roulette wheel selection");
     let total_fitness: f64 = chromosomes.iter().map(|ind| ind.fitness()).sum();
 
-    let mut rng = rand::rng();
+    let mut rng = crate::rng::make_rng();
 
     trace!(target="selection_events", method="roulette_wheel_selection"; "Total fitness: {}", total_fitness);
 
@@ -82,7 +82,7 @@ pub fn stochastic_universal_sampling<U: ChromosomeT>(
 
     //2- Calculate the pointer distance and the starting point between 0 and the pointer distance
     let pointer_distance = total / num_selections as f64;
-    let mut rng = rand::rng();
+    let mut rng = crate::rng::make_rng();
     let starting_point = rng.random_range(0.0..pointer_distance);
     trace!(target="selection_events", method="stochastic_universal_sampling"; "pointer distance {} - starting point {}", pointer_distance, starting_point);
 

@@ -37,7 +37,7 @@ pub fn insertion_mutation<U: ChromosomeT>(individual: &mut U) -> Result<(), GaEr
         return Ok(());
     }
 
-    let mut rng = rand::rng();
+    let mut rng = crate::rng::make_rng();
 
     // Pick two distinct random positions
     let i = rng.random_range(0..len);

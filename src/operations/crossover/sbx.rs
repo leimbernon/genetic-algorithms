@@ -44,7 +44,7 @@ where
 
     debug!(target="crossover_events", method="sbx"; "Starting SBX crossover with eta={}", eta);
 
-    let mut rng = rand::rng();
+    let mut rng = crate::rng::make_rng();
     let dna1 = parent_1.dna();
     let dna2 = parent_2.dna();
 

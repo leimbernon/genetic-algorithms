@@ -38,7 +38,7 @@ where
     T: Sync + Send + Clone + Default + Debug + 'static + PartialOrd + SampleUniform + Copy,
 {
     let mut genes = Vec::new();
-    let mut rng = rand::rng();
+    let mut rng = crate::rng::make_rng();
     let alleles = alleles.expect("At least 1 allele must be provided for range genotype");
     for i in 0..genes_per_chromosome {
         // Pick a random allele from the provided list

@@ -39,7 +39,7 @@ where
     let winners: Vec<usize> = (0..total_contestants)
         .into_par_iter()
         .map(|_| {
-            let mut rng = rand::rng();
+            let mut rng = crate::rng::make_rng();
             let index_1 = rng.random_range(0..chromosomes.len());
             let index_2 = rng.random_range(0..chromosomes.len());
 

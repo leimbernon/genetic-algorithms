@@ -8,7 +8,7 @@ pub fn swap<U: ChromosomeT>(chromosome: &mut U) {
     if chromosome.dna().len() < 2 {
         return;
     }
-    let mut rng = rand::rng();
+    let mut rng = crate::rng::make_rng();
     let index_1 = rng.random_range(0..chromosome.dna().len());
     let index_2 = rng.random_range(0..chromosome.dna().len());
     trace!(target="mutation_events", method="swap"; "Mutation index 1: {}, mutation index 2: {}", index_1, index_2);

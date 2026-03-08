@@ -30,7 +30,7 @@ pub fn order<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaErr
     }
 
     debug!(target="crossover_events", method="order"; "Starting order crossover (OX)");
-    let mut rng = rand::rng();
+    let mut rng = crate::rng::make_rng();
 
     let mut p1 = rng.random_range(0..len);
     let mut p2 = rng.random_range(0..len);

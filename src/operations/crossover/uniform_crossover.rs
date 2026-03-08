@@ -12,7 +12,7 @@ pub fn uniform<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaE
             parent_1.dna().len(), parent_2.dna().len())));
     }
 
-    let mut rng = rand::rng();
+    let mut rng = crate::rng::make_rng();
 
     //Creation of the children DNA using reserve + push to avoid redundant initialization
     let len = parent_1.dna().len();

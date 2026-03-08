@@ -28,7 +28,7 @@ pub fn single_point<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>
     }
 
     debug!(target="crossover_events", method="single_point"; "Starting single-point crossover");
-    let mut rng = rand::rng();
+    let mut rng = crate::rng::make_rng();
     // Crossover point: between 1 and len-1 (exclusive bounds ensure both parts are non-empty)
     let point = rng.random_range(1..len);
 

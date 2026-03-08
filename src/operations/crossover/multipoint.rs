@@ -37,7 +37,7 @@ pub fn multipoint<U: ChromosomeT>(
     // Generate N random, sorted, unique crossover point indices within 1..dna_len
     // Using Fisher-Yates partial shuffle on the range to pick N unique values
     let mut candidates: Vec<usize> = (1..dna_len).collect();
-    let mut rng = rand::rng();
+    let mut rng = crate::rng::make_rng();
     for i in 0..n {
         let j = rng.random_range(i..candidates.len());
         candidates.swap(i, j);

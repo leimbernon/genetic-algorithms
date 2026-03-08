@@ -17,7 +17,7 @@ where
     }
 
     debug!(target="mutation_events", method="bit_flip"; "Starting the bit flip mutation");
-    let mut rng = rand::rng();
+    let mut rng = crate::rng::make_rng();
     let index = rng.random_range(0..len);
 
     let mut gene = chromosome.dna()[index];

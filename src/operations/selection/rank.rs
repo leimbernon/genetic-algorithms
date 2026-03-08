@@ -53,7 +53,7 @@ pub fn rank_selection<U: ChromosomeT>(chromosomes: &[U], couples: usize) -> Vec<
     }
 
     // Select parents via roulette on ranks
-    let mut rng = rand::rng();
+    let mut rng = crate::rng::make_rng();
     let total_parents = couples * 2;
     let mut selected = Vec::with_capacity(total_parents);
 

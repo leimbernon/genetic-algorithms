@@ -49,7 +49,7 @@ where
 
     debug!(target="crossover_events", method="blend_alpha"; "Starting BLX-α crossover with alpha={}", alpha);
 
-    let mut rng = rand::rng();
+    let mut rng = crate::rng::make_rng();
     let dna1 = parent_1.dna();
     let dna2 = parent_2.dna();
 

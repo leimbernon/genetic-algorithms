@@ -79,4 +79,9 @@ pub trait ConfigurationT:
     fn with_save_progress(self, save_progress: bool) -> Self;
     fn with_save_progress_interval(self, save_progress_interval: usize) -> Self;
     fn with_save_progress_path(self, save_progress_path: String) -> Self;
+
+    /// Sets the RNG seed for reproducible runs.
+    ///
+    /// Two runs with the same seed (and thread count) produce identical results.
+    fn with_rng_seed(self, seed: u64) -> Self;
 }

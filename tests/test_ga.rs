@@ -1915,3 +1915,99 @@ fn test_fitness_target_reached_minimization() {
         "GA should terminate due to fitness target reached (fitness == 0 in minimization)"
     );
 }
+
+// ============================================================================
+// Task 6.1 — Seedable / injectable RNG
+// ============================================================================
+
+/// Verifies that `with_rng_seed` is accepted by the builder and that
+/// `rng::set_seed` / `rng::make_rng` produce deterministic values.
+#[test]
+fn test_rng_seed_api_is_functional() {
+    use genetic_algorithms::rng;
+    use rand::Rng;
+
+    // Verify deterministic RNG creation
+    rng::set_seed(Some(777));
+    let mut r1 = rng::make_rng();
+    let v1: f64 = r1.random();
+
+    rng::set_seed(Some(777));
+    let mut r2 = rng::make_rng();
+    let v2: f64 = r2.random();
+
+    assert_eq!(
+        v1, v2,
+        "Same seed + same counter position should yield identical values"
+    );
+    rng::set_seed(None); // clean up
+}
+
+/// Verifies that two GA runs with the same seed produce identical final populations.
+///
+/// This test is ignored by default because reproducibility requires that no
+/// concurrent code calls `rng::make_rng()` while the two runs execute. Run it
+/// with `cargo test test_rng_seed -- --test-threads=1 --ignored`.
+#[test]
+#[ignore]
+fn test_rng_seed_produces_reproducible_results() {
+    use genetic_algorithms::chromosomes::Range as RangeChromosome;
+    use genetic_algorithms::genotypes::Range as RangeGene;
+    use genetic_algorithms::initializers::range_random_initialization;
+
+    fn run_seeded(seed: u64) -> Vec<f64> {
+        let alleles = vec![RangeGene::new(0, vec![(0.0, 100.0)], 0.0); 4];
+        let alleles_clone = alleles.clone();
+
+        let mut ga: Ga<RangeChromosome<f64>> = Ga::new()
+            .with_genes_per_chromosome(4)
+            .with_population_size(20)
+            .with_initialization_fn(move |genes_per_chromosome, _, _| {
+                range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+            })
+            .with_fitness_fn(|dna: &[RangeGene<f64>]| dna.iter().map(|g| g.value).sum::<f64>())
+            .with_selection_method(Selection::Tournament)
+            .with_crossover_method(Crossover::Uniform)
+            .with_mutation_method(Mutation::Swap)
+            .with_problem_solving(ProblemSolving::Minimization)
+            .with_survivor_method(Survivor::Fitness)
+            .with_max_generations(50)
+            .with_rng_seed(seed)
+            .build()
+            .expect("Invalid configuration");
+
+        ga.run().unwrap();
+        ga.population
+            .chromosomes
+            .iter()
+            .map(|c| c.fitness())
+            .collect()
+    }
+
+    let run_a = run_seeded(42);
+    let run_b = run_seeded(42);
+    let run_c = run_seeded(99);
+
+    assert_eq!(
+        run_a, run_b,
+        "Two runs with the same seed should produce identical fitness vectors"
+    );
+    // Different seeds should (almost certainly) produce different results
+    assert_ne!(
+        run_a, run_c,
+        "Runs with different seeds should produce different fitness vectors"
+    );
+}
+
+/// Verifies that the `rng::set_seed` / `rng::make_rng` API is accessible from user code.
+#[test]
+fn test_rng_module_is_public() {
+    use genetic_algorithms::rng;
+    use rand::Rng;
+
+    rng::set_seed(Some(123));
+    let mut r = rng::make_rng();
+    let _v: f64 = r.random();
+
+    rng::set_seed(None); // clean up
+}

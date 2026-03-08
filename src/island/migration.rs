@@ -55,7 +55,7 @@ where
     }
 
     // Collect migrants from each island based on policy
-    let mut rng = rand::rng();
+    let mut rng = crate::rng::make_rng();
     let mut all_migrants: Vec<Vec<U>> = Vec::with_capacity(num_islands);
     for island in islands.iter() {
         let migrants = match config.migration_policy {

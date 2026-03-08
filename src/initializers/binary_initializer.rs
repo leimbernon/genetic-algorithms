@@ -28,7 +28,7 @@ pub fn binary_random_initialization(
     _needs_unique_ids: Option<bool>,
 ) -> Vec<BinaryGenotype> {
     let mut genes = Vec::new();
-    let mut rng = rand::rng();
+    let mut rng = crate::rng::make_rng();
     for i in 0..genes_per_chromosome {
         let gene = BinaryGenotype {
             id: i as i32,

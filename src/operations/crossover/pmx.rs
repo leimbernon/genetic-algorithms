@@ -37,7 +37,7 @@ pub fn pmx<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError
 
     debug!(target="crossover_events", method="pmx"; "Starting PMX crossover");
 
-    let mut rng = rand::rng();
+    let mut rng = crate::rng::make_rng();
 
     let mut start = rng.random_range(0..len);
     let mut end = rng.random_range(0..len);

@@ -13,7 +13,7 @@ pub fn random<U: ChromosomeT>(chromosomes: &[U]) -> Vec<(usize, usize)> {
     let pair_count = n / 2;
     let mut mating = Vec::with_capacity(pair_count);
     let mut indexes: Vec<usize> = (0..n).collect();
-    let mut rng = rand::rng();
+    let mut rng = crate::rng::make_rng();
     let mut remaining = n;
     debug!(target="selection_events", method="random"; "Starting random selection");
 

@@ -182,6 +182,12 @@ pub struct GaConfiguration {
     pub stopping_criteria: StoppingCriteria,
     /// Optional niching / fitness sharing configuration.
     pub niching_configuration: Option<NichingConfiguration>,
+    /// Optional RNG seed for reproducible runs.
+    ///
+    /// When set, all random number generators in operators are seeded
+    /// deterministically from this value. Two runs with the same seed
+    /// (and the same thread count) will produce identical results.
+    pub rng_seed: Option<u64>,
 }
 impl Default for GaConfiguration {
     fn default() -> Self {
@@ -208,6 +214,7 @@ impl Default for GaConfiguration {
             elitism_count: 0,
             stopping_criteria: StoppingCriteria::default(),
             niching_configuration: None,
+            rng_seed: None,
         }
     }
 }
@@ -370,6 +377,11 @@ impl ConfigurationT for GaConfiguration {
     }
     fn with_save_progress_path(mut self, save_progress_path: String) -> Self {
         self.save_progress_configuration.save_progress_path = save_progress_path;
+        self
+    }
+
+    fn with_rng_seed(mut self, seed: u64) -> Self {
+        self.rng_seed = Some(seed);
         self
     }
 }

@@ -8,7 +8,7 @@ pub fn inversion<U: ChromosomeT>(individual: &mut U) {
     if individual.dna().len() < 2 {
         return;
     }
-    let mut rng = rand::rng();
+    let mut rng = crate::rng::make_rng();
     let len = individual.dna().len();
 
     // Select two distinct random indices

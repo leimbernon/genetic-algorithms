@@ -289,6 +289,11 @@ where
             .save_progress_path = save_progress_path;
         self
     }
+
+    fn with_rng_seed(mut self, seed: u64) -> Self {
+        self.configuration.rng_seed = Some(seed);
+        self
+    }
 }
 
 impl<U> Ga<U>
@@ -472,6 +477,9 @@ where
     {
         //Before starting the run, we will check the conditions
         ValidatorFactory::validate::<U>(Some(&self.configuration), None, Some(&self.alleles))?;
+
+        // Apply RNG seed if configured (must be done before any random operations)
+        crate::rng::set_seed(self.configuration.rng_seed);
 
         //If we want to initialize the population randomly
         if self.population.size() == 0 && self.initialization_fn.is_some() {
@@ -877,7 +885,7 @@ where
     let results: Vec<Result<Vec<U>, GaError>> = parents
         .par_iter()
         .map(|(key, value)| {
-            let mut rng = rand::rng();
+            let mut rng = crate::rng::make_rng();
 
             // Getting the parent 1 and 2 for crossover
             let parent_1 = chromosomes.get(*key).ok_or_else(|| {

@@ -16,7 +16,7 @@ where
     let needs_unique_ids = needs_unique_ids
         .expect("needs_unique_ids must be provided for generic_random_initialization");
 
-    let mut rng = rand::rng();
+    let mut rng = crate::rng::make_rng();
     let mut dna = Vec::new();
 
     //Selects the genes randomly from the vector without repeating them
@@ -52,7 +52,7 @@ where
         "needs_unique_ids must be provided for generic_random_initialization_without_repetitions",
     );
 
-    let mut rng = rand::rng();
+    let mut rng = crate::rng::make_rng();
     let mut dna = Vec::new();
 
     let mut tmp_alleles = alleles.to_vec().clone();

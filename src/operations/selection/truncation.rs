@@ -60,7 +60,7 @@ pub fn truncation_selection<U: ChromosomeT>(
     }
 
     // Randomly pair individuals from the elite pool
-    let mut rng = rand::rng();
+    let mut rng = crate::rng::make_rng();
     let mut mating = Vec::with_capacity(couples);
 
     for _ in 0..couples {

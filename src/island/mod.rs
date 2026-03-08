@@ -317,8 +317,11 @@ where
         self.validate()?;
         self.initialize()?;
 
-        // Use the first config's limit settings for the global run parameters
+        // Apply RNG seed from the first island config if configured
         let base_config = self.config_for_island(0);
+        crate::rng::set_seed(base_config.rng_seed);
+
+        // Use the first config's limit settings for the global run parameters
         let max_generations = base_config.limit_configuration.max_generations;
         let problem_solving = base_config.limit_configuration.problem_solving;
         let fitness_target = base_config.limit_configuration.fitness_target;
@@ -416,7 +419,7 @@ where
                     selection::factory(&island.chromosomes, selection_config, num_threads)?;
 
                 // Crossover: iterate over parent pairs
-                let mut rng = rand::rng();
+                let mut rng = crate::rng::make_rng();
                 let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
 
                 let mut offspring: Vec<U> = Vec::new();

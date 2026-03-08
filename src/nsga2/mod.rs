@@ -194,6 +194,9 @@ where
     pub fn run(&mut self) -> Result<ParetoFront<U>, GaError> {
         self.validate()?;
 
+        // Apply RNG seed if configured
+        crate::rng::set_seed(self.ga_config.rng_seed);
+
         let pop_size = self.nsga2_config.population_size;
         let max_gens = self.nsga2_config.max_generations;
         let directions = self.nsga2_config.effective_directions();
@@ -369,7 +372,7 @@ where
         let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
         let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
 
-        let mut rng = rand::rng();
+        let mut rng = crate::rng::make_rng();
         let mut raw_offspring: Vec<U> = Vec::with_capacity(pop_size);
 
         while raw_offspring.len() < pop_size {

@@ -57,7 +57,7 @@ where
         return Ok(());
     }
 
-    let mut rng = rand::rng();
+    let mut rng = crate::rng::make_rng();
     let idx = rng.random_range(0..len);
 
     let mut dna = individual.dna().to_vec();

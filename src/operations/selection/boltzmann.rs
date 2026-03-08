@@ -77,7 +77,7 @@ pub fn boltzmann_selection<U: ChromosomeT>(
     }
 
     // Select parents via roulette-wheel sampling on Boltzmann probabilities
-    let mut rng = rand::rng();
+    let mut rng = crate::rng::make_rng();
     let total_parents = couples * 2;
     let mut selected = Vec::with_capacity(total_parents);
 

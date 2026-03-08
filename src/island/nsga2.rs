@@ -308,6 +308,9 @@ where
         self.validate()?;
         self.initialize_islands()?;
 
+        // Apply RNG seed if configured
+        crate::rng::set_seed(self.ga_config.rng_seed);
+
         let max_gens = self.nsga2_config.max_generations;
         let pop_size = self.nsga2_config.population_size;
 
@@ -367,7 +370,7 @@ where
         let objective_fns = &self.objective_fns;
 
         self.islands.par_iter_mut().try_for_each(|island| {
-            let mut rng = rand::rng();
+            let mut rng = crate::rng::make_rng();
             let mut offspring: Vec<ParetoIndividual<U>> = Vec::with_capacity(pop_size);
 
             while offspring.len() < pop_size {
@@ -692,7 +695,7 @@ mod tests {
         // With only 2 individuals, tournament always picks between index 0 and 1.
         // rank 0 < rank 2, so index 1 should be preferred.
         let mut wins = [0usize; 2];
-        let mut rng = rand::rng();
+        let mut rng = crate::rng::make_rng();
         for _ in 0..100 {
             let idx = binary_tournament(&pop, &mut rng);
             wins[idx] += 1;
