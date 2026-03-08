@@ -6,6 +6,7 @@ use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::initializers::range_random_initialization;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::population::Population;
+use genetic_algorithms::stats::GenerationStats;
 use genetic_algorithms::traits::{
     ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
 };
@@ -30,8 +31,9 @@ fn fitness_fn(dna: &[RangeGenotype<i32>]) -> f64 {
 fn report(
     generation: &usize,
     population: &Population<RangeChromosome<i32>>,
+    _stats: &GenerationStats,
     termination_cause: &TerminationCause,
-) {
+) -> std::ops::ControlFlow<()> {
     println!(
         "Generation: {} - Best Score: {} - Phenotype: {} - Termination Cause: {:?}",
         generation,
@@ -39,6 +41,7 @@ fn report(
         population.best_chromosome.phenotype(),
         termination_cause
     );
+    std::ops::ControlFlow::Continue(())
 }
 
 fn main() {

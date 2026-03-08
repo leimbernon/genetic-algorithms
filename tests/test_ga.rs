@@ -5,6 +5,7 @@ use crate::structures::{Chromosome, Gene};
 use genetic_algorithms::configuration::StoppingCriteria;
 use genetic_algorithms::ga::Ga;
 use genetic_algorithms::ga::TerminationCause;
+use genetic_algorithms::stats::GenerationStats;
 use genetic_algorithms::{
     configuration::ProblemSolving,
     fitness::FitnessFnWrapper,
@@ -535,14 +536,16 @@ fn test_parent_crossover_without_repeating_alleles() {
 fn callback_function(
     generation_number: &usize,
     population: &Population<Chromosome>,
+    _stats: &GenerationStats,
     termination_cause: &TerminationCause,
-) {
+) -> std::ops::ControlFlow<()> {
     assert!(*generation_number >= 7);
     assert_eq!(population.chromosomes.len(), 10);
     assert!(
         termination_cause == &TerminationCause::NotTerminated
             || termination_cause == &TerminationCause::GenerationLimitReached
     );
+    std::ops::ControlFlow::Continue(())
 }
 
 #[test]

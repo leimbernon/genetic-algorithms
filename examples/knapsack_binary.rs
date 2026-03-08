@@ -6,6 +6,7 @@ use genetic_algorithms::genotypes::Binary as BinaryGenotype;
 use genetic_algorithms::initializers::binary_random_initialization;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection};
 use genetic_algorithms::population::Population;
+use genetic_algorithms::stats::GenerationStats;
 use genetic_algorithms::traits::{
     ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
 };
@@ -86,12 +87,14 @@ fn fitness_fn(dna: &[BinaryGenotype]) -> f64 {
 fn report(
     generation: &usize,
     population: &Population<BinaryChromosome>,
+    _stats: &GenerationStats,
     termination_cause: &TerminationCause,
-) {
+) -> std::ops::ControlFlow<()> {
     println!(
         "Generation: {} - Best Score: {} - Termination Cause: {:?}",
         generation, population.best_chromosome.fitness, termination_cause
     );
+    std::ops::ControlFlow::Continue(())
 }
 
 fn main() {

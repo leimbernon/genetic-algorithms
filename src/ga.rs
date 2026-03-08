@@ -1,5 +1,6 @@
 use crate::configuration::GaConfiguration;
 use crate::error::GaError;
+use crate::stats::GenerationStats;
 use crate::traits::{FitnessFn, InitializationFn};
 use crate::validators::validator_factory as ValidatorFactory;
 use crate::{
@@ -15,6 +16,7 @@ use log::{debug, info, trace};
 use rand::Rng;
 use rayon::prelude::*;
 use std::fmt::Debug;
+use std::ops::ControlFlow;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -25,6 +27,7 @@ use std::time::Instant;
 /// - `StagnationReached`: no fitness improvement for N consecutive generations.
 /// - `ConvergenceReached`: fitness standard deviation dropped below threshold.
 /// - `TimeLimitReached`: elapsed wall-clock time exceeded the configured limit.
+/// - `CallbackRequested`: the user callback returned `ControlFlow::Break`.
 /// - `NotTerminated`: internal state before the run finalizes or if a callback is invoked mid-run.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TerminationCause {
@@ -33,6 +36,7 @@ pub enum TerminationCause {
     StagnationReached,
     ConvergenceReached,
     TimeLimitReached,
+    CallbackRequested,
     NotTerminated,
 }
 
@@ -62,6 +66,9 @@ where
     pub initialization_fn: Option<Arc<InitializationFn<U::Gene>>>,
     /// Fitness function applied to chromosomes.
     pub fitness_fn: Option<Arc<FitnessFn<U::Gene>>>,
+
+    /// Per-generation statistics collected during the run.
+    stats: Vec<GenerationStats>,
 }
 
 impl<U> Default for Ga<U>
@@ -78,6 +85,7 @@ where
             termination_cause: TerminationCause::NotTerminated,
             initialization_fn: None,
             fitness_fn: None,
+            stats: Vec::new(),
         }
     }
 }
@@ -434,10 +442,19 @@ where
     ///
     /// Equivalent to `run_with_callback(None, 0)`.
     pub fn run(&mut self) -> Result<&Population<U>, GaError> {
-        self.run_with_callback(None::<fn(&usize, &Population<U>, &TerminationCause)>, 0)
+        self.run_with_callback(
+            None::<
+                fn(&usize, &Population<U>, &GenerationStats, &TerminationCause) -> ControlFlow<()>,
+            >,
+            0,
+        )
     }
 
     /// Runs the GA and optionally invokes a callback every `generations_to_callback` generations.
+    ///
+    /// The callback receives the generation index, current population, per-generation statistics,
+    /// and the current termination cause. If the callback returns `ControlFlow::Break(())`, the
+    /// run terminates early with `TerminationCause::CallbackRequested`.
     ///
     /// Execution cycle per generation:
     /// 1) Selection of parents, 2) Crossover to produce offspring, 3) Mutation of offspring,
@@ -451,7 +468,7 @@ where
     ) -> Result<&Population<U>, GaError>
     where
         U: ChromosomeT + Send + Sync + 'static + Clone,
-        F: Fn(&usize, &Population<U>, &TerminationCause),
+        F: Fn(&usize, &Population<U>, &GenerationStats, &TerminationCause) -> ControlFlow<()>,
     {
         //Before starting the run, we will check the conditions
         ValidatorFactory::validate::<U>(Some(&self.configuration), None, Some(&self.alleles))?;
@@ -495,6 +512,15 @@ where
 
         // Starting counting the generations for the callback
         let mut generation_callback_count = 0usize;
+
+        // Reset per-generation stats
+        self.stats.clear();
+
+        // Determine if this is a maximization problem
+        let is_maximization = matches!(
+            self.configuration.limit_configuration.problem_solving,
+            ProblemSolving::Maximization
+        );
 
         // Compound stopping criteria tracking
         let start_time = Instant::now();
@@ -647,10 +673,24 @@ where
             }
             debug!(target="ga_events", method="run"; "Best chromosome calculated - generation {}", i+1);
 
-            // If we want to perform a callback
+            // Collect per-generation statistics
+            let fitness_values: Vec<f64> = self
+                .population
+                .chromosomes
+                .iter()
+                .map(|c| c.fitness())
+                .collect();
+            let gen_stats =
+                GenerationStats::from_fitness_values(i, &fitness_values, is_maximization);
+            self.stats.push(gen_stats.clone());
+
+            // If we want to perform a periodic callback
             if let Some(func) = &callback {
                 if (generation_callback_count + 1) == generations_to_callback {
-                    func(&i, &self.population, &self.termination_cause);
+                    if func(&i, &self.population, &gen_stats, &self.termination_cause).is_break() {
+                        self.termination_cause = TerminationCause::CallbackRequested;
+                        break;
+                    }
                     generation_callback_count = 0;
                 } else {
                     generation_callback_count += 1;
@@ -664,7 +704,7 @@ where
             ) {
                 self.termination_cause = TerminationCause::FitnessTargetReached;
                 if let Some(func) = &callback {
-                    func(&i, &self.population, &self.termination_cause);
+                    let _ = func(&i, &self.population, &gen_stats, &self.termination_cause);
                 }
                 break;
             }
@@ -690,7 +730,7 @@ where
                 if stagnation_count >= max_stagnation {
                     self.termination_cause = TerminationCause::StagnationReached;
                     if let Some(func) = &callback {
-                        func(&i, &self.population, &self.termination_cause);
+                        let _ = func(&i, &self.population, &gen_stats, &self.termination_cause);
                     }
                     break;
                 }
@@ -698,28 +738,12 @@ where
 
             // Convergence check (fitness std dev below threshold)
             if let Some(threshold) = self.configuration.stopping_criteria.convergence_threshold {
-                let fitness_values: Vec<f64> = self
-                    .population
-                    .chromosomes
-                    .iter()
-                    .map(|c| c.fitness())
-                    .collect();
-                let n = fitness_values.len() as f64;
-                if n > 0.0 {
-                    let avg = fitness_values.iter().sum::<f64>() / n;
-                    let variance = fitness_values
-                        .iter()
-                        .map(|f| (f - avg).powi(2))
-                        .sum::<f64>()
-                        / n;
-                    let std_dev = variance.sqrt();
-                    if std_dev < threshold {
-                        self.termination_cause = TerminationCause::ConvergenceReached;
-                        if let Some(func) = &callback {
-                            func(&i, &self.population, &self.termination_cause);
-                        }
-                        break;
+                if gen_stats.fitness_std_dev < threshold {
+                    self.termination_cause = TerminationCause::ConvergenceReached;
+                    if let Some(func) = &callback {
+                        let _ = func(&i, &self.population, &gen_stats, &self.termination_cause);
                     }
+                    break;
                 }
             }
 
@@ -728,7 +752,7 @@ where
                 if start_time.elapsed().as_secs_f64() >= max_secs {
                     self.termination_cause = TerminationCause::TimeLimitReached;
                     if let Some(func) = &callback {
-                        func(&i, &self.population, &self.termination_cause);
+                        let _ = func(&i, &self.population, &gen_stats, &self.termination_cause);
                     }
                     break;
                 }
@@ -743,15 +767,27 @@ where
         // If we want to perform a callback and the generation limit was just reached
         if let Some(func) = &callback {
             if self.termination_cause == TerminationCause::GenerationLimitReached {
-                func(
+                let final_stats = self.stats.last().cloned().unwrap_or_else(|| {
+                    GenerationStats::from_fitness_values(0, &[], is_maximization)
+                });
+                let _ = func(
                     &self.configuration.limit_configuration.max_generations,
                     &self.population,
+                    &final_stats,
                     &self.termination_cause,
                 );
             }
         }
 
         Ok(&self.population)
+    }
+
+    /// Returns per-generation statistics collected during the last run.
+    ///
+    /// The vector is populated during `run()` / `run_with_callback()` and cleared
+    /// at the start of each new run. Each entry corresponds to one generation.
+    pub fn stats(&self) -> &[GenerationStats] {
+        &self.stats
     }
 }
 
