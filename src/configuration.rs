@@ -39,12 +39,17 @@ pub enum LogLevel {
 pub struct SelectionConfiguration {
     pub number_of_couples: usize,
     pub method: Selection,
+    /// Temperature parameter for Boltzmann selection. Controls selective pressure:
+    /// high values → uniform selection, low values → strong selective pressure.
+    /// Only used when `method` is `Selection::Boltzmann`. Default is `1.0`.
+    pub boltzmann_temperature: f64,
 }
 impl Default for SelectionConfiguration {
     fn default() -> Self {
         SelectionConfiguration {
             number_of_couples: 0,
             method: Selection::Tournament,
+            boltzmann_temperature: 1.0,
         }
     }
 }
@@ -61,6 +66,9 @@ pub struct CrossoverConfiguration {
     /// Alpha parameter for BLX-α crossover. Controls exploration range.
     /// Typical value: 0.5. Default is 0.5.
     pub blend_alpha: Option<f64>,
+    /// Alpha parameter for Arithmetic crossover. Controls weighting between parents.
+    /// α=0.5 gives uniform arithmetic crossover (midpoint). Default is 0.5.
+    pub arithmetic_alpha: Option<f64>,
 }
 impl Default for CrossoverConfiguration {
     fn default() -> Self {
@@ -71,6 +79,7 @@ impl Default for CrossoverConfiguration {
             method: Crossover::Uniform,
             sbx_eta: None,
             blend_alpha: None,
+            arithmetic_alpha: None,
         }
     }
 }
@@ -86,6 +95,12 @@ pub struct MutationConfiguration {
     /// Standard deviation for Gaussian mutation. Only used when method is `Mutation::Gaussian`.
     /// Default is 1.0.
     pub sigma: Option<f64>,
+    /// Distribution index for Polynomial mutation. Higher values produce smaller
+    /// perturbations. Typical range: 20–100. Default is 20.0.
+    pub polynomial_eta: Option<f64>,
+    /// Decay parameter for NonUniform mutation. Controls how fast mutation
+    /// magnitude decreases over generations. Typical range: 2–5. Default is 2.0.
+    pub non_uniform_b: Option<f64>,
 }
 impl Default for MutationConfiguration {
     fn default() -> Self {
@@ -95,6 +110,8 @@ impl Default for MutationConfiguration {
             method: Mutation::Swap,
             step: None,
             sigma: None,
+            polynomial_eta: None,
+            non_uniform_b: None,
         }
     }
 }

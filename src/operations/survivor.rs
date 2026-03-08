@@ -1,5 +1,7 @@
 pub use self::age::age_based;
 pub use self::fitness::fitness_based;
+pub use self::mu_comma_lambda::mu_comma_lambda;
+pub use self::mu_plus_lambda::mu_plus_lambda;
 pub(crate) use crate::configuration::LimitConfiguration;
 use crate::error::GaError;
 use crate::traits::{ChromosomeT, SurvivorOperator};
@@ -7,6 +9,8 @@ use crate::traits::{ChromosomeT, SurvivorOperator};
 use super::Survivor;
 pub mod age;
 pub mod fitness;
+pub mod mu_comma_lambda;
+pub mod mu_plus_lambda;
 
 impl SurvivorOperator for Survivor {
     fn select_survivors<U: ChromosomeT>(
@@ -18,6 +22,12 @@ impl SurvivorOperator for Survivor {
         match self {
             Survivor::Fitness => fitness_based(chromosomes, population_size, limit_configuration),
             Survivor::Age => age_based(chromosomes, population_size),
+            Survivor::MuPlusLambda => {
+                mu_plus_lambda(chromosomes, population_size, limit_configuration)
+            }
+            Survivor::MuCommaLambda => {
+                mu_comma_lambda(chromosomes, population_size, limit_configuration)
+            }
         }
         Ok(())
     }

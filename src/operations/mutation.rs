@@ -2,17 +2,47 @@ pub use self::inversion::inversion;
 pub use self::scramble::scramble;
 pub use self::swap::swap;
 use super::Mutation;
+use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
 use crate::traits::{ChromosomeT, MutationOperator};
 use log::warn;
+use std::any::Any;
 
 pub mod bit_flip;
 pub mod creep;
 pub mod gaussian;
+pub mod insertion;
 pub mod inversion;
+pub mod non_uniform;
+pub mod polynomial;
 pub mod scramble;
 pub mod swap;
 pub mod value;
+
+/// Default distribution index for Polynomial mutation when none is configured.
+const DEFAULT_POLYNOMIAL_ETA: f64 = 20.0;
+
+/// Attempt polynomial mutation by downcasting a generic individual to `Range<T>`.
+///
+/// Tries `f64`, `f32`, `i32`, `i64` in order. Returns `Some(Ok(()))` or
+/// `Some(Err(...))` if the type matched, `None` if no supported type matched.
+fn try_polynomial<U: ChromosomeT + 'static>(
+    individual: &mut U,
+    eta_m: f64,
+) -> Option<Result<(), GaError>> {
+    macro_rules! try_type {
+        ($t:ty) => {
+            if let Some(ind) = (individual as &mut dyn Any).downcast_mut::<RangeChromosome<$t>>() {
+                return Some(polynomial::polynomial_mutation(ind, eta_m));
+            }
+        };
+    }
+    try_type!(f64);
+    try_type!(f32);
+    try_type!(i32);
+    try_type!(i64);
+    None
+}
 
 /// Trait for chromosomes that support specialized mutation operators.
 ///
@@ -100,6 +130,25 @@ impl MutationOperator for Mutation {
             Mutation::Gaussian => {
                 let s = sigma.unwrap_or(1.0);
                 individual.gaussian_mutate(s);
+            }
+            Mutation::Polynomial => {
+                let eta = step.unwrap_or(DEFAULT_POLYNOMIAL_ETA);
+                return try_polynomial(individual, eta).unwrap_or_else(|| {
+                    Err(GaError::MutationError(
+                        "Polynomial mutation requires Range<T> chromosomes where T is f64, f32, i32, or i64."
+                            .to_string(),
+                    ))
+                });
+            }
+            Mutation::NonUniform => {
+                return Err(GaError::MutationError(
+                    "Mutation::NonUniform requires generation context (generation, max_generations). \
+                     Call non_uniform::non_uniform_mutation() directly."
+                        .to_string(),
+                ));
+            }
+            Mutation::Insertion => {
+                return insertion::insertion_mutation(individual);
             }
         }
         Ok(())
@@ -189,6 +238,19 @@ where
                  Use Swap, Inversion, or Scramble instead, or implement ValueMutable for your type."
                 .to_string(),
         )),
+        Mutation::Polynomial => Err(GaError::MutationError(
+            "Mutation::Polynomial requires Range<T> chromosomes where T is f64, f32, i32, or i64. \
+                 Use Swap, Inversion, or Scramble instead."
+                .to_string(),
+        )),
+        Mutation::NonUniform => Err(GaError::MutationError(
+            "Mutation::NonUniform requires Range<T> chromosomes and generation context. \
+                 Call non_uniform::non_uniform_mutation() directly."
+                .to_string(),
+        )),
+        Mutation::Insertion => {
+            insertion::insertion_mutation(individual)
+        }
     }
 }
 

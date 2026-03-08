@@ -683,6 +683,7 @@ fn test_selection_factory_rejects_nan_fitness() {
     let config = SelectionConfiguration {
         method: Selection::Random,
         number_of_couples: 1,
+        ..Default::default()
     };
 
     let result = selection::factory(&chromosomes, config, 1);
@@ -713,6 +714,7 @@ fn test_selection_factory_accepts_valid_fitness() {
     let config = SelectionConfiguration {
         method: Selection::Random,
         number_of_couples: 2,
+        ..Default::default()
     };
 
     let result = selection::factory(&chromosomes, config, 1);
@@ -733,6 +735,7 @@ fn test_selection_factory_empty_population() {
     let config = SelectionConfiguration {
         method: Selection::Random,
         number_of_couples: 1,
+        ..Default::default()
     };
     let result = selection::factory(&chromosomes, config, 1);
     assert!(
@@ -752,6 +755,7 @@ fn test_selection_factory_single_chromosome() {
     let config = SelectionConfiguration {
         method: Selection::Random,
         number_of_couples: 1,
+        ..Default::default()
     };
     let result = selection::factory(&chromosomes, config, 1);
     assert!(
@@ -773,6 +777,7 @@ fn test_selection_factory_two_chromosomes_random() {
     let config = SelectionConfiguration {
         method: Selection::Random,
         number_of_couples: 1,
+        ..Default::default()
     };
     let result = selection::factory(&chromosomes, config, 1);
     assert!(
@@ -798,6 +803,7 @@ fn test_selection_factory_roulette_wheel() {
     let config = SelectionConfiguration {
         method: Selection::RouletteWheel,
         number_of_couples: 2,
+        ..Default::default()
     };
     let result = selection::factory(&chromosomes, config, 1);
     assert!(result.is_ok());
@@ -816,6 +822,7 @@ fn test_selection_factory_sus() {
     let config = SelectionConfiguration {
         method: Selection::StochasticUniversalSampling,
         number_of_couples: 2,
+        ..Default::default()
     };
     let result = selection::factory(&chromosomes, config, 1);
     assert!(result.is_ok());
@@ -834,6 +841,7 @@ fn test_selection_factory_tournament() {
     let config = SelectionConfiguration {
         method: Selection::Tournament,
         number_of_couples: 2,
+        ..Default::default()
     };
     let result = selection::factory(&chromosomes, config, 1);
     assert!(result.is_ok());
@@ -852,6 +860,7 @@ fn test_selection_factory_rank() {
     let config = SelectionConfiguration {
         method: Selection::Rank,
         number_of_couples: 2,
+        ..Default::default()
     };
     let result = selection::factory(&chromosomes, config, 1);
     assert!(result.is_ok());

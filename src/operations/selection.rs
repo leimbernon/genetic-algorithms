@@ -2,18 +2,22 @@ use crate::configuration::SelectionConfiguration;
 use crate::error::GaError;
 use crate::traits::{ChromosomeT, SelectionOperator};
 
+pub use self::boltzmann::boltzmann_selection;
 pub use self::fitness_proportionate::roulette_wheel_selection;
 pub use self::fitness_proportionate::stochastic_universal_sampling;
 pub use self::random::random;
 pub use self::rank::rank_selection;
 pub use self::tournament::tournament;
+pub use self::truncation::truncation_selection;
 
 use super::Selection;
 
+pub mod boltzmann;
 pub mod fitness_proportionate;
 pub mod random;
 pub mod rank;
 pub mod tournament;
+pub mod truncation;
 
 impl SelectionOperator for Selection {
     fn select<U>(
@@ -33,6 +37,8 @@ impl SelectionOperator for Selection {
             }
             Selection::Tournament => tournament(chromosomes, number_of_couples, number_of_threads),
             Selection::Rank => rank_selection(chromosomes, number_of_couples),
+            Selection::Boltzmann => boltzmann_selection(chromosomes, number_of_couples, 1.0),
+            Selection::Truncation => truncation_selection(chromosomes, number_of_couples),
         }
     }
 }
@@ -68,11 +74,18 @@ where
         }
     }
 
-    let pairs = configuration.method.select(
-        chromosomes,
-        configuration.number_of_couples,
-        number_of_threads,
-    );
+    let pairs = match configuration.method {
+        Selection::Boltzmann => boltzmann_selection(
+            chromosomes,
+            configuration.number_of_couples,
+            configuration.boltzmann_temperature,
+        ),
+        _ => configuration.method.select(
+            chromosomes,
+            configuration.number_of_couples,
+            number_of_threads,
+        ),
+    };
 
     Ok(pairs)
 }

@@ -1,6 +1,7 @@
 pub use self::cycle::cycle;
 pub use self::multipoint::multipoint;
 pub use self::order::order;
+pub use self::pmx::pmx;
 pub use self::single_point::single_point;
 pub use self::uniform_crossover::uniform;
 pub(crate) use super::Crossover;
@@ -10,10 +11,12 @@ use crate::error::GaError;
 use crate::traits::{ChromosomeT, CrossoverOperator};
 use std::any::Any;
 
+pub mod arithmetic;
 pub mod blend_alpha;
 pub mod cycle;
 pub mod multipoint;
 pub mod order;
+pub mod pmx;
 pub mod sbx;
 pub mod single_point;
 pub mod uniform_crossover;
@@ -96,6 +99,44 @@ fn try_blend_alpha<U: ChromosomeT>(
 const DEFAULT_SBX_ETA: f64 = 2.0;
 /// Default BLX-α alpha parameter when none is configured.
 const DEFAULT_BLEND_ALPHA: f64 = 0.5;
+/// Default arithmetic crossover alpha when none is configured.
+const DEFAULT_ARITHMETIC_ALPHA: f64 = 0.5;
+
+/// Attempt Arithmetic crossover by downcasting generic parents to `Range<T>`.
+///
+/// Tries `f64`, `f32`, `i32`, `i64` in order. Returns `Some(Ok(...))` or
+/// `Some(Err(...))` if the type matched, `None` if no supported type matched.
+fn try_arithmetic<U: ChromosomeT>(
+    parent_1: &U,
+    parent_2: &U,
+    alpha: f64,
+) -> Option<Result<Vec<U>, GaError>> {
+    macro_rules! try_type {
+        ($t:ty) => {
+            if let Some(p1) = (parent_1 as &dyn Any).downcast_ref::<RangeChromosome<$t>>() {
+                if let Some(p2) = (parent_2 as &dyn Any).downcast_ref::<RangeChromosome<$t>>() {
+                    let result = arithmetic::arithmetic(p1, p2, alpha);
+                    return Some(result.map(|children| {
+                        children
+                            .into_iter()
+                            .map(|c| {
+                                let boxed: Box<dyn Any> = Box::new(c);
+                                *boxed
+                                    .downcast::<U>()
+                                    .expect("type confirmed by downcast_ref")
+                            })
+                            .collect()
+                    }));
+                }
+            }
+        };
+    }
+    try_type!(f64);
+    try_type!(f32);
+    try_type!(i32);
+    try_type!(i64);
+    None
+}
 
 impl CrossoverOperator for Crossover {
     fn crossover<U: ChromosomeT>(&self, parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
@@ -109,6 +150,7 @@ impl CrossoverOperator for Crossover {
             Crossover::Uniform => uniform(parent_1, parent_2),
             Crossover::SinglePoint => single_point(parent_1, parent_2),
             Crossover::Order => order(parent_1, parent_2),
+            Crossover::Pmx => pmx(parent_1, parent_2),
             Crossover::Sbx => try_sbx(parent_1, parent_2, DEFAULT_SBX_ETA).unwrap_or_else(|| {
                 Err(GaError::CrossoverError(
                     "SBX crossover requires Range<T> chromosomes where T is f64, f32, i32, or i64."
@@ -119,6 +161,14 @@ impl CrossoverOperator for Crossover {
                 try_blend_alpha(parent_1, parent_2, DEFAULT_BLEND_ALPHA).unwrap_or_else(|| {
                     Err(GaError::CrossoverError(
                         "BLX-α crossover requires Range<T> chromosomes where T is f64, f32, i32, or i64."
+                            .to_string(),
+                    ))
+                })
+            }
+            Crossover::Arithmetic => {
+                try_arithmetic(parent_1, parent_2, DEFAULT_ARITHMETIC_ALPHA).unwrap_or_else(|| {
+                    Err(GaError::CrossoverError(
+                        "Arithmetic crossover requires Range<T> chromosomes where T is f64, f32, i32, or i64."
                             .to_string(),
                     ))
                 })
@@ -142,6 +192,7 @@ impl CrossoverOperator for CrossoverConfiguration {
             Crossover::Uniform => uniform(parent_1, parent_2),
             Crossover::SinglePoint => single_point(parent_1, parent_2),
             Crossover::Order => order(parent_1, parent_2),
+            Crossover::Pmx => pmx(parent_1, parent_2),
             Crossover::Sbx => {
                 let eta = self.sbx_eta.unwrap_or(DEFAULT_SBX_ETA);
                 try_sbx(parent_1, parent_2, eta).unwrap_or_else(|| {
@@ -156,6 +207,15 @@ impl CrossoverOperator for CrossoverConfiguration {
                 try_blend_alpha(parent_1, parent_2, alpha).unwrap_or_else(|| {
                     Err(GaError::CrossoverError(
                         "BLX-α crossover requires Range<T> chromosomes where T is f64, f32, i32, or i64."
+                            .to_string(),
+                    ))
+                })
+            }
+            Crossover::Arithmetic => {
+                let alpha = self.arithmetic_alpha.unwrap_or(DEFAULT_ARITHMETIC_ALPHA);
+                try_arithmetic(parent_1, parent_2, alpha).unwrap_or_else(|| {
+                    Err(GaError::CrossoverError(
+                        "Arithmetic crossover requires Range<T> chromosomes where T is f64, f32, i32, or i64."
                             .to_string(),
                     ))
                 })

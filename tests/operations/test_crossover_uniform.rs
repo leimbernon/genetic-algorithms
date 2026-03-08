@@ -24,12 +24,8 @@ fn uniform_crossover_preserves_length_and_values_from_parents() {
     let p2 = build_range_chromosome_from(&(0..n).rev().collect::<Vec<_>>(), n);
 
     let cfg = CrossoverConfiguration {
-        number_of_points: None,
-        probability_max: None,
-        probability_min: None,
         method: Crossover::Uniform,
-        sbx_eta: None,
-        blend_alpha: None,
+        ..Default::default()
     };
 
     let children = crossover::factory(&p1, &p2, cfg).expect("Crossover should succeed");
