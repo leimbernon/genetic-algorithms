@@ -4,7 +4,7 @@ use std::fmt;
 ///
 /// This enum covers configuration errors, validation errors,
 /// operator errors, and initialization errors.
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum GaError {
     /// A configuration parameter is invalid or missing.
     ConfigurationError(String),

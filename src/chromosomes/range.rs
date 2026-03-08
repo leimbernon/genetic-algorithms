@@ -2,6 +2,7 @@ use crate::fitness::FitnessFnWrapper;
 use crate::genotypes::Range as RangeGenotype;
 use crate::traits::ChromosomeT;
 use std::borrow::Cow;
+use std::fmt;
 use std::fmt::Debug;
 
 /// A chromosome that uses a range genotype.
@@ -143,5 +144,11 @@ impl<T: Sync + Send + Clone + Default + Debug + 'static> ChromosomeT for Range<T
 
     fn age(&self) -> usize {
         self.age
+    }
+}
+
+impl<T: Sync + Send + Clone + Default + Debug + fmt::Display> fmt::Display for Range<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[{}] fitness={:.6}", self.phenotype(), self.fitness)
     }
 }

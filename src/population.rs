@@ -2,6 +2,8 @@ use crate::configuration::ProblemSolving;
 use crate::traits::ChromosomeT;
 use log::{debug, trace};
 use rayon::prelude::*;
+use std::fmt;
+use std::ops::{Index, IndexMut};
 
 /// Population of chromosomes with aggregate statistics and best tracking.
 ///
@@ -182,4 +184,86 @@ fn find_best_index<U: ChromosomeT>(
         }
     }
     Some(best_idx)
+}
+
+// ---------------------------------------------------------------------------
+// Standard trait implementations for Population<U>
+// ---------------------------------------------------------------------------
+
+impl<U: ChromosomeT + Clone> Clone for Population<U> {
+    fn clone(&self) -> Self {
+        Population {
+            chromosomes: self.chromosomes.clone(),
+            best_chromosome: self.best_chromosome.clone(),
+            best_chromosome_is_set: self.best_chromosome_is_set,
+            generation_numbers: self.generation_numbers.clone(),
+            f_avg: self.f_avg,
+            f_max: self.f_max,
+        }
+    }
+}
+
+impl<U: ChromosomeT + fmt::Debug> fmt::Debug for Population<U> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Population")
+            .field("size", &self.chromosomes.len())
+            .field("f_avg", &self.f_avg)
+            .field("f_max", &self.f_max)
+            .field("best_chromosome_is_set", &self.best_chromosome_is_set)
+            .finish()
+    }
+}
+
+impl<U: ChromosomeT> Default for Population<U> {
+    fn default() -> Self {
+        Population::new_empty()
+    }
+}
+
+impl<U: ChromosomeT> IntoIterator for Population<U> {
+    type Item = U;
+    type IntoIter = std::vec::IntoIter<U>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.chromosomes.into_iter()
+    }
+}
+
+impl<'a, U: ChromosomeT> IntoIterator for &'a Population<U> {
+    type Item = &'a U;
+    type IntoIter = std::slice::Iter<'a, U>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.chromosomes.iter()
+    }
+}
+
+impl<'a, U: ChromosomeT> IntoIterator for &'a mut Population<U> {
+    type Item = &'a mut U;
+    type IntoIter = std::slice::IterMut<'a, U>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.chromosomes.iter_mut()
+    }
+}
+
+impl<U: ChromosomeT> FromIterator<U> for Population<U> {
+    fn from_iter<I: IntoIterator<Item = U>>(iter: I) -> Self {
+        let chromosomes: Vec<U> = iter.into_iter().collect();
+        Population::new(chromosomes)
+    }
+}
+
+impl<U: ChromosomeT> Index<usize> for Population<U> {
+    type Output = U;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.chromosomes[index]
+    }
+}
+
+impl<U: ChromosomeT> IndexMut<usize> for Population<U> {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.chromosomes[index]
+    }
 }

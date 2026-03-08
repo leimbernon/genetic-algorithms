@@ -20,12 +20,20 @@
 /// The binary gene can be used in mutation and crossover operations to
 /// evolve populations in a genetic algorithm.
 use crate::traits::GeneT;
+use std::fmt;
 
-#[derive(Debug, Copy, Clone, Default, PartialEq)]
+#[derive(Debug, Copy, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Binary {
     pub id: i32,
     pub value: bool,
 }
+
+impl fmt::Display for Binary {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}", self.id, if self.value { '1' } else { '0' })
+    }
+}
+
 impl GeneT for Binary {
     fn id(&self) -> i32 {
         self.id

@@ -1,4 +1,6 @@
 use crate::traits::GeneT;
+use std::fmt;
+use std::hash::{Hash, Hasher};
 
 /// A range gene with an identifier, a list of ranges, and a value.
 ///
@@ -27,6 +29,25 @@ pub struct Range<T> {
     pub id: i32,
     pub ranges: Vec<(T, T)>,
     pub value: T,
+}
+
+impl<T: Eq> Eq for Range<T> {}
+
+impl<T: Hash> Hash for Range<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+        for (lo, hi) in &self.ranges {
+            lo.hash(state);
+            hi.hash(state);
+        }
+        self.value.hash(state);
+    }
+}
+
+impl<T: fmt::Display> fmt::Display for Range<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}", self.id, self.value)
+    }
 }
 
 impl<T: Default> Default for Range<T> {

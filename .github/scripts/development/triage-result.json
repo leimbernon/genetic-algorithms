@@ -1,0 +1,10 @@
+{
+  "issue_number": 138,
+  "issue_title": "Phase 4: Advanced features",
+  "branch_name": "feature/138-phase-4-advanced-features",
+  "base_branch": "milestone/restructuring-and-optimisation",
+  "branch_type": "feature",
+  "requirements_met": true,
+  "questions": [],
+  "summary": "Development started for issue #138: Phase 4: Advanced features"
+}

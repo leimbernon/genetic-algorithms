@@ -9,7 +9,7 @@ use crate::{
     },
 };
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum ProblemSolving {
     Minimization,
     Maximization,
@@ -25,7 +25,7 @@ impl fmt::Display for ProblemSolving {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum LogLevel {
     Off,
     Error,
@@ -35,7 +35,7 @@ pub enum LogLevel {
     Trace,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct SelectionConfiguration {
     pub number_of_couples: usize,
     pub method: Selection,
@@ -49,7 +49,7 @@ impl Default for SelectionConfiguration {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct CrossoverConfiguration {
     pub number_of_points: Option<usize>,
     pub probability_max: Option<f64>,
@@ -75,7 +75,7 @@ impl Default for CrossoverConfiguration {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct MutationConfiguration {
     pub probability_max: Option<f64>,
     pub probability_min: Option<f64>,
@@ -99,7 +99,7 @@ impl Default for MutationConfiguration {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct LimitConfiguration {
     pub problem_solving: ProblemSolving,
     pub max_generations: usize,
@@ -123,7 +123,7 @@ impl Default for LimitConfiguration {
     }
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct SaveProgressConfiguration {
     pub save_progress: bool,
     pub save_progress_interval: usize,
@@ -133,7 +133,7 @@ pub struct SaveProgressConfiguration {
 /// Compound stopping criteria for the GA.
 ///
 /// Multiple criteria can be enabled simultaneously. The GA stops when **any** of them is met.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct StoppingCriteria {
     /// Stop after N generations without fitness improvement.
     /// `None` means this criterion is disabled.
@@ -146,7 +146,7 @@ pub struct StoppingCriteria {
     pub max_duration_secs: Option<f64>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct GaConfiguration {
     pub adaptive_ga: bool,
     pub number_of_threads: usize,

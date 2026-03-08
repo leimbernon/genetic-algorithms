@@ -3,7 +3,7 @@ pub mod mutation;
 pub mod selection;
 pub mod survivor;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Selection {
     Random,
     RouletteWheel,
@@ -13,7 +13,7 @@ pub enum Selection {
     /// probability is proportional to rank, avoiding dominance by very fit individuals.
     Rank,
 }
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Crossover {
     Cycle,
     MultiPoint,
@@ -27,7 +27,7 @@ pub enum Crossover {
     /// Uses an alpha parameter configured via `CrossoverConfiguration`.
     BlendAlpha,
 }
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Mutation {
     Swap,
     Inversion,
@@ -41,7 +41,7 @@ pub enum Mutation {
     /// Requires a sigma configured via `MutationConfiguration`.
     Gaussian,
 }
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Survivor {
     Fitness,
     Age,

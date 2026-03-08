@@ -26,7 +26,7 @@ use std::time::Instant;
 /// - `ConvergenceReached`: fitness standard deviation dropped below threshold.
 /// - `TimeLimitReached`: elapsed wall-clock time exceeded the configured limit.
 /// - `NotTerminated`: internal state before the run finalizes or if a callback is invoked mid-run.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TerminationCause {
     GenerationLimitReached,
     FitnessTargetReached,

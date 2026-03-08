@@ -4,6 +4,7 @@ use crate::genotypes::Binary as BinaryGenotype;
 use crate::operations::mutation::ValueMutable;
 use crate::traits::ChromosomeT;
 use std::borrow::Cow;
+use std::fmt;
 
 /// A chromosome that uses a binary genotype.
 ///
@@ -153,5 +154,11 @@ impl Binary {
 impl ValueMutable for Binary {
     fn bit_flip_mutate(&mut self) {
         crate::operations::mutation::bit_flip::bit_flip(self);
+    }
+}
+
+impl fmt::Display for Binary {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[{}] fitness={:.6}", self.phenotype(), self.fitness)
     }
 }
