@@ -24,6 +24,7 @@ use genetic_algorithms::configuration::GaConfiguration;
 // ---------------------------------------------------------------------------
 
 #[derive(Debug, Copy, Clone, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Gene {
     pub id: i32,
 }
@@ -38,10 +39,12 @@ impl GeneT for Gene {
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 struct SimpleChromosome {
     dna: Vec<Gene>,
     fitness: f64,
     age: usize,
+    #[cfg_attr(feature = "serde", serde(skip, default))]
     fitness_fn: FitnessFnWrapper<Gene>,
 }
 impl ChromosomeT for SimpleChromosome {
