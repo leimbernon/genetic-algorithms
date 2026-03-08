@@ -1,5 +1,20 @@
 use crate::island::topology::MigrationTopology;
 
+/// Policy for selecting migrants and replacing individuals in the destination island.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum MigrationPolicy {
+    /// The best individuals from the source replace the worst in the destination.
+    #[default]
+    BestReplaceWorst,
+    /// Random individuals from the source replace the worst in the destination.
+    RandomReplaceWorst,
+    /// Migrants are selected via tournament from the source; they replace the worst
+    /// in the destination.
+    TournamentMigrant,
+    /// Random individuals from the source replace random individuals in the destination.
+    RandomReplaceRandom,
+}
+
 /// Configuration for the island model genetic algorithm.
 ///
 /// Controls how multiple populations (islands) evolve independently and
@@ -31,6 +46,8 @@ pub struct IslandConfiguration {
     pub migration_count: usize,
     /// Topology governing which islands exchange individuals.
     pub topology: MigrationTopology,
+    /// Policy for selecting migrants and placing them in destinations.
+    pub migration_policy: MigrationPolicy,
 }
 
 impl Default for IslandConfiguration {
@@ -40,6 +57,7 @@ impl Default for IslandConfiguration {
             migration_interval: 10,
             migration_count: 1,
             topology: MigrationTopology::Ring,
+            migration_policy: MigrationPolicy::BestReplaceWorst,
         }
     }
 }
@@ -89,6 +107,16 @@ impl IslandConfiguration {
         self.topology = topology;
         self
     }
+
+    /// Sets the migration policy.
+    ///
+    /// # Arguments
+    ///
+    /// * `policy` - The policy for selecting migrants and replacing individuals.
+    pub fn with_migration_policy(mut self, policy: MigrationPolicy) -> Self {
+        self.migration_policy = policy;
+        self
+    }
 }
 
 #[cfg(test)]
@@ -102,6 +130,7 @@ mod tests {
         assert_eq!(config.migration_interval, 10);
         assert_eq!(config.migration_count, 1);
         assert_eq!(config.topology, MigrationTopology::Ring);
+        assert_eq!(config.migration_policy, MigrationPolicy::BestReplaceWorst);
     }
 
     #[test]
@@ -110,11 +139,27 @@ mod tests {
             .with_num_islands(8)
             .with_migration_interval(20)
             .with_migration_count(3)
-            .with_topology(MigrationTopology::FullyConnected);
+            .with_topology(MigrationTopology::FullyConnected)
+            .with_migration_policy(MigrationPolicy::RandomReplaceWorst);
 
         assert_eq!(config.num_islands, 8);
         assert_eq!(config.migration_interval, 20);
         assert_eq!(config.migration_count, 3);
         assert_eq!(config.topology, MigrationTopology::FullyConnected);
+        assert_eq!(config.migration_policy, MigrationPolicy::RandomReplaceWorst);
+    }
+
+    #[test]
+    fn test_island_configuration_migration_policy_variants() {
+        let config =
+            IslandConfiguration::new().with_migration_policy(MigrationPolicy::TournamentMigrant);
+        assert_eq!(config.migration_policy, MigrationPolicy::TournamentMigrant);
+
+        let config =
+            IslandConfiguration::new().with_migration_policy(MigrationPolicy::RandomReplaceRandom);
+        assert_eq!(
+            config.migration_policy,
+            MigrationPolicy::RandomReplaceRandom
+        );
     }
 }

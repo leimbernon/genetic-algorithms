@@ -1,16 +1,16 @@
 use crate::configuration::ProblemSolving;
-use crate::island::configuration::IslandConfiguration;
+use crate::island::configuration::{IslandConfiguration, MigrationPolicy};
 use crate::island::topology::neighbors;
 use crate::nsga2::pareto::ParetoIndividual;
 use crate::population::Population;
 use crate::traits::ChromosomeT;
 use log::debug;
+use rand::Rng;
 
 /// Performs migration between islands.
 ///
-/// Selects the best `migration_count` individuals from each island and copies them
-/// to the neighbor islands according to the configured topology. Migrants replace
-/// the worst individuals in the destination island.
+/// Selects migrants from each island and distributes them to neighbor islands
+/// according to the configured topology and migration policy.
 ///
 /// # Arguments
 ///
@@ -54,10 +54,21 @@ where
         }
     }
 
-    // Collect migrants from each island (best M individuals)
+    // Collect migrants from each island based on policy
+    let mut rng = rand::rng();
     let mut all_migrants: Vec<Vec<U>> = Vec::with_capacity(num_islands);
     for island in islands.iter() {
-        let migrants = select_best(island, config.migration_count, problem_solving);
+        let migrants = match config.migration_policy {
+            MigrationPolicy::BestReplaceWorst => {
+                select_best(island, config.migration_count, problem_solving)
+            }
+            MigrationPolicy::RandomReplaceWorst | MigrationPolicy::RandomReplaceRandom => {
+                select_random(island, config.migration_count, &mut rng)
+            }
+            MigrationPolicy::TournamentMigrant => {
+                select_tournament(island, config.migration_count, problem_solving, &mut rng)
+            }
+        };
         all_migrants.push(migrants);
     }
 
@@ -66,13 +77,23 @@ where
         let neighbors = neighbors(source_idx, num_islands, &config.topology);
         for &dest_idx in &neighbors {
             let migrants = source_migrants.clone();
-            replace_worst(&mut islands[dest_idx], &migrants, problem_solving);
+            match config.migration_policy {
+                MigrationPolicy::BestReplaceWorst
+                | MigrationPolicy::RandomReplaceWorst
+                | MigrationPolicy::TournamentMigrant => {
+                    replace_worst(&mut islands[dest_idx], &migrants, problem_solving);
+                }
+                MigrationPolicy::RandomReplaceRandom => {
+                    replace_random(&mut islands[dest_idx], &migrants, &mut rng);
+                }
+            }
             debug!(
                 target: "island_events",
-                "Migrated {} individuals from island {} to island {}",
+                "Migrated {} individuals from island {} to island {} (policy={:?})",
                 migrants.len(),
                 source_idx,
-                dest_idx
+                dest_idx,
+                config.migration_policy
             );
         }
     }
@@ -109,6 +130,58 @@ where
         .collect()
 }
 
+/// Selects `count` random individuals from a population.
+fn select_random<U>(population: &Population<U>, count: usize, rng: &mut impl Rng) -> Vec<U>
+where
+    U: ChromosomeT,
+{
+    let n = population.size();
+    (0..count)
+        .map(|_| {
+            let idx = rng.random_range(0..n);
+            population.chromosomes[idx].clone()
+        })
+        .collect()
+}
+
+/// Selects `count` individuals from a population via binary tournament.
+fn select_tournament<U>(
+    population: &Population<U>,
+    count: usize,
+    problem_solving: ProblemSolving,
+    rng: &mut impl Rng,
+) -> Vec<U>
+where
+    U: ChromosomeT,
+{
+    let n = population.size();
+    (0..count)
+        .map(|_| {
+            let i = rng.random_range(0..n);
+            let j = rng.random_range(0..n);
+            let fi = population.chromosomes[i].fitness();
+            let fj = population.chromosomes[j].fitness();
+            let winner = match problem_solving {
+                ProblemSolving::Minimization | ProblemSolving::FixedFitness => {
+                    if fi <= fj {
+                        i
+                    } else {
+                        j
+                    }
+                }
+                ProblemSolving::Maximization => {
+                    if fi >= fj {
+                        i
+                    } else {
+                        j
+                    }
+                }
+            };
+            population.chromosomes[winner].clone()
+        })
+        .collect()
+}
+
 /// Replaces the worst `migrants.len()` individuals in the population with the migrants.
 fn replace_worst<U>(population: &mut Population<U>, migrants: &[U], problem_solving: ProblemSolving)
 where
@@ -136,6 +209,23 @@ where
     let replace_count = migrants.len().min(population.size());
     for (m_idx, &worst_idx) in indices.iter().take(replace_count).enumerate() {
         population.chromosomes[worst_idx] = migrants[m_idx].clone();
+    }
+}
+
+/// Replaces `migrants.len()` random individuals in the population with the migrants.
+fn replace_random<U>(population: &mut Population<U>, migrants: &[U], rng: &mut impl Rng)
+where
+    U: ChromosomeT,
+{
+    if migrants.is_empty() || population.size() == 0 {
+        return;
+    }
+
+    let n = population.size();
+    let replace_count = migrants.len().min(n);
+    for (m_idx, _) in migrants.iter().enumerate().take(replace_count) {
+        let target = rng.random_range(0..n);
+        population.chromosomes[target] = migrants[m_idx].clone();
     }
 }
 
@@ -526,6 +616,93 @@ mod tests {
         assert!(
             !has_rank_3,
             "Island 1 should no longer contain the rank-3 individual"
+        );
+    }
+
+    // ---- Migration policy tests ----
+
+    #[test]
+    fn test_migrate_random_replace_worst_policy() {
+        let mut islands = vec![
+            make_population(&[10.0, 20.0, 30.0]),
+            make_population(&[100.0, 200.0, 300.0]),
+        ];
+        let config = IslandConfiguration::new()
+            .with_num_islands(2)
+            .with_migration_count(1)
+            .with_topology(MigrationTopology::Ring)
+            .with_migration_policy(MigrationPolicy::RandomReplaceWorst);
+
+        let result = migrate(&mut islands, &config, ProblemSolving::Minimization);
+        assert!(result.is_ok());
+
+        // Island 1 should no longer have 300.0 (worst) — it should be replaced
+        // by a random migrant from island 0
+        let island1_fitnesses: Vec<f64> =
+            islands[1].chromosomes.iter().map(|c| c.fitness()).collect();
+        let has_original_worst = island1_fitnesses.contains(&300.0);
+        let has_migrant = island1_fitnesses
+            .iter()
+            .any(|f| [10.0, 20.0, 30.0].contains(f));
+        // The worst should be replaced (since there's only 1 migrant, 300.0 is replaced)
+        assert!(
+            !has_original_worst || has_migrant,
+            "Worst individual should be replaced or a migrant should be present"
+        );
+    }
+
+    #[test]
+    fn test_migrate_random_replace_random_policy() {
+        let mut islands = vec![
+            make_population(&[10.0, 20.0, 30.0]),
+            make_population(&[100.0, 200.0, 300.0]),
+        ];
+        let config = IslandConfiguration::new()
+            .with_num_islands(2)
+            .with_migration_count(1)
+            .with_topology(MigrationTopology::Ring)
+            .with_migration_policy(MigrationPolicy::RandomReplaceRandom);
+
+        let result = migrate(&mut islands, &config, ProblemSolving::Minimization);
+        assert!(result.is_ok());
+
+        // After migration, island 1 should contain at least one individual
+        // from island 0 (the migrant replaces a random individual)
+        let island1_fitnesses: Vec<f64> =
+            islands[1].chromosomes.iter().map(|c| c.fitness()).collect();
+        let has_migrant = island1_fitnesses
+            .iter()
+            .any(|f| [10.0, 20.0, 30.0].contains(f));
+        assert!(
+            has_migrant,
+            "Island 1 should contain a migrant from island 0"
+        );
+    }
+
+    #[test]
+    fn test_migrate_tournament_policy() {
+        let mut islands = vec![
+            make_population(&[10.0, 20.0, 30.0]),
+            make_population(&[100.0, 200.0, 300.0]),
+        ];
+        let config = IslandConfiguration::new()
+            .with_num_islands(2)
+            .with_migration_count(1)
+            .with_topology(MigrationTopology::Ring)
+            .with_migration_policy(MigrationPolicy::TournamentMigrant);
+
+        let result = migrate(&mut islands, &config, ProblemSolving::Minimization);
+        assert!(result.is_ok());
+
+        // After migration, island 1 should have a migrant from island 0
+        let island1_fitnesses: Vec<f64> =
+            islands[1].chromosomes.iter().map(|c| c.fitness()).collect();
+        let has_migrant = island1_fitnesses
+            .iter()
+            .any(|f| [10.0, 20.0, 30.0].contains(f));
+        assert!(
+            has_migrant,
+            "Island 1 should contain a tournament-selected migrant"
         );
     }
 }

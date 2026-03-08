@@ -38,6 +38,10 @@ use std::sync::Arc;
 ///
 /// Runs multiple GA populations in parallel with periodic migration.
 ///
+/// Each island can use a different `GaConfiguration` for heterogeneous evolution
+/// strategies. When `ga_configs` has fewer entries than the number of islands,
+/// the last entry is reused for the remaining islands.
+///
 /// # Type Parameters
 ///
 /// * `U` - Chromosome type implementing `ChromosomeT`.
@@ -47,8 +51,9 @@ where
 {
     /// Island model configuration.
     pub island_config: IslandConfiguration,
-    /// Base GA configuration applied to each island.
-    pub ga_config: GaConfiguration,
+    /// Per-island GA configurations. If fewer than `num_islands`, the last entry
+    /// is cycled for the remaining islands.
+    pub ga_configs: Vec<GaConfiguration>,
     /// The populations for each island.
     pub islands: Vec<Population<U>>,
     /// Alleles template for initialization.
@@ -63,12 +68,12 @@ impl<U> IslandGa<U>
 where
     U: ChromosomeT,
 {
-    /// Creates a new `IslandGa` with the given configurations.
+    /// Creates a new `IslandGa` with a single shared GA configuration for all islands.
     ///
     /// # Arguments
     ///
     /// * `island_config` - Configuration for the island model.
-    /// * `ga_config` - Base GA configuration for each island.
+    /// * `ga_config` - Base GA configuration applied to each island.
     ///
     /// # Returns
     ///
@@ -76,11 +81,53 @@ where
     pub fn new(island_config: IslandConfiguration, ga_config: GaConfiguration) -> Self {
         IslandGa {
             island_config,
-            ga_config,
+            ga_configs: vec![ga_config],
             islands: Vec::new(),
             alleles: Vec::new(),
             initialization_fn: None,
             fitness_fn: None,
+        }
+    }
+
+    /// Creates a new `IslandGa` with per-island GA configurations.
+    ///
+    /// When `configs` has fewer entries than `num_islands`, the last entry is
+    /// repeated for the remaining islands. This allows heterogeneous evolution
+    /// strategies — e.g. different mutation rates or selection methods per island.
+    ///
+    /// # Arguments
+    ///
+    /// * `island_config` - Configuration for the island model.
+    /// * `configs` - One or more GA configurations. Must not be empty.
+    ///
+    /// # Returns
+    ///
+    /// A new `IslandGa` instance.
+    pub fn with_heterogeneous_configs(
+        island_config: IslandConfiguration,
+        configs: Vec<GaConfiguration>,
+    ) -> Self {
+        IslandGa {
+            island_config,
+            ga_configs: configs,
+            islands: Vec::new(),
+            alleles: Vec::new(),
+            initialization_fn: None,
+            fitness_fn: None,
+        }
+    }
+
+    /// Returns the effective GA configuration for a given island index.
+    ///
+    /// If `ga_configs` has fewer entries than the number of islands, the last
+    /// entry is returned for out-of-range indices.
+    fn config_for_island(&self, island_index: usize) -> &GaConfiguration {
+        if island_index < self.ga_configs.len() {
+            &self.ga_configs[island_index]
+        } else {
+            self.ga_configs
+                .last()
+                .expect("ga_configs must not be empty")
         }
     }
 
@@ -145,6 +192,11 @@ where
                 "migration_count must be > 0".to_string(),
             ));
         }
+        if self.ga_configs.is_empty() {
+            return Err(GaError::InvalidIslandConfiguration(
+                "ga_configs must not be empty".to_string(),
+            ));
+        }
         if self.initialization_fn.is_none() {
             return Err(GaError::InvalidIslandConfiguration(
                 "initialization_fn is required".to_string(),
@@ -155,17 +207,23 @@ where
                 "fitness_fn is required".to_string(),
             ));
         }
-        let pop_size = self.ga_config.limit_configuration.population_size;
-        if self.island_config.migration_count >= pop_size {
-            return Err(GaError::InvalidIslandConfiguration(format!(
-                "migration_count ({}) must be < population_size ({})",
-                self.island_config.migration_count, pop_size
-            )));
+        // Check migration count against the smallest population size across all configs
+        for (i, config) in self.ga_configs.iter().enumerate() {
+            let pop_size = config.limit_configuration.population_size;
+            if self.island_config.migration_count >= pop_size {
+                return Err(GaError::InvalidIslandConfiguration(format!(
+                    "migration_count ({}) must be < population_size ({}) for config index {}",
+                    self.island_config.migration_count, pop_size, i
+                )));
+            }
         }
         Ok(())
     }
 
     /// Initializes all islands with random populations.
+    ///
+    /// Each island uses its own `GaConfiguration` (from `ga_configs`) to determine
+    /// population size and gene parameters.
     ///
     /// # Errors
     ///
@@ -180,9 +238,6 @@ where
             .ok_or_else(|| GaError::InitializationError("No fitness function set".to_string()))?;
 
         let num_islands = self.island_config.num_islands;
-        let pop_size = self.ga_config.limit_configuration.population_size;
-        let genes_per_chrom = self.ga_config.limit_configuration.genes_per_chromosome;
-        let alleles_can_repeat = self.ga_config.limit_configuration.alleles_can_be_repeated;
 
         let alleles = if self.alleles.is_empty() {
             None
@@ -193,6 +248,11 @@ where
         self.islands = Vec::with_capacity(num_islands);
 
         for island_idx in 0..num_islands {
+            let cfg = self.config_for_island(island_idx);
+            let pop_size = cfg.limit_configuration.population_size;
+            let genes_per_chrom = cfg.limit_configuration.genes_per_chromosome;
+            let alleles_can_repeat = cfg.limit_configuration.alleles_can_be_repeated;
+
             let chromosomes = crate::traits::initialize_chromosomes::<U>(
                 pop_size,
                 genes_per_chrom,
@@ -257,9 +317,11 @@ where
         self.validate()?;
         self.initialize()?;
 
-        let max_generations = self.ga_config.limit_configuration.max_generations;
-        let problem_solving = self.ga_config.limit_configuration.problem_solving;
-        let fitness_target = self.ga_config.limit_configuration.fitness_target;
+        // Use the first config's limit settings for the global run parameters
+        let base_config = self.config_for_island(0);
+        let max_generations = base_config.limit_configuration.max_generations;
+        let problem_solving = base_config.limit_configuration.problem_solving;
+        let fitness_target = base_config.limit_configuration.fitness_target;
 
         info!(
             target: "island_events",
@@ -303,8 +365,7 @@ where
 
     /// Performs one generation of evolution on each island.
     ///
-    /// Uses the configured selection, crossover, mutation and survivor operators
-    /// via the standard factory functions.
+    /// Each island uses its own `GaConfiguration` for operator parameters.
     fn evolve_islands_one_generation(
         &mut self,
         _problem_solving: ProblemSolving,
@@ -313,79 +374,101 @@ where
         use rand::Rng;
         use rayon::prelude::*;
 
-        let selection_config = self.ga_config.selection_configuration;
-        let crossover_config = self.ga_config.crossover_configuration;
-        let mutation_config = self.ga_config.mutation_configuration;
-        let survivor_method = self.ga_config.survivor;
-        let limit_config = self.ga_config.limit_configuration;
-        let pop_size = limit_config.population_size;
         let fitness_fn = self
             .fitness_fn
             .as_ref()
             .ok_or_else(|| GaError::ConfigurationError("No fitness function set".to_string()))?;
 
         let fitness_fn = Arc::clone(fitness_fn);
-        let num_threads = self.ga_config.number_of_threads;
 
-        self.islands.par_iter_mut().try_for_each(|island| {
-            // Selection: returns Vec<(usize, usize)> parent index pairs
-            let parent_pairs =
-                selection::factory(&island.chromosomes, selection_config, num_threads)?;
+        // Build a per-island config snapshot so we can move into the parallel closure.
+        // Each tuple holds (selection, crossover, mutation, survivor, limit, num_threads).
+        let island_configs: Vec<_> = (0..self.islands.len())
+            .map(|i| {
+                let cfg = self.config_for_island(i);
+                (
+                    cfg.selection_configuration,
+                    cfg.crossover_configuration,
+                    cfg.mutation_configuration,
+                    cfg.survivor,
+                    cfg.limit_configuration,
+                    cfg.number_of_threads,
+                )
+            })
+            .collect();
 
-            // Crossover: iterate over parent pairs
-            let mut rng = rand::rng();
-            let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
+        self.islands
+            .par_iter_mut()
+            .enumerate()
+            .try_for_each(|(idx, island)| {
+                let (
+                    selection_config,
+                    crossover_config,
+                    mutation_config,
+                    survivor_method,
+                    limit_config,
+                    num_threads,
+                ) = island_configs[idx];
+                let pop_size = limit_config.population_size;
 
-            let mut offspring: Vec<U> = Vec::new();
-            for &(idx_a, idx_b) in &parent_pairs {
-                let p: f64 = rng.random();
-                if p <= crossover_prob {
-                    let children = crossover::factory(
-                        &island.chromosomes[idx_a],
-                        &island.chromosomes[idx_b],
-                        crossover_config,
-                    )?;
-                    offspring.extend(children);
-                } else {
-                    offspring.push(island.chromosomes[idx_a].clone());
-                    offspring.push(island.chromosomes[idx_b].clone());
+                // Selection: returns Vec<(usize, usize)> parent index pairs
+                let parent_pairs =
+                    selection::factory(&island.chromosomes, selection_config, num_threads)?;
+
+                // Crossover: iterate over parent pairs
+                let mut rng = rand::rng();
+                let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
+
+                let mut offspring: Vec<U> = Vec::new();
+                for &(idx_a, idx_b) in &parent_pairs {
+                    let p: f64 = rng.random();
+                    if p <= crossover_prob {
+                        let children = crossover::factory(
+                            &island.chromosomes[idx_a],
+                            &island.chromosomes[idx_b],
+                            crossover_config,
+                        )?;
+                        offspring.extend(children);
+                    } else {
+                        offspring.push(island.chromosomes[idx_a].clone());
+                        offspring.push(island.chromosomes[idx_b].clone());
+                    }
                 }
-            }
 
-            // Mutation
-            let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
-            for child in offspring.iter_mut() {
-                let p: f64 = rng.random();
-                if p <= mut_prob {
-                    mutation::factory_with_params(
-                        mutation_config.method,
-                        child,
-                        mutation_config.step,
-                        mutation_config.sigma,
-                    )?;
+                // Mutation
+                let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
+                for child in offspring.iter_mut() {
+                    let p: f64 = rng.random();
+                    if p <= mut_prob {
+                        mutation::factory_with_params(
+                            mutation_config.method,
+                            child,
+                            mutation_config.step,
+                            mutation_config.sigma,
+                        )?;
+                    }
                 }
-            }
 
-            // Assign fitness to offspring
-            for child in offspring.iter_mut() {
-                let ff = Arc::clone(&fitness_fn);
-                child.set_fitness_fn(move |genes| ff(genes));
-                child.calculate_fitness();
-            }
+                // Assign fitness to offspring
+                for child in offspring.iter_mut() {
+                    let ff = Arc::clone(&fitness_fn);
+                    child.set_fitness_fn(move |genes| ff(genes));
+                    child.calculate_fitness();
+                }
 
-            // Combine parent population with offspring
-            island.chromosomes.append(&mut offspring);
+                // Combine parent population with offspring
+                island.chromosomes.append(&mut offspring);
 
-            // Survivor selection: trims in-place to pop_size
-            survivor::factory(
-                survivor_method,
-                &mut island.chromosomes,
-                pop_size,
-                limit_config,
-            )?;
+                // Survivor selection: trims in-place to pop_size
+                survivor::factory(
+                    survivor_method,
+                    &mut island.chromosomes,
+                    pop_size,
+                    limit_config,
+                )?;
 
-            Ok(())
-        })
+                Ok(())
+            })
     }
 }
 
@@ -426,6 +509,75 @@ mod tests {
         let island_ga = IslandGa::<crate::chromosomes::Binary>::new(config, ga_config)
             .with_initialization_fn(|_, _, _| vec![])
             .with_fitness_fn(|_| 0.0);
+
+        let result = island_ga.validate();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_island_ga_heterogeneous_configs() {
+        let mut config1 = GaConfiguration::default();
+        config1.limit_configuration.population_size = 20;
+
+        let mut config2 = GaConfiguration::default();
+        config2.limit_configuration.population_size = 30;
+
+        let island_config = IslandConfiguration::new().with_num_islands(2);
+        let island_ga = IslandGa::<crate::chromosomes::Binary>::with_heterogeneous_configs(
+            island_config,
+            vec![config1, config2],
+        )
+        .with_initialization_fn(|_, _, _| vec![])
+        .with_fitness_fn(|_| 0.0);
+
+        assert_eq!(island_ga.ga_configs.len(), 2);
+        assert_eq!(
+            island_ga
+                .config_for_island(0)
+                .limit_configuration
+                .population_size,
+            20
+        );
+        assert_eq!(
+            island_ga
+                .config_for_island(1)
+                .limit_configuration
+                .population_size,
+            30
+        );
+    }
+
+    #[test]
+    fn test_island_ga_config_for_island_cycles_last() {
+        let mut config = GaConfiguration::default();
+        config.limit_configuration.population_size = 50;
+
+        let island_config = IslandConfiguration::new().with_num_islands(4);
+        let island_ga = IslandGa::<crate::chromosomes::Binary>::new(island_config, config);
+
+        // Only one config — all islands should get the same one
+        for i in 0..4 {
+            assert_eq!(
+                island_ga
+                    .config_for_island(i)
+                    .limit_configuration
+                    .population_size,
+                50
+            );
+        }
+    }
+
+    #[test]
+    fn test_island_ga_validate_empty_configs() {
+        let island_config = IslandConfiguration::new().with_num_islands(2);
+        let island_ga = IslandGa::<crate::chromosomes::Binary> {
+            island_config,
+            ga_configs: vec![],
+            islands: Vec::new(),
+            alleles: Vec::new(),
+            initialization_fn: None,
+            fitness_fn: None,
+        };
 
         let result = island_ga.validate();
         assert!(result.is_err());
