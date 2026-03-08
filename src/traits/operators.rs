@@ -49,9 +49,10 @@ pub trait SelectionOperator {
 /// Trait for crossover operators.
 ///
 /// Implement this trait to define a custom crossover strategy. Built-in
-/// implementations are provided for the [`Crossover`](crate::operations::Crossover)
-/// enum variants (except `Sbx` and `BlendAlpha`, which require
-/// [`RangeChromosome<T>`](crate::chromosomes::Range) and should be called directly).
+/// implementations are provided for all [`Crossover`](crate::operations::Crossover)
+/// enum variants. `Sbx` and `BlendAlpha` use runtime downcasting and work
+/// automatically when `U` is [`Range<T>`](crate::chromosomes::Range) with
+/// `T` being `f64`, `f32`, `i32`, or `i64`.
 ///
 /// # Example
 ///

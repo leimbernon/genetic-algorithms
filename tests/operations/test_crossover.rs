@@ -999,6 +999,124 @@ fn test_crossover_enum_blend_alpha_returns_error() {
     );
 }
 
+// --- SBX / BlendAlpha enum dispatch with Range<T> chromosomes ---
+
+#[test]
+fn test_crossover_enum_sbx_works_with_range_f64() {
+    use genetic_algorithms::chromosomes::Range as RangeChromosome;
+    use genetic_algorithms::genotypes::Range as RangeGenotype;
+    use genetic_algorithms::traits::{ChromosomeT, CrossoverOperator};
+    use std::borrow::Cow;
+
+    let mut p1 = RangeChromosome::<f64>::new();
+    let mut p2 = RangeChromosome::<f64>::new();
+    p1.set_dna(Cow::Owned(vec![
+        RangeGenotype::new(0, vec![(0.0, 100.0)], 20.0),
+        RangeGenotype::new(1, vec![(0.0, 100.0)], 80.0),
+    ]));
+    p2.set_dna(Cow::Owned(vec![
+        RangeGenotype::new(0, vec![(0.0, 100.0)], 60.0),
+        RangeGenotype::new(1, vec![(0.0, 100.0)], 30.0),
+    ]));
+
+    let children = Crossover::Sbx.crossover(&p1, &p2).unwrap();
+    assert_eq!(children.len(), 2);
+    assert_eq!(children[0].dna().len(), 2);
+    for child in &children {
+        for gene in child.dna() {
+            let (lo, hi) = gene.ranges[0];
+            assert!(gene.value >= lo && gene.value <= hi);
+        }
+    }
+}
+
+#[test]
+fn test_crossover_enum_blend_alpha_works_with_range_f64() {
+    use genetic_algorithms::chromosomes::Range as RangeChromosome;
+    use genetic_algorithms::genotypes::Range as RangeGenotype;
+    use genetic_algorithms::traits::{ChromosomeT, CrossoverOperator};
+    use std::borrow::Cow;
+
+    let mut p1 = RangeChromosome::<f64>::new();
+    let mut p2 = RangeChromosome::<f64>::new();
+    p1.set_dna(Cow::Owned(vec![
+        RangeGenotype::new(0, vec![(0.0, 100.0)], 30.0),
+        RangeGenotype::new(1, vec![(0.0, 100.0)], 70.0),
+    ]));
+    p2.set_dna(Cow::Owned(vec![
+        RangeGenotype::new(0, vec![(0.0, 100.0)], 60.0),
+        RangeGenotype::new(1, vec![(0.0, 100.0)], 40.0),
+    ]));
+
+    let children = Crossover::BlendAlpha.crossover(&p1, &p2).unwrap();
+    assert_eq!(children.len(), 2);
+    assert_eq!(children[0].dna().len(), 2);
+    for child in &children {
+        for gene in child.dna() {
+            let (lo, hi) = gene.ranges[0];
+            assert!(gene.value >= lo && gene.value <= hi);
+        }
+    }
+}
+
+#[test]
+fn test_crossover_config_sbx_uses_eta() {
+    use genetic_algorithms::chromosomes::Range as RangeChromosome;
+    use genetic_algorithms::genotypes::Range as RangeGenotype;
+    use genetic_algorithms::traits::{ChromosomeT, CrossoverOperator};
+    use std::borrow::Cow;
+
+    let mut p1 = RangeChromosome::<f64>::new();
+    let mut p2 = RangeChromosome::<f64>::new();
+    p1.set_dna(Cow::Owned(vec![RangeGenotype::new(
+        0,
+        vec![(0.0, 100.0)],
+        20.0,
+    )]));
+    p2.set_dna(Cow::Owned(vec![RangeGenotype::new(
+        0,
+        vec![(0.0, 100.0)],
+        80.0,
+    )]));
+
+    let config = CrossoverConfiguration {
+        method: Crossover::Sbx,
+        sbx_eta: Some(20.0),
+        ..Default::default()
+    };
+    let children = config.crossover(&p1, &p2).unwrap();
+    assert_eq!(children.len(), 2);
+}
+
+#[test]
+fn test_crossover_config_blend_alpha_uses_alpha() {
+    use genetic_algorithms::chromosomes::Range as RangeChromosome;
+    use genetic_algorithms::genotypes::Range as RangeGenotype;
+    use genetic_algorithms::traits::{ChromosomeT, CrossoverOperator};
+    use std::borrow::Cow;
+
+    let mut p1 = RangeChromosome::<f64>::new();
+    let mut p2 = RangeChromosome::<f64>::new();
+    p1.set_dna(Cow::Owned(vec![RangeGenotype::new(
+        0,
+        vec![(0.0, 100.0)],
+        30.0,
+    )]));
+    p2.set_dna(Cow::Owned(vec![RangeGenotype::new(
+        0,
+        vec![(0.0, 100.0)],
+        70.0,
+    )]));
+
+    let config = CrossoverConfiguration {
+        method: Crossover::BlendAlpha,
+        blend_alpha: Some(0.3),
+        ..Default::default()
+    };
+    let children = config.crossover(&p1, &p2).unwrap();
+    assert_eq!(children.len(), 2);
+}
+
 // --- Crossover AGA probability edge cases ---
 
 #[test]
