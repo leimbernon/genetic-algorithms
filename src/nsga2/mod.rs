@@ -34,9 +34,11 @@ pub mod pareto;
 
 use crate::configuration::GaConfiguration;
 use crate::error::GaError;
-use crate::nsga2::configuration::Nsga2Configuration;
+use crate::nsga2::configuration::{Nsga2Configuration, ObjectiveDirection};
 use crate::nsga2::crowding_distance::assign_crowding_distance;
-use crate::nsga2::non_dominated_sort::{assign_ranks, non_dominated_sort};
+use crate::nsga2::non_dominated_sort::{
+    assign_ranks, non_dominated_sort_constrained, non_dominated_sort_with_directions,
+};
 use crate::nsga2::pareto::{ParetoFront, ParetoIndividual};
 use crate::operations::mutation;
 use crate::traits::{ChromosomeT, InitializationFn};
@@ -67,6 +69,9 @@ where
     pub initialization_fn: Option<Arc<InitializationFn<U::Gene>>>,
     /// Objective functions (one per objective).
     pub objective_fns: Vec<Arc<ObjectiveFn<U::Gene>>>,
+    /// Optional constraint functions. Each returns a violation amount (> 0 means violated).
+    /// The total constraint violation is the sum of all individual violations.
+    pub constraint_fns: Vec<Arc<ObjectiveFn<U::Gene>>>,
 }
 
 impl<U> Nsga2Ga<U>
@@ -81,6 +86,7 @@ where
             alleles: Vec::new(),
             initialization_fn: None,
             objective_fns: Vec::new(),
+            constraint_fns: Vec::new(),
         }
     }
 
@@ -104,6 +110,18 @@ where
     /// Each function evaluates one objective given the chromosome's DNA.
     pub fn with_objective_fns(mut self, fns: Vec<Box<ObjectiveFn<U::Gene>>>) -> Self {
         self.objective_fns = fns.into_iter().map(Arc::from).collect();
+        self
+    }
+
+    /// Sets the constraint functions.
+    ///
+    /// Each function returns a violation amount for the given chromosome's DNA.
+    /// A return value of `0.0` (or negative) means the constraint is satisfied.
+    /// A positive value indicates the magnitude of the violation.
+    /// The total constraint violation for an individual is the sum of all functions' outputs
+    /// (clamped to >= 0).
+    pub fn with_constraint_fns(mut self, fns: Vec<Box<ObjectiveFn<U::Gene>>>) -> Self {
+        self.constraint_fns = fns.into_iter().map(Arc::from).collect();
         self
     }
 
@@ -147,6 +165,15 @@ where
                 self.objective_fns.len()
             )));
         }
+        if !self.nsga2_config.objective_directions.is_empty()
+            && self.nsga2_config.objective_directions.len() != self.nsga2_config.num_objectives
+        {
+            return Err(GaError::InvalidNsga2Configuration(format!(
+                "objective_directions length ({}) must match num_objectives ({})",
+                self.nsga2_config.objective_directions.len(),
+                self.nsga2_config.num_objectives
+            )));
+        }
         Ok(())
     }
 }
@@ -169,25 +196,24 @@ where
 
         let pop_size = self.nsga2_config.population_size;
         let max_gens = self.nsga2_config.max_generations;
+        let directions = self.nsga2_config.effective_directions();
+        let has_constraints = !self.constraint_fns.is_empty();
 
         // Initialize population
         let mut population = self.initialize_population()?;
 
         info!(
             target: "nsga2_events",
-            "Starting NSGA-II: {} individuals, {} objectives, {} generations",
+            "Starting NSGA-II: {} individuals, {} objectives, {} generations, constraints={}",
             pop_size,
             self.nsga2_config.num_objectives,
-            max_gens
+            max_gens,
+            has_constraints
         );
 
         for gen in 0..max_gens {
-            // Non-dominated sorting
-            let all_objectives: Vec<&[f64]> = population
-                .iter()
-                .map(|ind| ind.objectives.as_slice())
-                .collect();
-            let fronts = non_dominated_sort(&all_objectives);
+            // Non-dominated sorting (direction-aware, optionally constrained)
+            let fronts = self.perform_sorting(&population, &directions, has_constraints);
 
             // Assign ranks
             let mut ranks = vec![0usize; population.len()];
@@ -217,11 +243,7 @@ where
 
             // Environmental selection: sort by (rank asc, crowding_distance desc), truncate
             // Re-evaluate ranks and crowding for combined population
-            let combined_objectives: Vec<&[f64]> = population
-                .iter()
-                .map(|ind| ind.objectives.as_slice())
-                .collect();
-            let combined_fronts = non_dominated_sort(&combined_objectives);
+            let combined_fronts = self.perform_sorting(&population, &directions, has_constraints);
 
             let mut combined_ranks = vec![0usize; population.len()];
             assign_ranks(&mut combined_ranks, &combined_fronts);
@@ -267,6 +289,29 @@ where
         Ok(ParetoFront::new(front_individuals))
     }
 
+    /// Performs non-dominated sorting using the appropriate strategy.
+    fn perform_sorting(
+        &self,
+        population: &[ParetoIndividual<U>],
+        directions: &[ObjectiveDirection],
+        has_constraints: bool,
+    ) -> Vec<Vec<usize>> {
+        let all_objectives: Vec<&[f64]> = population
+            .iter()
+            .map(|ind| ind.objectives.as_slice())
+            .collect();
+
+        if has_constraints {
+            let violations: Vec<f64> = population
+                .iter()
+                .map(|ind| ind.constraint_violation)
+                .collect();
+            non_dominated_sort_constrained(&all_objectives, &violations, directions)
+        } else {
+            non_dominated_sort_with_directions(&all_objectives, directions)
+        }
+    }
+
     /// Initializes the population with random chromosomes and evaluates objectives.
     fn initialize_population(&self) -> Result<Vec<ParetoIndividual<U>>, GaError> {
         let init_fn = self.initialization_fn.as_ref().ok_or_else(|| {
@@ -296,11 +341,15 @@ where
 
         // Wrap each chromosome in a ParetoIndividual with evaluated objectives
         let objective_fns = &self.objective_fns;
+        let constraint_fns = &self.constraint_fns;
         let population = chromosomes
             .into_par_iter()
             .map(|chrom| {
                 let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
-                ParetoIndividual::new(chrom, objectives)
+                let constraint_violation = evaluate_constraints(chrom.dna(), constraint_fns);
+                let mut ind = ParetoIndividual::new(chrom, objectives);
+                ind.constraint_violation = constraint_violation;
+                ind
             })
             .collect();
 
@@ -365,11 +414,15 @@ where
 
         // Evaluate objectives in parallel
         let objective_fns = &self.objective_fns;
+        let constraint_fns = &self.constraint_fns;
         let offspring = raw_offspring
             .into_par_iter()
             .map(|chrom| {
                 let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
-                ParetoIndividual::new(chrom, objectives)
+                let constraint_violation = evaluate_constraints(chrom.dna(), constraint_fns);
+                let mut ind = ParetoIndividual::new(chrom, objectives);
+                ind.constraint_violation = constraint_violation;
+                ind
             })
             .collect();
 
@@ -377,7 +430,13 @@ where
     }
 
     /// Binary tournament selection: picks two random individuals and returns the
-    /// index of the better one (lower rank, or higher crowding distance if tied).
+    /// index of the better one.
+    ///
+    /// When constraint violations are present, uses constrained tournament rules:
+    /// 1. A feasible individual beats an infeasible one.
+    /// 2. Among two infeasible individuals, the one with lower violation wins.
+    /// 3. Among two feasible individuals (or when no constraints), lower rank wins,
+    ///    then higher crowding distance breaks ties.
     fn binary_tournament(&self, population: &[ParetoIndividual<U>], rng: &mut impl Rng) -> usize {
         let n = population.len();
         let i = rng.random_range(0..n);
@@ -386,6 +445,25 @@ where
         let a = &population[i];
         let b = &population[j];
 
+        // Constrained tournament: feasible beats infeasible
+        let a_feasible = a.is_feasible();
+        let b_feasible = b.is_feasible();
+
+        match (a_feasible, b_feasible) {
+            (true, false) => return i,
+            (false, true) => return j,
+            (false, false) => {
+                // Both infeasible: prefer smaller constraint violation
+                return if a.constraint_violation < b.constraint_violation {
+                    i
+                } else {
+                    j
+                };
+            }
+            (true, true) => {} // fall through to rank/crowding comparison
+        }
+
+        // Both feasible (or no constraints): standard rank + crowding distance
         if a.rank < b.rank {
             i
         } else if b.rank < a.rank {
@@ -396,6 +474,20 @@ where
             j
         }
     }
+}
+
+/// Evaluates all constraint functions for a given DNA and returns the total constraint violation.
+///
+/// Each constraint function returns a violation amount. Positive values are clamped to >= 0
+/// and summed. If there are no constraint functions, returns 0.0.
+fn evaluate_constraints<G>(dna: &[G], constraint_fns: &[Arc<ObjectiveFn<G>>]) -> f64
+where
+    G: Send + Sync,
+{
+    if constraint_fns.is_empty() {
+        return 0.0;
+    }
+    constraint_fns.iter().map(|f| f(dna).max(0.0)).sum()
 }
 
 #[cfg(test)]

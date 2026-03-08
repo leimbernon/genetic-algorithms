@@ -678,12 +678,14 @@ mod tests {
                 objectives: vec![1.0],
                 rank: 2,
                 crowding_distance: 5.0,
+                constraint_violation: 0.0,
             },
             ParetoIndividual {
                 chromosome: <SimpleChrom as Default>::default(),
                 objectives: vec![1.0],
                 rank: 0,
                 crowding_distance: 1.0,
+                constraint_violation: 0.0,
             },
         ];
 
