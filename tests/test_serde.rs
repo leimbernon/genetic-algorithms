@@ -395,3 +395,118 @@ fn serde_niching_configuration() {
     assert!((rt.sigma_share - 2.5).abs() < f64::EPSILON);
     assert!((rt.alpha - 0.5).abs() < f64::EPSILON);
 }
+
+// ---- Checkpoint integration tests ----
+
+use genetic_algorithms::checkpoint::{load_checkpoint, save_checkpoint, Checkpoint};
+use genetic_algorithms::ga::Ga;
+use genetic_algorithms::initializers::binary_initializer::binary_random_initialization;
+use genetic_algorithms::traits::{
+    ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+};
+use std::path::Path;
+
+#[test]
+fn checkpoint_round_trip_via_api() {
+    // Create a checkpoint with a small Binary population
+    let genes: Vec<BinaryGene> = (0..4)
+        .map(|i| BinaryGene {
+            id: i,
+            value: i % 2 == 0,
+        })
+        .collect();
+
+    let mut c1 = <BinaryChromosome as Default>::default();
+    c1.set_dna(std::borrow::Cow::Owned(genes.clone()));
+    c1.set_fitness(10.0);
+
+    let mut c2 = <BinaryChromosome as Default>::default();
+    c2.set_dna(std::borrow::Cow::Owned(genes));
+    c2.set_fitness(20.0);
+
+    let mut pop = Population::new(vec![c1.clone(), c2]);
+    pop.best_chromosome = c1;
+
+    let ckpt = Checkpoint {
+        population: pop,
+        configuration: GaConfiguration::default(),
+        generation: 3,
+        stats: vec![GenerationStats::from_fitness_values(
+            0,
+            &[10.0, 20.0],
+            false,
+        )],
+    };
+
+    let dir = std::env::temp_dir().join("ga_integ_ckpt_rt");
+    let _ = std::fs::remove_dir_all(&dir);
+    let path = dir.join("ckpt.json");
+
+    save_checkpoint(&ckpt, &path).expect("save");
+    let loaded: Checkpoint<BinaryChromosome> = load_checkpoint(&path).expect("load");
+
+    assert_eq!(loaded.generation, 3);
+    assert_eq!(loaded.population.size(), 2);
+    assert_eq!(loaded.stats.len(), 1);
+
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn ga_run_with_save_progress_creates_checkpoint_files() {
+    let ckpt_dir = std::env::temp_dir().join("ga_integ_save_progress");
+    let _ = std::fs::remove_dir_all(&ckpt_dir);
+
+    let alleles = vec![BinaryGene {
+        id: 0,
+        value: false,
+    }];
+    let alleles_clone = alleles.clone();
+
+    let mut ga: Ga<BinaryChromosome> = Ga::new()
+        .with_population_size(10)
+        .with_genes_per_chromosome(4)
+        .with_selection_method(Selection::Tournament)
+        .with_crossover_method(Crossover::Cycle)
+        .with_mutation_method(Mutation::Swap)
+        .with_problem_solving(ProblemSolving::Maximization)
+        .with_survivor_method(Survivor::Fitness)
+        .with_max_generations(10)
+        .with_save_progress(true)
+        .with_save_progress_interval(5)
+        .with_save_progress_path(ckpt_dir.to_str().unwrap().to_string())
+        .with_initialization_fn(move |genes_per_chromosome, _, _| {
+            binary_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        })
+        .with_fitness_fn(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64)
+        .build()
+        .expect("build should succeed");
+
+    let _ = ga.run().expect("run should succeed");
+
+    // Checkpoint files should exist for generation 5 and 10
+    let ckpt5 = ckpt_dir.join("checkpoint_gen_5.json");
+    let ckpt10 = ckpt_dir.join("checkpoint_gen_10.json");
+    assert!(ckpt5.exists(), "checkpoint at generation 5 should exist");
+    assert!(ckpt10.exists(), "checkpoint at generation 10 should exist");
+
+    // Load one and verify it's valid
+    let loaded: Checkpoint<BinaryChromosome> =
+        load_checkpoint(&ckpt5).expect("should load gen 5 checkpoint");
+    assert_eq!(loaded.generation, 4); // 0-based index, gen 5 = index 4
+    assert_eq!(loaded.population.size(), 10);
+    assert_eq!(loaded.stats.len(), 5);
+
+    let _ = std::fs::remove_dir_all(&ckpt_dir);
+}
+
+#[test]
+fn load_checkpoint_nonexistent_returns_error() {
+    let result: Result<Checkpoint<BinaryChromosome>, _> =
+        load_checkpoint(Path::new("/tmp/ga_integ_nonexistent_ckpt.json"));
+    assert!(result.is_err());
+    match result.unwrap_err() {
+        GaError::CheckpointError(msg) => assert!(msg.contains("Failed to read"), "{msg}"),
+        other => panic!("Expected CheckpointError, got: {other:?}"),
+    }
+}

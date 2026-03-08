@@ -5,6 +5,7 @@ use std::borrow::Cow;
 
 //Structures definition
 #[derive(Debug, Copy, Clone, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Gene {
     pub id: i32,
 }
@@ -19,10 +20,12 @@ impl GeneT for Gene {
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Chromosome {
     pub dna: Vec<Gene>,
     pub fitness: f64,
     pub age: usize,
+    #[cfg_attr(feature = "serde", serde(skip, default))]
     pub fitness_fn: FitnessFnWrapper<Gene>,
 }
 

@@ -27,6 +27,8 @@ pub enum GaError {
     InvalidNsga2Configuration(String),
     /// A migration operation between islands failed.
     MigrationError(String),
+    /// A checkpoint save or load operation failed.
+    CheckpointError(String),
 }
 
 impl fmt::Display for GaError {
@@ -48,6 +50,7 @@ impl fmt::Display for GaError {
                 write!(f, "Invalid NSGA-II configuration: {}", msg)
             }
             GaError::MigrationError(msg) => write!(f, "Migration error: {}", msg),
+            GaError::CheckpointError(msg) => write!(f, "Checkpoint error: {}", msg),
         }
     }
 }
@@ -116,6 +119,12 @@ mod tests {
     fn display_migration_error() {
         let e = GaError::MigrationError("mig fail".into());
         assert_eq!(e.to_string(), "Migration error: mig fail");
+    }
+
+    #[test]
+    fn display_checkpoint_error() {
+        let e = GaError::CheckpointError("ckpt fail".into());
+        assert_eq!(e.to_string(), "Checkpoint error: ckpt fail");
     }
 
     #[test]

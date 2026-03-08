@@ -20,6 +20,23 @@ use std::ops::ControlFlow;
 use std::sync::Arc;
 use std::time::Instant;
 
+/// Marker trait that resolves to `serde::Serialize` when the `serde` feature is
+/// enabled, or to an auto-implemented blanket trait otherwise.
+///
+/// This allows the `Ga` impl block to conditionally require `Serialize` without
+/// duplicating the entire implementation. Users never need to implement this
+/// trait manually — it is automatically satisfied for all types (or all
+/// `Serialize` types when the `serde` feature is active).
+#[cfg(feature = "serde")]
+pub trait MaybeSerialize: serde::Serialize {}
+#[cfg(feature = "serde")]
+impl<T: serde::Serialize> MaybeSerialize for T {}
+
+#[cfg(not(feature = "serde"))]
+pub trait MaybeSerialize {}
+#[cfg(not(feature = "serde"))]
+impl<T> MaybeSerialize for T {}
+
 /// Indicates why a GA run terminated.
 ///
 /// - `GenerationLimitReached`: the maximum number of generations was reached.
@@ -299,7 +316,14 @@ where
 
 impl<U> Ga<U>
 where
-    U: ChromosomeT + Send + Sync + 'static + Clone + Debug + mutation::ValueMutable,
+    U: ChromosomeT
+        + Send
+        + Sync
+        + 'static
+        + Clone
+        + Debug
+        + mutation::ValueMutable
+        + MaybeSerialize,
     U::Gene: 'static + Debug,
 {
     /// Validates configuration and adjusts defaults, returning a ready-to-run instance.
@@ -692,6 +716,28 @@ where
             let gen_stats =
                 GenerationStats::from_fitness_values(i, &fitness_values, is_maximization);
             self.stats.push(gen_stats.clone());
+
+            // Save checkpoint to disk if configured (requires serde feature)
+            #[cfg(feature = "serde")]
+            {
+                let spc = &self.configuration.save_progress_configuration;
+                if spc.save_progress
+                    && spc.save_progress_interval > 0
+                    && (i + 1) % spc.save_progress_interval == 0
+                {
+                    let ckpt = crate::checkpoint::Checkpoint {
+                        population: self.population.clone(),
+                        configuration: self.configuration.clone(),
+                        generation: i,
+                        stats: self.stats.clone(),
+                    };
+                    let path = std::path::Path::new(&spc.save_progress_path)
+                        .join(format!("checkpoint_gen_{}.json", i + 1));
+                    if let Err(e) = crate::checkpoint::save_checkpoint(&ckpt, &path) {
+                        log::warn!("Failed to save checkpoint at generation {}: {}", i + 1, e);
+                    }
+                }
+            }
 
             // If we want to perform a periodic callback
             if let Some(func) = &callback {

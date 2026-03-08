@@ -67,6 +67,8 @@
 //! - Parallel evaluation leverages threads to scale fitness computation.
 extern crate core;
 
+#[cfg(feature = "serde")]
+pub mod checkpoint;
 pub mod chromosomes;
 pub mod configuration;
 pub mod error;
