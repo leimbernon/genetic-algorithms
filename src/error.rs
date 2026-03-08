@@ -5,6 +5,7 @@ use std::fmt;
 /// This enum covers configuration errors, validation errors,
 /// operator errors, and initialization errors.
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum GaError {
     /// A configuration parameter is invalid or missing.
     ConfigurationError(String),

@@ -267,3 +267,118 @@ impl<U: ChromosomeT> IndexMut<usize> for Population<U> {
         &mut self.chromosomes[index]
     }
 }
+
+// ---------------------------------------------------------------------------
+// Serde support (behind the "serde" feature flag)
+// ---------------------------------------------------------------------------
+
+#[cfg(feature = "serde")]
+mod serde_impl {
+    use super::*;
+    use serde::de::{self, MapAccess, Visitor};
+    use serde::ser::SerializeStruct;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+    use std::marker::PhantomData;
+
+    impl<U> Serialize for Population<U>
+    where
+        U: ChromosomeT + Serialize,
+    {
+        fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            let mut state = serializer.serialize_struct("Population", 6)?;
+            state.serialize_field("chromosomes", &self.chromosomes)?;
+            state.serialize_field("best_chromosome", &self.best_chromosome)?;
+            state.serialize_field("best_chromosome_is_set", &self.best_chromosome_is_set)?;
+            state.serialize_field("generation_numbers", &self.generation_numbers)?;
+            state.serialize_field("f_avg", &self.f_avg)?;
+            state.serialize_field("f_max", &self.f_max)?;
+            state.end()
+        }
+    }
+
+    impl<'de, U> Deserialize<'de> for Population<U>
+    where
+        U: ChromosomeT + Deserialize<'de>,
+    {
+        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+            #[derive(serde::Deserialize)]
+            #[serde(field_identifier, rename_all = "snake_case")]
+            enum Field {
+                Chromosomes,
+                BestChromosome,
+                BestChromosomeIsSet,
+                GenerationNumbers,
+                FAvg,
+                FMax,
+            }
+
+            struct PopulationVisitor<U>(PhantomData<U>);
+
+            impl<'de, U> Visitor<'de> for PopulationVisitor<U>
+            where
+                U: ChromosomeT + Deserialize<'de>,
+            {
+                type Value = Population<U>;
+
+                fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                    f.write_str("struct Population")
+                }
+
+                fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
+                    let mut chromosomes: Option<Vec<U>> = None;
+                    let mut best_chromosome: Option<U> = None;
+                    let mut best_chromosome_is_set: Option<bool> = None;
+                    let mut generation_numbers: Option<Vec<usize>> = None;
+                    let mut f_avg: Option<f64> = None;
+                    let mut f_max: Option<f64> = None;
+
+                    while let Some(key) = map.next_key()? {
+                        match key {
+                            Field::Chromosomes => {
+                                chromosomes = Some(map.next_value()?);
+                            }
+                            Field::BestChromosome => {
+                                best_chromosome = Some(map.next_value()?);
+                            }
+                            Field::BestChromosomeIsSet => {
+                                best_chromosome_is_set = Some(map.next_value()?);
+                            }
+                            Field::GenerationNumbers => {
+                                generation_numbers = Some(map.next_value()?);
+                            }
+                            Field::FAvg => {
+                                f_avg = Some(map.next_value()?);
+                            }
+                            Field::FMax => {
+                                f_max = Some(map.next_value()?);
+                            }
+                        }
+                    }
+
+                    Ok(Population {
+                        chromosomes: chromosomes
+                            .ok_or_else(|| de::Error::missing_field("chromosomes"))?,
+                        best_chromosome: best_chromosome
+                            .ok_or_else(|| de::Error::missing_field("best_chromosome"))?,
+                        best_chromosome_is_set: best_chromosome_is_set
+                            .ok_or_else(|| de::Error::missing_field("best_chromosome_is_set"))?,
+                        generation_numbers: generation_numbers
+                            .ok_or_else(|| de::Error::missing_field("generation_numbers"))?,
+                        f_avg: f_avg.ok_or_else(|| de::Error::missing_field("f_avg"))?,
+                        f_max: f_max.ok_or_else(|| de::Error::missing_field("f_max"))?,
+                    })
+                }
+            }
+
+            const FIELDS: &[&str] = &[
+                "chromosomes",
+                "best_chromosome",
+                "best_chromosome_is_set",
+                "generation_numbers",
+                "f_avg",
+                "f_max",
+            ];
+            deserializer.deserialize_struct("Population", FIELDS, PopulationVisitor(PhantomData))
+        }
+    }
+}

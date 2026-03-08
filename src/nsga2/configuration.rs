@@ -1,5 +1,6 @@
 /// Direction of optimization for a single objective.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum ObjectiveDirection {
     /// Minimize this objective (lower is better).
     Minimize,
@@ -29,6 +30,7 @@ pub enum ObjectiveDirection {
 /// assert_eq!(config.objective_directions.len(), 2);
 /// ```
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Nsga2Configuration {
     /// Number of objective functions.
     pub num_objectives: usize,

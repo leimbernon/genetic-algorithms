@@ -25,6 +25,14 @@ use std::hash::{Hash, Hasher};
 /// The range gene can be used in mutation and crossover operations to
 /// evolve populations in a genetic algorithm.
 #[derive(Debug, PartialEq, Clone)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(bound(
+        serialize = "T: serde::Serialize",
+        deserialize = "T: serde::de::DeserializeOwned"
+    ))
+)]
 pub struct Range<T> {
     pub id: i32,
     pub ranges: Vec<(T, T)>,

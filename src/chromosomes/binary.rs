@@ -14,10 +14,12 @@ use std::fmt;
 /// the age of the chromosome.
 ///
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Binary {
     pub dna: Vec<BinaryGenotype>,
     pub fitness: f64,
     pub age: usize,
+    #[cfg_attr(feature = "serde", serde(skip, default))]
     pub fitness_fn: FitnessFnWrapper<BinaryGenotype>,
 }
 

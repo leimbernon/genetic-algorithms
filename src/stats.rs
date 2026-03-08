@@ -2,6 +2,7 @@
 ///
 /// Collected at the end of each generation and optionally passed to callbacks.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct GenerationStats {
     /// Generation number (0-based).
     pub generation: usize,

@@ -3,6 +3,7 @@
 /// Determines how islands are connected and which islands exchange individuals
 /// during migration events.
 #[derive(Debug, Clone, PartialEq, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum MigrationTopology {
     /// Ring topology: each island sends migrants to the next island in a circular arrangement.
     ///

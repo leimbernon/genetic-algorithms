@@ -23,6 +23,7 @@ use crate::traits::GeneT;
 use std::fmt;
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Binary {
     pub id: i32,
     pub value: bool,

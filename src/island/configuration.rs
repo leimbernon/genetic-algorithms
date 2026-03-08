@@ -2,6 +2,7 @@ use crate::island::topology::MigrationTopology;
 
 /// Policy for selecting migrants and replacing individuals in the destination island.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum MigrationPolicy {
     /// The best individuals from the source replace the worst in the destination.
     #[default]
@@ -37,6 +38,7 @@ pub enum MigrationPolicy {
 /// assert_eq!(config.migration_count, 2);
 /// ```
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct IslandConfiguration {
     /// Number of islands (sub-populations).
     pub num_islands: usize,

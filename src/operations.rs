@@ -4,6 +4,7 @@ pub mod selection;
 pub mod survivor;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Selection {
     Random,
     RouletteWheel,
@@ -21,6 +22,7 @@ pub enum Selection {
     Truncation,
 }
 #[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Crossover {
     Cycle,
     MultiPoint,
@@ -41,6 +43,7 @@ pub enum Crossover {
     Arithmetic,
 }
 #[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Mutation {
     Swap,
     Inversion,
@@ -64,6 +67,7 @@ pub enum Mutation {
     Insertion,
 }
 #[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Survivor {
     Fitness,
     Age,

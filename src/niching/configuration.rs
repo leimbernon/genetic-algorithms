@@ -17,6 +17,7 @@
 /// assert!((config.sigma_share - 0.5).abs() < f64::EPSILON);
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NichingConfiguration {
     /// Whether fitness sharing is enabled.
     pub enabled: bool,

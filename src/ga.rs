@@ -30,6 +30,7 @@ use std::time::Instant;
 /// - `CallbackRequested`: the user callback returned `ControlFlow::Break`.
 /// - `NotTerminated`: internal state before the run finalizes or if a callback is invoked mid-run.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum TerminationCause {
     GenerationLimitReached,
     FitnessTargetReached,

@@ -10,6 +10,7 @@ use crate::{
 };
 
 #[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum ProblemSolving {
     Minimization,
     Maximization,
@@ -26,6 +27,7 @@ impl fmt::Display for ProblemSolving {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum LogLevel {
     Off,
     Error,
@@ -36,6 +38,7 @@ pub enum LogLevel {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SelectionConfiguration {
     pub number_of_couples: usize,
     pub method: Selection,
@@ -55,6 +58,7 @@ impl Default for SelectionConfiguration {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CrossoverConfiguration {
     pub number_of_points: Option<usize>,
     pub probability_max: Option<f64>,
@@ -85,6 +89,7 @@ impl Default for CrossoverConfiguration {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MutationConfiguration {
     pub probability_max: Option<f64>,
     pub probability_min: Option<f64>,
@@ -117,6 +122,7 @@ impl Default for MutationConfiguration {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LimitConfiguration {
     pub problem_solving: ProblemSolving,
     pub max_generations: usize,
@@ -141,6 +147,7 @@ impl Default for LimitConfiguration {
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SaveProgressConfiguration {
     pub save_progress: bool,
     pub save_progress_interval: usize,
@@ -151,6 +158,7 @@ pub struct SaveProgressConfiguration {
 ///
 /// Multiple criteria can be enabled simultaneously. The GA stops when **any** of them is met.
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct StoppingCriteria {
     /// Stop after N generations without fitness improvement.
     /// `None` means this criterion is disabled.
@@ -164,6 +172,7 @@ pub struct StoppingCriteria {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct GaConfiguration {
     pub adaptive_ga: bool,
     pub number_of_threads: usize,

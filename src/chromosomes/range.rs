@@ -25,10 +25,19 @@ use std::fmt::Debug;
 /// println!("Fitness: {}", chromosome.fitness());
 /// ```
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(bound(
+        serialize = "T: serde::Serialize",
+        deserialize = "T: serde::de::DeserializeOwned"
+    ))
+)]
 pub struct Range<T: Sync + Send + Clone + Default + Debug> {
     pub dna: Vec<RangeGenotype<T>>,
     pub fitness: f64,
     pub age: usize,
+    #[cfg_attr(feature = "serde", serde(skip, default))]
     pub fitness_fn: FitnessFnWrapper<RangeGenotype<T>>,
 }
 
