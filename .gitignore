@@ -13,3 +13,10 @@
 # Built Visual Studio Code Extensions
 *.vsix
 .vscode
+
+# Node.js
+node_modules/
+
+# Python (legacy)
+__pycache__/
+*.pyc

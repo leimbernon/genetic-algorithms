@@ -1,42 +1,45 @@
+use crate::error::GaError;
+use crate::traits::ChromosomeT;
+use log::{debug, trace};
 use rand::Rng;
-use crate::traits::GenotypeT;
-use log::{trace, debug};
+use std::borrow::Cow;
 
-pub fn uniform<U: GenotypeT>(parent_1: &U, parent_2: &U) -> Option<Vec<U>>{
-
+pub fn uniform<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
     //Before doing the operation, we check that the dna in the parent 1 has the same length of the dna in the parent 2
-    if parent_1.get_dna().len() != parent_2.get_dna().len() {
-        panic!("parent 1 and parent 2 must have the same dna length. Currently parent 1 has a length of {} and parent 2 {}", parent_1.get_dna().len(), parent_2.get_dna().len());
+    if parent_1.dna().len() != parent_2.dna().len() {
+        return Err(GaError::CrossoverError(format!(
+            "parent 1 and parent 2 must have the same dna length. Currently parent 1 has a length of {} and parent 2 {}",
+            parent_1.dna().len(), parent_2.dna().len())));
     }
 
-    let mut rng = rand::thread_rng();
+    let mut rng = crate::rng::make_rng();
 
-    //Creation of the children DNA
-    let mut dna_child_1 = vec![U::new_gene(); parent_1.get_dna().len()];
-    let mut dna_child_2 = vec![U::new_gene(); parent_2.get_dna().len()];
+    //Creation of the children DNA using reserve + push to avoid redundant initialization
+    let len = parent_1.dna().len();
+    let mut dna_child_1 = Vec::with_capacity(len);
+    let mut dna_child_2 = Vec::with_capacity(len);
     debug!(target="crossover_events", method="uniform"; "Starting the  uniform crossover");
 
-    let mut child_1 = U::new();
-    let mut child_2 = U::new();
+    let mut child_1 = parent_1.clone();
+    let mut child_2 = parent_2.clone();
 
-    for i in 0..parent_1.get_dna().len() {
-        let crossover = rng.gen_range(0..2);
+    for i in 0..len {
+        let crossover = rng.random_range(0..2);
         trace!(target="crossover_events", method="uniform"; "Random crossover number {}", crossover);
 
-        //If crossover is 0, we take the genes from the corresponding parents
-        if crossover == 0{
-            dna_child_1[i] = parent_1.get_dna().get(i).cloned().unwrap();
-            dna_child_2[i] = parent_2.get_dna().get(i).cloned().unwrap();
-        }else{
-            dna_child_1[i] = parent_2.get_dna().get(i).cloned().unwrap();
-            dna_child_2[i] = parent_1.get_dna().get(i).cloned().unwrap();
+        if crossover == 0 {
+            dna_child_1.push(parent_1.dna().get(i).cloned().unwrap());
+            dna_child_2.push(parent_2.dna().get(i).cloned().unwrap());
+        } else {
+            dna_child_1.push(parent_2.dna().get(i).cloned().unwrap());
+            dna_child_2.push(parent_1.dna().get(i).cloned().unwrap());
         }
     }
-    
-    //Setting the DNA to the children
-    child_1.set_dna(dna_child_1.as_slice());
-    child_2.set_dna(dna_child_2.as_slice());
+
+    //Move the DNA into children to avoid extra clones
+    child_1.set_dna(Cow::Owned(dna_child_1));
+    child_2.set_dna(Cow::Owned(dna_child_2));
     debug!(target="crossover_events", method="uniform"; "Uniform crossover finished");
 
-    Some(vec![child_1, child_2])
+    Ok(vec![child_1, child_2])
 }

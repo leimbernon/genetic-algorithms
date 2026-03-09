@@ -1,0 +1,325 @@
+name: Documentation Agent
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+      - 'milestone/**'
+
+permissions:
+  contents: write
+  pull-requests: write
+  models: read
+
+# AI provider configuration — set to "github" (default) or "anthropic".
+# GitHub provider uses GITHUB_TOKEN; Anthropic provider requires ANTHROPIC_API_KEY secret.
+#
+# Model configuration — override per agent or set DEFAULT_MODEL for all.
+#
+# ┌─────────────────────────────────────────────────────────────────────┐
+# │ GitHub Models (AI_PROVIDER: "github")                              │
+# │ Endpoint: https://models.github.ai/inference                      │
+# │ Auth: GITHUB_TOKEN (needs models:read permission)                  │
+# │                                                                    │
+# │ OpenAI models:                                                     │
+# │   openai/gpt-4.1           — flagship, best quality (default)     │
+# │   openai/gpt-4.1-mini      — smaller, faster, cheaper             │
+# │   openai/gpt-4.1-nano      — smallest, fastest                    │
+# │   openai/gpt-4o            — multimodal                           │
+# │   openai/gpt-4o-mini       — affordable multimodal                │
+# │   openai/o4-mini           — reasoning, efficient                  │
+# │   openai/o3                — reasoning, advanced                   │
+# │   openai/o3-mini           — reasoning, cost-efficient             │
+# │   openai/o1                — reasoning                             │
+# │   openai/o1-mini           — reasoning, compact                    │
+# │                                                                    │
+# │ Note: Free tier limits — 15 req/min, 150 req/day,                 │
+# │       8K input tokens, 4K output tokens per request.               │
+# ├─────────────────────────────────────────────────────────────────────┤
+# │ Anthropic (AI_PROVIDER: "anthropic")                               │
+# │ Auth: ANTHROPIC_API_KEY secret                                     │
+# │                                                                    │
+# │ Current models:                                                    │
+# │   claude-sonnet-4-6             — fast + smart (recommended)       │
+# │   claude-opus-4-6              — most intelligent, agents/coding   │
+# │   claude-haiku-4-5-20251001   — fastest, near-frontier             │
+# │                                                                    │
+# │ Legacy models:                                                     │
+# │   claude-sonnet-4-20250514    — previous default                   │
+# │   claude-sonnet-4-5-20250929  — previous generation                │
+# │   claude-opus-4-20250514      — previous Opus                      │
+# │   claude-opus-4-5-20251101    — previous Opus generation           │
+# │   claude-opus-4-1-20250805    — Opus 4.1                           │
+# └─────────────────────────────────────────────────────────────────────┘
+env:
+  # AI_PROVIDER: "anthropic"  # Uncomment to use Anthropic instead of GitHub Models
+  DEFAULT_MODEL: "openai/gpt-4.1"
+  # GUARD_MODEL: "openai/gpt-4.1"
+  # INITIALIZER_MODEL: "openai/gpt-4.1"
+  # ANALYST_MODEL: "openai/gpt-4.1"
+  # WRITER_MODEL: "openai/gpt-4.1"
+  # REVIEWER_MODEL: "openai/gpt-4.1"
+
+jobs:
+  # --------------------------------------------------------------------------
+  # Agent 0: Guard — validate documentation structure
+  # --------------------------------------------------------------------------
+  guard:
+    name: "Agent 0: Guard — Validate Docs Structure"
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    outputs:
+      structure_valid: ${{ steps.guard.outputs.structure_valid }}
+      needs_initialization: ${{ steps.guard.outputs.needs_initialization }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: .github/scripts/documentation
+
+      - name: Run Guard Agent
+        id: guard
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AI_PROVIDER: ${{ env.AI_PROVIDER }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DEFAULT_MODEL: ${{ env.DEFAULT_MODEL }}
+          GUARD_MODEL: ${{ env.GUARD_MODEL }}
+        run: npx tsx src/guard.ts
+        working-directory: .github/scripts/documentation
+
+  # --------------------------------------------------------------------------
+  # Agent 0b: Initializer — bootstrap/adapt docs if needed
+  # --------------------------------------------------------------------------
+  initialize:
+    name: "Agent 0b: Initialize Documentation"
+    needs: guard
+    if: needs.guard.outputs.needs_initialization == 'true'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: docs-initialization
+      cancel-in-progress: false
+    outputs:
+      initialization_complete: ${{ steps.init.outputs.initialization_complete }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: .github/scripts/documentation
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Run Initializer Agent
+        id: init
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AI_PROVIDER: ${{ env.AI_PROVIDER }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DEFAULT_MODEL: ${{ env.DEFAULT_MODEL }}
+          INITIALIZER_MODEL: ${{ env.INITIALIZER_MODEL }}
+          REVIEWER_MODEL: ${{ env.REVIEWER_MODEL }}
+          REPO: ${{ github.repository }}
+          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+        run: npx tsx src/initialize-docs.ts
+        working-directory: .github/scripts/documentation
+
+  # --------------------------------------------------------------------------
+  # Agent 1: Analyst — analyze PR changes for doc updates
+  # --------------------------------------------------------------------------
+  analyze:
+    name: "Agent 1: Analyze Changes"
+    needs: [guard, initialize]
+    # Skip analysis during initialization — the initializer handles everything.
+    # Analyze only runs when initialization is not needed or is already complete.
+    if: |
+      always() &&
+      needs.guard.result == 'success' &&
+      needs.guard.outputs.needs_initialization != 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      has_changes: ${{ steps.analyze.outputs.has_changes }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: .github/scripts/documentation
+
+      - name: Run Analyst Agent
+        id: analyze
+        env:
+          DEFAULT_MODEL: ${{ env.DEFAULT_MODEL }}
+          ANALYST_MODEL: ${{ env.ANALYST_MODEL }}
+          AI_PROVIDER: ${{ env.AI_PROVIDER }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: npx tsx src/analyze-changes.ts
+        working-directory: .github/scripts/documentation
+
+      - name: Upload documentation plan
+        if: steps.analyze.outputs.has_changes == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: doc-plan
+          path: .github/scripts/documentation/doc-plan.json
+          retention-days: 1
+
+  # --------------------------------------------------------------------------
+  # Agents 2 & 3: Writer + Reviewer — generate and validate documentation
+  # --------------------------------------------------------------------------
+  write-and-review:
+    name: "Agents 2 & 3: Write and Review Documentation"
+    needs: [guard, initialize, analyze]
+    if: |
+      always() &&
+      needs.analyze.result == 'success' &&
+      needs.analyze.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: .github/scripts/documentation
+
+      - name: Download documentation plan
+        uses: actions/download-artifact@v4
+        with:
+          name: doc-plan
+          path: .github/scripts/documentation
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Run Writer Agent with Reviewer loop
+        env:
+          DEFAULT_MODEL: ${{ env.DEFAULT_MODEL }}
+          WRITER_MODEL: ${{ env.WRITER_MODEL }}
+          REVIEWER_MODEL: ${{ env.REVIEWER_MODEL }}
+          AI_PROVIDER: ${{ env.AI_PROVIDER }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: npx tsx src/write-docs.ts
+        working-directory: .github/scripts/documentation
+
+      - name: Create or update documentation branch and Pull Request
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+        run: |
+          BRANCH="docs/update-from-pr-${PR_NUMBER}"
+
+          # Create branch if not already on it
+          CURRENT_BRANCH=$(git branch --show-current)
+          if [ "$CURRENT_BRANCH" != "$BRANCH" ]; then
+            git checkout -b "$BRANCH"
+          fi
+
+          git add docs/
+
+          if ! git diff --cached --quiet; then
+            git commit -m "docs: update documentation from PR #${PR_NUMBER}"
+            git push origin "$BRANCH" --force-with-lease
+          else
+            echo "No documentation changes to commit. Skipping PR creation."
+            exit 0
+          fi
+
+          # Check if PR already exists for this branch
+          EXISTING_PR=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number' 2>/dev/null || echo "")
+
+          if [ -n "$EXISTING_PR" ]; then
+            echo "PR #${EXISTING_PR} already exists for branch ${BRANCH}. Updated with new commits."
+            exit 0
+          fi
+
+          # Build PR body
+          PR_BODY=$(cat <<'PREOF'
+          ## Automated Documentation Update
+
+          This PR was automatically generated by the **Documentation Agent** after merging:
+
+          > **PR #PLACEHOLDER_PR:** PLACEHOLDER_TITLE
+
+          ### What changed
+          The documentation in `/docs` has been created or updated to reflect the code changes from that PR.
+
+          ### Review checklist
+          - [ ] Documentation accurately reflects the code changes
+          - [ ] Examples are correct and runnable
+          - [ ] Language is clear and accessible to external developers
+          - [ ] No outdated information remains
+
+          ---
+          *Generated automatically by the Documentation Agent workflow.*
+          PREOF
+          )
+
+          # Replace placeholders
+          PR_BODY="${PR_BODY//PLACEHOLDER_PR/$PR_NUMBER}"
+          PR_BODY="${PR_BODY//PLACEHOLDER_TITLE/$PR_TITLE}"
+
+          # Create the pull request against the same branch where the merge happened
+          gh pr create \
+            --title "[Documentation] update from PR #${PR_NUMBER}" \
+            --body "$PR_BODY" \
+            --base "$BASE_BRANCH" \
+            --head "$BRANCH" \
+            --label "documentation" 2>/dev/null || \
+          gh pr create \
+            --title "[Documentation] update from PR #${PR_NUMBER}" \
+            --body "$PR_BODY" \
+            --base "$BASE_BRANCH" \
+            --head "$BRANCH"

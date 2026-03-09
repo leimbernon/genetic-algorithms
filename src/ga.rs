@@ -1,169 +1,382 @@
-use std::{sync::{mpsc::sync_channel, Mutex, Arc}, thread, collections::HashMap};
-use rand::Rng;
-use log::{trace, debug, info};
-use std::env;
-use crate::{population::Population, traits::{GenotypeT, ConfigurationT}, operations::{selection, crossover, mutation, survivor}, configuration::{ProblemSolving, LimitConfiguration, LogLevel}, helpers::{condition_checker_factory, self}};
 use crate::configuration::GaConfiguration;
+use crate::error::GaError;
+use crate::stats::GenerationStats;
+use crate::traits::{FitnessFn, InitializationFn};
+use crate::validators::validator_factory as ValidatorFactory;
+use crate::{
+    configuration::{LimitConfiguration, LogLevel, ProblemSolving},
+    operations::{crossover, mutation, selection, survivor},
+    population::Population,
+    traits::{
+        ChromosomeT, ConfigurationT, CrossoverConfig, ElitismConfig, GeneT, MutationConfig,
+        NichingConfig, SelectionConfig, StoppingConfig,
+    },
+};
+use log::{debug, info, trace};
+use rand::Rng;
+use rayon::prelude::*;
+use std::fmt::Debug;
+use std::ops::ControlFlow;
+use std::sync::Arc;
+use std::time::Instant;
 
-#[derive(Debug, PartialEq)]
+/// Marker trait that resolves to `serde::Serialize` when the `serde` feature is
+/// enabled, or to an auto-implemented blanket trait otherwise.
+///
+/// This allows the `Ga` impl block to conditionally require `Serialize` without
+/// duplicating the entire implementation. Users never need to implement this
+/// trait manually — it is automatically satisfied for all types (or all
+/// `Serialize` types when the `serde` feature is active).
+#[cfg(feature = "serde")]
+pub trait MaybeSerialize: serde::Serialize {}
+#[cfg(feature = "serde")]
+impl<T: serde::Serialize> MaybeSerialize for T {}
+
+#[cfg(not(feature = "serde"))]
+pub trait MaybeSerialize {}
+#[cfg(not(feature = "serde"))]
+impl<T> MaybeSerialize for T {}
+
+/// Indicates why a GA run terminated.
+///
+/// - `GenerationLimitReached`: the maximum number of generations was reached.
+/// - `FitnessTargetReached`: a stopping criterion based on fitness was satisfied.
+/// - `StagnationReached`: no fitness improvement for N consecutive generations.
+/// - `ConvergenceReached`: fitness standard deviation dropped below threshold.
+/// - `TimeLimitReached`: elapsed wall-clock time exceeded the configured limit.
+/// - `CallbackRequested`: the user callback returned `ControlFlow::Break`.
+/// - `NotTerminated`: internal state before the run finalizes or if a callback is invoked mid-run.
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum TerminationCause {
     GenerationLimitReached,
     FitnessTargetReached,
-    NotTerminated
+    StagnationReached,
+    ConvergenceReached,
+    TimeLimitReached,
+    CallbackRequested,
+    NotTerminated,
 }
 
+/// Generic Genetic Algorithm orchestrator.
+///
+/// Type parameter:
+/// - `U`: Chromosome type implementing `ChromosomeT`.
+///
+/// Responsibilities:
+/// - Manage configuration, alleles, population and termination state.
+/// - Provide builder-like configuration methods (`ConfigurationT`) to compose the run.
+/// - Coordinate the GA cycle: initialization, selection, crossover, mutation, survivor, evaluation.
 pub struct Ga<U>
 where
-    U:GenotypeT
+    U: ChromosomeT,
 {
+    /// Tunable GA configuration (limits, operators, logging, etc.).
     pub configuration: GaConfiguration,
+    /// Alleles template for initialization functions (optional).
     pub alleles: Vec<U::Gene>,
+    /// Current population.
     pub population: Population<U>,
-    pub random_initialization: bool,
-    pub default_population: bool
-}
+    /// Termination cause after `run` or `run_with_callback`.
+    pub termination_cause: TerminationCause,
 
+    /// Initialization function to build chromosomes' DNA at startup.
+    pub initialization_fn: Option<Arc<InitializationFn<U::Gene>>>,
+    /// Fitness function applied to chromosomes.
+    pub fitness_fn: Option<Arc<FitnessFn<U::Gene>>>,
+
+    /// Per-generation statistics collected during the run.
+    stats: Vec<GenerationStats>,
+}
 
 impl<U> Default for Ga<U>
 where
-    U:GenotypeT
+    U: ChromosomeT,
 {
     fn default() -> Self {
-        Ga { 
-            configuration: GaConfiguration{..Default::default()},
+        Ga {
+            configuration: GaConfiguration {
+                ..Default::default()
+            },
             population: Population::new_empty(),
             alleles: Vec::new(),
-            random_initialization: true,
-            default_population: true
+            termination_cause: TerminationCause::NotTerminated,
+            initialization_fn: None,
+            fitness_fn: None,
+            stats: Vec::new(),
         }
     }
 }
 
-
-impl<U> ConfigurationT for Ga<U>
+impl<U> SelectionConfig for Ga<U>
 where
-    U:GenotypeT
+    U: ChromosomeT,
 {
-    fn new()->Self{
-        Self::default()
-    }
-    fn with_adaptive_ga(&mut self, adaptive_ga: bool) -> &mut Self {
-        self.configuration.with_adaptive_ga(adaptive_ga);
+    fn with_number_of_couples(mut self, number_of_couples: usize) -> Self {
+        self.configuration.selection_configuration.number_of_couples = number_of_couples;
         self
     }
-    fn with_threads(&mut self, number_of_threads: i32)-> &mut Self {
-        self.configuration.with_threads(number_of_threads);
-        self
-    }
-    fn with_logs(&mut self, log_level: LogLevel) -> &mut Self {
-        self.configuration.with_logs(log_level);
-        self
-    }
-    fn with_survivor_method(&mut self, method: crate::operations::Survivor) -> &mut Self {
-        self.configuration.with_survivor_method(method);
-        self
-    }
-
-    //Limit configuration
-    fn with_problem_solving(&mut self, problem_solving: ProblemSolving)->&mut Self {
-        self.configuration.with_problem_solving(problem_solving);
-        self
-    }
-    fn with_max_generations(&mut self, max_generations: i32)-> &mut Self {
-        self.configuration.with_max_generations(max_generations);
-        self
-    }
-    fn with_fitness_target(&mut self, fitness_target: f64)-> &mut Self {
-        self.configuration.with_fitness_target(fitness_target);
-        self
-    }
-    fn with_best_individual_by_generation(&mut self, best_individual_by_generation: bool) -> &mut Self {
-        self.configuration.with_best_individual_by_generation(best_individual_by_generation);
-        self
-    }
-    fn with_population_size(&mut self, population_size: i32) -> &mut Self {
-        self.configuration.with_population_size(population_size);
-        self
-    }
-    fn with_genes_per_individual(&mut self, genes_per_individual: i32) -> &mut Self {
-        self.configuration.with_genes_per_individual(genes_per_individual);
-        self
-    }
-    fn with_needs_unique_ids(&mut self, needs_unique_ids: bool) -> &mut Self {
-        self.configuration.with_needs_unique_ids(needs_unique_ids);
-        self
-    }
-    fn with_alleles_can_be_repeated(&mut self, alleles_can_be_repeated: bool) -> &mut Self {
-        self.configuration.with_alleles_can_be_repeated(alleles_can_be_repeated);
-        self
-    }
-
-    //Selection configuration
-    fn with_number_of_couples(&mut self, number_of_couples: i32)->&mut Self {
-        self.configuration.with_number_of_couples(number_of_couples);
-        self
-    }
-    fn with_selection_method(&mut self, selection_method: crate::operations::Selection)->&mut Self {
-        self.configuration.with_selection_method(selection_method);
-        self
-    }
-
-    //Crossover configuration
-    fn with_crossover_number_of_points(&mut self, number_of_points: i32)->&mut Self {
-        self.configuration.with_crossover_number_of_points(number_of_points);
-        self
-    }
-    fn with_crossover_probability_max(&mut self, probability_max: f64)->&mut Self {
-        self.configuration.with_crossover_probability_max(probability_max);
-        self
-    }
-    fn with_crossover_probability_min(&mut self, probability_min: f64) -> &mut Self {
-        self.configuration.with_crossover_probability_min(probability_min);
-        self
-    }
-    fn with_crossover_method(&mut self, method: crossover::Crossover) -> &mut Self {
-        self.configuration.with_crossover_method(method);
-        self
-    }
-
-    //Mutation configuration
-    fn with_mutation_probability_max(&mut self, probability_max: f64)->&mut Self {
-        self.configuration.with_mutation_probability_max(probability_max);
-        self
-    }
-    fn with_mutation_probability_min(&mut self, probability_min: f64) -> &mut Self {
-        self.configuration.with_mutation_probability_min(probability_min);
-        self
-    }
-    fn with_mutation_method(&mut self, method: crate::operations::Mutation) -> &mut Self {
-        self.configuration.with_mutation_method(method);
-        self
-    }
-
-    //Save progress configuration
-    fn with_save_progress(&mut self, save_progress: bool) -> &mut Self {
-        self.configuration.with_save_progress(save_progress);
-        self
-    }
-    fn with_save_progress_interval(&mut self, save_progress_interval: i32) -> &mut Self {
-        self.configuration.with_save_progress_interval(save_progress_interval);
-        self
-    }
-    fn with_save_progress_path(&mut self, save_progress_path: String) -> &mut Self {
-        self.configuration.with_save_progress_path(save_progress_path);
+    fn with_selection_method(mut self, selection_method: crate::operations::Selection) -> Self {
+        self.configuration.selection_configuration.method = selection_method;
         self
     }
 }
 
-
-impl<U>Ga<U>
+impl<U> CrossoverConfig for Ga<U>
 where
-    U:GenotypeT + Send + Sync + 'static + Clone,
+    U: ChromosomeT,
 {
+    fn with_crossover_number_of_points(mut self, number_of_points: usize) -> Self {
+        self.configuration.crossover_configuration.number_of_points = Some(number_of_points);
+        self
+    }
+    fn with_crossover_probability_max(mut self, probability_max: f64) -> Self {
+        self.configuration.crossover_configuration.probability_max = Some(probability_max);
+        self
+    }
+    fn with_crossover_probability_min(mut self, probability_min: f64) -> Self {
+        self.configuration.crossover_configuration.probability_min = Some(probability_min);
+        self
+    }
+    fn with_crossover_method(mut self, method: crossover::Crossover) -> Self {
+        self.configuration.crossover_configuration.method = method;
+        self
+    }
+    fn with_sbx_eta(mut self, eta: f64) -> Self {
+        self.configuration.crossover_configuration.sbx_eta = Some(eta);
+        self
+    }
+    fn with_blend_alpha(mut self, alpha: f64) -> Self {
+        self.configuration.crossover_configuration.blend_alpha = Some(alpha);
+        self
+    }
+}
+
+impl<U> MutationConfig for Ga<U>
+where
+    U: ChromosomeT,
+{
+    fn with_mutation_probability_max(mut self, probability_max: f64) -> Self {
+        self.configuration.mutation_configuration.probability_max = Some(probability_max);
+        self
+    }
+    fn with_mutation_probability_min(mut self, probability_min: f64) -> Self {
+        self.configuration.mutation_configuration.probability_min = Some(probability_min);
+        self
+    }
+    fn with_mutation_method(mut self, method: crate::operations::Mutation) -> Self {
+        self.configuration.mutation_configuration.method = method;
+        self
+    }
+    fn with_mutation_step(mut self, step: f64) -> Self {
+        self.configuration.mutation_configuration.step = Some(step);
+        self
+    }
+    fn with_mutation_sigma(mut self, sigma: f64) -> Self {
+        self.configuration.mutation_configuration.sigma = Some(sigma);
+        self
+    }
+}
+
+impl<U> StoppingConfig for Ga<U>
+where
+    U: ChromosomeT,
+{
+    fn with_max_generations(mut self, max_generations: usize) -> Self {
+        self.configuration.limit_configuration.max_generations = max_generations;
+        self
+    }
+    fn with_fitness_target(mut self, fitness_target: f64) -> Self {
+        self.configuration.limit_configuration.fitness_target = Some(fitness_target);
+        self
+    }
+    fn with_stopping_criteria(mut self, criteria: crate::configuration::StoppingCriteria) -> Self {
+        self.configuration.stopping_criteria = criteria;
+        self
+    }
+}
+
+impl<U> NichingConfig for Ga<U>
+where
+    U: ChromosomeT,
+{
+    fn with_niching_enabled(mut self, enabled: bool) -> Self {
+        self.configuration
+            .niching_configuration
+            .get_or_insert_with(crate::niching::configuration::NichingConfiguration::default)
+            .enabled = enabled;
+        self
+    }
+    fn with_niching_sigma_share(mut self, sigma_share: f64) -> Self {
+        self.configuration
+            .niching_configuration
+            .get_or_insert_with(crate::niching::configuration::NichingConfiguration::default)
+            .sigma_share = sigma_share;
+        self
+    }
+    fn with_niching_alpha(mut self, alpha: f64) -> Self {
+        self.configuration
+            .niching_configuration
+            .get_or_insert_with(crate::niching::configuration::NichingConfiguration::default)
+            .alpha = alpha;
+        self
+    }
+}
+
+impl<U> ElitismConfig for Ga<U>
+where
+    U: ChromosomeT,
+{
+    fn with_elitism(mut self, elitism_count: usize) -> Self {
+        self.configuration.elitism_count = elitism_count;
+        self
+    }
+}
+
+impl<U> ConfigurationT for Ga<U>
+where
+    U: ChromosomeT,
+{
+    fn new() -> Self {
+        Self::default()
+    }
+    fn with_adaptive_ga(mut self, adaptive_ga: bool) -> Self {
+        self.configuration.adaptive_ga = adaptive_ga;
+        self
+    }
+    fn with_threads(mut self, number_of_threads: usize) -> Self {
+        self.configuration.number_of_threads = number_of_threads;
+        self
+    }
+    fn with_logs(mut self, log_level: LogLevel) -> Self {
+        self.configuration.log_level = log_level;
+        self
+    }
+    fn with_survivor_method(mut self, method: crate::operations::Survivor) -> Self {
+        self.configuration.survivor = method;
+        self
+    }
+
+    //Limit configuration
+    fn with_problem_solving(mut self, problem_solving: ProblemSolving) -> Self {
+        self.configuration.limit_configuration.problem_solving = problem_solving;
+        self
+    }
+    fn with_population_size(mut self, population_size: usize) -> Self {
+        self.configuration.limit_configuration.population_size = population_size;
+
+        // Setting the number of couples
+        self.configuration.selection_configuration.number_of_couples =
+            if self.configuration.selection_configuration.number_of_couples == 0 {
+                self.configuration.limit_configuration.population_size / 2
+            } else {
+                self.configuration.selection_configuration.number_of_couples
+            };
+
+        self
+    }
+    fn with_genes_per_chromosome(mut self, genes_per_chromosome: usize) -> Self {
+        self.configuration.limit_configuration.genes_per_chromosome = genes_per_chromosome;
+        self
+    }
+    fn with_needs_unique_ids(mut self, needs_unique_ids: bool) -> Self {
+        self.configuration.limit_configuration.needs_unique_ids = needs_unique_ids;
+        self
+    }
+    fn with_alleles_can_be_repeated(mut self, alleles_can_be_repeated: bool) -> Self {
+        self.configuration
+            .limit_configuration
+            .alleles_can_be_repeated = alleles_can_be_repeated;
+        self
+    }
+
+    //Save progress configuration
+    fn with_save_progress(mut self, save_progress: bool) -> Self {
+        self.configuration.save_progress_configuration.save_progress = save_progress;
+        self
+    }
+    fn with_save_progress_interval(mut self, save_progress_interval: usize) -> Self {
+        self.configuration
+            .save_progress_configuration
+            .save_progress_interval = save_progress_interval;
+        self
+    }
+    fn with_save_progress_path(mut self, save_progress_path: String) -> Self {
+        self.configuration
+            .save_progress_configuration
+            .save_progress_path = save_progress_path;
+        self
+    }
+
+    fn with_rng_seed(mut self, seed: u64) -> Self {
+        self.configuration.rng_seed = Some(seed);
+        self
+    }
+}
+
+impl<U> Ga<U>
+where
+    U: ChromosomeT
+        + Send
+        + Sync
+        + 'static
+        + Clone
+        + Debug
+        + mutation::ValueMutable
+        + MaybeSerialize,
+    U::Gene: 'static + Debug,
+{
+    /// Validates configuration and adjusts defaults, returning a ready-to-run instance.
+    ///
+    /// Call this after setting all builder options and before calling `run()` or
+    /// `initialization()`. It performs the following checks:
+    ///
+    /// - Auto-sets `number_of_couples` to `population_size / 2` if not explicitly set.
+    /// - Validates that `FixedFitness` mode has a `fitness_target`.
+    /// - Validates that adaptive GA has proper crossover probabilities.
+    /// - Validates alleles vs chromosome length when alleles can be repeated.
+    ///
+    /// # Errors
+    ///
+    /// Returns `GaError::ConfigurationError` if any validation check fails.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let mut ga = Ga::new()
+    ///     .with_population_size(100)
+    ///     .with_genes_per_chromosome(8)
+    ///     // ... other settings ...
+    ///     .build()?;
+    /// ga.run()?;
+    /// ```
+    pub fn build(mut self) -> Result<Self, GaError> {
+        // Auto-set number_of_couples from population_size if not explicitly configured
+        if self.configuration.selection_configuration.number_of_couples == 0
+            && self.configuration.limit_configuration.population_size > 0
+        {
+            self.configuration.selection_configuration.number_of_couples =
+                self.configuration.limit_configuration.population_size / 2;
+        }
+
+        // Validate configuration using the existing validator (config-only checks)
+        ValidatorFactory::validate::<U>(
+            Some(&self.configuration),
+            None,
+            if self.alleles.is_empty() {
+                None
+            } else {
+                Some(&self.alleles)
+            },
+        )?;
+
+        Ok(self)
+    }
+
     /**
      * Function to set the alleles
      */
-    pub fn with_alleles(&mut self, alleles: Vec<U::Gene>) -> &mut Self {
+    pub fn with_alleles(mut self, alleles: Vec<U::Gene>) -> Self {
         self.alleles = alleles;
         self
     }
@@ -171,118 +384,139 @@ where
     /**
      * Function to set the population
      */
-    pub fn with_population(&mut self, population: Population<U>) -> &mut Self {
-        self.population = population;
-        self.random_initialization = false;
-        self.default_population = false;
-        
+    pub fn with_population(mut self, population: Population<U>) -> Self {
         //Checks if the number of couples is 0, sets the number of couples to the half of the population
         if self.configuration.selection_configuration.number_of_couples == 0 {
-            self.configuration.selection_configuration.number_of_couples = ((self.population.size() / 2) as f64).round() as i32;
+            self.configuration.selection_configuration.number_of_couples = population.size() / 2;
         }
+        self.population = population;
         self
     }
 
     /**
-     * Function to randomly initialize the population
+     * Function to set the fitness function
      */
-    pub fn random_initialization(&mut self)->Population<U>
-    where U:GenotypeT + Send + Sync + 'static + Clone
+    pub fn with_fitness_fn<F>(mut self, fitness_fn: F) -> Self
+    where
+        F: Fn(&[U::Gene]) -> f64 + Send + Sync + 'static,
     {
-        //Before starting the run, we will check the conditions
-        condition_checker_factory::<U>(Some(&self.configuration), None, Some(&self.alleles), self.default_population);
-
-        info!("Random initialization started");
-        //let mut individuals = Vec::new();
-        let (tx, rx) = sync_channel(self.configuration.number_of_threads as usize);
-
-        //Setting the number of individuals per thread
-        let individuals_per_thread = self.configuration.limit_configuration.population_size / self.configuration.number_of_threads;
-
-        //Cloning the individuals for multithreading
-        let alleles_t = Arc::new(Mutex::new(self.alleles.clone()));
-
-        //Walking through the threads
-        for _ in 0..self.configuration.number_of_threads {
-
-        //Cloning the information from the main thread
-        let (tx, 
-        alleles_t, 
-        alleles_can_be_repeated_t, 
-        genes_per_individual_t, 
-        individuals_per_thread_t,
-        needs_unique_ids_t) = (tx.clone(), Arc::clone(&alleles_t), self.configuration.limit_configuration.alleles_can_be_repeated, 
-                                    self.configuration.limit_configuration.genes_per_individual, individuals_per_thread, 
-                                    self.configuration.limit_configuration.needs_unique_ids);
-
-        //Starting the thread management
-        thread::spawn(move || {
-
-        let mut individuals = Vec::new();
-
-        for _ in 0..individuals_per_thread_t{
-
-        let mut individual = U::new();
-
-        //Gets the dna randomly
-        if alleles_can_be_repeated_t {
-        let dna_individual = helpers::initialize_dna::<U>(&alleles_t.lock().unwrap(), genes_per_individual_t, needs_unique_ids_t);
-        individual.set_dna(dna_individual.as_slice());
-        }else{
-        let dna_individual = helpers::initialize_dna_without_repeated_alleles::<U>(&alleles_t.lock().unwrap(), genes_per_individual_t, needs_unique_ids_t);
-        individual.set_dna(dna_individual.as_slice());
-        }
-
-        //Sets the dna of the individual, the age, and calculates fitness
-        individual.set_age(0);
-        individual.calculate_fitness();
-
-        //Adds the individual in the vector
-        individuals.push(individual);
-
-        }
-
-        //we send the individuals randomly initialized
-        tx.send(individuals).unwrap();
-        });
-        }
-
-        drop(tx);
-
-        // We receive from the threads and add them into individuals
-        let mut individuals = Vec::new();
-        for mut received in rx {
-        individuals.append(&mut received);
-        }
-
-        Population::new(individuals)
-
-    }
-
-    pub fn run(&mut self)->Population<U>{
-        self.run_with_callback(None::<fn(&i32, &Population<U>,TerminationCause)>, 0)
+        self.fitness_fn = Some(Arc::new(fitness_fn));
+        self
     }
 
     /**
-     * Method for running the Genetic Algorithms with callback
+     * Sets the initialization function
      */
-    pub fn run_with_callback<F>(&mut self, callback: Option<F>, generations_to_callback: i32)->Population<U>
-    where 
-        U:GenotypeT + Send + Sync + 'static + Clone,
-        F: Fn(&i32, &Population<U>, TerminationCause)
+    pub fn with_initialization_fn<F>(mut self, initialization_fn: F) -> Self
+    where
+        U: ChromosomeT + Send + Sync + 'static + Clone,
+        F: Fn(usize, Option<&[U::Gene]>, Option<bool>) -> Vec<U::Gene> + Send + Sync + 'static,
+    {
+        self.initialization_fn = Some(Arc::new(initialization_fn));
+        self
+    }
+
+    /// Randomly initializes the population using the provided initialization function.
+    ///
+    /// Behavior:
+    /// - Validates configuration and alleles before starting.
+    /// - Creates and evaluates chromosomes in parallel using rayon.
+    /// - Sets the internal `population` with the collected chromosomes.
+    pub fn initialization(&mut self) -> Result<&mut Self, GaError>
+    where
+        U: ChromosomeT + Send + Sync + 'static + Clone,
+    {
+        // Before starting initialization, we should verify that initializer is set
+        if self.initialization_fn.is_none() {
+            return Err(GaError::InitializationError(
+                "No initialization function set".to_string(),
+            ));
+        }
+
+        //Before starting the run, we will check the conditions
+        ValidatorFactory::validate::<U>(Some(&self.configuration), None, Some(&self.alleles))?;
+
+        info!("Initialization started");
+
+        let population_size = self.configuration.limit_configuration.population_size;
+        let genes_per_chromosome = self.configuration.limit_configuration.genes_per_chromosome;
+        let needs_unique_ids = self.configuration.limit_configuration.needs_unique_ids;
+        let init_fn = self.initialization_fn.as_ref().unwrap();
+        let fitness_fn = self.fitness_fn.as_ref().unwrap();
+
+        let chromosomes = crate::traits::initialize_chromosomes_par::<U>(
+            population_size,
+            genes_per_chromosome,
+            if self.alleles.is_empty() {
+                None
+            } else {
+                Some(&self.alleles)
+            },
+            Some(needs_unique_ids),
+            init_fn,
+            Some(fitness_fn),
+            0,
+        );
+
+        // Set population directly (with_population is consuming, so we assign inline)
+        let new_population = Population::new(chromosomes);
+        if self.configuration.selection_configuration.number_of_couples == 0 {
+            self.configuration.selection_configuration.number_of_couples =
+                new_population.size() / 2;
+        }
+        self.population = new_population;
+        Ok(self)
+    }
+
+    /// Runs the GA without callbacks and returns a reference to the final population.
+    ///
+    /// Equivalent to `run_with_callback(None, 0)`.
+    pub fn run(&mut self) -> Result<&Population<U>, GaError> {
+        self.run_with_callback(
+            None::<
+                fn(&usize, &Population<U>, &GenerationStats, &TerminationCause) -> ControlFlow<()>,
+            >,
+            0,
+        )
+    }
+
+    /// Runs the GA and optionally invokes a callback every `generations_to_callback` generations.
+    ///
+    /// The callback receives the generation index, current population, per-generation statistics,
+    /// and the current termination cause. If the callback returns `ControlFlow::Break(())`, the
+    /// run terminates early with `TerminationCause::CallbackRequested`.
+    ///
+    /// Execution cycle per generation:
+    /// 1) Selection of parents, 2) Crossover to produce offspring, 3) Mutation of offspring,
+    /// 4) Survivor selection to prune population, 5) Best chromosome update, 6) Stop check.
+    ///
+    /// Logging is controlled by configuration log level; adaptive GA updates use f_avg and f_max.
+    pub fn run_with_callback<F>(
+        &mut self,
+        callback: Option<F>,
+        generations_to_callback: usize,
+    ) -> Result<&Population<U>, GaError>
+    where
+        U: ChromosomeT + Send + Sync + 'static + Clone,
+        F: Fn(&usize, &Population<U>, &GenerationStats, &TerminationCause) -> ControlFlow<()>,
     {
         //Before starting the run, we will check the conditions
-        condition_checker_factory::<U>(Some(&self.configuration), Some(&self.population), Some(&self.alleles), self.default_population);
+        ValidatorFactory::validate::<U>(Some(&self.configuration), None, Some(&self.alleles))?;
+
+        // Apply RNG seed if configured (must be done before any random operations)
+        crate::rng::set_seed(self.configuration.rng_seed);
 
         //If we want to initialize the population randomly
-        if self.random_initialization {
-            let tmp_population=self.random_initialization();
-            self.with_population(tmp_population);
-        }   
+        if self.population.size() == 0 && self.initialization_fn.is_some() {
+            self.initialization()?;
+        } else if self.population.size() == 0 && self.initialization_fn.is_none() {
+            return Err(GaError::InitializationError(
+                "No initialization function set".to_string(),
+            ));
+        }
 
-        //We set the environment variable from the configuration value
-        let key = "RUST_LOG";
-        let log_level = match self.configuration.log_level{
+        //We initialize the logger programmatically (no env::set_var, which is UB in multi-threaded context)
+        let log_level = match self.configuration.log_level {
             LogLevel::Off => log::LevelFilter::Off,
             LogLevel::Error => log::LevelFilter::Error,
             LogLevel::Warn => log::LevelFilter::Warn,
@@ -290,165 +524,357 @@ where
             LogLevel::Debug => log::LevelFilter::Debug,
             LogLevel::Trace => log::LevelFilter::Trace,
         };
-        env::set_var(key, log_level.as_str());
-        let _ = env_logger::try_init();
+        let _ = env_logger::Builder::from_default_env()
+            .filter_level(log_level)
+            .try_init();
 
         //Initialize the adaptive ga
-        if self.configuration.adaptive_ga{
-            self.population.aga_init();
+        if self.configuration.adaptive_ga {
+            self.population.recalculate_aga();
         }
 
-        //Best individual within the generations and population returned
+        //Best chromosome within the generations and population returned
         let initial_population_size = self.population.size();
-        let mut age = 0;
+        let mut age = 0usize;
 
-        //Calculation of the fitness and the best individual
-        let mut best_individual = population_fitness_calculation(&mut self.population.individuals, self.configuration.clone());
-        let mut best_population: Population<U> = Population::new_empty();
+        //Calculation of the fitness and the best chromosome
+        self.population.fitness_calculation(
+            self.configuration.number_of_threads,
+            self.configuration.limit_configuration.problem_solving,
+        );
 
         // Starting counting the generations for the callback
-        let mut generation_callback_count = 0;
-        let mut termination_cause = TerminationCause::NotTerminated;
+        let mut generation_callback_count = 0usize;
+
+        // Reset per-generation stats
+        self.stats.clear();
+
+        // Determine if this is a maximization problem
+        let is_maximization = matches!(
+            self.configuration.limit_configuration.problem_solving,
+            ProblemSolving::Maximization
+        );
+
+        // Compound stopping criteria tracking
+        let start_time = Instant::now();
+        let mut best_fitness_so_far = self.population.best_chromosome.fitness();
+        let mut stagnation_count: usize = 0;
 
         //We start the cycles
         for i in 0..self.configuration.limit_configuration.max_generations {
-
             info!(target="ga_events", method="run"; "Generation number: {}", i+1);
             age += 1;
 
             //1- Parent selection for reproduction
-            let mut parents = selection::factory(&self.population.individuals, self.configuration.selection_configuration, self.configuration.number_of_threads);
+            let parents = selection::factory(
+                &self.population.chromosomes,
+                self.configuration.selection_configuration,
+                self.configuration.number_of_threads,
+            )?;
             debug!(target="ga_events", method="run"; "Parents selected for reproduction");
 
             //2- Getting the offspring
-            let mut offspring = parent_crossover(&mut parents, &self.population.individuals, &self.configuration, age, self.population.f_max, self.population.f_avg);
+            let mut offspring = parent_crossover(
+                &parents,
+                &self.population.chromosomes,
+                &self.configuration,
+                age,
+                self.population.f_max,
+                self.population.f_avg,
+            )?;
             debug!(target="ga_events", method="run"; "Offspring created");
 
-            //3- Sets the best individual
-            for child in &offspring{
-                best_individual = get_best_individual(&best_individual, child, self.configuration.limit_configuration.problem_solving);
+            //3- Insert the children in the population
+            self.population.add_chromosomes(&mut offspring);
+
+            //3.5- Elitism: preserve the top N individuals
+            let elite = if self.configuration.elitism_count > 0 {
+                extract_elite(
+                    &self.population.chromosomes,
+                    self.configuration.elitism_count,
+                    self.configuration.limit_configuration.problem_solving,
+                )
+            } else {
+                Vec::new()
+            };
+
+            //4- Survivor selection
+            survivor::factory(
+                self.configuration.survivor,
+                &mut self.population.chromosomes,
+                initial_population_size,
+                self.configuration.limit_configuration,
+            )?;
+
+            // Reinsert elite individuals, replacing the worst survivors if needed
+            if !elite.is_empty() {
+                reinsert_elite(
+                    &mut self.population.chromosomes,
+                    elite,
+                    self.configuration.limit_configuration.problem_solving,
+                );
             }
-            debug!(target="ga_events", method="run"; "Best individual calculated - generation {}", i+1);
-
-            //3.1- If we want to return the best individual by generation
-            if self.configuration.limit_configuration.get_best_individual_by_generation {
-                best_population.add_individual_gn(best_individual.clone(), i, self.configuration.adaptive_ga);
+            if self.configuration.adaptive_ga {
+                self.population.recalculate_aga();
             }
 
-            //4- Insert the children in the population
-            self.population.add_individuals(&mut offspring, self.configuration.adaptive_ga);
+            // Apply niching / fitness sharing if configured
+            if let Some(ref niching_config) = self.configuration.niching_configuration {
+                if niching_config.enabled {
+                    // Extract fitness values
+                    let mut fitness_values: Vec<f64> = self
+                        .population
+                        .chromosomes
+                        .iter()
+                        .map(|c| c.fitness())
+                        .collect();
 
-            //5- Survivor selection
-            survivor::factory(self.configuration.survivor, &mut self.population.individuals, initial_population_size, self.configuration.limit_configuration);
+                    // Extract DNA slices for distance computation
+                    let dna_slices: Vec<&[U::Gene]> = self
+                        .population
+                        .chromosomes
+                        .iter()
+                        .map(|c| c.dna())
+                        .collect();
+
+                    // Compute distance matrix using gene ID comparison
+                    let distances = crate::niching::sharing::compute_distance_matrix(
+                        &dna_slices,
+                        |dna_a: &[U::Gene], dna_b: &[U::Gene]| {
+                            let max_len = dna_a.len().max(dna_b.len());
+                            if max_len == 0 {
+                                return 0.0;
+                            }
+                            let mut diff = 0usize;
+                            for idx in 0..max_len {
+                                let id_a = dna_a.get(idx).map(|g| g.id()).unwrap_or(-1);
+                                let id_b = dna_b.get(idx).map(|g| g.id()).unwrap_or(-1);
+                                if id_a != id_b {
+                                    diff += 1;
+                                }
+                            }
+                            diff as f64
+                        },
+                    );
+
+                    // Apply fitness sharing
+                    crate::niching::sharing::apply_fitness_sharing(
+                        &mut fitness_values,
+                        &distances,
+                        niching_config.sigma_share,
+                        niching_config.alpha,
+                    );
+
+                    // Write adjusted fitness back
+                    for (chromosome, &shared_fitness) in self
+                        .population
+                        .chromosomes
+                        .iter_mut()
+                        .zip(fitness_values.iter())
+                    {
+                        chromosome.set_fitness(shared_fitness);
+                    }
+                }
+            }
+
             debug!(target="ga_events", method="run"; "Survivors selected");
 
-            // If we want to perform a callback
+            //5- Sets the best chromosome (scan by index, clone only the winner)
+            {
+                let ps = self.configuration.limit_configuration.problem_solving;
+                let chromosomes = &self.population.chromosomes;
+                if let Some(best_idx) = best_chromosome_index(chromosomes, ps) {
+                    if !self.population.best_chromosome_is_set {
+                        self.population.best_chromosome =
+                            self.population.chromosomes[best_idx].clone();
+                        self.population.best_chromosome_is_set = true;
+                    } else {
+                        let candidate = self.population.chromosomes[best_idx].fitness();
+                        let current = self.population.best_chromosome.fitness();
+                        let better = match ps {
+                            ProblemSolving::Maximization | ProblemSolving::FixedFitness => {
+                                candidate > current
+                            }
+                            ProblemSolving::Minimization => candidate < current,
+                        };
+                        if better {
+                            self.population.best_chromosome =
+                                self.population.chromosomes[best_idx].clone();
+                        }
+                    }
+                }
+            }
+            debug!(target="ga_events", method="run"; "Best chromosome calculated - generation {}", i+1);
+
+            // Collect per-generation statistics
+            let fitness_values: Vec<f64> = self
+                .population
+                .chromosomes
+                .iter()
+                .map(|c| c.fitness())
+                .collect();
+            let gen_stats =
+                GenerationStats::from_fitness_values(i, &fitness_values, is_maximization);
+            self.stats.push(gen_stats.clone());
+
+            // Save checkpoint to disk if configured (requires serde feature)
+            #[cfg(feature = "serde")]
+            {
+                let spc = &self.configuration.save_progress_configuration;
+                if spc.save_progress
+                    && spc.save_progress_interval > 0
+                    && (i + 1) % spc.save_progress_interval == 0
+                {
+                    let ckpt = crate::checkpoint::Checkpoint {
+                        population: self.population.clone(),
+                        configuration: self.configuration.clone(),
+                        generation: i,
+                        stats: self.stats.clone(),
+                    };
+                    let path = std::path::Path::new(&spc.save_progress_path)
+                        .join(format!("checkpoint_gen_{}.json", i + 1));
+                    if let Err(e) = crate::checkpoint::save_checkpoint(&ckpt, &path) {
+                        log::warn!("Failed to save checkpoint at generation {}: {}", i + 1, e);
+                    }
+                }
+            }
+
+            // If we want to perform a periodic callback
             if let Some(func) = &callback {
-                if (generation_callback_count+1) == generations_to_callback {
-                    func(&i, &self.population, TerminationCause::NotTerminated);
+                if (generation_callback_count + 1) == generations_to_callback {
+                    if func(&i, &self.population, &gen_stats, &self.termination_cause).is_break() {
+                        self.termination_cause = TerminationCause::CallbackRequested;
+                        break;
+                    }
                     generation_callback_count = 0;
                 } else {
-                    generation_callback_count+=1;
+                    generation_callback_count += 1;
                 }
             }
 
             //6- Identifies if the limit has been reached or not
-            if limit_reached(self.configuration.limit_configuration, &self.population.individuals){
-
-                // If we want to perform a callback
+            if limit_reached(
+                self.configuration.limit_configuration,
+                &self.population.chromosomes,
+            ) {
+                self.termination_cause = TerminationCause::FitnessTargetReached;
                 if let Some(func) = &callback {
-                    termination_cause = TerminationCause::FitnessTargetReached;
-                    func(&i, &self.population, TerminationCause::NotTerminated);
+                    let _ = func(&i, &self.population, &gen_stats, &self.termination_cause);
                 }
                 break;
             }
-        }
 
-        //If it's not required to return the best individuals by generation
-        if !self.configuration.limit_configuration.get_best_individual_by_generation {
-            best_population.add_individual_gn(best_individual, -1, self.configuration.adaptive_ga);
-        }
+            //7- Compound stopping criteria
+            // Stagnation check
+            let current_best = self.population.best_chromosome.fitness();
+            let improved = match self.configuration.limit_configuration.problem_solving {
+                ProblemSolving::Maximization => current_best > best_fitness_so_far,
+                ProblemSolving::Minimization => current_best < best_fitness_so_far,
+                _ => (current_best - best_fitness_so_far).abs() > f64::EPSILON,
+            };
+            if improved {
+                best_fitness_so_far = current_best;
+                stagnation_count = 0;
+            } else {
+                stagnation_count += 1;
+            }
 
-        // If we want to perform a callback and the fitness target is not reached
-        if let Some(func) = &callback {
-            if termination_cause == TerminationCause::NotTerminated {
-                termination_cause = TerminationCause::GenerationLimitReached;
-                func(&self.configuration.limit_configuration.max_generations, &self.population, termination_cause);
+            if let Some(max_stagnation) =
+                self.configuration.stopping_criteria.stagnation_generations
+            {
+                if stagnation_count >= max_stagnation {
+                    self.termination_cause = TerminationCause::StagnationReached;
+                    if let Some(func) = &callback {
+                        let _ = func(&i, &self.population, &gen_stats, &self.termination_cause);
+                    }
+                    break;
+                }
+            }
+
+            // Convergence check (fitness std dev below threshold)
+            if let Some(threshold) = self.configuration.stopping_criteria.convergence_threshold {
+                if gen_stats.fitness_std_dev < threshold {
+                    self.termination_cause = TerminationCause::ConvergenceReached;
+                    if let Some(func) = &callback {
+                        let _ = func(&i, &self.population, &gen_stats, &self.termination_cause);
+                    }
+                    break;
+                }
+            }
+
+            // Time limit check
+            if let Some(max_secs) = self.configuration.stopping_criteria.max_duration_secs {
+                if start_time.elapsed().as_secs_f64() >= max_secs {
+                    self.termination_cause = TerminationCause::TimeLimitReached;
+                    if let Some(func) = &callback {
+                        let _ = func(&i, &self.population, &gen_stats, &self.termination_cause);
+                    }
+                    break;
+                }
             }
         }
 
-        best_population
+        // Set termination cause when generation limit is reached (regardless of callback)
+        if self.termination_cause == TerminationCause::NotTerminated {
+            self.termination_cause = TerminationCause::GenerationLimitReached;
+        }
+
+        // If we want to perform a callback and the generation limit was just reached
+        if let Some(func) = &callback {
+            if self.termination_cause == TerminationCause::GenerationLimitReached {
+                let final_stats = self.stats.last().cloned().unwrap_or_else(|| {
+                    GenerationStats::from_fitness_values(0, &[], is_maximization)
+                });
+                let _ = func(
+                    &self.configuration.limit_configuration.max_generations,
+                    &self.population,
+                    &final_stats,
+                    &self.termination_cause,
+                );
+            }
+        }
+
+        Ok(&self.population)
+    }
+
+    /// Returns per-generation statistics collected during the last run.
+    ///
+    /// The vector is populated during `run()` / `run_with_callback()` and cleared
+    /// at the start of each new run. Each entry corresponds to one generation.
+    pub fn stats(&self) -> &[GenerationStats] {
+        &self.stats
     }
 }
 
-/**
- * Function to determine which of the individuals is the best individual and return the best of them
- */
-fn get_best_individual<U>(individual_1: &U, individual_2: &U, problem_solving: ProblemSolving) -> U
+/// Checks termination limits according to `LimitConfiguration`.
+///
+/// - For Minimization: stops when any chromosome has fitness exactly `0.0`.
+/// - For FixedFitness: stops when any chromosome has fitness exactly `fitness_target`.
+fn limit_reached<U>(limit: LimitConfiguration, chromosomes: &[U]) -> bool
 where
-U:GenotypeT
+    U: ChromosomeT,
 {
-
-    debug!(target="ga_events", method="get_best_individual"; "Started the best individual method");
-    let mut best_individual = U::new();
-    trace!(target="ga_events", method="get_best_individual"; "Individual 1 fitness: {} - Individual 2 fitness: {}", individual_1.get_fitness(), individual_2.get_fitness());
-
-    if problem_solving == ProblemSolving::Maximization {
-
-        //We check if the fitness is the best and store it if it's the case
-        if individual_1.get_fitness() >= individual_2.get_fitness(){
-            best_individual.set_dna(individual_1.get_dna());
-            best_individual.set_fitness(individual_1.get_fitness());
-        }else{
-            best_individual.set_dna(individual_2.get_dna());
-            best_individual.set_fitness(individual_2.get_fitness());
-        }
-
-    } else {
-
-        //We check if the fitness is the best and store it if it's the case
-        if individual_1.get_fitness() >= individual_2.get_fitness(){
-            best_individual.set_dna(individual_2.get_dna());
-            best_individual.set_fitness(individual_2.get_fitness());
-        }else{
-            best_individual.set_dna(individual_1.get_dna());
-            best_individual.set_fitness(individual_1.get_fitness());
-        }
-
-    }
-
-    debug!(target="ga_events", method="get_best_individual"; "Best individual method finished");
-    best_individual
-}
-
-/**
- * Function to identify if the limit has been reached or not in the current generation
- */
-fn limit_reached<U>(limit: LimitConfiguration, individuals: &Vec<U>)->bool
-where
-U:GenotypeT
-{
-
     debug!(target="ga_events", method="limit_reached"; "Started limit reached method");
     let mut result = false;
 
-    if limit.problem_solving == ProblemSolving::Minimization{
-        //If the problem solving is minimization, fitness must be 0
-        for genotype in individuals {
-            if genotype.get_fitness() == 0.0 {
+    if limit.problem_solving == ProblemSolving::Minimization {
+        //If the problem-solving is minimization, fitness must be 0
+        for chromosome in chromosomes {
+            if chromosome.fitness() == 0.0 {
                 trace!(target="ga_events", method="limit_reached"; "limit reached for minimization");
                 result = true;
                 break;
             }
         }
-    }else if limit.problem_solving == ProblemSolving::FixedFitness{
-
-        //If the problem solving is a fixed fitness
-        for genotype in individuals {
-            if genotype.get_fitness() == limit.fitness_target.unwrap() {
-                trace!(target="ga_events", method="limit_reached"; "limit reached for fixed fitness");
-                result = true;
-                break;
+    } else if limit.problem_solving == ProblemSolving::FixedFitness {
+        //If the problem-solving is a fixed fitness
+        if let Some(target) = limit.fitness_target {
+            for chromosome in chromosomes {
+                if chromosome.fitness() == target {
+                    trace!(target="ga_events", method="limit_reached"; "limit reached for fixed fitness");
+                    result = true;
+                    break;
+                }
             }
         }
     }
@@ -457,234 +883,245 @@ U:GenotypeT
     result
 }
 
-/**
- * Sets the population fitness, age and the best individual
- */
-fn population_fitness_calculation<U>(individuals: &mut Vec<U>, configuration: GaConfiguration) -> U
+/// Performs parent crossover using the configured crossover and mutation strategies.
+///
+/// Behavior:
+/// - Splits work among threads considering available parent pairs.
+/// - Computes adaptive probabilities when enabled; otherwise uses static ones.
+/// - Produces children, mutates them, computes their fitness, and returns the offspring.
+fn parent_crossover<U>(
+    parents: &[(usize, usize)],
+    chromosomes: &[U],
+    configuration: &GaConfiguration,
+    age: usize,
+    f_max: f64,
+    f_avg: f64,
+) -> Result<Vec<U>, GaError>
 where
-U:GenotypeT + Send + Sync + 'static + Clone
+    U: ChromosomeT + Send + Sync + 'static + Clone + mutation::ValueMutable,
 {
-
-    debug!(target="ga_events", method="population_fitness_calculation"; "Started the population fitness calculation");
-    let mut number_of_threads = configuration.number_of_threads;
-    let (tx, rx) = sync_channel(number_of_threads as usize);
-
-    //Division of the individuals in different threads
-    number_of_threads = if number_of_threads > individuals.len() as i32 {individuals.len() as i32} else {number_of_threads};
-
-    //Setting the starting point and the jump
-    let mut start_index = 0;
-    let mut jump = individuals.len() as i32 / number_of_threads;
-
-    //Cloning the individuals for multithreading
-    let individuals_t = Vec::from_iter(individuals[..].iter().cloned());
-    let individuals_t = Arc::new(Mutex::new(individuals_t));
-
-    let best_individual_t = Arc::new(Mutex::new(U::new()));
-
-    //Walking through the threads
-    for _ in 0..number_of_threads {
-
-        //We calculate the next jump
-        if jump > individuals.len() as i32 - (start_index + jump) {
-            jump += individuals.len() as i32 - (start_index + jump);
-        }
-
-        //Cloning the information from the main thread
-        let (start_index_t, tx, jump_t, individuals_t, best_individual_t) = (start_index, tx.clone(),  jump, Arc::clone(&individuals_t), Arc::clone(&best_individual_t));
-
-        //Starting the thread management
-        thread::spawn(move || {
-
-            let mut fitness_map = HashMap::new();
-            let mut best_individual = U::new();
-
-            //Calculates the fitness from the corresponding population
-            for i in start_index_t..(start_index_t + jump_t){
-                individuals_t.lock().unwrap()[i as usize].calculate_fitness();
-                fitness_map.insert(i as usize, individuals_t.lock().unwrap()[i as usize].get_fitness());
-
-                if !best_individual.get_dna().is_empty() {
-                    best_individual = get_best_individual(&best_individual, &individuals_t.lock().unwrap()[i as usize], configuration.limit_configuration.problem_solving);
-                } else{
-                    best_individual.set_dna(individuals_t.lock().unwrap()[i as usize].get_dna());
-                    best_individual.set_fitness(individuals_t.lock().unwrap()[i as usize].get_fitness());
-                }
-            }
-
-            //Setting the best global individual
-            if !best_individual_t.lock().unwrap().get_dna().is_empty() {
-                let global_best_individual = get_best_individual(&best_individual_t.lock().unwrap().clone(), &best_individual, configuration.limit_configuration.problem_solving);
-                best_individual_t.lock().unwrap().set_dna(global_best_individual.get_dna());
-                best_individual_t.lock().unwrap().set_fitness(global_best_individual.get_fitness());
-            }else{
-                best_individual_t.lock().unwrap().set_dna(best_individual.get_dna());
-                best_individual_t.lock().unwrap().set_fitness(best_individual.get_fitness());
-            }
-
-            //Sending the result
-            tx.send(fitness_map).unwrap();
-        });
-
-        start_index += jump;
-    }
-
-    drop(tx);
-
-    //We receive from the threads and set the fitness in individuals
-    for received in rx {
-        for element in received{
-            individuals[element.0].set_fitness(element.1);
-        }
-    }
-
-    let mut best_individual = U::new();
-    best_individual.set_dna(best_individual_t.lock().unwrap().get_dna());
-    best_individual.set_fitness(best_individual_t.lock().unwrap().get_fitness());
-
-    debug!(target="ga_events", method="population_fitness_calculation"; "Population fitness calculation finished");
-
-    best_individual
-}
-
-/**
- * Function for parent crossover
- */
-fn parent_crossover<U>(parents: &mut HashMap<usize, usize>, individuals: &Vec<U>, configuration: &GaConfiguration, age: i32, f_max: f64, f_avg: f64) -> Vec<U>
-where 
-U:GenotypeT + Send + Sync + 'static + Clone
-{
-    //Setting the control variables
     debug!(target="ga_events", method="parent_crossover"; "Started the parent crossover");
-    let number_of_threads = if configuration.number_of_threads > parents.len() as i32 {parents.len() as i32}else{configuration.number_of_threads};
-    let jump = parents.len() / number_of_threads as usize;
-
-    let mut handles = Vec::new();
-    let offspring = Arc::new(Mutex::new(Vec::new()));
 
     /*
         Gets the static crossover probability config and the static mutation probability config
         This way we avoid of passing by these conditions at each thread if it's not necessary
     */
-    let crossover_probability_config = 
-            if configuration.crossover_configuration.probability_max.is_none(){
-                Some(1.0)
-            }else if !configuration.adaptive_ga{
-                Some(configuration.crossover_configuration.probability_max.unwrap())
-            }else{
-                    None
-            };
+    let crossover_probability_config =
+        if let Some(p) = configuration.crossover_configuration.probability_max {
+            if !configuration.adaptive_ga {
+                Some(p)
+            } else {
+                None
+            }
+        } else {
+            Some(1.0)
+        };
 
     let mutation_probability_config =
-            if configuration.mutation_configuration.probability_max.is_none(){
-                Some(1.0)
-            }else if !configuration.adaptive_ga{
-                Some(configuration.mutation_configuration.probability_max.unwrap())
-            }else{
+        if let Some(p) = configuration.mutation_configuration.probability_max {
+            if !configuration.adaptive_ga {
+                Some(p)
+            } else {
                 None
-            };
+            }
+        } else {
+            Some(1.0)
+        };
 
-    //Run all the threads
-    for t in 0..number_of_threads{
+    // Use rayon to process parent pairs in parallel
+    let results: Vec<Result<Vec<U>, GaError>> = parents
+        .par_iter()
+        .map(|(key, value)| {
+            let mut rng = crate::rng::make_rng();
 
-        //We copy the parents that we want to crossover inside the thread
-        let (individuals, configuration, offspring, crossover_probability_config, mutation_probability_config) = (individuals.clone(), configuration.clone(), Arc::clone(&offspring), crossover_probability_config, mutation_probability_config);
-        let mut parents_t = HashMap::new();
-        let parents_c = parents.clone();
+            // Getting the parent 1 and 2 for crossover
+            let parent_1 = chromosomes.get(*key).ok_or_else(|| {
+                GaError::SelectionError(format!(
+                    "Selection returned out-of-bounds index {} (population size {})",
+                    key,
+                    chromosomes.len()
+                ))
+            })?.clone();
+            let parent_2 = chromosomes.get(*value).ok_or_else(|| {
+                GaError::SelectionError(format!(
+                    "Selection returned out-of-bounds index {} (population size {})",
+                    value,
+                    chromosomes.len()
+                ))
+            })?.clone();
 
-        for (index, i) in parents_c.keys().enumerate(){
+            // Making the crossover of the parents when the random number is below or equal to the given probability
+            let crossover_probability = rng.random_range(0.0..1.0);
+            let effective_crossover_prob =
+                if let Some(p) = crossover_probability_config {
+                    p
+                } else {
+                    crossover::aga_probability(
+                        &parent_1,
+                        &parent_2,
+                        f_max,
+                        f_avg,
+                        configuration.crossover_configuration.probability_max.unwrap_or(1.0),
+                        configuration.crossover_configuration.probability_min.unwrap_or(0.0),
+                    )
+                };
 
-            //If we reach the number of crossovers / thread
-            if t < number_of_threads - 1 && index >= jump {
-                break;
+            // Making the mutation of each child when the random number is below or equal the given probability
+            let mut mutation_probability = rng.random_range(0.0..1.0);
+            let effective_mutation_prob =
+                if let Some(p) = mutation_probability_config {
+                    p
+                } else {
+                    mutation::aga_probability(
+                        &parent_1,
+                        &parent_2,
+                        f_avg,
+                        configuration.mutation_configuration.probability_max.unwrap_or(1.0),
+                        configuration.mutation_configuration.probability_min.unwrap_or(0.0),
+                    )
+                };
+
+            debug!(target="ga_events", method="parent_crossover"; "Processing parent pair");
+
+            let mut child_1: U;
+            let mut child_2: U;
+
+            if crossover_probability <= effective_crossover_prob {
+                let mut children = crossover::factory(&parent_1, &parent_2, configuration.crossover_configuration)?;
+                child_2 = children.pop().ok_or_else(|| {
+                    GaError::CrossoverError("Crossover returned fewer than 2 children".to_string())
+                })?;
+                child_1 = children.pop().ok_or_else(|| {
+                    GaError::CrossoverError("Crossover returned fewer than 2 children".to_string())
+                })?;
+            } else {
+                child_1 = parent_1;
+                child_2 = parent_2;
             }
 
-            let key = *parents.get_key_value(i).unwrap().0;
-            parents_t.insert(key, *parents.get_key_value(i).unwrap().1);
-            parents.remove(&key);
-        }
+            debug!(target="ga_events", method="parent_crossover"; "mutation_probability_config {} - mutation probability {}", effective_mutation_prob, mutation_probability);
 
-        //Starts the thread
-        let handle = thread::spawn(move || {
-
-            //Getting random numbers in this thread
-            let mut rng = rand::thread_rng();
-
-            for(key, value) in parents_t.iter(){
-                //Getting the parent 1 and 2 for crossover                
-                let parent_1 = individuals.get(*key).unwrap().clone();
-                let parent_2 = individuals.get(*value).unwrap().clone();
-
-                //Making the crossover of the parents when the random number is below or equal to the given probability
-                let crossover_probability = rng.gen_range(0.0..1.0);
-                let crossover_probability_config = 
-                    if crossover_probability_config.is_some(){
-                        crossover_probability_config.unwrap()
-                    }else{
-                        crossover::aga_probability(&parent_1, &parent_2, f_max, f_avg, configuration.crossover_configuration.probability_max.unwrap(), configuration.crossover_configuration.probability_min.unwrap())
-                    };
-                
-
-                //Making the mutation of each child when the random number is below or equal the given probability
-                let mut mutation_probability = rng.gen_range(0.0..1.0);
-                let mutation_probability_config = 
-                    if mutation_probability_config.is_some(){
-                        mutation_probability_config.unwrap()
-                    }else{
-                        mutation::aga_probability(&parent_1, &parent_2, f_avg, configuration.mutation_configuration.probability_max.unwrap(), configuration.mutation_configuration.probability_min.unwrap())
-                    };
-
-                debug!(target="ga_events", method="parent_crossover"; "Started the parent crossover");
-
-                let mut child_1: U;
-                let mut child_2: U;
-                let mut offspring_t: Vec<U> = vec![];
-
-                if crossover_probability <= crossover_probability_config {
-                    offspring_t = crossover::factory(&parent_1, &parent_2, configuration.crossover_configuration).unwrap();
-                    child_1 = offspring_t.pop().unwrap();
-                    child_2 = offspring_t.pop().unwrap();
-                }else{
-                    child_1 = parent_1;
-                    child_2 = parent_2;
-                }
-                
-                if configuration.mutation_configuration.probability_max.is_none(){1.0}else{configuration.mutation_configuration.probability_max.unwrap()};
-                debug!(target="ga_events", method="parent_crossover"; "mutation_probability_config {} - mutation probability {}", mutation_probability_config, mutation_probability);
-
-                if mutation_probability < mutation_probability_config {
-                    mutation::factory(configuration.mutation_configuration.method, &mut child_1);
-                }
-
-                mutation_probability = rng.gen_range(0.0..1.0);
-                if mutation_probability <= mutation_probability_config {
-                    mutation::factory(configuration.mutation_configuration.method, &mut child_2);
-                }
-
-                //Calculate the fitness of both children and set their age
-                child_1.calculate_fitness();
-                child_2.calculate_fitness();
-
-                child_1.set_age(age);
-                child_2.set_age(age);
-
-                //Adds the children in the offspring
-                offspring_t.push(child_1);
-                offspring_t.push(child_2);
-                
-                //Then sets the offspring in the result vector
-                offspring.lock().unwrap().append(&mut offspring_t);
+            if mutation_probability < effective_mutation_prob {
+                mutation::factory_with_params(
+                    configuration.mutation_configuration.method,
+                    &mut child_1,
+                    configuration.mutation_configuration.step,
+                    configuration.mutation_configuration.sigma,
+                )?;
             }
-            
-        });
-        handles.push(handle);
-    }
 
-    //Joining all the threads
-    for handle in handles{
-        handle.join().unwrap();
+            mutation_probability = rng.random_range(0.0..1.0);
+            if mutation_probability <= effective_mutation_prob {
+                mutation::factory_with_params(
+                    configuration.mutation_configuration.method,
+                    &mut child_2,
+                    configuration.mutation_configuration.step,
+                    configuration.mutation_configuration.sigma,
+                )?;
+            }
+
+            // Calculate the fitness of both children and set their age
+            child_1.calculate_fitness();
+            child_2.calculate_fitness();
+
+            child_1.set_age(age);
+            child_2.set_age(age);
+
+            Ok(vec![child_1, child_2])
+        })
+        .collect();
+
+    // Check for any errors and flatten the results
+    let mut offspring = Vec::new();
+    for result in results {
+        offspring.extend(result?);
     }
 
     debug!(target="ga_events", method="parent_crossover"; "Parent crossover finished");
-    return offspring.lock().unwrap().to_vec();
+    Ok(offspring)
+}
+
+/// Extracts the top `count` individuals from the population by fitness.
+///
+/// Only clones the selected elite individuals instead of the whole population.
+fn extract_elite<U: ChromosomeT>(
+    chromosomes: &[U],
+    count: usize,
+    problem_solving: ProblemSolving,
+) -> Vec<U> {
+    if count == 0 || chromosomes.is_empty() {
+        return Vec::new();
+    }
+    let k = count.min(chromosomes.len());
+
+    // Build index array and partially sort so the best `k` are at the front.
+    let mut indices: Vec<usize> = (0..chromosomes.len()).collect();
+    let cmp_fn = |a: &usize, b: &usize| {
+        let cmp = chromosomes[*a]
+            .fitness()
+            .partial_cmp(&chromosomes[*b].fitness())
+            .unwrap_or(std::cmp::Ordering::Equal);
+        match problem_solving {
+            ProblemSolving::Maximization => cmp.reverse(),
+            _ => cmp,
+        }
+    };
+    indices.select_nth_unstable_by(k - 1, cmp_fn);
+    // The first `k` elements are the best (unordered among themselves).
+    indices.truncate(k);
+
+    indices.iter().map(|&i| chromosomes[i].clone()).collect()
+}
+
+/// Reinserts elite individuals into the population, replacing the worst if already at capacity.
+fn reinsert_elite<U: ChromosomeT>(
+    chromosomes: &mut [U],
+    elite: Vec<U>,
+    problem_solving: ProblemSolving,
+) {
+    // Sort population so worst are at the end
+    chromosomes.sort_by(|a, b| {
+        let cmp = a
+            .fitness()
+            .partial_cmp(&b.fitness())
+            .unwrap_or(std::cmp::Ordering::Equal);
+        match problem_solving {
+            ProblemSolving::Maximization => cmp.reverse(),
+            _ => cmp,
+        }
+    });
+
+    // Replace the worst individuals with elite (guard against more elite than population)
+    let pop_len = chromosomes.len();
+    let count = elite.len().min(pop_len);
+    for (i, elite_individual) in elite.into_iter().take(count).enumerate() {
+        let replace_idx = pop_len - 1 - i;
+        chromosomes[replace_idx] = elite_individual;
+    }
+}
+
+/// Finds the index of the best chromosome according to the problem objective.
+///
+/// Returns `None` for an empty slice.
+fn best_chromosome_index<U: ChromosomeT>(
+    chromosomes: &[U],
+    problem_solving: ProblemSolving,
+) -> Option<usize> {
+    if chromosomes.is_empty() {
+        return None;
+    }
+    let mut best = 0;
+    let mut best_fit = chromosomes[0].fitness();
+    for (i, c) in chromosomes.iter().enumerate().skip(1) {
+        let f = c.fitness();
+        let is_better = match problem_solving {
+            ProblemSolving::Maximization | ProblemSolving::FixedFitness => f > best_fit,
+            ProblemSolving::Minimization => f < best_fit,
+        };
+        if is_better {
+            best = i;
+            best_fit = f;
+        }
+    }
+    Some(best)
 }

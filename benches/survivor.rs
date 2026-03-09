@@ -1,19 +1,22 @@
-use criterion::{criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion, PlotConfiguration};
+use criterion::{
+    criterion_group, criterion_main, AxisScale, BatchSize, BenchmarkId, Criterion,
+    PlotConfiguration,
+};
 
+use genetic_algorithms::fitness::FitnessFnWrapper;
 use rand::Rng;
-use pprof::criterion::{Output, PProfProfiler};
+use std::borrow::Cow;
 
-use genetic_algorithms::traits::{GeneT, GenotypeT};
 use genetic_algorithms::operations::survivor::age::age_based;
 use genetic_algorithms::operations::survivor::fitness::fitness_based;
+use genetic_algorithms::traits::{ChromosomeT, GeneT};
 
-
-#[derive(Debug, Copy, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct Gene {
     pub id: i32,
 }
 impl GeneT for Gene {
-    fn get_id(&self) -> i32 {
+    fn id(&self) -> i32 {
         self.id
     }
     fn set_id(&mut self, id: i32) -> &mut Self {
@@ -23,33 +26,47 @@ impl GeneT for Gene {
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
-struct SimpleGenotype {
+struct SimpleChromosome {
     dna: Vec<Gene>,
     pub fitness: f64,
-    pub age: i32,
+    pub age: usize,
+    pub fitness_fn: FitnessFnWrapper<Gene>,
 }
-impl GenotypeT for SimpleGenotype {
+impl ChromosomeT for SimpleChromosome {
     type Gene = Gene;
 
-    fn get_dna(&self) -> &[Self::Gene] {
+    fn dna(&self) -> &[Self::Gene] {
         &self.dna
     }
-    fn get_fitness(&self) -> f64 {
+    fn dna_mut(&mut self) -> &mut [Self::Gene] {
+        &mut self.dna
+    }
+    fn fitness(&self) -> f64 {
         self.fitness
     }
     fn set_fitness(&mut self, fitness: f64) -> &mut Self {
         self.fitness = fitness;
         self
     }
-    fn set_age(&mut self, age: i32) -> &mut Self {
+    fn set_age(&mut self, age: usize) -> &mut Self {
         self.age = age;
         self
     }
-    fn get_age(&self) -> i32 {
+    fn age(&self) -> usize {
         self.age
     }
-    fn set_dna(&mut self, dna: &[Self::Gene]) -> &mut Self {
-        self.dna = dna.to_vec();
+    fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
+        self.dna = match dna {
+            Cow::Borrowed(slice) => slice.to_vec(),
+            Cow::Owned(vec) => vec,
+        };
+        self
+    }
+    fn set_fitness_fn<F>(&mut self, fitness_fn: F) -> &mut Self
+    where
+        F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static,
+    {
+        self.fitness_fn = FitnessFnWrapper::new(fitness_fn);
         self
     }
     fn calculate_fitness(&mut self) {
@@ -57,21 +74,26 @@ impl GenotypeT for SimpleGenotype {
     }
 }
 
-fn setup_population(population_size: usize, gene_length: usize) -> Vec<SimpleGenotype> {
+#[cfg(not(tarpaulin_include))]
+fn setup_population(population_size: usize, gene_length: usize) -> Vec<SimpleChromosome> {
+    let mut rng = rand::rng();
     (0..population_size)
-        .map(|_| SimpleGenotype {
-            fitness: rand::thread_rng().gen_range(0.0..1.0),
+        .map(|_| SimpleChromosome {
+            fitness: rng.random_range(0.0..1.0),
             dna: (0..gene_length)
-                .map(|_| Gene { id: rand::thread_rng().gen_range(0..255) })
+                .map(|_| Gene {
+                    id: rng.random_range(0..255),
+                })
                 .collect(),
-            age: rand::thread_rng().gen_range(0..100),
+            age: rng.random_range(0..100),
+            fitness_fn: FitnessFnWrapper::default(),
         })
         .collect()
 }
 
 // Benchmark the survivor methods
+#[cfg(not(tarpaulin_include))]
 fn benchmark_survivor_methods(c: &mut Criterion) {
-
     let population_size = 1000;
     let gene_lengths = vec![10, 100, 1000];
 
@@ -79,34 +101,46 @@ fn benchmark_survivor_methods(c: &mut Criterion) {
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     for &gene_length in &gene_lengths {
-        let individuals = setup_population(population_size, gene_length);
+        let chromosomes = setup_population(population_size, gene_length);
 
-        // Benchmark for age survivor
-        group.bench_with_input(BenchmarkId::new("age survivor", format!("genes_{}", gene_length)), &gene_length, |b, _| {
-            b.iter(|| {
-                let mut individuals = individuals.clone();
-                age_based(&mut individuals, population_size);
-            });
-        });
+        // Benchmark for age survivor — clone moved to iter_batched setup
+        group.bench_with_input(
+            BenchmarkId::new("age survivor", format!("genes_{}", gene_length)),
+            &chromosomes,
+            |b, chromosomes| {
+                b.iter_batched(
+                    || chromosomes.clone(),
+                    |mut chromosomes| age_based(&mut chromosomes, population_size),
+                    BatchSize::SmallInput,
+                );
+            },
+        );
 
-         // Benchmark for fitness survivor
-        group.bench_with_input(BenchmarkId::new("fitness survivor", format!("genes_{}", gene_length)), &gene_length, |b, _| {
-            b.iter(|| {
-                let mut individuals = individuals.clone();
-                let limit_configuration = genetic_algorithms::configuration::LimitConfiguration::default();
-                fitness_based(&mut individuals, population_size, limit_configuration);
-            });
-        });
-    } 
+        // Benchmark for fitness survivor — clone moved to iter_batched setup
+        group.bench_with_input(
+            BenchmarkId::new("fitness survivor", format!("genes_{}", gene_length)),
+            &chromosomes,
+            |b, chromosomes| {
+                b.iter_batched(
+                    || chromosomes.clone(),
+                    |mut chromosomes| {
+                        let limit_configuration =
+                            genetic_algorithms::configuration::LimitConfiguration::default();
+                        fitness_based(&mut chromosomes, population_size, limit_configuration);
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+    }
 
     group.finish();
-} 
+}
 
-// Configure the benchmark group with Criterion and PProf
+// Benchmark group (profiler removed due to criterion version mismatch with pprof)
 criterion_group! {
     name = survivor_benchmarks;
-    config = Criterion::default()
-        .with_profiler(PProfProfiler::new(100, Output::Flamegraph(None)));
+    config = Criterion::default();
     targets = benchmark_survivor_methods
 }
 

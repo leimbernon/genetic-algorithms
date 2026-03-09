@@ -2,7 +2,7 @@
 name = "genetic_algorithms"
 description = "Library for solving genetic algorithm problems"
 authors = ["Luis Eduardo Imbernón <imbernon@gmail.com>"]
-version = "1.6.0"
+version = "2.0.0"
 edition = "2021"
 rust-version = "1.81.0"
 readme = "README.md"
@@ -15,15 +15,22 @@ categories = ["emulators","development-tools", "science", "simulation"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = []
+serde = ["dep:serde", "dep:serde_json"]
+
 [dependencies]
-rand = "0.8.5"
-num_cpus = "1.15.0"
+rand = "0.9.0"
+rayon = "1.10"
 log = { version = "0.4.22", features = ["std", "serde", "kv_unstable"] }
 env_logger = "0.11.5"
+serde = { version = "1", features = ["derive"], optional = true }
+serde_json = { version = "1", optional = true }
 
 [dev-dependencies]
-criterion = "0.5.1"
-pprof = { version = "0.14", features = ["criterion", "flamegraph"] }
+criterion = "0.7.0"
+pprof = { version = "0.15.0", features = ["criterion", "flamegraph"] }
+serde_json = "1"
 
 [[bench]]
 name = "selection"
@@ -39,4 +46,16 @@ harness = false
 
 [[bench]]
 name = "survivor"
+harness = false
+
+[[bench]]
+name = "ga_run"
+harness = false
+
+[[bench]]
+name = "nsga2"
+harness = false
+
+[[bench]]
+name = "island_ga"
 harness = false

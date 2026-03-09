@@ -1,9 +1,16 @@
 use std::fmt;
 
-use crate::{operations::{Crossover, Selection, Mutation, Survivor}, traits::ConfigurationT};
+use crate::niching::configuration::NichingConfiguration;
+use crate::{
+    operations::{Crossover, Mutation, Selection, Survivor},
+    traits::{
+        ConfigurationT, CrossoverConfig, ElitismConfig, MutationConfig, NichingConfig,
+        SelectionConfig, StoppingConfig,
+    },
+};
 
-
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum ProblemSolving {
     Minimization,
     Maximization,
@@ -19,7 +26,8 @@ impl fmt::Display for ProblemSolving {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum LogLevel {
     Off,
     Error,
@@ -29,101 +37,145 @@ pub enum LogLevel {
     Trace,
 }
 
-#[derive(Copy, Clone)]
-pub struct SelectionConfiguration{
-    pub number_of_couples: i32,
+#[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct SelectionConfiguration {
+    pub number_of_couples: usize,
     pub method: Selection,
+    /// Temperature parameter for Boltzmann selection. Controls selective pressure:
+    /// high values → uniform selection, low values → strong selective pressure.
+    /// Only used when `method` is `Selection::Boltzmann`. Default is `1.0`.
+    pub boltzmann_temperature: f64,
 }
-impl Default for SelectionConfiguration{
+impl Default for SelectionConfiguration {
     fn default() -> Self {
-        SelectionConfiguration { 
-            number_of_couples: 1, 
-            method: Selection::Tournament 
+        SelectionConfiguration {
+            number_of_couples: 0,
+            method: Selection::Tournament,
+            boltzmann_temperature: 1.0,
         }
     }
 }
 
-#[derive(Copy, Clone)]
-pub struct CrossoverConfiguration{
-    pub number_of_points: Option<i32>,
+#[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct CrossoverConfiguration {
+    pub number_of_points: Option<usize>,
     pub probability_max: Option<f64>,
     pub probability_min: Option<f64>,
     pub method: Crossover,
+    /// Distribution index for SBX crossover. Higher values produce children
+    /// closer to parents. Typical range: 2–20. Default is 2.0.
+    pub sbx_eta: Option<f64>,
+    /// Alpha parameter for BLX-α crossover. Controls exploration range.
+    /// Typical value: 0.5. Default is 0.5.
+    pub blend_alpha: Option<f64>,
+    /// Alpha parameter for Arithmetic crossover. Controls weighting between parents.
+    /// α=0.5 gives uniform arithmetic crossover (midpoint). Default is 0.5.
+    pub arithmetic_alpha: Option<f64>,
 }
-impl Default for CrossoverConfiguration{
+impl Default for CrossoverConfiguration {
     fn default() -> Self {
-        CrossoverConfiguration { 
-            number_of_points: None, 
-            probability_max: None, 
+        CrossoverConfiguration {
+            number_of_points: None,
+            probability_max: None,
             probability_min: None,
-            method: Crossover::Uniform
+            method: Crossover::Uniform,
+            sbx_eta: None,
+            blend_alpha: None,
+            arithmetic_alpha: None,
         }
     }
 }
 
-#[derive(Copy, Clone)]
-pub struct MutationConfiguration{
+#[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct MutationConfiguration {
     pub probability_max: Option<f64>,
     pub probability_min: Option<f64>,
     pub method: Mutation,
+    /// Step size for Creep mutation. Only used when method is `Mutation::Creep`.
+    /// Default is 1.0.
+    pub step: Option<f64>,
+    /// Standard deviation for Gaussian mutation. Only used when method is `Mutation::Gaussian`.
+    /// Default is 1.0.
+    pub sigma: Option<f64>,
+    /// Distribution index for Polynomial mutation. Higher values produce smaller
+    /// perturbations. Typical range: 20–100. Default is 20.0.
+    pub polynomial_eta: Option<f64>,
+    /// Decay parameter for NonUniform mutation. Controls how fast mutation
+    /// magnitude decreases over generations. Typical range: 2–5. Default is 2.0.
+    pub non_uniform_b: Option<f64>,
 }
 impl Default for MutationConfiguration {
     fn default() -> Self {
-        MutationConfiguration { 
+        MutationConfiguration {
             probability_max: None,
             probability_min: None,
-            method: Mutation::Swap, 
+            method: Mutation::Swap,
+            step: None,
+            sigma: None,
+            polynomial_eta: None,
+            non_uniform_b: None,
         }
     }
 }
 
-
-#[derive(Copy, Clone)]
-pub struct LimitConfiguration{
+#[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct LimitConfiguration {
     pub problem_solving: ProblemSolving,
-    pub max_generations: i32,
-    pub fitness_target: Option<f64>, 
-    pub get_best_individual_by_generation: bool,
-    pub population_size: i32,
-    pub genes_per_individual: i32,
+    pub max_generations: usize,
+    pub fitness_target: Option<f64>,
+    pub population_size: usize,
+    pub genes_per_chromosome: usize,
     pub needs_unique_ids: bool,
     pub alleles_can_be_repeated: bool,
 }
 impl Default for LimitConfiguration {
     fn default() -> Self {
-        LimitConfiguration { 
-            problem_solving: ProblemSolving::Minimization, 
-            max_generations: 100, 
-            fitness_target: None, 
-            get_best_individual_by_generation: false,
+        LimitConfiguration {
+            problem_solving: ProblemSolving::Minimization,
+            max_generations: 100,
+            fitness_target: None,
             population_size: 0,
-            genes_per_individual: 0,
+            genes_per_chromosome: 0,
             needs_unique_ids: false,
             alleles_can_be_repeated: false,
         }
     }
 }
 
-#[derive(Clone)]
-pub struct SaveProgressConfiguration{
+#[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct SaveProgressConfiguration {
     pub save_progress: bool,
-    pub save_progress_interval: i32,
+    pub save_progress_interval: usize,
     pub save_progress_path: String,
 }
-impl Default for SaveProgressConfiguration {
-    fn default() -> Self {
-        SaveProgressConfiguration { 
-            save_progress: false, 
-            save_progress_interval: 0, 
-            save_progress_path: String::new()
-        }
-    }
+
+/// Compound stopping criteria for the GA.
+///
+/// Multiple criteria can be enabled simultaneously. The GA stops when **any** of them is met.
+#[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct StoppingCriteria {
+    /// Stop after N generations without fitness improvement.
+    /// `None` means this criterion is disabled.
+    pub stagnation_generations: Option<usize>,
+    /// Stop when the fitness standard deviation drops below this threshold.
+    /// `None` means this criterion is disabled.
+    pub convergence_threshold: Option<f64>,
+    /// Stop after the specified elapsed time (in seconds).
+    /// `None` means this criterion is disabled.
+    pub max_duration_secs: Option<f64>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct GaConfiguration {
     pub adaptive_ga: bool,
-    pub number_of_threads: i32,
+    pub number_of_threads: usize,
     pub limit_configuration: LimitConfiguration,
     pub selection_configuration: SelectionConfiguration,
     pub crossover_configuration: CrossoverConfiguration,
@@ -131,132 +183,214 @@ pub struct GaConfiguration {
     pub survivor: Survivor,
     pub log_level: LogLevel,
     pub save_progress_configuration: SaveProgressConfiguration,
+    /// Number of best individuals to preserve unchanged between generations (elitism).
+    /// Default is 0 (no elitism).
+    pub elitism_count: usize,
+    /// Compound stopping criteria. These are checked in addition to
+    /// max_generations and fitness_target.
+    pub stopping_criteria: StoppingCriteria,
+    /// Optional niching / fitness sharing configuration.
+    pub niching_configuration: Option<NichingConfiguration>,
+    /// Optional RNG seed for reproducible runs.
+    ///
+    /// When set, all random number generators in operators are seeded
+    /// deterministically from this value. Two runs with the same seed
+    /// (and the same thread count) will produce identical results.
+    pub rng_seed: Option<u64>,
 }
-impl Default for GaConfiguration{
+impl Default for GaConfiguration {
     fn default() -> Self {
-        GaConfiguration { 
-            adaptive_ga: false, 
-            number_of_threads: 1, 
-            survivor: Survivor::Fitness, 
+        GaConfiguration {
+            adaptive_ga: false,
+            number_of_threads: 1,
+            survivor: Survivor::Fitness,
             log_level: LogLevel::Off,
-            limit_configuration: LimitConfiguration { ..Default::default() }, 
-            selection_configuration: SelectionConfiguration { ..Default::default() }, 
-            crossover_configuration: CrossoverConfiguration { ..Default::default() }, 
-            mutation_configuration: MutationConfiguration { ..Default::default() },
-            save_progress_configuration: SaveProgressConfiguration { ..Default::default() }
+            limit_configuration: LimitConfiguration {
+                ..Default::default()
+            },
+            selection_configuration: SelectionConfiguration {
+                ..Default::default()
+            },
+            crossover_configuration: CrossoverConfiguration {
+                ..Default::default()
+            },
+            mutation_configuration: MutationConfiguration {
+                ..Default::default()
+            },
+            save_progress_configuration: SaveProgressConfiguration {
+                ..Default::default()
+            },
+            elitism_count: 0,
+            stopping_criteria: StoppingCriteria::default(),
+            niching_configuration: None,
+            rng_seed: None,
         }
     }
 }
 
-impl ConfigurationT for GaConfiguration{
+impl SelectionConfig for GaConfiguration {
+    fn with_number_of_couples(mut self, number_of_couples: usize) -> Self {
+        self.selection_configuration.number_of_couples = number_of_couples;
+        self
+    }
+    fn with_selection_method(mut self, selection_method: Selection) -> Self {
+        self.selection_configuration.method = selection_method;
+        self
+    }
+}
+
+impl CrossoverConfig for GaConfiguration {
+    fn with_crossover_number_of_points(mut self, number_of_points: usize) -> Self {
+        self.crossover_configuration.number_of_points = Some(number_of_points);
+        self
+    }
+    fn with_crossover_probability_max(mut self, probability_max: f64) -> Self {
+        self.crossover_configuration.probability_max = Some(probability_max);
+        self
+    }
+    fn with_crossover_probability_min(mut self, probability_min: f64) -> Self {
+        self.crossover_configuration.probability_min = Some(probability_min);
+        self
+    }
+    fn with_crossover_method(mut self, method: Crossover) -> Self {
+        self.crossover_configuration.method = method;
+        self
+    }
+    fn with_sbx_eta(mut self, eta: f64) -> Self {
+        self.crossover_configuration.sbx_eta = Some(eta);
+        self
+    }
+    fn with_blend_alpha(mut self, alpha: f64) -> Self {
+        self.crossover_configuration.blend_alpha = Some(alpha);
+        self
+    }
+}
+
+impl MutationConfig for GaConfiguration {
+    fn with_mutation_probability_max(mut self, probability_max: f64) -> Self {
+        self.mutation_configuration.probability_max = Some(probability_max);
+        self
+    }
+    fn with_mutation_probability_min(mut self, probability_min: f64) -> Self {
+        self.mutation_configuration.probability_min = Some(probability_min);
+        self
+    }
+    fn with_mutation_method(mut self, method: Mutation) -> Self {
+        self.mutation_configuration.method = method;
+        self
+    }
+    fn with_mutation_step(mut self, step: f64) -> Self {
+        self.mutation_configuration.step = Some(step);
+        self
+    }
+    fn with_mutation_sigma(mut self, sigma: f64) -> Self {
+        self.mutation_configuration.sigma = Some(sigma);
+        self
+    }
+}
+
+impl StoppingConfig for GaConfiguration {
+    fn with_max_generations(mut self, max_generations: usize) -> Self {
+        self.limit_configuration.max_generations = max_generations;
+        self
+    }
+    fn with_fitness_target(mut self, fitness_target: f64) -> Self {
+        self.limit_configuration.fitness_target = Some(fitness_target);
+        self
+    }
+    fn with_stopping_criteria(mut self, criteria: StoppingCriteria) -> Self {
+        self.stopping_criteria = criteria;
+        self
+    }
+}
+
+impl NichingConfig for GaConfiguration {
+    fn with_niching_enabled(mut self, enabled: bool) -> Self {
+        self.niching_configuration
+            .get_or_insert_with(NichingConfiguration::default)
+            .enabled = enabled;
+        self
+    }
+    fn with_niching_sigma_share(mut self, sigma_share: f64) -> Self {
+        self.niching_configuration
+            .get_or_insert_with(NichingConfiguration::default)
+            .sigma_share = sigma_share;
+        self
+    }
+    fn with_niching_alpha(mut self, alpha: f64) -> Self {
+        self.niching_configuration
+            .get_or_insert_with(NichingConfiguration::default)
+            .alpha = alpha;
+        self
+    }
+}
+
+impl ElitismConfig for GaConfiguration {
+    fn with_elitism(mut self, elitism_count: usize) -> Self {
+        self.elitism_count = elitism_count;
+        self
+    }
+}
+
+impl ConfigurationT for GaConfiguration {
     fn new() -> Self {
         Self::default()
     }
-    fn with_adaptive_ga(&mut self, adaptive_ga: bool) -> &mut Self{
+    fn with_adaptive_ga(mut self, adaptive_ga: bool) -> Self {
         self.adaptive_ga = adaptive_ga;
         self
     }
-    fn with_threads(&mut self, number_of_threads: i32)-> &mut Self{
+    fn with_threads(mut self, number_of_threads: usize) -> Self {
         self.number_of_threads = number_of_threads;
         self
     }
-    fn with_logs(&mut self, log_level: LogLevel) -> &mut Self{
+    fn with_logs(mut self, log_level: LogLevel) -> Self {
         self.log_level = log_level;
         self
     }
-    fn with_survivor_method(&mut self, method: Survivor) -> &mut Self{
+    fn with_survivor_method(mut self, method: Survivor) -> Self {
         self.survivor = method;
         self
     }
 
     //Limit configuration
-    fn with_problem_solving(&mut self, problem_solving: ProblemSolving)->&mut Self{
+    fn with_problem_solving(mut self, problem_solving: ProblemSolving) -> Self {
         self.limit_configuration.problem_solving = problem_solving;
         self
     }
-    fn with_max_generations(&mut self, max_generations: i32)-> &mut Self{
-        self.limit_configuration.max_generations = max_generations;
-        self
-    }
-    fn with_fitness_target(&mut self, fitness_target: f64)-> &mut Self{
-        self.limit_configuration.fitness_target = Some(fitness_target);
-        self
-    }
-    fn with_best_individual_by_generation(&mut self, best_individual_by_generation: bool) -> &mut Self {
-        self.limit_configuration.get_best_individual_by_generation = best_individual_by_generation;
-        self
-    }
-    fn with_population_size(&mut self, population_size: i32) -> &mut Self {
+    fn with_population_size(mut self, population_size: usize) -> Self {
         self.limit_configuration.population_size = population_size;
         self
     }
-    fn with_genes_per_individual(&mut self, genes_per_individual: i32) -> &mut Self {
-        self.limit_configuration.genes_per_individual = genes_per_individual;
+    fn with_genes_per_chromosome(mut self, genes_per_chromosome: usize) -> Self {
+        self.limit_configuration.genes_per_chromosome = genes_per_chromosome;
         self
     }
-    fn with_needs_unique_ids(&mut self, needs_unique_ids: bool) -> &mut Self {
+    fn with_needs_unique_ids(mut self, needs_unique_ids: bool) -> Self {
         self.limit_configuration.needs_unique_ids = needs_unique_ids;
         self
     }
-    fn with_alleles_can_be_repeated(&mut self, alleles_can_be_repeated: bool) -> &mut Self {
+    fn with_alleles_can_be_repeated(mut self, alleles_can_be_repeated: bool) -> Self {
         self.limit_configuration.alleles_can_be_repeated = alleles_can_be_repeated;
         self
     }
 
-    //Selection configuration
-    fn with_number_of_couples(&mut self, number_of_couples: i32)->&mut Self{
-        self.selection_configuration.number_of_couples = number_of_couples;
-        self
-    }
-    fn with_selection_method(&mut self, selection_method: Selection)->&mut Self{
-        self.selection_configuration.method = selection_method;
-        self
-    }
-
-    //Crossover configuration
-    fn with_crossover_number_of_points(&mut self, number_of_points: i32)->&mut Self{
-        self.crossover_configuration.number_of_points = Some(number_of_points);
-        self
-    }
-    fn with_crossover_probability_max(&mut self, probability_max: f64)->&mut Self{
-        self.crossover_configuration.probability_max = Some(probability_max);
-        self
-    }
-    fn with_crossover_probability_min(&mut self, probability_min: f64) -> &mut Self{
-        self.crossover_configuration.probability_min = Some(probability_min);
-        self
-    }
-    fn with_crossover_method(&mut self, method: Crossover) -> &mut Self {
-        self.crossover_configuration.method = method;
-        self
-    }
-
-    //Mutation configuration
-    fn with_mutation_probability_max(&mut self, probability_max: f64)->&mut Self{
-        self.mutation_configuration.probability_max = Some(probability_max);
-        self
-    }
-    fn with_mutation_probability_min(&mut self, probability_min: f64) -> &mut Self{
-        self.mutation_configuration.probability_min = Some(probability_min);
-        self
-    }
-    fn with_mutation_method(&mut self, method: Mutation) -> &mut Self {
-        self.mutation_configuration.method = method;
-        self
-    }
-
     //Save progress configuration
-    fn with_save_progress(&mut self, save_progress: bool) -> &mut Self {
+    fn with_save_progress(mut self, save_progress: bool) -> Self {
         self.save_progress_configuration.save_progress = save_progress;
         self
     }
-    fn with_save_progress_interval(&mut self, save_progress_interval: i32) -> &mut Self {
+    fn with_save_progress_interval(mut self, save_progress_interval: usize) -> Self {
         self.save_progress_configuration.save_progress_interval = save_progress_interval;
         self
     }
-    fn with_save_progress_path(&mut self, save_progress_path: String) -> &mut Self {
+    fn with_save_progress_path(mut self, save_progress_path: String) -> Self {
         self.save_progress_configuration.save_progress_path = save_progress_path;
         self
     }
 
-} 
+    fn with_rng_seed(mut self, seed: u64) -> Self {
+        self.rng_seed = Some(seed);
+        self
+    }
+}
