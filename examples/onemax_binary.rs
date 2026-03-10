@@ -28,10 +28,8 @@ use genetic_algorithms::initializers::binary_random_initialization;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::population::Population;
 use genetic_algorithms::stats::GenerationStats;
-use genetic_algorithms::traits::{
-    ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
-};
 
+/// Entry point for the OneMax Binary example.
 fn main() {
     // --- Problem parameters ---
     const N_BITS: usize = 100;
@@ -76,41 +74,61 @@ fn main() {
 
     // --- Run the GA with a callback to report progress ---
     let report_interval = 50;
-    let result = ga.run_with_callback(
-        Some(
-            |gen: &usize,
-             pop: &Population<BinaryChromosome>,
-             _stats: &GenerationStats,
-             _cause: &TerminationCause|
-             -> std::ops::ControlFlow<()> {
-                let avg_fitness =
-                    pop.chromosomes.iter().map(|c| c.fitness()).sum::<f64>() / pop.size() as f64;
+    let result = ga.run_with_callback(Some(
+        |gen: &usize, pop: &Population<BinaryChromosome>, stats: &GenerationStats| {
+            if gen % report_interval == 0 || gen == 1 {
+                let best = pop.best_chromosome();
                 println!(
-                    "Generation {:4}: best = {:6.2}, avg = {:6.2}",
-                    gen, pop.best_chromosome.fitness, avg_fitness
+                    "[Gen {:4}] Best fitness: {:>5.1} | Avg: {:>5.1} | Worst: {:>5.1}",
+                    gen, stats.best_fitness, stats.mean_fitness, stats.worst_fitness
                 );
-                std::ops::ControlFlow::Continue(())
-            },
-        ),
-        report_interval,
-    );
-
-    // --- Show the final result ---
-    match result {
-        Ok(population) => {
-            println!("-------------------------------------------------------");
-            println!(
-                "Finished. Best fitness: {}",
-                population.best_chromosome.fitness
-            );
-            if (population.best_chromosome.fitness - FITNESS_TARGET).abs() < f64::EPSILON {
-                println!("SUCCESS: Found the global optimum (all bits are 1)!");
-            } else {
-                println!("Did not reach optimum. Try increasing generations or population size.");
+                if let Some(best) = best {
+                    println!(
+                        "  Best DNA: {}",
+                        best.dna()
+                            .iter()
+                            .map(|b| if *b { '1' } else { '0' })
+                            .collect::<String>()
+                    );
+                }
             }
+        },
+    ));
+
+    // --- Report final result ---
+    println!("-------------------------------------------------------");
+    match result.termination_cause {
+        TerminationCause::FitnessTargetReached => {
+            println!(
+                "SUCCESS: Optimum found at generation {}! Fitness = {}",
+                result.generations,
+                result.best_chromosome.fitness()
+            );
         }
-        Err(e) => {
-            println!("GA failed: {:?}", e);
+        TerminationCause::MaxGenerationsReached => {
+            println!(
+                "FAIL: Max generations reached. Best fitness = {}",
+                result.best_chromosome.fitness()
+            );
+        }
+        _ => {
+            println!(
+                "Terminated: {:?}. Best fitness = {}",
+                result.termination_cause,
+                result.best_chromosome.fitness()
+            );
         }
     }
+    println!("Best chromosome DNA:");
+    println!(
+        "{}",
+        result
+            .best_chromosome
+            .dna()
+            .iter()
+            .map(|b| if *b { '1' } else { '0' })
+            .collect::<String>()
+    );
+    println!("-------------------------------------------------------");
+    println!("OneMax Binary example complete.");
 }
