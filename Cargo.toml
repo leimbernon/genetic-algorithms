@@ -2,7 +2,7 @@
 name = "genetic_algorithms"
 description = "Library for solving genetic algorithm problems"
 authors = ["Luis Eduardo Imbernón <imbernon@gmail.com>"]
-version = "2.1.0"
+version = "2.0.0"
 edition = "2021"
 rust-version = "1.81.0"
 readme = "README.md"
@@ -32,4 +32,31 @@ criterion = "0.8.2"
 pprof = { version = "0.15.0", features = ["criterion", "flamegraph"] }
 serde_json = "1"
 
+[[bench]]
+name = "selection"
+harness = false
+
+[[bench]]
+name = "crossover"
+harness = false
+
+[[bench]]
+name = "mutation"
+harness = false
+
+[[bench]]
+name = "survivor"
+harness = false
+
+[[bench]]
+name = "ga_run"
+harness = false
+
+[[bench]]
+name = "nsga2"
+harness = false
+
+[[bench]]
+name = "island_ga"
+harness = false
 # Removed invalid bench target "select"

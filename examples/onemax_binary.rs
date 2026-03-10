@@ -19,13 +19,17 @@ cargo run --example onemax_binary
 ```
 */
 
+use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::fitness::count_true;
-use genetic_algorithms::ga::Ga;
+use genetic_algorithms::ga::{Ga, TerminationCause};
 use genetic_algorithms::genotypes::Binary;
+use genetic_algorithms::initializers::binary_random_initialization;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+use genetic_algorithms::population::Population;
+use genetic_algorithms::stats::GenerationStats;
 use genetic_algorithms::traits::{
-    ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+    ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
 };
 
 fn main() {
@@ -45,12 +49,7 @@ fn main() {
         .with_genes_per_chromosome(N_BITS)
         .with_population_size(POP_SIZE)
         // Random initialization for Binary chromosomes
-        .with_initialization_fn(|genes_per_chromosome, _, _| {
-            // Each gene is randomly true/false
-            (0..genes_per_chromosome)
-                .map(|_| rand::random::<bool>())
-                .collect()
-        })
+        .with_initialization_fn(binary_random_initialization)
         .with_fitness_fn(fitness_fn)
         // Selection: Roulette Wheel (fitness-proportional)
         .with_selection_method(Selection::RouletteWheel)
@@ -78,31 +77,35 @@ fn main() {
     // --- Run the GA with a callback to report progress ---
     let report_interval = 50;
     let result = ga.run_with_callback(
-        |gen: usize,
-         pop: &Vec<genetic_algorithms::chromosome::Chromosome<Binary>>,
-         best: &genetic_algorithms::chromosome::Chromosome<Binary>| {
-            if gen % report_interval == 0 || best.fitness() >= FITNESS_TARGET {
-                let avg_fitness = pop.iter().map(|c| c.fitness()).sum::<f64>() / pop.len() as f64;
-                println!(
-                    "Generation {:4}: best = {:6.2}, avg = {:6.2}",
-                    gen,
-                    best.fitness(),
-                    avg_fitness
-                );
-            }
-        },
+        Some(
+            |gen: &usize,
+             pop: &Population<BinaryChromosome>,
+             _stats: &GenerationStats,
+             _cause: &TerminationCause|
+             -> std::ops::ControlFlow<()> {
+                if *gen % report_interval == 0 || pop.best_chromosome.fitness >= FITNESS_TARGET {
+                    let avg_fitness =
+                        pop.chromosomes.iter().map(|c| c.fitness()).sum::<f64>() / pop.size() as f64;
+                    println!(
+                        "Generation {:4}: best = {:6.2}, avg = {:6.2}",
+                        gen, pop.best_chromosome.fitness, avg_fitness
+                    );
+                }
+                std::ops::ControlFlow::Continue(())
+            },
+        ),
+        report_interval,
     );
 
     // --- Show the final result ---
     match result {
-        Ok((final_gen, final_pop, best)) => {
+        Ok(population) => {
             println!("-------------------------------------------------------");
             println!(
-                "Finished at generation {}. Best fitness: {}",
-                final_gen,
-                best.fitness()
+                "Finished. Best fitness: {}",
+                population.best_chromosome.fitness
             );
-            if (best.fitness() - FITNESS_TARGET).abs() < f64::EPSILON {
+            if (population.best_chromosome.fitness - FITNESS_TARGET).abs() < f64::EPSILON {
                 println!("SUCCESS: Found the global optimum (all bits are 1)!");
             } else {
                 println!("Did not reach optimum. Try increasing generations or population size.");
