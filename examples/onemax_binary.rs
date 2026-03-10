@@ -55,7 +55,7 @@ fn main() {
         .with_selection_method(Selection::RouletteWheel)
         // Crossover: Single-point
         .with_crossover_method(Crossover::SinglePoint)
-        // Mutation: Bit flip (default rate: 1/N)
+        // Mutation: Bit flip (default probability = 1.0; flips exactly one random bit per mutated child)
         .with_mutation_method(Mutation::BitFlip)
         // Survivor selection: Fitness-based
         .with_survivor_method(Survivor::Fitness)
@@ -83,14 +83,12 @@ fn main() {
              _stats: &GenerationStats,
              _cause: &TerminationCause|
              -> std::ops::ControlFlow<()> {
-                if *gen % report_interval == 0 || pop.best_chromosome.fitness >= FITNESS_TARGET {
-                    let avg_fitness =
-                        pop.chromosomes.iter().map(|c| c.fitness()).sum::<f64>() / pop.size() as f64;
-                    println!(
-                        "Generation {:4}: best = {:6.2}, avg = {:6.2}",
-                        gen, pop.best_chromosome.fitness, avg_fitness
-                    );
-                }
+                let avg_fitness =
+                    pop.chromosomes.iter().map(|c| c.fitness()).sum::<f64>() / pop.size() as f64;
+                println!(
+                    "Generation {:4}: best = {:6.2}, avg = {:6.2}",
+                    gen, pop.best_chromosome.fitness, avg_fitness
+                );
                 std::ops::ControlFlow::Continue(())
             },
         ),

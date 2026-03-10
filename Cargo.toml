@@ -59,4 +59,3 @@ harness = false
 [[bench]]
 name = "island_ga"
 harness = false
-# Removed invalid bench target "select"
