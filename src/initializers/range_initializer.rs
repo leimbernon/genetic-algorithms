@@ -1,44 +1,53 @@
-/*!
-# Range Chromosome Initializer
-
-Provides random initialization for chromosomes with genes in a specified range.
-
-# Examples
-
-```rust
-use genetic_algorithms::initializers::range_random_initialization;
-```
-*/
-
-use crate::chromosomes::Generic;
-use crate::error::GaError;
+use crate::genotypes::Range as RangeGenotype;
+use rand::distr::uniform::SampleUniform;
 use rand::Rng;
+use std::fmt::Debug;
 
-/// Random initialization for chromosomes with genes in a specified range.
+/// Initializes a vector of `RangeGenotype` with random values.
 ///
 /// # Arguments
-/// * `n_genes` - Number of genes per chromosome.
-/// * `min` - Minimum value (inclusive).
-/// * `max` - Maximum value (inclusive).
+///
+/// * `genes_per_chromosome` - The number of genes per chromosome.
+/// * `alleles` - An optional slice of `RangeGenotype` to use as a source of alleles.
+/// * `_needs_unique_ids` - An optional boolean indicating if unique IDs are needed (not used in this function).
 ///
 /// # Returns
-/// * `Result<Generic<T>, GaError>` - Initialized chromosome.
 ///
-/// # Errors
-/// * Returns `GaError` if initialization fails.
+/// A vector of `RangeGenotype` with random values.
+///
+/// # Panics
+///
+/// This function will panic if no alleles are provided.
 ///
 /// # Examples
-/// ```rust
-/// use genetic_algorithms::initializers::range_random_initialization;
-/// let chromosome = range_random_initialization(10, 0, 100);
+///
 /// ```
-pub fn range_random_initialization<T>(n_genes: usize, min: T, max: T) -> Result<Generic<T>, GaError>
+/// use genetic_algorithms::genotypes::Range;
+/// use genetic_algorithms::initializers::range_random_initialization;
+///
+/// let alleles = vec![Range::new(0, vec![(0.0, 1.0)], 0.0)];
+/// let genes = range_random_initialization(10, Some(&alleles), Some(false));
+/// assert_eq!(genes.len(), 10);
+/// ```
+pub fn range_random_initialization<T>(
+    genes_per_chromosome: usize,
+    alleles: Option<&[RangeGenotype<T>]>,
+    _needs_unique_ids: Option<bool>,
+) -> Vec<RangeGenotype<T>>
 where
-    T: rand::distributions::uniform::SampleUniform + Copy,
+    T: Sync + Send + Clone + Default + Debug + 'static + PartialOrd + SampleUniform + Copy,
 {
-    let mut rng = rand::thread_rng();
-    let dna: Vec<T> = (0..n_genes)
-        .map(|_| rng.gen_range(min..=max))
-        .collect();
-    Ok(Generic::from_dna(dna))
+    let mut genes = Vec::new();
+    let mut rng = crate::rng::make_rng();
+    let alleles = alleles.expect("At least 1 allele must be provided for range genotype");
+    for i in 0..genes_per_chromosome {
+        // Pick a random allele from the provided list
+        let allele = alleles[rng.random_range(0..alleles.len())].clone();
+        // Pick a random range from the allele
+        let range = allele.ranges[rng.random_range(0..allele.ranges.len())];
+        // Generate a new gene with a random value from the selected range
+        let gene = RangeGenotype::new(i as i32, vec![range], rng.random_range(range.0..range.1));
+        genes.push(gene);
+    }
+    genes
 }

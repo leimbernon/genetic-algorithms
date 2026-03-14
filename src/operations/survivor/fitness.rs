@@ -1,2 +1,49 @@
-@@ -4,7 +4,6 @@
--use rand::Rng;
+pub(crate) use crate::{
+    configuration::{LimitConfiguration, ProblemSolving},
+    traits::ChromosomeT,
+};
+use log::{debug, trace};
+
+pub fn fitness_based<U: ChromosomeT>(
+    chromosomes: &mut Vec<U>,
+    population_size: usize,
+    limit_configuration: LimitConfiguration,
+) {
+    debug!(target="survivor_events", method="fitness_based"; "Starting fitness based survivor method");
+    if limit_configuration.problem_solving != ProblemSolving::FixedFitness {
+        //We sort the chromosomes by their fitness if there is not a fixed fitness problem
+        chromosomes.sort_by(|a, b| {
+            b.fitness()
+                .partial_cmp(&a.fitness())
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+    } else {
+        //We sort the chromosomes by their distance with the fitness target in a fixed fitness problem
+        let target = limit_configuration.fitness_target.unwrap_or(0.0);
+        chromosomes.sort_by(|a, b| {
+            b.fitness_distance(&target)
+                .partial_cmp(&a.fitness_distance(&target))
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+    }
+
+    // Drop surplus individuals in a single bulk operation instead of
+    // one-by-one Vec::remove calls (which are O(N) each).
+    trace!(target="survivor_events", method="fitness_based"; "Chromosomes length {} - population size {}", chromosomes.len(), population_size);
+    if chromosomes.len() > population_size {
+        match limit_configuration.problem_solving {
+            // Sorted descending: best (highest) at front, worst at tail.
+            ProblemSolving::Maximization => {
+                chromosomes.truncate(population_size);
+            }
+            // Sorted descending: worst (highest) at front.
+            // Drain the excess from the front in one O(N) shift.
+            ProblemSolving::Minimization | ProblemSolving::FixedFitness => {
+                let excess = chromosomes.len() - population_size;
+                chromosomes.drain(0..excess);
+            }
+        }
+    }
+
+    debug!(target="survivor_events", method="fitness_based"; "Fitness based survivor method finished");
+}

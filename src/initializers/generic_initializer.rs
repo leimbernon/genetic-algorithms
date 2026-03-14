@@ -1,40 +1,76 @@
-/*!
-# Generic Chromosome Initializer
-
-Provides random initialization for generic chromosomes.
-
-# Examples
-
-```rust
-use genetic_algorithms::initializers::generic_random_initialization;
-```
-*/
-
-use crate::chromosomes::Generic;
-use crate::error::GaError;
+use crate::traits::{ChromosomeT, GeneT};
 use rand::Rng;
 
-/// Random initialization for generic chromosomes.
-///
-/// # Arguments
-/// * `n_genes` - Number of genes per chromosome.
-/// * `gene_fn` - Function to generate a random gene.
-///
-/// # Returns
-/// * `Result<Generic<T>, GaError>` - Initialized generic chromosome.
-///
-/// # Errors
-/// * Returns `GaError` if initialization fails.
-///
-/// # Examples
-/// ```rust
-/// use genetic_algorithms::initializers::generic_random_initialization;
-/// let chromosome = generic_random_initialization(10, || rand::random::<u8>());
-/// ```
-pub fn generic_random_initialization<T, F>(n_genes: usize, gene_fn: F) -> Result<Generic<T>, GaError>
+/**
+ * Function to initialize the dna of an chromosome
+ */
+pub fn generic_random_initialization<U>(
+    genes_per_chromosome: usize,
+    alleles: Option<&[U::Gene]>,
+    needs_unique_ids: Option<bool>,
+) -> Vec<U::Gene>
 where
-    F: Fn() -> T,
+    U: ChromosomeT + Send + Sync + 'static + Clone,
 {
-    let dna: Vec<T> = (0..n_genes).map(|_| gene_fn()).collect();
-    Ok(Generic::from_dna(dna))
+    let alleles = alleles.expect("Alleles must be provided for generic_random_initialization");
+    let needs_unique_ids = needs_unique_ids
+        .expect("needs_unique_ids must be provided for generic_random_initialization");
+
+    let mut rng = crate::rng::make_rng();
+    let mut dna = Vec::new();
+
+    //Selects the genes randomly from the vector without repeating them
+    for j in 0..genes_per_chromosome {
+        let index = rng.random_range(0..alleles.len());
+        let mut gene = alleles.get(index).cloned().unwrap();
+
+        //If we need unique ids
+        if needs_unique_ids {
+            gene.set_id(j as i32);
+        }
+
+        dna.push(gene);
+    }
+
+    dna
+}
+
+/**
+ * Function to initialize the dna of a chromosome without repeating an array of alleles
+ */
+pub fn generic_random_initialization_without_repetitions<U>(
+    genes_per_chromosome: usize,
+    alleles: Option<&[U::Gene]>,
+    needs_unique_ids: Option<bool>,
+) -> Vec<U::Gene>
+where
+    U: ChromosomeT + Send + Sync + 'static + Clone,
+{
+    let alleles = alleles
+        .expect("Alleles must be provided for generic_random_initialization_without_repetitions");
+    let needs_unique_ids = needs_unique_ids.expect(
+        "needs_unique_ids must be provided for generic_random_initialization_without_repetitions",
+    );
+
+    let mut rng = crate::rng::make_rng();
+    let mut dna = Vec::new();
+
+    let mut tmp_alleles = alleles.to_vec().clone();
+
+    //Selects the genes randomly from the vector without repeating them
+    for j in 0..genes_per_chromosome {
+        let index = rng.random_range(0..tmp_alleles.len());
+        let mut gene = tmp_alleles.get(index).cloned().unwrap();
+
+        //If we need unique ids
+        if needs_unique_ids {
+            gene.set_id(j as i32);
+        }
+
+        tmp_alleles.remove(index);
+
+        dna.push(gene);
+    }
+
+    dna
 }

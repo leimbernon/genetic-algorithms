@@ -1,40 +1,40 @@
-/*!
-# Binary Chromosome Initializer
-
-Provides random initialization for binary chromosomes.
-
-# Examples
-
-```rust
-use genetic_algorithms::initializers::binary_random_initialization;
-```
-*/
-
-use crate::chromosomes::Binary;
-use crate::genotypes::Binary as BinaryGene;
-use crate::error::GaError;
+use crate::genotypes::Binary as BinaryGenotype;
 use rand::Rng;
 
-/// Random initialization for binary chromosomes.
+/// Initializes a vector of `Binary` genes with random values.
 ///
 /// # Arguments
-/// * `n_genes` - Number of genes per chromosome.
+///
+/// * `genes_per_chromosome` - The number of genes per chromosome.
+/// * `_alleles` - An optional slice of `Binary` to use as a source of alleles (not used in this function).
+/// * `_needs_unique_ids` - An optional boolean indicating if unique IDs are needed (not used in this function).
 ///
 /// # Returns
-/// * `Result<Binary, GaError>` - Initialized binary chromosome.
 ///
-/// # Errors
-/// * Returns `GaError` if initialization fails.
+/// A vector of `Binary` genes with random values.
 ///
 /// # Examples
-/// ```rust
-/// use genetic_algorithms::initializers::binary_random_initialization;
-/// let chromosome = binary_random_initialization(10);
+///
 /// ```
-pub fn binary_random_initialization(n_genes: usize) -> Result<Binary, GaError> {
-    let mut rng = rand::thread_rng();
-    let dna: Vec<BinaryGene> = (0..n_genes)
-        .map(|_| rng.gen_bool(0.5))
-        .collect();
-    Ok(Binary::from_dna(dna))
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::initializers::binary_random_initialization;
+///
+/// let genes = binary_random_initialization(100, None, None);
+/// assert_eq!(genes.len(), 100);
+/// ```
+pub fn binary_random_initialization(
+    genes_per_chromosome: usize,
+    _alleles: Option<&[BinaryGenotype]>,
+    _needs_unique_ids: Option<bool>,
+) -> Vec<BinaryGenotype> {
+    let mut genes = Vec::new();
+    let mut rng = crate::rng::make_rng();
+    for i in 0..genes_per_chromosome {
+        let gene = BinaryGenotype {
+            id: i as i32,
+            value: rng.random_bool(0.5),
+        };
+        genes.push(gene);
+    }
+    genes
 }
