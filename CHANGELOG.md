@@ -8,35 +8,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.0.0] - 2026-03-01
 
 ### Added
-- `GaError` enum for structured error handling across all operations.
-- All factories and operators now return `Result<T, GaError>` instead of panicking.
-- Parallelism via `rayon` replacing manual thread management.
-- `Mutation::Value` variant for numeric range chromosomes (`Range<T>`).
-- `Mutation::BitFlip` variant for binary chromosomes (flips a random gene's boolean value).
-- `Mutation::Creep` — small uniform perturbation mutation for `Range<T>` chromosomes (configurable step size).
-- `Mutation::Gaussian` — normal distribution perturbation mutation for `Range<T>` chromosomes (configurable sigma).
-- `Crossover::SinglePoint` operator (splits parents at one random point, swaps tails).
-- `Crossover::Order` operator (OX — preserves relative gene order; essential for permutation/TSP problems).
-- `Crossover::Sbx` — Simulated Binary Crossover for continuous optimization with `Range<T>` chromosomes (configurable eta).
-- `Crossover::BlendAlpha` — BLX-α blend crossover for continuous optimization with `Range<T>` chromosomes (configurable alpha).
-- `Selection::Rank` — rank-based selection that assigns probability proportional to fitness rank, avoiding dominance by very fit individuals.
-- Compound stopping criteria: `StoppingCriteria` with stagnation detection (N generations without improvement), convergence threshold (fitness std dev), and time limit (wall-clock seconds).
-- New `TerminationCause` variants: `StagnationReached`, `ConvergenceReached`, `TimeLimitReached`.
-- Elitism support: `with_elitism(n)` preserves the top N individuals across generations.
-- `stats` module with `GenerationStats` for per-generation tracking (best/worst/avg fitness, std dev).
-- `error` module (`src/error.rs`) with `GaError` variants: `ConfigurationError`, `ValidationError`, `CrossoverError`, `MutationError`, `InitializationError`, `SelectionError`.
+- **Island Model GA** (`IslandGa`): evolve multiple sub-populations in parallel with configurable migration policies and topologies (ring, fully-connected, custom).
+- **NSGA-II multi-objective optimizer** (`Nsga2Ga`): non-dominated sorting, crowding distance, per-objective direction (min/max), and constraint handling with constrained tournament selection.
+- **Island + NSGA-II hybrid** (`IslandNsga2Ga`): orchestrator combining island model with NSGA-II for distributed multi-objective optimization.
+- **Fitness sharing / niching**: maintain population diversity by penalizing similar individuals.
+- **Elitism support**: `with_elitism(n)` preserves the top N individuals across generations.
+- **Early-stop callbacks**: `ControlFlow`-based callbacks with per-generation `GenerationStats` (best/worst/avg fitness, std dev).
+- **Compound stopping criteria** (`StoppingCriteria`): stagnation detection (N generations without improvement), convergence threshold (fitness std dev), and time limit (wall-clock seconds). New `TerminationCause` variants: `StagnationReached`, `ConvergenceReached`, `TimeLimitReached`.
+- **Serde support** (feature flag `serde`): opt-in serialization/deserialization for all core types.
+- **Checkpoint save/load**: save and restore GA progress to/from disk via the `serde` feature.
+- **Seedable RNG**: reproducible GA runs with user-supplied random seeds.
+- **New selection operators**: `Selection::Rank`, `Selection::Boltzmann`, `Selection::Truncation`.
+- **New crossover operators**: `Crossover::SinglePoint`, `Crossover::Order` (OX), `Crossover::Sbx` (Simulated Binary), `Crossover::BlendAlpha` (BLX-α), `Crossover::Pmx` (Partially Mapped), `Crossover::Arithmetic`.
+- **New mutation operators**: `Mutation::Value` (for `Range<T>`), `Mutation::BitFlip` (for binary chromosomes), `Mutation::Creep` (uniform perturbation), `Mutation::Gaussian` (normal perturbation), `Mutation::Polynomial`, `Mutation::NonUniform`, `Mutation::Insertion`.
+- **New survivor strategies**: μ+λ and μ,λ survivor selection.
+- `GaError` enum for structured error handling — all factories and operators return `Result<T, GaError>` instead of panicking.
+- `stats` module with `GenerationStats` for per-generation tracking.
+- `error` module (`src/error.rs`) with variants: `ConfigurationError`, `ValidationError`, `CrossoverError`, `MutationError`, `InitializationError`, `SelectionError`.
+- `build()` validation step on `Ga`, `IslandGa`, `Nsga2Ga` builders.
+- Standard trait implementations (`Debug`, `Clone`, `Default`, `PartialEq`) on core types.
+- `dna_mut()` on `ChromosomeT` for zero-copy in-place gene edits.
+- Operator traits (`SelectionOperator`, `CrossoverOperator`, `MutationOperator`) for extensibility.
 - Builder methods: `with_sbx_eta()`, `with_blend_alpha()`, `with_mutation_step()`, `with_mutation_sigma()`, `with_stopping_criteria()`.
-- `AGENT_INSTRUCTIONS.md` with coding guidelines for contributors and agents.
-- `CONTRIBUTING.md` with development workflow and conventions.
+- OneMax binary example ("Hello World" of genetic algorithms).
+- Comprehensive benchmark suite: hot-path benchmarks for `Ga::run`, NSGA-II, and Island GA.
+- Extensive test coverage: unit tests for zero-coverage modules, edge-case tests for all operators, integration tests for NSGA-II, Island GA, AGA, niching, and Range chromosomes.
+- `AGENT_INSTRUCTIONS.md` and `CONTRIBUTING.md`.
 
 ### Changed
-- Parent pairs returned as `Vec<(usize, usize)>` instead of `HashMap<usize, usize>` (deterministic ordering, no duplicate key collisions).
-- Mutation factory uses `ValueMutable` trait with default swap fallback instead of `Any`/`downcast`.
-- `ValueMutable` trait extended with `creep_mutate()` and `gaussian_mutate()` methods (default falls back to swap).
-- `CrossoverConfiguration` extended with `sbx_eta` and `blend_alpha` fields.
-- `MutationConfiguration` extended with `step` and `sigma` fields.
-- Mutation factory supports `factory_with_params()` for passing step/sigma to Creep/Gaussian mutations.
-- All thread-based parallelism replaced with `rayon` (`par_iter`, `into_par_iter`).
+- **BREAKING**: All thread-based parallelism replaced with `rayon` (`par_iter`, `into_par_iter`). Manual thread spawning removed.
+- **BREAKING**: Parent pairs returned as `Vec<(usize, usize)>` instead of `HashMap<usize, usize>` (deterministic ordering, no duplicate key collisions).
+- **BREAKING**: Mutation factory uses `ValueMutable` trait with default swap fallback instead of `Any`/`downcast`.
+- **BREAKING**: `get_` prefix removed from accessor methods (e.g., `get_fitness()` → `fitness()`).
+- **BREAKING**: Non-negative `i32` fields changed to `usize`.
+- **BREAKING**: Builder pattern unified to consuming `self -> Self`.
+- **BREAKING**: `ConfigurationT` broken into focused sub-traits.
+- `ValueMutable` trait extended with `creep_mutate()` and `gaussian_mutate()` methods.
 - `GeneT::get_id()` now returns `i32` directly (was wrapped).
 - `ChromosomeT::set_dna` uses `Cow<'a, [Gene]>` to avoid redundant copies.
 - Selection functions accept `&[U]` instead of `&Vec<U>`.
@@ -45,13 +52,397 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - `Any`/`downcast` usage in mutation factory.
 - Manual thread spawning and join handles (replaced by `rayon`).
-- `pprof` profiler integration from benchmarks (version incompatibility with Criterion 0.7).
-- Obsolete examples using old `set_dna(&[Gene])` signatures.
+- `pprof` profiler integration from benchmarks (version incompatibility with Criterion 0.7+).
 
 ### Fixed
+- Critical correctness bugs in selection, crossover, mutation, and fitness evaluation.
+- Eliminated all panics and undefined behavior — safety hardening across the library.
 - Eliminated all `clippy` warnings across library, tests, and benchmarks.
-- Resolved `cargo fmt` trailing whitespace issues.
-- Fixed `if_same_then_else` in validator factory.
-- Fixed `clone_on_copy` in range initializer.
-- Replaced `assert_eq!` with `assert!` for boolean comparisons in tests.
+- SBX and BLX-α crossover enabled through enum dispatch via `Any` downcasting.
+- Warnings added when `ValueMutable` defaults fall back to swap mutation.
+- Flaky CI tests fixed (concurrency-safe RNG, increased time limits).
 
+### Performance
+- Parallelize NSGA-II objective evaluation with `rayon`.
+- Parallelize island evolution with `rayon` `par_iter_mut`.
+- Eliminate objectives cloning in NSGA-II by using slice references.
+- Eliminate full population clone in best-chromosome update.
+- Eliminate per-chromosome clone in fitness calculation.
+- Use `select_nth_unstable` to clone only elite individuals in `extract_elite`.
+- Use `HashSet` for segment membership in order crossover.
+- Use `HashMap` for gene ID lookup in cycle crossover.
+- Use `HashSet` for `unique_gene_ids` and O(N) `same_dna_length`.
+- Use `truncate`/`drain` instead of loop `remove` in survivor selection.
+- Use Fisher-Yates partial shuffle in random selection.
+
+---
+
+## [1.6.0] - 2024-10-30
+
+### Added
+- Benchmark suite using Criterion with `pprof` profiling for selection, crossover, mutation, and survivor operations.
+
+### Fixed
+- Cycle crossover bug: incorrect DNA generation for offspring during cycle detection ([#94](https://github.com/leimbernon/rust_genetic_algorithms/issues/94)).
+- Inversion mutation crash: `None` reference error when accessing gene indices ([#95](https://github.com/leimbernon/rust_genetic_algorithms/issues/95)).
+- Roulette wheel selection: simplified and corrected `total_fitness` calculation to avoid incorrect probability distribution ([#93](https://github.com/leimbernon/rust_genetic_algorithms/issues/93)).
+
+### Changed
+- Simplified test folder structure.
+- Downgraded minimum Rust version for GitHub Actions compatibility.
+
+---
+
+## [1.5.0] - 2024-08-30
+
+### Added
+- **Progress callback**: register a callback function that is invoked after each generation, receiving the current population and generation number. Enables real-time monitoring and custom logging.
+- Termination cause reported in the callback.
+- Unit tests for the callback mechanism.
+
+---
+
+## [1.4.2] - 2024-08-27
+
+### Fixed
+- Version metadata correction (no functional changes).
+
+---
+
+## [1.4.1] - 2024-08-27
+
+### Fixed
+- Setters returning `&mut self` for builder chaining in save-progress configuration.
+
+---
+
+## [1.4.0] - 2024-08-24
+
+### Added
+- **Save/load GA progress**: new configuration parameters to persist genetic algorithm state (population, generation, configuration) to disk and resume from a checkpoint. Enables long-running experiments to survive interruptions.
+- New dependencies for serialization support.
+
+### Changed
+- Removed `Copy` derive from configuration structs to support non-Copy fields.
+
+---
+
+## [1.3.2] - 2023-11-22
+
+### Fixed
+- Bug where the number of couples was not set correctly, causing a panic when the configuration omitted `number_of_couples` ([#75](https://github.com/leimbernon/rust_genetic_algorithms/issues/75)).
+
+---
+
+## [1.3.1] - 2023-11-18
+
+### Fixed
+- Packages and security dependencies updated.
+- Documentation improvements.
+
+---
+
+## [1.3.0] - 2023-11-17
+
+### Added
+- **Configuration builder pattern**: fluent API to configure GA with chained method calls (`with_selection()`, `with_crossover()`, `with_mutation()`, `with_limits()`). Replaces verbose struct initialization.
+- `ConfigurationT` trait for GA configuration, enabling custom configuration implementations.
+- Configuration trait integrated into the `Ga` structure.
+
+### Changed
+- Configuration is now set within the `Ga` builder chain instead of being constructed separately and passed in.
+- Trait renaming: added `T` suffix for consistency (e.g., `Configuration` → `ConfigurationT`).
+- Deleted CircleCI badge (all CI now runs on GitHub Actions).
+
+---
+
+## [1.2.0] - 2023-11-04
+
+### Added
+- **Population initialization within GA**: the GA can now initialize the population automatically from configuration, removing the need to manually create and pass a population.
+- Parameter to set initial population directly if already constructed.
+- Condition checker updated to validate initialization parameters.
+
+### Changed
+- If population is provided, initialization step is skipped.
+- Documentation simplified and updated.
+
+---
+
+## [1.1.0] - 2023-10-12
+
+### Added
+- **Adaptive Genetic Algorithm (AGA)**: crossover and mutation probabilities automatically adjust based on population fitness statistics.
+  - Adaptive crossover probability: adjusts based on individual fitness relative to population average and maximum fitness.
+  - Adaptive mutation probability: same adaptive mechanism applied to mutation rates.
+  - New AGA-specific configuration parameters (`probability_max`, `probability_min`).
+- **Random population initialization**: functions to initialize a population with random DNA, with or without repeated alleles. Supports multithreading.
+- Allele uniqueness validation: panic if unique alleles are required but fewer alleles than DNA length are provided ([#51](https://github.com/leimbernon/rust_genetic_algorithms/issues/51)).
+- Panic with descriptive message when fitness target is not set for fixed-fitness problems ([#50](https://github.com/leimbernon/rust_genetic_algorithms/issues/50)).
+- Custom `LogLevel` enum replacing direct use of `log::LevelFilter` in configuration ([#49](https://github.com/leimbernon/rust_genetic_algorithms/issues/49)).
+- `Gene::set_id()` function for setting gene IDs after construction.
+- Average and maximum fitness tracked on the population without extra iteration.
+- Condition checkers for AGA crossover and mutation configuration.
+- Scramble mutation fix for edge cases.
+
+### Fixed
+- Fitness proportionate selection: corrected probability calculation.
+- Scramble mutation: off-by-one error in gene range.
+- `add_individuals` function: error when adding individuals to a population ([#57](https://github.com/leimbernon/rust_genetic_algorithms/issues/57)).
+
+### Changed
+- Functions renamed: removed "multithread" from function names where single-thread and multithread variants were consolidated.
+
+---
+
+## [1.0.1] - 2023-09-05
+
+### Fixed
+- Info-level log messages reduced — generation-level detail moved to debug logs to avoid flooding the console.
+
+---
+
+## [1.0.0] - 2023-09-05
+
+### Added
+- **Logging system**: log traces at all levels (error, warn, info, debug, trace) across all GA operations — selection, crossover, mutation, survivor, and main GA loop.
+- Log level configurable via `GaConfiguration` (uses `env_logger`).
+- `kv_unstable` feature for structured log key-value pairs.
+- `SECURITY.md` security policy.
+
+### Changed
+- **BREAKING**: Getters no longer return references for `Copy` types (`get_id`, `get_fitness`, `get_age` return values directly).
+- **BREAKING**: `get_dna()` returns `&[Gene]` (slice) instead of `Vec<Gene>`.
+- **BREAKING**: `get_dna_mut()` replaced by `set_dna()` and `set_gene()` for controlled mutation.
+- **BREAKING**: `GeneT::get_id()` made optional (default implementation provided).
+- **BREAKING**: `Gene` is now a type alias used inside `Genotype`, making the genotype generic over the gene type.
+- `new_gene()` method made optional with a default implementation.
+- `GeneT::new_gene()` provides a default implementation.
+- Condition that didn't match requirements fixed ([#23](https://github.com/leimbernon/rust_genetic_algorithms/issues/23)).
+- Duplicated lines removed from README.
+- Clippy results uploaded to GitHub via CI.
+- Technical debt addressed: lint fixes and test improvements.
+
+---
+
+## [0.9.2] - 2023-08-22
+
+### Fixed
+- Technical debt: code quality improvements and lint fixes.
+
+---
+
+## [0.9.1] - 2023-08-22
+
+### Fixed
+- Technical debt: Rust code quality improvements and lint compliance.
+
+---
+
+## [0.9.0] - 2023-08-22
+
+### Added
+- **Operator probabilities**: crossover, mutation, and selection operations now support configurable probability values, allowing fine-grained control over how often each operator is applied.
+- Selection method probability configuration.
+- README updated with probability configuration documentation.
+
+### Changed
+- GA configuration simplified to include probabilities inline.
+
+---
+
+## [0.8.4] - 2023-07-26
+
+### Changed
+- CI/CD improvements: added unit testing badge, set up `rust-unit-tests.yml` workflow.
+- Documentation improved.
+
+---
+
+## [0.8.3] - 2023-07-26
+
+### Fixed
+- Minor documentation fixes.
+
+---
+
+## [0.8.2] - 2023-07-26
+
+### Changed
+- Added Rust syntax highlighting to code documentation.
+- Version number updated.
+
+---
+
+## [0.8.1] - 2023-07-26
+
+### Changed
+- Documentation improvements and version number fix.
+
+---
+
+## [0.8.0] - 2023-07-25
+
+### Added
+- **Best individual by generation**: new function `get_best_individual_by_generation()` to retrieve the best-performing individual at any given generation. Useful for tracking convergence history.
+- New configuration field to support per-generation tracking.
+
+### Changed
+- Renamed `get_best_fitness_by_generation` to `get_best_individual_by_generation` (returns full individual, not just fitness).
+
+---
+
+## [0.7.3] - 2023-07-25
+
+### Changed
+- README improvements and version number update.
+
+---
+
+## [0.7.2] - 2023-07-25
+
+### Changed
+- Code style fixes.
+- Added `rust-clippy.yml` GitHub Actions workflow for automated linting.
+
+---
+
+## [0.7.1] - 2023-01-07
+
+### Fixed
+- Cleanup of unused functions.
+
+---
+
+## [0.7.0] - 2023-01-07
+
+### Added
+- **Full multithreading for crossover operations**: crossover now runs in parallel across parent pairs, completing the multithreading coverage for all major GA operations.
+
+---
+
+## [0.6.0] - 2023-01-02
+
+### Added
+- **Multithreaded mutation**: mutation operations now execute in parallel using threads.
+
+---
+
+## [0.5.1] - 2022-12-26
+
+### Fixed
+- Tournament selection multithreading error: race condition fixed when running tournament selection across multiple threads.
+
+---
+
+## [0.5.0] - 2022-12-26
+
+### Added
+- **Multithreading support**: fitness calculation, parent selection, and tournament selection now run in parallel using threads. First major performance feature.
+- Documentation for multithreading usage.
+
+---
+
+## [0.4.0] - 2022-12-25
+
+### Added
+- **Tournament selection** operator.
+- **Run-based API** (`ga.run()`): simplified entry point that handles the full GA loop (selection → crossover → mutation → survivor → repeat).
+- **Configuration struct**: centralized GA configuration with all parameters in one place.
+- **Fitness target termination**: GA stops when a target fitness value is reached.
+- **Fitness distance calculation**: measure how far current best is from the target.
+- `LICENSE` file (Apache-2.0).
+
+### Changed
+- Major refactoring of configuration management — parameters moved into a dedicated configuration module.
+- Naming conventions standardized.
+
+---
+
+## [0.3.0] - 2022-12-24
+
+### Added
+- **Uniform crossover** operator.
+- **Scramble mutation** operator.
+- **Stochastic universal sampling** selection operator.
+
+### Changed
+- README updated with new operators documentation.
+
+---
+
+## [0.2.1] - 2022-12-18
+
+### Changed
+- README styling improvements.
+
+---
+
+## [0.2.0] - 2022-12-18
+
+### Added
+- **Roulette wheel selection** (fitness proportionate selection) operator.
+- **Multipoint crossover** operator (configurable number of crossover points).
+- **Inversion mutation** operator.
+- **Age-based selection** operator.
+
+---
+
+## [0.1.1] - 2022-12-04
+
+### Changed
+- README improvements with additional information about the library.
+
+---
+
+## [0.1.0] - 2022-12-04
+
+### Added
+- Initial release of the `genetic_algorithms` library.
+- Core genetic algorithm loop: selection → crossover → mutation → survivor selection → repeat.
+- **Gene and Genotype traits**: generic abstractions for representing individuals with typed DNA.
+- **Cycle crossover** operator.
+- **Swap mutation** operator.
+- **Random selection** operator.
+- **Fitness-based survivor selection** operator.
+- **Population** struct with support for adding/removing individuals.
+- Phenotype (fitness) calculation.
+- Maximization and minimization problem support.
+- Unit tests for all implemented operators.
+
+---
+
+[2.0.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/1.6.0...HEAD
+[1.6.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/1.5.0...1.6.0
+[1.5.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/1.4.2...1.5.0
+[1.4.2]: https://github.com/leimbernon/rust_genetic_algorithms/compare/1.4.1...1.4.2
+[1.4.1]: https://github.com/leimbernon/rust_genetic_algorithms/compare/1.4.0...1.4.1
+[1.4.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/1.3.2...1.4.0
+[1.3.2]: https://github.com/leimbernon/rust_genetic_algorithms/compare/1.3.1...1.3.2
+[1.3.1]: https://github.com/leimbernon/rust_genetic_algorithms/compare/1.3.0...1.3.1
+[1.3.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/1.2.0...1.3.0
+[1.2.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/1.1.0...1.2.0
+[1.1.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/1.0.1...1.1.0
+[1.0.1]: https://github.com/leimbernon/rust_genetic_algorithms/compare/1.0.0...1.0.1
+[1.0.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/0.9.2...1.0.0
+[0.9.2]: https://github.com/leimbernon/rust_genetic_algorithms/compare/0.9.1...0.9.2
+[0.9.1]: https://github.com/leimbernon/rust_genetic_algorithms/compare/0.9.0...0.9.1
+[0.9.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/0.8.4...0.9.0
+[0.8.4]: https://github.com/leimbernon/rust_genetic_algorithms/compare/0.8.3...0.8.4
+[0.8.3]: https://github.com/leimbernon/rust_genetic_algorithms/compare/0.8.2...0.8.3
+[0.8.2]: https://github.com/leimbernon/rust_genetic_algorithms/compare/0.8.1...0.8.2
+[0.8.1]: https://github.com/leimbernon/rust_genetic_algorithms/compare/0.8.0...0.8.1
+[0.8.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/0.7.3...0.8.0
+[0.7.3]: https://github.com/leimbernon/rust_genetic_algorithms/compare/0.7.2...0.7.3
+[0.7.2]: https://github.com/leimbernon/rust_genetic_algorithms/compare/0.7.1...0.7.2
+[0.7.1]: https://github.com/leimbernon/rust_genetic_algorithms/compare/0.7.0...0.7.1
+[0.7.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/0.6.0...0.7.0
+[0.6.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/0.5.1...0.6.0
+[0.5.1]: https://github.com/leimbernon/rust_genetic_algorithms/compare/0.5.0...0.5.1
+[0.5.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/0.4.0...0.5.0
+[0.4.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/0.3.0...0.4.0
+[0.3.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/0.2.1...0.3.0
+[0.2.1]: https://github.com/leimbernon/rust_genetic_algorithms/compare/0.2.0...0.2.1
+[0.2.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/0.1.1...0.2.0
+[0.1.1]: https://github.com/leimbernon/rust_genetic_algorithms/compare/0.1.0...0.1.1
+[0.1.0]: https://github.com/leimbernon/rust_genetic_algorithms/releases/tag/0.1.0
