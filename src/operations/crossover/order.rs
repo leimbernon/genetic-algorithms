@@ -1,3 +1,5 @@
+//! Order crossover (OX) implementation.
+
 use crate::error::GaError;
 use crate::traits::ChromosomeT;
 use log::debug;

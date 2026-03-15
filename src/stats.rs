@@ -1,3 +1,10 @@
+//! Per-generation statistics.
+//!
+//! The [`GenerationStats`] struct captures fitness metrics (best, worst,
+//! average, standard deviation) at the end of each generation. These
+//! statistics are used internally for convergence-based stopping criteria and
+//! are also passed to user callbacks during `run_with_callback`.
+
 /// Per-generation statistics for tracking GA convergence and behavior.
 ///
 /// Collected at the end of each generation and optionally passed to callbacks.

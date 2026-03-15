@@ -1,3 +1,10 @@
+//! Value mutation operator for range-encoded chromosomes.
+//!
+//! Replaces a single gene's value with a new one drawn uniformly from that
+//! gene's declared range. This module also provides the [`ValueMutable`]
+//! trait implementations for the built-in numeric `Range<T>` chromosome
+//! types (`i32`, `i64`, `f32`, `f64`).
+
 use crate::chromosomes::Range as RangeChromosome;
 use crate::traits::ChromosomeT;
 use rand::distr::uniform::SampleUniform;
@@ -7,7 +14,7 @@ use std::fmt::Debug;
 
 use super::ValueMutable;
 
-/// Value mutation for Range<T> chromosomes.
+/// Value mutation for `Range<T>` chromosomes.
 ///
 /// - Randomly selects a gene from the DNA.
 /// - Picks one of its ranges and assigns a new value uniformly within that range.
@@ -47,7 +54,7 @@ where
     individual.set_dna(Cow::Owned(dna));
 }
 
-/// Implement ValueMutable for Range<i32>
+/// `ValueMutable` implementation for `Range<i32>`.
 impl ValueMutable for RangeChromosome<i32> {
     fn value_mutate(&mut self) {
         value_mutation(self);
@@ -60,7 +67,7 @@ impl ValueMutable for RangeChromosome<i32> {
     }
 }
 
-/// Implement ValueMutable for Range<i64>
+/// `ValueMutable` implementation for `Range<i64>`.
 impl ValueMutable for RangeChromosome<i64> {
     fn value_mutate(&mut self) {
         value_mutation(self);
@@ -73,7 +80,7 @@ impl ValueMutable for RangeChromosome<i64> {
     }
 }
 
-/// Implement ValueMutable for Range<f32>
+/// `ValueMutable` implementation for `Range<f32>`.
 impl ValueMutable for RangeChromosome<f32> {
     fn value_mutate(&mut self) {
         value_mutation(self);
@@ -86,7 +93,7 @@ impl ValueMutable for RangeChromosome<f32> {
     }
 }
 
-/// Implement ValueMutable for Range<f64>
+/// `ValueMutable` implementation for `Range<f64>`.
 impl ValueMutable for RangeChromosome<f64> {
     fn value_mutate(&mut self) {
         value_mutation(self);

@@ -1,3 +1,10 @@
+//! Range chromosome implementation.
+//!
+//! A [`Range`] chromosome stores a vector of [`genotypes::Range`](crate::genotypes::Range)
+//! genes, each holding a numeric value within defined bounds. This is suited
+//! for continuous or integer optimization problems (function optimization,
+//! parameter tuning, etc.).
+
 use crate::fitness::FitnessFnWrapper;
 use crate::genotypes::Range as RangeGenotype;
 use crate::traits::ChromosomeT;

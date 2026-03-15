@@ -1,3 +1,9 @@
+//! Binary genotype (gene) for binary-encoded chromosomes.
+//!
+//! Each [`Binary`] gene carries an integer identifier and a boolean value.
+//! It is the building block for [`crate::chromosomes::Binary`] chromosomes
+//! used in problems with binary / bit-string representations.
+
 /// A binary gene with an identifier and a boolean value.
 ///
 /// This struct implements the `GeneT` trait, allowing it to be used in genetic

@@ -1,3 +1,11 @@
+//! Parent-selection operators.
+//!
+//! This module provides the [`factory`] dispatch function and individual
+//! selection implementations (tournament, roulette wheel, stochastic
+//! universal sampling, random, rank, Boltzmann, truncation). The correct
+//! implementation is selected at runtime based on the [`Selection`] variant
+//! in the configuration.
+
 use crate::configuration::SelectionConfiguration;
 use crate::error::GaError;
 use crate::traits::{ChromosomeT, SelectionOperator};

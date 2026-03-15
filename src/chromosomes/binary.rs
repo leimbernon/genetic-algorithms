@@ -1,3 +1,9 @@
+//! Binary chromosome implementation.
+//!
+//! A [`Binary`] chromosome stores a vector of [`genotypes::Binary`](crate::genotypes::Binary)
+//! genes, each holding a boolean value. This is the natural choice for
+//! problems like OneMax, knapsack, or any bit-string optimization.
+
 use crate::error::GaError;
 use crate::fitness::FitnessFnWrapper;
 use crate::genotypes::Binary as BinaryGenotype;

@@ -1,3 +1,10 @@
+//! Survivor-selection operators.
+//!
+//! This module provides the [`factory`] dispatch function and individual
+//! survivor-selection strategies (fitness-based, age-based, mu+lambda,
+//! mu,lambda). The correct strategy is selected at runtime based on the
+//! [`Survivor`] variant in the configuration.
+
 pub use self::age::age_based;
 pub use self::fitness::fitness_based;
 pub use self::mu_comma_lambda::mu_comma_lambda;

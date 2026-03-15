@@ -1,78 +1,119 @@
+//! Genetic operators: selection, crossover, mutation, and survivor selection.
+//!
+//! Each sub-module contains the operator implementations and a `factory`
+//! function that dispatches to the correct variant at runtime based on the
+//! configuration enums defined here ([`Selection`], [`Crossover`],
+//! [`Mutation`], [`Survivor`]).
+
 pub mod crossover;
 pub mod mutation;
 pub mod selection;
 pub mod survivor;
 
+/// Parent-selection strategies.
+///
+/// Determines how individuals are chosen from the current population to
+/// become parents for the next generation's offspring.
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Selection {
+    /// Pure random selection — every individual has equal probability.
     Random,
+    /// Fitness-proportionate selection — probability is proportional to fitness.
     RouletteWheel,
+    /// Like roulette wheel but with evenly spaced pointers for lower variance.
     StochasticUniversalSampling,
+    /// Pairwise tournament — two (or more) individuals compete and the fitter wins.
     Tournament,
     /// Rank-based selection: individuals are ranked by fitness and selection
     /// probability is proportional to rank, avoiding dominance by very fit individuals.
     Rank,
     /// Boltzmann selection: uses a temperature parameter to control selective pressure.
-    /// High temperature → uniform selection (exploration), low temperature → strong
+    /// High temperature -> uniform selection (exploration), low temperature -> strong
     /// selective pressure (exploitation).
     Boltzmann,
     /// Truncation selection: only the top portion of the population is eligible
     /// for reproduction, providing very high selective pressure.
     Truncation,
 }
+
+/// Crossover (recombination) strategies.
+///
+/// Determines how two parent chromosomes are combined to produce offspring.
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Crossover {
+    /// Cycle crossover — preserves the position of each gene from one parent.
     Cycle,
+    /// Multi-point crossover — alternates segments between parents at N random cut points.
     MultiPoint,
+    /// Uniform crossover — each gene is independently chosen from either parent.
     Uniform,
+    /// Single-point crossover — one cut point splits both parents into two halves that are swapped.
     SinglePoint,
+    /// Order crossover (OX) — preserves relative ordering, suited for permutation chromosomes.
     Order,
     /// Partially Mapped Crossover for permutation-based chromosomes.
     /// Preserves absolute positions within a segment and relative order outside it.
     Pmx,
-    /// Simulated Binary Crossover for Range<T> chromosomes.
+    /// Simulated Binary Crossover for `Range<T>` chromosomes.
     /// Uses a distribution index (eta) configured via `CrossoverConfiguration`.
     Sbx,
-    /// Blend Crossover (BLX-α) for Range<T> chromosomes.
+    /// Blend Crossover (BLX-alpha) for `Range<T>` chromosomes.
     /// Uses an alpha parameter configured via `CrossoverConfiguration`.
     BlendAlpha,
-    /// Arithmetic (whole) crossover for Range<T> chromosomes.
-    /// Child = α·parent1 + (1-α)·parent2. Uses `arithmetic_alpha` from configuration.
+    /// Arithmetic (whole) crossover for `Range<T>` chromosomes.
+    /// Child = alpha * parent1 + (1 - alpha) * parent2. Uses `arithmetic_alpha` from configuration.
     Arithmetic,
 }
+
+/// Mutation strategies.
+///
+/// Determines how offspring chromosomes are randomly altered to maintain
+/// genetic diversity.
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Mutation {
+    /// Swap mutation — two random genes exchange positions.
     Swap,
+    /// Inversion mutation — a random sub-sequence of the chromosome is reversed.
     Inversion,
+    /// Scramble mutation — a random sub-sequence is shuffled in place.
     Scramble,
+    /// Value mutation — a single gene is replaced with a random allele.
     Value,
+    /// Bit-flip mutation — each bit (gene) is flipped with a given probability (binary chromosomes).
     BitFlip,
-    /// Small uniform perturbation mutation for Range<T> chromosomes.
+    /// Small uniform perturbation mutation for `Range<T>` chromosomes.
     /// Requires a step size configured via `MutationConfiguration`.
     Creep,
-    /// Gaussian (normal distribution) perturbation mutation for Range<T> chromosomes.
+    /// Gaussian (normal distribution) perturbation mutation for `Range<T>` chromosomes.
     /// Requires a sigma configured via `MutationConfiguration`.
     Gaussian,
-    /// Polynomial mutation for Range<T> chromosomes (NSGA-II style).
+    /// Polynomial mutation for `Range<T>` chromosomes (NSGA-II style).
     /// Uses a distribution index (eta_m) from `MutationConfiguration`.
     Polynomial,
-    /// Non-uniform mutation for Range<T> chromosomes.
+    /// Non-uniform mutation for `Range<T>` chromosomes.
     /// Mutation magnitude decreases over generations.
     NonUniform,
     /// Insertion mutation for permutation-based chromosomes.
     /// Removes a gene and reinserts it at a different position.
     Insertion,
 }
+
+/// Survivor-selection strategies.
+///
+/// Determines which individuals from the combined parent+offspring pool
+/// survive into the next generation.
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Survivor {
+    /// Keep the fittest individuals regardless of age.
     Fitness,
+    /// Keep the youngest individuals (most recently created).
     Age,
-    /// (μ+λ) strategy: parents and offspring compete together for survival.
+    /// (mu+lambda) strategy: parents and offspring compete together for survival.
     MuPlusLambda,
-    /// (μ,λ) strategy: only offspring (age == 0) are eligible for survival.
+    /// (mu,lambda) strategy: only offspring (age == 0) are eligible for survival.
     MuCommaLambda,
 }

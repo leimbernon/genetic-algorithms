@@ -1,9 +1,21 @@
+//! Cycle crossover implementation.
+
 use crate::error::GaError;
 use crate::traits::{ChromosomeT, GeneT};
 use log::{debug, trace};
 use std::borrow::Cow;
 use std::collections::HashMap;
 
+/// Cycle crossover: identifies positional cycles between parents and alternates
+/// which parent contributes each cycle to the children.
+///
+/// Preserves the absolute position of every gene (each gene ends up at the
+/// same index it occupied in one of the parents), making it well-suited for
+/// permutation-based problems.
+///
+/// # Errors
+///
+/// Returns `Err(GaError::CrossoverError)` if parents have different DNA lengths.
 pub fn cycle<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
     let dna_len = parent_1.dna().len();
 

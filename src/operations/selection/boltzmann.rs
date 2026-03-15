@@ -1,3 +1,11 @@
+//! Boltzmann selection operator.
+//!
+//! Uses a temperature parameter inspired by statistical mechanics to
+//! control selective pressure. High temperatures yield nearly uniform
+//! selection (exploration); low temperatures strongly favor the fittest
+//! (exploitation). Lowering the temperature over generations produces a
+//! simulated-annealing effect.
+
 use crate::traits::ChromosomeT;
 use log::{debug, trace};
 use rand::Rng;

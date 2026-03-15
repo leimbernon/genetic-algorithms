@@ -1,3 +1,15 @@
+//! GA configuration types.
+//!
+//! This module defines the configuration structs used to parameterize every
+//! aspect of the genetic algorithm: problem type, operator settings, stopping
+//! criteria, logging, checkpointing, and more.
+//!
+//! Most users interact with these types through the builder methods on [`Ga`]
+//! (via the [`ConfigurationT`], [`SelectionConfig`], [`CrossoverConfig`], and
+//! [`MutationConfig`] traits) rather than constructing them directly.
+//!
+//! [`Ga`]: crate::ga::Ga
+
 use std::fmt;
 
 use crate::niching::configuration::NichingConfiguration;
@@ -9,11 +21,18 @@ use crate::{
     },
 };
 
+/// Optimization direction for the genetic algorithm.
+///
+/// Determines how fitness values are compared when selecting the "best"
+/// individual and when checking stopping conditions.
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum ProblemSolving {
+    /// Minimize fitness — lower values are better.
     Minimization,
+    /// Maximize fitness — higher values are better.
     Maximization,
+    /// Target a specific fitness value (set via [`LimitConfiguration::fitness_target`]).
     FixedFitness,
 }
 impl fmt::Display for ProblemSolving {
@@ -26,17 +45,30 @@ impl fmt::Display for ProblemSolving {
     }
 }
 
+/// Verbosity level for the GA's internal logging (backed by the `log` crate).
+///
+/// Default is [`LogLevel::Off`]. Set via [`ConfigurationT::with_logs`].
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum LogLevel {
+    /// Disable all logging output.
     Off,
+    /// Log only errors.
     Error,
+    /// Log warnings and above.
     Warn,
+    /// Log informational messages and above.
     Info,
+    /// Log debug-level messages and above.
     Debug,
+    /// Log everything, including fine-grained trace messages.
     Trace,
 }
 
+/// Configuration for the parent-selection operator.
+///
+/// Controls how many parent pairs are created each generation and which
+/// selection strategy is used (tournament, roulette wheel, etc.).
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SelectionConfiguration {
@@ -57,6 +89,10 @@ impl Default for SelectionConfiguration {
     }
 }
 
+/// Configuration for the crossover (recombination) operator.
+///
+/// Specifies the crossover method, probability bounds (for adaptive GA),
+/// and method-specific parameters like SBX eta or BLX-alpha.
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CrossoverConfiguration {
@@ -88,6 +124,10 @@ impl Default for CrossoverConfiguration {
     }
 }
 
+/// Configuration for the mutation operator.
+///
+/// Specifies the mutation method, probability bounds (for adaptive GA),
+/// and method-specific parameters like step size, sigma, or polynomial eta.
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MutationConfiguration {
@@ -121,6 +161,10 @@ impl Default for MutationConfiguration {
     }
 }
 
+/// Core limits and problem parameters for the GA.
+///
+/// Defines population size, chromosome length, optimization direction,
+/// generation cap, and whether alleles can repeat or require unique IDs.
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LimitConfiguration {
@@ -146,6 +190,11 @@ impl Default for LimitConfiguration {
     }
 }
 
+/// Checkpoint / save-progress configuration.
+///
+/// When enabled, the GA periodically serializes its state (population,
+/// configuration, and statistics) to disk so a run can be resumed later.
+/// Requires the `serde` feature.
 #[derive(Clone, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SaveProgressConfiguration {
@@ -171,6 +220,11 @@ pub struct StoppingCriteria {
     pub max_duration_secs: Option<f64>,
 }
 
+/// Top-level configuration for a [`Ga`](crate::ga::Ga) run.
+///
+/// Aggregates all sub-configurations (selection, crossover, mutation,
+/// limits, stopping criteria, niching, checkpointing) into a single struct
+/// that is stored inside [`Ga`](crate::ga::Ga).
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct GaConfiguration {

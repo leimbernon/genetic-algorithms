@@ -1,7 +1,20 @@
+//! Inversion mutation operator.
+//!
+//! Reverses the order of genes between two randomly chosen positions in the
+//! chromosome. Inversion mutation is especially useful for permutation
+//! encodings (e.g., TSP) because it preserves the set of alleles while
+//! changing their relative order.
+
 pub(crate) use crate::traits::ChromosomeT;
 use log::{debug, trace};
 use rand::Rng;
 
+/// Inversion mutation: reverses the sub-sequence of genes between two
+/// randomly selected positions.
+///
+/// Two indices are chosen at random; the genes in the inclusive range
+/// `[lower, upper]` are then reversed in place. If the DNA has fewer than
+/// 2 genes the function is a no-op.
 pub fn inversion<U: ChromosomeT>(individual: &mut U) {
     // Starting the inversion mutation and obtaining two random indices
     debug!(target="mutation_events", method="inversion"; "Starting the inversion mutation");

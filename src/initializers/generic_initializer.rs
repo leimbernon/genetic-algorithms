@@ -1,9 +1,20 @@
+//! Generic initializer for allele-based chromosomes.
+//!
+//! Provides two initialization functions that create chromosome DNA by
+//! randomly sampling from a user-supplied alleles list — with or without
+//! repetition.
+
 use crate::traits::{ChromosomeT, GeneT};
 use rand::Rng;
 
-/**
- * Function to initialize the dna of an chromosome
- */
+/// Randomly initializes a chromosome's DNA by sampling alleles **with** replacement.
+///
+/// Each gene position is filled by picking a random allele from the provided
+/// list. The same allele may appear more than once in the resulting DNA.
+///
+/// # Panics
+///
+/// Panics if `alleles` or `needs_unique_ids` is `None`.
 pub fn generic_random_initialization<U>(
     genes_per_chromosome: usize,
     alleles: Option<&[U::Gene]>,
@@ -35,9 +46,14 @@ where
     dna
 }
 
-/**
- * Function to initialize the dna of a chromosome without repeating an array of alleles
- */
+/// Randomly initializes a chromosome's DNA by sampling alleles **without** replacement.
+///
+/// Each selected allele is removed from the candidate pool, guaranteeing that
+/// no allele appears more than once. Requires `alleles.len() >= genes_per_chromosome`.
+///
+/// # Panics
+///
+/// Panics if `alleles` or `needs_unique_ids` is `None`.
 pub fn generic_random_initialization_without_repetitions<U>(
     genes_per_chromosome: usize,
     alleles: Option<&[U::Gene]>,

@@ -1,3 +1,11 @@
+//! Creep mutation operator for range-encoded chromosomes.
+//!
+//! Applies a small uniform perturbation to a single gene. The magnitude
+//! of the perturbation is bounded by a user-specified `step` size and the
+//! result is always clamped to the gene's declared range. Creep mutation
+//! is ideal for fine-tuning solutions in continuous or integer search
+//! spaces.
+
 use crate::chromosomes::Range as RangeChromosome;
 use crate::traits::ChromosomeT;
 use rand::distr::uniform::SampleUniform;
@@ -5,7 +13,7 @@ use rand::Rng;
 use std::borrow::Cow;
 use std::fmt::Debug;
 
-/// Creep mutation for Range<T> chromosomes.
+/// Creep mutation for `Range<T>` chromosomes.
 ///
 /// Applies a small uniform perturbation to a randomly selected gene.
 /// The perturbation is drawn from [-step, +step] and the result is clamped

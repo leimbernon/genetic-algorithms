@@ -1,3 +1,11 @@
+//! (mu+lambda) survivor selection strategy.
+//!
+//! All individuals — both the *mu* parents and the *lambda* offspring —
+//! compete together for survival. The best `population_size` individuals
+//! are kept based on fitness. This is the standard approach in
+//! evolution-strategy literature and is functionally identical to
+//! fitness-based selection.
+
 pub(crate) use crate::{
     configuration::{LimitConfiguration, ProblemSolving},
     traits::ChromosomeT,

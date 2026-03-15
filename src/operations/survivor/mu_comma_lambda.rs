@@ -1,3 +1,10 @@
+//! (mu,lambda) survivor selection strategy.
+//!
+//! Only offspring (individuals with `age == 0`) are eligible to survive;
+//! all parents are unconditionally discarded. This enforces that every
+//! generation is composed entirely of newly created individuals, preventing
+//! stagnation from long-lived parents.
+
 pub(crate) use crate::{
     configuration::{LimitConfiguration, ProblemSolving},
     traits::ChromosomeT,

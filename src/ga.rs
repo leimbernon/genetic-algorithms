@@ -1,3 +1,30 @@
+//! Main genetic algorithm orchestrator.
+//!
+//! This module contains the [`Ga`] struct, the central entry point for
+//! configuring and running a single-objective genetic algorithm. It coordinates
+//! the full evolutionary cycle: initialization, selection, crossover, mutation,
+//! survivor selection, and fitness evaluation.
+//!
+//! # Quick start
+//!
+//! ```ignore
+//! use genetic_algorithms::prelude::*;
+//!
+//! let mut ga = Ga::new()
+//!     .with_population_size(100)
+//!     .with_max_generations(500)
+//!     .with_genes_per_chromosome(8)
+//!     .with_fitness_fn(|dna: &[MyGene]| { /* return fitness */ 0.0 })
+//!     .with_initialization_fn(generic_random_initialization)
+//!     .build()?;
+//!
+//! let population = ga.run()?;
+//! println!("Best: {:?}", population.best_chromosome);
+//! ```
+//!
+//! See also: [`crate::island`] for multi-population island models, and
+//! [`crate::nsga2`] for multi-objective optimization.
+
 use crate::configuration::GaConfiguration;
 use crate::error::GaError;
 use crate::stats::GenerationStats;
@@ -373,17 +400,15 @@ where
         Ok(self)
     }
 
-    /**
-     * Function to set the alleles
-     */
+    /// Sets the alleles (possible gene values) used during initialization.
     pub fn with_alleles(mut self, alleles: Vec<U::Gene>) -> Self {
         self.alleles = alleles;
         self
     }
 
-    /**
-     * Function to set the population
-     */
+    /// Sets an initial population instead of generating one from scratch.
+    ///
+    /// If `number_of_couples` has not been set, it defaults to half the population size.
     pub fn with_population(mut self, population: Population<U>) -> Self {
         //Checks if the number of couples is 0, sets the number of couples to the half of the population
         if self.configuration.selection_configuration.number_of_couples == 0 {
@@ -393,9 +418,10 @@ where
         self
     }
 
-    /**
-     * Function to set the fitness function
-     */
+    /// Sets the fitness function used to evaluate chromosomes.
+    ///
+    /// The closure receives a chromosome's DNA (a slice of genes) and must return
+    /// a scalar `f64` fitness value.
     pub fn with_fitness_fn<F>(mut self, fitness_fn: F) -> Self
     where
         F: Fn(&[U::Gene]) -> f64 + Send + Sync + 'static,
@@ -404,9 +430,10 @@ where
         self
     }
 
-    /**
-     * Sets the initialization function
-     */
+    /// Sets the initialization function used to create chromosome DNA.
+    ///
+    /// The closure receives `(genes_per_chromosome, alleles, needs_unique_ids)`
+    /// and must return a `Vec` of genes for one chromosome.
     pub fn with_initialization_fn<F>(mut self, initialization_fn: F) -> Self
     where
         U: ChromosomeT + Send + Sync + 'static + Clone,

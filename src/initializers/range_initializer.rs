@@ -1,3 +1,8 @@
+//! Range chromosome initializer.
+//!
+//! Creates random numeric genes for [`chromosomes::Range`](crate::chromosomes::Range)
+//! chromosomes by sampling uniformly within the bounds defined by each allele.
+
 use crate::genotypes::Range as RangeGenotype;
 use rand::distr::uniform::SampleUniform;
 use rand::Rng;

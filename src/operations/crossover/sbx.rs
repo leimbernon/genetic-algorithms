@@ -1,3 +1,5 @@
+//! Simulated Binary Crossover (SBX) implementation.
+
 use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
 use crate::traits::ChromosomeT;
@@ -6,7 +8,7 @@ use rand::Rng;
 use std::borrow::Cow;
 use std::fmt::Debug;
 
-/// Simulated Binary Crossover (SBX) for Range<T> chromosomes.
+/// Simulated Binary Crossover (SBX) for `Range<T>` chromosomes.
 ///
 /// SBX simulates single-point crossover in continuous space. The distribution
 /// index `eta` controls how close offspring are to their parents:
@@ -103,7 +105,9 @@ where
 
 /// Trait for types that can be converted to/from an f64 value (for SBX).
 pub trait SbxConvertible {
+    /// Converts an `f64` value to this type (e.g., rounding for integers).
     fn from_f64(val: f64) -> Self;
+    /// Converts a value of this type to `f64`.
     fn to_f64(val: Self) -> f64;
 }
 
