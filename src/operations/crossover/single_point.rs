@@ -1,3 +1,5 @@
+//! Single-point crossover implementation.
+
 use crate::error::GaError;
 use crate::traits::ChromosomeT;
 use log::debug;

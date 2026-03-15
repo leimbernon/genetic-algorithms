@@ -1,3 +1,15 @@
+//! Polynomial mutation operator for range-encoded chromosomes.
+//!
+//! Uses a polynomial probability distribution to perturb a single gene.
+//! The spread is controlled by the distribution index `eta_m`:
+//!
+//! - Low `eta_m` (1–5): larger perturbations (exploration).
+//! - High `eta_m` (20–100): smaller perturbations (exploitation).
+//!
+//! This operator is widely used in NSGA-II and other multi-objective
+//! evolutionary algorithms. Also defines the [`PolynomialConvertible`]
+//! trait for `f64` conversion.
+
 use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
 use crate::traits::ChromosomeT;
@@ -6,7 +18,7 @@ use rand::Rng;
 use std::borrow::Cow;
 use std::fmt::Debug;
 
-/// Polynomial mutation for Range<T> chromosomes.
+/// Polynomial mutation for `Range<T>` chromosomes.
 ///
 /// This operator is commonly used in NSGA-II and other multi-objective
 /// evolutionary algorithms. It perturbs a randomly selected gene using a

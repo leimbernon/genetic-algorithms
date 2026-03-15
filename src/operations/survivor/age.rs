@@ -1,6 +1,19 @@
+//! Age-based survivor selection.
+//!
+//! Retains the youngest individuals (lowest age) after parents and offspring
+//! have been merged. This strategy favours fresh genetic material and
+//! prevents long-lived individuals from dominating the population.
+
 pub(crate) use crate::traits::ChromosomeT;
 use log::{debug, trace};
 
+/// Age-based survivor selection: sorts individuals by age (youngest first)
+/// and keeps the top `population_size`.
+///
+/// # Arguments
+///
+/// * `chromosomes` - Combined parents + offspring (modified in place).
+/// * `population_size` - Desired population size after selection.
 pub fn age_based<U: ChromosomeT>(chromosomes: &mut Vec<U>, population_size: usize) {
     //We first sort the chromosomes by their fitness
     debug!(target="survivor_events", method="age_based"; "Starting age based survivor method");

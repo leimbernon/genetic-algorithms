@@ -1,9 +1,19 @@
+//! Uniform crossover implementation.
+
 use crate::error::GaError;
 use crate::traits::ChromosomeT;
 use log::{debug, trace};
 use rand::Rng;
 use std::borrow::Cow;
 
+/// Uniform crossover: each gene is independently chosen from either parent.
+///
+/// For every gene position a coin is flipped — the child gets the gene from
+/// parent 1 or parent 2 with equal probability.
+///
+/// # Errors
+///
+/// Returns `Err(GaError::CrossoverError)` if parents have different DNA lengths.
 pub fn uniform<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
     //Before doing the operation, we check that the dna in the parent 1 has the same length of the dna in the parent 2
     if parent_1.dna().len() != parent_2.dna().len() {

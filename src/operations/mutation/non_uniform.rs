@@ -1,3 +1,13 @@
+//! Non-uniform mutation operator for range-encoded chromosomes.
+//!
+//! The mutation magnitude decreases over generations: broad exploration
+//! early in the run, fine-tuning near the end. The decay rate is governed
+//! by a time-dependent factor `tau = (1 - t/T)^b` where `t` is the
+//! current generation, `T` the maximum, and `b` the decay exponent
+//! (typically 2–5).
+//!
+//! Also defines the [`NonUniformConvertible`] trait for `f64` conversion.
+
 use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
 use crate::traits::ChromosomeT;
@@ -6,7 +16,7 @@ use rand::Rng;
 use std::borrow::Cow;
 use std::fmt::Debug;
 
-/// Non-uniform mutation for Range<T> chromosomes.
+/// Non-uniform mutation for `Range<T>` chromosomes.
 ///
 /// The mutation magnitude decreases over generations, making it suitable for
 /// algorithms that need broad exploration early on and fine-tuning later.

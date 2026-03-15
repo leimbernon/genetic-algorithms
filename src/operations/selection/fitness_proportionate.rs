@@ -1,7 +1,26 @@
+//! Fitness-proportionate selection operators.
+//!
+//! Provides two classic selection methods where an individual's probability of
+//! being selected is proportional to its fitness:
+//!
+//! - [`roulette_wheel_selection`] — each parent is chosen independently by
+//!   spinning a roulette wheel weighted by fitness.
+//! - [`stochastic_universal_sampling`] — evenly spaced pointers on a single
+//!   spin of the wheel, producing a lower-variance set of parents.
+
 use crate::traits::ChromosomeT;
 use log::{debug, trace};
 use rand::Rng;
 
+/// Roulette-wheel selection (fitness-proportionate).
+///
+/// Each individual's selection probability equals its fitness divided by the
+/// total population fitness. Parents are selected independently by generating
+/// a random spin in `[0, total_fitness)` and walking the cumulative
+/// distribution.
+///
+/// Returns an empty vector when the total fitness is zero or negative
+/// (all individuals must have positive fitness for meaningful selection).
 pub fn roulette_wheel_selection<U: ChromosomeT>(chromosomes: &[U]) -> Vec<(usize, usize)> {
     let mut mating = Vec::new();
 
@@ -50,6 +69,20 @@ pub fn roulette_wheel_selection<U: ChromosomeT>(chromosomes: &[U]) -> Vec<(usize
     mating
 }
 
+/// Stochastic Universal Sampling (SUS).
+///
+/// A low-variance alternative to roulette-wheel selection. A single random
+/// starting point is chosen, then equally spaced pointers are placed along
+/// the cumulative fitness distribution to select `couples * 2` parents.
+///
+/// SUS guarantees that individuals with very high fitness are selected
+/// roughly the expected number of times, reducing the sampling noise
+/// inherent in independent roulette spins.
+///
+/// # Arguments
+///
+/// * `chromosomes` - Population to select from.
+/// * `couples` - Number of parent pairs to produce.
 pub fn stochastic_universal_sampling<U: ChromosomeT>(
     chromosomes: &[U],
     couples: usize,

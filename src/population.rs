@@ -1,3 +1,13 @@
+//! Population container for evolving chromosomes.
+//!
+//! A [`Population`] holds the current generation of chromosomes, tracks the
+//! best-so-far individual, and computes aggregate fitness statistics used by
+//! adaptive GA operators.
+//!
+//! The struct supports standard Rust collection traits (`IntoIterator`,
+//! `FromIterator`, `Index`, `IndexMut`), and implements `Clone`, `Debug`,
+//! and optional `serde` serialization behind the `serde` feature flag.
+
 use crate::configuration::ProblemSolving;
 use crate::traits::ChromosomeT;
 use log::{debug, trace};

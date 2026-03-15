@@ -1,11 +1,25 @@
+//! Tournament selection operator.
+//!
+//! Pairs of randomly chosen individuals compete, and the one with the higher
+//! fitness wins. Winners are then paired into mating couples. The tournament
+//! runs in parallel using Rayon for large populations.
+
 use crate::traits::ChromosomeT;
 use log::{debug, trace};
 use rand::Rng;
 use rayon::prelude::*;
 
-/**
- * Main function for tournament selection
- */
+/// Tournament selection: for each parent slot, two individuals are chosen at
+/// random and the one with the higher fitness advances.
+///
+/// Winners are collected and paired sequentially to form mating couples.
+/// The implementation uses Rayon for parallel tournament evaluation.
+///
+/// # Arguments
+///
+/// * `chromosomes` - Population to select from.
+/// * `couples` - Desired number of parent pairs (clamped to `population / 2`).
+/// * `_number_of_threads` - Unused; parallelism is managed by Rayon's global pool.
 pub fn tournament<U>(
     chromosomes: &[U],
     couples: usize,
@@ -17,9 +31,7 @@ where
     tournament_impl(chromosomes, couples)
 }
 
-/**
- * Tournament selection implementation using rayon for parallelism.
- */
+/// Internal implementation of tournament selection using Rayon parallelism.
 fn tournament_impl<U>(chromosomes: &[U], couples: usize) -> Vec<(usize, usize)>
 where
     U: ChromosomeT + Send + Sync + 'static + Clone,

@@ -1,9 +1,28 @@
+//! Fitness-based survivor selection.
+//!
+//! Retains the best individuals (by fitness) after parents and offspring have
+//! been merged. Sorting direction is determined by the [`ProblemSolving`] mode:
+//! maximization keeps the highest, minimization the lowest, and fixed-fitness
+//! keeps those closest to the target.
+
 pub(crate) use crate::{
     configuration::{LimitConfiguration, ProblemSolving},
     traits::ChromosomeT,
 };
 use log::{debug, trace};
 
+/// Fitness-based survivor selection: sorts the combined population by fitness
+/// and truncates to `population_size`.
+///
+/// - **Maximization** — highest fitness individuals survive.
+/// - **Minimization** — lowest fitness individuals survive.
+/// - **FixedFitness** — individuals closest to `fitness_target` survive.
+///
+/// # Arguments
+///
+/// * `chromosomes` - Combined parents + offspring (modified in place).
+/// * `population_size` - Desired population size after selection.
+/// * `limit_configuration` - Controls sorting direction and optional target.
 pub fn fitness_based<U: ChromosomeT>(
     chromosomes: &mut Vec<U>,
     population_size: usize,

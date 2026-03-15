@@ -1,3 +1,10 @@
+//! Truncation selection operator.
+//!
+//! Only the top portion (50%) of the population is eligible for
+//! reproduction. Parents are randomly paired from that elite subset.
+//! This is a high-pressure strategy that accelerates convergence at
+//! the cost of reduced diversity.
+
 use crate::traits::ChromosomeT;
 use log::{debug, trace};
 use rand::Rng;

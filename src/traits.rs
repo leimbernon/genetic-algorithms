@@ -1,3 +1,15 @@
+//! Core traits that define the genetic algorithm abstractions.
+//!
+//! This module re-exports all public traits from its sub-modules:
+//!
+//! - [`GeneT`] — the gene abstraction (identity, cloning).
+//! - [`ChromosomeT`] — the chromosome abstraction (DNA, fitness, age).
+//! - [`ConfigurationT`] and its sub-traits — builder-pattern configuration.
+//! - Operator traits ([`SelectionOperator`], [`CrossoverOperator`],
+//!   [`MutationOperator`], [`SurvivorOperator`]) — for custom operator
+//!   implementations.
+//! - Helper functions and type aliases ([`FitnessFn`], [`InitializationFn`]).
+
 pub mod chromosome;
 pub mod common;
 pub mod configuration;

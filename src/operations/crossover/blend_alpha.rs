@@ -1,3 +1,5 @@
+//! Blend Crossover (BLX-alpha) implementation.
+
 use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
 use crate::traits::ChromosomeT;
@@ -6,7 +8,7 @@ use rand::Rng;
 use std::borrow::Cow;
 use std::fmt::Debug;
 
-/// Blend Crossover (BLX-α) for Range<T> chromosomes.
+/// Blend Crossover (BLX-α) for `Range<T>` chromosomes.
 ///
 /// Generates offspring values uniformly within an extended interval around the
 /// parents' values. For each gene, if parents have values `p1` and `p2`:
@@ -99,7 +101,9 @@ where
 
 /// Trait for types that can be converted to/from an f64 value (for BLX-α).
 pub trait BlendConvertible {
+    /// Converts an `f64` value to this type (e.g., rounding for integers).
     fn from_f64(val: f64) -> Self;
+    /// Converts a value of this type to `f64`.
     fn to_f64(val: Self) -> f64;
 }
 

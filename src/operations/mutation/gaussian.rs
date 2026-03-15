@@ -1,10 +1,20 @@
+//! Gaussian mutation operator for range-encoded chromosomes.
+//!
+//! Perturbs a randomly selected gene by adding noise drawn from a normal
+//! distribution *N(0, sigma)*. The result is clamped to the gene's declared
+//! range. This is the standard mutation operator for continuous numerical
+//! optimization.
+//!
+//! Also defines the [`GaussianConvertible`] trait required for converting
+//! gene values to and from `f64`.
+
 use crate::chromosomes::Range as RangeChromosome;
 use crate::traits::ChromosomeT;
 use rand::Rng;
 use std::borrow::Cow;
 use std::fmt::Debug;
 
-/// Gaussian mutation for Range<T> chromosomes where T can be converted to/from f64.
+/// Gaussian mutation for `Range<T>` chromosomes where `T` can be converted to/from `f64`.
 ///
 /// Applies a perturbation drawn from a normal distribution N(0, sigma) to a
 /// randomly selected gene. The result is clamped to the gene's declared range.
@@ -59,7 +69,9 @@ where
 /// `From<f64>` for numeric types. Implementations should do a reasonable
 /// conversion (e.g., rounding for integers).
 pub trait GaussianConvertible {
+    /// Converts an `f64` value to this type (e.g., rounding for integers).
     fn from_f64(val: f64) -> Self;
+    /// Converts a value of this type to `f64`.
     fn to_f64(val: Self) -> f64;
 }
 

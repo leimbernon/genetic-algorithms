@@ -1,3 +1,10 @@
+//! Rank-based selection operator.
+//!
+//! Individuals are sorted by fitness and assigned selection probabilities
+//! proportional to their rank rather than absolute fitness. This avoids
+//! premature convergence caused by a few very fit individuals dominating
+//! selection.
+
 use crate::traits::ChromosomeT;
 use log::{debug, trace};
 use rand::Rng;

@@ -1,3 +1,9 @@
+//! Bit-flip mutation operator for binary-encoded chromosomes.
+//!
+//! Inverts a single randomly chosen boolean gene (`true` ↔ `false`).
+//! This is the canonical mutation operator for binary / bit-string
+//! representations.
+
 use crate::genotypes::Binary as BinaryGenotype;
 use crate::traits::ChromosomeT;
 use log::debug;

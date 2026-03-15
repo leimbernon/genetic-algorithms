@@ -1,7 +1,19 @@
+//! Swap mutation operator.
+//!
+//! Selects two random positions in a chromosome's DNA and exchanges their
+//! genes. This is one of the simplest mutation operators and works with any
+//! chromosome type.
+
 use crate::traits::ChromosomeT;
 use log::{debug, trace};
 pub(crate) use rand::Rng;
 
+/// Swap mutation: randomly selects two positions in the chromosome and
+/// exchanges their genes.
+///
+/// This operator preserves all alleles (no values are created or destroyed),
+/// making it suitable for both value-encoded and permutation-encoded
+/// chromosomes. If the DNA has fewer than 2 genes the function is a no-op.
 pub fn swap<U: ChromosomeT>(chromosome: &mut U) {
     //Getting two random genes from the dna of the chromosome
     debug!(target="mutation_events", method="swap"; "Starting the swap mutation");

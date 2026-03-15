@@ -1,3 +1,10 @@
+//! Insertion mutation operator for permutation-based chromosomes.
+//!
+//! Removes a gene from one position and re-inserts it adjacent to another,
+//! preserving all alleles while altering their relative order. This is a
+//! standard operator for permutation encodings such as TSP and scheduling
+//! problems.
+
 use crate::error::GaError;
 use crate::traits::ChromosomeT;
 use log::debug;

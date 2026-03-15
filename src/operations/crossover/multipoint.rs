@@ -1,8 +1,16 @@
+//! Multi-point crossover implementation.
+
 use crate::error::GaError;
 use crate::traits::ChromosomeT;
 use log::{debug, trace};
 use rand::Rng;
 
+/// Multi-point crossover: alternates segments between parents at N random cut points.
+///
+/// # Errors
+///
+/// Returns `Err(GaError::CrossoverError)` if parents have different DNA lengths
+/// or if `crossover_number_of_points` exceeds DNA length.
 pub fn multipoint<U: ChromosomeT>(
     parent_1: &U,
     parent_2: &U,

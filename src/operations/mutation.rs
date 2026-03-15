@@ -1,3 +1,14 @@
+//! Mutation operators.
+//!
+//! This module provides the [`factory`] dispatch function and individual
+//! mutation implementations (swap, inversion, scramble, value, bit-flip,
+//! creep, Gaussian, polynomial, non-uniform, insertion). The correct
+//! implementation is selected at runtime based on the [`Mutation`] variant
+//! in the configuration.
+//!
+//! Chromosome types that need value-aware mutations should implement the
+//! [`ValueMutable`] trait.
+
 pub use self::inversion::inversion;
 pub use self::scramble::scramble;
 pub use self::swap::swap;
@@ -83,7 +94,7 @@ pub trait ValueMutable: ChromosomeT {
     /// Performs creep mutation on this chromosome in-place.
     ///
     /// The default implementation logs a warning and falls back to swap mutation.
-    /// Override this for Range<T> chromosomes to apply small uniform perturbation.
+    /// Override this for `Range<T>` chromosomes to apply small uniform perturbation.
     fn creep_mutate(&mut self, _step: f64) {
         warn!(
             "creep_mutate() not overridden for this chromosome type; \
@@ -96,7 +107,7 @@ pub trait ValueMutable: ChromosomeT {
     /// Performs gaussian mutation on this chromosome in-place.
     ///
     /// The default implementation logs a warning and falls back to swap mutation.
-    /// Override this for Range<T> chromosomes to apply gaussian perturbation.
+    /// Override this for `Range<T>` chromosomes to apply gaussian perturbation.
     fn gaussian_mutate(&mut self, _sigma: f64) {
         warn!(
             "gaussian_mutate() not overridden for this chromosome type; \

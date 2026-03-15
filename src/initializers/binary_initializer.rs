@@ -1,3 +1,8 @@
+//! Binary chromosome initializer.
+//!
+//! Creates random binary (true/false) genes for [`chromosomes::Binary`](crate::chromosomes::Binary)
+//! chromosomes.
+
 use crate::genotypes::Binary as BinaryGenotype;
 use rand::Rng;
 

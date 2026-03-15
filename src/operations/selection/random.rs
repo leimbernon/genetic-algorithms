@@ -1,13 +1,20 @@
+//! Random selection operator.
+//!
+//! Pairs parents by shuffling the population indices with a Fisher-Yates
+//! partial shuffle, then pairing them consecutively. Every individual is
+//! selected at most once (no replacement), and the cost is *O(N)*.
+
 use crate::traits::ChromosomeT;
 use log::{debug, trace};
 use rand::Rng;
 
-/**
- * Function to make the random parent selection between the list of chromosomes.
- *
- * Uses a Fisher-Yates partial shuffle so each pick is O(1) (swap-to-end)
- * instead of O(N) (`Vec::remove` shifting). Total cost: O(N).
- */
+/// Random selection: pairs all individuals randomly without regard to fitness.
+///
+/// Uses a Fisher-Yates partial shuffle so each pick is *O(1)* (swap-to-end)
+/// instead of *O(N)* (`Vec::remove` shifting). Total cost: *O(N)*.
+///
+/// Each individual participates in at most one pair; if the population size
+/// is odd the last individual is left unpaired.
 pub fn random<U: ChromosomeT>(chromosomes: &[U]) -> Vec<(usize, usize)> {
     let n = chromosomes.len();
     let pair_count = n / 2;

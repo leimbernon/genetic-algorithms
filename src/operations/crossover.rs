@@ -1,3 +1,11 @@
+//! Crossover (recombination) operators.
+//!
+//! This module provides the [`factory`] dispatch function and individual
+//! crossover implementations (uniform, single-point, multi-point, cycle,
+//! order, PMX, SBX, BLX-alpha, arithmetic). The correct implementation is
+//! selected at runtime based on the [`Crossover`] variant in the
+//! configuration.
+
 pub use self::cycle::cycle;
 pub use self::multipoint::multipoint;
 pub use self::order::order;
@@ -224,6 +232,7 @@ impl CrossoverOperator for CrossoverConfiguration {
     }
 }
 
+/// Dispatches crossover according to the configured method and parameters.
 pub fn factory<U: ChromosomeT>(
     parent_1: &U,
     parent_2: &U,
@@ -232,7 +241,10 @@ pub fn factory<U: ChromosomeT>(
     configuration.crossover(parent_1, parent_2)
 }
 
-//Function to calculate the probability for adaptive genetic algorithms
+/// Calculates the crossover probability for adaptive genetic algorithms (AGA).
+///
+/// Returns a probability between `probability_min` and `probability_max`
+/// based on how the fitter parent compares to the population average.
 pub fn aga_probability<U: ChromosomeT>(
     parent_1: &U,
     parent_2: &U,

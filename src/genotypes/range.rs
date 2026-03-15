@@ -1,3 +1,10 @@
+//! Range genotype (gene) for range-encoded chromosomes.
+//!
+//! Each [`Range<T>`] gene carries an integer identifier, a list of valid
+//! `(low, high)` ranges, and a current value of type `T`. It is the
+//! building block for [`crate::chromosomes::Range`] chromosomes used in
+//! continuous and integer optimization problems.
+
 use crate::traits::GeneT;
 use std::fmt;
 use std::hash::{Hash, Hasher};

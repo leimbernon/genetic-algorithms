@@ -1,3 +1,5 @@
+//! Arithmetic crossover implementation.
+
 use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
 use crate::traits::ChromosomeT;
@@ -5,7 +7,7 @@ use log::debug;
 use std::borrow::Cow;
 use std::fmt::Debug;
 
-/// Arithmetic (whole) crossover for Range<T> chromosomes.
+/// Arithmetic (whole) crossover for `Range<T>` chromosomes.
 ///
 /// Produces two offspring by taking weighted linear combinations of the parents'
 /// gene values. For each gene position `i`:

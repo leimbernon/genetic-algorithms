@@ -1,3 +1,5 @@
+//! Partially Mapped Crossover (PMX) implementation.
+
 use crate::error::GaError;
 use crate::traits::{ChromosomeT, GeneT};
 use log::debug;
