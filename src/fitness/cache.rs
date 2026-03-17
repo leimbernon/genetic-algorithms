@@ -54,9 +54,9 @@ impl FitnessCache {
 
     /// Inserts a fitness value into the cache, evicting the LRU entry if full.
     pub fn put(&mut self, key: u64, value: f64) {
-        if self.map.contains_key(&key) {
+        if let Some(existing) = self.map.get_mut(&key) {
             // Update existing entry and move to back
-            self.map.insert(key, value);
+            *existing = value;
             self.order.retain(|&k| k != key);
             self.order.push_back(key);
             return;

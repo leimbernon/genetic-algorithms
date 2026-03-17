@@ -16,11 +16,11 @@ fn cache_new_is_empty() {
 #[test]
 fn cache_put_and_get() {
     let mut cache = FitnessCache::new(10);
-    cache.put(42, 3.14);
+    cache.put(42, 3.5);
     assert_eq!(cache.len(), 1);
 
     let result = cache.get(42);
-    assert_eq!(result, Some(3.14));
+    assert_eq!(result, Some(3.5));
     assert_eq!(cache.hits(), 1);
     assert_eq!(cache.misses(), 0);
 }
