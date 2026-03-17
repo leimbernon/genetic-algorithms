@@ -147,6 +147,15 @@ pub struct MutationConfiguration {
     /// Decay parameter for NonUniform mutation. Controls how fast mutation
     /// magnitude decreases over generations. Typical range: 2–5. Default is 2.0.
     pub non_uniform_b: Option<f64>,
+    /// Enable dynamic mutation probability adjustment based on population cardinality.
+    /// When enabled, mutation probability is adjusted each generation: increased when
+    /// diversity is low and decreased when diversity is high.
+    pub dynamic_mutation: bool,
+    /// Target cardinality ratio (unique fitness values / population size) in `[0.0, 1.0]`.
+    /// The dynamic mutation adjusts probability toward this target.
+    pub target_cardinality: Option<f64>,
+    /// Step size for dynamic mutation probability adjustment each generation.
+    pub probability_step: Option<f64>,
 }
 impl Default for MutationConfiguration {
     fn default() -> Self {
@@ -158,6 +167,9 @@ impl Default for MutationConfiguration {
             sigma: None,
             polynomial_eta: None,
             non_uniform_b: None,
+            dynamic_mutation: false,
+            target_cardinality: None,
+            probability_step: None,
         }
     }
 }
@@ -343,6 +355,18 @@ impl MutationConfig for GaConfiguration {
     }
     fn with_mutation_sigma(mut self, sigma: f64) -> Self {
         self.mutation_configuration.sigma = Some(sigma);
+        self
+    }
+    fn with_dynamic_mutation(mut self, enabled: bool) -> Self {
+        self.mutation_configuration.dynamic_mutation = enabled;
+        self
+    }
+    fn with_mutation_target_cardinality(mut self, target: f64) -> Self {
+        self.mutation_configuration.target_cardinality = Some(target);
+        self
+    }
+    fn with_mutation_probability_step(mut self, step: f64) -> Self {
+        self.mutation_configuration.probability_step = Some(step);
         self
     }
 }

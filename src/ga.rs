@@ -114,6 +114,10 @@ where
 
     /// Per-generation statistics collected during the run.
     stats: Vec<GenerationStats>,
+
+    /// Current dynamic mutation probability, adjusted each generation when
+    /// `dynamic_mutation` is enabled.
+    dynamic_mutation_probability: f64,
 }
 
 impl<U> Default for Ga<U>
@@ -131,6 +135,7 @@ where
             initialization_fn: None,
             fitness_fn: None,
             stats: Vec::new(),
+            dynamic_mutation_probability: 1.0,
         }
     }
 }
@@ -201,6 +206,18 @@ where
     }
     fn with_mutation_sigma(mut self, sigma: f64) -> Self {
         self.configuration.mutation_configuration.sigma = Some(sigma);
+        self
+    }
+    fn with_dynamic_mutation(mut self, enabled: bool) -> Self {
+        self.configuration.mutation_configuration.dynamic_mutation = enabled;
+        self
+    }
+    fn with_mutation_target_cardinality(mut self, target: f64) -> Self {
+        self.configuration.mutation_configuration.target_cardinality = Some(target);
+        self
+    }
+    fn with_mutation_probability_step(mut self, step: f64) -> Self {
+        self.configuration.mutation_configuration.probability_step = Some(step);
         self
     }
 }
@@ -611,6 +628,15 @@ where
             self.population.recalculate_aga();
         }
 
+        // Initialize dynamic mutation probability
+        if self.configuration.mutation_configuration.dynamic_mutation {
+            self.dynamic_mutation_probability = self
+                .configuration
+                .mutation_configuration
+                .probability_max
+                .unwrap_or(1.0);
+        }
+
         //Best chromosome within the generations and population returned
         let initial_population_size = self.population.size();
         let mut age = 0usize;
@@ -652,6 +678,11 @@ where
             debug!(target="ga_events", method="run"; "Parents selected for reproduction");
 
             //2- Getting the offspring
+            let dynamic_prob = if self.configuration.mutation_configuration.dynamic_mutation {
+                Some(self.dynamic_mutation_probability)
+            } else {
+                None
+            };
             let mut offspring = parent_crossover(
                 &parents,
                 &self.population.chromosomes,
@@ -659,6 +690,7 @@ where
                 age,
                 self.population.f_max,
                 self.population.f_avg,
+                dynamic_prob,
             )?;
             debug!(target="ga_events", method="run"; "Offspring created");
 
@@ -694,6 +726,49 @@ where
             }
             if self.configuration.adaptive_ga {
                 self.population.recalculate_aga();
+            }
+
+            // Update dynamic mutation probability based on population cardinality
+            if self.configuration.mutation_configuration.dynamic_mutation {
+                let cardinality =
+                    mutation::compute_cardinality(&self.population.chromosomes);
+                let target = self
+                    .configuration
+                    .mutation_configuration
+                    .target_cardinality
+                    .unwrap_or(0.5);
+                let step = self
+                    .configuration
+                    .mutation_configuration
+                    .probability_step
+                    .unwrap_or(0.01);
+                let p_max = self
+                    .configuration
+                    .mutation_configuration
+                    .probability_max
+                    .unwrap_or(1.0);
+                let p_min = self
+                    .configuration
+                    .mutation_configuration
+                    .probability_min
+                    .unwrap_or(0.0);
+
+                self.dynamic_mutation_probability = mutation::dynamic_probability(
+                    self.dynamic_mutation_probability,
+                    cardinality,
+                    target,
+                    step,
+                    p_max,
+                    p_min,
+                );
+
+                debug!(
+                    target = "ga_events",
+                    method = "run";
+                    "Dynamic mutation: cardinality={:.4}, probability={:.4}",
+                    cardinality,
+                    self.dynamic_mutation_probability
+                );
             }
 
             // Apply extension strategy if configured and diversity is low
@@ -1056,6 +1131,7 @@ fn parent_crossover<U>(
     age: usize,
     f_max: f64,
     f_avg: f64,
+    dynamic_mutation_prob: Option<f64>,
 ) -> Result<Vec<U>, GaError>
 where
     U: ChromosomeT + Send + Sync + 'static + Clone + mutation::ValueMutable,
@@ -1077,16 +1153,18 @@ where
             Some(1.0)
         };
 
-    let mutation_probability_config =
-        if let Some(p) = configuration.mutation_configuration.probability_max {
-            if !configuration.adaptive_ga {
-                Some(p)
-            } else {
-                None
-            }
+    let mutation_probability_config = if let Some(dp) = dynamic_mutation_prob {
+        // Dynamic mutation overrides static probability
+        Some(dp)
+    } else if let Some(p) = configuration.mutation_configuration.probability_max {
+        if !configuration.adaptive_ga {
+            Some(p)
         } else {
-            Some(1.0)
-        };
+            None
+        }
+    } else {
+        Some(1.0)
+    };
 
     // Use rayon to process parent pairs in parallel
     let results: Vec<Result<Vec<U>, GaError>> = parents

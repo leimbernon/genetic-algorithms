@@ -6,6 +6,7 @@ mod operations {
     mod test_mutation;
     mod test_mutation_bit_flip;
     mod test_mutation_creep_gaussian;
+    mod test_mutation_dynamic;
     mod test_mutation_range_value;
     mod test_selection;
     mod test_selection_rank;

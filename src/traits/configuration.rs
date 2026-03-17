@@ -44,6 +44,12 @@ pub trait MutationConfig {
     fn with_mutation_step(self, step: f64) -> Self;
     /// Sets the sigma for Gaussian mutation.
     fn with_mutation_sigma(self, sigma: f64) -> Self;
+    /// Enables or disables dynamic mutation probability adjustment based on population cardinality.
+    fn with_dynamic_mutation(self, enabled: bool) -> Self;
+    /// Sets the target cardinality ratio for dynamic mutation (0.0..1.0).
+    fn with_mutation_target_cardinality(self, target: f64) -> Self;
+    /// Sets the probability step size for dynamic mutation adjustment.
+    fn with_mutation_probability_step(self, step: f64) -> Self;
 }
 
 /// Configuration for stopping / termination criteria.

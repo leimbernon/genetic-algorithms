@@ -2015,3 +2015,47 @@ fn test_rng_module_is_public() {
     let mut r = rng::make_rng();
     let _v: f64 = r.random();
 }
+
+// ==================== Dynamic mutation integration test ====================
+
+#[test]
+fn test_ga_with_dynamic_mutation() {
+    let alleles = (1..=10).map(|i| Gene { id: i }).collect::<Vec<_>>();
+
+    let mut ga: Ga<Chromosome> = Ga::new()
+        .with_population_size(20)
+        .with_genes_per_chromosome(10)
+        .with_alleles_can_be_repeated(true)
+        .with_initialization_fn(|genes, alleles, _unique| {
+            let mut rng = genetic_algorithms::rng::make_rng();
+            let alleles: &[Gene] = alleles.unwrap();
+            (0..genes)
+                .map(|_| {
+                    use rand::Rng;
+                    alleles[rng.random_range(0..alleles.len())]
+                })
+                .collect()
+        })
+        .with_fitness_fn(fitness_fn)
+        .with_problem_solving(ProblemSolving::Maximization)
+        .with_selection_method(Selection::Tournament)
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::Swap)
+        .with_mutation_probability_max(0.8)
+        .with_mutation_probability_min(0.1)
+        .with_dynamic_mutation(true)
+        .with_mutation_target_cardinality(0.5)
+        .with_mutation_probability_step(0.02)
+        .with_survivor_method(Survivor::Fitness)
+        .with_max_generations(30)
+        .with_alleles(alleles);
+
+    ga.initialization().expect("initialization should succeed");
+    let result = ga.run();
+    assert!(result.is_ok(), "GA with dynamic mutation should complete successfully");
+
+    // Verify configuration was stored correctly
+    assert!(ga.configuration.mutation_configuration.dynamic_mutation);
+    assert!((ga.configuration.mutation_configuration.target_cardinality.unwrap() - 0.5).abs() < f64::EPSILON);
+    assert!((ga.configuration.mutation_configuration.probability_step.unwrap() - 0.02).abs() < f64::EPSILON);
+}
