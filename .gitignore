@@ -20,3 +20,7 @@ node_modules/
 # Python (legacy)
 __pycache__/
 *.pyc
+
+# Claude Code local settings (keep commands/)
+.claude/settings.local.json
+.DS_Store
