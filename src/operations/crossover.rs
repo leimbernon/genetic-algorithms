@@ -6,6 +6,7 @@
 //! selected at runtime based on the [`Crossover`] variant in the
 //! configuration.
 
+pub use self::clone::clone_crossover;
 pub use self::cycle::cycle;
 pub use self::multipoint::multipoint;
 pub use self::order::order;
@@ -21,6 +22,7 @@ use std::any::Any;
 
 pub mod arithmetic;
 pub mod blend_alpha;
+pub mod clone;
 pub mod cycle;
 pub mod multipoint;
 pub mod order;
@@ -181,6 +183,7 @@ impl CrossoverOperator for Crossover {
                     ))
                 })
             }
+            Crossover::Clone => clone_crossover(parent_1, parent_2),
         }
     }
 }
@@ -228,6 +231,7 @@ impl CrossoverOperator for CrossoverConfiguration {
                     ))
                 })
             }
+            Crossover::Clone => clone_crossover(parent_1, parent_2),
         }
     }
 }
