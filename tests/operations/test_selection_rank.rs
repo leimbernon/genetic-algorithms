@@ -44,6 +44,23 @@ fn test_rank_selection_with_two_chromosomes() {
 }
 
 #[test]
+fn test_rank_selection_returns_valid_indices() {
+    let pop: Vec<Chromosome> = (0..6)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: i as f64,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        })
+        .collect();
+    let pairs = rank_selection(&pop, 3);
+    for (a, b) in &pairs {
+        assert!(*a < pop.len(), "Index {} out of bounds", a);
+        assert!(*b < pop.len(), "Index {} out of bounds", b);
+    }
+}
+
+#[test]
 fn test_rank_selection_favors_higher_fitness() {
     let population: Vec<Chromosome> = (0..20)
         .map(|i| Chromosome {

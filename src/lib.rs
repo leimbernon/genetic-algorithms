@@ -82,7 +82,7 @@ pub mod population;
 pub mod rng;
 pub mod stats;
 pub mod traits;
-mod validators;
+pub mod validators;
 
 pub mod island;
 pub mod niching;
