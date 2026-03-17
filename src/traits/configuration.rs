@@ -6,7 +6,7 @@
 //! single supertrait.
 
 use crate::configuration::{LogLevel, ProblemSolving, StoppingCriteria};
-use crate::operations::{Crossover, Mutation, Selection, Survivor};
+use crate::operations::{Crossover, Extension, Mutation, Selection, Survivor};
 
 /// Configuration for parent selection.
 pub trait SelectionConfig {
@@ -73,13 +73,34 @@ pub trait ElitismConfig {
     fn with_elitism(self, elitism_count: usize) -> Self;
 }
 
+/// Configuration for extension strategies (population diversity control).
+pub trait ExtensionConfig {
+    /// Sets the extension strategy method.
+    fn with_extension_method(self, method: Extension) -> Self;
+    /// Sets the diversity threshold (fitness standard deviation).
+    /// Extension triggers when fitness_std_dev drops below this value.
+    fn with_extension_diversity_threshold(self, threshold: f64) -> Self;
+    /// Sets the survival rate for MassExtinction (0.0..1.0).
+    fn with_extension_survival_rate(self, rate: f64) -> Self;
+    /// Sets the number of mutation rounds for MassDegeneration.
+    fn with_extension_mutation_rounds(self, rounds: usize) -> Self;
+    /// Sets the number of elite individuals protected from the extension event.
+    fn with_extension_elite_count(self, count: usize) -> Self;
+}
+
 /// Full GA configuration supertrait.
 ///
 /// Combines all focused sub-traits (`SelectionConfig`, `CrossoverConfig`,
 /// `MutationConfig`, `StoppingConfig`, `NichingConfig`, `ElitismConfig`)
 /// with general GA settings (population size, threading, logging, etc.).
 pub trait ConfigurationT:
-    SelectionConfig + CrossoverConfig + MutationConfig + StoppingConfig + NichingConfig + ElitismConfig
+    SelectionConfig
+    + CrossoverConfig
+    + MutationConfig
+    + StoppingConfig
+    + NichingConfig
+    + ElitismConfig
+    + ExtensionConfig
 {
     /// Creates a new instance with default configuration values.
     fn new() -> Self;

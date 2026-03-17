@@ -21,7 +21,8 @@ The following table summarizes the core modules and their primary types:
 | `genotypes`       | `Binary`, `Range`      | Concrete gene types                                              |
 | `ga`              | `Ga`                   | Genetic algorithm orchestrator                                   |
 | `configuration`   | `ProblemSolving`       | Problem-solving mode (Minimization/Maximization)                 |
-| `operations`      | `Selection`, `Crossover`, `Mutation`, `Survivor` | Operator enums for GA phases                                     |
+| `operations`      | `Selection`, `Crossover`, `Mutation`, `Survivor`, `Extension` | Operator enums for GA phases                          |
+| `extension`       | `ExtensionConfiguration` | Extension strategy configuration for diversity control           |
 | `population`      | `Population`           | Population management and best tracking                          |
 | `fitness`         | `FitnessFn`            | Fitness evaluation helpers                                       |
 | `initializers`    | `range_random_initialization` | Utilities for initial DNA generation                             |
@@ -44,6 +45,7 @@ The following table summarizes the core modules and their primary types:
 | `Crossover` | `Uniform`, `Multipoint`, `Cycle`       | DNA recombination strategies       |
 | `Mutation`  | `Swap`, `Scramble`, `Inversion`, `Value` | DNA mutation strategies            |
 | `Survivor`  | `Age`, `Fitness`                       | Survivor selection strategies      |
+| `Extension` | `Noop`, `MassExtinction`, `MassGenesis`, `MassDegeneration`, `MassDeduplication` | Population diversity control strategies |
 
 ### Configuration Options
 
@@ -147,7 +149,8 @@ let _population = ga
 | `ga`                | Genetic algorithm orchestrator (`Ga`)                            |
 | `genotypes`         | Concrete gene types (`Binary`, `Range`)                          |
 | `initializers`      | Population initialization utilities                              |
-| `operations`        | Selection, crossover, mutation, survivor operators               |
+| `extension`         | Extension strategy configuration for diversity control           |
+| `operations`        | Selection, crossover, mutation, survivor, extension operators    |
 | `population`        | Population management and best tracking                          |
 | `stats`             | Statistics tracking for GA runs                                  |
 | `traits`            | Core traits for genes, chromosomes, and configuration            |
@@ -297,6 +300,18 @@ Enum for survivor selection operators.
 | `Age`           | Age-based survivor selection         |
 | `Fitness`       | Fitness-based survivor selection     |
 
+### `operations::Extension`
+
+Enum for extension strategies (population diversity control).
+
+| Variant              | Description                                                                    |
+|----------------------|--------------------------------------------------------------------------------|
+| `Noop`               | No extension — diversity drops are ignored (default).                         |
+| `MassExtinction`     | Random cull to a survival rate, protecting elite individuals.                 |
+| `MassGenesis`        | Trim to 2 best chromosomes, regrow population.                               |
+| `MassDegeneration`   | Apply N mutation rounds to non-elite chromosomes.                             |
+| `MassDeduplication`  | Remove duplicate chromosomes by gene ID comparison.                           |
+
 ---
 
 ### `population::Population`
@@ -359,6 +374,7 @@ Error type for GA operations.
 - [operators/crossover.md](operators/crossover.md) — Crossover operators
 - [operators/mutation.md](operators/mutation.md) — Mutation operators
 - [operators/survivor.md](operators/survivor.md) — Survivor selection
+- [operators/extension.md](operators/extension.md) — Extension strategies
 - [configuration.md](configuration.md) — Configuration options
 - [fitness.md](fitness.md) — Fitness evaluation
 - [population.md](population.md) — Population management

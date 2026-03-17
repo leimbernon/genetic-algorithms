@@ -41,6 +41,17 @@ Configuration is a central part of the library's architecture: it is consumed by
 | `save_progress_configuration` | `SaveProgressConfiguration`  | Controls progress saving.                                                                         |
 | `elitism_count`               | `usize`                     | Number of elite individuals preserved each generation (default: 0).                               |
 | `stopping_criteria`           | `StoppingCriteria`           | Additional stopping criteria.                                                                     |
+| `extension_configuration`     | `Option<ExtensionConfiguration>` | Optional extension strategy for population diversity control (default: None).                |
+
+#### ExtensionConfiguration Fields
+
+| Field                  | Type         | Description                                                                                   |
+|------------------------|--------------|-----------------------------------------------------------------------------------------------|
+| `method`               | `Extension`  | Extension strategy (`Noop`, `MassExtinction`, `MassGenesis`, `MassDegeneration`, `MassDeduplication`). |
+| `diversity_threshold`  | `f64`        | Fitness std dev threshold that triggers the extension (default: 0.01).                        |
+| `survival_rate`        | `f64`        | Fraction of population surviving MassExtinction (default: 0.1).                               |
+| `mutation_rounds`      | `usize`      | Number of mutation rounds for MassDegeneration (default: 3).                                  |
+| `elite_count`          | `usize`      | Number of elite individuals protected (default: 1).                                           |
 
 #### LimitConfiguration Fields
 
@@ -247,6 +258,11 @@ The `ConfigurationT` trait provides a builder-style API for constructing and cus
 | `with_save_progress_path(String)`      | Sets the file path for saving progress.                                                       |
 | `with_elitism(usize)`                  | Sets the number of elite individuals preserved each generation.                               |
 | `with_stopping_criteria(StoppingCriteria)` | Sets compound stopping criteria in addition to max_generations and fitness_target.        |
+| `with_extension_method(Extension)`     | Sets the extension strategy for population diversity control.                                 |
+| `with_extension_diversity_threshold(f64)` | Sets the fitness std dev threshold that triggers the extension.                            |
+| `with_extension_survival_rate(f64)`    | Sets the survival rate for MassExtinction (0.0..1.0).                                        |
+| `with_extension_mutation_rounds(usize)` | Sets the number of mutation rounds for MassDegeneration.                                    |
+| `with_extension_elite_count(usize)`    | Sets the number of elite individuals protected from extension events.                         |
 
 ## Defaults
 
@@ -265,6 +281,15 @@ A summary of default values for each configuration struct:
 - `save_progress_configuration`: see below
 - `elitism_count`: 0
 - `stopping_criteria`: all fields None
+- `extension_configuration`: None
+
+### ExtensionConfiguration
+
+- `method`: Extension::Noop
+- `diversity_threshold`: 0.01
+- `survival_rate`: 0.1
+- `mutation_rounds`: 3
+- `elite_count`: 1
 
 ### LimitConfiguration
 
@@ -331,6 +356,7 @@ Top-level struct for configuring all aspects of the genetic algorithm.
 | `save_progress_configuration`| `SaveProgressConfiguration`  | Progress saving options.                                     |
 | `elitism_count`              | `usize`                     | Number of elite individuals preserved.                       |
 | `stopping_criteria`          | `StoppingCriteria`           | Additional stopping criteria.                                |
+| `extension_configuration`    | `Option<ExtensionConfiguration>` | Optional extension strategy for diversity control.      |
 
 **Methods (via `ConfigurationT`):**
 
@@ -423,6 +449,7 @@ Variants: `Minimization`, `Maximization`, `FixedFitness`.
 - [operators/crossover.md](operators/crossover.md) — Crossover operators
 - [operators/mutation.md](operators/mutation.md) — Mutation operators
 - [operators/survivor.md](operators/survivor.md) — Survivor selection
+- [operators/extension.md](operators/extension.md) — Extension strategies for diversity control
 - [fitness.md](fitness.md) — Fitness evaluation
 - [population.md](population.md) — Population management
 - [examples.md](examples.md) — End-to-end configuration examples

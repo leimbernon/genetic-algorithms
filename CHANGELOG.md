@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - Unreleased
+
+### Added
+- **Extension strategies for population diversity control**: optional diversity-rescue mechanisms that trigger when fitness standard deviation drops below a configurable threshold. Four strategies available:
+  - `Extension::MassExtinction` — Random cull to a survival rate, protecting elite individuals.
+  - `Extension::MassGenesis` — Trim to the 2 best chromosomes, regrow population from scratch.
+  - `Extension::MassDegeneration` — Apply N mutation rounds to the whole population, protecting elite.
+  - `Extension::MassDeduplication` — Remove duplicate chromosomes (by gene ID comparison), regrow population.
+- `ExtensionOperator` trait for custom extension strategy implementations.
+- `ExtensionConfig` trait with builder methods: `with_extension_method()`, `with_extension_diversity_threshold()`, `with_extension_survival_rate()`, `with_extension_mutation_rounds()`, `with_extension_elite_count()`.
+- `ExtensionConfiguration` struct with builder pattern (in `extension::configuration`).
+- `Extension` enum in `operations` module (variants: `Noop`, `MassExtinction`, `MassGenesis`, `MassDegeneration`, `MassDeduplication`).
+- Extension hook integrated into the GA main loop (after survivor selection + elite reinsertion, before niching).
+- Automatic population regrowth after extension strategies that reduce the population.
+- 16 new tests covering all extension strategies, configuration, and GA integration.
+
+---
+
 ## [2.0.0] - 2026-03-01
 
 ### Added
@@ -412,7 +430,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[2.0.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/1.6.0...HEAD
+[2.1.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/2.0.0...HEAD
+[2.0.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/1.6.0...2.0.0
 [1.6.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/1.5.0...1.6.0
 [1.5.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/1.4.2...1.5.0
 [1.4.2]: https://github.com/leimbernon/rust_genetic_algorithms/compare/1.4.1...1.4.2
