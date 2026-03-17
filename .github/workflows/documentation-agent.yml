@@ -12,54 +12,44 @@ permissions:
   pull-requests: write
   models: read
 
-# AI provider configuration — set to "github" (default) or "anthropic".
-# GitHub provider uses GITHUB_TOKEN; Anthropic provider requires ANTHROPIC_API_KEY secret.
+# AI provider configuration — set to "anthropic" (default) or "github".
+# Anthropic provider requires ANTHROPIC_API_KEY secret.
 #
 # Model configuration — override per agent or set DEFAULT_MODEL for all.
 #
 # ┌─────────────────────────────────────────────────────────────────────┐
+# │ Anthropic (AI_PROVIDER: "anthropic") — DEFAULT                     │
+# │ Auth: ANTHROPIC_API_KEY secret                                     │
+# │                                                                    │
+# │ Current models:                                                    │
+# │   claude-opus-4-6              — most intelligent (default)        │
+# │   claude-sonnet-4-6            — fast + smart                      │
+# │   claude-haiku-4-5-20251001   — fastest, near-frontier             │
+# │                                                                    │
+# ├─────────────────────────────────────────────────────────────────────┤
 # │ GitHub Models (AI_PROVIDER: "github")                              │
 # │ Endpoint: https://models.github.ai/inference                      │
 # │ Auth: GITHUB_TOKEN (needs models:read permission)                  │
 # │                                                                    │
 # │ OpenAI models:                                                     │
-# │   openai/gpt-4.1           — flagship, best quality (default)     │
+# │   openai/gpt-4.1           — flagship, best quality               │
 # │   openai/gpt-4.1-mini      — smaller, faster, cheaper             │
 # │   openai/gpt-4.1-nano      — smallest, fastest                    │
-# │   openai/gpt-4o            — multimodal                           │
-# │   openai/gpt-4o-mini       — affordable multimodal                │
 # │   openai/o4-mini           — reasoning, efficient                  │
 # │   openai/o3                — reasoning, advanced                   │
-# │   openai/o3-mini           — reasoning, cost-efficient             │
-# │   openai/o1                — reasoning                             │
-# │   openai/o1-mini           — reasoning, compact                    │
 # │                                                                    │
 # │ Note: Free tier limits — 15 req/min, 150 req/day,                 │
 # │       8K input tokens, 4K output tokens per request.               │
-# ├─────────────────────────────────────────────────────────────────────┤
-# │ Anthropic (AI_PROVIDER: "anthropic")                               │
-# │ Auth: ANTHROPIC_API_KEY secret                                     │
-# │                                                                    │
-# │ Current models:                                                    │
-# │   claude-sonnet-4-6             — fast + smart (recommended)       │
-# │   claude-opus-4-6              — most intelligent, agents/coding   │
-# │   claude-haiku-4-5-20251001   — fastest, near-frontier             │
-# │                                                                    │
-# │ Legacy models:                                                     │
-# │   claude-sonnet-4-20250514    — previous default                   │
-# │   claude-sonnet-4-5-20250929  — previous generation                │
-# │   claude-opus-4-20250514      — previous Opus                      │
-# │   claude-opus-4-5-20251101    — previous Opus generation           │
-# │   claude-opus-4-1-20250805    — Opus 4.1                           │
 # └─────────────────────────────────────────────────────────────────────┘
 env:
-  # AI_PROVIDER: "anthropic"  # Uncomment to use Anthropic instead of GitHub Models
-  DEFAULT_MODEL: "openai/gpt-4.1"
-  # GUARD_MODEL: "openai/gpt-4.1"
-  # INITIALIZER_MODEL: "openai/gpt-4.1"
-  # ANALYST_MODEL: "openai/gpt-4.1"
-  # WRITER_MODEL: "openai/gpt-4.1"
-  # REVIEWER_MODEL: "openai/gpt-4.1"
+  AI_PROVIDER: "anthropic"
+  DEFAULT_MODEL: "claude-opus-4-6"
+  # Per-agent overrides (uncomment to customize):
+  # GUARD_MODEL: "claude-opus-4-6"
+  # INITIALIZER_MODEL: "claude-opus-4-6"
+  # ANALYST_MODEL: "claude-opus-4-6"
+  # WRITER_MODEL: "claude-opus-4-6"
+  # REVIEWER_MODEL: "claude-opus-4-6"
 
 jobs:
   # --------------------------------------------------------------------------

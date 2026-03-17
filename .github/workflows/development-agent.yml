@@ -17,28 +17,28 @@ permissions:
   models: read
 
 # AI provider configuration — same model catalog as documentation-agent.yml.
-# Set AI_PROVIDER to "anthropic" and provide ANTHROPIC_API_KEY secret to use Anthropic.
+# Set AI_PROVIDER to "github" and remove ANTHROPIC_API_KEY to use GitHub Models.
 #
 # ┌─────────────────────────────────────────────────────────────────────┐
+# │ Anthropic (AI_PROVIDER: "anthropic") — DEFAULT                     │
+# │ Auth: ANTHROPIC_API_KEY secret                                     │
+# │                                                                    │
+# │ Current models:                                                    │
+# │   claude-opus-4-6              — most intelligent (default)        │
+# │   claude-sonnet-4-6            — fast + smart                      │
+# │   claude-haiku-4-5-20251001   — fastest, near-frontier             │
+# │                                                                    │
+# ├─────────────────────────────────────────────────────────────────────┤
 # │ GitHub Models (AI_PROVIDER: "github")                              │
 # │ Endpoint: https://models.github.ai/inference                      │
 # │ Auth: GITHUB_TOKEN (needs models:read permission)                  │
 # │                                                                    │
 # │ OpenAI models:                                                     │
-# │   openai/gpt-4.1           — flagship, best quality (default)     │
+# │   openai/gpt-4.1           — flagship, best quality               │
 # │   openai/gpt-4.1-mini      — smaller, faster, cheaper             │
 # │   openai/gpt-4.1-nano      — smallest, fastest                    │
 # │   openai/o4-mini           — reasoning, efficient                  │
 # │   openai/o3                — reasoning, advanced                   │
-# │                                                                    │
-# ├─────────────────────────────────────────────────────────────────────┤
-# │ Anthropic (AI_PROVIDER: "anthropic")                               │
-# │ Auth: ANTHROPIC_API_KEY secret                                     │
-# │                                                                    │
-# │ Current models:                                                    │
-# │   claude-sonnet-4-6             — fast + smart (recommended)       │
-# │   claude-opus-4-6              — most intelligent, agents/coding   │
-# │   claude-haiku-4-5-20251001   — fastest, near-frontier             │
 # └─────────────────────────────────────────────────────────────────────┘
 #
 # Label lifecycle:
@@ -51,14 +51,14 @@ permissions:
 #   "done"                      → (auto) Set on PR merge, issue closed
 
 env:
-  # AI_PROVIDER: "anthropic"
-  DEFAULT_MODEL: "openai/gpt-4.1"
+  AI_PROVIDER: "anthropic"
+  DEFAULT_MODEL: "claude-opus-4-6"
   # Per-agent overrides (uncomment to customize):
-  # TRIAGE_MODEL: "openai/gpt-4.1"
-  # ARCHITECT_MODEL: "openai/gpt-4.1"
-  # WRITER_MODEL: "openai/gpt-4.1"
-  # REVIEWER_MODEL: "openai/gpt-4.1"
-  # PULL_REQUEST_MODEL: "openai/gpt-4.1-mini"
+  # TRIAGE_MODEL: "claude-opus-4-6"
+  # ARCHITECT_MODEL: "claude-opus-4-6"
+  # WRITER_MODEL: "claude-opus-4-6"
+  # REVIEWER_MODEL: "claude-opus-4-6"
+  # PULL_REQUEST_MODEL: "claude-sonnet-4-6"
 
 jobs:
   # ============================================================================
