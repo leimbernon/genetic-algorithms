@@ -20,227 +20,82 @@ The following concepts are central to the examples:
 | Genotype               | `Genotype`             | Defines the chromosome type and allele range             |
 | Genetic Algorithm      | `Ga`                   | Main orchestrator for GA runs                            |
 | Fitness Function       | `FitnessFn`            | Evaluates solution quality                               |
-| Initialization Function| `InitializationFn`     | Customizes population initialization                     |
-| Configuration          | `GaConfiguration`      | Controls operators, limits, logging, and more            |
-| Population             | `Population`           | Collection of candidate solutions                        |
-| Termination Cause      | `TerminationCause`     | Indicates why a GA run stopped                           |
-| Logging                | `LogLevel`             | Controls verbosity of GA output                          |
-| Error Handling         | `GaError`              | Error type for GA operations                             |
-
-### Example Configuration Fields
-
-| Field                   | Type                  | Description                                              |
-|-------------------------|-----------------------|----------------------------------------------------------|
-| `population_size`       | `usize`               | Number of chromosomes in each generation                 |
-| `generation_limit`      | `usize`               | Maximum number of generations to run                     |
-| `fitness_target`        | `f64`                 | Stop when best fitness reaches this value                |
-| `log_level`             | `LogLevel`            | Controls logging verbosity                               |
-| `alleles`               | `Vec<Gene>`           | Possible gene values for initialization                  |
-| `initialization_fn`     | `InitializationFn`    | Custom population initialization logic                   |
-| `fitness_fn`            | `FitnessFn`           | Function to evaluate chromosome fitness                  |
+| Extension Strategy     | `MassDeduplication`    | Prevents premature convergence by deduplicating population |
+| Callback               | `Callback`             | Allows custom logic during GA execution                  |
 
 ## Usage
 
-### Basic Example
+### OneMax with Extension Strategies
 
-**Knapsack Problem (Binary Chromosome)**
+The `onemax_extension.rs` example demonstrates how to solve the classic OneMax problem using extension strategies to improve genetic algorithm robustness. The OneMax problem seeks to maximize the number of ones in a binary chromosome.
 
-This example solves the classic knapsack problem: select items to maximize value without exceeding weight.
+#### Preventing Premature Convergence with MassDeduplication
+
+Premature convergence occurs when the population loses diversity too quickly, often resulting in suboptimal solutions. The `MassDeduplication` extension strategy addresses this by deduplicating individuals in the population, ensuring that similar solutions do not dominate and allowing the algorithm to explore a broader search space.
+
+#### Configuration and Callback Usage
+
+The example configures the GA to use the `MassDeduplication` extension strategy. It also demonstrates how to use callbacks for monitoring progress or custom logic during the run.
+
+#### Running the Example
+
+To run the example, use the following command from the project root:
+
+```bash
+cargo run --example onemax_extension
+```
+
+#### Example Code
+
+Below is a simplified excerpt illustrating the key setup:
 
 ```rust
-use ga::{
-    Ga, GaConfiguration, Population, BinaryChromosome, TerminationCause, LogLevel,
+use ga_lib::{
+    BinaryChromosome, Genotype, Ga, ExtensionStrategy, MassDeduplication, Callback,
 };
 
-const ITEM_WEIGHTS: [u32; 5] = [2, 3, 4, 5, 9];
-const ITEM_VALUES: [u32; 5] = [3, 4, 8, 8, 10];
-const KNAPSACK_CAPACITY: u32 = 15;
+fn main() {
+    // Define the genotype for a 100-bit chromosome
+    let genotype = Genotype::binary(100);
 
-fn knapsack_fitness(chromosome: &BinaryChromosome) -> f64 {
-    let mut total_weight = 0;
-    let mut total_value = 0;
-    for (gene, (&weight, &value)) in chromosome.genes().iter().zip(ITEM_WEIGHTS.iter().zip(ITEM_VALUES.iter())) {
-        if *gene {
-            total_weight += weight;
-            total_value += value;
-        }
-    }
-    if total_weight > KNAPSACK_CAPACITY {
-        0.0
-    } else {
-        total_value as f64
-    }
-}
+    // Fitness function: count the number of ones
+    let fitness_fn = |chromosome: &BinaryChromosome| chromosome.iter().filter(|&&bit| bit).count();
 
-fn main() -> Result<(), ga::GaError> {
-    let mut ga = Ga::<BinaryChromosome>::default();
-    ga.configuration.population_size = 50;
-    ga.configuration.generation_limit = 100;
-    ga.configuration.log_level = LogLevel::Info;
-    ga.with_fitness_fn(knapsack_fitness);
+    // Configure MassDeduplication extension strategy
+    let extension = ExtensionStrategy::MassDeduplication(MassDeduplication::default());
 
-    ga.initialization()?; // Randomly initialize population
-    let population = ga.run()?;
+    // Optional: define a callback to monitor progress
+    let callback = Callback::new(|generation, best| {
+        println!("Generation {}: best fitness {}", generation, best.fitness);
+    });
 
-    let best = population.best_chromosome().unwrap();
-    println!("Best solution: {:?}", best.genes());
-    println!("Best value: {}", knapsack_fitness(best));
-    println!("Termination cause: {:?}", ga.termination_cause);
+    // Set up and run the GA
+    let mut ga = Ga::builder()
+        .genotype(genotype)
+        .fitness_fn(fitness_fn)
+        .extension_strategy(extension)
+        .callback(callback)
+        .build();
 
-    Ok(())
+    let result = ga.run();
+    println!("Best solution found: {:?}", result.best_chromosome());
 }
 ```
 
-### Advanced Example
+### Other Examples
 
-**N-Queens Problem (Range Chromosome, Custom Initialization, Logging, Error Handling)**
-
-This example finds a solution to the N-Queens problem using integer chromosomes, custom initialization, and advanced configuration.
-
-```rust
-use ga::{
-    Ga, GaConfiguration, Population, RangeChromosome, TerminationCause, LogLevel,
-};
-
-const N: usize = 8; // Number of queens
-
-// Fitness: count non-attacking pairs of queens
-fn nqueens_fitness(chromosome: &RangeChromosome) -> f64 {
-    let positions = chromosome.genes();
-    let mut non_attacking = 0;
-    for i in 0..N {
-        for j in (i + 1)..N {
-            if positions[i] != positions[j] // not same column
-                && (positions[i] as isize - positions[j] as isize).abs() != (i as isize - j as isize).abs() // not same diagonal
-            {
-                non_attacking += 1;
-            }
-        }
-    }
-    non_attacking as f64
-}
-
-// Custom initialization: random permutation (each queen in a unique column)
-fn permutation_init(alleles: &[u8], rng: &mut rand::rngs::ThreadRng) -> Vec<u8> {
-    let mut genes = alleles.to_vec();
-    genes.shuffle(rng);
-    genes
-}
-
-fn main() -> Result<(), ga::GaError> {
-    let alleles: Vec<u8> = (0..N as u8).collect();
-
-    let mut ga = Ga::<RangeChromosome>::default();
-    ga.configuration.population_size = 100;
-    ga.configuration.generation_limit = 500;
-    ga.configuration.log_level = LogLevel::Debug;
-    ga.configuration.fitness_target = ((N * (N - 1)) / 2) as f64; // All pairs non-attacking
-
-    ga.with_alleles(alleles.clone());
-    ga.with_initialization_fn(permutation_init);
-    ga.with_fitness_fn(nqueens_fitness);
-
-    ga.initialization()?; // Custom population initialization
-
-    let population = ga.run()?;
-    let best = population.best_chromosome().unwrap();
-
-    println!("Best solution: {:?}", best.genes());
-    println!("Best fitness: {}", nqueens_fitness(best));
-    println!("Termination cause: {:?}", ga.termination_cause);
-
-    // Interpret result
-    if ga.termination_cause == TerminationCause::FitnessTargetReached {
-        println!("Found valid N-Queens solution!");
-    } else {
-        println!("Did not find valid solution; best fitness: {}", nqueens_fitness(best));
-    }
-
-    Ok(())
-}
-```
+- **Knapsack Problem**: Demonstrates binary chromosome optimization for item selection under weight constraints.
+- **N-Queens Problem**: Uses range chromosomes to solve the classic chessboard placement problem.
 
 ## API Reference
 
-### `Ga<U>`
+| Component              | Description                                                                 |
+|------------------------|-----------------------------------------------------------------------------|
+| `BinaryChromosome`     | Represents a binary vector solution                                         |
+| `Genotype`            | Specifies chromosome structure and allele range                             |
+| `Ga`                  | Main genetic algorithm runner                                               |
+| `ExtensionStrategy`   | Configures population extension behavior, e.g., deduplication               |
+| `MassDeduplication`   | Deduplicates similar individuals to maintain diversity                      |
+| `Callback`            | Allows custom logic during GA execution                                     |
 
-Generic genetic algorithm orchestrator.
-
-**Fields:**
-
-| Name                | Type                             | Description                                              |
-|---------------------|----------------------------------|----------------------------------------------------------|
-| `configuration`     | `GaConfiguration`                | GA configuration options                                 |
-| `alleles`           | `Vec<U::Gene>`                   | Alleles for initialization                              |
-| `population`        | `Population<U>`                  | Current population                                       |
-| `termination_cause` | `TerminationCause`               | Reason for termination                                   |
-| `initialization_fn` | `Option<Arc<InitializationFn>>`  | Custom initialization function                           |
-| `fitness_fn`        | `Option<Arc<FitnessFn>>`         | Fitness evaluation function                              |
-
-**Methods:**
-
-| Name                      | Signature                                                           | Description                                              |
-|---------------------------|---------------------------------------------------------------------|----------------------------------------------------------|
-| `with_alleles`            | `fn with_alleles(&mut self, alleles: Vec<U::Gene>) -> &mut Self`    | Sets alleles for chromosome initialization               |
-| `with_population`         | `fn with_population(&mut self, population: Population<U>) -> &mut Self` | Sets initial population                              |
-| `with_fitness_fn`         | `fn with_fitness_fn<F>(&mut self, fitness_fn: F) -> &mut Self`      | Sets fitness function                                    |
-| `with_initialization_fn`  | `fn with_initialization_fn<F>(&mut self, initialization_fn: F) -> &mut Self` | Sets custom initialization function         |
-| `initialization`          | `fn initialization(&mut self) -> Result<&mut Self, GaError>`        | Initializes population                                   |
-| `run`                     | `fn run(&mut self) -> Result<&Population<U>, GaError>`              | Runs GA to completion                                    |
-| `run_with_callback`       | `fn run_with_callback<F>(&mut self, callback: Option<F>, generations_to_callback: usize) -> Result<&Population<U>, GaError>` | Runs GA with callback |
-
-### `TerminationCause`
-
-Enumerates reasons for GA termination.
-
-| Variant                  | Description                                              |
-|--------------------------|----------------------------------------------------------|
-| `GenerationLimitReached` | Maximum generations reached                              |
-| `FitnessTargetReached`   | Desired fitness achieved                                 |
-| `StagnationReached`      | No improvement for N generations                         |
-| `ConvergenceReached`     | Population converged                                     |
-| `TimeLimitReached`       | Time limit exceeded                                      |
-| `NotTerminated`          | Not yet terminated                                       |
-
-### `GaConfiguration`
-
-Controls GA behavior.
-
-| Field             | Type         | Description                          |
-|-------------------|--------------|--------------------------------------|
-| `population_size` | `usize`      | Number of chromosomes per generation |
-| `generation_limit`| `usize`      | Max generations                      |
-| `fitness_target`  | `f64`        | Target fitness to stop               |
-| `log_level`       | `LogLevel`   | Logging verbosity                    |
-
-### `LogLevel`
-
-Controls logging output.
-
-| Variant   | Description                       |
-|-----------|-----------------------------------|
-| `Off`     | No logging                        |
-| `Error`   | Errors only                       |
-| `Info`    | Key events and progress           |
-| `Debug`   | Detailed per-generation logging   |
-
-### `GaError`
-
-Error type for GA operations.
-
-| Variant         | Description                          |
-|-----------------|--------------------------------------|
-| `InvalidConfig` | Configuration error                  |
-| `InitFailed`    | Initialization failed                |
-| `RunFailed`     | Error during GA run                  |
-
-## Related
-
-- [Configuration Options](configuration.md)
-- [Chromosome Types](chromosomes.md)
-- [Fitness Functions](fitness.md)
-- [Population Management](population.md)
-- [Traits](traits.md)
-- [Source: examples/knapsack_binary.rs](../examples/knapsack_binary.rs)
-- [Source: examples/nqueens_range.rs](../examples/nqueens_range.rs)
-- [Source: src/ga.rs](../src/ga.rs)
+For detailed API documentation, refer to the [API Reference](./api.md).

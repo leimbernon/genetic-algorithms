@@ -8,98 +8,126 @@ Extension strategies are optional diversity-rescue mechanisms integrated into th
 
 Extensions run after survivor selection and elite reinsertion, but before niching/fitness sharing. When an extension reduces the population size, the GA automatically regrows it using the configured initialization and fitness functions.
 
-## Available Strategies
+## Key Concepts
+
+### ExtensionOperator Trait and Extension Enum
+
+The extension operator is defined by the `ExtensionOperator` trait, which is implemented for each strategy. The `Extension` enum specifies the available strategies:
+
+- `Noop`: No extension — diversity drops are ignored. This is the default.
+- `MassExtinction`: Randomly culls the population to a survival rate, protecting a configurable number of elite individuals.
+- `MassGenesis`: Trims the population to the 2 best chromosomes. The GA regrows the rest from scratch.
+- `MassDegeneration`: Applies N rounds of swap mutation to all non-elite chromosomes and marks them for fitness re-evaluation.
+- `MassDeduplication`: Removes chromosomes with duplicate gene-ID sequences, keeping the best fitness in each group.
+
+### Diversity Threshold and Automatic Regrowth
+
+Each extension strategy is triggered when the population's fitness standard deviation drops below the configured diversity threshold. If the extension reduces the population size, the GA automatically regrows the population using the initialization and fitness functions specified in your configuration.
+
+## Usage
+
+### Configuring Extension Strategies
+
+Extension strategies are configured via the `ExtensionConfiguration` struct. You can set the strategy, diversity threshold, survival rate, mutation rounds, and elite count using builder methods:
+
+| Method                        | Description                                                                                       | Default Value |
+|-------------------------------|---------------------------------------------------------------------------------------------------|--------------|
+| `with_method(Extension)`      | Sets the extension strategy.                                                                      | `Extension::Noop` |
+| `with_diversity_threshold(f64)` | Sets the fitness standard deviation threshold for triggering the extension.                     | `0.0`        |
+| `with_survival_rate(f64)`     | Sets the survival rate for MassExtinction (fraction of population to keep, 0.0..1.0).             | `1.0`        |
+| `with_mutation_rounds(usize)` | Sets the number of mutation rounds for MassDegeneration.                                          | `1`          |
+| `with_elite_count(usize)`     | Sets the number of elite individuals protected from extension events.                             | `0`          |
+
+#### Default Values
+
+| Field               | Default Value | Applies To           |
+|---------------------|--------------|----------------------|
+| `method`            | `Extension::Noop` | All strategies      |
+| `diversity_threshold` | `0.0`       | All strategies       |
+| `survival_rate`     | `1.0`        | MassExtinction       |
+| `mutation_rounds`   | `1`          | MassDegeneration     |
+| `elite_count`       | `0`          | MassExtinction, MassDegeneration |
+
+### Example: Configuring and Integrating Extension Strategies
+
+Below is a complete example demonstrating how to configure an extension strategy and integrate it into your GA loop. Note that you assign the `ExtensionConfiguration` to the `extension_configuration` field of your `GaConfiguration`.
+
+```rust
+use genetic_algorithms::extension::configuration::ExtensionConfiguration;
+use genetic_algorithms::operations::Extension;
+use genetic_algorithms::configuration::{GaConfiguration, LimitConfiguration, SelectionConfiguration, CrossoverConfiguration, MutationConfiguration};
+
+fn main() {
+    // Create an ExtensionConfiguration for MassExtinction
+    let extension_config = ExtensionConfiguration::new()
+        .with_method(Extension::MassExtinction)
+        .with_diversity_threshold(0.05)
+        .with_survival_rate(0.2)
+        .with_elite_count(2);
+
+    // Build your GA configuration and assign the extension configuration
+    let ga_config = GaConfiguration {
+        limit_configuration: LimitConfiguration {
+            population_size: 100,
+            genes_per_chromosome: 10,
+            ..Default::default()
+        },
+        selection_configuration: SelectionConfiguration::default(),
+        crossover_configuration: CrossoverConfiguration::default(),
+        mutation_configuration: MutationConfiguration::default(),
+        extension_configuration: Some(extension_config),
+        ..Default::default()
+    };
+
+    // Now pass ga_config to your GA instance (not shown)
+}
+```
+
+## API Reference
+
+### Extension Enum
 
 | Variant              | Description                                                                                   |
-|----------------------|-----------------------------------------------------------------------------------------------|
-| `Noop`               | No extension — diversity drops are ignored. This is the default.                             |
+|----------------------|----------------------------------------------------------------------------------------------|
+| `Noop`               | No extension — diversity drops are ignored.                                                  |
 | `MassExtinction`     | Randomly culls the population to a survival rate, protecting a configurable number of elite individuals. |
 | `MassGenesis`        | Trims the population to the 2 best chromosomes. The GA regrows the rest from scratch.        |
 | `MassDegeneration`   | Applies N rounds of swap mutation to all non-elite chromosomes and marks them for fitness re-evaluation. |
 | `MassDeduplication`  | Removes chromosomes with duplicate gene-ID sequences, keeping the best fitness in each group. |
 
-## Configuration
+### ExtensionConfiguration Struct
 
-Extension strategies are configured via the `ExtensionConfig` trait methods on the `Ga` builder:
+| Field                | Type         | Description                                                                                   | Default Value |
+|----------------------|--------------|-----------------------------------------------------------------------------------------------|--------------|
+| `method`             | `Extension`  | The extension strategy to use.                                                                | `Extension::Noop` |
+| `diversity_threshold`| `f64`        | Fitness standard deviation threshold for triggering the extension.                            | `0.0`        |
+| `survival_rate`      | `f64`        | For MassExtinction: fraction of population that survives the cull (0.0..1.0).                | `1.0`        |
+| `mutation_rounds`    | `usize`      | For MassDegeneration: number of mutation rounds applied to non-elite chromosomes.             | `1`          |
+| `elite_count`        | `usize`      | Number of elite individuals protected from the extension event.                               | `0`          |
 
-| Method                                  | Description                                                        | Default |
-|-----------------------------------------|--------------------------------------------------------------------|---------|
-| `with_extension_method(Extension)`      | Sets the extension strategy.                                       | `Noop`  |
-| `with_extension_diversity_threshold(f64)` | Fitness std dev threshold that triggers the extension.           | `0.01`  |
-| `with_extension_survival_rate(f64)`     | Fraction of population surviving MassExtinction (0.0..1.0).       | `0.1`   |
-| `with_extension_mutation_rounds(usize)` | Number of swap mutation rounds for MassDegeneration.               | `3`     |
-| `with_extension_elite_count(usize)`     | Number of elite individuals protected from the extension.          | `1`     |
+#### Builder Methods
 
-### ExtensionConfiguration
+- `ExtensionConfiguration::new()`: Creates a new configuration with default values.
+- `with_method(method: Extension)`: Sets the extension strategy.
+- `with_diversity_threshold(threshold: f64)`: Sets the diversity threshold.
+- `with_survival_rate(rate: f64)`: Sets the survival rate for MassExtinction.
+- `with_mutation_rounds(rounds: usize)`: Sets mutation rounds for MassDegeneration.
+- `with_elite_count(count: usize)`: Sets the number of elite individuals protected.
 
-The `ExtensionConfiguration` struct (in `extension::configuration`) can also be constructed directly:
+## Summary Table: Extension Strategies
 
-```rust
-use genetic_algorithms::extension::configuration::ExtensionConfiguration;
-use genetic_algorithms::operations::Extension;
+| Strategy           | Trigger Condition                      | Action Taken                                                                 | Configurable Parameters            |
+|--------------------|----------------------------------------|------------------------------------------------------------------------------|------------------------------------|
+| Noop               | Never                                  | No action                                                                    | None                               |
+| MassExtinction     | Diversity < threshold                   | Cull population randomly to survival_rate, protect elite_count individuals    | survival_rate, elite_count         |
+| MassGenesis        | Diversity < threshold                   | Keep 2 best chromosomes, regrow rest                                         | None                               |
+| MassDegeneration   | Diversity < threshold                   | Apply mutation_rounds swap mutations to all non-elite chromosomes             | mutation_rounds, elite_count       |
+| MassDeduplication  | Diversity < threshold                   | Remove duplicate chromosomes, keep best in each group                         | None                               |
 
-let config = ExtensionConfiguration::new()
-    .with_method(Extension::MassExtinction)
-    .with_diversity_threshold(0.05)
-    .with_survival_rate(0.2)
-    .with_elite_count(2);
-```
+## Integration Notes
 
-## Usage
+- Set `extension_configuration` in your `GaConfiguration` to enable diversity control.
+- Extensions are triggered automatically when the diversity threshold is crossed.
+- Population regrowth is handled internally after extension events that reduce population size.
 
-```rust
-use genetic_algorithms::ga::Ga;
-use genetic_algorithms::operations::{Extension, Selection, Crossover, Mutation, Survivor};
-use genetic_algorithms::traits::{ConfigurationT, ExtensionConfig};
-use genetic_algorithms::configuration::ProblemSolving;
-
-let mut ga = Ga::new()
-    .with_population_size(100)
-    .with_genes_per_chromosome(10)
-    // ... other configuration ...
-    .with_extension_method(Extension::MassDeduplication)
-    .with_extension_diversity_threshold(0.5)
-    .with_extension_elite_count(2)
-    .build()
-    .expect("Valid configuration");
-
-let population = ga.run();
-```
-
-## How It Works
-
-Each generation, after survivor selection and elite reinsertion:
-
-1. The GA computes the fitness standard deviation of the current population.
-2. If `std_dev < diversity_threshold` and the configured method is not `Noop`:
-   - The extension strategy is applied to the population.
-   - If the population was reduced (MassGenesis, MassDeduplication, MassExtinction), new chromosomes are generated to restore the target population size.
-   - If chromosomes were mutated with NaN fitness (MassDegeneration), their fitness is recalculated.
-3. The GA continues with niching/fitness sharing and the rest of the generation.
-
-## Trait
-
-Custom extension strategies can be implemented via the `ExtensionOperator` trait:
-
-```rust
-pub trait ExtensionOperator {
-    fn apply_extension<U: ChromosomeT>(
-        &self,
-        chromosomes: &mut Vec<U>,
-        population_size: usize,
-        problem_solving: ProblemSolving,
-        config: &ExtensionConfiguration,
-    ) -> Result<(), GaError>;
-}
-```
-
-## Related
-
-- [configuration.md](../configuration.md) — GA configuration including extension settings
-- [operators/survivor.md](survivor.md) — Survivor selection (runs before extension)
-- [traits.md](../traits.md) — Core traits including `ExtensionOperator`
-
-**Source code:**
-- [`src/operations/extension/mod.rs`](../../src/operations/extension/mod.rs)
-- [`src/extension/configuration.rs`](../../src/extension/configuration.rs)
-- [`src/traits/operators.rs`](../../src/traits/operators.rs)
+For further details, see the source code documentation for [`ExtensionConfiguration`](https://docs.rs/genetic_algorithms/latest/genetic_algorithms/extension/configuration/struct.ExtensionConfiguration.html) and [`Extension`](https://docs.rs/genetic_algorithms/latest/genetic_algorithms/operations/enum.Extension.html).
