@@ -5,8 +5,10 @@
 //! - [`FitnessFnWrapper`] — a wrapper that stores an `Arc<dyn Fn>` fitness
 //!   function alongside a chromosome, enabling deferred evaluation.
 
+pub mod cache;
 pub mod count_true;
 pub mod fitness_fn_wrapper;
 
+pub use cache::FitnessCache;
 pub use count_true::count_true;
 pub use fitness_fn_wrapper::FitnessFnWrapper;
