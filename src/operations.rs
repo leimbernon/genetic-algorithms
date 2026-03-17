@@ -6,6 +6,7 @@
 //! [`Mutation`], [`Survivor`]).
 
 pub mod crossover;
+pub mod extension;
 pub mod mutation;
 pub mod selection;
 pub mod survivor;
@@ -116,4 +117,23 @@ pub enum Survivor {
     MuPlusLambda,
     /// (mu,lambda) strategy: only offspring (age == 0) are eligible for survival.
     MuCommaLambda,
+}
+
+/// Extension strategies for population diversity control.
+///
+/// Extensions are optional diversity-rescue mechanisms that trigger when
+/// population diversity drops below a configurable threshold.
+#[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum Extension {
+    /// No extension — diversity drops are ignored.
+    Noop,
+    /// Random cull to a survival rate, protecting elite individuals.
+    MassExtinction,
+    /// Trim to the 2 best chromosomes, regrow population from scratch.
+    MassGenesis,
+    /// Apply N mutation rounds to the whole population, protecting elite.
+    MassDegeneration,
+    /// Remove duplicate chromosomes (by gene comparison), regrow population.
+    MassDeduplication,
 }

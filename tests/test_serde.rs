@@ -160,6 +160,15 @@ fn serde_ga_configuration_with_values() {
             sigma_share: 2.0,
             alpha: 1.5,
         }),
+        extension_configuration: Some(
+            genetic_algorithms::extension::configuration::ExtensionConfiguration {
+                method: genetic_algorithms::operations::Extension::MassExtinction,
+                diversity_threshold: 0.05,
+                survival_rate: 0.2,
+                mutation_rounds: 3,
+                elite_count: 2,
+            },
+        ),
         rng_seed: Some(42),
     };
     let rt = round_trip(&config);

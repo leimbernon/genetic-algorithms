@@ -72,6 +72,7 @@ pub mod checkpoint;
 pub mod chromosomes;
 pub mod configuration;
 pub mod error;
+pub mod extension;
 pub mod fitness;
 pub mod ga;
 pub mod genotypes;

@@ -32,11 +32,11 @@ use crate::traits::{FitnessFn, InitializationFn};
 use crate::validators::validator_factory as ValidatorFactory;
 use crate::{
     configuration::{LimitConfiguration, LogLevel, ProblemSolving},
-    operations::{crossover, mutation, selection, survivor},
+    operations::{crossover, extension, mutation, selection, survivor, Extension},
     population::Population,
     traits::{
-        ChromosomeT, ConfigurationT, CrossoverConfig, ElitismConfig, GeneT, MutationConfig,
-        NichingConfig, SelectionConfig, StoppingConfig,
+        ChromosomeT, ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, GeneT,
+        MutationConfig, NichingConfig, SelectionConfig, StoppingConfig,
     },
 };
 use log::{debug, info, trace};
@@ -256,6 +256,57 @@ where
 {
     fn with_elitism(mut self, elitism_count: usize) -> Self {
         self.configuration.elitism_count = elitism_count;
+        self
+    }
+}
+
+impl<U> ExtensionConfig for Ga<U>
+where
+    U: ChromosomeT,
+{
+    fn with_extension_method(mut self, method: crate::operations::Extension) -> Self {
+        self.configuration
+            .extension_configuration
+            .get_or_insert_with(
+                crate::extension::configuration::ExtensionConfiguration::default,
+            )
+            .method = method;
+        self
+    }
+    fn with_extension_diversity_threshold(mut self, threshold: f64) -> Self {
+        self.configuration
+            .extension_configuration
+            .get_or_insert_with(
+                crate::extension::configuration::ExtensionConfiguration::default,
+            )
+            .diversity_threshold = threshold;
+        self
+    }
+    fn with_extension_survival_rate(mut self, rate: f64) -> Self {
+        self.configuration
+            .extension_configuration
+            .get_or_insert_with(
+                crate::extension::configuration::ExtensionConfiguration::default,
+            )
+            .survival_rate = rate;
+        self
+    }
+    fn with_extension_mutation_rounds(mut self, rounds: usize) -> Self {
+        self.configuration
+            .extension_configuration
+            .get_or_insert_with(
+                crate::extension::configuration::ExtensionConfiguration::default,
+            )
+            .mutation_rounds = rounds;
+        self
+    }
+    fn with_extension_elite_count(mut self, count: usize) -> Self {
+        self.configuration
+            .extension_configuration
+            .get_or_insert_with(
+                crate::extension::configuration::ExtensionConfiguration::default,
+            )
+            .elite_count = count;
         self
     }
 }
@@ -643,6 +694,88 @@ where
             }
             if self.configuration.adaptive_ga {
                 self.population.recalculate_aga();
+            }
+
+            // Apply extension strategy if configured and diversity is low
+            if let Some(ref ext_config) = self.configuration.extension_configuration {
+                if ext_config.method != Extension::Noop {
+                    let fitness_vals: Vec<f64> = self
+                        .population
+                        .chromosomes
+                        .iter()
+                        .map(|c| c.fitness())
+                        .collect();
+                    let n = fitness_vals.len() as f64;
+                    if n > 1.0 {
+                        let avg = fitness_vals.iter().sum::<f64>() / n;
+                        let variance =
+                            fitness_vals.iter().map(|f| (f - avg).powi(2)).sum::<f64>() / n;
+                        let std_dev = variance.sqrt();
+
+                        if std_dev < ext_config.diversity_threshold {
+                            info!(
+                                target = "extension_events",
+                                method = "run";
+                                "Extension triggered: fitness_std_dev={:.6} < threshold={:.6}",
+                                std_dev,
+                                ext_config.diversity_threshold
+                            );
+
+                            extension::factory(
+                                ext_config.method,
+                                &mut self.population.chromosomes,
+                                initial_population_size,
+                                self.configuration.limit_configuration.problem_solving,
+                                ext_config,
+                            )?;
+
+                            // Regrow population if extension reduced it
+                            if self.population.chromosomes.len() < initial_population_size {
+                                if let Some(ref init_fn) = self.initialization_fn {
+                                    let deficit = initial_population_size
+                                        - self.population.chromosomes.len();
+                                    for _ in 0..deficit {
+                                        let alleles_ref = if self.alleles.is_empty() {
+                                            None
+                                        } else {
+                                            Some(self.alleles.as_slice())
+                                        };
+                                        let genes = init_fn(
+                                            self.configuration
+                                                .limit_configuration
+                                                .genes_per_chromosome,
+                                            alleles_ref,
+                                            Some(
+                                                self.configuration
+                                                    .limit_configuration
+                                                    .alleles_can_be_repeated,
+                                            ),
+                                        );
+                                        let mut new_chromosome = U::new();
+                                        new_chromosome
+                                            .set_dna(std::borrow::Cow::Owned(genes));
+                                        if let Some(ref ff) = self.fitness_fn {
+                                            let ff_clone = Arc::clone(ff);
+                                            new_chromosome
+                                                .set_fitness_fn(move |genes| ff_clone(genes));
+                                        }
+                                        new_chromosome.calculate_fitness();
+                                        new_chromosome.set_age(0);
+                                        self.population.chromosomes.push(new_chromosome);
+                                    }
+                                }
+                            }
+
+                            // Recalculate fitness for chromosomes marked with NaN
+                            // (e.g., after MassDegeneration)
+                            for c in self.population.chromosomes.iter_mut() {
+                                if c.fitness().is_nan() {
+                                    c.calculate_fitness();
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             // Apply niching / fitness sharing if configured

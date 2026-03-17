@@ -1,13 +1,14 @@
-# genetic_algorithms (v2.0.0)
+# genetic_algorithms (v2.1.0)
 
 [![Rust Unit Tests](https://github.com/leimbernon/rust_genetic_algorithms/actions/workflows/rust-unit-tests.yml/badge.svg)](https://github.com/leimbernon/rust_genetic_algorithms/actions/workflows/rust-unit-tests.yml)
 
 Modular and concurrent Genetic Algorithms (GA) library for Rust featuring:
 - Clear abstractions (traits for genes, chromosomes, and configuration).
-- Composable operators (selection, crossover, mutation, survivor).
+- Composable operators (selection, crossover, mutation, survivor, extension).
 - Multi-threaded execution via `rayon` (fitness evaluation, reproduction, mutation in parallel).
 - Adaptive GA mode (dynamic crossover and mutation probabilities based on population performance).
 - Elitism support (preserve top N individuals across generations).
+- Extension strategies for population diversity control (mass extinction, genesis, degeneration, deduplication).
 - Compound stopping criteria (stagnation, convergence, time limit).
 - `Cow` for minimizing unnecessary DNA copies.
 
@@ -77,6 +78,7 @@ Main differences vs 1.x:
 - **Crossover:** `Cycle`, `MultiPoint`, `Uniform`, `SinglePoint`, `Order` (OX), `Sbx` (Simulated Binary), `BlendAlpha` (BLX-α).
 - **Mutation:** `Swap`, `Inversion`, `Scramble`, `Value` (Range<T>), `BitFlip` (Binary), `Creep` (uniform perturbation), `Gaussian` (normal perturbation).
 - **Survivor:** `Fitness` (keep best), `Age` (prefer younger / age-based pruning).
+- **Extension:** `Noop`, `MassExtinction`, `MassGenesis`, `MassDegeneration`, `MassDeduplication`.
 
 ### GA Configuration
 `GaConfiguration` (or the `Ga` builder) exposes:
@@ -86,6 +88,7 @@ Main differences vs 1.x:
 - **Mutation:** `probability_min` / `probability_max`, `method`, `step` (Creep step size), `sigma` (Gaussian standard deviation).
 - **Survivor:** `survivor`.
 - **Elitism:** `elitism_count` — preserve the top N individuals unchanged across generations.
+- **Extension:** `extension_configuration` — optional diversity control strategies. Configure with `with_extension_method()`, `with_extension_diversity_threshold()`, `with_extension_survival_rate()`, `with_extension_mutation_rounds()`, `with_extension_elite_count()`.
 - **Stopping criteria:** `StoppingCriteria` with `stagnation_generations`, `convergence_threshold`, `max_duration_secs`. The GA stops when **any** enabled criterion is met.
 - **Infra:** `adaptive_ga`, `number_of_threads`, `log_level`.
 - **Progress** (present but not yet wired): `save_progress_configuration` (future/experimental).
@@ -187,7 +190,7 @@ println!("Best fitness: {}", population.unwrap().best_chromosome.get_fitness());
 Add to your `Cargo.toml`:
 ```toml
 [dependencies]
-genetic_algorithms = "2.0.0"
+genetic_algorithms = "2.1.0"
 ```
 
 ## Development
@@ -220,8 +223,9 @@ Reports are generated in `target/criterion/` and can be viewed in a browser.
 
 ### Run Examples
 ```bash
-cargo run --example knapsack_binary   # 0/1 Knapsack problem using Binary chromosomes
-cargo run --example nqueens_range     # N-Queens problem using Range<i32> chromosomes
+cargo run --example knapsack_binary    # 0/1 Knapsack problem using Binary chromosomes
+cargo run --example nqueens_range      # N-Queens problem using Range<i32> chromosomes
+cargo run --example onemax_extension   # OneMax with MassDeduplication extension strategy
 ```
 
 ### Code Quality
