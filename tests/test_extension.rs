@@ -456,7 +456,7 @@ fn ga_builder_with_extension_config() {
     let mut ga: Ga<BinaryChromosome> = Ga::new()
         .with_population_size(20)
         .with_genes_per_chromosome(10)
-        .with_initialization_fn(|genes, alleles, unique| binary_random_initialization(genes, alleles, unique))
+        .with_initialization_fn(binary_random_initialization)
         .with_fitness_fn(fitness_fn)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
