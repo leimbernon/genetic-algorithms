@@ -1,5 +1,6 @@
 mod operations {
     mod test_crossover;
+    mod test_crossover_clone;
     mod test_crossover_order;
     mod test_crossover_single_point;
     mod test_crossover_uniform;

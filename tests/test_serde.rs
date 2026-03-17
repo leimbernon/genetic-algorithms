@@ -58,6 +58,7 @@ fn serde_crossover_enum() {
         Crossover::Sbx,
         Crossover::BlendAlpha,
         Crossover::Arithmetic,
+        Crossover::Clone,
     ];
     for v in &variants {
         assert_eq!(&round_trip(v), v);

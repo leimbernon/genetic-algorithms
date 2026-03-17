@@ -66,6 +66,9 @@ pub enum Crossover {
     /// Arithmetic (whole) crossover for `Range<T>` chromosomes.
     /// Child = alpha * parent1 + (1 - alpha) * parent2. Uses `arithmetic_alpha` from configuration.
     Arithmetic,
+    /// Clone crossover — copies parents directly as offspring without any genetic exchange.
+    /// Useful for mutation-only strategies and baseline experiments.
+    Clone,
 }
 
 /// Mutation strategies.
