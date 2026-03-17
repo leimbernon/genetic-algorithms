@@ -268,3 +268,200 @@ fn gaussian_mutation_default_sigma() {
         assert!(gene.value >= lo && gene.value <= hi);
     }
 }
+
+// ==================== Extracted from src/operations/mutation/creep.rs ====================
+
+#[test]
+fn creep_mutation_stays_within_range() {
+    use genetic_algorithms::operations::mutation::creep::creep_mutation;
+    let mut c = build_f64_chromosome(5);
+    for _ in 0..100 {
+        creep_mutation(&mut c, 5.0);
+        for gene in c.dna() {
+            let (lo, hi) = gene.ranges[0];
+            assert!(
+                gene.value >= lo && gene.value <= hi,
+                "Gene value {} out of range [{}, {}]",
+                gene.value,
+                lo,
+                hi
+            );
+        }
+    }
+}
+
+#[test]
+fn creep_mutation_can_change_value() {
+    use genetic_algorithms::operations::mutation::creep::creep_mutation;
+    let mut c = build_f64_chromosome(5);
+    let mut changed = false;
+    for _ in 0..200 {
+        let before = c.dna().to_vec();
+        creep_mutation(&mut c, 10.0);
+        if before.iter().zip(c.dna()).any(|(b, a)| b.value != a.value) {
+            changed = true;
+            break;
+        }
+    }
+    assert!(
+        changed,
+        "Creep mutation did not change any value after 200 attempts"
+    );
+}
+
+#[test]
+fn creep_mutation_changes_at_most_one_gene() {
+    use genetic_algorithms::operations::mutation::creep::creep_mutation;
+    let mut c = build_f64_chromosome(8);
+    let before = c.dna().to_vec();
+    creep_mutation(&mut c, 5.0);
+    let diff_count = before
+        .iter()
+        .zip(c.dna())
+        .filter(|(b, a)| b.value != a.value)
+        .count();
+    assert!(
+        diff_count <= 1,
+        "More than one gene changed: {}",
+        diff_count
+    );
+}
+
+#[test]
+fn creep_mutation_respects_step_size() {
+    use genetic_algorithms::operations::mutation::creep::creep_mutation;
+    let mut c = RangeChromosome::<f64>::new();
+    let dna = vec![RangeGenotype::new(0, vec![(0.0, 1000.0)], 500.0)];
+    c.set_dna(Cow::Owned(dna));
+
+    for _ in 0..100 {
+        let before_val = c.dna()[0].value;
+        creep_mutation(&mut c, 1.0);
+        let after_val = c.dna()[0].value;
+        assert!(
+            (after_val - before_val).abs() <= 1.0 + f64::EPSILON,
+            "Perturbation {} exceeded step 1.0",
+            (after_val - before_val).abs()
+        );
+    }
+}
+
+#[test]
+fn creep_mutation_empty_dna_does_nothing() {
+    use genetic_algorithms::operations::mutation::creep::creep_mutation;
+    let mut c = RangeChromosome::<f64>::new();
+    creep_mutation(&mut c, 5.0);
+    assert_eq!(c.dna().len(), 0);
+}
+
+// ==================== Extracted from src/operations/mutation/gaussian.rs ====================
+
+#[test]
+fn gaussian_mutation_stays_within_range() {
+    use genetic_algorithms::operations::mutation::gaussian::gaussian_mutation;
+    let mut c = build_f64_chromosome(5);
+    for _ in 0..200 {
+        gaussian_mutation(&mut c, 10.0);
+        for gene in c.dna() {
+            let (lo, hi) = gene.ranges[0];
+            assert!(
+                gene.value >= lo && gene.value <= hi,
+                "Gene value {} out of range [{}, {}]",
+                gene.value,
+                lo,
+                hi
+            );
+        }
+    }
+}
+
+#[test]
+fn gaussian_mutation_can_change_value() {
+    use genetic_algorithms::operations::mutation::gaussian::gaussian_mutation;
+    let mut c = build_f64_chromosome(5);
+    let mut changed = false;
+    for _ in 0..200 {
+        let before = c.dna().to_vec();
+        gaussian_mutation(&mut c, 10.0);
+        if before.iter().zip(c.dna()).any(|(b, a)| b.value != a.value) {
+            changed = true;
+            break;
+        }
+    }
+    assert!(
+        changed,
+        "Gaussian mutation did not change any value after 200 attempts"
+    );
+}
+
+#[test]
+fn gaussian_mutation_changes_at_most_one_gene() {
+    use genetic_algorithms::operations::mutation::gaussian::gaussian_mutation;
+    let mut c = build_f64_chromosome(8);
+    let before = c.dna().to_vec();
+    gaussian_mutation(&mut c, 5.0);
+    let diff_count = before
+        .iter()
+        .zip(c.dna())
+        .filter(|(b, a)| b.value != a.value)
+        .count();
+    assert!(
+        diff_count <= 1,
+        "More than one gene changed: {}",
+        diff_count
+    );
+}
+
+#[test]
+fn gaussian_mutation_empty_dna_does_nothing() {
+    use genetic_algorithms::operations::mutation::gaussian::gaussian_mutation;
+    let mut c = RangeChromosome::<f64>::new();
+    gaussian_mutation(&mut c, 5.0);
+    assert_eq!(c.dna().len(), 0);
+}
+
+#[test]
+fn gaussian_mutation_with_i32() {
+    use genetic_algorithms::operations::mutation::gaussian::gaussian_mutation;
+    let mut c = RangeChromosome::<i32>::new();
+    let dna = vec![
+        RangeGenotype::new(0, vec![(0, 100)], 50),
+        RangeGenotype::new(1, vec![(0, 100)], 50),
+    ];
+    c.set_dna(Cow::Owned(dna));
+
+    for _ in 0..100 {
+        gaussian_mutation(&mut c, 5.0);
+        for gene in c.dna() {
+            let (lo, hi) = gene.ranges[0];
+            assert!(
+                gene.value >= lo && gene.value <= hi,
+                "Gene value {} out of range [{}, {}]",
+                gene.value,
+                lo,
+                hi
+            );
+        }
+    }
+}
+
+#[test]
+fn gaussian_mutation_small_sigma_small_perturbation() {
+    use genetic_algorithms::operations::mutation::gaussian::gaussian_mutation;
+    let mut c = RangeChromosome::<f64>::new();
+    let dna = vec![RangeGenotype::new(0, vec![(0.0, 1000.0)], 500.0)];
+    c.set_dna(Cow::Owned(dna));
+
+    // With sigma=0.001, perturbations should be very small
+    for _ in 0..100 {
+        let before_val = c.dna()[0].value;
+        gaussian_mutation(&mut c, 0.001);
+        let after_val = c.dna()[0].value;
+        // 6-sigma bound: very unlikely to exceed 0.006
+        assert!(
+            (after_val - before_val).abs() < 1.0,
+            "Perturbation {} too large for sigma=0.001",
+            (after_val - before_val).abs()
+        );
+    }
+}
