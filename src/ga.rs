@@ -118,6 +118,10 @@ where
     /// Current dynamic mutation probability, adjusted each generation when
     /// `dynamic_mutation` is enabled.
     dynamic_mutation_probability: f64,
+
+    /// Optional LRU fitness cache size. When set, fitness evaluations are
+    /// cached to avoid re-evaluating chromosomes with identical DNA.
+    fitness_cache_size: Option<usize>,
 }
 
 impl<U> Default for Ga<U>
@@ -136,6 +140,7 @@ where
             fitness_fn: None,
             stats: Vec::new(),
             dynamic_mutation_probability: 1.0,
+            fitness_cache_size: None,
         }
     }
 }
@@ -465,6 +470,14 @@ where
             },
         )?;
 
+        // Wrap fitness function with LRU cache if configured
+        if let Some(cache_size) = self.fitness_cache_size {
+            if let Some(fitness_fn) = self.fitness_fn.take() {
+                self.fitness_fn =
+                    Some(crate::fitness::cache::wrap_with_cache(fitness_fn, cache_size));
+            }
+        }
+
         Ok(self)
     }
 
@@ -495,6 +508,23 @@ where
         F: Fn(&[U::Gene]) -> f64 + Send + Sync + 'static,
     {
         self.fitness_fn = Some(Arc::new(fitness_fn));
+        self
+    }
+
+    /// Enables an LRU fitness cache with the given capacity.
+    ///
+    /// When enabled, fitness evaluations are cached by DNA hash. Chromosomes
+    /// with identical genes will reuse cached fitness values, avoiding
+    /// redundant (and potentially expensive) fitness function calls.
+    ///
+    /// The cache is shared across all chromosomes and threads.
+    ///
+    /// # Arguments
+    ///
+    /// * `size` - Maximum number of entries in the cache. A typical value
+    ///   is 2-10x the population size.
+    pub fn with_fitness_cache_size(mut self, size: usize) -> Self {
+        self.fitness_cache_size = Some(size);
         self
     }
 
