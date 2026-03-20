@@ -758,131 +758,6 @@ where
                 self.population.recalculate_aga();
             }
 
-            // Update dynamic mutation probability based on population cardinality
-            if self.configuration.mutation_configuration.dynamic_mutation {
-                let cardinality =
-                    mutation::compute_cardinality(&self.population.chromosomes);
-                let target = self
-                    .configuration
-                    .mutation_configuration
-                    .target_cardinality
-                    .unwrap_or(0.5);
-                let step = self
-                    .configuration
-                    .mutation_configuration
-                    .probability_step
-                    .unwrap_or(0.01);
-                let p_max = self
-                    .configuration
-                    .mutation_configuration
-                    .probability_max
-                    .unwrap_or(1.0);
-                let p_min = self
-                    .configuration
-                    .mutation_configuration
-                    .probability_min
-                    .unwrap_or(0.0);
-
-                self.dynamic_mutation_probability = mutation::dynamic_probability(
-                    self.dynamic_mutation_probability,
-                    cardinality,
-                    target,
-                    step,
-                    p_max,
-                    p_min,
-                );
-
-                debug!(
-                    target = "ga_events",
-                    method = "run";
-                    "Dynamic mutation: cardinality={:.4}, probability={:.4}",
-                    cardinality,
-                    self.dynamic_mutation_probability
-                );
-            }
-
-            // Apply extension strategy if configured and diversity is low
-            if let Some(ref ext_config) = self.configuration.extension_configuration {
-                if ext_config.method != Extension::Noop {
-                    let fitness_vals: Vec<f64> = self
-                        .population
-                        .chromosomes
-                        .iter()
-                        .map(|c| c.fitness())
-                        .collect();
-                    let n = fitness_vals.len() as f64;
-                    if n > 1.0 {
-                        let avg = fitness_vals.iter().sum::<f64>() / n;
-                        let variance =
-                            fitness_vals.iter().map(|f| (f - avg).powi(2)).sum::<f64>() / n;
-                        let std_dev = variance.sqrt();
-
-                        if std_dev < ext_config.diversity_threshold {
-                            info!(
-                                target = "extension_events",
-                                method = "run";
-                                "Extension triggered: fitness_std_dev={:.6} < threshold={:.6}",
-                                std_dev,
-                                ext_config.diversity_threshold
-                            );
-
-                            extension::factory(
-                                ext_config.method,
-                                &mut self.population.chromosomes,
-                                initial_population_size,
-                                self.configuration.limit_configuration.problem_solving,
-                                ext_config,
-                            )?;
-
-                            // Regrow population if extension reduced it
-                            if self.population.chromosomes.len() < initial_population_size {
-                                if let Some(ref init_fn) = self.initialization_fn {
-                                    let deficit = initial_population_size
-                                        - self.population.chromosomes.len();
-                                    for _ in 0..deficit {
-                                        let alleles_ref = if self.alleles.is_empty() {
-                                            None
-                                        } else {
-                                            Some(self.alleles.as_slice())
-                                        };
-                                        let genes = init_fn(
-                                            self.configuration
-                                                .limit_configuration
-                                                .genes_per_chromosome,
-                                            alleles_ref,
-                                            Some(
-                                                self.configuration
-                                                    .limit_configuration
-                                                    .alleles_can_be_repeated,
-                                            ),
-                                        );
-                                        let mut new_chromosome = U::new();
-                                        new_chromosome
-                                            .set_dna(std::borrow::Cow::Owned(genes));
-                                        if let Some(ref ff) = self.fitness_fn {
-                                            let ff_clone = Arc::clone(ff);
-                                            new_chromosome
-                                                .set_fitness_fn(move |genes| ff_clone(genes));
-                                        }
-                                        new_chromosome.calculate_fitness();
-                                        new_chromosome.set_age(0);
-                                        self.population.chromosomes.push(new_chromosome);
-                                    }
-                                }
-                            }
-
-                            // Recalculate fitness for chromosomes marked with NaN
-                            // (e.g., after MassDegeneration)
-                            for c in self.population.chromosomes.iter_mut() {
-                                if c.fitness().is_nan() {
-                                    c.calculate_fitness();
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
             // Apply niching / fitness sharing if configured
             if let Some(ref niching_config) = self.configuration.niching_configuration {
                 if niching_config.enabled {
@@ -981,6 +856,114 @@ where
             let gen_stats =
                 GenerationStats::from_fitness_values(i, &fitness_values, is_maximization);
             self.stats.push(gen_stats.clone());
+
+            // Update dynamic mutation probability based on population diversity
+            if self.configuration.mutation_configuration.dynamic_mutation {
+                let target = self
+                    .configuration
+                    .mutation_configuration
+                    .target_cardinality
+                    .unwrap_or(0.5);
+                let step = self
+                    .configuration
+                    .mutation_configuration
+                    .probability_step
+                    .unwrap_or(0.01);
+                let p_max = self
+                    .configuration
+                    .mutation_configuration
+                    .probability_max
+                    .unwrap_or(1.0);
+                let p_min = self
+                    .configuration
+                    .mutation_configuration
+                    .probability_min
+                    .unwrap_or(0.0);
+
+                self.dynamic_mutation_probability = mutation::dynamic_probability(
+                    self.dynamic_mutation_probability,
+                    gen_stats.diversity,
+                    target,
+                    step,
+                    p_max,
+                    p_min,
+                );
+
+                debug!(
+                    target = "ga_events",
+                    method = "run";
+                    "Dynamic mutation: diversity={:.4}, probability={:.4}",
+                    gen_stats.diversity,
+                    self.dynamic_mutation_probability
+                );
+            }
+
+            // Apply extension strategy if configured and diversity is low
+            if let Some(ref ext_config) = self.configuration.extension_configuration {
+                if ext_config.method != Extension::Noop
+                    && gen_stats.diversity < ext_config.diversity_threshold
+                {
+                    info!(
+                        target = "extension_events",
+                        method = "run";
+                        "Extension triggered: diversity={:.6} < threshold={:.6}",
+                        gen_stats.diversity,
+                        ext_config.diversity_threshold
+                    );
+
+                    extension::factory(
+                        ext_config.method,
+                        &mut self.population.chromosomes,
+                        initial_population_size,
+                        self.configuration.limit_configuration.problem_solving,
+                        ext_config,
+                    )?;
+
+                    // Regrow population if extension reduced it
+                    if self.population.chromosomes.len() < initial_population_size {
+                        if let Some(ref init_fn) = self.initialization_fn {
+                            let deficit =
+                                initial_population_size - self.population.chromosomes.len();
+                            for _ in 0..deficit {
+                                let alleles_ref = if self.alleles.is_empty() {
+                                    None
+                                } else {
+                                    Some(self.alleles.as_slice())
+                                };
+                                let genes = init_fn(
+                                    self.configuration
+                                        .limit_configuration
+                                        .genes_per_chromosome,
+                                    alleles_ref,
+                                    Some(
+                                        self.configuration
+                                            .limit_configuration
+                                            .alleles_can_be_repeated,
+                                    ),
+                                );
+                                let mut new_chromosome = U::new();
+                                new_chromosome.set_dna(std::borrow::Cow::Owned(genes));
+                                if let Some(ref ff) = self.fitness_fn {
+                                    let ff_clone = Arc::clone(ff);
+                                    new_chromosome
+                                        .set_fitness_fn(move |genes| ff_clone(genes));
+                                }
+                                new_chromosome.calculate_fitness();
+                                new_chromosome.set_age(0);
+                                self.population.chromosomes.push(new_chromosome);
+                            }
+                        }
+                    }
+
+                    // Recalculate fitness for chromosomes marked with NaN
+                    // (e.g., after MassDegeneration)
+                    for c in self.population.chromosomes.iter_mut() {
+                        if c.fitness().is_nan() {
+                            c.calculate_fitness();
+                        }
+                    }
+                }
+            }
 
             // Save checkpoint to disk if configured (requires serde feature)
             #[cfg(feature = "serde")]
