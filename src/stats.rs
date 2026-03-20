@@ -23,6 +23,10 @@ pub struct GenerationStats {
     pub fitness_std_dev: f64,
     /// Population size at the end of this generation.
     pub population_size: usize,
+    /// Population diversity: standard deviation of fitness values.
+    /// Equal to `fitness_std_dev` in v2.2. Higher values = more diverse.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub diversity: f64,
 }
 
 impl GenerationStats {
@@ -43,6 +47,7 @@ impl GenerationStats {
                 avg_fitness: 0.0,
                 fitness_std_dev: 0.0,
                 population_size: 0,
+                diversity: 0.0,
             };
         }
 
@@ -80,6 +85,7 @@ impl GenerationStats {
             avg_fitness: avg,
             fitness_std_dev: std_dev,
             population_size: n,
+            diversity: std_dev,
         }
     }
 }
