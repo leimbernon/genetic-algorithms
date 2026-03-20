@@ -40,7 +40,11 @@ Phases 1-5 predate GSD tracking. Issues closed: #165, #166, #167, #168, #169.
   2. The extension strategy (e.g., MassExtinction) triggers only when the per-generation diversity value falls below the configured threshold — not based on ad-hoc heuristics
   3. The dynamic mutation probability module uses the per-generation diversity value when deciding how to scale mutation probability
   4. All existing tests pass with no change to the public `ChromosomeT` or operator trait signatures
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — Add diversity field to GenerationStats with serde backward-compat
+- [ ] 06-02-PLAN.md — Reorder GA loop and wire subsystems to read gen_stats.diversity
 
 ### Phase 7: List Genotype
 **Goal**: Users can solve problems over finite symbolic alphabets using a `List<T>` gene and chromosome that plug into the existing operator pipeline without modification
@@ -82,7 +86,7 @@ Phases 1-5 predate GSD tracking. Issues closed: #165, #166, #167, #168, #169.
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 6. Diversity Estimation | v2.2 | 0/TBD | Not started | - |
+| 6. Diversity Estimation | v2.2 | 0/2 | Planning complete | - |
 | 7. List Genotype | v2.2 | 0/TBD | Not started | - |
 | 8. Reporter Trait | v2.2 | 0/TBD | Not started | - |
 | 9. Visualization | v2.2 | 0/TBD | Not started | - |
