@@ -8,8 +8,8 @@
 ### Diversity Estimation
 
 - [x] **DIV-01**: User can read a diversity metric from per-generation statistics
-- [ ] **DIV-02**: Extension strategies use the diversity metric to determine when to trigger
-- [ ] **DIV-03**: Dynamic mutation probability uses the diversity metric for adjustment decisions
+- [x] **DIV-02**: Extension strategies use the diversity metric to determine when to trigger
+- [x] **DIV-03**: Dynamic mutation probability uses the diversity metric for adjustment decisions
 
 ### List Genotype
 
@@ -57,8 +57,8 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | DIV-01 | Phase 6 | Complete |
-| DIV-02 | Phase 6 | Pending |
-| DIV-03 | Phase 6 | Pending |
+| DIV-02 | Phase 6 | Complete |
+| DIV-03 | Phase 6 | Complete |
 | LIST-01 | Phase 7 | Pending |
 | LIST-02 | Phase 7 | Pending |
 | LIST-03 | Phase 7 | Pending |

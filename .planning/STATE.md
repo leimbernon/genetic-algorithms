@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: — Improve Usability (completion)
 status: unknown
-stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-03-20T19:25:40.174Z"
+stopped_at: Completed 06-02-PLAN.md
+last_updated: "2026-03-20T19:31:02Z"
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 2
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -23,8 +23,8 @@ See: .planning/PROJECT.md (updated 2026-03-20)
 
 ## Current Position
 
-Phase: 6 (Diversity Estimation) — EXECUTING
-Plan: 1 of 2
+Phase: 6 (Diversity Estimation) — COMPLETE
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -42,6 +42,7 @@ Plan: 1 of 2
 
 *Updated after each plan completion*
 | Phase 06 P01 | 1 | 1 tasks | 3 files |
+| Phase 06 P02 | 2 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -60,6 +61,9 @@ Recent decisions affecting current work:
 - PRs target milestone branch, not main
 - [Phase 06]: diversity equals fitness_std_dev — same computed value, Plan 02 will wire dedicated diversity computation
 - [Phase 06]: serde(default) on GenerationStats.diversity for backward-compatible checkpoint loading
+- [Phase 06-02]: Niching and best-chromosome moved before stats collection so diversity reflects final post-niching population state
+- [Phase 06-02]: Extension trigger n > 1.0 guard removed — GenerationStats handles edge cases, 0.0 < threshold is valid trigger
+- [Phase 06-02]: compute_cardinality replaced by gen_stats.diversity in dynamic mutation — unified diversity signal
 
 ### Pending Todos
 
@@ -71,6 +75,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T19:25:40.172Z
-Stopped at: Completed 06-01-PLAN.md
+Last session: 2026-03-20T19:31:02Z
+Stopped at: Completed 06-02-PLAN.md
 Resume file: None

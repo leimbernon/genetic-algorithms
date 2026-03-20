@@ -24,7 +24,7 @@ Phases 1-5 predate GSD tracking. Issues closed: #165, #166, #167, #168, #169.
 
 **Milestone goal:** Expose diversity as a first-class metric, add a symbolic List genotype, give users structured lifecycle reporting, and provide an optional chart-generation module.
 
-- [ ] **Phase 6: Diversity Estimation** — Expose a diversity metric in statistics and wire it into the GA's adaptive subsystems
+- [x] **Phase 6: Diversity Estimation** — Expose a diversity metric in statistics and wire it into the GA's adaptive subsystems (completed 2026-03-20)
 - [ ] **Phase 7: List Genotype** — Add a `List<T>` gene and chromosome type for finite symbolic alphabets
 - [ ] **Phase 8: Reporter Trait** — Add a `Reporter` trait with lifecycle hooks and two built-in implementations
 - [ ] **Phase 9: Visualization** — Add an optional `visualization` feature that renders fitness and diversity charts to PNG/SVG
@@ -40,7 +40,7 @@ Phases 1-5 predate GSD tracking. Issues closed: #165, #166, #167, #168, #169.
   2. The extension strategy (e.g., MassExtinction) triggers only when the per-generation diversity value falls below the configured threshold — not based on ad-hoc heuristics
   3. The dynamic mutation probability module uses the per-generation diversity value when deciding how to scale mutation probability
   4. All existing tests pass with no change to the public `ChromosomeT` or operator trait signatures
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 06-01-PLAN.md — Add diversity field to GenerationStats with serde backward-compat
@@ -86,7 +86,7 @@ Plans:
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 6. Diversity Estimation | 1/2 | In Progress|  | - |
+| 6. Diversity Estimation | 2/2 | Complete   | 2026-03-20 | - |
 | 7. List Genotype | v2.2 | 0/TBD | Not started | - |
 | 8. Reporter Trait | v2.2 | 0/TBD | Not started | - |
 | 9. Visualization | v2.2 | 0/TBD | Not started | - |
