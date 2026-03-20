@@ -1,3 +1,17 @@
+---
+gsd_state_version: 1.0
+milestone: v2.2
+milestone_name: — Improve Usability (completion)
+status: unknown
+stopped_at: Completed 06-01-PLAN.md
+last_updated: "2026-03-20T19:25:40.174Z"
+progress:
+  total_phases: 4
+  completed_phases: 0
+  total_plans: 2
+  completed_plans: 1
+---
+
 # Project State
 
 ## Project Reference
@@ -9,16 +23,13 @@ See: .planning/PROJECT.md (updated 2026-03-20)
 
 ## Current Position
 
-Phase: 6 of 9 (Diversity Estimation)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-03-20 — Roadmap created for v2.2 milestone (phases 6-9)
-
-Progress: [░░░░░░░░░░] 0%
+Phase: 6 (Diversity Estimation) — EXECUTING
+Plan: 1 of 2
 
 ## Performance Metrics
 
 **Velocity:**
+
 - Total plans completed: 0
 - Average duration: — min
 - Total execution time: — hours
@@ -30,6 +41,7 @@ Progress: [░░░░░░░░░░] 0%
 | - | - | - | - |
 
 *Updated after each plan completion*
+| Phase 06 P01 | 1 | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -46,6 +58,8 @@ Recent decisions affecting current work:
 - Branch naming: `feat/<number>-<description>` from milestone branch (not from main)
 - GitHub auth: always use `GITHUB_TOKEN= gh <command>` to force keyring credentials
 - PRs target milestone branch, not main
+- [Phase 06]: diversity equals fitness_std_dev — same computed value, Plan 02 will wire dedicated diversity computation
+- [Phase 06]: serde(default) on GenerationStats.diversity for backward-compatible checkpoint loading
 
 ### Pending Todos
 
@@ -57,6 +71,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20
-Stopped at: Roadmap written; STATE.md and REQUIREMENTS.md traceability initialized
+Last session: 2026-03-20T19:25:40.172Z
+Stopped at: Completed 06-01-PLAN.md
 Resume file: None
