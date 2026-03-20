@@ -86,7 +86,7 @@ Plans:
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 6. Diversity Estimation | 2/2 | Complete   | 2026-03-20 | - |
+| 6. Diversity Estimation | 2/2 | Complete    | 2026-03-20 | - |
 | 7. List Genotype | v2.2 | 0/TBD | Not started | - |
 | 8. Reporter Trait | v2.2 | 0/TBD | Not started | - |
 | 9. Visualization | v2.2 | 0/TBD | Not started | - |
