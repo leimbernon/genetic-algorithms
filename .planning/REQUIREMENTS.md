@@ -56,27 +56,27 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DIV-01 | — | Pending |
-| DIV-02 | — | Pending |
-| DIV-03 | — | Pending |
-| LIST-01 | — | Pending |
-| LIST-02 | — | Pending |
-| LIST-03 | — | Pending |
-| LIST-04 | — | Pending |
-| VIZ-01 | — | Pending |
-| VIZ-02 | — | Pending |
-| VIZ-03 | — | Pending |
-| VIZ-04 | — | Pending |
-| REP-01 | — | Pending |
-| REP-02 | — | Pending |
-| REP-03 | — | Pending |
-| REP-04 | — | Pending |
+| DIV-01 | Phase 6 | Pending |
+| DIV-02 | Phase 6 | Pending |
+| DIV-03 | Phase 6 | Pending |
+| LIST-01 | Phase 7 | Pending |
+| LIST-02 | Phase 7 | Pending |
+| LIST-03 | Phase 7 | Pending |
+| LIST-04 | Phase 7 | Pending |
+| REP-01 | Phase 8 | Pending |
+| REP-02 | Phase 8 | Pending |
+| REP-03 | Phase 8 | Pending |
+| REP-04 | Phase 8 | Pending |
+| VIZ-01 | Phase 9 | Pending |
+| VIZ-02 | Phase 9 | Pending |
+| VIZ-03 | Phase 9 | Pending |
+| VIZ-04 | Phase 9 | Pending |
 
 **Coverage:**
 - v2.2 requirements: 15 total
-- Mapped to phases: 0
-- Unmapped: 15 ⚠️
+- Mapped to phases: 15
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-20*
-*Last updated: 2026-03-20 after initial definition*
+*Last updated: 2026-03-20 — Phase mappings added after roadmap creation*
