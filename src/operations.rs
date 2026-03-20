@@ -69,6 +69,10 @@ pub enum Crossover {
     /// Clone crossover — copies parents directly as offspring without any genetic exchange.
     /// Useful for mutation-only strategies and baseline experiments.
     Clone,
+    /// Rejuvenate crossover — clones parents as offspring and resets their ages to zero.
+    /// Useful for combating population aging: top performers are preserved but treated as new
+    /// individuals, preventing age-based survivor selection from eliminating them.
+    Rejuvenate,
 }
 
 /// Mutation strategies.

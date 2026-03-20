@@ -1,11 +1,13 @@
 name: Documentation Agent
 
 on:
-  pull_request:
-    types: [closed]
-    branches:
-      - main
-      - 'milestone/**'
+  # TEMPORARILY DISABLED — uncomment to re-enable
+  # pull_request:
+  #   types: [closed]
+  #   branches:
+  #     - main
+  #     - 'milestone/**'
+  workflow_dispatch: # manual trigger only while disabled
 
 permissions:
   contents: write
