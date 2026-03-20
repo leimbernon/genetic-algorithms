@@ -33,7 +33,7 @@ The simplest correct way to run a genetic algorithm in Rust — generic enough f
 
 <!-- Current scope — Milestone v2.2 -->
 
-- [ ] Population diversity estimation metric (#170)
+- ✓ Population diversity estimation metric (#170) — Validated in Phase 6
 - [ ] List genotype (#171)
 - [ ] Visualization module with optional feature flag (#178)
 - [ ] Reporter trait with lifecycle hooks (#179)
@@ -69,4 +69,4 @@ The simplest correct way to run a genetic algorithm in Rust — generic enough f
 | Rayon for parallelism | Fits workload; overhead on small populations | ✓ Good |
 
 ---
-*Last updated: 2026-03-20 — Milestone v2.2 started*
+*Last updated: 2026-03-20 — Phase 6 complete (Diversity Estimation)*
