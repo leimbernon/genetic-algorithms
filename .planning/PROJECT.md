@@ -34,7 +34,7 @@ The simplest correct way to run a genetic algorithm in Rust — generic enough f
 <!-- Current scope — Milestone v2.2 -->
 
 - ✓ Population diversity estimation metric (#170) — Validated in Phase 6
-- [ ] List genotype (#171)
+- ✓ List genotype (#171) — Validated in Phase 7
 - [ ] Visualization module with optional feature flag (#178)
 - [ ] Reporter trait with lifecycle hooks (#179)
 
