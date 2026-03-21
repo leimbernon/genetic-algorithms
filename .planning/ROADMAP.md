@@ -71,7 +71,11 @@ Plans:
   2. A `Ga` without a reporter configured compiles and runs with zero overhead (the `NoopReporter` is the default and the compiler eliminates it)
   3. `SimpleReporter` prints a one-line progress summary to stdout every N generations (N configurable by the user)
   4. `DurationReporter` reports wall-clock time spent in each execution phase (selection, crossover, mutation, survivor) at the end of the run
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 08-01-PLAN.md — Reporter trait definition, NoopReporter, and Ga integration (hook wiring)
+- [ ] 08-02-PLAN.md — SimpleReporter, DurationReporter, and integration tests
 
 ### Phase 9: Visualization
 **Goal**: Users who opt into the `visualization` feature flag can generate PNG or SVG charts of fitness and diversity trends directly from GA statistics
@@ -92,5 +96,5 @@ Plans:
 |-------|-----------|----------------|--------|-----------|
 | 6. Diversity Estimation | 2/2 | Complete    | 2026-03-20 | - |
 | 7. List Genotype | 2/2 | Complete   | 2026-03-21 | - |
-| 8. Reporter Trait | v2.2 | 0/TBD | Not started | - |
+| 8. Reporter Trait | v2.2 | 0/2 | Planning complete | - |
 | 9. Visualization | v2.2 | 0/TBD | Not started | - |
