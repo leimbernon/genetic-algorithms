@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: — Improve Usability (completion)
 status: unknown
-stopped_at: Phase 8 context gathered
-last_updated: "2026-03-21T15:43:47.916Z"
+stopped_at: Completed 08-01-PLAN.md
+last_updated: "2026-03-21T17:06:49.433Z"
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 6
+  completed_plans: 5
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-20)
 
 **Core value:** The simplest correct way to run a genetic algorithm in Rust — generic enough for any problem domain, fast enough for real workloads.
-**Current focus:** Phase 07 — list-genotype
+**Current focus:** Phase 08 — reporter-trait
 
 ## Current Position
 
-Phase: 07 (list-genotype) — EXECUTING
-Plan: 2 of 2
+Phase: 08 (reporter-trait) — EXECUTING
+Plan: 1 of 2
 
 ## Performance Metrics
 
@@ -45,6 +45,7 @@ Plan: 2 of 2
 | Phase 06 P02 | 2 | 2 tasks | 3 files |
 | Phase 07 P01 | 4 | 2 tasks | 4 files |
 | Phase 07 P02 | 63 | 3 tasks | 7 files |
+| Phase 08 P01 | 2 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,9 @@ Recent decisions affecting current work:
 - [Phase 07]: GeneT::set_id on List silently ignores out-of-bounds ids with log::warn rather than panicking
 - [Phase 07]: ValueMutable impl for ListChromosome<T> lives in list_value.rs to avoid circular imports
 - [Phase 07]: Generic T impl for ValueMutable on ListChromosome — one impl covers all T types
+- [Phase 08]: Reporter<U> uses Box<dyn Reporter<U> + Send> trait object (not generic param on Ga) to avoid viral generic propagation
+- [Phase 08]: Default reporter is None — zero overhead when no reporter configured
+- [Phase 08]: on_finish fires after termination_cause is finalized, before final GenerationLimitReached callback
 
 ### Pending Todos
 
@@ -81,6 +85,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T15:43:47.908Z
-Stopped at: Phase 8 context gathered
-Resume file: .planning/phases/08-reporter-trait/08-CONTEXT.md
+Last session: 2026-03-21T17:06:49.431Z
+Stopped at: Completed 08-01-PLAN.md
+Resume file: None
