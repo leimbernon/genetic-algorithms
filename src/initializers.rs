@@ -9,11 +9,14 @@
 //! - **range** — random numeric genes within allele bounds.
 //! - **generic** — random selection from a provided alleles list, with or
 //!   without repetition.
+//! - **list** — random allele-index genes from a finite allele set.
 
 pub mod binary_initializer;
 pub mod generic_initializer;
+pub mod list_initializer;
 pub mod range_initializer;
 
 pub use binary_initializer::*;
 pub use generic_initializer::*;
+pub use list_initializer::*;
 pub use range_initializer::*;

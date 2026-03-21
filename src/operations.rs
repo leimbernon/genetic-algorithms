@@ -107,6 +107,9 @@ pub enum Mutation {
     /// Insertion mutation for permutation-based chromosomes.
     /// Removes a gene and reinserts it at a different position.
     Insertion,
+    /// List-value mutation — replaces a single gene's value with a different allele
+    /// from that gene's allele set. Requires a `ListChromosome<T>`.
+    ListValue,
 }
 
 /// Survivor-selection strategies.

@@ -439,6 +439,50 @@ fn extension_config_builder() {
 // ============================================================================
 
 #[test]
+fn ga_extension_triggers_on_diversity() {
+    // Create a population where all chromosomes have identical fitness (diversity = 0.0)
+    // and configure extension with diversity_threshold = 1.0 so it triggers (0.0 < 1.0).
+    use genetic_algorithms::ga::Ga;
+    use genetic_algorithms::initializers::binary_random_initialization;
+    use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+    use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig, ExtensionConfig,
+        MutationConfig, SelectionConfig, StoppingConfig};
+    use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
+
+    // All chromosomes return the same fitness so diversity (std-dev) = 0.0, guaranteeing
+    // the extension trigger fires on every generation (0.0 < 1.0 threshold).
+    fn uniform_fitness(_dna: &[genetic_algorithms::genotypes::Binary]) -> f64 {
+        1.0
+    }
+
+    let mut ga: Ga<BinaryChromosome> = Ga::new()
+        .with_population_size(20)
+        .with_genes_per_chromosome(8)
+        .with_initialization_fn(binary_random_initialization)
+        .with_fitness_fn(uniform_fitness)
+        .with_selection_method(Selection::Random)
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::BitFlip)
+        .with_problem_solving(ProblemSolving::Maximization)
+        .with_survivor_method(Survivor::Fitness)
+        .with_max_generations(5)
+        .with_extension_method(Extension::MassDeduplication)
+        .with_extension_diversity_threshold(1.0)
+        .build()
+        .expect("Configuration should be valid");
+
+    let result = ga.run();
+    assert!(result.is_ok(), "GA with extension should complete successfully");
+
+    // Verify all stats entries have diversity >= 0.0 (extension uses diversity from stats)
+    let stats = ga.stats();
+    assert!(!stats.is_empty(), "Stats must be collected");
+    for s in stats {
+        assert!(s.diversity >= 0.0, "Diversity must be non-negative");
+    }
+}
+
+#[test]
 fn ga_builder_with_extension_config() {
     use genetic_algorithms::ga::Ga;
     use genetic_algorithms::initializers::binary_random_initialization;

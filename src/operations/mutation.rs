@@ -27,6 +27,7 @@ pub mod inversion;
 pub mod non_uniform;
 pub mod polynomial;
 pub mod scramble;
+pub mod list_value;
 pub mod swap;
 pub mod value;
 
@@ -161,6 +162,7 @@ impl MutationOperator for Mutation {
             Mutation::Insertion => {
                 return insertion::insertion_mutation(individual);
             }
+            Mutation::ListValue => individual.value_mutate(),
         }
         Ok(())
     }
@@ -262,6 +264,11 @@ where
         Mutation::Insertion => {
             insertion::insertion_mutation(individual)
         }
+        Mutation::ListValue => Err(GaError::MutationError(
+            "Mutation::ListValue requires a ListChromosome type. \
+                 Use Swap, Inversion, or Scramble instead."
+                .to_string(),
+        )),
     }
 }
 

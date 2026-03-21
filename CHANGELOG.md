@@ -8,18 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.1.0] - Unreleased
 
 ### Added
-- **Extension strategies for population diversity control**: optional diversity-rescue mechanisms that trigger when fitness standard deviation drops below a configurable threshold. Four strategies available:
-  - `Extension::MassExtinction` — Random cull to a survival rate, protecting elite individuals.
-  - `Extension::MassGenesis` — Trim to the 2 best chromosomes, regrow population from scratch.
-  - `Extension::MassDegeneration` — Apply N mutation rounds to the whole population, protecting elite.
-  - `Extension::MassDeduplication` — Remove duplicate chromosomes (by gene ID comparison), regrow population.
-- `ExtensionOperator` trait for custom extension strategy implementations.
-- `ExtensionConfig` trait with builder methods: `with_extension_method()`, `with_extension_diversity_threshold()`, `with_extension_survival_rate()`, `with_extension_mutation_rounds()`, `with_extension_elite_count()`.
-- `ExtensionConfiguration` struct with builder pattern (in `extension::configuration`).
-- `Extension` enum in `operations` module (variants: `Noop`, `MassExtinction`, `MassGenesis`, `MassDegeneration`, `MassDeduplication`).
-- Extension hook integrated into the GA main loop (after survivor selection + elite reinsertion, before niching).
-- Automatic population regrowth after extension strategies that reduce the population.
-- 16 new tests covering all extension strategies, configuration, and GA integration.
+- **Extension strategies for population diversity control**: optional diversity-rescue mechanisms that trigger when fitness standard deviation drops below a configurable threshold. Four strategies: `MassExtinction`, `MassGenesis`, `MassDegeneration`, `MassDeduplication`.
+- `ExtensionOperator` trait for custom implementations.
+- Builder methods: `with_extension_method()`, `with_extension_diversity_threshold()`, `with_extension_survival_rate()`, `with_extension_mutation_rounds()`, `with_extension_elite_count()`.
+- **Population diversity metric**: `GenerationStats` now exposes a `diversity` field (fitness standard deviation) updated every generation. Extension strategies and adaptive mutation use it internally; users can read it in callbacks and reporters.
+- **List genotype**: `genotypes::List<T>` and `chromosomes::ListChromosome<T>` for problems over finite symbolic alphabets (colors, directions, categories, etc.). Works with all existing operators. Includes `list_random_initialization` and `list_random_initialization_without_repetitions` initializers, plus a new `Mutation::ListValue` operator.
+- **Reporter trait**: attach lifecycle observers to `Ga` via `.with_reporter(Box::new(r))`. Hooks: `on_start`, `on_generation_complete(&GenerationStats)`, `on_new_best(generation, chromosome)`, `on_finish(TerminationCause, &[GenerationStats])`. Zero overhead when no reporter is configured. Built-in: `NoopReporter`, `SimpleReporter` (stdout every N gens), `DurationReporter` (wall-clock timing summary).
+- **Visualization** (`visualization` feature): generate PNG or SVG charts from run statistics — `plot_fitness`, `plot_diversity`, `plot_histogram`. Format detected from path extension. Powered by `plotters`; absent from the binary unless the feature is enabled.
 
 ---
 
