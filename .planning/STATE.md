@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: — Improve Usability (completion)
 status: unknown
-stopped_at: Phase 9 context gathered
-last_updated: "2026-03-21T17:29:48.900Z"
+stopped_at: Completed 09-01-PLAN.md
+last_updated: "2026-03-21T17:56:34.517Z"
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 8
+  completed_plans: 7
 ---
 
 # Project State
@@ -19,11 +19,11 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-20)
 
 **Core value:** The simplest correct way to run a genetic algorithm in Rust — generic enough for any problem domain, fast enough for real workloads.
-**Current focus:** Phase 08 — reporter-trait
+**Current focus:** Phase 09 — visualization
 
 ## Current Position
 
-Phase: 08 (reporter-trait) — EXECUTING
+Phase: 09 (visualization) — EXECUTING
 Plan: 1 of 2
 
 ## Performance Metrics
@@ -47,6 +47,7 @@ Plan: 1 of 2
 | Phase 07 P02 | 63 | 3 tasks | 7 files |
 | Phase 08 P01 | 2 | 2 tasks | 4 files |
 | Phase 08 P02 | 4 | 2 tasks | 4 files |
+| Phase 09 P01 | 6 | 1 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -77,6 +78,9 @@ Recent decisions affecting current work:
 - [Phase 08]: on_finish fires after termination_cause is finalized, before final GenerationLimitReached callback
 - [Phase 08]: SimpleReporter displays generation + 1 (1-based) for user-facing readability
 - [Phase 08]: DurationReporter per-operator timing limitation documented inline — deferred to GaObserver (#182-#186)
+- [Phase 09]: plotters bitmap_backend + bitmap_encoder both required; line_series needed with default-features = false
+- [Phase 09]: Text labels omitted from PNG chart — ab_glyph requires registered font bytes; SVG works without font registration
+- [Phase 09]: Generic draw_fitness_chart<DB: DrawingBackend> chosen over code duplication across PNG/SVG match arms
 
 ### Pending Todos
 
@@ -88,6 +92,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T17:29:48.898Z
-Stopped at: Phase 9 context gathered
-Resume file: .planning/phases/09-visualization/09-CONTEXT.md
+Last session: 2026-03-21T17:56:34.515Z
+Stopped at: Completed 09-01-PLAN.md
+Resume file: None
