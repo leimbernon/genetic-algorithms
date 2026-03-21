@@ -10,8 +10,12 @@
 //! - [`DurationReporter`] — reports total wall-clock timing at run end
 
 mod noop;
+mod simple;
+mod duration;
 
 pub use noop::NoopReporter;
+pub use simple::SimpleReporter;
+pub use duration::DurationReporter;
 
 use crate::ga::TerminationCause;
 use crate::stats::GenerationStats;
