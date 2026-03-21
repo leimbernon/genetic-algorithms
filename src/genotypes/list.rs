@@ -69,7 +69,7 @@ impl<T: Clone + Default + Sync + Send> List<T> {
     /// initial value hint.
     ///
     /// The actual stored `value` is always derived from `alleles[id]`; the
-    /// `_value` argument is accepted for API symmetry with [`Range::new`] but
+    /// `_value` argument is accepted for API symmetry with `Range::new` but
     /// is otherwise ignored.
     ///
     /// # Errors
