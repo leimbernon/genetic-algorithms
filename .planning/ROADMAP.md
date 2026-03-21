@@ -27,7 +27,7 @@ Phases 1-5 predate GSD tracking. Issues closed: #165, #166, #167, #168, #169.
 - [x] **Phase 6: Diversity Estimation** — Expose a diversity metric in statistics and wire it into the GA's adaptive subsystems (completed 2026-03-20)
 - [x] **Phase 7: List Genotype** — Add a `List<T>` gene and chromosome type for finite symbolic alphabets (completed 2026-03-21)
 - [x] **Phase 8: Reporter Trait** — Add a `Reporter` trait with lifecycle hooks and two built-in implementations (completed 2026-03-21)
-- [ ] **Phase 9: Visualization** — Add an optional `visualization` feature that renders fitness and diversity charts to PNG/SVG
+- [x] **Phase 9: Visualization** — Add an optional `visualization` feature that renders fitness and diversity charts to PNG/SVG (completed 2026-03-21)
 
 ## Phase Details
 
@@ -86,7 +86,7 @@ Plans:
   2. User can produce a diversity-over-generations chart from the same `Vec<Stats>` using the diversity values populated in Phase 6
   3. User can produce a fitness-distribution histogram for a chosen generation from the run statistics
   4. All visualization functions are absent from the compiled binary unless the `visualization` feature flag is explicitly enabled — the crate compiles cleanly with `cargo test` (no feature) and with `cargo test --features visualization`
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 09-01-PLAN.md — Feature flag setup, VisualizationError, and plot_fitness function
@@ -101,4 +101,4 @@ Plans:
 | 6. Diversity Estimation | 2/2 | Complete    | 2026-03-20 | - |
 | 7. List Genotype | 2/2 | Complete   | 2026-03-21 | - |
 | 8. Reporter Trait | 2/2 | Complete   | 2026-03-21 | - |
-| 9. Visualization | 1/2 | In Progress|  | - |
+| 9. Visualization | 2/2 | Complete   | 2026-03-21 | - |

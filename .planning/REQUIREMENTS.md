@@ -21,8 +21,8 @@
 ### Visualization
 
 - [x] **VIZ-01**: User can plot fitness over generations (best, worst, average) to PNG/SVG
-- [ ] **VIZ-02**: User can plot population diversity over generations to PNG/SVG
-- [ ] **VIZ-03**: User can plot fitness distribution at a given generation to PNG/SVG
+- [x] **VIZ-02**: User can plot population diversity over generations to PNG/SVG
+- [x] **VIZ-03**: User can plot fitness distribution at a given generation to PNG/SVG
 - [x] **VIZ-04**: Visualization is only available when the `visualization` feature flag is enabled
 
 ### Reporter
@@ -68,8 +68,8 @@
 | REP-03 | Phase 8 | Complete |
 | REP-04 | Phase 8 | Complete |
 | VIZ-01 | Phase 9 | Complete |
-| VIZ-02 | Phase 9 | Pending |
-| VIZ-03 | Phase 9 | Pending |
+| VIZ-02 | Phase 9 | Complete |
+| VIZ-03 | Phase 9 | Complete |
 | VIZ-04 | Phase 9 | Complete |
 
 **Coverage:**
