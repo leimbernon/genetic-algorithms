@@ -27,6 +27,7 @@
 
 use crate::configuration::GaConfiguration;
 use crate::error::GaError;
+use crate::reporter::Reporter;
 use crate::stats::GenerationStats;
 use crate::traits::{FitnessFn, InitializationFn};
 use crate::validators::validator_factory as ValidatorFactory;
@@ -122,6 +123,10 @@ where
     /// Optional LRU fitness cache size. When set, fitness evaluations are
     /// cached to avoid re-evaluating chromosomes with identical DNA.
     fitness_cache_size: Option<usize>,
+
+    /// Optional lifecycle reporter. When `None` (the default), no hook
+    /// calls are made and there is zero overhead.
+    reporter: Option<Box<dyn Reporter<U> + Send>>,
 }
 
 impl<U> Default for Ga<U>
@@ -141,6 +146,7 @@ where
             stats: Vec::new(),
             dynamic_mutation_probability: 1.0,
             fitness_cache_size: None,
+            reporter: None,
         }
     }
 }
@@ -511,6 +517,14 @@ where
         self
     }
 
+    /// Attaches a lifecycle reporter that receives hooks during execution.
+    ///
+    /// See [`Reporter`](crate::reporter::Reporter) for the hook contract.
+    pub fn with_reporter(mut self, reporter: Box<dyn Reporter<U> + Send>) -> Self {
+        self.reporter = Some(reporter);
+        self
+    }
+
     /// Enables an LRU fitness cache with the given capacity.
     ///
     /// When enabled, fitness evaluations are cached by DNA hash. Chromosomes
@@ -694,6 +708,10 @@ where
         let mut best_fitness_so_far = self.population.best_chromosome.fitness();
         let mut stagnation_count: usize = 0;
 
+        if let Some(ref mut r) = self.reporter {
+            r.on_start();
+        }
+
         //We start the cycles
         for i in 0..self.configuration.limit_configuration.max_generations {
             info!(target="ga_events", method="run"; "Generation number: {}", i+1);
@@ -856,6 +874,10 @@ where
             let gen_stats =
                 GenerationStats::from_fitness_values(i, &fitness_values, is_maximization);
             self.stats.push(gen_stats.clone());
+
+            if let Some(ref mut r) = self.reporter {
+                r.on_generation_complete(&gen_stats);
+            }
 
             // Update dynamic mutation probability based on population diversity
             if self.configuration.mutation_configuration.dynamic_mutation {
@@ -1023,6 +1045,9 @@ where
             if improved {
                 best_fitness_so_far = current_best;
                 stagnation_count = 0;
+                if let Some(ref mut r) = self.reporter {
+                    r.on_new_best(i, self.population.best_chromosome.clone());
+                }
             } else {
                 stagnation_count += 1;
             }
@@ -1065,6 +1090,10 @@ where
         // Set termination cause when generation limit is reached (regardless of callback)
         if self.termination_cause == TerminationCause::NotTerminated {
             self.termination_cause = TerminationCause::GenerationLimitReached;
+        }
+
+        if let Some(ref mut r) = self.reporter {
+            r.on_finish(self.termination_cause, &self.stats);
         }
 
         // If we want to perform a callback and the generation limit was just reached
