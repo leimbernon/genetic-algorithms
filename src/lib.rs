@@ -79,6 +79,7 @@ pub mod genotypes;
 pub mod initializers;
 pub mod operations;
 pub mod population;
+pub mod reporter;
 pub mod rng;
 pub mod stats;
 pub mod traits;
