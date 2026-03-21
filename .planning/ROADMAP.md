@@ -56,7 +56,11 @@ Plans:
   3. A `ListChromosome<T>` works as input to all existing selection, crossover, mutation, and survivor operators without any operator code change
   4. User can initialize a full `List` population with a built-in initializer (equivalent to `BinaryChromosome` and `RangeChromosome` initializers)
   5. Diversity estimation from Phase 6 is computed correctly for `List` populations
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — List<T> gene type and ListChromosome<T> with GeneT/ChromosomeT impls
+- [ ] 07-02-PLAN.md — ListValue mutation operator, list initializer, integration tests
 
 ### Phase 8: Reporter Trait
 **Goal**: Users can attach structured lifecycle observers to `Ga` that receive hooks at key execution points, with zero cost when no reporter is configured
@@ -87,6 +91,6 @@ Plans:
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 6. Diversity Estimation | 2/2 | Complete    | 2026-03-20 | - |
-| 7. List Genotype | v2.2 | 0/TBD | Not started | - |
+| 7. List Genotype | v2.2 | 0/2 | Planned | - |
 | 8. Reporter Trait | v2.2 | 0/TBD | Not started | - |
 | 9. Visualization | v2.2 | 0/TBD | Not started | - |
