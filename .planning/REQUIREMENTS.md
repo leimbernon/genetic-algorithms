@@ -13,8 +13,8 @@
 
 ### List Genotype
 
-- [ ] **LIST-01**: User can define a `List<T>` gene drawn from a finite allele set
-- [ ] **LIST-02**: User can create a `List<T>` chromosome compatible with `ChromosomeT`
+- [x] **LIST-01**: User can define a `List<T>` gene drawn from a finite allele set
+- [x] **LIST-02**: User can create a `List<T>` chromosome compatible with `ChromosomeT`
 - [ ] **LIST-03**: List chromosomes work with all existing selection, crossover, mutation, and survivor operators
 - [ ] **LIST-04**: User can initialize a List population with a built-in initializer
 
@@ -59,8 +59,8 @@
 | DIV-01 | Phase 6 | Complete |
 | DIV-02 | Phase 6 | Complete |
 | DIV-03 | Phase 6 | Complete |
-| LIST-01 | Phase 7 | Pending |
-| LIST-02 | Phase 7 | Pending |
+| LIST-01 | Phase 7 | Complete |
+| LIST-02 | Phase 7 | Complete |
 | LIST-03 | Phase 7 | Pending |
 | LIST-04 | Phase 7 | Pending |
 | REP-01 | Phase 8 | Pending |

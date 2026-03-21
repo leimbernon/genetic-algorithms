@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: — Improve Usability (completion)
 status: unknown
-stopped_at: Phase 7 context gathered
-last_updated: "2026-03-21T12:56:58.219Z"
+stopped_at: Completed 07-01-PLAN.md
+last_updated: "2026-03-21T14:54:58.686Z"
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 4
+  completed_plans: 3
 ---
 
 # Project State
@@ -19,11 +19,11 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-20)
 
 **Core value:** The simplest correct way to run a genetic algorithm in Rust — generic enough for any problem domain, fast enough for real workloads.
-**Current focus:** Phase 6 — Diversity Estimation
+**Current focus:** Phase 07 — list-genotype
 
 ## Current Position
 
-Phase: 6 (Diversity Estimation) — COMPLETE
+Phase: 07 (list-genotype) — EXECUTING
 Plan: 2 of 2
 
 ## Performance Metrics
@@ -43,6 +43,7 @@ Plan: 2 of 2
 *Updated after each plan completion*
 | Phase 06 P01 | 1 | 1 tasks | 3 files |
 | Phase 06 P02 | 2 | 2 tasks | 3 files |
+| Phase 07 P01 | 4 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -64,6 +65,8 @@ Recent decisions affecting current work:
 - [Phase 06-02]: Niching and best-chromosome moved before stats collection so diversity reflects final post-niching population state
 - [Phase 06-02]: Extension trigger n > 1.0 guard removed — GenerationStats handles edge cases, 0.0 < threshold is valid trigger
 - [Phase 06-02]: compute_cardinality replaced by gen_stats.diversity in dynamic mutation — unified diversity signal
+- [Phase 07]: List::new ignores _value arg; value always derived from alleles[id] to enforce id/value invariant
+- [Phase 07]: GeneT::set_id on List silently ignores out-of-bounds ids with log::warn rather than panicking
 
 ### Pending Todos
 
@@ -75,6 +78,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T12:56:58.212Z
-Stopped at: Phase 7 context gathered
-Resume file: .planning/phases/07-list-genotype/07-CONTEXT.md
+Last session: 2026-03-21T14:54:58.684Z
+Stopped at: Completed 07-01-PLAN.md
+Resume file: None
