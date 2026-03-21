@@ -4,7 +4,7 @@ milestone: v2.2
 milestone_name: — Improve Usability (completion)
 status: unknown
 stopped_at: Completed 07-02-PLAN.md
-last_updated: "2026-03-21T15:04:28.566Z"
+last_updated: "2026-03-21T15:08:10.481Z"
 progress:
   total_phases: 4
   completed_phases: 2
