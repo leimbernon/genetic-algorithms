@@ -25,7 +25,7 @@ Phases 1-5 predate GSD tracking. Issues closed: #165, #166, #167, #168, #169.
 **Milestone goal:** Expose diversity as a first-class metric, add a symbolic List genotype, give users structured lifecycle reporting, and provide an optional chart-generation module.
 
 - [x] **Phase 6: Diversity Estimation** — Expose a diversity metric in statistics and wire it into the GA's adaptive subsystems (completed 2026-03-20)
-- [ ] **Phase 7: List Genotype** — Add a `List<T>` gene and chromosome type for finite symbolic alphabets
+- [x] **Phase 7: List Genotype** — Add a `List<T>` gene and chromosome type for finite symbolic alphabets (completed 2026-03-21)
 - [ ] **Phase 8: Reporter Trait** — Add a `Reporter` trait with lifecycle hooks and two built-in implementations
 - [ ] **Phase 9: Visualization** — Add an optional `visualization` feature that renders fitness and diversity charts to PNG/SVG
 
@@ -56,7 +56,7 @@ Plans:
   3. A `ListChromosome<T>` works as input to all existing selection, crossover, mutation, and survivor operators without any operator code change
   4. User can initialize a full `List` population with a built-in initializer (equivalent to `BinaryChromosome` and `RangeChromosome` initializers)
   5. Diversity estimation from Phase 6 is computed correctly for `List` populations
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 07-01-PLAN.md — List<T> gene type and ListChromosome<T> with GeneT/ChromosomeT impls
@@ -91,6 +91,6 @@ Plans:
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 6. Diversity Estimation | 2/2 | Complete    | 2026-03-20 | - |
-| 7. List Genotype | 1/2 | In Progress|  | - |
+| 7. List Genotype | 2/2 | Complete   | 2026-03-21 | - |
 | 8. Reporter Trait | v2.2 | 0/TBD | Not started | - |
 | 9. Visualization | v2.2 | 0/TBD | Not started | - |

@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: — Improve Usability (completion)
 status: unknown
-stopped_at: Completed 07-01-PLAN.md
-last_updated: "2026-03-21T14:54:58.686Z"
+stopped_at: Completed 07-02-PLAN.md
+last_updated: "2026-03-21T15:04:28.566Z"
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 4
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Project State
@@ -44,6 +44,7 @@ Plan: 2 of 2
 | Phase 06 P01 | 1 | 1 tasks | 3 files |
 | Phase 06 P02 | 2 | 2 tasks | 3 files |
 | Phase 07 P01 | 4 | 2 tasks | 4 files |
+| Phase 07 P02 | 63 | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -67,6 +68,8 @@ Recent decisions affecting current work:
 - [Phase 06-02]: compute_cardinality replaced by gen_stats.diversity in dynamic mutation — unified diversity signal
 - [Phase 07]: List::new ignores _value arg; value always derived from alleles[id] to enforce id/value invariant
 - [Phase 07]: GeneT::set_id on List silently ignores out-of-bounds ids with log::warn rather than panicking
+- [Phase 07]: ValueMutable impl for ListChromosome<T> lives in list_value.rs to avoid circular imports
+- [Phase 07]: Generic T impl for ValueMutable on ListChromosome — one impl covers all T types
 
 ### Pending Todos
 
@@ -78,6 +81,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T14:54:58.684Z
-Stopped at: Completed 07-01-PLAN.md
+Last session: 2026-03-21T15:04:28.565Z
+Stopped at: Completed 07-02-PLAN.md
 Resume file: None
