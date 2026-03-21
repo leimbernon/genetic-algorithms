@@ -293,7 +293,7 @@ mod tests {
     fn list_chromosome_display_format() {
         let mut c = ListChromosome::<char>::new();
         c.dna.push(make_gene(0, vec!['a', 'b'])); // value 'a'
-        c.set_fitness(3.14);
+        c.set_fitness(std::f64::consts::PI);
         let s = format!("{}", c);
         assert!(s.contains("fitness="), "display was: {}", s);
     }
