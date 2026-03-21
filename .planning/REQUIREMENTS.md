@@ -29,8 +29,8 @@
 
 - [x] **REP-01**: User can attach a reporter to `Ga` via `.with_reporter()` that receives lifecycle hooks (`on_start`, `on_generation_complete`, `on_new_best`, `on_finish`)
 - [x] **REP-02**: Default (no reporter configured) has zero overhead via `NoopReporter`
-- [ ] **REP-03**: Built-in `SimpleReporter` logs progress to stdout every N generations
-- [ ] **REP-04**: Built-in `DurationReporter` reports wall-clock timing summary (total elapsed and per-generation average)
+- [x] **REP-03**: Built-in `SimpleReporter` logs progress to stdout every N generations
+- [x] **REP-04**: Built-in `DurationReporter` reports wall-clock timing summary (total elapsed and per-generation average)
 
 ## Future Requirements
 
@@ -65,8 +65,8 @@
 | LIST-04 | Phase 7 | Complete |
 | REP-01 | Phase 8 | Complete |
 | REP-02 | Phase 8 | Complete |
-| REP-03 | Phase 8 | Pending |
-| REP-04 | Phase 8 | Pending |
+| REP-03 | Phase 8 | Complete |
+| REP-04 | Phase 8 | Complete |
 | VIZ-01 | Phase 9 | Pending |
 | VIZ-02 | Phase 9 | Pending |
 | VIZ-03 | Phase 9 | Pending |

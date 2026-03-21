@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: — Improve Usability (completion)
 status: unknown
-stopped_at: Completed 08-01-PLAN.md
-last_updated: "2026-03-21T17:06:49.433Z"
+stopped_at: Completed 08-02-PLAN.md
+last_updated: "2026-03-21T17:13:39.087Z"
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 6
-  completed_plans: 5
+  completed_plans: 6
 ---
 
 # Project State
@@ -46,6 +46,7 @@ Plan: 1 of 2
 | Phase 07 P01 | 4 | 2 tasks | 4 files |
 | Phase 07 P02 | 63 | 3 tasks | 7 files |
 | Phase 08 P01 | 2 | 2 tasks | 4 files |
+| Phase 08 P02 | 4 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -74,6 +75,8 @@ Recent decisions affecting current work:
 - [Phase 08]: Reporter<U> uses Box<dyn Reporter<U> + Send> trait object (not generic param on Ga) to avoid viral generic propagation
 - [Phase 08]: Default reporter is None — zero overhead when no reporter configured
 - [Phase 08]: on_finish fires after termination_cause is finalized, before final GenerationLimitReached callback
+- [Phase 08]: SimpleReporter displays generation + 1 (1-based) for user-facing readability
+- [Phase 08]: DurationReporter per-operator timing limitation documented inline — deferred to GaObserver (#182-#186)
 
 ### Pending Todos
 
@@ -85,6 +88,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T17:06:49.431Z
-Stopped at: Completed 08-01-PLAN.md
+Last session: 2026-03-21T17:13:39.085Z
+Stopped at: Completed 08-02-PLAN.md
 Resume file: None
