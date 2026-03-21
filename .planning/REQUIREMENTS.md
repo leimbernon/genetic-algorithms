@@ -30,7 +30,7 @@
 - [ ] **REP-01**: User can attach a reporter to `Ga` via `.with_reporter()` that receives lifecycle hooks (`on_start`, `on_generation_complete`, `on_new_best`, `on_finish`)
 - [ ] **REP-02**: Default (no reporter configured) has zero overhead via `NoopReporter`
 - [ ] **REP-03**: Built-in `SimpleReporter` logs progress to stdout every N generations
-- [ ] **REP-04**: Built-in `DurationReporter` reports per-phase timing breakdown
+- [ ] **REP-04**: Built-in `DurationReporter` reports wall-clock timing summary (total elapsed and per-generation average)
 
 ## Future Requirements
 
@@ -75,8 +75,8 @@
 **Coverage:**
 - v2.2 requirements: 15 total
 - Mapped to phases: 15
-- Unmapped: 0 ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-20*
-*Last updated: 2026-03-20 — Phase mappings added after roadmap creation*
+*Last updated: 2026-03-21 — REP-04 updated to reflect wall-clock timing summary (per-operator breakdown deferred to Observability milestone)*
