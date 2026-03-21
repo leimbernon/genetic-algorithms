@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.2
-milestone_name: — Improve Usability (completion)
-status: unknown
-stopped_at: Completed 09-02-PLAN.md
-last_updated: "2026-03-21T18:08:28.949Z"
+milestone: v2.1.0
+milestone_name: New Examples
+status: defining_requirements
+stopped_at: —
+last_updated: "2026-03-21T00:00:00.000Z"
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 8
-  completed_plans: 8
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
@@ -23,8 +23,10 @@ See: .planning/PROJECT.md (updated 2026-03-20)
 
 ## Current Position
 
-Phase: 09 (visualization) — COMPLETE
-Plan: 2 of 2
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-21 — Milestone v2.1.0 New Examples started
 
 ## Performance Metrics
 

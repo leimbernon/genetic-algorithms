@@ -14,6 +14,10 @@ The simplest correct way to run a genetic algorithm in Rust — generic enough f
 
 <!-- Shipped and confirmed valuable. -->
 
+- ✓ Population diversity estimation metric — v2.1.0 (Phase 6)
+- ✓ List genotype `List<T>` / `ListChromosome<T>` — v2.1.0 (Phase 7)
+- ✓ Reporter trait with lifecycle hooks — v2.1.0 (Phase 8)
+- ✓ Visualization module (`plot_fitness`, `plot_diversity`, `plot_histogram`) — v2.1.0 (Phase 9)
 - ✓ Single-population GA (`Ga<U>`) with builder pattern — core library
 - ✓ Multi-objective NSGA-II (`Nsga2Ga`) — pareto front, crowding distance
 - ✓ Island model (`IslandGa`) — multi-population + migration topologies
@@ -31,12 +35,15 @@ The simplest correct way to run a genetic algorithm in Rust — generic enough f
 
 ### Active
 
-<!-- Current scope — Milestone v2.2 -->
+<!-- Current scope — Milestone v2.1.0 New Examples -->
 
-- ✓ Population diversity estimation metric (#170) — Validated in Phase 6
-- ✓ List genotype (#171) — Validated in Phase 7
-- ✓ Visualization module with optional feature flag (#178) — Validated in Phase 9
-- ✓ Reporter trait with lifecycle hooks (#179) — Validated in Phase 8
+- [ ] Rastrigin continuous optimization example using `Range<f64>` chromosomes (#154)
+- [ ] NSGA-II multi-objective example (ZDT1 benchmark) (#155)
+- [ ] Island Model GA example (parallel multi-population) (#156)
+- [ ] Job Scheduling example (minimize makespan, permutation) (#157)
+- [ ] Feature Selection example (Binary chromosomes + adaptive GA) (#158)
+- [ ] Niching / Fitness Sharing example (multimodal optimization) (#159)
+- [ ] README updated to document all examples with run commands
 
 ### Out of Scope
 
@@ -68,5 +75,13 @@ The simplest correct way to run a genetic algorithm in Rust — generic enough f
 | LRU cache keyed on Debug string | Simple to implement; correctness risk if Debug is non-deterministic | ⚠️ Revisit |
 | Rayon for parallelism | Fits workload; overhead on small populations | ✓ Good |
 
+## Current Milestone: v2.1.0 — New Examples
+
+**Goal:** Add runnable examples covering all major GA modes and operators, and update README to document them.
+
+**Target features:**
+- 6 runnable examples: Rastrigin, NSGA-II (ZDT1), Island Model, Job Scheduling, Feature Selection, Niching
+- README updated with examples section and `cargo run --example <name>` commands
+
 ---
-*Last updated: 2026-03-21 — Phase 9 complete (Visualization) — milestone v2.2 all phases done*
+*Last updated: 2026-03-21 — milestone v2.1.0 New Examples started*
