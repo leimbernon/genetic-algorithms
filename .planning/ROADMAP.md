@@ -3,7 +3,8 @@
 ## Milestones
 
 - ✅ **v2.1 — Improve Usability (partial)** — Phases 1-5 (shipped 2026-03-20)
-- 🚧 **v2.2 — Improve Usability (completion)** — Phases 6-9 (in progress)
+- ✅ **v2.2 — Improve Usability (completion)** — Phases 6-9 (shipped 2026-03-21)
+- 🚧 **v2.1.0 — New Examples** — Phases 10-12 (in progress)
 
 ## Phases
 
@@ -20,14 +21,25 @@ Phases 1-5 predate GSD tracking. Issues closed: #165, #166, #167, #168, #169.
 
 </details>
 
-### 🚧 v2.2 — Improve Usability, completion (In Progress)
+<details>
+<summary>✅ v2.2 — Improve Usability, completion (Phases 6-9) — SHIPPED 2026-03-21</summary>
 
-**Milestone goal:** Expose diversity as a first-class metric, add a symbolic List genotype, give users structured lifecycle reporting, and provide an optional chart-generation module.
+Issues closed: #170, #171, #178, #179.
 
 - [x] **Phase 6: Diversity Estimation** — Expose a diversity metric in statistics and wire it into the GA's adaptive subsystems (completed 2026-03-20)
 - [x] **Phase 7: List Genotype** — Add a `List<T>` gene and chromosome type for finite symbolic alphabets (completed 2026-03-21)
 - [x] **Phase 8: Reporter Trait** — Add a `Reporter` trait with lifecycle hooks and two built-in implementations (completed 2026-03-21)
 - [x] **Phase 9: Visualization** — Add an optional `visualization` feature that renders fitness and diversity charts to PNG/SVG (completed 2026-03-21)
+
+</details>
+
+### 🚧 v2.1.0 — New Examples (In Progress)
+
+**Milestone goal:** Add six runnable examples covering all major GA modes and operators, and update the README to document them with `cargo run --example` commands.
+
+- [ ] **Phase 10: Single-population Examples** - Rastrigin continuous optimization, Feature Selection with adaptive GA, and Niching / Fitness Sharing — all using `Ga<U>`
+- [ ] **Phase 11: Advanced Mode Examples** - NSGA-II multi-objective (ZDT1), Island Model multi-population, and Job Scheduling permutation — using `Nsga2Ga` and `IslandGa`
+- [ ] **Phase 12: Documentation** - README updated with examples section and `cargo run --example <name>` commands
 
 ## Phase Details
 
@@ -43,8 +55,8 @@ Phases 1-5 predate GSD tracking. Issues closed: #165, #166, #167, #168, #169.
 **Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 06-01-PLAN.md — Add diversity field to GenerationStats with serde backward-compat
-- [ ] 06-02-PLAN.md — Reorder GA loop and wire subsystems to read gen_stats.diversity
+- [x] 06-01-PLAN.md — Add diversity field to GenerationStats with serde backward-compat
+- [x] 06-02-PLAN.md — Reorder GA loop and wire subsystems to read gen_stats.diversity
 
 ### Phase 7: List Genotype
 **Goal**: Users can solve problems over finite symbolic alphabets using a `List<T>` gene and chromosome that plug into the existing operator pipeline without modification
@@ -59,8 +71,8 @@ Plans:
 **Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 07-01-PLAN.md — List<T> gene type and ListChromosome<T> with GeneT/ChromosomeT impls
-- [ ] 07-02-PLAN.md — ListValue mutation operator, list initializer, integration tests
+- [x] 07-01-PLAN.md — List<T> gene type and ListChromosome<T> with GeneT/ChromosomeT impls
+- [x] 07-02-PLAN.md — ListValue mutation operator, list initializer, integration tests
 
 ### Phase 8: Reporter Trait
 **Goal**: Users can attach structured lifecycle observers to `Ga` that receive hooks at key execution points, with zero cost when no reporter is configured
@@ -74,8 +86,8 @@ Plans:
 **Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 08-01-PLAN.md — Reporter trait definition, NoopReporter, and Ga integration (hook wiring)
-- [ ] 08-02-PLAN.md — SimpleReporter, DurationReporter, and integration tests
+- [x] 08-01-PLAN.md — Reporter trait definition, NoopReporter, and Ga integration (hook wiring)
+- [x] 08-02-PLAN.md — SimpleReporter, DurationReporter, and integration tests
 
 ### Phase 9: Visualization
 **Goal**: Users who opt into the `visualization` feature flag can generate PNG or SVG charts of fitness and diversity trends directly from GA statistics
@@ -89,16 +101,51 @@ Plans:
 **Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 09-01-PLAN.md — Feature flag setup, VisualizationError, and plot_fitness function
-- [ ] 09-02-PLAN.md — plot_diversity and plot_histogram functions
+- [x] 09-01-PLAN.md — Feature flag setup, VisualizationError, and plot_fitness function
+- [x] 09-02-PLAN.md — plot_diversity and plot_histogram functions
+
+### Phase 10: Single-population Examples
+**Goal**: Users can run three self-contained examples that demonstrate `Ga<U>` on continuous optimization, binary feature selection with adaptive parameters, and multimodal niching
+**Depends on**: Phase 9 (all prior library work is in place)
+**Requirements**: EX-01, EX-05, EX-06
+**Success Criteria** (what must be TRUE):
+  1. `cargo run --example rastrigin` executes without error, prints per-generation fitness, and converges toward the global minimum (fitness near 0)
+  2. `cargo run --example feature_selection` executes without error and prints the best binary feature mask found along with its evaluated fitness
+  3. `cargo run --example niching` executes without error and the reported best solutions include multiple distinct peaks rather than converging to a single one
+  4. Each example file is self-contained with an explanatory comment block describing the problem, chromosome type, and operators used
+**Plans**: TBD
+
+### Phase 11: Advanced Mode Examples
+**Goal**: Users can run three self-contained examples demonstrating NSGA-II multi-objective optimization, island model parallel evolution, and permutation-based job scheduling
+**Depends on**: Phase 10
+**Requirements**: EX-02, EX-03, EX-04
+**Success Criteria** (what must be TRUE):
+  1. `cargo run --example nsga2_zdt1` executes without error and prints a non-dominated Pareto front approximation showing the trade-off between the two ZDT1 objectives
+  2. `cargo run --example island_model` executes without error and prints per-island best fitness values plus the global best after migration rounds complete
+  3. `cargo run --example job_scheduling` executes without error and prints the best job ordering found along with its makespan value
+  4. Each example file is self-contained with an explanatory comment block describing the problem, GA mode used, and key configuration choices
+**Plans**: TBD
+
+### Phase 12: Documentation
+**Goal**: The README documents all six examples so users can discover and run them without reading source code
+**Depends on**: Phase 11
+**Requirements**: DOC-01
+**Success Criteria** (what must be TRUE):
+  1. The README contains an Examples section listing all six examples with a one-line description of each
+  2. Every example entry in the README includes the exact `cargo run --example <name>` command needed to execute it
+  3. A first-time user reading only the README can identify which example matches their problem domain (continuous, multi-objective, parallel, permutation, binary, multimodal)
+**Plans**: TBD
 
 ## Progress
 
-**Execution order:** 6 → 7 → 8 → 9
+**Execution order:** 6 → 7 → 8 → 9 → 10 → 11 → 12
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 6. Diversity Estimation | 2/2 | Complete    | 2026-03-20 | - |
-| 7. List Genotype | 2/2 | Complete   | 2026-03-21 | - |
-| 8. Reporter Trait | 2/2 | Complete   | 2026-03-21 | - |
-| 9. Visualization | 2/2 | Complete   | 2026-03-21 | - |
+| 6. Diversity Estimation | v2.2 | 2/2 | Complete | 2026-03-20 |
+| 7. List Genotype | v2.2 | 2/2 | Complete | 2026-03-21 |
+| 8. Reporter Trait | v2.2 | 2/2 | Complete | 2026-03-21 |
+| 9. Visualization | v2.2 | 2/2 | Complete | 2026-03-21 |
+| 10. Single-population Examples | v2.1.0 | 0/TBD | Not started | - |
+| 11. Advanced Mode Examples | v2.1.0 | 0/TBD | Not started | - |
+| 12. Documentation | v2.1.0 | 0/TBD | Not started | - |

@@ -43,18 +43,18 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| EX-01 | — | Pending |
-| EX-02 | — | Pending |
-| EX-03 | — | Pending |
-| EX-04 | — | Pending |
-| EX-05 | — | Pending |
-| EX-06 | — | Pending |
-| DOC-01 | — | Pending |
+| EX-01 | Phase 10 | Pending |
+| EX-02 | Phase 11 | Pending |
+| EX-03 | Phase 11 | Pending |
+| EX-04 | Phase 11 | Pending |
+| EX-05 | Phase 10 | Pending |
+| EX-06 | Phase 10 | Pending |
+| DOC-01 | Phase 12 | Pending |
 
 **Coverage:**
 - v2.1.0 requirements: 7 total
-- Mapped to phases: 0
-- Unmapped: 7 ⚠️
+- Mapped to phases: 7
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-21*
