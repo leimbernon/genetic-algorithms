@@ -151,6 +151,6 @@ Plans:
 | 7. List Genotype | v2.2 | 2/2 | Complete | 2026-03-21 |
 | 8. Reporter Trait | v2.2 | 2/2 | Complete | 2026-03-21 |
 | 9. Visualization | v2.2 | 2/2 | Complete | 2026-03-21 |
-| 10. Single-population Examples | 3/3 | Complete   | 2026-03-22 | - |
+| 10. Single-population Examples | 3/3 | Complete    | 2026-03-22 | - |
 | 11. Advanced Mode Examples | v2.1.0 | 0/TBD | Not started | - |
 | 12. Documentation | v2.1.0 | 0/TBD | Not started | - |
