@@ -25,10 +25,10 @@ Creating, editing, or moving other examples is out of scope.
 - Final result via `match result { Ok(...) => ..., Err(...) => ... }`
 
 ### NSGA-II output format
-- Show per-generation progress reporting front size (count of non-dominated individuals) — grows toward population size as algorithm converges
+- **API constraint (discovered during planning):** `Nsga2Ga::run()` has no callback hook — per-generation progress is not achievable without library changes. Decision revised: print final result only.
 - At completion, sample ~10 evenly-spaced points from the Pareto front and print them as `(f1, f2)` pairs
 - Print header: `Pareto front (10 points sampled from N non-dominated solutions):`
-- Progress line example: `Generation 50: front size = 42`
+- Include a comment in the example doc block explaining that `Nsga2Ga` runs silently (no callback API)
 
 ### NSGA-II problem setup
 - ZDT1 benchmark: 30 variables in [0, 1], two objectives: minimize f1 = x[0], minimize f2 = 1 - sqrt(x[0]/g)
@@ -39,8 +39,9 @@ Creating, editing, or moving other examples is out of scope.
 - Problem: Rastrigin function minimization with 20 dimensions (harder than Phase 10's single-pop example — shows why island model helps)
 - 4 islands, Ring topology (`MigrationTopology::Ring`), migration every 10 generations, 2 migrants per migration
 - Heterogeneous configs: each island gets a different mutation probability (0.01, 0.05, 0.10, 0.20) via `with_heterogeneous_configs()` to demonstrate diversity-preserving evolution
-- Output: after each migration round, print per-island best fitness and global best
-- Progress line example: `Migration 3: island[0]=2.4 island[1]=1.8 island[2]=3.1 island[3]=2.9 | global=1.8`
+- **API constraint (discovered during planning):** `IslandGa::evolve_islands_one_generation()` and `global_best()` are private — per-migration progress is not achievable without library changes. Decision revised: print final global best only.
+- Output: after `run()` completes, print the global best fitness and chromosome
+- Include a comment in the example doc block explaining that `IslandGa` evolves all islands internally with no mid-run observability via the current public API
 
 ### Job scheduling problem setup
 - 15 jobs, 5 machines with hardcoded processing times (2D matrix)
