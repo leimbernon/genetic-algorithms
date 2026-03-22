@@ -43,7 +43,7 @@ The simplest correct way to run a genetic algorithm in Rust — generic enough f
 - [ ] Job Scheduling example (minimize makespan, permutation) (#157)
 - [ ] Feature Selection example (Binary chromosomes + adaptive GA) (#158)
 - [ ] Niching / Fitness Sharing example (multimodal optimization) (#159)
-- [ ] README updated to document all examples with run commands
+- [x] README updated to document all examples with run commands — v2.1.0 (Phase 12)
 
 ### Out of Scope
 
@@ -84,4 +84,4 @@ The simplest correct way to run a genetic algorithm in Rust — generic enough f
 - README updated with examples section and `cargo run --example <name>` commands
 
 ---
-*Last updated: 2026-03-21 — milestone v2.1.0 New Examples started*
+*Last updated: 2026-03-22 — milestone v2.1.0 New Examples complete (Phase 12)*
