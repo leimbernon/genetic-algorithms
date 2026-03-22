@@ -144,7 +144,10 @@ Plans:
   1. The README contains an Examples section listing all six examples with a one-line description of each
   2. Every example entry in the README includes the exact `cargo run --example <name>` command needed to execute it
   3. A first-time user reading only the README can identify which example matches their problem domain (continuous, multi-objective, parallel, permutation, binary, multimodal)
-**Plans**: TBD
+**Plans:** 1 plan
+
+Plans:
+- [ ] 12-01-PLAN.md — Add Examples section to README with all 10 examples table
 
 ## Progress
 
@@ -158,4 +161,4 @@ Plans:
 | 9. Visualization | v2.2 | 2/2 | Complete | 2026-03-21 |
 | 10. Single-population Examples | 3/3 | Complete    | 2026-03-22 | - |
 | 11. Advanced Mode Examples | 3/3 | Complete    | 2026-03-22 | - |
-| 12. Documentation | v2.1.0 | 0/TBD | Not started | - |
+| 12. Documentation | v2.1.0 | 0/1 | Not started | - |
