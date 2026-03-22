@@ -129,7 +129,12 @@ Plans:
   2. `cargo run --example island_model` executes without error and prints per-island best fitness values plus the global best after migration rounds complete
   3. `cargo run --example job_scheduling` executes without error and prints the best job ordering found along with its makespan value
   4. Each example file is self-contained with an explanatory comment block describing the problem, GA mode used, and key configuration choices
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 11-01-PLAN.md — NSGA-II ZDT1 multi-objective example (EX-02)
+- [ ] 11-02-PLAN.md — Island model Rastrigin 20D example (EX-03)
+- [ ] 11-03-PLAN.md — Job scheduling permutation example (EX-04)
 
 ### Phase 12: Documentation
 **Goal**: The README documents all six examples so users can discover and run them without reading source code
@@ -143,7 +148,7 @@ Plans:
 
 ## Progress
 
-**Execution order:** 6 → 7 → 8 → 9 → 10 → 11 → 12
+**Execution order:** 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -152,5 +157,5 @@ Plans:
 | 8. Reporter Trait | v2.2 | 2/2 | Complete | 2026-03-21 |
 | 9. Visualization | v2.2 | 2/2 | Complete | 2026-03-21 |
 | 10. Single-population Examples | 3/3 | Complete    | 2026-03-22 | - |
-| 11. Advanced Mode Examples | v2.1.0 | 0/TBD | Not started | - |
+| 11. Advanced Mode Examples | v2.1.0 | 0/3 | Not started | - |
 | 12. Documentation | v2.1.0 | 0/TBD | Not started | - |
