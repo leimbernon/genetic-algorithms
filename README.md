@@ -31,6 +31,7 @@ Modular and concurrent Genetic Algorithms (GA) library for Rust featuring:
   - [Multithreading & Performance](#multithreading--performance)
 - [Quick Example](#quick-example)
 - [Full Example (Range)](#full-example-range)
+- [Examples](#examples)
 - [Usage](#usage)
 - [Development](#development)
 - [Roadmap / Notes](#roadmap--notes)
@@ -227,6 +228,23 @@ let population = ga
 println!("Best fitness: {}", population.unwrap().best_chromosome.get_fitness());
 ```
 
+## Examples
+
+Run any example directly with `cargo run`:
+
+| Example | Domain | Command |
+|---------|--------|---------|
+| `rastrigin` | Continuous optimization | `cargo run --example rastrigin` |
+| `nsga2_zdt1` | Multi-objective (NSGA-II) | `cargo run --example nsga2_zdt1` |
+| `island_model` | Parallel / island model | `cargo run --example island_model` |
+| `job_scheduling` | Permutation / scheduling | `cargo run --example job_scheduling` |
+| `feature_selection` | Binary / adaptive GA | `cargo run --example feature_selection` |
+| `niching` | Multimodal / niching | `cargo run --example niching` |
+| `knapsack_binary` | Binary / combinatorial | `cargo run --example knapsack_binary` |
+| `nqueens_range` | Constraint satisfaction | `cargo run --example nqueens_range` |
+| `onemax_binary` | Binary / baseline | `cargo run --example onemax_binary` |
+| `onemax_extension` | Binary / diversity control | `cargo run --example onemax_extension` |
+
 ## Usage
 Add to your `Cargo.toml`:
 ```toml
@@ -264,13 +282,6 @@ cargo bench --bench survivor      # Run only survivor benchmarks
 cargo bench --no-run              # Only compile benchmarks (useful for CI)
 ```
 Reports are generated in `target/criterion/` and can be viewed in a browser.
-
-### Run Examples
-```bash
-cargo run --example knapsack_binary    # 0/1 Knapsack problem using Binary chromosomes
-cargo run --example nqueens_range      # N-Queens problem using Range<i32> chromosomes
-cargo run --example onemax_extension   # OneMax with MassDeduplication extension strategy
-```
 
 ### Code Quality
 ```bash
