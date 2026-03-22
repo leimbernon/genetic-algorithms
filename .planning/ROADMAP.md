@@ -113,7 +113,12 @@ Plans:
   2. `cargo run --example feature_selection` executes without error and prints the best binary feature mask found along with its evaluated fitness
   3. `cargo run --example niching` executes without error and the reported best solutions include multiple distinct peaks rather than converging to a single one
   4. Each example file is self-contained with an explanatory comment block describing the problem, chromosome type, and operators used
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 10-01-PLAN.md — Rastrigin continuous optimization example (EX-01)
+- [ ] 10-02-PLAN.md — Feature selection with adaptive GA example (EX-05)
+- [ ] 10-03-PLAN.md — Niching / fitness sharing example (EX-06)
 
 ### Phase 11: Advanced Mode Examples
 **Goal**: Users can run three self-contained examples demonstrating NSGA-II multi-objective optimization, island model parallel evolution, and permutation-based job scheduling
@@ -146,6 +151,6 @@ Plans:
 | 7. List Genotype | v2.2 | 2/2 | Complete | 2026-03-21 |
 | 8. Reporter Trait | v2.2 | 2/2 | Complete | 2026-03-21 |
 | 9. Visualization | v2.2 | 2/2 | Complete | 2026-03-21 |
-| 10. Single-population Examples | v2.1.0 | 0/TBD | Not started | - |
+| 10. Single-population Examples | v2.1.0 | 0/3 | Planning complete | - |
 | 11. Advanced Mode Examples | v2.1.0 | 0/TBD | Not started | - |
 | 12. Documentation | v2.1.0 | 0/TBD | Not started | - |
