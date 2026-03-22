@@ -27,16 +27,17 @@
 
 use crate::configuration::GaConfiguration;
 use crate::error::GaError;
+use crate::reporter::Reporter;
 use crate::stats::GenerationStats;
 use crate::traits::{FitnessFn, InitializationFn};
 use crate::validators::validator_factory as ValidatorFactory;
 use crate::{
     configuration::{LimitConfiguration, LogLevel, ProblemSolving},
-    operations::{crossover, mutation, selection, survivor},
+    operations::{crossover, extension, mutation, selection, survivor, Extension},
     population::Population,
     traits::{
-        ChromosomeT, ConfigurationT, CrossoverConfig, ElitismConfig, GeneT, MutationConfig,
-        NichingConfig, SelectionConfig, StoppingConfig,
+        ChromosomeT, ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, GeneT,
+        MutationConfig, NichingConfig, SelectionConfig, StoppingConfig,
     },
 };
 use log::{debug, info, trace};
@@ -114,6 +115,18 @@ where
 
     /// Per-generation statistics collected during the run.
     stats: Vec<GenerationStats>,
+
+    /// Current dynamic mutation probability, adjusted each generation when
+    /// `dynamic_mutation` is enabled.
+    dynamic_mutation_probability: f64,
+
+    /// Optional LRU fitness cache size. When set, fitness evaluations are
+    /// cached to avoid re-evaluating chromosomes with identical DNA.
+    fitness_cache_size: Option<usize>,
+
+    /// Optional lifecycle reporter. When `None` (the default), no hook
+    /// calls are made and there is zero overhead.
+    reporter: Option<Box<dyn Reporter<U> + Send>>,
 }
 
 impl<U> Default for Ga<U>
@@ -131,6 +144,9 @@ where
             initialization_fn: None,
             fitness_fn: None,
             stats: Vec::new(),
+            dynamic_mutation_probability: 1.0,
+            fitness_cache_size: None,
+            reporter: None,
         }
     }
 }
@@ -203,6 +219,18 @@ where
         self.configuration.mutation_configuration.sigma = Some(sigma);
         self
     }
+    fn with_dynamic_mutation(mut self, enabled: bool) -> Self {
+        self.configuration.mutation_configuration.dynamic_mutation = enabled;
+        self
+    }
+    fn with_mutation_target_cardinality(mut self, target: f64) -> Self {
+        self.configuration.mutation_configuration.target_cardinality = Some(target);
+        self
+    }
+    fn with_mutation_probability_step(mut self, step: f64) -> Self {
+        self.configuration.mutation_configuration.probability_step = Some(step);
+        self
+    }
 }
 
 impl<U> StoppingConfig for Ga<U>
@@ -256,6 +284,57 @@ where
 {
     fn with_elitism(mut self, elitism_count: usize) -> Self {
         self.configuration.elitism_count = elitism_count;
+        self
+    }
+}
+
+impl<U> ExtensionConfig for Ga<U>
+where
+    U: ChromosomeT,
+{
+    fn with_extension_method(mut self, method: crate::operations::Extension) -> Self {
+        self.configuration
+            .extension_configuration
+            .get_or_insert_with(
+                crate::extension::configuration::ExtensionConfiguration::default,
+            )
+            .method = method;
+        self
+    }
+    fn with_extension_diversity_threshold(mut self, threshold: f64) -> Self {
+        self.configuration
+            .extension_configuration
+            .get_or_insert_with(
+                crate::extension::configuration::ExtensionConfiguration::default,
+            )
+            .diversity_threshold = threshold;
+        self
+    }
+    fn with_extension_survival_rate(mut self, rate: f64) -> Self {
+        self.configuration
+            .extension_configuration
+            .get_or_insert_with(
+                crate::extension::configuration::ExtensionConfiguration::default,
+            )
+            .survival_rate = rate;
+        self
+    }
+    fn with_extension_mutation_rounds(mut self, rounds: usize) -> Self {
+        self.configuration
+            .extension_configuration
+            .get_or_insert_with(
+                crate::extension::configuration::ExtensionConfiguration::default,
+            )
+            .mutation_rounds = rounds;
+        self
+    }
+    fn with_extension_elite_count(mut self, count: usize) -> Self {
+        self.configuration
+            .extension_configuration
+            .get_or_insert_with(
+                crate::extension::configuration::ExtensionConfiguration::default,
+            )
+            .elite_count = count;
         self
     }
 }
@@ -397,6 +476,14 @@ where
             },
         )?;
 
+        // Wrap fitness function with LRU cache if configured
+        if let Some(cache_size) = self.fitness_cache_size {
+            if let Some(fitness_fn) = self.fitness_fn.take() {
+                self.fitness_fn =
+                    Some(crate::fitness::cache::wrap_with_cache(fitness_fn, cache_size));
+            }
+        }
+
         Ok(self)
     }
 
@@ -427,6 +514,31 @@ where
         F: Fn(&[U::Gene]) -> f64 + Send + Sync + 'static,
     {
         self.fitness_fn = Some(Arc::new(fitness_fn));
+        self
+    }
+
+    /// Attaches a lifecycle reporter that receives hooks during execution.
+    ///
+    /// See [`Reporter`](crate::reporter::Reporter) for the hook contract.
+    pub fn with_reporter(mut self, reporter: Box<dyn Reporter<U> + Send>) -> Self {
+        self.reporter = Some(reporter);
+        self
+    }
+
+    /// Enables an LRU fitness cache with the given capacity.
+    ///
+    /// When enabled, fitness evaluations are cached by DNA hash. Chromosomes
+    /// with identical genes will reuse cached fitness values, avoiding
+    /// redundant (and potentially expensive) fitness function calls.
+    ///
+    /// The cache is shared across all chromosomes and threads.
+    ///
+    /// # Arguments
+    ///
+    /// * `size` - Maximum number of entries in the cache. A typical value
+    ///   is 2-10x the population size.
+    pub fn with_fitness_cache_size(mut self, size: usize) -> Self {
+        self.fitness_cache_size = Some(size);
         self
     }
 
@@ -560,6 +672,15 @@ where
             self.population.recalculate_aga();
         }
 
+        // Initialize dynamic mutation probability
+        if self.configuration.mutation_configuration.dynamic_mutation {
+            self.dynamic_mutation_probability = self
+                .configuration
+                .mutation_configuration
+                .probability_max
+                .unwrap_or(1.0);
+        }
+
         //Best chromosome within the generations and population returned
         let initial_population_size = self.population.size();
         let mut age = 0usize;
@@ -587,6 +708,10 @@ where
         let mut best_fitness_so_far = self.population.best_chromosome.fitness();
         let mut stagnation_count: usize = 0;
 
+        if let Some(ref mut r) = self.reporter {
+            r.on_start();
+        }
+
         //We start the cycles
         for i in 0..self.configuration.limit_configuration.max_generations {
             info!(target="ga_events", method="run"; "Generation number: {}", i+1);
@@ -601,6 +726,11 @@ where
             debug!(target="ga_events", method="run"; "Parents selected for reproduction");
 
             //2- Getting the offspring
+            let dynamic_prob = if self.configuration.mutation_configuration.dynamic_mutation {
+                Some(self.dynamic_mutation_probability)
+            } else {
+                None
+            };
             let mut offspring = parent_crossover(
                 &parents,
                 &self.population.chromosomes,
@@ -608,6 +738,7 @@ where
                 age,
                 self.population.f_max,
                 self.population.f_avg,
+                dynamic_prob,
             )?;
             debug!(target="ga_events", method="run"; "Offspring created");
 
@@ -744,6 +875,118 @@ where
                 GenerationStats::from_fitness_values(i, &fitness_values, is_maximization);
             self.stats.push(gen_stats.clone());
 
+            if let Some(ref mut r) = self.reporter {
+                r.on_generation_complete(&gen_stats);
+            }
+
+            // Update dynamic mutation probability based on population diversity
+            if self.configuration.mutation_configuration.dynamic_mutation {
+                let target = self
+                    .configuration
+                    .mutation_configuration
+                    .target_cardinality
+                    .unwrap_or(0.5);
+                let step = self
+                    .configuration
+                    .mutation_configuration
+                    .probability_step
+                    .unwrap_or(0.01);
+                let p_max = self
+                    .configuration
+                    .mutation_configuration
+                    .probability_max
+                    .unwrap_or(1.0);
+                let p_min = self
+                    .configuration
+                    .mutation_configuration
+                    .probability_min
+                    .unwrap_or(0.0);
+
+                self.dynamic_mutation_probability = mutation::dynamic_probability(
+                    self.dynamic_mutation_probability,
+                    gen_stats.diversity,
+                    target,
+                    step,
+                    p_max,
+                    p_min,
+                );
+
+                debug!(
+                    target = "ga_events",
+                    method = "run";
+                    "Dynamic mutation: diversity={:.4}, probability={:.4}",
+                    gen_stats.diversity,
+                    self.dynamic_mutation_probability
+                );
+            }
+
+            // Apply extension strategy if configured and diversity is low
+            if let Some(ref ext_config) = self.configuration.extension_configuration {
+                if ext_config.method != Extension::Noop
+                    && gen_stats.diversity < ext_config.diversity_threshold
+                {
+                    info!(
+                        target = "extension_events",
+                        method = "run";
+                        "Extension triggered: diversity={:.6} < threshold={:.6}",
+                        gen_stats.diversity,
+                        ext_config.diversity_threshold
+                    );
+
+                    extension::factory(
+                        ext_config.method,
+                        &mut self.population.chromosomes,
+                        initial_population_size,
+                        self.configuration.limit_configuration.problem_solving,
+                        ext_config,
+                    )?;
+
+                    // Regrow population if extension reduced it
+                    if self.population.chromosomes.len() < initial_population_size {
+                        if let Some(ref init_fn) = self.initialization_fn {
+                            let deficit =
+                                initial_population_size - self.population.chromosomes.len();
+                            for _ in 0..deficit {
+                                let alleles_ref = if self.alleles.is_empty() {
+                                    None
+                                } else {
+                                    Some(self.alleles.as_slice())
+                                };
+                                let genes = init_fn(
+                                    self.configuration
+                                        .limit_configuration
+                                        .genes_per_chromosome,
+                                    alleles_ref,
+                                    Some(
+                                        self.configuration
+                                            .limit_configuration
+                                            .alleles_can_be_repeated,
+                                    ),
+                                );
+                                let mut new_chromosome = U::new();
+                                new_chromosome.set_dna(std::borrow::Cow::Owned(genes));
+                                if let Some(ref ff) = self.fitness_fn {
+                                    let ff_clone = Arc::clone(ff);
+                                    new_chromosome
+                                        .set_fitness_fn(move |genes| ff_clone(genes));
+                                }
+                                new_chromosome.calculate_fitness();
+                                new_chromosome.set_age(0);
+                                self.population.chromosomes.push(new_chromosome);
+                            }
+                        }
+                    }
+
+                    // Recalculate fitness for chromosomes marked with NaN
+                    // (e.g., after MassDegeneration)
+                    for c in self.population.chromosomes.iter_mut() {
+                        if c.fitness().is_nan() {
+                            c.calculate_fitness();
+                        }
+                    }
+                }
+            }
+
             // Save checkpoint to disk if configured (requires serde feature)
             #[cfg(feature = "serde")]
             {
@@ -802,6 +1045,9 @@ where
             if improved {
                 best_fitness_so_far = current_best;
                 stagnation_count = 0;
+                if let Some(ref mut r) = self.reporter {
+                    r.on_new_best(i, self.population.best_chromosome.clone());
+                }
             } else {
                 stagnation_count += 1;
             }
@@ -844,6 +1090,10 @@ where
         // Set termination cause when generation limit is reached (regardless of callback)
         if self.termination_cause == TerminationCause::NotTerminated {
             self.termination_cause = TerminationCause::GenerationLimitReached;
+        }
+
+        if let Some(ref mut r) = self.reporter {
+            r.on_finish(self.termination_cause, &self.stats);
         }
 
         // If we want to perform a callback and the generation limit was just reached
@@ -923,6 +1173,7 @@ fn parent_crossover<U>(
     age: usize,
     f_max: f64,
     f_avg: f64,
+    dynamic_mutation_prob: Option<f64>,
 ) -> Result<Vec<U>, GaError>
 where
     U: ChromosomeT + Send + Sync + 'static + Clone + mutation::ValueMutable,
@@ -944,16 +1195,18 @@ where
             Some(1.0)
         };
 
-    let mutation_probability_config =
-        if let Some(p) = configuration.mutation_configuration.probability_max {
-            if !configuration.adaptive_ga {
-                Some(p)
-            } else {
-                None
-            }
+    let mutation_probability_config = if let Some(dp) = dynamic_mutation_prob {
+        // Dynamic mutation overrides static probability
+        Some(dp)
+    } else if let Some(p) = configuration.mutation_configuration.probability_max {
+        if !configuration.adaptive_ga {
+            Some(p)
         } else {
-            Some(1.0)
-        };
+            None
+        }
+    } else {
+        Some(1.0)
+    };
 
     // Use rayon to process parent pairs in parallel
     let results: Vec<Result<Vec<U>, GaError>> = parents

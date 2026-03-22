@@ -12,12 +12,13 @@
 
 use std::fmt;
 
+use crate::extension::configuration::ExtensionConfiguration;
 use crate::niching::configuration::NichingConfiguration;
 use crate::{
-    operations::{Crossover, Mutation, Selection, Survivor},
+    operations::{Crossover, Extension, Mutation, Selection, Survivor},
     traits::{
-        ConfigurationT, CrossoverConfig, ElitismConfig, MutationConfig, NichingConfig,
-        SelectionConfig, StoppingConfig,
+        ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, MutationConfig,
+        NichingConfig, SelectionConfig, StoppingConfig,
     },
 };
 
@@ -146,6 +147,15 @@ pub struct MutationConfiguration {
     /// Decay parameter for NonUniform mutation. Controls how fast mutation
     /// magnitude decreases over generations. Typical range: 2–5. Default is 2.0.
     pub non_uniform_b: Option<f64>,
+    /// Enable dynamic mutation probability adjustment based on population cardinality.
+    /// When enabled, mutation probability is adjusted each generation: increased when
+    /// diversity is low and decreased when diversity is high.
+    pub dynamic_mutation: bool,
+    /// Target cardinality ratio (unique fitness values / population size) in `[0.0, 1.0]`.
+    /// The dynamic mutation adjusts probability toward this target.
+    pub target_cardinality: Option<f64>,
+    /// Step size for dynamic mutation probability adjustment each generation.
+    pub probability_step: Option<f64>,
 }
 impl Default for MutationConfiguration {
     fn default() -> Self {
@@ -157,6 +167,9 @@ impl Default for MutationConfiguration {
             sigma: None,
             polynomial_eta: None,
             non_uniform_b: None,
+            dynamic_mutation: false,
+            target_cardinality: None,
+            probability_step: None,
         }
     }
 }
@@ -245,6 +258,8 @@ pub struct GaConfiguration {
     pub stopping_criteria: StoppingCriteria,
     /// Optional niching / fitness sharing configuration.
     pub niching_configuration: Option<NichingConfiguration>,
+    /// Optional extension configuration for population diversity control.
+    pub extension_configuration: Option<ExtensionConfiguration>,
     /// Optional RNG seed for reproducible runs.
     ///
     /// When set, all random number generators in operators are seeded
@@ -277,6 +292,7 @@ impl Default for GaConfiguration {
             elitism_count: 0,
             stopping_criteria: StoppingCriteria::default(),
             niching_configuration: None,
+            extension_configuration: None,
             rng_seed: None,
         }
     }
@@ -341,6 +357,18 @@ impl MutationConfig for GaConfiguration {
         self.mutation_configuration.sigma = Some(sigma);
         self
     }
+    fn with_dynamic_mutation(mut self, enabled: bool) -> Self {
+        self.mutation_configuration.dynamic_mutation = enabled;
+        self
+    }
+    fn with_mutation_target_cardinality(mut self, target: f64) -> Self {
+        self.mutation_configuration.target_cardinality = Some(target);
+        self
+    }
+    fn with_mutation_probability_step(mut self, step: f64) -> Self {
+        self.mutation_configuration.probability_step = Some(step);
+        self
+    }
 }
 
 impl StoppingConfig for GaConfiguration {
@@ -382,6 +410,39 @@ impl NichingConfig for GaConfiguration {
 impl ElitismConfig for GaConfiguration {
     fn with_elitism(mut self, elitism_count: usize) -> Self {
         self.elitism_count = elitism_count;
+        self
+    }
+}
+
+impl ExtensionConfig for GaConfiguration {
+    fn with_extension_method(mut self, method: Extension) -> Self {
+        self.extension_configuration
+            .get_or_insert_with(ExtensionConfiguration::default)
+            .method = method;
+        self
+    }
+    fn with_extension_diversity_threshold(mut self, threshold: f64) -> Self {
+        self.extension_configuration
+            .get_or_insert_with(ExtensionConfiguration::default)
+            .diversity_threshold = threshold;
+        self
+    }
+    fn with_extension_survival_rate(mut self, rate: f64) -> Self {
+        self.extension_configuration
+            .get_or_insert_with(ExtensionConfiguration::default)
+            .survival_rate = rate;
+        self
+    }
+    fn with_extension_mutation_rounds(mut self, rounds: usize) -> Self {
+        self.extension_configuration
+            .get_or_insert_with(ExtensionConfiguration::default)
+            .mutation_rounds = rounds;
+        self
+    }
+    fn with_extension_elite_count(mut self, count: usize) -> Self {
+        self.extension_configuration
+            .get_or_insert_with(ExtensionConfiguration::default)
+            .elite_count = count;
         self
     }
 }

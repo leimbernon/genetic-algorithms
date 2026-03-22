@@ -6,6 +6,7 @@
 //! [`Mutation`], [`Survivor`]).
 
 pub mod crossover;
+pub mod extension;
 pub mod mutation;
 pub mod selection;
 pub mod survivor;
@@ -65,6 +66,13 @@ pub enum Crossover {
     /// Arithmetic (whole) crossover for `Range<T>` chromosomes.
     /// Child = alpha * parent1 + (1 - alpha) * parent2. Uses `arithmetic_alpha` from configuration.
     Arithmetic,
+    /// Clone crossover — copies parents directly as offspring without any genetic exchange.
+    /// Useful for mutation-only strategies and baseline experiments.
+    Clone,
+    /// Rejuvenate crossover — clones parents as offspring and resets their ages to zero.
+    /// Useful for combating population aging: top performers are preserved but treated as new
+    /// individuals, preventing age-based survivor selection from eliminating them.
+    Rejuvenate,
 }
 
 /// Mutation strategies.
@@ -99,6 +107,9 @@ pub enum Mutation {
     /// Insertion mutation for permutation-based chromosomes.
     /// Removes a gene and reinserts it at a different position.
     Insertion,
+    /// List-value mutation — replaces a single gene's value with a different allele
+    /// from that gene's allele set. Requires a `ListChromosome<T>`.
+    ListValue,
 }
 
 /// Survivor-selection strategies.
@@ -116,4 +127,23 @@ pub enum Survivor {
     MuPlusLambda,
     /// (mu,lambda) strategy: only offspring (age == 0) are eligible for survival.
     MuCommaLambda,
+}
+
+/// Extension strategies for population diversity control.
+///
+/// Extensions are optional diversity-rescue mechanisms that trigger when
+/// population diversity drops below a configurable threshold.
+#[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum Extension {
+    /// No extension — diversity drops are ignored.
+    Noop,
+    /// Random cull to a survival rate, protecting elite individuals.
+    MassExtinction,
+    /// Trim to the 2 best chromosomes, regrow population from scratch.
+    MassGenesis,
+    /// Apply N mutation rounds to the whole population, protecting elite.
+    MassDegeneration,
+    /// Remove duplicate chromosomes (by gene comparison), regrow population.
+    MassDeduplication,
 }

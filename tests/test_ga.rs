@@ -2015,3 +2015,86 @@ fn test_rng_module_is_public() {
     let mut r = rng::make_rng();
     let _v: f64 = r.random();
 }
+
+// ==================== Dynamic mutation integration test ====================
+
+#[test]
+fn test_ga_with_dynamic_mutation() {
+    let alleles = (1..=10).map(|i| Gene { id: i }).collect::<Vec<_>>();
+
+    let mut ga: Ga<Chromosome> = Ga::new()
+        .with_population_size(20)
+        .with_genes_per_chromosome(10)
+        .with_alleles_can_be_repeated(true)
+        .with_initialization_fn(|genes, alleles, _unique| {
+            let mut rng = genetic_algorithms::rng::make_rng();
+            let alleles: &[Gene] = alleles.unwrap();
+            (0..genes)
+                .map(|_| {
+                    use rand::Rng;
+                    alleles[rng.random_range(0..alleles.len())]
+                })
+                .collect()
+        })
+        .with_fitness_fn(fitness_fn)
+        .with_problem_solving(ProblemSolving::Maximization)
+        .with_selection_method(Selection::Tournament)
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::Swap)
+        .with_mutation_probability_max(0.8)
+        .with_mutation_probability_min(0.1)
+        .with_dynamic_mutation(true)
+        .with_mutation_target_cardinality(0.5)
+        .with_mutation_probability_step(0.02)
+        .with_survivor_method(Survivor::Fitness)
+        .with_max_generations(30)
+        .with_alleles(alleles);
+
+    ga.initialization().expect("initialization should succeed");
+    let result = ga.run();
+    assert!(result.is_ok(), "GA with dynamic mutation should complete successfully");
+
+    // Verify configuration was stored correctly
+    assert!(ga.configuration.mutation_configuration.dynamic_mutation);
+    assert!((ga.configuration.mutation_configuration.target_cardinality.unwrap() - 0.5).abs() < f64::EPSILON);
+    assert!((ga.configuration.mutation_configuration.probability_step.unwrap() - 0.02).abs() < f64::EPSILON);
+}
+
+#[test]
+fn test_ga_stats_diversity_populated() {
+    // Run a simple GA for a few generations and verify diversity is populated in stats
+    let chromosomes = vec![
+        Chromosome { dna: vec![Gene { id: 1 }, Gene { id: 2 }, Gene { id: 3 }, Gene { id: 4 }], fitness: 1.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
+        Chromosome { dna: vec![Gene { id: 2 }, Gene { id: 3 }, Gene { id: 4 }, Gene { id: 1 }], fitness: 2.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
+        Chromosome { dna: vec![Gene { id: 3 }, Gene { id: 4 }, Gene { id: 1 }, Gene { id: 2 }], fitness: 3.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
+        Chromosome { dna: vec![Gene { id: 4 }, Gene { id: 1 }, Gene { id: 2 }, Gene { id: 3 }], fitness: 4.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
+        Chromosome { dna: vec![Gene { id: 2 }, Gene { id: 1 }, Gene { id: 3 }, Gene { id: 4 }], fitness: 5.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
+        Chromosome { dna: vec![Gene { id: 1 }, Gene { id: 3 }, Gene { id: 4 }, Gene { id: 2 }], fitness: 6.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
+        Chromosome { dna: vec![Gene { id: 3 }, Gene { id: 4 }, Gene { id: 2 }, Gene { id: 1 }], fitness: 7.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
+        Chromosome { dna: vec![Gene { id: 4 }, Gene { id: 2 }, Gene { id: 1 }, Gene { id: 3 }], fitness: 8.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
+        Chromosome { dna: vec![Gene { id: 2 }, Gene { id: 1 }, Gene { id: 4 }, Gene { id: 3 }], fitness: 9.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
+        Chromosome { dna: vec![Gene { id: 1 }, Gene { id: 4 }, Gene { id: 3 }, Gene { id: 2 }], fitness: 10.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
+    ];
+
+    let population = Population::new(chromosomes);
+    let mut ga = Ga::new()
+        .with_problem_solving(ProblemSolving::Maximization)
+        .with_selection_method(Selection::Random)
+        .with_crossover_method(Crossover::Cycle)
+        .with_mutation_method(Mutation::Swap)
+        .with_survivor_method(Survivor::Fitness)
+        .with_population(population);
+    ga.run().unwrap();
+
+    let stats = ga.stats();
+    assert!(!stats.is_empty(), "Stats should have at least one entry");
+    for s in stats {
+        assert!(s.diversity >= 0.0, "Diversity must be non-negative");
+        assert_eq!(s.diversity, s.fitness_std_dev, "Diversity must equal fitness_std_dev");
+    }
+    // For a non-trivial population with varied fitness, at least one generation should have diversity > 0
+    assert!(
+        stats.iter().any(|s| s.diversity > 0.0),
+        "At least one generation should have non-zero diversity"
+    );
+}

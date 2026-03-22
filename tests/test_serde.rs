@@ -58,6 +58,7 @@ fn serde_crossover_enum() {
         Crossover::Sbx,
         Crossover::BlendAlpha,
         Crossover::Arithmetic,
+        Crossover::Clone,
     ];
     for v in &variants {
         assert_eq!(&round_trip(v), v);
@@ -141,6 +142,9 @@ fn serde_ga_configuration_with_values() {
             sigma: Some(1.5),
             polynomial_eta: Some(30.0),
             non_uniform_b: Some(3.0),
+            dynamic_mutation: false,
+            target_cardinality: None,
+            probability_step: None,
         },
         survivor: Survivor::MuPlusLambda,
         log_level: LogLevel::Debug,
@@ -160,6 +164,15 @@ fn serde_ga_configuration_with_values() {
             sigma_share: 2.0,
             alpha: 1.5,
         }),
+        extension_configuration: Some(
+            genetic_algorithms::extension::configuration::ExtensionConfiguration {
+                method: genetic_algorithms::operations::Extension::MassExtinction,
+                diversity_threshold: 0.05,
+                survival_rate: 0.2,
+                mutation_rounds: 3,
+                elite_count: 2,
+            },
+        ),
         rng_seed: Some(42),
     };
     let rt = round_trip(&config);
@@ -227,6 +240,15 @@ fn serde_generation_stats() {
     assert!((rt.avg_fitness - stats.avg_fitness).abs() < 1e-10);
     assert!((rt.fitness_std_dev - stats.fitness_std_dev).abs() < 1e-10);
     assert_eq!(rt.population_size, stats.population_size);
+    assert!((rt.diversity - stats.diversity).abs() < 1e-10);
+}
+
+#[test]
+fn serde_generation_stats_backward_compat() {
+    // JSON without diversity field (simulates old checkpoint)
+    let json = r#"{"generation":5,"best_fitness":5.0,"worst_fitness":1.0,"avg_fitness":3.0,"fitness_std_dev":1.4142135623730951,"population_size":5}"#;
+    let stats: GenerationStats = serde_json::from_str(json).unwrap();
+    assert_eq!(stats.diversity, 0.0);
 }
 
 // ---- Genotypes ----

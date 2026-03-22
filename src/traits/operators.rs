@@ -1,5 +1,6 @@
-use crate::configuration::LimitConfiguration;
+use crate::configuration::{LimitConfiguration, ProblemSolving};
 use crate::error::GaError;
+use crate::extension::configuration::ExtensionConfiguration;
 use crate::operations::mutation::ValueMutable;
 use crate::traits::ChromosomeT;
 
@@ -162,5 +163,46 @@ pub trait SurvivorOperator {
         chromosomes: &mut Vec<U>,
         population_size: usize,
         limit_configuration: LimitConfiguration,
+    ) -> Result<(), GaError>;
+}
+
+/// Trait for extension operators (population diversity control).
+///
+/// Implement this trait to define a custom extension strategy. Built-in
+/// implementations are provided for the
+/// [`Extension`](crate::operations::Extension) enum variants.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use genetic_algorithms::traits::ExtensionOperator;
+///
+/// struct MyExtension;
+///
+/// impl ExtensionOperator for MyExtension {
+///     fn apply_extension<U: ChromosomeT>(
+///         &self,
+///         chromosomes: &mut Vec<U>,
+///         population_size: usize,
+///         problem_solving: ProblemSolving,
+///         config: &ExtensionConfiguration,
+///     ) -> Result<(), GaError> {
+///         // Custom extension logic here
+///         Ok(())
+///     }
+/// }
+/// ```
+pub trait ExtensionOperator {
+    /// Apply the extension strategy to the population.
+    ///
+    /// This is called when population diversity drops below the configured
+    /// threshold. Implementations may reduce the population (requiring regrowth)
+    /// or modify chromosomes in-place.
+    fn apply_extension<U: ChromosomeT>(
+        &self,
+        chromosomes: &mut Vec<U>,
+        population_size: usize,
+        problem_solving: ProblemSolving,
+        config: &ExtensionConfiguration,
     ) -> Result<(), GaError>;
 }

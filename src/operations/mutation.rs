@@ -27,6 +27,7 @@ pub mod inversion;
 pub mod non_uniform;
 pub mod polynomial;
 pub mod scramble;
+pub mod list_value;
 pub mod swap;
 pub mod value;
 
@@ -161,6 +162,7 @@ impl MutationOperator for Mutation {
             Mutation::Insertion => {
                 return insertion::insertion_mutation(individual);
             }
+            Mutation::ListValue => individual.value_mutate(),
         }
         Ok(())
     }
@@ -262,6 +264,11 @@ where
         Mutation::Insertion => {
             insertion::insertion_mutation(individual)
         }
+        Mutation::ListValue => Err(GaError::MutationError(
+            "Mutation::ListValue requires a ListChromosome type. \
+                 Use Swap, Inversion, or Scramble instead."
+                .to_string(),
+        )),
     }
 }
 
@@ -295,5 +302,41 @@ pub fn aga_probability<U: ChromosomeT>(
         probability_min
     } else {
         probability_max
+    }
+}
+
+/// Computes population cardinality as the ratio of unique fitness values to population size.
+///
+/// Returns a value in `[0.0, 1.0]` where 1.0 means all individuals have distinct fitness.
+pub fn compute_cardinality<U: ChromosomeT>(chromosomes: &[U]) -> f64 {
+    if chromosomes.is_empty() {
+        return 0.0;
+    }
+    let mut seen = std::collections::HashSet::new();
+    for c in chromosomes {
+        // Use bits representation for exact f64 comparison via HashSet
+        seen.insert(c.fitness().to_bits());
+    }
+    seen.len() as f64 / chromosomes.len() as f64
+}
+
+/// Adjusts mutation probability based on population cardinality vs target.
+///
+/// Increases probability when cardinality is below target (low diversity),
+/// decreases it when cardinality is above target (high diversity).
+pub fn dynamic_probability(
+    current_probability: f64,
+    cardinality: f64,
+    target_cardinality: f64,
+    probability_step: f64,
+    probability_max: f64,
+    probability_min: f64,
+) -> f64 {
+    if cardinality < target_cardinality {
+        (current_probability + probability_step).min(probability_max)
+    } else if cardinality > target_cardinality {
+        (current_probability - probability_step).max(probability_min)
+    } else {
+        current_probability
     }
 }

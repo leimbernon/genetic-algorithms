@@ -22,7 +22,7 @@ export type AIProvider = "github" | "anthropic";
 
 export const GITHUB_MODELS_ENDPOINT = "https://models.github.ai/inference";
 export const DEFAULT_GITHUB_MODEL = "openai/gpt-4.1";
-export const DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-6";
+export const DEFAULT_ANTHROPIC_MODEL = "claude-opus-4-6";
 export const MAX_RETRIES = 3;
 export const RETRY_DELAY_SECONDS = 5;
 

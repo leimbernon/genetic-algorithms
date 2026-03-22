@@ -69,19 +69,23 @@ extern crate core;
 
 #[cfg(feature = "serde")]
 pub mod checkpoint;
+#[cfg(feature = "visualization")]
+pub mod visualization;
 pub mod chromosomes;
 pub mod configuration;
 pub mod error;
+pub mod extension;
 pub mod fitness;
 pub mod ga;
 pub mod genotypes;
 pub mod initializers;
 pub mod operations;
 pub mod population;
+pub mod reporter;
 pub mod rng;
 pub mod stats;
 pub mod traits;
-mod validators;
+pub mod validators;
 
 pub mod island;
 pub mod niching;

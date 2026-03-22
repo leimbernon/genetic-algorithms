@@ -1,15 +1,19 @@
-# genetic_algorithms (v2.0.0)
+# genetic_algorithms (v2.1.0)
 
 [![Rust Unit Tests](https://github.com/leimbernon/rust_genetic_algorithms/actions/workflows/rust-unit-tests.yml/badge.svg)](https://github.com/leimbernon/rust_genetic_algorithms/actions/workflows/rust-unit-tests.yml)
 
 Modular and concurrent Genetic Algorithms (GA) library for Rust featuring:
 - Clear abstractions (traits for genes, chromosomes, and configuration).
-- Composable operators (selection, crossover, mutation, survivor).
+- Composable operators (selection, crossover, mutation, survivor, extension).
 - Multi-threaded execution via `rayon` (fitness evaluation, reproduction, mutation in parallel).
 - Adaptive GA mode (dynamic crossover and mutation probabilities based on population performance).
 - Elitism support (preserve top N individuals across generations).
+- Extension strategies for population diversity control (mass extinction, genesis, degeneration, deduplication).
+- Population diversity metric tracked per generation.
+- Lifecycle reporter hooks (`on_start`, `on_generation_complete`, `on_new_best`, `on_finish`).
 - Compound stopping criteria (stagnation, convergence, time limit).
 - `Cow` for minimizing unnecessary DNA copies.
+- Optional `visualization` feature for PNG/SVG fitness and diversity charts.
 
 ## Table of Contents
 - [Documentation](#documentation)
@@ -20,11 +24,14 @@ Modular and concurrent Genetic Algorithms (GA) library for Rust featuring:
   - [Included Genotypes & Chromosomes](#included-genotypes--chromosomes)
   - [Initializers](#initializers)
   - [Operators](#operators)
+  - [Reporter](#reporter)
+  - [Visualization](#visualization)
   - [GA Configuration](#ga-configuration)
   - [Adaptive GA](#adaptive-ga)
   - [Multithreading & Performance](#multithreading--performance)
 - [Quick Example](#quick-example)
 - [Full Example (Range)](#full-example-range)
+- [Examples](#examples)
 - [Usage](#usage)
 - [Development](#development)
 - [Roadmap / Notes](#roadmap--notes)
@@ -63,20 +70,57 @@ Main differences vs 1.x:
 ### Included Genotypes & Chromosomes
 - `genotypes::Binary` (boolean gene).
 - `genotypes::Range<T>` (values constrained to one or more `(min,max)` intervals).
+- `genotypes::List<T>` (values drawn from a finite symbolic alphabet).
 - `chromosomes::Range<T>` (chromosome built from `Range<T>` genes).
+- `chromosomes::ListChromosome<T>` (chromosome built from `List<T>` genes).
 - (Custom chromosomes can be added by implementing `ChromosomeT`).
 
 ### Initializers
 - `initializers::binary_random_initialization`.
 - `initializers::range_random_initialization`.
+- `initializers::list_random_initialization` (for `List<T>` chromosomes, with repetition).
+- `initializers::list_random_initialization_without_repetitions` (permutation problems).
 - `initializers::generic_random_initialization` (takes allele slice, optional unique IDs).
 - `initializers::generic_random_initialization_without_repetitions` (no allele repetition).
 
 ### Operators
 - **Selection:** `Random`, `RouletteWheel`, `StochasticUniversalSampling`, `Tournament`, `Rank`.
 - **Crossover:** `Cycle`, `MultiPoint`, `Uniform`, `SinglePoint`, `Order` (OX), `Sbx` (Simulated Binary), `BlendAlpha` (BLX-α).
-- **Mutation:** `Swap`, `Inversion`, `Scramble`, `Value` (Range<T>), `BitFlip` (Binary), `Creep` (uniform perturbation), `Gaussian` (normal perturbation).
+- **Mutation:** `Swap`, `Inversion`, `Scramble`, `Value` (Range<T>), `BitFlip` (Binary), `Creep` (uniform perturbation), `Gaussian` (normal perturbation), `ListValue` (List<T>).
 - **Survivor:** `Fitness` (keep best), `Age` (prefer younger / age-based pruning).
+- **Extension:** `Noop`, `MassExtinction`, `MassGenesis`, `MassDegeneration`, `MassDeduplication`.
+
+### Reporter
+Attach a lifecycle observer to `Ga` via `.with_reporter(Box::new(r))`. Four hooks: `on_start`, `on_generation_complete`, `on_new_best`, `on_finish`. Zero overhead when no reporter is configured (stored as `Option`).
+
+Built-in reporters:
+- `reporter::NoopReporter` — default, no-op.
+- `reporter::SimpleReporter::new(n)` — prints a progress line every N generations.
+- `reporter::DurationReporter::new()` — reports total elapsed time and per-generation average at finish.
+
+Implement `Reporter<U>` to build custom observers.
+
+### Visualization
+Optional feature flag. Add to `Cargo.toml`:
+```toml
+genetic_algorithms = { version = "2.1.0", features = ["visualization"] }
+```
+
+Three functions in `genetic_algorithms::visualization`:
+```rust
+// Fitness over generations (best, average, worst lines)
+visualization::plot_fitness(&stats, "fitness.png")?;
+visualization::plot_fitness(&stats, "fitness.svg")?;
+
+// Diversity over generations
+visualization::plot_diversity(&stats, "diversity.png")?;
+
+// Fitness distribution for a generation (raw fitness values)
+let fitness: Vec<f64> = population.iter().map(|c| c.fitness()).collect();
+visualization::plot_histogram(&fitness, "distribution.png")?;
+```
+
+Format is determined by path extension (`.png` or `.svg`). All functions return `Result<(), VisualizationError>`.
 
 ### GA Configuration
 `GaConfiguration` (or the `Ga` builder) exposes:
@@ -86,6 +130,7 @@ Main differences vs 1.x:
 - **Mutation:** `probability_min` / `probability_max`, `method`, `step` (Creep step size), `sigma` (Gaussian standard deviation).
 - **Survivor:** `survivor`.
 - **Elitism:** `elitism_count` — preserve the top N individuals unchanged across generations.
+- **Extension:** `extension_configuration` — optional diversity control strategies. Configure with `with_extension_method()`, `with_extension_diversity_threshold()`, `with_extension_survival_rate()`, `with_extension_mutation_rounds()`, `with_extension_elite_count()`.
 - **Stopping criteria:** `StoppingCriteria` with `stagnation_generations`, `convergence_threshold`, `max_duration_secs`. The GA stops when **any** enabled criterion is met.
 - **Infra:** `adaptive_ga`, `number_of_threads`, `log_level`.
 - **Progress** (present but not yet wired): `save_progress_configuration` (future/experimental).
@@ -183,11 +228,31 @@ let population = ga
 println!("Best fitness: {}", population.unwrap().best_chromosome.get_fitness());
 ```
 
+## Examples
+
+Run any example directly with `cargo run`:
+
+| Example | Domain | Command |
+|---------|--------|---------|
+| `rastrigin` | Continuous optimization | `cargo run --example rastrigin` |
+| `nsga2_zdt1` | Multi-objective (NSGA-II) | `cargo run --example nsga2_zdt1` |
+| `island_model` | Parallel / island model | `cargo run --example island_model` |
+| `job_scheduling` | Permutation / scheduling | `cargo run --example job_scheduling` |
+| `feature_selection` | Binary / adaptive GA | `cargo run --example feature_selection` |
+| `niching` | Multimodal / niching | `cargo run --example niching` |
+| `knapsack_binary` | Binary / combinatorial | `cargo run --example knapsack_binary` |
+| `nqueens_range` | Constraint satisfaction | `cargo run --example nqueens_range` |
+| `onemax_binary` | Binary / baseline | `cargo run --example onemax_binary` |
+| `onemax_extension` | Binary / diversity control | `cargo run --example onemax_extension` |
+
 ## Usage
 Add to your `Cargo.toml`:
 ```toml
 [dependencies]
-genetic_algorithms = "2.0.0"
+genetic_algorithms = "2.1.0"
+
+# Optional: enable PNG/SVG chart generation
+# genetic_algorithms = { version = "2.1.0", features = ["visualization"] }
 ```
 
 ## Development
@@ -200,10 +265,10 @@ cargo build --release  # Optimized release build
 
 ### Run Tests
 ```bash
-cargo test                        # Run all tests (unit + integration + doc-tests)
-cargo test test_ga                # Run only tests matching "test_ga"
-cargo test -- --nocapture         # Run tests with visible stdout/stderr
-cargo test --doc                  # Run doc-tests only
+cargo test                              # Run all tests
+cargo test --features serde             # Include serde tests
+cargo test --features visualization     # Include visualization tests
+cargo test -- --nocapture               # With visible stdout/stderr
 ```
 
 ### Run Benchmarks
@@ -217,12 +282,6 @@ cargo bench --bench survivor      # Run only survivor benchmarks
 cargo bench --no-run              # Only compile benchmarks (useful for CI)
 ```
 Reports are generated in `target/criterion/` and can be viewed in a browser.
-
-### Run Examples
-```bash
-cargo run --example knapsack_binary   # 0/1 Knapsack problem using Binary chromosomes
-cargo run --example nqueens_range     # N-Queens problem using Range<i32> chromosomes
-```
 
 ### Code Quality
 ```bash
