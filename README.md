@@ -1,4 +1,4 @@
-# genetic_algorithms (v2.2.0)
+# genetic_algorithms (v2.1.0)
 
 [![Rust Unit Tests](https://github.com/leimbernon/rust_genetic_algorithms/actions/workflows/rust-unit-tests.yml/badge.svg)](https://github.com/leimbernon/rust_genetic_algorithms/actions/workflows/rust-unit-tests.yml)
 
@@ -103,7 +103,7 @@ Implement `Reporter<U>` to build custom observers.
 ### Visualization
 Optional feature flag. Add to `Cargo.toml`:
 ```toml
-genetic_algorithms = { version = "2.2.0", features = ["visualization"] }
+genetic_algorithms = { version = "2.1.0", features = ["visualization"] }
 ```
 
 Three functions in `genetic_algorithms::visualization`:
@@ -249,10 +249,10 @@ Run any example directly with `cargo run`:
 Add to your `Cargo.toml`:
 ```toml
 [dependencies]
-genetic_algorithms = "2.2.0"
+genetic_algorithms = "2.1.0"
 
 # Optional: enable PNG/SVG chart generation
-# genetic_algorithms = { version = "2.2.0", features = ["visualization"] }
+# genetic_algorithms = { version = "2.1.0", features = ["visualization"] }
 ```
 
 ## Development
