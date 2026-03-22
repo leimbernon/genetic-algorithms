@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 11-01-PLAN.md
-last_updated: "2026-03-22T10:35:46.664Z"
+stopped_at: Completed 11-03-PLAN.md
+last_updated: "2026-03-22T10:35:54.983Z"
 progress:
   total_phases: 7
   completed_phases: 6
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-21)
 ## Current Position
 
 Phase: 11 (advanced-mode-examples) — EXECUTING
-Plan: 1 of 3
+Plan: 2 of 3
 
 ## Performance Metrics
 
@@ -68,6 +68,9 @@ Recent decisions affecting current work:
 - [Phase 10]: Adaptive GA requires explicit crossover probability bounds (max/min) — always pair with_adaptive_ga(true) with with_crossover_probability_max/min builder calls
 - [Phase 11]: Nsga2Ga::run() has no callback hook — document API limitation in example doc block and stdout
 - [Phase 11]: GaConfiguration for NSGA-II: set limit_configuration fields directly since Nsga2Ga does not expose ConfigurationT builder
+- [Phase 11]: IslandGa::run() used directly — evolve_islands_one_generation() and global_best() are private, so no per-migration progress; API limitation documented in example doc block
+- [Phase 11]: Crossover::Order + Mutation::Insertion as permutation-safe operator pair for job scheduling example
+- [Phase 11]: PROCESSING_TIMES as module-level const to avoid closure capture issues in fitness_fn
 
 ### Pending Todos
 
@@ -79,6 +82,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-22T10:35:37.398Z
-Stopped at: Completed 11-01-PLAN.md
+Last session: 2026-03-22T10:35:54.981Z
+Stopped at: Completed 11-03-PLAN.md
 Resume file: None
