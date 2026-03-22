@@ -38,7 +38,7 @@ Issues closed: #170, #171, #178, #179.
 **Milestone goal:** Add six runnable examples covering all major GA modes and operators, and update the README to document them with `cargo run --example` commands.
 
 - [x] **Phase 10: Single-population Examples** - Rastrigin continuous optimization, Feature Selection with adaptive GA, and Niching / Fitness Sharing — all using `Ga<U>` (completed 2026-03-22)
-- [ ] **Phase 11: Advanced Mode Examples** - NSGA-II multi-objective (ZDT1), Island Model multi-population, and Job Scheduling permutation — using `Nsga2Ga` and `IslandGa`
+- [x] **Phase 11: Advanced Mode Examples** - NSGA-II multi-objective (ZDT1), Island Model multi-population, and Job Scheduling permutation — using `Nsga2Ga` and `IslandGa` (completed 2026-03-22)
 - [ ] **Phase 12: Documentation** - README updated with examples section and `cargo run --example <name>` commands
 
 ## Phase Details
@@ -129,7 +129,7 @@ Plans:
   2. `cargo run --example island_model` executes without error and prints per-island best fitness values plus the global best after migration rounds complete
   3. `cargo run --example job_scheduling` executes without error and prints the best job ordering found along with its makespan value
   4. Each example file is self-contained with an explanatory comment block describing the problem, GA mode used, and key configuration choices
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 11-01-PLAN.md — NSGA-II ZDT1 multi-objective example (EX-02)
@@ -157,5 +157,5 @@ Plans:
 | 8. Reporter Trait | v2.2 | 2/2 | Complete | 2026-03-21 |
 | 9. Visualization | v2.2 | 2/2 | Complete | 2026-03-21 |
 | 10. Single-population Examples | 3/3 | Complete    | 2026-03-22 | - |
-| 11. Advanced Mode Examples | v2.1.0 | 0/3 | Not started | - |
+| 11. Advanced Mode Examples | 3/3 | Complete   | 2026-03-22 | - |
 | 12. Documentation | v2.1.0 | 0/TBD | Not started | - |
