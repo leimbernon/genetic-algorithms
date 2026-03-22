@@ -161,4 +161,4 @@ Plans:
 | 9. Visualization | v2.2 | 2/2 | Complete | 2026-03-21 |
 | 10. Single-population Examples | 3/3 | Complete    | 2026-03-22 | - |
 | 11. Advanced Mode Examples | 3/3 | Complete    | 2026-03-22 | - |
-| 12. Documentation | 1/1 | Complete   | 2026-03-22 | - |
+| 12. Documentation | 1/1 | Complete    | 2026-03-22 | - |
