@@ -7,7 +7,7 @@
 
 ### Examples
 
-- [ ] **EX-01**: User can run a Rastrigin continuous optimization example using `Range<f64>` chromosomes and gaussian/creep mutation operators
+- [x] **EX-01**: User can run a Rastrigin continuous optimization example using `Range<f64>` chromosomes and gaussian/creep mutation operators
 - [ ] **EX-02**: User can run an NSGA-II multi-objective example optimizing the ZDT1 benchmark (two conflicting objectives)
 - [ ] **EX-03**: User can run an Island Model GA example with multiple sub-populations evolving in parallel with migration
 - [ ] **EX-04**: User can run a Job Scheduling example minimizing makespan across machines via permutation-based chromosome representation
@@ -43,7 +43,7 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| EX-01 | Phase 10 | Pending |
+| EX-01 | Phase 10 | Complete |
 | EX-02 | Phase 11 | Pending |
 | EX-03 | Phase 11 | Pending |
 | EX-04 | Phase 11 | Pending |

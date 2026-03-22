@@ -113,7 +113,7 @@ Plans:
   2. `cargo run --example feature_selection` executes without error and prints the best binary feature mask found along with its evaluated fitness
   3. `cargo run --example niching` executes without error and the reported best solutions include multiple distinct peaks rather than converging to a single one
   4. Each example file is self-contained with an explanatory comment block describing the problem, chromosome type, and operators used
-**Plans:** 3 plans
+**Plans:** 2/3 plans executed
 
 Plans:
 - [ ] 10-01-PLAN.md — Rastrigin continuous optimization example (EX-01)
@@ -151,6 +151,6 @@ Plans:
 | 7. List Genotype | v2.2 | 2/2 | Complete | 2026-03-21 |
 | 8. Reporter Trait | v2.2 | 2/2 | Complete | 2026-03-21 |
 | 9. Visualization | v2.2 | 2/2 | Complete | 2026-03-21 |
-| 10. Single-population Examples | v2.1.0 | 0/3 | Planning complete | - |
+| 10. Single-population Examples | 2/3 | In Progress|  | - |
 | 11. Advanced Mode Examples | v2.1.0 | 0/TBD | Not started | - |
 | 12. Documentation | v2.1.0 | 0/TBD | Not started | - |

@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.1.0
-milestone_name: New Examples
-status: ready_to_plan
-stopped_at: Roadmap created for phases 10-12
-last_updated: "2026-03-21T00:00:00.000Z"
+milestone: v2.1
+milestone_name: milestone
+status: unknown
+stopped_at: Completed 10-01-PLAN.md (rastrigin.rs example)
+last_updated: "2026-03-22T09:35:41.828Z"
 progress:
-  total_phases: 3
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_phases: 7
+  completed_phases: 4
+  total_plans: 11
+  completed_plans: 10
 ---
 
 # Project State
@@ -19,16 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-21)
 
 **Core value:** The simplest correct way to run a genetic algorithm in Rust — generic enough for any problem domain, fast enough for real workloads.
-**Current focus:** Phase 10 — Single-population Examples
+**Current focus:** Phase 10 — single-population-examples
 
 ## Current Position
 
-Phase: 10 of 12 (Single-population Examples)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-03-21 — Roadmap created for milestone v2.1.0 New Examples (phases 10-12)
-
-Progress: [░░░░░░░░░░] 0%
+Phase: 10 (single-population-examples) — COMPLETE
+Plan: 3 of 3
 
 ## Performance Metrics
 
@@ -45,6 +41,8 @@ Progress: [░░░░░░░░░░] 0%
 | - | - | - | - |
 
 *Updated after each plan completion*
+| Phase 10 P01 | 1 | 1 tasks | 1 files |
+| Phase 10 P03 | 1 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -59,6 +57,10 @@ Recent decisions affecting current work:
 - No breaking changes to `ChromosomeT` or operator trait signatures
 - Enum + factory pattern for all operators (no dyn Trait overhead in operator dispatch)
 - [Phase 09]: plotters text labels omitted from PNG — ab_glyph requires registered font bytes; SVG works without font registration
+- [Phase 10]: RangeGenotype::new() first arg is i32 id, not T — plan template had type mismatch (0.0_f64 → 0)
+- [Phase 10]: Rastrigin example uses Gaussian mutation + Tournament selection + Minimization mode for continuous optimization
+- [Phase 10 P03]: NichingConfig must be imported explicitly from genetic_algorithms::traits for builder methods to compile
+- [Phase 10 P03]: SIGMA_SHARE=1.5, POP_SIZE=150 reliably covers all 3 peaks in 300 generations
 
 ### Pending Todos
 
@@ -70,6 +72,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21
-Stopped at: Roadmap created — phases 10, 11, 12 defined. Ready to plan Phase 10.
+Last session: 2026-03-22T09:35:41.826Z
+Stopped at: Completed 10-03-PLAN.md (niching.rs example) — Phase 10 complete
 Resume file: None
