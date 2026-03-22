@@ -16,7 +16,7 @@
 
 ### Documentation
 
-- [ ] **DOC-01**: README documents all available examples with a brief purpose description and the corresponding `cargo run --example <name>` command
+- [x] **DOC-01**: README documents all available examples with a brief purpose description and the corresponding `cargo run --example <name>` command
 
 ## Future Requirements
 
@@ -49,7 +49,7 @@
 | EX-04 | Phase 11 | Complete |
 | EX-05 | Phase 10 | Complete |
 | EX-06 | Phase 10 | Complete |
-| DOC-01 | Phase 12 | Pending |
+| DOC-01 | Phase 12 | Complete |
 
 **Coverage:**
 - v2.1.0 requirements: 7 total
