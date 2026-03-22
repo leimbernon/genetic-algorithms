@@ -12,7 +12,7 @@
 - [ ] **EX-03**: User can run an Island Model GA example with multiple sub-populations evolving in parallel with migration
 - [ ] **EX-04**: User can run a Job Scheduling example minimizing makespan across machines via permutation-based chromosome representation
 - [ ] **EX-05**: User can run a Feature Selection example using Binary chromosomes with adaptive GA to select optimal ML feature subsets
-- [ ] **EX-06**: User can run a Niching / Fitness Sharing example that maintains multiple solutions in a multimodal optimization landscape
+- [x] **EX-06**: User can run a Niching / Fitness Sharing example that maintains multiple solutions in a multimodal optimization landscape
 
 ### Documentation
 
@@ -48,7 +48,7 @@
 | EX-03 | Phase 11 | Pending |
 | EX-04 | Phase 11 | Pending |
 | EX-05 | Phase 10 | Pending |
-| EX-06 | Phase 10 | Pending |
+| EX-06 | Phase 10 | Complete |
 | DOC-01 | Phase 12 | Pending |
 
 **Coverage:**

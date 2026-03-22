@@ -37,7 +37,7 @@ Issues closed: #170, #171, #178, #179.
 
 **Milestone goal:** Add six runnable examples covering all major GA modes and operators, and update the README to document them with `cargo run --example` commands.
 
-- [ ] **Phase 10: Single-population Examples** - Rastrigin continuous optimization, Feature Selection with adaptive GA, and Niching / Fitness Sharing — all using `Ga<U>`
+- [x] **Phase 10: Single-population Examples** - Rastrigin continuous optimization, Feature Selection with adaptive GA, and Niching / Fitness Sharing — all using `Ga<U>` (completed 2026-03-22)
 - [ ] **Phase 11: Advanced Mode Examples** - NSGA-II multi-objective (ZDT1), Island Model multi-population, and Job Scheduling permutation — using `Nsga2Ga` and `IslandGa`
 - [ ] **Phase 12: Documentation** - README updated with examples section and `cargo run --example <name>` commands
 
@@ -113,7 +113,7 @@ Plans:
   2. `cargo run --example feature_selection` executes without error and prints the best binary feature mask found along with its evaluated fitness
   3. `cargo run --example niching` executes without error and the reported best solutions include multiple distinct peaks rather than converging to a single one
   4. Each example file is self-contained with an explanatory comment block describing the problem, chromosome type, and operators used
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 10-01-PLAN.md — Rastrigin continuous optimization example (EX-01)
@@ -151,6 +151,6 @@ Plans:
 | 7. List Genotype | v2.2 | 2/2 | Complete | 2026-03-21 |
 | 8. Reporter Trait | v2.2 | 2/2 | Complete | 2026-03-21 |
 | 9. Visualization | v2.2 | 2/2 | Complete | 2026-03-21 |
-| 10. Single-population Examples | 2/3 | In Progress|  | - |
+| 10. Single-population Examples | 3/3 | Complete   | 2026-03-22 | - |
 | 11. Advanced Mode Examples | v2.1.0 | 0/TBD | Not started | - |
 | 12. Documentation | v2.1.0 | 0/TBD | Not started | - |
