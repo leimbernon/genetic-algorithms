@@ -1,60 +1,123 @@
 # Requirements: genetic_algorithms
 
-**Defined:** 2026-03-21
-**Core Value:** The simplest correct way to run a genetic algorithm in Rust — generic enough for any problem domain, fast enough for real workloads.
+**Defined:** 2026-03-23
+**Core Value:** Users can solve complex optimization problems with composable, performant genetic algorithms
 
-## v2.1.0 Requirements
+## v2.2.0 Requirements
 
-### Examples
+Requirements for the Observability & Traceability milestone. Each maps to roadmap phases.
 
-- [x] **EX-01**: User can run a Rastrigin continuous optimization example using `Range<f64>` chromosomes and gaussian/creep mutation operators
-- [x] **EX-02**: User can run an NSGA-II multi-objective example optimizing the ZDT1 benchmark (two conflicting objectives)
-- [x] **EX-03**: User can run an Island Model GA example with multiple sub-populations evolving in parallel with migration
-- [x] **EX-04**: User can run a Job Scheduling example minimizing makespan across machines via permutation-based chromosome representation
-- [x] **EX-05**: User can run a Feature Selection example using Binary chromosomes with adaptive GA to select optimal ML feature subsets
-- [x] **EX-06**: User can run a Niching / Fitness Sharing example that maintains multiple solutions in a multimodal optimization landscape
+### Observer Core
 
-### Documentation
+- [ ] **OBS-01**: User can attach an observer to `Ga<U>` via `with_observer()` builder method
+- [ ] **OBS-02**: Observer receives lifecycle events (run start/end, generation start/end) with timing data
+- [ ] **OBS-03**: Observer receives operator events (selection, crossover, mutation, fitness eval, survivor) with counts and timing
+- [ ] **OBS-04**: Observer receives special events (best chromosome updated, stagnation detected, convergence detected)
+- [ ] **OBS-05**: Observer receives adaptive GA events (parameter updates, dynamic mutation updates)
+- [ ] **OBS-06**: Observer receives checkpoint events (saved, failed)
+- [ ] **OBS-07**: Observer receives elitism and niching events with counts and timing
+- [ ] **OBS-08**: All observer trait methods have default no-op implementations for forward compatibility
+- [ ] **OBS-09**: Zero overhead when no observer is set (Option::None branch, no allocations or measurements)
+- [ ] **OBS-10**: Observer is stored as `Option<Arc<dyn GaObserver<U> + Send + Sync>>` for thread safety
+- [ ] **OBS-11**: Typed `ExtensionEvent` struct carries rich data for extension/niching events
 
-- [x] **DOC-01**: README documents all available examples with a brief purpose description and the corresponding `cargo run --example <name>` command
+### Logging
+
+- [ ] **LOG-01**: `LogObserver` implements all `GaObserver<U>` methods using `log!()` macros
+- [ ] **LOG-02**: Log output is identical to current behavior (same 8 targets, levels, message format)
+- [ ] **LOG-03**: Hardcoded `log!()` calls removed from `ga.rs` and operator modules
+- [ ] **LOG-04**: Backward compatible: `with_logs(LogLevel)` without explicit observer produces same output as before
+- [ ] **LOG-05**: User can override default LogObserver by setting a custom observer
+
+### Tracing
+
+- [ ] **TRC-01**: `observer-tracing` feature flag compiles and is off by default
+- [ ] **TRC-02**: `TracingObserver` implements all `GaObserver<U>` methods with structured spans
+- [ ] **TRC-03**: Spans are properly nested (ga_run > generation > operators)
+- [ ] **TRC-04**: All events carry structured fields (generation, duration_us, fitness values, counts)
+- [ ] **TRC-05**: Integration test with `tracing-test` verifying span/event emission
+- [ ] **TRC-06**: Example showing usage with `tracing-subscriber`
+
+### Multi-Engine Observers
+
+- [ ] **ISL-01**: `IslandObserver<U>` sub-trait defined with migration start/complete, per-island generation, island run start/end events
+- [ ] **ISL-02**: `Nsga2Observer<U>` sub-trait defined with non-dominated sort, crowding distance, Pareto front update events
+- [ ] **ISL-03**: `IslandGa<U>` instrumented with observer notifications including migration events
+- [ ] **ISL-04**: `Nsga2Ga<U>` instrumented with observer notifications including Pareto-specific events
+- [ ] **ISL-05**: `LogObserver` extended to cover Island and NSGA-II events
+- [ ] **ISL-06**: `TracingObserver` extended (if feature enabled) with Island and NSGA-II spans
+
+### Composition & Metrics
+
+- [ ] **CMP-01**: `CompositeObserver<U>` delegates every `GaObserver` method to all inner observers
+- [ ] **CMP-02**: `CompositeObserver` works with `IslandObserver` and `Nsga2Observer` as well
+- [ ] **CMP-03**: Builder pattern: `CompositeObserver::new().with(observer1).with(observer2).build()`
+- [ ] **MET-01**: `observer-metrics` feature flag compiles and is off by default
+- [ ] **MET-02**: `MetricsObserver` emits all defined metrics (histograms, gauges, counters) via `metrics` crate facade
+- [ ] **MET-03**: Integration test with `metrics-util` verifying metric emission
+- [ ] **MET-04**: Example showing CompositeObserver with LogObserver + MetricsObserver
 
 ## Future Requirements
 
-### Alternative Strategies (#172–#177)
+### Documentation & Examples
 
-- **STRAT-01**: HillClimb strategy
-- **STRAT-02**: Permutate strategy
-- **STRAT-03**: Unique genotype
-- **STRAT-04**: MultiRange genotype
-- **STRAT-05**: MultiUnique genotype
-- **STRAT-06**: Unified strategy trait
+- **DOC-01**: Comprehensive module-level documentation for observer system
+- **DOC-02**: Migration guide from `with_logs()` to observer pattern
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Breaking API changes | Deferred to v3.0+ Advanced Representations milestone |
-| NSGA-III / MOEA/D / SPEA2 | Separate Advanced Multi-Objective milestone |
-| Differential Evolution engine | Separate Alt. Metaheuristics milestone |
-| Observer/tracing system | Separate Observability milestone (#182–#186) |
-| New operators or chromosome types | Separate New Operators milestone |
+| Async observer methods | `rayon` thread model incompatible; `GaObserver` methods must be sync |
+| Bundled telemetry backends (Prometheus, Jaeger) | Facade pattern — users choose their own backends |
+| Per-gene hooks | Too granular; unacceptable overhead in hot loops |
+| GUI/visualization | Library focus — users choose their own frontend |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| EX-01 | Phase 10 | Complete |
-| EX-02 | Phase 11 | Complete |
-| EX-03 | Phase 11 | Complete |
-| EX-04 | Phase 11 | Complete |
-| EX-05 | Phase 10 | Complete |
-| EX-06 | Phase 10 | Complete |
-| DOC-01 | Phase 12 | Complete |
+| OBS-01 | — | Pending |
+| OBS-02 | — | Pending |
+| OBS-03 | — | Pending |
+| OBS-04 | — | Pending |
+| OBS-05 | — | Pending |
+| OBS-06 | — | Pending |
+| OBS-07 | — | Pending |
+| OBS-08 | — | Pending |
+| OBS-09 | — | Pending |
+| OBS-10 | — | Pending |
+| OBS-11 | — | Pending |
+| LOG-01 | — | Pending |
+| LOG-02 | — | Pending |
+| LOG-03 | — | Pending |
+| LOG-04 | — | Pending |
+| LOG-05 | — | Pending |
+| TRC-01 | — | Pending |
+| TRC-02 | — | Pending |
+| TRC-03 | — | Pending |
+| TRC-04 | — | Pending |
+| TRC-05 | — | Pending |
+| TRC-06 | — | Pending |
+| ISL-01 | — | Pending |
+| ISL-02 | — | Pending |
+| ISL-03 | — | Pending |
+| ISL-04 | — | Pending |
+| ISL-05 | — | Pending |
+| ISL-06 | — | Pending |
+| CMP-01 | — | Pending |
+| CMP-02 | — | Pending |
+| CMP-03 | — | Pending |
+| MET-01 | — | Pending |
+| MET-02 | — | Pending |
+| MET-03 | — | Pending |
+| MET-04 | — | Pending |
 
 **Coverage:**
-- v2.1.0 requirements: 7 total
-- Mapped to phases: 7
-- Unmapped: 0 ✓
+- v2.2.0 requirements: 35 total
+- Mapped to phases: 0
+- Unmapped: 35 ⚠️
 
 ---
-*Requirements defined: 2026-03-21*
+*Requirements defined: 2026-03-23*
+*Last updated: 2026-03-23 after initial definition*
