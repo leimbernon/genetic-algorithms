@@ -279,3 +279,52 @@ fn test_log_observer_attaches_and_runs() {
 fn test_log_observer_crate_reexport() {
     let _obs = genetic_algorithms::LogObserver;
 }
+
+/// Regression: no direct info!/debug!/trace! calls remain in ga.rs
+#[test]
+fn test_ga_has_no_direct_log_calls() {
+    let ga_source = include_str!("../src/ga.rs");
+    // Count occurrences of direct log macro invocations
+    // The only allowed log call is log::warn! inside #[cfg(feature = "serde")]
+    for line in ga_source.lines() {
+        let trimmed = line.trim();
+        // Skip comments
+        if trimmed.starts_with("//") || trimmed.starts_with("/*") || trimmed.starts_with("*") {
+            continue;
+        }
+        // These macros must not appear outside comments
+        assert!(
+            !trimmed.starts_with("info!("),
+            "Found direct info!() call in ga.rs: {}", trimmed
+        );
+        assert!(
+            !trimmed.starts_with("debug!("),
+            "Found direct debug!() call in ga.rs: {}", trimmed
+        );
+        assert!(
+            !trimmed.starts_with("trace!("),
+            "Found direct trace!() call in ga.rs: {}", trimmed
+        );
+        // log::info!, log::debug!, log::trace! forms
+        assert!(
+            !trimmed.starts_with("log::info!("),
+            "Found direct log::info!() call in ga.rs: {}", trimmed
+        );
+        assert!(
+            !trimmed.starts_with("log::debug!("),
+            "Found direct log::debug!() call in ga.rs: {}", trimmed
+        );
+        assert!(
+            !trimmed.starts_with("log::trace!("),
+            "Found direct log::trace!() call in ga.rs: {}", trimmed
+        );
+    }
+    // log::warn! is allowed (checkpoint failure, serde-gated) — verify it exists exactly once
+    let warn_count = ga_source.lines()
+        .filter(|l| {
+            let t = l.trim();
+            !t.starts_with("//") && (t.starts_with("log::warn!(") || t.starts_with("warn!("))
+        })
+        .count();
+    assert!(warn_count <= 1, "Expected at most 1 warn!() call in ga.rs (checkpoint exception), found {}", warn_count);
+}

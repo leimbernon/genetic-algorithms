@@ -43,7 +43,6 @@ use crate::{
         MutationConfig, NichingConfig, SelectionConfig, StoppingConfig,
     },
 };
-use log::{debug, info, trace};
 use rand::Rng;
 use rayon::prelude::*;
 use std::fmt::Debug;
@@ -610,8 +609,6 @@ where
         //Before starting the run, we will check the conditions
         ValidatorFactory::validate::<U>(Some(&self.configuration), None, Some(&self.alleles))?;
 
-        info!("Initialization started");
-
         let population_size = self.configuration.limit_configuration.population_size;
         let genes_per_chromosome = self.configuration.limit_configuration.genes_per_chromosome;
         let needs_unique_ids = self.configuration.limit_configuration.needs_unique_ids;
@@ -751,7 +748,6 @@ where
 
         //We start the cycles
         for i in 0..self.configuration.limit_configuration.max_generations {
-            info!(target="ga_events", method="run"; "Generation number: {}", i+1);
             age += 1;
             self.notify(|obs| obs.on_generation_start(i));
 
@@ -765,8 +761,6 @@ where
             if let Some(t) = t_sel {
                 self.notify(|obs| obs.on_selection_complete(i, t.elapsed(), parents.len()));
             }
-            debug!(target="ga_events", method="run"; "Parents selected for reproduction");
-
             //2- Getting the offspring
             let dynamic_prob = if self.configuration.mutation_configuration.dynamic_mutation {
                 Some(self.dynamic_mutation_probability)
@@ -791,8 +785,6 @@ where
                 self.notify(|obs| obs.on_mutation_complete(i, Duration::ZERO, pop_size));
                 self.notify(|obs| obs.on_fitness_evaluation_complete(i, Duration::ZERO, pop_size));
             }
-            debug!(target="ga_events", method="run"; "Offspring created");
-
             //3- Insert the children in the population
             self.population.add_chromosomes(&mut offspring);
 
@@ -891,8 +883,6 @@ where
                 }
             }
 
-            debug!(target="ga_events", method="run"; "Survivors selected");
-
             //5- Sets the best chromosome (scan by index, clone only the winner)
             {
                 let ps = self.configuration.limit_configuration.problem_solving;
@@ -918,8 +908,6 @@ where
                     }
                 }
             }
-            debug!(target="ga_events", method="run"; "Best chromosome calculated - generation {}", i+1);
-
             // Collect per-generation statistics
             let fitness_values: Vec<f64> = self
                 .population
@@ -963,14 +951,6 @@ where
                     p_min,
                 );
 
-                debug!(
-                    target = "ga_events",
-                    method = "run";
-                    "Dynamic mutation: diversity={:.4}, probability={:.4}",
-                    gen_stats.diversity,
-                    self.dynamic_mutation_probability
-                );
-
                 // Update the pushed stats entry with the current dynamic mutation probability
                 if let Some(last) = self.stats.last_mut() {
                     last.dynamic_mutation_probability = Some(self.dynamic_mutation_probability);
@@ -989,14 +969,6 @@ where
                 if ext_config.method != Extension::Noop
                     && gen_stats.diversity < ext_config.diversity_threshold
                 {
-                    info!(
-                        target = "extension_events",
-                        method = "run";
-                        "Extension triggered: diversity={:.6} < threshold={:.6}",
-                        gen_stats.diversity,
-                        ext_config.diversity_threshold
-                    );
-
                     extension::factory(
                         ext_config.method,
                         &mut self.population.chromosomes,
@@ -1074,6 +1046,9 @@ where
                     let path = std::path::Path::new(&spc.save_progress_path)
                         .join(format!("checkpoint_gen_{}.json", i + 1));
                     if let Err(e) = crate::checkpoint::save_checkpoint(&ckpt, &path) {
+                        // Exception: this log::warn! cannot migrate to LogObserver because no
+                        // on_checkpoint_failed hook exists (deferred per REQUIREMENTS.md EXT-02).
+                        // It is feature-gated (#[cfg(feature = "serde")]) and only fires on I/O errors.
                         log::warn!("Failed to save checkpoint at generation {}: {}", i + 1, e);
                     }
                 }
@@ -1204,14 +1179,12 @@ fn limit_reached<U>(limit: LimitConfiguration, chromosomes: &[U]) -> bool
 where
     U: ChromosomeT,
 {
-    debug!(target="ga_events", method="limit_reached"; "Started limit reached method");
     let mut result = false;
 
     if limit.problem_solving == ProblemSolving::Minimization {
         //If the problem-solving is minimization, fitness must be 0
         for chromosome in chromosomes {
             if chromosome.fitness() == 0.0 {
-                trace!(target="ga_events", method="limit_reached"; "limit reached for minimization");
                 result = true;
                 break;
             }
@@ -1221,7 +1194,6 @@ where
         if let Some(target) = limit.fitness_target {
             for chromosome in chromosomes {
                 if chromosome.fitness() == target {
-                    trace!(target="ga_events", method="limit_reached"; "limit reached for fixed fitness");
                     result = true;
                     break;
                 }
@@ -1229,7 +1201,6 @@ where
         }
     }
 
-    debug!(target="ga_events", method="limit_reached"; "Limit reached method finished");
     result
 }
 
@@ -1251,8 +1222,6 @@ fn parent_crossover<U>(
 where
     U: ChromosomeT + Send + Sync + 'static + Clone + mutation::ValueMutable,
 {
-    debug!(target="ga_events", method="parent_crossover"; "Started the parent crossover");
-
     /*
         Gets the static crossover probability config and the static mutation probability config
         This way we avoid of passing by these conditions at each thread if it's not necessary
@@ -1334,8 +1303,6 @@ where
                     )
                 };
 
-            debug!(target="ga_events", method="parent_crossover"; "Processing parent pair");
-
             let mut child_1: U;
             let mut child_2: U;
 
@@ -1351,8 +1318,6 @@ where
                 child_1 = parent_1;
                 child_2 = parent_2;
             }
-
-            debug!(target="ga_events", method="parent_crossover"; "mutation_probability_config {} - mutation probability {}", effective_mutation_prob, mutation_probability);
 
             if mutation_probability < effective_mutation_prob {
                 mutation::factory_with_params(
@@ -1390,7 +1355,6 @@ where
         offspring.extend(result?);
     }
 
-    debug!(target="ga_events", method="parent_crossover"; "Parent crossover finished");
     Ok(offspring)
 }
 
