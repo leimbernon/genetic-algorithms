@@ -1,192 +1,299 @@
-# Feature Landscape
+# Feature Research
 
 **Domain:** Observability system for a Rust genetic algorithms library
-**Researched:** 2026-03-23
-**Confidence:** HIGH (based on direct codebase analysis + strong training knowledge of tracing/metrics/log crate APIs)
+**Researched:** 2026-03-25
+**Confidence:** HIGH (direct codebase inspection + verified tracing 0.1.44 and metrics 0.24.3 via docs.rs)
 
 ---
 
 ## Context: What Already Exists
 
-Before mapping features, it is critical to understand what the codebase already provides, because the observer system must replace or wrap these — not duplicate them.
+The observer system is additive. Understanding the existing surface prevents duplication.
 
-**Existing logging surface (hardcoded `log!()` macros):**
+**Existing `Reporter<U>` trait (v2.1.0 — stays, does NOT get replaced):**
 
-| Log Target | Where Called | Level Used |
-|---|---|---|
-| `ga_events` | `ga.rs` main loop | `info`, `debug`, `trace` |
-| `population_events` | `population.rs` | `debug`, `trace` |
-| `selection_events` | All selection operators | `debug`, `trace` |
-| `crossover_events` | All crossover operators | `debug` |
-| `mutation_events` | All mutation operators | `debug`, `warn` |
-| `survivor_events` | All survivor operators | `debug`, `trace` |
-| `chromosome_events` | `population.rs` | `debug` |
-| `island_events` | `island/mod.rs`, `island/nsga2.rs` | `info`, `debug` |
-| `nsga2_events` | `nsga2/mod.rs` | `info`, `debug` |
-| `extension_events` | (implicit, for niching/adaptive) | `debug` |
+| Hook | Signature | Notes |
+|------|-----------|-------|
+| `on_start` | `&mut self` | Before generation loop |
+| `on_generation_complete` | `&mut self, &GenerationStats` | After each generation |
+| `on_new_best` | `&mut self, generation: usize, best: U` | When best fitness improves (takes ownership of clone) |
+| `on_finish` | `&mut self, TerminationCause, &[GenerationStats]` | After loop exits |
 
-**Existing data the observer can observe:**
-- `GenerationStats` (best/worst/avg fitness, std dev, population size, generation number)
-- `TerminationCause` (7 variants)
-- `Population<U>` (chromosomes, best chromosome)
-- Island index, migration events, Pareto front rank/crowding distance
+`Reporter<U>` uses `&mut self` and is stored as `Option<Box<dyn Reporter<U> + Send>>` — single-threaded ownership. It cannot be shared across island threads. `GaObserver<U>` must use `&self` and `Arc` to satisfy the island model's `rayon` parallelism.
 
----
+**Existing `GenerationStats` fields available to observers:**
+`generation`, `best_fitness`, `worst_fitness`, `avg_fitness`, `fitness_std_dev`, `population_size`, `diversity`
 
-## Table Stakes
+**Existing `TerminationCause` variants:**
+`GenerationLimitReached`, `FitnessTargetReached`, `StagnationReached`, `ConvergenceReached`, `TimeLimitReached`, `CallbackRequested`, `NotTerminated`
 
-Features users expect when they see "observability system". Missing these makes the feature feel incomplete.
+**Existing hardcoded `log!()` call-site inventory:**
 
-| Feature | Why Expected | Complexity | Depends On |
+| Log Target | Location | Level | Count |
 |---|---|---|---|
-| `GaObserver` trait with default no-op methods | Foundational — all other observers implement this | Low | `GenerationStats`, `TerminationCause`, `ChromosomeT` |
-| `on_generation_end` hook | Fundamental telemetry point — every generation emits stats | Low | `GaObserver` |
-| `on_run_start` hook | Baseline lifecycle: users need to open spans/timers at start | Low | `GaObserver` |
-| `on_run_end` hook | Lifecycle: flush metrics, close spans, log summary | Low | `GaObserver` |
-| `on_best_chromosome_updated` hook | Most important observability signal for optimization problems | Low-Med | `GaObserver`, `ChromosomeT` |
-| `on_termination` hook | Required to log/record why the run stopped | Low | `GaObserver`, `TerminationCause` |
-| `LogObserver` (behind no feature flag) | Drop-in replacement for current hardcoded `log!()` calls | Med | `GaObserver`, `log` crate (already dep) |
-| `LogObserver` must reproduce identical log output | Backward compatibility — existing users using `env_logger` must see same messages | Med | Requires audit of all 8 log targets |
-| `with_observer()` builder method on `Ga`, `IslandGa`, `Nsga2Ga` | Ergonomic attachment point | Low | `Option<Arc<dyn GaObserver<U>>>` |
-| Observer stored as `Option<Arc<dyn GaObserver<U>>>` | Zero overhead when `None`; `Arc` required for `Send + Sync` across rayon | Low | Existing `Arc` usage pattern in codebase |
-| All observer trait methods have default no-op impls | Forward compatibility — new events added later don't break existing observers | Low | Trait design |
+| `ga_events` | `ga.rs` main loop | info/debug/trace | ~12 |
+| `population_events` | `population.rs` | debug/trace | ~3 |
+| `chromosome_events` | `population.rs` | debug | ~1 |
+| `selection_events` | All selection operators | debug/trace | ~25 |
+| `crossover_events` | All crossover operators | debug/trace | ~20 |
+| `mutation_events` | All mutation operators | debug/trace | ~18 |
+| `survivor_events` | All survivor operators | debug/trace | ~9 |
+| `island_events` | `island/mod.rs` | info/debug | ~4 |
+| `nsga2_events` | `nsga2/mod.rs` | info/debug | ~2 |
+
+Total: approximately 94 call sites across 9 targets. `LogObserver` must reproduce all of them to satisfy the backward-compatibility constraint.
 
 ---
 
-## Differentiators
+## Feature Landscape
 
-Features that meaningfully raise the value above baseline. Not expected, but distinguishing.
+### Table Stakes (Users Expect These)
 
-| Feature | Value Proposition | Complexity | Depends On |
-|---|---|---|---|
-| `TracingObserver` (behind `observer-tracing` feature flag) | Structured spans via the `tracing` crate — integrates with OpenTelemetry, Jaeger, Honeycomb; users bring their own subscriber | Med | `GaObserver`, `tracing` crate ≥ 0.1 |
-| `TracingObserver` uses spans for generation lifecycle | Each generation becomes a `tracing::span!` with fitness fields — enables waterfall views, distributed traces | Med | `TracingObserver` |
-| `MetricsObserver` (behind `observer-metrics` feature flag) | Emits counters/gauges/histograms via the `metrics` crate facade — integrates with Prometheus, StatsD, any metrics backend | Med | `GaObserver`, `metrics` crate ≥ 0.21 |
-| `MetricsObserver` emits `ga.generation.best_fitness`, `ga.generation.avg_fitness`, `ga.population.size` | Standard metric names let users graph convergence, compare runs, set alerts | Low-Med | `MetricsObserver`, `GenerationStats` |
-| `CompositeObserver` for combining multiple observers | Users want both logging and metrics simultaneously — single `with_observer()` call handles it | Low | `GaObserver`, `Vec<Arc<dyn GaObserver<U>>>` |
-| `IslandGaObserver` sub-trait with `on_migration` and `on_island_generation_end` hooks | Island model produces island-specific events (migration, per-island stats) that the base trait cannot expose | Med | `GaObserver`, `IslandGa` |
-| `Nsga2Observer` sub-trait with `on_pareto_front_updated` and `on_generation_end_nsga2` hooks | NSGA-II has no scalar fitness — needs Pareto front size, hypervolume signal, front rank counts | Med | `GaObserver`, `ParetoFront<U>` |
-| `on_operator_event` hook for operator-level tracing | Enables profiling which operators are slow — selection, crossover, mutation timing | High | `GaObserver`, requires operator call-site wrapping |
+Features users assume exist when they see "observability system". Missing these makes the feature feel incomplete.
 
----
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| `GaObserver<U>` trait with default no-op methods | Foundation — all other observer types implement this; default no-ops enable forward compatibility without breaking existing observers | LOW | Uses `&self` (not `&mut self`) so it can be stored as `Arc<dyn GaObserver<U>>` for thread-safety |
+| `on_run_start` lifecycle hook | Users need to open spans, start timers, or print headers at the start of a run | LOW | Receives `&GaConfiguration` |
+| `on_generation_complete` lifecycle hook | Primary telemetry point — most users only care about per-generation fitness stats | LOW | Receives `generation: usize`, `&GenerationStats` |
+| `on_new_best` lifecycle hook | Most important optimization signal — tells users when the algorithm improves | LOW | Receives `generation: usize`, best fitness `f64` (no chromosome clone — avoids allocation in hot path) |
+| `on_run_complete` lifecycle hook | Required for flushing metrics, closing spans, printing final summary | LOW | Receives `&TerminationCause`, `total_generations: usize`, `&[GenerationStats]` |
+| `with_observer()` builder method on `Ga<U>` | Ergonomic attachment — consistent with `with_reporter()` already on `Ga<U>` | LOW | Accepts `Arc<dyn GaObserver<U> + Send + Sync>` |
+| Observer stored as `Option<Arc<dyn GaObserver<U> + Send + Sync>>` | Zero overhead when `None`; `Arc` required for sharing across island rayon threads | LOW | Pattern mirrors `Option<Arc<FitnessFn>>` already used in `Ga<U>` |
+| `LogObserver` behind no feature flag | Drop-in replacement for current hardcoded `log!()` calls; backward-compatible migration for all 9 log targets | MEDIUM | Depends on `log` crate already in `[dependencies]`; must reproduce identical log output for all 94 call sites |
+| `LogObserver` must reproduce identical log output | Backward compatibility — existing users using `env_logger` must see same messages with same targets and levels | MEDIUM | Requires careful audit of all 9 log targets; any deviation is a regression |
+| `with_observer()` on `IslandGa<U>` and `Nsga2Ga<U>` | Consistency — users expect all three GA modes to support observers | LOW | Each orchestrator adds one field and one builder method |
+| All `GaObserver` methods have default no-op bodies | Forward compatibility — new event hooks added in later versions do not break existing `GaObserver` implementations | LOW | Rust trait default methods; same design as existing `Reporter<U>` |
 
-## Anti-Features
+### Differentiators (Competitive Advantage)
 
-Features to explicitly NOT build in this milestone.
+Features that meaningfully raise the value above baseline.
+
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| `TracingObserver` behind `observer-tracing` feature flag | Structured spans via `tracing` 0.1.44 — integrates with OpenTelemetry, Jaeger, Honeycomb, and any `tracing` subscriber; each generation becomes a named span with fitness fields | MEDIUM | Depends on `tracing = "0.1"` (MSRV 1.65, compatible with project MSRV 1.81.0); users bring their own subscriber |
+| `TracingObserver` maps generation lifecycle to spans | `span!("generation", gen=%i, best=%fitness)` enables waterfall views, per-generation duration, and distributed trace integration | MEDIUM | `on_generation_complete` opens and closes the span; fields set from `GenerationStats` |
+| `MetricsObserver` behind `observer-metrics` feature flag | Emits counters/gauges/histograms via `metrics` 0.24.3 facade — integrates with Prometheus, StatsD, any metrics backend; users install their own recorder | MEDIUM | Depends on `metrics = "0.24"` (MSRV ~1.70, compatible with project MSRV 1.81.0); users bring their own recorder |
+| `MetricsObserver` emits standard GA metric names | `ga.generation.best_fitness`, `ga.generation.avg_fitness`, `ga.population.size`, etc. — standard names let users graph convergence, compare runs, set alerts | LOW | Metric names follow OpenMetrics/Prometheus conventions |
+| `CompositeObserver` for combining multiple observers | Users want logging AND metrics AND tracing simultaneously — one `with_observer()` call handles all; fan-out with no additional overhead | LOW | Pure Rust: `Vec<Arc<dyn GaObserver<U>>>`, no new deps |
+| `IslandGaObserver` sub-trait with `on_migration` and `on_island_generation_end` hooks | Island model produces events (migration, per-island stats) the base trait cannot expose; sub-trait pattern preserves the single observer attachment point | MEDIUM | `IslandGaObserver: GaObserver` — a single `Arc<dyn IslandGaObserver<U>>` satisfies both traits |
+| `Nsga2Observer` sub-trait with `on_pareto_front_assigned` hook | NSGA-II has no scalar fitness — Pareto front sizes, front count, and crowding distance are the meaningful signals; base trait is insufficient | MEDIUM | `Nsga2Observer: GaObserver` — same sub-trait pattern as island; receives front size counts per generation |
+| Operator-level hooks (`on_selection_complete`, `on_crossover_complete`, `on_survivor_selection_complete`) on `GaObserver` | Enables profiling which operator phase is slowest; useful for benchmarking operator configurations; called from the sequential driver loop so overhead is bounded | MEDIUM | These hooks are in the base trait with default no-ops; called once per generation, not per chromosome |
+| `GaObserver::on_extension_triggered` hook | Extension events (mass extinction, mass degeneration, mass genesis) are already logged with `info!(target="extension_events", ...)` — surfacing them in the observer enables alerting on diversity collapse | LOW | Triggered once per invocation of the extension strategy; receives `diversity: f64` and extension method |
+
+### Anti-Features (Commonly Requested, Often Problematic)
 
 | Anti-Feature | Why Avoid | What to Do Instead |
 |---|---|---|
-| Async observer methods (`async fn on_generation_end`) | `rayon` is sync; `async` traits require `async-trait` crate, leak into user code, and have no value here since GA runs are blocking | Keep all hooks synchronous; users can use channels to bridge to async if needed |
-| Bundled metrics backend (Prometheus exporter, StatsD emitter) | Couples the library to a specific ops stack; violates the facade principle that `tracing`/`metrics` crates are built on | `metrics` crate facade pattern — users install their own recorder |
-| Bundled tracing subscriber (e.g. `fmt::Subscriber`) | Same reason — library should not own the subscriber pipeline | `tracing` crate facade — users call `tracing_subscriber::fmt().init()` |
-| Observer receiving mutable population access | Mutations inside an observer callback violate separation of concerns and are thread-unsafe | Pass only shared references: `&Population<U>`, `&GenerationStats` |
-| `on_crossover` / `on_mutation` per-gene hooks | Called millions of times per run; cannot have non-zero-cost hooks at gene level | Aggregate at generation end via `GenerationStats`; per-operator hooks only for tracing opt-in |
-| `Box<dyn GaObserver>` (non-`Arc`) | Island model uses rayon across threads; `Box` is not `Sync` | `Arc<dyn GaObserver<U> + Send + Sync>` |
-| Removing `with_logs(LogLevel)` config method | That would be a breaking change for existing users | Keep it working; `LogObserver` attaches under the hood when log level is non-Off, or make it opt-in alongside the new observer |
-| Observer as a generic type parameter on `Ga<U, O>` | Monomorphizes every Ga type; users cannot swap observers at runtime; breaks existing API | `dyn GaObserver` via `Arc` — dynamic dispatch cost is negligible compared to fitness evaluation |
+| Async observer methods (`async fn on_generation_complete`) | `rayon` is sync; `async` traits require `async-trait` crate, add `Pin<Box<Future>>` overhead, and have no value since GA runs are blocking | Keep all hooks synchronous; users can bridge to async via `tokio::task::spawn_blocking` or `std::sync::mpsc` channels |
+| Bundled metrics backend (Prometheus exporter, StatsD emitter) | Couples the library to a specific ops stack; violates the facade principle that `metrics` 0.24 is built on | `metrics` crate facade — users install their own recorder (e.g. `metrics-exporter-prometheus`) |
+| Bundled tracing subscriber (e.g. `tracing_subscriber::fmt`) | Same vendor coupling problem; library should emit but not route | `tracing` crate facade — users call `tracing_subscriber::fmt().init()` independently |
+| Observer receiving mutable population access | Passing `&mut Population<U>` to observer methods violates separation of concerns; an observer mutating the population would cause undefined GA behavior | Pass only shared references: `&GenerationStats`, `&TerminationCause`; never pass `&mut Population<U>` |
+| Per-gene observer hooks (`on_gene_mutated`, `on_gene_selected`) | Called millions of times per run; any non-zero-cost hook at gene level makes the observer unusable for non-trivial populations | Aggregate at generation level via `GenerationStats`; per-operator hooks aggregate over all genes in one call |
+| `Box<dyn GaObserver>` (single ownership) | `IslandGa<U>` needs to share one observer across parallel island threads; `Box` cannot be shared without `Arc` wrapping | `Arc<dyn GaObserver<U> + Send + Sync>` — same cost as `Box` when not shared; enables safe cross-thread sharing |
+| Observer as a generic type parameter `Ga<U, O: GaObserver<U>>` | Monomorphizes every `Ga<U>` type; users cannot swap observers at runtime; breaks existing `Ga<U>` public API | `dyn GaObserver` via `Arc` — dynamic dispatch overhead is negligible compared to fitness evaluation (called once per generation) |
+| Replacing `Reporter<U>` with `GaObserver<U>` | `Reporter<U>` shipped in v2.1.0 and is public API; removing it is a breaking change; existing users have implemented it | Both coexist; `Reporter<U>` fires from `Ga<U>` only; `GaObserver<U>` fires from all three engines; users can migrate at their own pace |
+| Removing `with_logs(LogLevel)` config method | Breaking change for existing users | Keep working; `LogObserver` attaches under the hood when log level is non-Off, or let users attach it manually alongside the new observer |
 
 ---
 
 ## Feature Dependencies
 
 ```
-log crate (already dep)
-  └── LogObserver (implements GaObserver, no new dep)
+Reporter<U> (v2.1.0 — existing, unchanged)
+  └── fires from Ga<U> only (on_start, on_generation_complete, on_new_best, on_finish)
 
-tracing crate (new optional dep, observer-tracing feature)
-  └── TracingObserver (implements GaObserver)
-
-metrics crate (new optional dep, observer-metrics feature)
-  └── MetricsObserver (implements GaObserver)
-
-GaObserver trait
+GaObserver<U> trait (new — v2.2.0 foundation)
+  ├── requires: GenerationStats (exists), TerminationCause (exists), GaConfiguration (exists)
   ├── LogObserver
-  ├── TracingObserver (optional)
-  ├── MetricsObserver (optional)
-  ├── CompositeObserver (wraps Vec<Arc<dyn GaObserver<U>>>)
-  └── User-defined observers (downstream)
+  │     └── requires: log crate (already dep), GaObserver trait
+  ├── CompositeObserver
+  │     └── requires: GaObserver trait only
+  ├── TracingObserver  [feature: observer-tracing]
+  │     └── requires: tracing 0.1.44 (new optional dep), GaObserver trait
+  └── MetricsObserver  [feature: observer-metrics]
+        └── requires: metrics 0.24.3 (new optional dep), GaObserver trait
 
 IslandGaObserver sub-trait
-  └── depends on GaObserver + IslandGa run loop
-      (on_migration, on_island_generation_end)
+  └── requires: GaObserver trait, IslandGa run loop (exists)
+  └── observers implementing IslandGaObserver automatically satisfy GaObserver
 
 Nsga2Observer sub-trait
-  └── depends on GaObserver + Nsga2Ga run loop
-      (on_pareto_front_updated, on_generation_end_nsga2)
+  └── requires: GaObserver trait, Nsga2Ga run loop (exists), ParetoFront type (exists)
+  └── observers implementing Nsga2Observer automatically satisfy GaObserver
 
-with_observer() builder method
-  └── requires GaObserver trait to be defined first
-  └── must be added to Ga, IslandGa, Nsga2Ga
+with_observer() on Ga<U>
+  └── requires: GaObserver trait to be defined first
+
+with_observer() on IslandGa<U>
+  └── requires: IslandGaObserver sub-trait (accepts IslandGaObserver or plain GaObserver)
+
+with_observer() on Nsga2Ga<U>
+  └── requires: Nsga2Observer sub-trait (accepts Nsga2Observer or plain GaObserver)
 ```
+
+### Dependency Notes
+
+- **`GaObserver` trait must be defined before any other observer work:** All concrete implementations (LogObserver, TracingObserver, MetricsObserver, CompositeObserver) and all engine integrations (Ga, IslandGa, Nsga2Ga) depend on the base trait. Design the full hook surface up front — adding hooks later is safe (default no-ops), but removing or renaming hooks is a breaking change.
+- **`LogObserver` has no new dependencies:** It uses the `log` crate which is already in `[dependencies]`. This makes it the safest first concrete implementation.
+- **Sub-traits (`IslandGaObserver`, `Nsga2Observer`) are supersets of `GaObserver`:** A user implementing `IslandGaObserver` gets all base lifecycle hooks for free via the sub-trait relationship. The orchestrators each store a typed observer: `Option<Arc<dyn IslandGaObserver<U>>>` (not the base `GaObserver<U>`), so island-specific hooks fire naturally.
+- **`CompositeObserver` requires all inner observers to implement `GaObserver<U>`:** It cannot compose `IslandGaObserver` and `Nsga2Observer` instances in the same composite — they are separate hierarchies for separate engines.
+- **`Reporter<U>` and `GaObserver<U>` coexist without conflict:** Both are stored as separate `Option` fields on `Ga<U>`. They fire independently. `Reporter<U>` is not replaced.
 
 ---
 
-## MVP Recommendation
+## MVP Definition
 
-Prioritize in order:
+### Launch With (v2.2.0)
 
-1. **`GaObserver` trait definition** — all other features are blocked on this; design the full event surface (lifecycle + operator-level) up front even if most hooks start as no-ops
-2. **`LogObserver`** — backward-compatible migration of all 8 log targets; no new deps; unblocks removing hardcoded `log!()` calls from operators
-3. **`with_observer()` on `Ga`** — makes the trait usable immediately; `IslandGa`/`Nsga2Ga` follow same pattern
-4. **`CompositeObserver`** — simple; enables users to compose observers even before tracing/metrics land
-5. **`IslandGaObserver` + `Nsga2Observer` sub-traits** — migration and pareto-front hooks are unique to those engines; they cannot reuse the base lifecycle hooks
-6. **`TracingObserver`** — medium complexity; high user value for distributed tracing; feature-flagged
-7. **`MetricsObserver`** — similar complexity to tracing; feature-flagged
+Minimum viable product — what is needed to deliver "Observability & Traceability" milestone.
 
-Defer:
-- **`on_operator_event` per-operator hooks**: Very high complexity (requires threading observer through every operator factory call), low MVP value. Good candidate for v2.2.
-- **Any per-gene hooks**: Explicitly out of scope (anti-feature), see above.
+- [ ] `GaObserver<U>` trait with complete hook surface and default no-ops — everything else is blocked on this
+- [ ] `LogObserver` — backward-compatible migration of all 9 log targets; unblocks removing hardcoded `log!()` calls; no new deps
+- [ ] `with_observer()` on `Ga<U>` — makes `GaObserver` usable immediately on the primary engine
+- [ ] `with_observer()` on `IslandGa<U>` and `Nsga2Ga<U>` — consistency across all three GA modes
+- [ ] `CompositeObserver` — simple fan-out; enables combining LogObserver + user-defined observer in one `with_observer()` call
+- [ ] `IslandGaObserver` sub-trait with `on_migration` and `on_island_generation_end` — island model has unique events that the base trait cannot surface
+- [ ] `Nsga2Observer` sub-trait with `on_pareto_front_assigned` — NSGA-II has no scalar fitness; Pareto front signal is the meaningful hook
+- [ ] `TracingObserver` behind `observer-tracing` feature flag — highest-value differentiator; structured span integration with the `tracing` ecosystem
+
+### Add After Validation (v2.2.x)
+
+Features to add once the core observer system is working and validated.
+
+- [ ] `MetricsObserver` behind `observer-metrics` feature flag — similar complexity to TracingObserver; add when TracingObserver pattern is proven
+- [ ] `on_extension_triggered` hook — surfacing extension events is low complexity; add when LogObserver migration is complete and the hook surface is stable
+
+### Future Consideration (v2.3+)
+
+- [ ] Per-operator timing hooks (`on_selection_start` / `on_selection_complete` with elapsed `Duration`) — useful for benchmarking operator configurations; deferred because operator call-sites are deep in factory functions and would require threading `Arc<dyn GaObserver>` through every operator invocation
+- [ ] `on_checkpoint_saved` hook — wraps the serde checkpoint event; low priority since checkpointing is already working and the event is not critical for observability
+
+---
+
+## Feature Prioritization Matrix
+
+| Feature | User Value | Implementation Cost | Priority |
+|---------|------------|---------------------|----------|
+| `GaObserver<U>` trait definition | HIGH | LOW | P1 |
+| `LogObserver` (backward compat) | HIGH | MEDIUM | P1 |
+| `with_observer()` on all three engines | HIGH | LOW | P1 |
+| `CompositeObserver` | MEDIUM | LOW | P1 |
+| `IslandGaObserver` sub-trait | HIGH | MEDIUM | P1 |
+| `Nsga2Observer` sub-trait | HIGH | MEDIUM | P1 |
+| `TracingObserver` (`observer-tracing`) | HIGH | MEDIUM | P1 |
+| `MetricsObserver` (`observer-metrics`) | MEDIUM | MEDIUM | P2 |
+| `on_extension_triggered` hook | LOW | LOW | P2 |
+| Per-operator start/complete hooks with timing | MEDIUM | HIGH | P3 |
+| `on_checkpoint_saved` hook | LOW | LOW | P3 |
+
+**Priority key:**
+- P1: Must have for v2.2.0 launch
+- P2: Should have, add in v2.2.x
+- P3: Nice to have, v2.3+ consideration
 
 ---
 
 ## Hook Surface Reference
 
-The following is the minimum complete event surface for `GaObserver`, derived from the existing log call sites:
+Complete event surface for `GaObserver<U>`, derived from existing `log!()` call sites in `ga.rs`, `island/mod.rs`, and `nsga2/mod.rs`:
+
+**Base `GaObserver<U>` hooks:**
+
+| Hook | Trigger Point | Data Available | Complexity |
+|------|---------------|----------------|------------|
+| `on_run_start` | Before generation loop | `&GaConfiguration` | LOW |
+| `on_generation_start` | Start of each generation | `generation: usize` | LOW |
+| `on_selection_complete` | After `selection::factory` | `generation: usize`, parent pairs count | LOW |
+| `on_crossover_complete` | After `parent_crossover` | `generation: usize`, offspring count | LOW |
+| `on_survivor_selection_complete` | After `survivor::factory` | `generation: usize`, surviving population size | LOW |
+| `on_generation_complete` | After stats are collected | `generation: usize`, `&GenerationStats` | LOW |
+| `on_new_best` | When best fitness improves | `generation: usize`, best fitness `f64` | LOW |
+| `on_extension_triggered` | When diversity threshold triggers extension | `generation: usize`, `diversity: f64`, extension method name | LOW |
+| `on_run_complete` | After loop exits | `&TerminationCause`, `total_generations: usize`, `&[GenerationStats]` | LOW |
+
+**`IslandGaObserver<U>` additional hooks (sub-trait of `GaObserver<U>`):**
 
 | Hook | Trigger Point | Data Available |
-|---|---|---|
-| `on_run_start` | Before generation loop | `&GaConfiguration` |
-| `on_generation_end` | End of each generation | `generation: usize`, `&GenerationStats`, `&Population<U>` |
-| `on_best_chromosome_updated` | When best chromosome improves | `generation: usize`, best chromosome fitness `f64` |
-| `on_termination` | After loop exits | `&TerminationCause`, `total_generations: usize` |
-| `on_run_end` | After termination | `&Population<U>`, `&[GenerationStats]` (full history) |
+|------|---------------|----------------|
+| `on_island_initialized` | After each island is initialized | `island_index: usize`, `population_size: usize` |
+| `on_island_generation_end` | End of each island's generation | `island_index: usize`, `generation: usize` |
+| `on_migration` | After each migration step | `generation: usize`, `migrant_count: usize` |
 
-**`IslandGaObserver` additional hooks:**
+**`Nsga2Observer<U>` additional hooks (sub-trait of `GaObserver<U>`):**
 
 | Hook | Trigger Point | Data Available |
-|---|---|---|
-| `on_island_generation_end` | End of each island's generation | `island_index: usize`, `generation: usize`, island population size |
-| `on_migration` | After each migration step | `generation: usize`, migrant count |
-
-**`Nsga2Observer` additional hooks:**
-
-| Hook | Trigger Point | Data Available |
-|---|---|---|
-| `on_generation_end_nsga2` | End of each NSGA-II generation | `generation: usize`, pareto front size, front count |
-| `on_pareto_front_updated` | When first front changes | `generation: usize`, `&ParetoFront<U>` |
+|------|---------------|----------------|
+| `on_generation_complete_nsga2` | End of each NSGA-II generation | `generation: usize`, `pareto_front_size: usize`, `front_count: usize` |
+| `on_pareto_front_assigned` | After non-dominated sorting assigns fronts | `generation: usize`, `front_sizes: &[usize]` |
 
 ---
 
-## Metric Names for MetricsObserver
+## TracingObserver: How GA Events Map to Spans and Fields
 
-Standard naming convention (following OpenMetrics / Prometheus conventions):
+The `tracing` crate models instrumentation as spans (bounded time ranges) and events (point-in-time). The mapping:
 
-| Metric | Type | Description |
+| Observer Hook | Tracing Primitive | Span/Event Fields |
 |---|---|---|
-| `ga.generation.best_fitness` | Gauge | Best fitness in current generation |
-| `ga.generation.worst_fitness` | Gauge | Worst fitness in current generation |
-| `ga.generation.avg_fitness` | Gauge | Average fitness in current generation |
-| `ga.generation.fitness_std_dev` | Gauge | Fitness standard deviation |
-| `ga.generation.population_size` | Gauge | Population size at generation end |
-| `ga.run.total_generations` | Counter | Total generations completed on run end |
-| `ga.island.migration_count` | Counter | Number of migrants (IslandGA only) |
+| `on_run_start` | `span!(Level::INFO, "ga_run")` opened | `max_generations`, `population_size`, `problem_solving` |
+| `on_generation_start` | `span!(Level::DEBUG, "ga_generation", gen=%generation)` opened | `generation` |
+| `on_generation_complete` | Span closed; `event!` with stats | `best_fitness`, `avg_fitness`, `diversity`, `population_size` |
+| `on_new_best` | `event!(Level::INFO, "new_best", gen=%generation, fitness=%best)` | `generation`, `best_fitness` |
+| `on_run_complete` | `ga_run` span closed; event with cause | `termination_cause`, `total_generations` |
+| `on_migration` (island) | `event!(Level::DEBUG, "migration", gen=%generation, migrants=%count)` | `generation`, `migrant_count` |
+| `on_pareto_front_assigned` (nsga2) | `event!(Level::DEBUG, "pareto_front", gen=%generation, size=%size)` | `generation`, `front_sizes` |
+
+The `ga_run` span wraps the entire run. The `ga_generation` span wraps each generation. This nesting enables waterfall views in Jaeger/Honeycomb when a compatible subscriber is installed. No tracing code compiles into default builds (behind `#[cfg(feature = "observer-tracing")]`).
+
+---
+
+## MetricsObserver: Standard Metric Names
+
+Naming follows OpenMetrics / Prometheus conventions (dot-separated hierarchy):
+
+| Metric Name | Type | Emitted At | Description |
+|---|---|---|---|
+| `ga.generation.best_fitness` | Gauge | `on_generation_complete` | Best fitness in current generation |
+| `ga.generation.worst_fitness` | Gauge | `on_generation_complete` | Worst fitness in current generation |
+| `ga.generation.avg_fitness` | Gauge | `on_generation_complete` | Average fitness across population |
+| `ga.generation.fitness_std_dev` | Gauge | `on_generation_complete` | Fitness standard deviation (= diversity) |
+| `ga.generation.population_size` | Gauge | `on_generation_complete` | Population size at generation end |
+| `ga.run.total_generations` | Counter | `on_run_complete` | Total generations completed in this run |
+| `ga.island.migration_count` | Counter | `on_migration` (island) | Number of migrants at this migration step |
+| `ga.pareto.front_size` | Gauge | `on_pareto_front_assigned` (nsga2) | First Pareto front size |
+
+---
+
+## Reporter<U> vs GaObserver<U>: Coexistence Contract
+
+Both traits fire from `Ga<U>`. They are separate fields and separate concerns:
+
+| Aspect | `Reporter<U>` (v2.1.0) | `GaObserver<U>` (v2.2.0) |
+|--------|------------------------|--------------------------|
+| Self mutability | `&mut self` — can accumulate state | `&self` — immutable; state via `Arc<Mutex<>>` if needed |
+| Storage | `Option<Box<dyn Reporter<U> + Send>>` | `Option<Arc<dyn GaObserver<U> + Send + Sync>>` |
+| Thread sharing | Single-owner only | Shareable across rayon threads |
+| Available on | `Ga<U>` only | `Ga<U>`, `IslandGa<U>`, `Nsga2Ga<U>` |
+| Migration intent | Keep as-is indefinitely | New preferred API going forward |
+| Breaking change risk | None — unchanged | None — additive |
+
+Users who implemented `Reporter<U>` do not need to migrate. New users should prefer `GaObserver<U>`.
 
 ---
 
 ## Sources
 
-- Codebase analysis: `/src/ga.rs`, `/src/island/mod.rs`, `/src/nsga2/mod.rs`, `/src/stats.rs`, all operator files (direct read, HIGH confidence)
-- `log` crate 0.4.x API: already a project dependency, well-understood (HIGH confidence)
-- `tracing` crate 0.1.x facade pattern: subscriber-separation architecture is a core documented design (HIGH confidence via training data; could not verify current version via web tools)
-- `metrics` crate 0.21.x+ facade pattern: recorder-separation mirrors tracing's subscriber pattern (MEDIUM confidence via training data; exact current version unverified)
-- PROJECT.md constraints (zero-overhead, `Send + Sync`, MSRV 1.81.0, feature flags): direct read (HIGH confidence)
+- `src/ga.rs` — `run_with_callback` full implementation, `Reporter<U>` call sites, `TerminationCause` definition (direct inspection, HIGH confidence)
+- `src/reporter/mod.rs` — `Reporter<U>` trait contract and signature (direct inspection, HIGH confidence)
+- `src/reporter/simple.rs`, `src/reporter/noop.rs`, `src/reporter/duration.rs` — existing built-in reporters (direct inspection, HIGH confidence)
+- `src/island/mod.rs` — `IslandGa::run`, migration events, log targets (direct inspection, HIGH confidence)
+- `src/nsga2/mod.rs` — `Nsga2Ga::run`, Pareto front generation events (direct inspection, HIGH confidence)
+- `src/stats.rs` — `GenerationStats` struct, all available fields (direct inspection, HIGH confidence)
+- `Cargo.toml` — existing dependencies, MSRV 1.81.0, existing feature flag pattern (direct inspection, HIGH confidence)
+- `.planning/PROJECT.md` — zero-overhead constraint, backward compat, feature flag names, observer coexistence decision (direct read, HIGH confidence)
+- `tracing` crate v0.1.44: https://docs.rs/tracing/latest/tracing/ (verified via WebFetch, HIGH confidence)
+- `metrics` crate v0.24.3: https://docs.rs/metrics/latest/metrics/ (verified via WebFetch, HIGH confidence)
+
+---
+*Feature research for: Observability & Traceability system (v2.2.0)*
+*Researched: 2026-03-25*
