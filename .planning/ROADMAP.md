@@ -52,7 +52,7 @@ Full archive: `.planning/milestones/v2.1.0-ROADMAP.md`
 Issues: #182, #183, #184, #185, #186
 
 - [x] **Phase 13: GaObserver Base Trait** — Core trait + `Ga<U>` integration; foundation all other phases depend on (completed 2026-03-25)
-- [ ] **Phase 14: LogObserver + Log Migration** — Backward-compatible log migration; validates Phase 13 end-to-end
+- [x] **Phase 14: LogObserver + Log Migration** — Backward-compatible log migration; validates Phase 13 end-to-end (completed 2026-03-25)
 - [ ] **Phase 15: TracingObserver** — Structured tracing spans behind `observer-tracing` feature flag
 - [ ] **Phase 16: Sub-Traits** — `IslandGaObserver` and `Nsga2Observer` for engine-specific events
 - [ ] **Phase 17: CompositeObserver + MetricsObserver** — Fan-out composition and metrics facade behind `observer-metrics` flag
@@ -129,7 +129,7 @@ Phases execute in numeric order: 13 → 14 → 15 → 16 → 17
 | 10. Single-population Examples | v2.1.0 | 3/3 | Complete | 2026-03-22 |
 | 11. Advanced Mode Examples | v2.1.0 | 3/3 | Complete | 2026-03-22 |
 | 12. Documentation | v2.1.0 | 1/1 | Complete | 2026-03-22 |
-| 13. GaObserver Base Trait | 2/2 | Complete   | 2026-03-25 | - |
+| 13. GaObserver Base Trait | 2/2 | Complete    | 2026-03-25 | - |
 | 14. LogObserver + Log Migration | v2.2.0 | 0/? | Not started | - |
 | 15. TracingObserver | v2.2.0 | 0/? | Not started | - |
 | 16. Sub-Traits | v2.2.0 | 0/? | Not started | - |
