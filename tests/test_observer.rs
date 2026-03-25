@@ -241,3 +241,41 @@ fn test_observer_stagnation_fires() {
     let best = data.new_best.load(Ordering::Relaxed);
     assert_eq!(stag + best, 50, "stagnation + new_best should equal total generations");
 }
+
+/// LogObserver: implements GaObserver for BinaryChromosome (compile check)
+#[test]
+fn test_log_observer_implements_trait() {
+    use genetic_algorithms::observer::LogObserver;
+    let obs: Arc<dyn GaObserver<BinaryChromosome> + Send + Sync> = Arc::new(LogObserver);
+    drop(obs);
+}
+
+/// LogObserver: is Send + Sync
+#[test]
+fn test_log_observer_is_send_sync() {
+    use genetic_algorithms::observer::LogObserver;
+    fn assert_send_sync<T: Send + Sync>() {}
+    assert_send_sync::<LogObserver>();
+}
+
+/// LogObserver: is a unit struct (zero-sized)
+#[test]
+fn test_log_observer_is_unit_struct() {
+    use genetic_algorithms::observer::LogObserver;
+    assert_eq!(std::mem::size_of::<LogObserver>(), 0);
+}
+
+/// LogObserver: attaches to Ga<U> and GA run completes without panic
+#[test]
+fn test_log_observer_attaches_and_runs() {
+    use genetic_algorithms::observer::LogObserver;
+    let obs: Arc<dyn GaObserver<BinaryChromosome> + Send + Sync> = Arc::new(LogObserver);
+    let mut ga = build_test_ga_with_observer(5, obs);
+    ga.run().expect("GA with LogObserver should complete without panic");
+}
+
+/// LogObserver: is re-exported from crate root
+#[test]
+fn test_log_observer_crate_reexport() {
+    let _obs = genetic_algorithms::LogObserver;
+}

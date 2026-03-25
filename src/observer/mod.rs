@@ -95,3 +95,6 @@ pub trait GaObserver<U: ChromosomeT>: Send + Sync {
 pub struct NoopObserver;
 
 impl<U: ChromosomeT> GaObserver<U> for NoopObserver {}
+
+mod log;
+pub use log::LogObserver;

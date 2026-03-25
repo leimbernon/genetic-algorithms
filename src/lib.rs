@@ -91,3 +91,5 @@ pub mod validators;
 pub mod island;
 pub mod niching;
 pub mod nsga2;
+
+pub use observer::LogObserver;
