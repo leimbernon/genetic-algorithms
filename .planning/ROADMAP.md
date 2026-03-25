@@ -82,7 +82,7 @@ Plans:
   1. User can attach `LogObserver` to `Ga<U>` and observe log output at the same targets, levels, and message formats as produced by v2.1.0
   2. A `grep` for `info!\|debug!\|trace!\|warn!` in `src/ga.rs`, `src/island/`, and `src/nsga2/` returns results only inside `log_observer.rs` itself — no call sites remain in the execution loops
   3. `cargo build` (default features) and `cargo build --features serde` both succeed with zero new dependencies added
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 14-01-PLAN.md — LogObserver struct, ExtensionEvent/GenerationStats extensions, module registration, tests
@@ -134,7 +134,7 @@ Phases execute in numeric order: 13 → 14 → 15 → 16 → 17
 | 11. Advanced Mode Examples | v2.1.0 | 3/3 | Complete | 2026-03-22 |
 | 12. Documentation | v2.1.0 | 1/1 | Complete | 2026-03-22 |
 | 13. GaObserver Base Trait | 2/2 | Complete    | 2026-03-25 | - |
-| 14. LogObserver + Log Migration | v2.2.0 | 0/2 | Planned | - |
+| 14. LogObserver + Log Migration | 1/2 | In Progress|  | - |
 | 15. TracingObserver | v2.2.0 | 0/? | Not started | - |
 | 16. Sub-Traits | v2.2.0 | 0/? | Not started | - |
 | 17. CompositeObserver + MetricsObserver | v2.2.0 | 0/? | Not started | - |

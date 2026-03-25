@@ -3,28 +3,28 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: milestone
 status: unknown
-stopped_at: Phase 14 context gathered
-last_updated: "2026-03-25T18:51:45.069Z"
+stopped_at: Completed 14-01-PLAN.md
+last_updated: "2026-03-25T19:14:51.513Z"
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 4
+  completed_plans: 3
 ---
 
 # State
 
 ## Current Position
 
-Phase: 13 (gaobserver-base-trait) — COMPLETE
-Plan: 2 of 2
+Phase: 14 (logobserver-log-migration) — EXECUTING
+Plan: 1 of 2
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library
-**Current focus:** Phase 13 — gaobserver-base-trait
+**Current focus:** Phase 14 — logobserver-log-migration
 
 ## Accumulated Context
 
@@ -39,6 +39,7 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 - [Phase 13]: Reporter<U> and with_reporter() soft-deprecated since 2.2.0, removed in v3.0.0
 - [Phase 13]: on_mutation_complete and on_fitness_evaluation_complete fire with Duration::ZERO since parent_crossover is opaque — timing separation requires future refactor
 - [Phase 13]: Instant::now() gated behind observer.is_some() — zero overhead when no observer attached
+- [Phase 14]: LogObserver reorders dynamic mutation block before on_generation_end so stats carry dynamic_mutation_probability
 
 ### Blockers/Concerns
 
@@ -50,6 +51,6 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 
 ## Session Continuity
 
-Last session: 2026-03-25T18:51:45.060Z
-Stopped at: Phase 14 context gathered
-Resume file: .planning/phases/14-logobserver-log-migration/14-CONTEXT.md
+Last session: 2026-03-25T19:14:51.512Z
+Stopped at: Completed 14-01-PLAN.md
+Resume file: None
