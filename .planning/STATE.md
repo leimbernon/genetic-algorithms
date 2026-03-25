@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v2.2.0
 milestone_name: observability-and-traceability
-status: Defining requirements
+status: Ready to plan
 last_updated: "2026-03-25"
-last_activity: 2026-03-25 — Milestone v2.2.0 started
+last_activity: 2026-03-25 — Roadmap created, 5 phases defined (13-17), 16/16 requirements mapped
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -16,20 +16,40 @@ progress:
 
 ## Current Position
 
-Phase: Not started
+Phase: 13 of 17 (GaObserver Base Trait)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-03-25 — Milestone v2.2.0 started
+Status: Ready to plan
+Last activity: 2026-03-25 — Roadmap created, phases 13-17 defined
+
+Progress: [░░░░░░░░░░] 0%
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library
-**Current focus:** v2.2.0 Observability & Traceability — GaObserver trait system
+**Current focus:** v2.2.0 Phase 13 — GaObserver Base Trait + Ga<U> integration
 
 ## Accumulated Context
 
-v2.1.0 shipped: diversity metric, List genotype, Reporter trait, visualization feature flag, 6 runnable examples.
-Tech debt carried forward: Reporter/Visualization/List not demonstrated in examples (deferred).
-`Reporter<U>` (v2.1.0) is the simpler precursor to `GaObserver<U>` — both will coexist.
+### Decisions
+
+- v2.1.0 shipped: diversity metric, List genotype, Reporter trait, visualization feature flag, 6 examples
+- Observer stored as `Option<Arc<dyn GaObserver<U> + Send + Sync>>` — Arc for island thread sharing, Option for zero-cost when absent (contrasts with Reporter's Box)
+- `Reporter<U>` and `GaObserver<U>` coexist as separate fields; removing Reporter is a breaking change
+- All hooks use `&self` (not `&mut self`) — required for rayon parallel regions
+- Feature flags: `observer-tracing` and `observer-metrics` off by default; naming follows existing `serde` precedent
+
+### Blockers/Concerns
+
+- Phase 14: Log migration must be atomic per module — never leave both direct log!() call and observer dispatch active simultaneously (~94 call sites across 9 targets)
+- Phase 15: `tracing::Span::enter()` must never be called inside rayon closures; use `in_scope()` or `event!()` only
+- Phase 15: `TracingObserver` must emit only via `tracing::event!()`, never `log::*` — prevents LogTracer infinite recursion
+- Phase 16: Island `par_iter_mut()` requires same clone-once-before-parallel pattern as Phase 13
+- Warn users: attaching `LogObserver` alongside an existing `SimpleReporter` produces duplicate per-generation log output
+
+## Session Continuity
+
+Last session: 2026-03-25
+Stopped at: Roadmap written, requirements mapped, ready to plan Phase 13
+Resume file: None

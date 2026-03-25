@@ -60,28 +60,28 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| OBS-01 | — | Pending |
-| OBS-02 | — | Pending |
-| OBS-03 | — | Pending |
-| OBS-04 | — | Pending |
-| LOG-01 | — | Pending |
-| LOG-02 | — | Pending |
-| LOG-03 | — | Pending |
-| TRAC-01 | — | Pending |
-| TRAC-02 | — | Pending |
-| TRAC-03 | — | Pending |
-| SUB-01 | — | Pending |
-| SUB-02 | — | Pending |
-| SUB-03 | — | Pending |
-| COMP-01 | — | Pending |
-| COMP-02 | — | Pending |
-| COMP-03 | — | Pending |
+| OBS-01 | Phase 13 | Pending |
+| OBS-02 | Phase 13 | Pending |
+| OBS-03 | Phase 13 | Pending |
+| OBS-04 | Phase 13 | Pending |
+| LOG-01 | Phase 14 | Pending |
+| LOG-02 | Phase 14 | Pending |
+| LOG-03 | Phase 14 | Pending |
+| TRAC-01 | Phase 15 | Pending |
+| TRAC-02 | Phase 15 | Pending |
+| TRAC-03 | Phase 15 | Pending |
+| SUB-01 | Phase 16 | Pending |
+| SUB-02 | Phase 16 | Pending |
+| SUB-03 | Phase 16 | Pending |
+| COMP-01 | Phase 17 | Pending |
+| COMP-02 | Phase 17 | Pending |
+| COMP-03 | Phase 17 | Pending |
 
 **Coverage:**
 - v2.2.0 requirements: 16 total
-- Mapped to phases: 0
-- Unmapped: 16 ⚠️
+- Mapped to phases: 16
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-25*
-*Last updated: 2026-03-25 after initial definition*
+*Last updated: 2026-03-25 — traceability filled after roadmap creation*
