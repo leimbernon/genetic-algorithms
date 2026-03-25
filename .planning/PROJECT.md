@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A modular, concurrent Genetic Algorithms library for Rust. Provides composable operators (selection, crossover, mutation, survivor), multi-threaded execution via `rayon`, Island Model GA, NSGA-II multi-objective optimization, adaptive GA mode, and elitism/stopping criteria. Published on crates.io as `genetic_algorithms`.
+A modular, concurrent Genetic Algorithms library for Rust. Provides composable operators (selection, crossover, mutation, survivor), multi-threaded execution via `rayon`, Island Model GA, NSGA-II multi-objective optimization, adaptive GA mode, elitism/stopping criteria, population diversity tracking, a `Reporter<U>` lifecycle trait, an optional visualization feature (PNG/SVG charts), and a `List<T>` genotype for finite symbolic alphabets. Published on crates.io as `genetic_algorithms` with six runnable examples covering every major GA mode.
 
 ## Core Value
 
@@ -33,6 +33,12 @@ Users can solve complex optimization problems with composable, performant geneti
 - ✓ Adaptive GA (dynamic crossover/mutation probabilities) — v2.0
 - ✓ Per-generation statistics (GenerationStats) — v2.0
 - ✓ Rayon-based parallelism — v2.0
+- ✓ Population diversity metric (`GenerationStats.diversity`) wired into extension trigger and dynamic mutation — v2.1.0
+- ✓ `List<T>` gene and `ListChromosome<T>` for finite symbolic alphabets, compatible with all operators — v2.1.0
+- ✓ `Reporter<U>` trait with `on_start`, `on_generation_complete`, `on_new_best`, `on_finish` hooks; zero overhead when unset — v2.1.0
+- ✓ `visualization` feature flag: `plot_fitness`, `plot_diversity`, `plot_histogram` (PNG/SVG via plotters) — v2.1.0
+- ✓ Six runnable examples: `rastrigin`, `feature_selection`, `niching`, `nsga2_zdt1`, `island_model`, `job_scheduling` — v2.1.0
+- ✓ README `## Examples` table documenting all 10 examples with `cargo run` commands — v2.1.0
 
 ### Active
 
@@ -49,8 +55,9 @@ Users can solve complex optimization problems with composable, performant geneti
 
 <!-- Explicit boundaries. Includes reasoning to prevent re-adding. -->
 
-- GUI/visualization — library focus, users choose their own frontend
+- GUI/interactive visualization — library generates static PNG/SVG charts; interactive dashboards are users' concern
 - Specific telemetry backends (Prometheus, Jaeger) — facade pattern lets users pick
+- Per-gene hooks in observer — too granular, unacceptable overhead in hot loops
 
 ## Current Milestone: v2.2.0 Observability & Traceability
 
@@ -66,10 +73,12 @@ Users can solve complex optimization problems with composable, performant geneti
 ## Context
 
 - Library is published on crates.io, backward compatibility matters
-- Current logging uses hardcoded `log!()` macros with 8 log targets in ga.rs
+- v2.1.0 shipped: ~14,600 LOC Rust, 10 runnable examples, `visualization` feature, `Reporter<U>` trait, `List<T>` genotype
+- Current logging uses hardcoded `log!()` macros with 8 log targets in ga.rs — migration to observer is the v2.2.0 goal
 - Observer pattern must have zero overhead when no observer is set
 - Feature flags keep optional dependencies (tracing, metrics) out of default builds
 - All observer traits use default no-op methods for forward compatibility
+- `Reporter<U>` (v2.1.0) is a simpler precursor to `GaObserver<U>` (v2.2.0) — both will coexist
 
 ## Constraints
 
@@ -83,9 +92,14 @@ Users can solve complex optimization problems with composable, performant geneti
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
+| fitness_std_dev as diversity metric | Simple, allocation-free, one pass over fitness values | ✓ Good — wired cleanly into extension and dynamic mutation |
+| Stats computed once per generation, then passed to subsystems | Eliminates duplicate computation; diversity is authoritative | ✓ Good — removed compute_cardinality call from ga.rs |
+| `Reporter<U>` as `Option<Box<dyn Reporter<U> + Send>>` | Simpler than Arc for single-owner; Box is fine for non-shared | ✓ Good — zero overhead confirmed via if-let guard |
+| plotters 0.3.7 for visualization | Widely used, pure Rust, no C deps, good PNG/SVG support | ✓ Good — compiles cleanly behind feature flag |
+| RangeChromosome<i32> for job_scheduling permutation | `list_random_initialization(..., Some(false))` achieves unique IDs | ⚠ Revisit — ListChromosome would be more semantic |
 | Facade pattern (log, tracing, metrics crates) | Users choose their own backends; library stays agnostic | — Pending |
 | Observer via `Option<Arc<dyn GaObserver<U>>>` | Zero cost when unused, shared across threads | — Pending |
 | Default no-op methods on traits | Forward-compatible: new events don't break existing observers | — Pending |
 
 ---
-*Last updated: 2026-03-23 after milestone v2.2.0 initialization*
+*Last updated: 2026-03-25 after v2.1.0 milestone completion*
