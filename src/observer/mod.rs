@@ -44,6 +44,8 @@ pub struct ExtensionEvent {
     pub diversity: f64,
     /// Name of the extension strategy (e.g. `"MassExtinction"`).
     pub extension_type: &'static str,
+    /// Diversity threshold that triggered the extension.
+    pub threshold: f64,
 }
 
 /// Structured lifecycle observer for [`Ga<U>`](crate::ga::Ga).

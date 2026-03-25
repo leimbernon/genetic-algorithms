@@ -931,11 +931,6 @@ where
                 GenerationStats::from_fitness_values(i, &fitness_values, is_maximization);
             self.stats.push(gen_stats.clone());
 
-            if let Some(ref mut r) = self.reporter {
-                r.on_generation_complete(&gen_stats);
-            }
-            self.notify(|obs| obs.on_generation_end(&gen_stats));
-
             // Update dynamic mutation probability based on population diversity
             if self.configuration.mutation_configuration.dynamic_mutation {
                 let target = self
@@ -975,7 +970,19 @@ where
                     gen_stats.diversity,
                     self.dynamic_mutation_probability
                 );
+
+                // Update the pushed stats entry with the current dynamic mutation probability
+                if let Some(last) = self.stats.last_mut() {
+                    last.dynamic_mutation_probability = Some(self.dynamic_mutation_probability);
+                }
             }
+
+            if let Some(ref mut r) = self.reporter {
+                r.on_generation_complete(&gen_stats);
+            }
+            // Notify with the (possibly updated) stats entry that includes dynamic_mutation_probability
+            let notify_stats = self.stats.last().cloned().unwrap_or(gen_stats.clone());
+            self.notify(|obs| obs.on_generation_end(&notify_stats));
 
             // Apply extension strategy if configured and diversity is low
             if let Some(ref ext_config) = self.configuration.extension_configuration {
@@ -1001,6 +1008,7 @@ where
                         generation: i,
                         diversity: gen_stats.diversity,
                         extension_type: ext_config.method.as_str(),
+                        threshold: ext_config.diversity_threshold,
                     }));
 
                     // Regrow population if extension reduced it
