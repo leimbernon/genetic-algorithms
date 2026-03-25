@@ -31,7 +31,7 @@ Implement `LogObserver` — a `GaObserver<U>` implementation that reproduces all
 
 - **All 17** `log!()` call sites in `src/ga.rs` are removed (run loop + helpers `limit_reached()` + `parent_crossover()`)
 - Debug/trace calls inside `limit_reached()` and `parent_crossover()` that don't map directly to a hook: **absorb into the nearest lifecycle hook** (e.g., parent_crossover debug → `on_crossover_complete`, limit_reached debug → `on_generation_end`)
-- The `warn!()` for checkpoint save failures **is reproduced** by `LogObserver` at the same warn level
+- The `warn!()` for checkpoint save failures **remains in `src/ga.rs`** as a documented exception — no `GaObserver` hook fires at checkpoint-failure time (`on_checkpoint_failed` is deferred as EXT-02 in v2.3+). LogObserver cannot reproduce it without a new hook. The `log::warn!` call is kept in-place with a comment.
 
 ### LogObserver public API
 
