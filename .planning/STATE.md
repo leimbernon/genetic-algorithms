@@ -3,21 +3,21 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 13-01-PLAN.md
-last_updated: "2026-03-25T18:20:14.976Z"
+stopped_at: Completed 13-02-PLAN.md
+last_updated: "2026-03-25T19:00:00.000Z"
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 2
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # State
 
 ## Current Position
 
-Phase: 13 (gaobserver-base-trait) — EXECUTING
-Plan: 1 of 2
+Phase: 13 (gaobserver-base-trait) — COMPLETE
+Plan: 2 of 2
 
 ## Project Reference
 
@@ -37,6 +37,8 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 - Feature flags: `observer-tracing` and `observer-metrics` off by default; naming follows existing `serde` precedent
 - [Phase 13]: GaObserver<U> uses &self and Send+Sync supertraits for Arc-based island sharing
 - [Phase 13]: Reporter<U> and with_reporter() soft-deprecated since 2.2.0, removed in v3.0.0
+- [Phase 13]: on_mutation_complete and on_fitness_evaluation_complete fire with Duration::ZERO since parent_crossover is opaque — timing separation requires future refactor
+- [Phase 13]: Instant::now() gated behind observer.is_some() — zero overhead when no observer attached
 
 ### Blockers/Concerns
 
@@ -48,6 +50,6 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 
 ## Session Continuity
 
-Last session: 2026-03-25T18:20:14.974Z
-Stopped at: Completed 13-01-PLAN.md
+Last session: 2026-03-25T19:00:00.000Z
+Stopped at: Completed 13-02-PLAN.md
 Resume file: None
