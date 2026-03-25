@@ -79,6 +79,7 @@ pub mod fitness;
 pub mod ga;
 pub mod genotypes;
 pub mod initializers;
+pub mod observer;
 pub mod operations;
 pub mod population;
 pub mod reporter;
