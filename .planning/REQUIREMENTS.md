@@ -9,9 +9,9 @@
 ### Observer Trait (GaObserver base — #182)
 
 - [ ] **OBS-01**: User can attach a `GaObserver<U>` to `Ga<U>` via `with_observer()` and receive notifications for run start/end, each generation, new best, and special events (stagnation, extension triggered)
-- [ ] **OBS-02**: `GaObserver<U>` has default no-op implementations for all hooks — users implement only the hooks they care about
+- [x] **OBS-02**: `GaObserver<U>` has default no-op implementations for all hooks — users implement only the hooks they care about
 - [ ] **OBS-03**: No overhead when no observer is attached (`Option::None` branch eliminates all vtable dispatch and measurement)
-- [ ] **OBS-04**: `GaObserver<U>` is safely shareable across rayon threads (`Arc<dyn GaObserver<U> + Send + Sync>`)
+- [x] **OBS-04**: `GaObserver<U>` is safely shareable across rayon threads (`Arc<dyn GaObserver<U> + Send + Sync>`)
 
 ### Log Observer (#183)
 
@@ -61,9 +61,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | OBS-01 | Phase 13 | Pending |
-| OBS-02 | Phase 13 | Pending |
+| OBS-02 | Phase 13 | Complete |
 | OBS-03 | Phase 13 | Pending |
-| OBS-04 | Phase 13 | Pending |
+| OBS-04 | Phase 13 | Complete |
 | LOG-01 | Phase 14 | Pending |
 | LOG-02 | Phase 14 | Pending |
 | LOG-03 | Phase 14 | Pending |

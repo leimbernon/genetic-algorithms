@@ -68,7 +68,7 @@ Issues: #182, #183, #184, #185, #186
   2. A custom observer that implements only one hook compiles without error — all other hooks have default no-op bodies
   3. Running `Ga<U>` with no observer attached produces identical output and timing to pre-v2.2.0 (zero-overhead branch confirmed by benchmarks)
   4. A custom observer type that is not `Send + Sync` is rejected at compile time when passed to `with_observer()`
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 13-01-PLAN.md — GaObserver trait definition, ExtensionEvent, NoopObserver, Extension::as_str(), Reporter deprecation
@@ -129,7 +129,7 @@ Phases execute in numeric order: 13 → 14 → 15 → 16 → 17
 | 10. Single-population Examples | v2.1.0 | 3/3 | Complete | 2026-03-22 |
 | 11. Advanced Mode Examples | v2.1.0 | 3/3 | Complete | 2026-03-22 |
 | 12. Documentation | v2.1.0 | 1/1 | Complete | 2026-03-22 |
-| 13. GaObserver Base Trait | v2.2.0 | 0/2 | Planning complete | - |
+| 13. GaObserver Base Trait | 1/2 | In Progress|  | - |
 | 14. LogObserver + Log Migration | v2.2.0 | 0/? | Not started | - |
 | 15. TracingObserver | v2.2.0 | 0/? | Not started | - |
 | 16. Sub-Traits | v2.2.0 | 0/? | Not started | - |
