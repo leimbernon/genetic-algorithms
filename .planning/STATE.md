@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v2.2.0
 milestone_name: observability-and-traceability
-status: Planning next milestone
+status: Defining requirements
 last_updated: "2026-03-25"
-last_activity: 2026-03-25 — v2.1.0 milestone archived; v2.2.0 ready to plan
+last_activity: 2026-03-25 — Milestone v2.2.0 started
 progress:
   total_phases: 0
   completed_phases: 0
@@ -18,8 +18,8 @@ progress:
 
 Phase: Not started
 Plan: —
-Status: v2.1.0 complete — ready to plan v2.2.0 phases
-Last activity: 2026-03-25 — v2.1.0 milestone archived
+Status: Defining requirements
+Last activity: 2026-03-25 — Milestone v2.2.0 started
 
 ## Project Reference
 
