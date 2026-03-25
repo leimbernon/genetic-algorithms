@@ -52,7 +52,7 @@ Full archive: `.planning/milestones/v2.1.0-ROADMAP.md`
 Issues: #182, #183, #184, #185, #186
 
 - [x] **Phase 13: GaObserver Base Trait** — Core trait + `Ga<U>` integration; foundation all other phases depend on (completed 2026-03-25)
-- [x] **Phase 14: LogObserver + Log Migration** — Backward-compatible log migration; validates Phase 13 end-to-end (completed 2026-03-25)
+- [ ] **Phase 14: LogObserver + Log Migration** — Backward-compatible log migration; validates Phase 13 end-to-end
 - [ ] **Phase 15: TracingObserver** — Structured tracing spans behind `observer-tracing` feature flag
 - [ ] **Phase 16: Sub-Traits** — `IslandGaObserver` and `Nsga2Observer` for engine-specific events
 - [ ] **Phase 17: CompositeObserver + MetricsObserver** — Fan-out composition and metrics facade behind `observer-metrics` flag
@@ -82,7 +82,11 @@ Plans:
   1. User can attach `LogObserver` to `Ga<U>` and observe log output at the same targets, levels, and message formats as produced by v2.1.0
   2. A `grep` for `info!\|debug!\|trace!\|warn!` in `src/ga.rs`, `src/island/`, and `src/nsga2/` returns results only inside `log_observer.rs` itself — no call sites remain in the execution loops
   3. `cargo build` (default features) and `cargo build --features serde` both succeed with zero new dependencies added
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 14-01-PLAN.md — LogObserver struct, ExtensionEvent/GenerationStats extensions, module registration, tests
+- [ ] 14-02-PLAN.md — Remove all 17 log!() calls from ga.rs, grep regression test
 
 ### Phase 15: TracingObserver
 **Goal**: Users can attach `TracingObserver` to emit structured tracing spans and events per generation, enabling integration with OpenTelemetry, Jaeger, or any `tracing`-compatible subscriber
@@ -130,7 +134,7 @@ Phases execute in numeric order: 13 → 14 → 15 → 16 → 17
 | 11. Advanced Mode Examples | v2.1.0 | 3/3 | Complete | 2026-03-22 |
 | 12. Documentation | v2.1.0 | 1/1 | Complete | 2026-03-22 |
 | 13. GaObserver Base Trait | 2/2 | Complete    | 2026-03-25 | - |
-| 14. LogObserver + Log Migration | v2.2.0 | 0/? | Not started | - |
+| 14. LogObserver + Log Migration | v2.2.0 | 0/2 | Planned | - |
 | 15. TracingObserver | v2.2.0 | 0/? | Not started | - |
 | 16. Sub-Traits | v2.2.0 | 0/? | Not started | - |
 | 17. CompositeObserver + MetricsObserver | v2.2.0 | 0/? | Not started | - |
