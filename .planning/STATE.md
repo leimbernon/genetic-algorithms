@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 14-01-PLAN.md
-last_updated: "2026-03-25T19:14:51.513Z"
+stopped_at: Completed 14-02-PLAN.md
+last_updated: "2026-03-25T19:22:34.142Z"
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 4
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # State
@@ -40,6 +40,7 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 - [Phase 13]: on_mutation_complete and on_fitness_evaluation_complete fire with Duration::ZERO since parent_crossover is opaque — timing separation requires future refactor
 - [Phase 13]: Instant::now() gated behind observer.is_some() — zero overhead when no observer attached
 - [Phase 14]: LogObserver reorders dynamic mutation block before on_generation_end so stats carry dynamic_mutation_probability
+- [Phase 14]: log::warn! kept with EXT-02 comment — on_checkpoint_failed hook deferred, serde-gated, fires only on I/O errors
 
 ### Blockers/Concerns
 
@@ -51,6 +52,6 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 
 ## Session Continuity
 
-Last session: 2026-03-25T19:14:51.512Z
-Stopped at: Completed 14-01-PLAN.md
+Last session: 2026-03-25T19:22:34.140Z
+Stopped at: Completed 14-02-PLAN.md
 Resume file: None

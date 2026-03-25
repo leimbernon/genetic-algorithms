@@ -16,7 +16,7 @@
 ### Log Observer (#183)
 
 - [x] **LOG-01**: User can attach `LogObserver` to reproduce identical log output to pre-v2.2.0 behavior (fully backward-compatible migration)
-- [ ] **LOG-02**: All hardcoded `log!()` call sites in `ga.rs`, `island/`, and `nsga2/` are replaced by observer notifications — duplicate output is structurally impossible
+- [x] **LOG-02**: All hardcoded `log!()` call sites in `ga.rs`, `island/`, and `nsga2/` are replaced by observer notifications — duplicate output is structurally impossible
 - [x] **LOG-03**: `LogObserver` compiles and works with zero new dependencies (uses existing `log 0.4` crate)
 
 ### Tracing Observer (#184)
@@ -65,7 +65,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | OBS-03 | Phase 13 | Complete |
 | OBS-04 | Phase 13 | Complete |
 | LOG-01 | Phase 14 | Complete |
-| LOG-02 | Phase 14 | Pending |
+| LOG-02 | Phase 14 | Complete |
 | LOG-03 | Phase 14 | Complete |
 | TRAC-01 | Phase 15 | Pending |
 | TRAC-02 | Phase 15 | Pending |
