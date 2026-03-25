@@ -1,6 +1,7 @@
 use crate::ga::TerminationCause;
 use crate::stats::GenerationStats;
 use crate::traits::ChromosomeT;
+#[allow(deprecated)]
 use super::Reporter;
 
 /// Prints a one-line progress summary to stdout every N generations.
@@ -30,6 +31,7 @@ impl SimpleReporter {
     }
 }
 
+#[allow(deprecated)]
 impl<U: ChromosomeT> Reporter<U> for SimpleReporter {
     fn on_generation_complete(&mut self, stats: &GenerationStats) {
         self.count += 1;

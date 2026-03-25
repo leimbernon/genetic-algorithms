@@ -27,6 +27,7 @@
 
 use crate::configuration::GaConfiguration;
 use crate::error::GaError;
+#[allow(deprecated)]
 use crate::reporter::Reporter;
 use crate::stats::GenerationStats;
 use crate::traits::{FitnessFn, InitializationFn};
@@ -95,6 +96,7 @@ pub enum TerminationCause {
 /// - Manage configuration, alleles, population and termination state.
 /// - Provide builder-like configuration methods (`ConfigurationT`) to compose the run.
 /// - Coordinate the GA cycle: initialization, selection, crossover, mutation, survivor, evaluation.
+#[allow(deprecated)]
 pub struct Ga<U>
 where
     U: ChromosomeT,
@@ -129,6 +131,7 @@ where
     reporter: Option<Box<dyn Reporter<U> + Send>>,
 }
 
+#[allow(deprecated)]
 impl<U> Default for Ga<U>
 where
     U: ChromosomeT,
@@ -520,6 +523,11 @@ where
     /// Attaches a lifecycle reporter that receives hooks during execution.
     ///
     /// See [`Reporter`](crate::reporter::Reporter) for the hook contract.
+    #[allow(deprecated)]
+    #[deprecated(
+        since = "2.2.0",
+        note = "use with_observer() instead. Reporter will be removed in v3.0.0."
+    )]
     pub fn with_reporter(mut self, reporter: Box<dyn Reporter<U> + Send>) -> Self {
         self.reporter = Some(reporter);
         self
@@ -630,6 +638,7 @@ where
     /// 4) Survivor selection to prune population, 5) Best chromosome update, 6) Stop check.
     ///
     /// Logging is controlled by configuration log level; adaptive GA updates use f_avg and f_max.
+    #[allow(deprecated)]
     pub fn run_with_callback<F>(
         &mut self,
         callback: Option<F>,

@@ -2,6 +2,7 @@ use std::time::{Duration, Instant};
 use crate::ga::TerminationCause;
 use crate::stats::GenerationStats;
 use crate::traits::ChromosomeT;
+#[allow(deprecated)]
 use super::Reporter;
 
 /// Reports total wall-clock run time and per-generation average at the end of a run.
@@ -48,6 +49,7 @@ impl Default for DurationReporter {
     }
 }
 
+#[allow(deprecated)]
 impl<U: ChromosomeT> Reporter<U> for DurationReporter {
     fn on_start(&mut self) {
         self.start = Some(Instant::now());

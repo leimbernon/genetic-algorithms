@@ -28,6 +28,10 @@ use crate::traits::ChromosomeT;
 ///
 /// The `Send` supertrait allows reporters to be used with the island model
 /// in future without API changes.
+#[deprecated(
+    since = "2.2.0",
+    note = "use GaObserver<U> instead. Reporter will be removed in v3.0.0."
+)]
 pub trait Reporter<U: ChromosomeT>: Send {
     /// Called once before the first generation.
     fn on_start(&mut self) {}
@@ -47,6 +51,7 @@ pub trait Reporter<U: ChromosomeT>: Send {
 }
 
 #[cfg(test)]
+#[allow(deprecated)]
 mod tests {
     use super::*;
     use crate::chromosomes::Binary as BinaryChromosome;

@@ -1,5 +1,6 @@
-use crate::traits::ChromosomeT;
+#[allow(deprecated)]
 use super::Reporter;
+use crate::traits::ChromosomeT;
 
 /// A no-op reporter. All hook methods use the trait's default empty bodies.
 ///
@@ -8,4 +9,5 @@ use super::Reporter;
 /// `None`, so no reporter code runs at all when the user does not configure one.
 pub struct NoopReporter;
 
+#[allow(deprecated)]
 impl<U: ChromosomeT> Reporter<U> for NoopReporter {}

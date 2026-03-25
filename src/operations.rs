@@ -147,3 +147,18 @@ pub enum Extension {
     /// Remove duplicate chromosomes (by gene comparison), regrow population.
     MassDeduplication,
 }
+
+impl Extension {
+    /// Returns the extension variant name as a static string.
+    ///
+    /// Used by [`ExtensionEvent`](crate::observer::ExtensionEvent) to avoid heap allocation.
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Extension::Noop => "Noop",
+            Extension::MassExtinction => "MassExtinction",
+            Extension::MassGenesis => "MassGenesis",
+            Extension::MassDegeneration => "MassDegeneration",
+            Extension::MassDeduplication => "MassDeduplication",
+        }
+    }
+}

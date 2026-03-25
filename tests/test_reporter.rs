@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 use std::sync::{Arc, Mutex};
 use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
 use genetic_algorithms::ga::{Ga, TerminationCause};
