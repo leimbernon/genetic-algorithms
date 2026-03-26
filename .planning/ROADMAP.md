@@ -53,7 +53,7 @@ Issues: #182, #183, #184, #185, #186
 
 - [x] **Phase 13: GaObserver Base Trait** — Core trait + `Ga<U>` integration; foundation all other phases depend on (completed 2026-03-25)
 - [x] **Phase 14: LogObserver + Log Migration** — Backward-compatible log migration; validates Phase 13 end-to-end (completed 2026-03-25)
-- [ ] **Phase 15: TracingObserver** — Structured tracing spans behind `observer-tracing` feature flag
+- [x] **Phase 15: TracingObserver** — Structured tracing spans behind `observer-tracing` feature flag (completed 2026-03-26)
 - [ ] **Phase 16: Sub-Traits** — `IslandGaObserver` and `Nsga2Observer` for engine-specific events
 - [ ] **Phase 17: CompositeObserver + MetricsObserver** — Fan-out composition and metrics facade behind `observer-metrics` flag
 
@@ -96,7 +96,7 @@ Plans:
   1. User can add `features = ["observer-tracing"]` to their `Cargo.toml`, attach `TracingObserver`, and observe `tracing::event!()` emissions per generation in their subscriber
   2. `cargo build` (default features, no `observer-tracing`) succeeds without pulling in the `tracing` crate
   3. A CI test running 10 generations with `LogTracer::init()` and `TracingObserver` both active completes without stack overflow or infinite recursion
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 15-01-PLAN.md — Feature flag wiring, TracingObserver implementation (all 12 hooks), module re-exports
@@ -139,6 +139,6 @@ Phases execute in numeric order: 13 → 14 → 15 → 16 → 17
 | 12. Documentation | v2.1.0 | 1/1 | Complete | 2026-03-22 |
 | 13. GaObserver Base Trait | 2/2 | Complete    | 2026-03-25 | - |
 | 14. LogObserver + Log Migration | 2/2 | Complete    | 2026-03-25 | - |
-| 15. TracingObserver | 1/2 | In Progress|  | - |
+| 15. TracingObserver | 2/2 | Complete   | 2026-03-26 | - |
 | 16. Sub-Traits | v2.2.0 | 0/? | Not started | - |
 | 17. CompositeObserver + MetricsObserver | v2.2.0 | 0/? | Not started | - |

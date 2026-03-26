@@ -3,21 +3,21 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 15-tracingobserver 15-01-PLAN.md
-last_updated: "2026-03-26T09:41:38.405Z"
+stopped_at: Completed 15-tracingobserver 15-02-PLAN.md
+last_updated: "2026-03-26T09:46:03Z"
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 6
-  completed_plans: 5
+  completed_plans: 6
 ---
 
 # State
 
 ## Current Position
 
-Phase: 15 (tracingobserver) — EXECUTING
-Plan: 1 of 2
+Phase: 15 (tracingobserver) — COMPLETE
+Plan: 2 of 2 (DONE)
 
 ## Project Reference
 
@@ -44,6 +44,8 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 - [Phase 15-tracingobserver]: TracingObserver stores Mutex<Option<Span>> not EnteredSpan — EnteredSpan is !Send, breaking GaObserver: Send+Sync
 - [Phase 15-tracingobserver]: Zero log::* calls in tracing_observer.rs — prevents LogTracer infinite recursion when LogObserver and TracingObserver both active (TRAC-03)
 - [Phase 15-tracingobserver]: observer-tracing feature flag off by default — default builds do not pull in tracing crate (TRAC-02)
+- [Phase 15-tracingobserver]: Integration tests use #![cfg(feature = "observer-tracing")] at file top (single gate) — entire file skipped in default cargo test (TRAC-02 verification)
+- [Phase 15-tracingobserver]: LogTracer coexistence test uses tracing::subscriber::with_default (scoped) not set_global_default — avoids test suite subscriber state poisoning
 
 ### Blockers/Concerns
 
@@ -55,6 +57,6 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 
 ## Session Continuity
 
-Last session: 2026-03-26T09:41:38.403Z
-Stopped at: Completed 15-tracingobserver 15-01-PLAN.md
+Last session: 2026-03-26T09:46:03Z
+Stopped at: Completed 15-tracingobserver 15-02-PLAN.md
 Resume file: None
