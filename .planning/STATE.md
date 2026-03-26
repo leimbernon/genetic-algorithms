@@ -3,20 +3,20 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: milestone
 status: unknown
-stopped_at: Phase 15 context gathered
-last_updated: "2026-03-26T09:19:29.651Z"
+stopped_at: Completed 15-tracingobserver 15-01-PLAN.md
+last_updated: "2026-03-26T09:41:38.405Z"
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 6
+  completed_plans: 5
 ---
 
 # State
 
 ## Current Position
 
-Phase: 14 (logobserver-log-migration) — EXECUTING
+Phase: 15 (tracingobserver) — EXECUTING
 Plan: 1 of 2
 
 ## Project Reference
@@ -24,7 +24,7 @@ Plan: 1 of 2
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library
-**Current focus:** Phase 14 — logobserver-log-migration
+**Current focus:** Phase 15 — tracingobserver
 
 ## Accumulated Context
 
@@ -41,6 +41,9 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 - [Phase 13]: Instant::now() gated behind observer.is_some() — zero overhead when no observer attached
 - [Phase 14]: LogObserver reorders dynamic mutation block before on_generation_end so stats carry dynamic_mutation_probability
 - [Phase 14]: log::warn! kept with EXT-02 comment — on_checkpoint_failed hook deferred, serde-gated, fires only on I/O errors
+- [Phase 15-tracingobserver]: TracingObserver stores Mutex<Option<Span>> not EnteredSpan — EnteredSpan is !Send, breaking GaObserver: Send+Sync
+- [Phase 15-tracingobserver]: Zero log::* calls in tracing_observer.rs — prevents LogTracer infinite recursion when LogObserver and TracingObserver both active (TRAC-03)
+- [Phase 15-tracingobserver]: observer-tracing feature flag off by default — default builds do not pull in tracing crate (TRAC-02)
 
 ### Blockers/Concerns
 
@@ -52,6 +55,6 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 
 ## Session Continuity
 
-Last session: 2026-03-26T09:19:29.643Z
-Stopped at: Phase 15 context gathered
-Resume file: .planning/phases/15-tracingobserver/15-CONTEXT.md
+Last session: 2026-03-26T09:41:38.403Z
+Stopped at: Completed 15-tracingobserver 15-01-PLAN.md
+Resume file: None

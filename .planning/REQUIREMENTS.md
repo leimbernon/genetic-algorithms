@@ -21,9 +21,9 @@
 
 ### Tracing Observer (#184)
 
-- [ ] **TRAC-01**: User can attach `TracingObserver` (behind `observer-tracing` feature flag) to emit structured tracing spans and events per generation
-- [ ] **TRAC-02**: `TracingObserver` compiles only when `--features observer-tracing` is enabled; default builds are entirely unaffected
-- [ ] **TRAC-03**: `TracingObserver` is safe to use alongside `LogTracer` — emits exclusively via `tracing::event!()`, no infinite recursion possible
+- [x] **TRAC-01**: User can attach `TracingObserver` (behind `observer-tracing` feature flag) to emit structured tracing spans and events per generation
+- [x] **TRAC-02**: `TracingObserver` compiles only when `--features observer-tracing` is enabled; default builds are entirely unaffected
+- [x] **TRAC-03**: `TracingObserver` is safe to use alongside `LogTracer` — emits exclusively via `tracing::event!()`, no infinite recursion possible
 
 ### Sub-Traits (#185)
 
@@ -67,9 +67,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LOG-01 | Phase 14 | Complete |
 | LOG-02 | Phase 14 | Complete |
 | LOG-03 | Phase 14 | Complete |
-| TRAC-01 | Phase 15 | Pending |
-| TRAC-02 | Phase 15 | Pending |
-| TRAC-03 | Phase 15 | Pending |
+| TRAC-01 | Phase 15 | Complete |
+| TRAC-02 | Phase 15 | Complete |
+| TRAC-03 | Phase 15 | Complete |
 | SUB-01 | Phase 16 | Pending |
 | SUB-02 | Phase 16 | Pending |
 | SUB-03 | Phase 16 | Pending |
