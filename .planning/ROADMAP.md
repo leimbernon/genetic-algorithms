@@ -140,5 +140,5 @@ Phases execute in numeric order: 13 → 14 → 15 → 16 → 17
 | 13. GaObserver Base Trait | 2/2 | Complete    | 2026-03-25 | - |
 | 14. LogObserver + Log Migration | 2/2 | Complete    | 2026-03-25 | - |
 | 15. TracingObserver | 2/2 | Complete    | 2026-03-26 | - |
-| 16. Sub-Traits | v2.2.0 | 0/? | Not started | - |
+| 16. Sub-Traits | 1/3 | In Progress|  | - |
 | 17. CompositeObserver + MetricsObserver | v2.2.0 | 0/? | Not started | - |

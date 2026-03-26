@@ -3,28 +3,28 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: milestone
 status: unknown
-stopped_at: Phase 16 context gathered
-last_updated: "2026-03-26T10:09:00.497Z"
+stopped_at: Completed 16-sub-traits-01-PLAN.md
+last_updated: "2026-03-26T17:06:37.999Z"
 progress:
   total_phases: 5
   completed_phases: 3
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 9
+  completed_plans: 7
 ---
 
 # State
 
 ## Current Position
 
-Phase: 15 (tracingobserver) — COMPLETE
-Plan: 2 of 2 (DONE)
+Phase: 16 (sub-traits) — EXECUTING
+Plan: 1 of 3
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library
-**Current focus:** Phase 15 — tracingobserver
+**Current focus:** Phase 16 — sub-traits
 
 ## Accumulated Context
 
@@ -46,6 +46,8 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 - [Phase 15-tracingobserver]: observer-tracing feature flag off by default — default builds do not pull in tracing crate (TRAC-02)
 - [Phase 15-tracingobserver]: Integration tests use #![cfg(feature = "observer-tracing")] at file top (single gate) — entire file skipped in default cargo test (TRAC-02 verification)
 - [Phase 15-tracingobserver]: LogTracer coexistence test uses tracing::subscriber::with_default (scoped) not set_global_default — avoids test suite subscriber state poisoning
+- [Phase 16-sub-traits]: IslandGaObserver and Nsga2Observer are independent sub-traits (not GaObserver extensions) — allows engine-specific impls without full GaObserver surface
+- [Phase 16-sub-traits]: LogObserver implements all three observer traits in a single zero-sized struct — no separate IslandLogObserver or Nsga2LogObserver needed
 
 ### Blockers/Concerns
 
@@ -57,6 +59,6 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 
 ## Session Continuity
 
-Last session: 2026-03-26T10:09:00.495Z
-Stopped at: Phase 16 context gathered
-Resume file: .planning/phases/16-sub-traits/16-CONTEXT.md
+Last session: 2026-03-26T17:06:37.997Z
+Stopped at: Completed 16-sub-traits-01-PLAN.md
+Resume file: None

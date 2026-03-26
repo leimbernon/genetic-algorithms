@@ -27,9 +27,9 @@
 
 ### Sub-Traits (#185)
 
-- [ ] **SUB-01**: User can attach an `IslandGaObserver` to `IslandGa<U>` via `with_observer()` and receive island-specific events (migration triggered, per-island run start/end, per-island generation complete)
-- [ ] **SUB-02**: User can attach a `Nsga2Observer` to `Nsga2Ga<U>` via `with_observer()` and receive NSGA-II-specific events (Pareto front assigned, non-dominated sort complete, crowding distance calculated)
-- [ ] **SUB-03**: `LogObserver` implements all three observer traits (`GaObserver`, `IslandGaObserver`, `Nsga2Observer`) providing complete log migration coverage across all GA modes
+- [x] **SUB-01**: User can attach an `IslandGaObserver` to `IslandGa<U>` via `with_observer()` and receive island-specific events (migration triggered, per-island run start/end, per-island generation complete)
+- [x] **SUB-02**: User can attach a `Nsga2Observer` to `Nsga2Ga<U>` via `with_observer()` and receive NSGA-II-specific events (Pareto front assigned, non-dominated sort complete, crowding distance calculated)
+- [x] **SUB-03**: `LogObserver` implements all three observer traits (`GaObserver`, `IslandGaObserver`, `Nsga2Observer`) providing complete log migration coverage across all GA modes
 
 ### Composite + Metrics (#186)
 
@@ -70,9 +70,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TRAC-01 | Phase 15 | Complete |
 | TRAC-02 | Phase 15 | Complete |
 | TRAC-03 | Phase 15 | Complete |
-| SUB-01 | Phase 16 | Pending |
-| SUB-02 | Phase 16 | Pending |
-| SUB-03 | Phase 16 | Pending |
+| SUB-01 | Phase 16 | Complete |
+| SUB-02 | Phase 16 | Complete |
+| SUB-03 | Phase 16 | Complete |
 | COMP-01 | Phase 17 | Pending |
 | COMP-02 | Phase 17 | Pending |
 | COMP-03 | Phase 17 | Pending |
