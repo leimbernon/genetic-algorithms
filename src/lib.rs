@@ -93,3 +93,5 @@ pub mod niching;
 pub mod nsga2;
 
 pub use observer::LogObserver;
+#[cfg(feature = "observer-tracing")]
+pub use observer::TracingObserver;

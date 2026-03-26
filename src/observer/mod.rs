@@ -98,3 +98,8 @@ impl<U: ChromosomeT> GaObserver<U> for NoopObserver {}
 
 mod log;
 pub use log::LogObserver;
+
+#[cfg(feature = "observer-tracing")]
+mod tracing_observer;
+#[cfg(feature = "observer-tracing")]
+pub use tracing_observer::TracingObserver;
