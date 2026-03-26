@@ -25,7 +25,7 @@
 
 use std::time::Duration;
 use crate::ga::TerminationCause;
-use crate::observer::{ExtensionEvent, GaObserver};
+use crate::observer::{ExtensionEvent, GaObserver, IslandGaObserver, Nsga2Observer};
 use crate::stats::GenerationStats;
 use crate::traits::ChromosomeT;
 
@@ -127,5 +127,45 @@ impl<U: ChromosomeT> GaObserver<U> for LogObserver {
 
     fn on_run_end(&self, _cause: TerminationCause, _all_stats: &[GenerationStats]) {
         // No direct log call existed for run end in the original code
+    }
+}
+
+impl<U: ChromosomeT> IslandGaObserver<U> for LogObserver {
+    fn on_island_run_start(&self, _island_id: usize) {
+        // Reproduces island/mod.rs: info!(target: "island_events", "Starting island model GA: ...")
+        log::info!(target: "island_events", "Island model GA started");
+    }
+    fn on_island_run_end(&self, _island_id: usize) {
+        // No direct log call existed for island run end in the original code
+        log::info!(target: "island_events", "Island model GA ended");
+    }
+    fn on_island_generation_end(&self, _island_id: usize, generation: usize, stats: &GenerationStats) {
+        // Reproduces island/mod.rs: debug!(target: "island_events", "Generation {} complete", gen)
+        log::debug!(target: "island_events", "Best chromosome calculated - generation {}", generation + 1);
+        if let Some(prob) = stats.dynamic_mutation_probability {
+            log::debug!(
+                target: "island_events",
+                "Dynamic mutation: diversity={:.4}, probability={:.4}",
+                stats.diversity,
+                prob
+            );
+        }
+    }
+    fn on_migration_triggered(&self, generation: usize, migration_count: usize) {
+        // Reproduces island/mod.rs: debug!(target: "island_events", "Migration performed at generation {}", gen)
+        log::debug!(target: "island_events", "Migration performed at generation {} (count={})", generation, migration_count);
+    }
+}
+
+impl<U: ChromosomeT> Nsga2Observer<U> for LogObserver {
+    fn on_pareto_front_assigned(&self, generation: usize, front_count: usize, population_size: usize) {
+        // Reproduces nsga2/mod.rs: debug!(target: "nsga2_events", "Generation {} complete, population size = {}", gen, population.len())
+        log::debug!(target: "nsga2_events", "Generation {} complete, population size = {}, fronts = {}", generation, population_size, front_count);
+    }
+    fn on_non_dominated_sort_complete(&self, generation: usize, duration_ms: f64) {
+        log::debug!(target: "nsga2_events", "Non-dominated sort complete at generation {} ({:.2}ms)", generation, duration_ms);
+    }
+    fn on_crowding_distance_calculated(&self, generation: usize, duration_ms: f64) {
+        log::debug!(target: "nsga2_events", "Crowding distance calculated at generation {} ({:.2}ms)", generation, duration_ms);
     }
 }
