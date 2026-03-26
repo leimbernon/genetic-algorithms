@@ -96,7 +96,11 @@ Plans:
   1. User can add `features = ["observer-tracing"]` to their `Cargo.toml`, attach `TracingObserver`, and observe `tracing::event!()` emissions per generation in their subscriber
   2. `cargo build` (default features, no `observer-tracing`) succeeds without pulling in the `tracing` crate
   3. A CI test running 10 generations with `LogTracer::init()` and `TracingObserver` both active completes without stack overflow or infinite recursion
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 15-01-PLAN.md — Feature flag wiring, TracingObserver implementation (all 12 hooks), module re-exports
+- [ ] 15-02-PLAN.md — Integration tests (TRAC-01 attach/run/Send+Sync, TRAC-02 feature gate, TRAC-03 LogTracer coexistence)
 
 ### Phase 16: Sub-Traits
 **Goal**: Users can attach engine-specific observers to `IslandGa<U>` and `Nsga2Ga<U>` and receive events unique to each engine's execution model
@@ -135,6 +139,6 @@ Phases execute in numeric order: 13 → 14 → 15 → 16 → 17
 | 12. Documentation | v2.1.0 | 1/1 | Complete | 2026-03-22 |
 | 13. GaObserver Base Trait | 2/2 | Complete    | 2026-03-25 | - |
 | 14. LogObserver + Log Migration | 2/2 | Complete    | 2026-03-25 | - |
-| 15. TracingObserver | v2.2.0 | 0/? | Not started | - |
+| 15. TracingObserver | v2.2.0 | 0/2 | Not started | - |
 | 16. Sub-Traits | v2.2.0 | 0/? | Not started | - |
 | 17. CompositeObserver + MetricsObserver | v2.2.0 | 0/? | Not started | - |
