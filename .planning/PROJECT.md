@@ -46,7 +46,7 @@ Users can solve complex optimization problems with composable, performant geneti
 
 - ✓ GaObserver trait with lifecycle, operator, and special event hooks — Validated in Phase 13: GaObserver Base Trait
 - ✓ LogObserver replacing hardcoded log!() calls — Validated in Phase 14: LogObserver + Log Migration
-- [ ] TracingObserver behind `observer-tracing` feature flag (#184)
+- ✓ TracingObserver behind `observer-tracing` feature flag (#184) — Validated in Phase 15: TracingObserver
 - [ ] Island GA and NSGA-II specialized observer sub-traits (#185)
 - [ ] CompositeObserver for combining multiple observers (#186)
 - [ ] MetricsObserver behind `observer-metrics` feature flag (#186)
@@ -102,4 +102,4 @@ Users can solve complex optimization problems with composable, performant geneti
 | Default no-op methods on traits | Forward-compatible: new events don't break existing observers | — Pending |
 
 ---
-*Last updated: 2026-03-25 — Phase 14 complete: LogObserver shipped, ga.rs log migration done*
+*Last updated: 2026-03-26 — Phase 15 complete: TracingObserver shipped behind observer-tracing feature flag*
