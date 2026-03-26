@@ -96,6 +96,34 @@ pub struct NoopObserver;
 
 impl<U: ChromosomeT> GaObserver<U> for NoopObserver {}
 
+/// Observer for [`IslandGa<U>`](crate::island::IslandGa) engine-specific events.
+///
+/// All methods have default no-op implementations. The `Send + Sync`
+/// supertraits are required for safe sharing across rayon island threads via `Arc`.
+pub trait IslandGaObserver<U: ChromosomeT>: Send + Sync {
+    /// Called when an island run starts.
+    fn on_island_run_start(&self, _island_id: usize) {}
+    /// Called when an island run ends.
+    fn on_island_run_end(&self, _island_id: usize) {}
+    /// Called at the end of each generation for each island.
+    fn on_island_generation_end(&self, _island_id: usize, _generation: usize, _stats: &GenerationStats) {}
+    /// Called when migration is triggered between islands.
+    fn on_migration_triggered(&self, _generation: usize, _migration_count: usize) {}
+}
+
+/// Observer for [`Nsga2Ga<U>`](crate::nsga2::Nsga2Ga) engine-specific events.
+///
+/// All methods have default no-op implementations. The `Send + Sync`
+/// supertraits are required for safe sharing across rayon threads via `Arc`.
+pub trait Nsga2Observer<U: ChromosomeT>: Send + Sync {
+    /// Called after Pareto fronts are assigned.
+    fn on_pareto_front_assigned(&self, _generation: usize, _front_count: usize, _population_size: usize) {}
+    /// Called after non-dominated sorting completes.
+    fn on_non_dominated_sort_complete(&self, _generation: usize, _duration_ms: f64) {}
+    /// Called after crowding distance calculation completes.
+    fn on_crowding_distance_calculated(&self, _generation: usize, _duration_ms: f64) {}
+}
+
 mod log;
 pub use log::LogObserver;
 
