@@ -97,3 +97,6 @@ pub use observer::IslandGaObserver;
 pub use observer::Nsga2Observer;
 #[cfg(feature = "observer-tracing")]
 pub use observer::TracingObserver;
+pub use observer::AllObserver;
+pub use observer::CompositeObserver;
+pub use observer::GaObserver;
