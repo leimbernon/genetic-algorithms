@@ -64,6 +64,7 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260327-h4k | Move all unit tests from src/ to tests/ folder | 2026-03-27 | c81faf4 | [260327-h4k-move-all-unit-tests-from-src-to-tests-fo](./quick/260327-h4k-move-all-unit-tests-from-src-to-tests-fo/) |
+| 260327-kkp | Add observability to examples and document observer API in README | 2026-03-27 | e4e7115 | [260327-kkp-add-observability-to-examples-and-docume](./quick/260327-kkp-add-observability-to-examples-and-docume/) |
 
 ### Blockers/Concerns
 
@@ -76,5 +77,5 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 ## Session Continuity
 
 Last session: 2026-03-27
-Stopped at: Completed quick task 260327-h4k (Move all unit tests from src/ to tests/ folder)
+Stopped at: Completed quick task 260327-kkp (Add observability to examples and document observer API in README)
 Resume file: None
