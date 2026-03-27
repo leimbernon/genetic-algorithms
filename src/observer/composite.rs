@@ -60,6 +60,11 @@ impl<U: ChromosomeT> CompositeObserver<U> {
         self.observers.push(obs);
         self
     }
+
+    /// Returns the number of observers currently registered.
+    pub fn observer_count(&self) -> usize {
+        self.observers.len()
+    }
 }
 
 impl<U: ChromosomeT> Default for CompositeObserver<U> {

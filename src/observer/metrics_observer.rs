@@ -59,6 +59,11 @@ impl MetricsObserver {
     pub fn new(run_id: &'static str) -> Self {
         Self { run_id }
     }
+
+    /// Returns the run_id this observer was constructed with.
+    pub fn run_id(&self) -> &'static str {
+        self.run_id
+    }
 }
 
 impl Default for MetricsObserver {
