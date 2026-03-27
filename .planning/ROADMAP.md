@@ -55,7 +55,7 @@ Issues: #182, #183, #184, #185, #186
 - [x] **Phase 14: LogObserver + Log Migration** — Backward-compatible log migration; validates Phase 13 end-to-end (completed 2026-03-25)
 - [x] **Phase 15: TracingObserver** — Structured tracing spans behind `observer-tracing` feature flag (completed 2026-03-26)
 - [x] **Phase 16: Sub-Traits** — `IslandGaObserver` and `Nsga2Observer` for engine-specific events (completed 2026-03-27)
-- [ ] **Phase 17: CompositeObserver + MetricsObserver** — Fan-out composition and metrics facade behind `observer-metrics` flag
+- [x] **Phase 17: CompositeObserver + MetricsObserver** — Fan-out composition and metrics facade behind `observer-metrics` flag (completed 2026-03-27)
 
 ## Phase Details
 
@@ -126,7 +126,7 @@ Plans:
   2. User can add `features = ["observer-metrics"]` and attach `MetricsObserver`; per-generation counters and gauges are recorded via the `metrics` facade without installing any backend in the library
   3. `cargo build` (default features, no `observer-metrics`) succeeds without pulling in the `metrics` crate
   4. A criterion benchmark shows `MetricsObserver` used inside island parallel execution produces no data races or panics (metric calls are sequential-only)
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 17-01-PLAN.md — AllObserver<U> supertrait + CompositeObserver<U> with fan-out for all 19 hooks
@@ -151,4 +151,4 @@ Phases execute in numeric order: 13 → 14 → 15 → 16 → 17
 | 14. LogObserver + Log Migration | 2/2 | Complete    | 2026-03-25 | - |
 | 15. TracingObserver | 2/2 | Complete    | 2026-03-26 | - |
 | 16. Sub-Traits | 3/3 | Complete    | 2026-03-27 | - |
-| 17. CompositeObserver + MetricsObserver | 2/3 | In Progress|  | - |
+| 17. CompositeObserver + MetricsObserver | 3/3 | Complete   | 2026-03-27 | - |
