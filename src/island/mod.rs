@@ -28,10 +28,11 @@ use crate::configuration::{GaConfiguration, ProblemSolving};
 use crate::error::GaError;
 use crate::island::configuration::IslandConfiguration;
 use crate::island::migration::migrate;
+use crate::observer::IslandGaObserver;
 use crate::operations::mutation;
 use crate::population::Population;
+use crate::stats::GenerationStats;
 use crate::traits::{ChromosomeT, FitnessFn, InitializationFn};
-use log::{debug, info};
 use std::sync::Arc;
 
 /// Island Model Genetic Algorithm orchestrator.
@@ -62,6 +63,8 @@ where
     pub initialization_fn: Option<Arc<InitializationFn<U::Gene>>>,
     /// Fitness function.
     pub fitness_fn: Option<Arc<FitnessFn<U::Gene>>>,
+    /// Optional lifecycle observer for island-specific events.
+    observer: Option<Arc<dyn IslandGaObserver<U> + Send + Sync>>,
 }
 
 impl<U> IslandGa<U>
@@ -86,6 +89,7 @@ where
             alleles: Vec::new(),
             initialization_fn: None,
             fitness_fn: None,
+            observer: None,
         }
     }
 
@@ -114,6 +118,7 @@ where
             alleles: Vec::new(),
             initialization_fn: None,
             fitness_fn: None,
+            observer: None,
         }
     }
 
@@ -153,6 +158,26 @@ where
     {
         self.fitness_fn = Some(Arc::new(f));
         self
+    }
+
+    /// Attaches a lifecycle observer that receives island-specific hooks during execution.
+    ///
+    /// The observer is stored as an `Arc` for thread-safe sharing across rayon island threads.
+    /// All hooks receive `&self`, so observers that need interior mutability should use
+    /// `Mutex`, `AtomicU64`, or similar.
+    ///
+    /// See [`IslandGaObserver`](crate::observer::IslandGaObserver) for the hook contract.
+    pub fn with_observer(mut self, obs: Arc<dyn IslandGaObserver<U> + Send + Sync>) -> Self {
+        self.observer = Some(obs);
+        self
+    }
+
+    /// Dispatches an island observer hook if an observer is attached. No-op when `self.observer` is `None`.
+    #[inline]
+    fn notify<F: FnOnce(&dyn IslandGaObserver<U>)>(&self, f: F) {
+        if let Some(ref obs) = self.observer {
+            f(obs.as_ref());
+        }
     }
 
     /// Validates configuration and returns a ready-to-run instance.
@@ -264,10 +289,6 @@ where
             );
 
             self.islands.push(Population::new(chromosomes));
-            debug!(
-                target: "island_events",
-                "Initialized island {} with {} chromosomes", island_idx, pop_size
-            );
         }
 
         Ok(())
@@ -326,26 +347,18 @@ where
         let problem_solving = base_config.limit_configuration.problem_solving;
         let fitness_target = base_config.limit_configuration.fitness_target;
 
-        info!(
-            target: "island_events",
-            "Starting island model GA: {} islands, {} generations",
-            self.island_config.num_islands,
-            max_generations
-        );
+        self.notify(|obs| obs.on_island_run_start(0));
 
         for gen in 0..max_generations {
             // Evolve each island for one generation
-            self.evolve_islands_one_generation(problem_solving)?;
+            self.evolve_islands_one_generation(gen, problem_solving)?;
 
             // Check fitness target
             if let Some(target) = fitness_target {
                 let best = self.global_best(problem_solving);
                 let dist = (best.fitness() - target).abs();
                 if dist < 1e-10 {
-                    info!(
-                        target: "island_events",
-                        "Fitness target reached at generation {}", gen
-                    );
+                    self.notify(|obs| obs.on_island_run_end(0));
                     return Ok(best);
                 }
             }
@@ -355,14 +368,13 @@ where
                 && self.island_config.migration_interval > 0
                 && gen % self.island_config.migration_interval == 0
             {
+                let migration_count = self.island_config.migration_count;
                 migrate(&mut self.islands, &self.island_config, problem_solving)?;
-                debug!(
-                    target: "island_events",
-                    "Migration performed at generation {}", gen
-                );
+                self.notify(|obs| obs.on_migration_triggered(gen, migration_count));
             }
         }
 
+        self.notify(|obs| obs.on_island_run_end(0));
         Ok(self.global_best(problem_solving))
     }
 
@@ -371,7 +383,8 @@ where
     /// Each island uses its own `GaConfiguration` for operator parameters.
     fn evolve_islands_one_generation(
         &mut self,
-        _problem_solving: ProblemSolving,
+        gen: usize,
+        problem_solving: ProblemSolving,
     ) -> Result<(), GaError> {
         use crate::operations::{crossover, mutation, selection, survivor};
         use rand::Rng;
@@ -383,6 +396,12 @@ where
             .ok_or_else(|| GaError::ConfigurationError("No fitness function set".to_string()))?;
 
         let fitness_fn = Arc::clone(fitness_fn);
+
+        // Clone observer Arc once before entering the parallel region.
+        let observer_clone: Option<Arc<dyn IslandGaObserver<U> + Send + Sync>> =
+            self.observer.as_ref().map(Arc::clone);
+
+        let is_maximization = matches!(problem_solving, ProblemSolving::Maximization);
 
         // Build a per-island config snapshot so we can move into the parallel closure.
         // Each tuple holds (selection, crossover, mutation, survivor, limit, num_threads).
@@ -469,6 +488,18 @@ where
                     pop_size,
                     limit_config,
                 )?;
+
+                // Fire per-island generation hook if an observer is attached
+                if let Some(ref obs) = observer_clone {
+                    let fitness_values: Vec<f64> =
+                        island.chromosomes.iter().map(|c| c.fitness()).collect();
+                    let stats = GenerationStats::from_fitness_values(
+                        gen,
+                        &fitness_values,
+                        is_maximization,
+                    );
+                    obs.on_island_generation_end(idx, gen, &stats);
+                }
 
                 Ok(())
             })
