@@ -150,5 +150,10 @@ mod tracing_observer;
 #[cfg(feature = "observer-tracing")]
 pub use tracing_observer::TracingObserver;
 
+#[cfg(feature = "observer-metrics")]
+mod metrics_observer;
+#[cfg(feature = "observer-metrics")]
+pub use metrics_observer::MetricsObserver;
+
 mod composite;
 pub use composite::CompositeObserver;
