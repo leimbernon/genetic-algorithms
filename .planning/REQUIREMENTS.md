@@ -33,9 +33,9 @@
 
 ### Composite + Metrics (#186)
 
-- [ ] **COMP-01**: User can combine multiple observers simultaneously via `CompositeObserver`, with all three observer traits fanning out to every attached observer
-- [ ] **COMP-02**: User can attach `MetricsObserver` (behind `observer-metrics` feature flag) to record per-generation counters, gauges, and histograms via the `metrics` facade crate
-- [ ] **COMP-03**: `MetricsObserver` is safe inside island parallel execution — metric calls are restricted to sequential per-generation hooks, never inside `par_iter()` closures
+- [x] **COMP-01**: User can combine multiple observers simultaneously via `CompositeObserver`, with all three observer traits fanning out to every attached observer
+- [x] **COMP-02**: User can attach `MetricsObserver` (behind `observer-metrics` feature flag) to record per-generation counters, gauges, and histograms via the `metrics` facade crate
+- [x] **COMP-03**: `MetricsObserver` is safe inside island parallel execution — metric calls are restricted to sequential per-generation hooks, never inside `par_iter()` closures
 
 ## Future Requirements (v2.3+)
 
@@ -73,9 +73,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SUB-01 | Phase 16 | Complete |
 | SUB-02 | Phase 16 | Complete |
 | SUB-03 | Phase 16 | Complete |
-| COMP-01 | Phase 17 | Pending |
-| COMP-02 | Phase 17 | Pending |
-| COMP-03 | Phase 17 | Pending |
+| COMP-01 | Phase 17 | Complete |
+| COMP-02 | Phase 17 | Complete |
+| COMP-03 | Phase 17 | Complete |
 
 **Coverage:**
 - v2.2.0 requirements: 16 total

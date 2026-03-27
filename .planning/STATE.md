@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 17-01-PLAN.md
-last_updated: "2026-03-27T09:45:04.638Z"
+stopped_at: Completed 17-02-PLAN.md (MetricsObserver)
+last_updated: "2026-03-27T09:49:25.729Z"
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 12
-  completed_plans: 10
+  completed_plans: 11
 ---
 
 # State
@@ -54,6 +54,9 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 - [Phase 16-sub-traits]: on_pareto_front_assigned fires unconditionally — count event, no timing gate needed
 - [Phase 17]: AllObserver<U> is a pure supertrait marker (no methods) — object-safe, enabling dyn AllObserver<U> for CompositeObserver storage
 - [Phase 17]: CompositeObserver uses Vec<Arc<dyn AllObserver<U>>> — allows sharing inner observers across multiple GA engine instances
+- [Phase 17]: MetricsObserver uses &'static str run_id (not Arc) — avoids heap overhead, user provides stable string literal
+- [Phase 17]: observer-metrics feature flag off by default — default builds do not pull in metrics crate (COMP-02/COMP-03)
+- [Phase 17]: All metrics::* calls in sequential hook bodies only — zero metrics calls inside par_iter closures (COMP-03)
 
 ### Blockers/Concerns
 
@@ -65,6 +68,6 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 
 ## Session Continuity
 
-Last session: 2026-03-27T09:45:04.636Z
-Stopped at: Completed 17-01-PLAN.md
+Last session: 2026-03-27T09:49:25.727Z
+Stopped at: Completed 17-02-PLAN.md (MetricsObserver)
 Resume file: None
