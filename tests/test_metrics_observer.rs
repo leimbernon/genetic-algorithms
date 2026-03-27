@@ -1,4 +1,5 @@
 #![cfg(feature = "observer-metrics")]
+// Unit tests migrated from src/observer/metrics_observer.rs are appended below.
 //! Integration tests for MetricsObserver — covers COMP-02 and COMP-03.
 //!
 //! This file is cfg-gated on `observer-metrics`. Running `cargo test` (no
@@ -122,4 +123,24 @@ fn test_metrics_observer_island_no_panic() {
         "IslandGa run with MetricsObserver returned Err: {:?}",
         result.err()
     );
+}
+
+// ── Unit tests migrated from src/observer/metrics_observer.rs ────────────────
+
+#[test]
+fn new_stores_run_id() {
+    let obs = MetricsObserver::new("test_run");
+    assert_eq!(obs.run_id(), "test_run");
+}
+
+#[test]
+fn default_uses_default_run_id() {
+    let obs = MetricsObserver::default();
+    assert_eq!(obs.run_id(), "default");
+}
+
+#[test]
+fn implements_send_and_sync() {
+    fn assert_send_sync<T: Send + Sync>() {}
+    assert_send_sync::<MetricsObserver>();
 }

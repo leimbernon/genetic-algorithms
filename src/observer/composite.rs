@@ -220,36 +220,3 @@ impl<U: ChromosomeT> Nsga2Observer<U> for CompositeObserver<U> {
 // Note: CompositeObserver<U> automatically satisfies AllObserver<U> via the
 // blanket impl in src/observer/mod.rs — no explicit `impl AllObserver` needed.
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::observer::LogObserver;
-
-    #[test]
-    fn composite_observer_new_is_empty() {
-        let composite: CompositeObserver<crate::chromosomes::Binary> = CompositeObserver::new();
-        assert!(composite.observers.is_empty());
-    }
-
-    #[test]
-    fn composite_observer_add_builds_chain() {
-        let composite: CompositeObserver<crate::chromosomes::Binary> = CompositeObserver::new()
-            .add(Arc::new(LogObserver))
-            .add(Arc::new(LogObserver));
-        assert_eq!(composite.observers.len(), 2);
-    }
-
-    #[test]
-    fn composite_observer_default_is_empty() {
-        let composite: CompositeObserver<crate::chromosomes::Binary> = CompositeObserver::default();
-        assert!(composite.observers.is_empty());
-    }
-
-    #[test]
-    fn composite_observer_clone_shares_arcs() {
-        let composite: CompositeObserver<crate::chromosomes::Binary> = CompositeObserver::new()
-            .add(Arc::new(LogObserver));
-        let cloned = composite.clone();
-        assert_eq!(cloned.observers.len(), 1);
-    }
-}

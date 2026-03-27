@@ -121,25 +121,3 @@ impl<U: ChromosomeT> IslandGaObserver<U> for MetricsObserver {}
 
 impl<U: ChromosomeT> Nsga2Observer<U> for MetricsObserver {}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn new_stores_run_id() {
-        let obs = MetricsObserver::new("test_run");
-        assert_eq!(obs.run_id, "test_run");
-    }
-
-    #[test]
-    fn default_uses_default_run_id() {
-        let obs = MetricsObserver::default();
-        assert_eq!(obs.run_id, "default");
-    }
-
-    #[test]
-    fn implements_send_and_sync() {
-        fn assert_send_sync<T: Send + Sync>() {}
-        assert_send_sync::<MetricsObserver>();
-    }
-}

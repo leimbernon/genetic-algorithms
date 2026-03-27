@@ -17,6 +17,7 @@ use genetic_algorithms::nsga2::Nsga2Ga;
 use genetic_algorithms::observer::{GaObserver, IslandGaObserver, Nsga2Observer};
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::traits::{ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig};
+use genetic_algorithms::observer::LogObserver;
 use genetic_algorithms::{AllObserver, CompositeObserver};
 
 // ============================================================================
@@ -232,4 +233,34 @@ fn test_composite_fan_out_order() {
         2,
         "on_run_start should fire exactly 2 times (once per registered observer)"
     );
+}
+
+// ── Unit tests migrated from src/observer/composite.rs ───────────────────────
+
+#[test]
+fn composite_observer_new_is_empty() {
+    let composite: CompositeObserver<BinaryChromosome> = CompositeObserver::new();
+    assert_eq!(composite.observer_count(), 0);
+}
+
+#[test]
+fn composite_observer_add_builds_chain() {
+    let composite: CompositeObserver<BinaryChromosome> = CompositeObserver::new()
+        .add(Arc::new(LogObserver) as Arc<dyn AllObserver<BinaryChromosome> + Send + Sync>)
+        .add(Arc::new(LogObserver) as Arc<dyn AllObserver<BinaryChromosome> + Send + Sync>);
+    assert_eq!(composite.observer_count(), 2);
+}
+
+#[test]
+fn composite_observer_default_is_empty() {
+    let composite: CompositeObserver<BinaryChromosome> = CompositeObserver::default();
+    assert_eq!(composite.observer_count(), 0);
+}
+
+#[test]
+fn composite_observer_clone_shares_arcs() {
+    let composite: CompositeObserver<BinaryChromosome> = CompositeObserver::new()
+        .add(Arc::new(LogObserver) as Arc<dyn AllObserver<BinaryChromosome> + Send + Sync>);
+    let cloned = composite.clone();
+    assert_eq!(cloned.observer_count(), 1);
 }
