@@ -110,7 +110,12 @@ Plans:
   1. User can call `island_ga.with_observer(arc_observer)` with an `IslandGaObserver` implementation and receive `on_migration_triggered`, `on_island_run_start`, `on_island_run_end`, and `on_island_generation_end` events
   2. User can call `nsga2_ga.with_observer(arc_observer)` with a `Nsga2Observer` implementation and receive `on_pareto_front_assigned`, `on_non_dominated_sort_complete`, and `on_crowding_distance_calculated` events
   3. A single `LogObserver` instance implements all three observer traits (`GaObserver`, `IslandGaObserver`, `Nsga2Observer`) and can be passed to any of the three GA engines
-**Plans**: TBD
+**Plans:** 3 plans complete
+
+Plans:
+- [ ] 16-01-PLAN.md — IslandGaObserver + Nsga2Observer trait definitions, LogObserver multi-trait impl, module re-exports
+- [ ] 16-02-PLAN.md — IslandGa<U> integration (observer field, hooks, migration dispatch)
+- [ ] 16-03-PLAN.md — Nsga2Ga<U> integration + integration tests for all three sub-traits
 
 ### Phase 17: CompositeObserver + MetricsObserver
 **Goal**: Users can combine multiple observers in a single run and optionally record per-generation metrics counters, gauges, and histograms via the `metrics` facade
@@ -121,7 +126,12 @@ Plans:
   2. User can add `features = ["observer-metrics"]` and attach `MetricsObserver`; per-generation counters and gauges are recorded via the `metrics` facade without installing any backend in the library
   3. `cargo build` (default features, no `observer-metrics`) succeeds without pulling in the `metrics` crate
   4. A criterion benchmark shows `MetricsObserver` used inside island parallel execution produces no data races or panics (metric calls are sequential-only)
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 17-01-PLAN.md — AllObserver<U> supertrait + CompositeObserver<U> with fan-out for all 19 hooks
+- [ ] 17-02-PLAN.md — MetricsObserver behind observer-metrics feature flag (11 metric calls)
+- [ ] 17-03-PLAN.md — Integration tests (COMP-01/02/03) + criterion benchmark
 
 ## Progress
 
@@ -141,4 +151,4 @@ Phases execute in numeric order: 13 → 14 → 15 → 16 → 17
 | 14. LogObserver + Log Migration | 2/2 | Complete    | 2026-03-25 | - |
 | 15. TracingObserver | 2/2 | Complete    | 2026-03-26 | - |
 | 16. Sub-Traits | 3/3 | Complete    | 2026-03-27 | - |
-| 17. CompositeObserver + MetricsObserver | v2.2.0 | 0/? | Not started | - |
+| 17. CompositeObserver + MetricsObserver | v2.2.0 | 0/3 | Not started | - |
