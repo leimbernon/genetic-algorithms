@@ -59,6 +59,12 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 - [Phase 17]: All metrics::* calls in sequential hook bodies only — zero metrics calls inside par_iter closures (COMP-03)
 - [Phase 17]: CountingAllObserver implements all three observer traits in one struct — enables fan-out tests across GaObserver, IslandGaObserver, Nsga2Observer without separate types
 
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260327-h4k | Move all unit tests from src/ to tests/ folder | 2026-03-27 | c81faf4 | [260327-h4k-move-all-unit-tests-from-src-to-tests-fo](./quick/260327-h4k-move-all-unit-tests-from-src-to-tests-fo/) |
+
 ### Blockers/Concerns
 
 - Phase 14: Log migration must be atomic per module — never leave both direct log!() call and observer dispatch active simultaneously (~94 call sites across 9 targets)
@@ -69,6 +75,6 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 
 ## Session Continuity
 
-Last session: 2026-03-27T10:56:44.940Z
-Stopped at: Completed 17-03-PLAN.md (Integration Tests)
+Last session: 2026-03-27
+Stopped at: Completed quick task 260327-h4k (Move all unit tests from src/ to tests/ folder)
 Resume file: None
