@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 16-sub-traits-01-PLAN.md
-last_updated: "2026-03-26T17:06:37.999Z"
+stopped_at: Completed 16-sub-traits-02-PLAN.md
+last_updated: "2026-03-27T08:42:15.923Z"
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 9
-  completed_plans: 7
+  completed_plans: 8
 ---
 
 # State
@@ -48,6 +48,8 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 - [Phase 15-tracingobserver]: LogTracer coexistence test uses tracing::subscriber::with_default (scoped) not set_global_default — avoids test suite subscriber state poisoning
 - [Phase 16-sub-traits]: IslandGaObserver and Nsga2Observer are independent sub-traits (not GaObserver extensions) — allows engine-specific impls without full GaObserver surface
 - [Phase 16-sub-traits]: LogObserver implements all three observer traits in a single zero-sized struct — no separate IslandLogObserver or Nsga2LogObserver needed
+- [Phase 16-sub-traits]: island_id=0 passed to run-level hooks (on_island_run_start, on_island_run_end) — IslandGa is a single logical run, island-thread hooks use idx
+- [Phase 16-sub-traits]: test files using IslandGa struct literals must be updated to constructor pattern when private fields are added — public API is correct for external tests
 
 ### Blockers/Concerns
 
@@ -59,6 +61,6 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 
 ## Session Continuity
 
-Last session: 2026-03-26T17:06:37.997Z
-Stopped at: Completed 16-sub-traits-01-PLAN.md
+Last session: 2026-03-27T08:42:15.921Z
+Stopped at: Completed 16-sub-traits-02-PLAN.md
 Resume file: None
