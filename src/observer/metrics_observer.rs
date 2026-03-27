@@ -34,7 +34,6 @@
 //! ```
 
 use std::time::Duration;
-use crate::ga::TerminationCause;
 use crate::observer::{ExtensionEvent, GaObserver, IslandGaObserver, Nsga2Observer};
 use crate::stats::GenerationStats;
 use crate::traits::ChromosomeT;
