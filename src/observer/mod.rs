@@ -124,6 +124,24 @@ pub trait Nsga2Observer<U: ChromosomeT>: Send + Sync {
     fn on_crowding_distance_calculated(&self, _generation: usize, _duration_ms: f64) {}
 }
 
+/// Combined observer bound for use with [`CompositeObserver`].
+///
+/// Any type that implements [`GaObserver<U>`], [`IslandGaObserver<U>`],
+/// [`Nsga2Observer<U>`], and [`Send + Sync`] automatically satisfies this
+/// supertrait via the blanket impl below.
+///
+/// `AllObserver<U>` has zero methods of its own — it is a pure supertrait
+/// marker and is object-safe: `dyn AllObserver<U>` is valid.
+pub trait AllObserver<U: ChromosomeT>:
+    GaObserver<U> + IslandGaObserver<U> + Nsga2Observer<U> + Send + Sync
+{}
+
+impl<U, T> AllObserver<U> for T
+where
+    U: ChromosomeT,
+    T: GaObserver<U> + IslandGaObserver<U> + Nsga2Observer<U> + Send + Sync,
+{}
+
 mod log;
 pub use log::LogObserver;
 
@@ -131,3 +149,6 @@ pub use log::LogObserver;
 mod tracing_observer;
 #[cfg(feature = "observer-tracing")]
 pub use tracing_observer::TracingObserver;
+
+mod composite;
+pub use composite::CompositeObserver;
