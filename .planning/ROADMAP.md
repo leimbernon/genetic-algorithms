@@ -126,7 +126,7 @@ Plans:
   2. User can add `features = ["observer-metrics"]` and attach `MetricsObserver`; per-generation counters and gauges are recorded via the `metrics` facade without installing any backend in the library
   3. `cargo build` (default features, no `observer-metrics`) succeeds without pulling in the `metrics` crate
   4. A criterion benchmark shows `MetricsObserver` used inside island parallel execution produces no data races or panics (metric calls are sequential-only)
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
 - [ ] 17-01-PLAN.md — AllObserver<U> supertrait + CompositeObserver<U> with fan-out for all 19 hooks
@@ -151,4 +151,4 @@ Phases execute in numeric order: 13 → 14 → 15 → 16 → 17
 | 14. LogObserver + Log Migration | 2/2 | Complete    | 2026-03-25 | - |
 | 15. TracingObserver | 2/2 | Complete    | 2026-03-26 | - |
 | 16. Sub-Traits | 3/3 | Complete    | 2026-03-27 | - |
-| 17. CompositeObserver + MetricsObserver | v2.2.0 | 0/3 | Not started | - |
+| 17. CompositeObserver + MetricsObserver | 1/3 | In Progress|  | - |

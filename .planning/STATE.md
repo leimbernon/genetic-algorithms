@@ -3,28 +3,28 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: milestone
 status: unknown
-stopped_at: Phase 17 context gathered
-last_updated: "2026-03-27T09:17:37.706Z"
+stopped_at: Completed 17-01-PLAN.md
+last_updated: "2026-03-27T09:45:04.638Z"
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 9
-  completed_plans: 9
+  total_plans: 12
+  completed_plans: 10
 ---
 
 # State
 
 ## Current Position
 
-Phase: 16 (sub-traits) — COMPLETE
-Plan: 3 of 3
+Phase: 17 (compositeobserver-metricsobserver) — EXECUTING
+Plan: 2 of 3
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library
-**Current focus:** Phase 16 — sub-traits
+**Current focus:** Phase 17 — compositeobserver-metricsobserver
 
 ## Accumulated Context
 
@@ -52,6 +52,8 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 - [Phase 16-sub-traits]: test files using IslandGa struct literals must be updated to constructor pattern when private fields are added — public API is correct for external tests
 - [Phase 16-sub-traits]: Nsga2Observer hooks fire only on initial sort+crowding phase (not combined population sort) — observer reports algorithmic steps, not environmental selection
 - [Phase 16-sub-traits]: on_pareto_front_assigned fires unconditionally — count event, no timing gate needed
+- [Phase 17]: AllObserver<U> is a pure supertrait marker (no methods) — object-safe, enabling dyn AllObserver<U> for CompositeObserver storage
+- [Phase 17]: CompositeObserver uses Vec<Arc<dyn AllObserver<U>>> — allows sharing inner observers across multiple GA engine instances
 
 ### Blockers/Concerns
 
@@ -63,6 +65,6 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 
 ## Session Continuity
 
-Last session: 2026-03-27T09:17:37.703Z
-Stopped at: Phase 17 context gathered
-Resume file: .planning/phases/17-compositeobserver-metricsobserver/17-CONTEXT.md
+Last session: 2026-03-27T09:45:04.636Z
+Stopped at: Completed 17-01-PLAN.md
+Resume file: None
