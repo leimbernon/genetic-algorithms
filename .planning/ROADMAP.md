@@ -54,7 +54,7 @@ Issues: #182, #183, #184, #185, #186
 - [x] **Phase 13: GaObserver Base Trait** — Core trait + `Ga<U>` integration; foundation all other phases depend on (completed 2026-03-25)
 - [x] **Phase 14: LogObserver + Log Migration** — Backward-compatible log migration; validates Phase 13 end-to-end (completed 2026-03-25)
 - [x] **Phase 15: TracingObserver** — Structured tracing spans behind `observer-tracing` feature flag (completed 2026-03-26)
-- [ ] **Phase 16: Sub-Traits** — `IslandGaObserver` and `Nsga2Observer` for engine-specific events
+- [x] **Phase 16: Sub-Traits** — `IslandGaObserver` and `Nsga2Observer` for engine-specific events (completed 2026-03-27)
 - [ ] **Phase 17: CompositeObserver + MetricsObserver** — Fan-out composition and metrics facade behind `observer-metrics` flag
 
 ## Phase Details
@@ -140,5 +140,5 @@ Phases execute in numeric order: 13 → 14 → 15 → 16 → 17
 | 13. GaObserver Base Trait | 2/2 | Complete    | 2026-03-25 | - |
 | 14. LogObserver + Log Migration | 2/2 | Complete    | 2026-03-25 | - |
 | 15. TracingObserver | 2/2 | Complete    | 2026-03-26 | - |
-| 16. Sub-Traits | 2/3 | In Progress|  | - |
+| 16. Sub-Traits | 3/3 | Complete   | 2026-03-27 | - |
 | 17. CompositeObserver + MetricsObserver | v2.2.0 | 0/? | Not started | - |

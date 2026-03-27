@@ -3,21 +3,21 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 16-sub-traits-02-PLAN.md
-last_updated: "2026-03-27T08:42:15.923Z"
+stopped_at: Completed 16-sub-traits-03-PLAN.md
+last_updated: "2026-03-27T08:47:08.223Z"
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 9
-  completed_plans: 8
+  completed_plans: 9
 ---
 
 # State
 
 ## Current Position
 
-Phase: 16 (sub-traits) — EXECUTING
-Plan: 1 of 3
+Phase: 16 (sub-traits) — COMPLETE
+Plan: 3 of 3
 
 ## Project Reference
 
@@ -50,6 +50,8 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 - [Phase 16-sub-traits]: LogObserver implements all three observer traits in a single zero-sized struct — no separate IslandLogObserver or Nsga2LogObserver needed
 - [Phase 16-sub-traits]: island_id=0 passed to run-level hooks (on_island_run_start, on_island_run_end) — IslandGa is a single logical run, island-thread hooks use idx
 - [Phase 16-sub-traits]: test files using IslandGa struct literals must be updated to constructor pattern when private fields are added — public API is correct for external tests
+- [Phase 16-sub-traits]: Nsga2Observer hooks fire only on initial sort+crowding phase (not combined population sort) — observer reports algorithmic steps, not environmental selection
+- [Phase 16-sub-traits]: on_pareto_front_assigned fires unconditionally — count event, no timing gate needed
 
 ### Blockers/Concerns
 
@@ -61,6 +63,6 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 
 ## Session Continuity
 
-Last session: 2026-03-27T08:42:15.921Z
-Stopped at: Completed 16-sub-traits-02-PLAN.md
+Last session: 2026-03-27T08:47:08.221Z
+Stopped at: Completed 16-sub-traits-03-PLAN.md
 Resume file: None
