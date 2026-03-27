@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::Ga;
@@ -10,6 +11,7 @@ use genetic_algorithms::stats::GenerationStats;
 use genetic_algorithms::traits::{
     ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
 };
+use genetic_algorithms::LogObserver;
 
 const N: usize = 8; // Size of the chessboard (N-Queens problem)
 
@@ -61,6 +63,8 @@ fn main() {
         .with_survivor_method(Survivor::Fitness)
         .with_max_generations(5000)
         .with_fitness_target(0.0)
+        // Observer: LogObserver logs every lifecycle hook via the `log` crate
+        .with_observer(Arc::new(LogObserver))
         .build()
         .expect("Invalid GA configuration");
     let population = ga.run_with_callback(Some(report), 100).unwrap();

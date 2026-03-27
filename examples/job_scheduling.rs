@@ -25,6 +25,12 @@ completion time, defined as the maximum finish time across all machines.
 
 Both operators are permutation-safe and will never introduce duplicate job indices.
 
+## Features demonstrated
+- Permutation chromosomes (`Range<i32>`) for combinatorial optimization
+- Order crossover (OX) and Insertion mutation
+- Minimization mode (makespan)
+- LogObserver lifecycle hooks
+
 ## Scheduling Heuristic
 
 The fitness function uses a greedy FIFO heuristic: each job in the permutation order is assigned
@@ -38,6 +44,7 @@ cargo run --example job_scheduling
 ```
 */
 
+use std::sync::Arc;
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::{Ga, TerminationCause};
@@ -49,6 +56,7 @@ use genetic_algorithms::stats::GenerationStats;
 use genetic_algorithms::traits::{
     ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
 };
+use genetic_algorithms::LogObserver;
 
 /// Processing times matrix: PROCESSING_TIMES[job][machine] = time units for job on that machine.
 /// 15 jobs x 5 machines, values in range 1-20.
@@ -120,6 +128,8 @@ fn main() {
         // Objective: minimize makespan
         .with_problem_solving(ProblemSolving::Minimization)
         .with_max_generations(MAX_GENERATIONS)
+        // Observer: LogObserver logs every lifecycle hook via the `log` crate
+        .with_observer(Arc::new(LogObserver))
         .build()
         .expect("Failed to build GA configuration");
 

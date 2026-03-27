@@ -12,6 +12,7 @@ Features demonstrated:
 - Uniform crossover
 - Minimization mode
 - Progress callback
+- CompositeObserver combining LogObserver and optional MetricsObserver
 
 Run with:
 ```sh
@@ -19,6 +20,7 @@ cargo run --example rastrigin
 ```
 */
 
+use std::sync::Arc;
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::{Ga, TerminationCause};
@@ -30,6 +32,9 @@ use genetic_algorithms::stats::GenerationStats;
 use genetic_algorithms::traits::{
     ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
 };
+use genetic_algorithms::{CompositeObserver, LogObserver};
+#[cfg(feature = "observer-metrics")]
+use genetic_algorithms::MetricsObserver;
 
 fn main() {
     // --- Problem parameters ---
@@ -52,6 +57,12 @@ fn main() {
     let alleles = vec![RangeGenotype::new(0, vec![(-5.12, 5.12)], 0.0_f64)];
     let alleles_clone = alleles.clone();
 
+    // --- Build composite observer (LogObserver always active; MetricsObserver when feature flag set) ---
+    let composite = CompositeObserver::new()
+        .add(Arc::new(LogObserver));
+    #[cfg(feature = "observer-metrics")]
+    let composite = composite.add(Arc::new(MetricsObserver::new("rastrigin")));
+
     // --- Build the GA configuration ---
     let mut ga = Ga::new()
         // Chromosome: DIMENSIONS genes, each a continuous value in [-5.12, 5.12]
@@ -73,6 +84,8 @@ fn main() {
         // Problem: minimize fitness toward 0.0
         .with_problem_solving(ProblemSolving::Minimization)
         .with_max_generations(MAX_GENERATIONS)
+        // Observer: CompositeObserver fans out to LogObserver (and MetricsObserver if feature enabled)
+        .with_observer(Arc::new(composite))
         .build()
         .expect("Failed to build GA configuration");
 

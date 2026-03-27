@@ -14,6 +14,7 @@ Features demonstrated:
 - Niching / Fitness Sharing (`sigma_share`, `alpha`)
 - Maximization mode
 - Multimodal solution reporting (counting individuals near each peak)
+- LogObserver lifecycle hooks
 
 Run with:
 ```sh
@@ -21,6 +22,7 @@ cargo run --example niching
 ```
 */
 
+use std::sync::Arc;
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::{Ga, TerminationCause};
@@ -33,6 +35,7 @@ use genetic_algorithms::traits::{
     ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, NichingConfig, SelectionConfig,
     StoppingConfig,
 };
+use genetic_algorithms::LogObserver;
 
 fn main() {
     // --- Problem parameters ---
@@ -79,6 +82,8 @@ fn main() {
         .with_niching_sigma_share(SIGMA_SHARE)
         .with_niching_alpha(ALPHA)
         .with_max_generations(MAX_GENERATIONS)
+        // Observer: LogObserver logs every lifecycle hook via the `log` crate
+        .with_observer(Arc::new(LogObserver))
         .build()
         .expect("Failed to build GA configuration");
 

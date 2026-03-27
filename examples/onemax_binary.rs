@@ -12,6 +12,7 @@ Features demonstrated:
 - SinglePoint crossover
 - BitFlip mutation
 - Progress callback
+- LogObserver lifecycle hooks
 
 Run with:
 ```sh
@@ -19,6 +20,7 @@ cargo run --example onemax_binary
 ```
 */
 
+use std::sync::Arc;
 use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::fitness::count_true;
@@ -31,6 +33,7 @@ use genetic_algorithms::stats::GenerationStats;
 use genetic_algorithms::traits::{
     ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
 };
+use genetic_algorithms::LogObserver;
 
 fn main() {
     // --- Problem parameters ---
@@ -63,6 +66,8 @@ fn main() {
         .with_problem_solving(ProblemSolving::FixedFitness)
         .with_fitness_target(FITNESS_TARGET)
         .with_max_generations(MAX_GENERATIONS)
+        // Observer: LogObserver logs every lifecycle hook via the `log` crate
+        .with_observer(Arc::new(LogObserver))
         .build()
         .expect("Failed to build GA configuration");
 

@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::Ga;
@@ -10,6 +11,7 @@ use genetic_algorithms::stats::GenerationStats;
 use genetic_algorithms::traits::{
     ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
 };
+use genetic_algorithms::LogObserver;
 
 // see https://en.wikipedia.org/wiki/Knapsack_problem
 // With 10 items the optimal value is 1270.
@@ -109,6 +111,8 @@ fn main() {
         .with_mutation_method(Mutation::Swap)
         .with_problem_solving(ProblemSolving::Maximization)
         .with_max_generations(5000)
+        // Observer: LogObserver logs every lifecycle hook via the `log` crate
+        .with_observer(Arc::new(LogObserver))
         .build()
         .expect("Invalid GA configuration");
     let population = ga.run_with_callback(Some(report), 100).unwrap();
@@ -130,6 +134,8 @@ fn main() {
         .with_problem_solving(ProblemSolving::FixedFitness)
         .with_fitness_target(1270.0)
         .with_max_generations(5000)
+        // Observer: LogObserver logs every lifecycle hook via the `log` crate
+        .with_observer(Arc::new(LogObserver))
         .build()
         .expect("Invalid GA configuration");
     let population = ga_fixed.run_with_callback(Some(report), 100).unwrap();

@@ -19,6 +19,11 @@ The Pareto-optimal front is: f2 = 1 - sqrt(f1), where g(x) = 1.
 NSGA-II with non-dominated sorting (rank-based) and crowding distance for diversity
 preservation. Both objectives are minimized simultaneously.
 
+## Features demonstrated
+- Multi-objective optimization (NSGA-II)
+- ZDT1 benchmark problem
+- LogObserver as Nsga2Observer — logs pareto-front and crowding events
+
 ## Key configuration
 
 - Population: 100 individuals
@@ -38,12 +43,14 @@ cargo run --example nsga2_zdt1
 ```
 */
 
+use std::sync::Arc;
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::GaConfiguration;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::initializers::range_random_initialization;
 use genetic_algorithms::nsga2::configuration::{Nsga2Configuration, ObjectiveDirection};
 use genetic_algorithms::nsga2::Nsga2Ga;
+use genetic_algorithms::{LogObserver, Nsga2Observer};
 
 fn main() {
     // --- Problem parameters ---
@@ -84,12 +91,14 @@ fn main() {
     };
 
     // --- Build the NSGA-II optimizer ---
+    // LogObserver implements Nsga2Observer — logs pareto-front and crowding events
     let mut nsga2 = Nsga2Ga::<RangeChromosome<f64>>::new(nsga2_config, ga_config)
         .with_alleles(alleles)
         .with_initialization_fn(move |n, _, _| {
             range_random_initialization(n, Some(&alleles_clone), Some(true))
         })
         .with_objective_fns(vec![Box::new(obj_f1), Box::new(obj_f2)])
+        .with_observer(Arc::new(LogObserver) as Arc<dyn Nsga2Observer<RangeChromosome<f64>> + Send + Sync>)
         .build()
         .expect("Failed to build NSGA-II");
 
