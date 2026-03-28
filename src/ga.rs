@@ -32,7 +32,6 @@ use crate::observer::{ExtensionEvent, GaObserver};
 use crate::reporter::Reporter;
 use crate::stats::GenerationStats;
 use crate::traits::{FitnessFn, InitializationFn};
-use std::time::Duration;
 use crate::validators::validator_factory as ValidatorFactory;
 use crate::{
     configuration::{LimitConfiguration, LogLevel, ProblemSolving},
@@ -782,8 +781,10 @@ where
                 let offspring_count = offspring.len();
                 let pop_size = self.population.chromosomes.len();
                 self.notify(|obs| obs.on_crossover_complete(i, elapsed, offspring_count));
-                self.notify(|obs| obs.on_mutation_complete(i, Duration::ZERO, pop_size));
-                self.notify(|obs| obs.on_fitness_evaluation_complete(i, Duration::ZERO, pop_size));
+                // NOTE: elapsed covers combined crossover+mutation+fitness time (EXT-01)
+                self.notify(|obs| obs.on_mutation_complete(i, elapsed, pop_size));
+                // NOTE: elapsed covers combined crossover+mutation+fitness time (EXT-01)
+                self.notify(|obs| obs.on_fitness_evaluation_complete(i, elapsed, pop_size));
             }
             //3- Insert the children in the population
             self.population.add_chromosomes(&mut offspring);
@@ -957,13 +958,6 @@ where
                 }
             }
 
-            if let Some(ref mut r) = self.reporter {
-                r.on_generation_complete(&gen_stats);
-            }
-            // Notify with the (possibly updated) stats entry that includes dynamic_mutation_probability
-            let notify_stats = self.stats.last().cloned().unwrap_or(gen_stats.clone());
-            self.notify(|obs| obs.on_generation_end(&notify_stats));
-
             // Apply extension strategy if configured and diversity is low
             if let Some(ref ext_config) = self.configuration.extension_configuration {
                 if ext_config.method != Extension::Noop
@@ -1028,6 +1022,14 @@ where
                     }
                 }
             }
+
+            // Reporter (legacy) — fires after extension, matching pre-v2.2.0 order
+            if let Some(ref mut r) = self.reporter {
+                r.on_generation_complete(&gen_stats);
+            }
+            // Notify with the (possibly updated) stats entry that includes dynamic_mutation_probability
+            let notify_stats = self.stats.last().cloned().unwrap_or(gen_stats.clone());
+            self.notify(|obs| obs.on_generation_end(&notify_stats));
 
             // Save checkpoint to disk if configured (requires serde feature)
             #[cfg(feature = "serde")]
