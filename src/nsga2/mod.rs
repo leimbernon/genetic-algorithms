@@ -40,12 +40,13 @@ use crate::nsga2::non_dominated_sort::{
     assign_ranks, non_dominated_sort_constrained, non_dominated_sort_with_directions,
 };
 use crate::nsga2::pareto::{ParetoFront, ParetoIndividual};
+use crate::observer::Nsga2Observer;
 use crate::operations::mutation;
 use crate::traits::{ChromosomeT, InitializationFn};
-use log::{debug, info};
 use rand::Rng;
 use rayon::prelude::*;
 use std::sync::Arc;
+use std::time::Instant;
 
 /// Type alias for a single objective function.
 pub type ObjectiveFn<G> = dyn Fn(&[G]) -> f64 + Send + Sync;
@@ -72,6 +73,8 @@ where
     /// Optional constraint functions. Each returns a violation amount (> 0 means violated).
     /// The total constraint violation is the sum of all individual violations.
     pub constraint_fns: Vec<Arc<ObjectiveFn<U::Gene>>>,
+    /// Optional structured lifecycle observer for NSGA-II-specific events.
+    pub observer: Option<Arc<dyn Nsga2Observer<U> + Send + Sync>>,
 }
 
 impl<U> Nsga2Ga<U>
@@ -87,6 +90,26 @@ where
             initialization_fn: None,
             objective_fns: Vec::new(),
             constraint_fns: Vec::new(),
+            observer: None,
+        }
+    }
+
+    /// Attaches a structured lifecycle observer that receives NSGA-II-specific hooks.
+    ///
+    /// The observer is stored as an `Arc` for thread-safe sharing. All hooks receive
+    /// `&self`, so observers needing interior mutability should use `Mutex` or atomics.
+    ///
+    /// See [`Nsga2Observer`](crate::observer::Nsga2Observer) for the hook contract.
+    pub fn with_observer(mut self, obs: Arc<dyn Nsga2Observer<U> + Send + Sync>) -> Self {
+        self.observer = Some(obs);
+        self
+    }
+
+    /// Dispatches an observer hook if an observer is attached. No-op when `self.observer` is `None`.
+    #[inline]
+    fn notify<F: FnOnce(&dyn Nsga2Observer<U>)>(&self, f: F) {
+        if let Some(ref obs) = self.observer {
+            f(obs.as_ref());
         }
     }
 
@@ -205,18 +228,13 @@ where
         // Initialize population
         let mut population = self.initialize_population()?;
 
-        info!(
-            target: "nsga2_events",
-            "Starting NSGA-II: {} individuals, {} objectives, {} generations, constraints={}",
-            pop_size,
-            self.nsga2_config.num_objectives,
-            max_gens,
-            has_constraints
-        );
-
         for gen in 0..max_gens {
             // Non-dominated sorting (direction-aware, optionally constrained)
+            let t_sort = if self.observer.is_some() { Some(Instant::now()) } else { None };
             let fronts = self.perform_sorting(&population, &directions, has_constraints);
+            if let Some(start) = t_sort {
+                self.notify(|obs| obs.on_non_dominated_sort_complete(gen, start.elapsed().as_secs_f64() * 1000.0));
+            }
 
             // Assign ranks
             let mut ranks = vec![0usize; population.len()];
@@ -226,6 +244,7 @@ where
             }
 
             // Assign crowding distance per front
+            let t_crowd = if self.observer.is_some() { Some(Instant::now()) } else { None };
             for front in &fronts {
                 let front_objectives: Vec<&[f64]> = front
                     .iter()
@@ -237,6 +256,10 @@ where
                     population[global_idx].crowding_distance = front_crowding[local_idx];
                 }
             }
+            if let Some(start) = t_crowd {
+                self.notify(|obs| obs.on_crowding_distance_calculated(gen, start.elapsed().as_secs_f64() * 1000.0));
+            }
+            self.notify(|obs| obs.on_pareto_front_assigned(gen, fronts.len(), population.len()));
 
             // Binary tournament selection + crossover + mutation to create offspring
             let offspring = self.create_offspring(&population)?;
@@ -276,11 +299,6 @@ where
             });
 
             population.truncate(pop_size);
-
-            debug!(
-                target: "nsga2_events",
-                "Generation {} complete, population size = {}", gen, population.len()
-            );
         }
 
         // Extract the first Pareto front from the final population.

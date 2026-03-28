@@ -79,6 +79,7 @@ pub mod fitness;
 pub mod ga;
 pub mod genotypes;
 pub mod initializers;
+pub mod observer;
 pub mod operations;
 pub mod population;
 pub mod reporter;
@@ -90,3 +91,17 @@ pub mod validators;
 pub mod island;
 pub mod niching;
 pub mod nsga2;
+
+pub use observer::LogObserver;
+pub use observer::IslandGaObserver;
+pub use observer::Nsga2Observer;
+#[cfg(feature = "observer-tracing")]
+pub use observer::TracingObserver;
+#[cfg(feature = "observer-metrics")]
+pub use observer::MetricsObserver;
+pub use observer::AllObserver;
+pub use observer::CompositeObserver;
+pub use observer::GaObserver;
+pub use observer::NoopObserver;
+pub use observer::ExtensionEvent;
+pub use ga::TerminationCause;

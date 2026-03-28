@@ -10,6 +10,11 @@ across independent populations that periodically exchange individuals.
 
 `IslandGa` with 4 islands, Ring topology, and heterogeneous mutation rates.
 
+## Features demonstrated
+- Island model with migration topology
+- Heterogeneous mutation rates per island
+- CompositeObserver with IslandGaObserver-aware LogObserver and optional MetricsObserver
+
 ## Why Heterogeneous?
 
 Each island uses a different mutation probability (0.01, 0.05, 0.10, 0.20) to balance
@@ -44,6 +49,7 @@ cargo run --example island_model
 ```
 */
 
+use std::sync::Arc;
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::{GaConfiguration, ProblemSolving};
 use genetic_algorithms::genotypes::Range as RangeGenotype;
@@ -53,6 +59,9 @@ use genetic_algorithms::island::topology::MigrationTopology;
 use genetic_algorithms::island::IslandGa;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::traits::ChromosomeT;
+use genetic_algorithms::{CompositeObserver, IslandGaObserver, LogObserver};
+#[cfg(feature = "observer-metrics")]
+use genetic_algorithms::MetricsObserver;
 
 fn main() {
     // --- Problem parameters ---
@@ -105,6 +114,13 @@ fn main() {
         })
         .collect();
 
+    // --- Build composite observer (LogObserver always active; MetricsObserver when feature flag set) ---
+    // CompositeObserver implements IslandGaObserver — forwards all island hooks to inner observers.
+    let composite = CompositeObserver::new()
+        .add(Arc::new(LogObserver));
+    #[cfg(feature = "observer-metrics")]
+    let composite = composite.add(Arc::new(MetricsObserver::new("island_model")));
+
     // --- Print problem summary ---
     println!("== Island Model: Rastrigin {}D Minimization ==", DIMENSIONS);
     println!(
@@ -136,6 +152,8 @@ fn main() {
                 range_random_initialization(n, Some(&alleles_clone), Some(true))
             })
             .with_fitness_fn(fitness_fn)
+            // Observer: CompositeObserver fans out to LogObserver (and MetricsObserver if feature enabled)
+            .with_observer(Arc::new(composite) as Arc<dyn IslandGaObserver<RangeChromosome<f64>> + Send + Sync>)
             .build()
             .expect("Failed to build island GA");
 

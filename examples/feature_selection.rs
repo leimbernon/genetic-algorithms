@@ -13,6 +13,7 @@ Features demonstrated:
 - Uniform crossover
 - BitFlip mutation
 - Progress callback
+- LogObserver lifecycle hooks
 
 Run with:
 ```sh
@@ -20,6 +21,7 @@ cargo run --example feature_selection
 ```
 */
 
+use std::sync::Arc;
 use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::{Ga, TerminationCause};
@@ -31,6 +33,7 @@ use genetic_algorithms::stats::GenerationStats;
 use genetic_algorithms::traits::{
     ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
 };
+use genetic_algorithms::LogObserver;
 
 fn main() {
     // --- Problem parameters ---
@@ -75,6 +78,8 @@ fn main() {
         // Adaptive GA: auto-adjusts crossover/mutation probabilities each generation
         .with_adaptive_ga(true)
         .with_max_generations(MAX_GENERATIONS)
+        // Observer: LogObserver logs every lifecycle hook via the `log` crate
+        .with_observer(Arc::new(LogObserver))
         .build()
         .expect("Failed to build GA configuration");
 

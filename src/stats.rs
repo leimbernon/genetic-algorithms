@@ -27,6 +27,10 @@ pub struct GenerationStats {
     /// Equal to `fitness_std_dev` in v2.2. Higher values = more diverse.
     #[cfg_attr(feature = "serde", serde(default))]
     pub diversity: f64,
+    /// Current dynamic mutation probability, if dynamic mutation is enabled.
+    /// `None` when dynamic mutation is disabled.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub dynamic_mutation_probability: Option<f64>,
 }
 
 impl GenerationStats {
@@ -48,6 +52,7 @@ impl GenerationStats {
                 fitness_std_dev: 0.0,
                 population_size: 0,
                 diversity: 0.0,
+                dynamic_mutation_probability: None,
             };
         }
 
@@ -86,6 +91,7 @@ impl GenerationStats {
             fitness_std_dev: std_dev,
             population_size: n,
             diversity: std_dev,
+            dynamic_mutation_probability: None,
         }
     }
 }

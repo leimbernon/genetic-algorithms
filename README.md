@@ -24,7 +24,7 @@ Modular and concurrent Genetic Algorithms (GA) library for Rust featuring:
   - [Included Genotypes & Chromosomes](#included-genotypes--chromosomes)
   - [Initializers](#initializers)
   - [Operators](#operators)
-  - [Reporter](#reporter)
+  - [Observer (GaObserver)](#observer-gaobserver)
   - [Visualization](#visualization)
   - [GA Configuration](#ga-configuration)
   - [Adaptive GA](#adaptive-ga)
@@ -90,15 +90,99 @@ Main differences vs 1.x:
 - **Survivor:** `Fitness` (keep best), `Age` (prefer younger / age-based pruning).
 - **Extension:** `Noop`, `MassExtinction`, `MassGenesis`, `MassDegeneration`, `MassDeduplication`.
 
-### Reporter
-Attach a lifecycle observer to `Ga` via `.with_reporter(Box::new(r))`. Four hooks: `on_start`, `on_generation_complete`, `on_new_best`, `on_finish`. Zero overhead when no reporter is configured (stored as `Option`).
+### Observer (GaObserver)
 
-Built-in reporters:
-- `reporter::NoopReporter` — default, no-op.
-- `reporter::SimpleReporter::new(n)` — prints a progress line every N generations.
-- `reporter::DurationReporter::new()` — reports total elapsed time and per-generation average at finish.
+> **Note:** `Reporter<U>` is deprecated since 2.2.0 and will be removed in v3.0.0. Use `GaObserver` instead.
 
-Implement `Reporter<U>` to build custom observers.
+Attach a lifecycle observer to any GA engine via `.with_observer(Arc::new(my_observer))`. All hooks use `&self` — safe for use in rayon parallel regions. Zero overhead when no observer is attached (stored as `Option<Arc<_>>`).
+
+#### Core trait: `GaObserver<U>`
+
+Hooks fired by `Ga<U>` on every generation cycle:
+
+| Hook | When it fires |
+|------|--------------|
+| `on_selection_complete` | After parent selection |
+| `on_crossover_complete` | After crossover batch |
+| `on_mutation_complete` | After mutation batch |
+| `on_fitness_evaluation_complete` | After fitness re-evaluation |
+| `on_survivor_selection_complete` | After survivor selection |
+| `on_new_best` | When a new best chromosome is found |
+| `on_stagnation` | When no improvement for N generations |
+| `on_extension_triggered` | When diversity extension fires |
+| `on_generation_end` | End of each generation (with `GenerationStats`) |
+| `on_run_start` | Before the first generation |
+| `on_run_end` | After the last generation |
+
+#### Engine-specific sub-traits
+
+- `IslandGaObserver<U>` — additional hooks for island migration events; attach via `IslandGa::with_observer`.
+- `Nsga2Observer<U>` — additional hooks for NSGA-II pareto-front and crowding events; attach via `Nsga2::with_observer`.
+
+#### Built-in observers
+
+**`LogObserver`** — logs every hook via the `log` crate. No feature flags required. Implements `GaObserver`, `IslandGaObserver`, and `Nsga2Observer`.
+
+```rust
+use std::sync::Arc;
+use genetic_algorithms::{Ga, LogObserver};
+
+let ga = Ga::new(config, population)
+    .with_observer(Arc::new(LogObserver))
+    .run();
+```
+
+**`CompositeObserver<U>`** — fan-out observer that forwards all hooks to a list of inner observers. Inner observers must implement `AllObserver<U>` (a supertrait marker).
+
+```rust
+use std::sync::Arc;
+use genetic_algorithms::{Ga, CompositeObserver, LogObserver};
+
+let composite = CompositeObserver::new()
+    .add(Arc::new(LogObserver));
+
+let ga = Ga::new(config, population)
+    .with_observer(Arc::new(composite))
+    .run();
+```
+
+**`MetricsObserver`** — emits `metrics`-crate gauges, counters, and histograms per generation. Requires feature flag:
+
+```toml
+genetic_algorithms = { version = "2.2.0", features = ["observer-metrics"] }
+```
+
+```rust
+#[cfg(feature = "observer-metrics")]
+use genetic_algorithms::MetricsObserver;
+
+#[cfg(feature = "observer-metrics")]
+let composite = composite.add(Arc::new(MetricsObserver::new("my_run")));
+```
+
+Emitted metrics: `ga.generation.best_fitness`, `ga.generation.mean_fitness`, `ga.generation.diversity`, `ga.operator.*_ms` histograms, `ga.event.new_best` / `ga.event.stagnation` / `ga.event.extension_triggered` counters.
+
+**`TracingObserver`** — emits `tracing`-crate spans and events. Requires feature flag:
+
+```toml
+genetic_algorithms = { version = "2.2.0", features = ["observer-tracing"] }
+```
+
+#### Custom observer
+
+Implement `GaObserver<U>` (or `IslandGaObserver<U>` / `Nsga2Observer<U>`) on your own type. Only override the hooks you care about — all hooks have default no-op implementations:
+
+```rust
+use genetic_algorithms::{GaObserver, stats::GenerationStats};
+
+struct MyObserver;
+
+impl<U: genetic_algorithms::traits::ChromosomeT> GaObserver<U> for MyObserver {
+    fn on_generation_end(&self, stats: &GenerationStats) {
+        println!("Gen {} best={:.4}", stats.generation, stats.best_fitness);
+    }
+}
+```
 
 ### Visualization
 Optional feature flag. Add to `Cargo.toml`:

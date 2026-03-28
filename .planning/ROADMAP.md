@@ -4,7 +4,8 @@
 
 - ✅ **v2.1 — Improve Usability (partial)** — Phases 1-5 (shipped 2026-03-20)
 - ✅ **v2.2 — Improve Usability (completion)** — Phases 6-9 (shipped 2026-03-21)
-- 🚧 **v2.1.0 — New Examples** — Phases 10-12 (in progress)
+- ✅ **v2.1.0 — New Examples** — Phases 10-12 (shipped 2026-03-22)
+- 🚧 **v2.2.0 — Observability & Traceability** — Phases 13-18 (in progress)
 
 ## Phases
 
@@ -26,132 +27,133 @@ Phases 1-5 predate GSD tracking. Issues closed: #165, #166, #167, #168, #169.
 
 Issues closed: #170, #171, #178, #179.
 
-- [x] **Phase 6: Diversity Estimation** — Expose a diversity metric in statistics and wire it into the GA's adaptive subsystems (completed 2026-03-20)
-- [x] **Phase 7: List Genotype** — Add a `List<T>` gene and chromosome type for finite symbolic alphabets (completed 2026-03-21)
-- [x] **Phase 8: Reporter Trait** — Add a `Reporter` trait with lifecycle hooks and two built-in implementations (completed 2026-03-21)
-- [x] **Phase 9: Visualization** — Add an optional `visualization` feature that renders fitness and diversity charts to PNG/SVG (completed 2026-03-21)
+- [x] **Phase 6: Diversity Estimation** — `GenerationStats.diversity` wired into extension trigger and dynamic mutation (completed 2026-03-20)
+- [x] **Phase 7: List Genotype** — `List<T>` gene and `ListChromosome<T>` for finite symbolic alphabets (completed 2026-03-21)
+- [x] **Phase 8: Reporter Trait** — `Reporter<U>` with 4 lifecycle hooks, `SimpleReporter`, `DurationReporter` (completed 2026-03-21)
+- [x] **Phase 9: Visualization** — `visualization` feature flag, `plot_fitness`, `plot_diversity`, `plot_histogram` (completed 2026-03-21)
 
 </details>
 
-### 🚧 v2.1.0 — New Examples (In Progress)
+<details>
+<summary>✅ v2.1.0 — New Examples (Phases 10-12) — SHIPPED 2026-03-22</summary>
 
-**Milestone goal:** Add six runnable examples covering all major GA modes and operators, and update the README to document them with `cargo run --example` commands.
+- [x] **Phase 10: Single-population Examples** — `rastrigin`, `feature_selection`, `niching` (completed 2026-03-22)
+- [x] **Phase 11: Advanced Mode Examples** — `nsga2_zdt1`, `island_model`, `job_scheduling` (completed 2026-03-22)
+- [x] **Phase 12: Documentation** — README `## Examples` table with all 10 examples and `cargo run` commands (completed 2026-03-22)
 
-- [x] **Phase 10: Single-population Examples** - Rastrigin continuous optimization, Feature Selection with adaptive GA, and Niching / Fitness Sharing — all using `Ga<U>` (completed 2026-03-22)
-- [x] **Phase 11: Advanced Mode Examples** - NSGA-II multi-objective (ZDT1), Island Model multi-population, and Job Scheduling permutation — using `Nsga2Ga` and `IslandGa` (completed 2026-03-22)
-- [x] **Phase 12: Documentation** - README updated with examples section and `cargo run --example <name>` commands (completed 2026-03-22)
+Full archive: `.planning/milestones/v2.1.0-ROADMAP.md`
+
+</details>
+
+### 🚧 v2.2.0 — Observability & Traceability (In Progress)
+
+**Milestone goal:** Implement a generic, telemetry-agnostic observability system — `GaObserver` trait, `LogObserver`, `TracingObserver`, Island/NSGA-II sub-traits, `CompositeObserver`, `MetricsObserver`.
+
+Issues: #182, #183, #184, #185, #186
+
+- [x] **Phase 13: GaObserver Base Trait** — Core trait + `Ga<U>` integration; foundation all other phases depend on (completed 2026-03-25)
+- [x] **Phase 14: LogObserver + Log Migration** — Backward-compatible log migration; validates Phase 13 end-to-end (completed 2026-03-25)
+- [x] **Phase 15: TracingObserver** — Structured tracing spans behind `observer-tracing` feature flag (completed 2026-03-26)
+- [x] **Phase 16: Sub-Traits** — `IslandGaObserver` and `Nsga2Observer` for engine-specific events (completed 2026-03-27)
+- [x] **Phase 17: CompositeObserver + MetricsObserver** — Fan-out composition and metrics facade behind `observer-metrics` flag (completed 2026-03-27)
+- [x] **Phase 18: Observer API Polish** — Close audit gaps: TracingObserver AllObserver compatibility, ga.rs hook ordering and timing accuracy, lib.rs public API re-exports (completed 2026-03-28)
 
 ## Phase Details
 
-### Phase 6: Diversity Estimation
-**Goal**: Population diversity is a first-class observable metric that both users and the GA's internal subsystems can read and act on
-**Depends on**: Nothing (first GSD-tracked phase; builds on shipped v2.1 codebase)
-**Requirements**: DIV-01, DIV-02, DIV-03
+### Phase 13: GaObserver Base Trait
+**Goal**: Users can attach a structured observer to `Ga<U>` and receive lifecycle notifications with zero overhead when no observer is attached
+**Depends on**: Nothing (first phase of this milestone)
+**Requirements**: OBS-01, OBS-02, OBS-03, OBS-04
 **Success Criteria** (what must be TRUE):
-  1. After each generation, `stats.diversity` returns a `f64` value the user can read and log
-  2. The extension strategy (e.g., MassExtinction) triggers only when the per-generation diversity value falls below the configured threshold — not based on ad-hoc heuristics
-  3. The dynamic mutation probability module uses the per-generation diversity value when deciding how to scale mutation probability
-  4. All existing tests pass with no change to the public `ChromosomeT` or operator trait signatures
+  1. User can call `ga.with_observer(arc_observer)` and have `on_run_start`, `on_generation_end`, `on_new_best`, `on_run_end`, `on_stagnation`, and `on_extension_triggered` fire at the correct points in the GA loop
+  2. A custom observer that implements only one hook compiles without error — all other hooks have default no-op bodies
+  3. Running `Ga<U>` with no observer attached produces identical output and timing to pre-v2.2.0 (zero-overhead branch confirmed by benchmarks)
+  4. A custom observer type that is not `Send + Sync` is rejected at compile time when passed to `with_observer()`
 **Plans:** 2/2 plans complete
 
 Plans:
-- [x] 06-01-PLAN.md — Add diversity field to GenerationStats with serde backward-compat
-- [x] 06-02-PLAN.md — Reorder GA loop and wire subsystems to read gen_stats.diversity
+- [ ] 13-01-PLAN.md — GaObserver trait definition, ExtensionEvent, NoopObserver, Extension::as_str(), Reporter deprecation
+- [ ] 13-02-PLAN.md — Ga<U> integration (observer field, builder, notify helper, 12 call sites) + integration tests
 
-### Phase 7: List Genotype
-**Goal**: Users can solve problems over finite symbolic alphabets using a `List<T>` gene and chromosome that plug into the existing operator pipeline without modification
-**Depends on**: Phase 6
-**Requirements**: LIST-01, LIST-02, LIST-03, LIST-04
+### Phase 14: LogObserver + Log Migration
+**Goal**: Users can reproduce all pre-v2.2.0 log output by attaching `LogObserver`, and no hardcoded `log!()` calls remain in the GA execution paths
+**Depends on**: Phase 13
+**Requirements**: LOG-01, LOG-02, LOG-03
 **Success Criteria** (what must be TRUE):
-  1. User can define a `List<T>` gene by specifying a finite allele set and obtain gene instances drawn from it
-  2. User can construct a `ListChromosome<T>` that implements `ChromosomeT` and carries a fitness value
-  3. A `ListChromosome<T>` works as input to all existing selection, crossover, mutation, and survivor operators without any operator code change
-  4. User can initialize a full `List` population with a built-in initializer (equivalent to `BinaryChromosome` and `RangeChromosome` initializers)
-  5. Diversity estimation from Phase 6 is computed correctly for `List` populations
+  1. User can attach `LogObserver` to `Ga<U>` and observe log output at the same targets, levels, and message formats as produced by v2.1.0
+  2. A `grep` for `info!\|debug!\|trace!\|warn!` in `src/ga.rs`, `src/island/`, and `src/nsga2/` returns results only inside `log_observer.rs` itself — no call sites remain in the execution loops
+  3. `cargo build` (default features) and `cargo build --features serde` both succeed with zero new dependencies added
 **Plans:** 2/2 plans complete
 
 Plans:
-- [x] 07-01-PLAN.md — List<T> gene type and ListChromosome<T> with GeneT/ChromosomeT impls
-- [x] 07-02-PLAN.md — ListValue mutation operator, list initializer, integration tests
+- [ ] 14-01-PLAN.md — LogObserver struct, ExtensionEvent/GenerationStats extensions, module registration, tests
+- [ ] 14-02-PLAN.md — Remove all 17 log!() calls from ga.rs, grep regression test
 
-### Phase 8: Reporter Trait
-**Goal**: Users can attach structured lifecycle observers to `Ga` that receive hooks at key execution points, with zero cost when no reporter is configured
-**Depends on**: Phase 6
-**Requirements**: REP-01, REP-02, REP-03, REP-04
+### Phase 15: TracingObserver
+**Goal**: Users can attach `TracingObserver` to emit structured tracing spans and events per generation, enabling integration with OpenTelemetry, Jaeger, or any `tracing`-compatible subscriber
+**Depends on**: Phase 14
+**Requirements**: TRAC-01, TRAC-02, TRAC-03
 **Success Criteria** (what must be TRUE):
-  1. User can call `.with_reporter(Box::new(my_reporter))` on a `Ga` builder and have `on_start`, `on_generation_complete`, `on_new_best`, and `on_finish` invoked at the corresponding execution points
-  2. A `Ga` without a reporter configured compiles and runs with zero overhead (the `NoopReporter` is the default and the compiler eliminates it)
-  3. `SimpleReporter` prints a one-line progress summary to stdout every N generations (N configurable by the user)
-  4. `DurationReporter` reports wall-clock time spent in each execution phase (selection, crossover, mutation, survivor) at the end of the run
+  1. User can add `features = ["observer-tracing"]` to their `Cargo.toml`, attach `TracingObserver`, and observe `tracing::event!()` emissions per generation in their subscriber
+  2. `cargo build` (default features, no `observer-tracing`) succeeds without pulling in the `tracing` crate
+  3. A CI test running 10 generations with `LogTracer::init()` and `TracingObserver` both active completes without stack overflow or infinite recursion
 **Plans:** 2/2 plans complete
 
 Plans:
-- [x] 08-01-PLAN.md — Reporter trait definition, NoopReporter, and Ga integration (hook wiring)
-- [x] 08-02-PLAN.md — SimpleReporter, DurationReporter, and integration tests
+- [ ] 15-01-PLAN.md — Feature flag wiring, TracingObserver implementation (all 12 hooks), module re-exports
+- [ ] 15-02-PLAN.md — Integration tests (TRAC-01 attach/run/Send+Sync, TRAC-02 feature gate, TRAC-03 LogTracer coexistence)
 
-### Phase 9: Visualization
-**Goal**: Users who opt into the `visualization` feature flag can generate PNG or SVG charts of fitness and diversity trends directly from GA statistics
-**Depends on**: Phase 6, Phase 7, Phase 8
-**Requirements**: VIZ-01, VIZ-02, VIZ-03, VIZ-04
+### Phase 16: Sub-Traits
+**Goal**: Users can attach engine-specific observers to `IslandGa<U>` and `Nsga2Ga<U>` and receive events unique to each engine's execution model
+**Depends on**: Phase 13
+**Requirements**: SUB-01, SUB-02, SUB-03
 **Success Criteria** (what must be TRUE):
-  1. User can call a visualization function with a `Vec<Stats>` to produce a fitness-over-generations chart (best, worst, average lines) saved as PNG or SVG
-  2. User can produce a diversity-over-generations chart from the same `Vec<Stats>` using the diversity values populated in Phase 6
-  3. User can produce a fitness-distribution histogram for a chosen generation from the run statistics
-  4. All visualization functions are absent from the compiled binary unless the `visualization` feature flag is explicitly enabled — the crate compiles cleanly with `cargo test` (no feature) and with `cargo test --features visualization`
-**Plans:** 2/2 plans complete
+  1. User can call `island_ga.with_observer(arc_observer)` with an `IslandGaObserver` implementation and receive `on_migration_triggered`, `on_island_run_start`, `on_island_run_end`, and `on_island_generation_end` events
+  2. User can call `nsga2_ga.with_observer(arc_observer)` with a `Nsga2Observer` implementation and receive `on_pareto_front_assigned`, `on_non_dominated_sort_complete`, and `on_crowding_distance_calculated` events
+  3. A single `LogObserver` instance implements all three observer traits (`GaObserver`, `IslandGaObserver`, `Nsga2Observer`) and can be passed to any of the three GA engines
+**Plans:** 3 plans complete
 
 Plans:
-- [x] 09-01-PLAN.md — Feature flag setup, VisualizationError, and plot_fitness function
-- [x] 09-02-PLAN.md — plot_diversity and plot_histogram functions
+- [ ] 16-01-PLAN.md — IslandGaObserver + Nsga2Observer trait definitions, LogObserver multi-trait impl, module re-exports
+- [ ] 16-02-PLAN.md — IslandGa<U> integration (observer field, hooks, migration dispatch)
+- [ ] 16-03-PLAN.md — Nsga2Ga<U> integration + integration tests for all three sub-traits
 
-### Phase 10: Single-population Examples
-**Goal**: Users can run three self-contained examples that demonstrate `Ga<U>` on continuous optimization, binary feature selection with adaptive parameters, and multimodal niching
-**Depends on**: Phase 9 (all prior library work is in place)
-**Requirements**: EX-01, EX-05, EX-06
+### Phase 17: CompositeObserver + MetricsObserver
+**Goal**: Users can combine multiple observers in a single run and optionally record per-generation metrics counters, gauges, and histograms via the `metrics` facade
+**Depends on**: Phases 13, 14, 15, 16
+**Requirements**: COMP-01, COMP-02, COMP-03
 **Success Criteria** (what must be TRUE):
-  1. `cargo run --example rastrigin` executes without error, prints per-generation fitness, and converges toward the global minimum (fitness near 0)
-  2. `cargo run --example feature_selection` executes without error and prints the best binary feature mask found along with its evaluated fitness
-  3. `cargo run --example niching` executes without error and the reported best solutions include multiple distinct peaks rather than converging to a single one
-  4. Each example file is self-contained with an explanatory comment block describing the problem, chromosome type, and operators used
+  1. User can build a `CompositeObserver` with two or more observers and all three trait interfaces (`GaObserver`, `IslandGaObserver`, `Nsga2Observer`) fan out to every attached observer
+  2. User can add `features = ["observer-metrics"]` and attach `MetricsObserver`; per-generation counters and gauges are recorded via the `metrics` facade without installing any backend in the library
+  3. `cargo build` (default features, no `observer-metrics`) succeeds without pulling in the `metrics` crate
+  4. A criterion benchmark shows `MetricsObserver` used inside island parallel execution produces no data races or panics (metric calls are sequential-only)
 **Plans:** 3/3 plans complete
 
 Plans:
-- [ ] 10-01-PLAN.md — Rastrigin continuous optimization example (EX-01)
-- [ ] 10-02-PLAN.md — Feature selection with adaptive GA example (EX-05)
-- [ ] 10-03-PLAN.md — Niching / fitness sharing example (EX-06)
+- [ ] 17-01-PLAN.md — AllObserver<U> supertrait + CompositeObserver<U> with fan-out for all 19 hooks
+- [ ] 17-02-PLAN.md — MetricsObserver behind observer-metrics feature flag (11 metric calls)
+- [ ] 17-03-PLAN.md — Integration tests (COMP-01/02/03) + criterion benchmark
 
-### Phase 11: Advanced Mode Examples
-**Goal**: Users can run three self-contained examples demonstrating NSGA-II multi-objective optimization, island model parallel evolution, and permutation-based job scheduling
-**Depends on**: Phase 10
-**Requirements**: EX-02, EX-03, EX-04
+### Phase 18: Observer API Polish
+**Goal**: Close all audit gaps from v2.2.0: TracingObserver gains AllObserver compatibility, ga.rs gets accurate hook ordering and operator timing, and lib.rs exposes the complete observer public API surface
+**Depends on**: Phases 13, 14, 15, 16, 17
+**Requirements**: OBS-01, OBS-02, LOG-01, TRAC-01, COMP-01, COMP-02
+**Gap Closure**: Closes gaps from v2.2.0-MILESTONE-AUDIT.md (tech_debt items)
 **Success Criteria** (what must be TRUE):
-  1. `cargo run --example nsga2_zdt1` executes without error and prints a non-dominated Pareto front approximation showing the trade-off between the two ZDT1 objectives
-  2. `cargo run --example island_model` executes without error and prints per-island best fitness values plus the global best after migration rounds complete
-  3. `cargo run --example job_scheduling` executes without error and prints the best job ordering found along with its makespan value
-  4. Each example file is self-contained with an explanatory comment block describing the problem, GA mode used, and key configuration choices
-**Plans:** 3/3 plans complete
+  1. `Arc::new(TracingObserver::new())` can be passed to `CompositeObserver::add()` and the composite runs against `Ga<U>`, `IslandGa<U>`, and `Nsga2Ga<U>` without compile errors
+  2. `on_extension_triggered` fires before `on_generation_end` within the same generation — LogObserver output order matches pre-v2.2.0
+  3. `on_mutation_complete` and `on_fitness_evaluation_complete` receive real `Duration` values (not `Duration::ZERO`) — MetricsObserver histograms record non-zero timing
+  4. `use genetic_algorithms::{NoopObserver, ExtensionEvent};` and `use genetic_algorithms::ga::TerminationCause;` all compile from crate root or standard path
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 11-01-PLAN.md — NSGA-II ZDT1 multi-objective example (EX-02)
-- [ ] 11-02-PLAN.md — Island model Rastrigin 20D example (EX-03)
-- [ ] 11-03-PLAN.md — Job scheduling permutation example (EX-04)
-
-### Phase 12: Documentation
-**Goal**: The README documents all six examples so users can discover and run them without reading source code
-**Depends on**: Phase 11
-**Requirements**: DOC-01
-**Success Criteria** (what must be TRUE):
-  1. The README contains an Examples section listing all six examples with a one-line description of each
-  2. Every example entry in the README includes the exact `cargo run --example <name>` command needed to execute it
-  3. A first-time user reading only the README can identify which example matches their problem domain (continuous, multi-objective, parallel, permutation, binary, multimodal)
-**Plans:** 1/1 plans complete
-
-Plans:
-- [ ] 12-01-PLAN.md — Add Examples section to README with all 10 examples table
+- [ ] 18-01-PLAN.md — TracingObserver AllObserver compatibility + ga.rs hook ordering + operator timing accuracy
+- [ ] 18-02-PLAN.md — lib.rs public API surface: NoopObserver, ExtensionEvent, TerminationCause re-exports + tests
 
 ## Progress
 
-**Execution order:** 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
+**Execution Order:**
+Phases execute in numeric order: 13 → 14 → 15 → 16 → 17 → 18
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -159,6 +161,12 @@ Plans:
 | 7. List Genotype | v2.2 | 2/2 | Complete | 2026-03-21 |
 | 8. Reporter Trait | v2.2 | 2/2 | Complete | 2026-03-21 |
 | 9. Visualization | v2.2 | 2/2 | Complete | 2026-03-21 |
-| 10. Single-population Examples | 3/3 | Complete    | 2026-03-22 | - |
-| 11. Advanced Mode Examples | 3/3 | Complete    | 2026-03-22 | - |
-| 12. Documentation | 1/1 | Complete    | 2026-03-22 | - |
+| 10. Single-population Examples | v2.1.0 | 3/3 | Complete | 2026-03-22 |
+| 11. Advanced Mode Examples | v2.1.0 | 3/3 | Complete | 2026-03-22 |
+| 12. Documentation | v2.1.0 | 1/1 | Complete | 2026-03-22 |
+| 13. GaObserver Base Trait | 2/2 | Complete    | 2026-03-25 | - |
+| 14. LogObserver + Log Migration | 2/2 | Complete    | 2026-03-25 | - |
+| 15. TracingObserver | 2/2 | Complete    | 2026-03-26 | - |
+| 16. Sub-Traits | 3/3 | Complete    | 2026-03-27 | - |
+| 17. CompositeObserver + MetricsObserver | 3/3 | Complete    | 2026-03-27 | - |
+| 18. Observer API Polish | 2/2 | Complete    | 2026-03-28 | - |

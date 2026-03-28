@@ -1,27 +1,28 @@
 # Milestones
 
-## v2.1 — Improve Usability (partial)
+## v2.1.0 — New Examples (Shipped: 2026-03-22)
 
-**Shipped:** 2026-03-20
-**Issues closed:** #165, #166, #167, #168, #169
+Added `GenerationStats.diversity`, `ListChromosome<T>` genotype, `Reporter<U>` lifecycle trait, and a `visualization` feature flag — then demonstrated the whole library with six runnable examples covering every major GA mode.
 
-### What shipped
+**Phases:** 6–12 (7 phases, 15 plans) | **Timeline:** 2026-03-20 → 2026-03-22 | **Commits:** ~103
 
-- **#165** — Extension strategies for population diversity control (MassExtinction, MassGenesis, MassDegeneration, MassDeduplication)
-- **#166** — Dynamic mutation probability based on population cardinality
-- **#167** — Clone crossover strategy
-- **#168** — Rejuvenate crossover operator
-- **#169** — LRU fitness cache to avoid redundant evaluations
+**Key accomplishments:**
 
-### Last phase
+- Added `diversity: f64` to `GenerationStats` (fitness std-dev); wired into extension trigger and dynamic mutation
+- Introduced `List<T>` gene and `ListChromosome<T>` for finite symbolic alphabets, integrating with all existing operators
+- Shipped `Reporter<U>` trait with `on_start`, `on_generation_complete`, `on_new_best`, `on_finish` hooks; zero overhead when unset
+- Added `visualization` feature flag with `plot_fitness`, `plot_diversity`, and `plot_histogram` (PNG/SVG via plotters)
+- Added six self-contained examples: `rastrigin`, `feature_selection`, `niching`, `nsga2_zdt1`, `island_model`, `job_scheduling`
+- Updated README with `## Examples` table documenting all 10 examples with exact `cargo run` commands
 
-Phase 5 (arbitrary starting point — GSD tracking begins at v2.2)
+**Known gaps (deferred):** Reporter/Visualization not demonstrated in examples; ListChromosome has no dedicated example. See `.planning/milestones/v2.1.0-MILESTONE-AUDIT.md`.
 
 ---
 
-## v2.2 — Improve Usability (completion)
+## v2.0.0 — Restructuring & Optimisation (Completed 2026-03-01)
 
-**Started:** 2026-03-20
-**Status:** In progress
+Major rewrite: Island GA, NSGA-II, structured errors, rayon parallelism, serde support, new operators, elitism, stopping criteria, adaptive GA, checkpoint support.
 
-Covers remaining open issues from the "Improve usability" GitHub milestone: #170, #171, #178, #179.
+**Phases:** Pre-GSD (no phase tracking)
+
+---

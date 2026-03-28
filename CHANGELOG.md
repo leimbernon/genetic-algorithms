@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - Unreleased
+
+### Added
+- **`GaObserver<U>` trait** (`observer` module): telemetry-agnostic observability hook with 12 lifecycle callbacks covering generation start/end, operator results (selection, crossover, mutation, survivor), extension events, new-best events, and run start/finish. All methods have default no-op implementations for forward compatibility.
+- **`ExtensionEvent` struct**: carries the extension strategy name, generation number, and diversity value at the moment an extension was triggered — passed to `on_extension`.
+- **`NoopObserver`**: zero-cost `GaObserver` implementation for when no observer is needed.
+- **`LogObserver`**: drop-in replacement for the previous hardcoded `log!()` calls. Implements all 12 `GaObserver` hooks (and both sub-trait extensions) with identical log output. Zero behavior change for existing setups.
+- **`TracingObserver`** (`observer-tracing` feature): structured OpenTelemetry-compatible spans and events via the `tracing` crate. Each generation opens a span; operator results and special events become child spans/events. Gated behind the `observer-tracing` feature flag — no impact on default builds.
+- **`IslandGaObserver<U>` sub-trait**: extends `GaObserver<U>` with Island-GA-specific hooks (`on_migration`, `on_island_generation_complete`). `LogObserver` implements this trait.
+- **`Nsga2Observer<U>` sub-trait**: extends `GaObserver<U>` with NSGA-II-specific hooks (`on_front_assigned`, `on_crowding_distance_computed`). `LogObserver` implements this trait.
+- **`AllObserver<U>` supertrait**: blanket supertrait combining `GaObserver<U>`, `IslandGaObserver<U>`, and `Nsga2Observer<U>` for observers that span all GA modes.
+- **`CompositeObserver<U>`**: fan-out observer that forwards every hook call to a list of `Arc<dyn AllObserver<U>>` observers. Constructed with a fluent `add()` builder. Enables combining `LogObserver` + `TracingObserver` + `MetricsObserver` without custom glue code.
+- **`MetricsObserver`** (`observer-metrics` feature): records per-generation gauges (`best_fitness`, `worst_fitness`, `avg_fitness`, `diversity`), histograms (crossover offspring count, mutation events), and counters (new-best events, extension triggers) via the `metrics` crate facade. Gated behind the `observer-metrics` feature flag — compatible with any `metrics`-compatible backend (Prometheus, StatsD, etc.).
+- `Extension::as_str()` method: human-readable name for each extension strategy, used by `LogObserver` and `MetricsObserver`.
+- Re-exports: `GaObserver`, `AllObserver`, `CompositeObserver`, `NoopObserver`, `LogObserver` available from the crate root.
+
+### Changed
+- `Ga<U>` now accepts an optional `Arc<dyn GaObserver<U>>` via `.with_observer(obs)`. All 12 hook call sites are wired into the execution loop; zero overhead when no observer is set (`Option::None` branch, no allocations).
+- `IslandGa<U>` wired with `IslandGaObserver<U>` hooks at migration and per-island generation boundaries.
+- `Nsga2Ga<U>` wired with `Nsga2Observer<U>` hooks at front-assignment and crowding-distance steps.
+- `log!()` calls removed from `ga.rs` execution paths — all logging now routes through `LogObserver`.
+
+### Deprecated
+- `Reporter<U>` trait and `.with_reporter()` builder: superseded by `GaObserver<U>` + `LogObserver`. `Reporter<U>` remains functional for this release; it will be removed in a future version.
+
+---
+
+## [2.2.0] - 2026-03-22
+
+### Added
+- **Extension strategies for population diversity control**: optional diversity-rescue mechanisms that trigger when fitness standard deviation drops below a configurable threshold. Four strategies: `MassExtinction`, `MassGenesis`, `MassDegeneration`, `MassDeduplication`.
+- `ExtensionOperator` trait for custom implementations.
+- Builder methods: `with_extension_method()`, `with_extension_diversity_threshold()`, `with_extension_survival_rate()`, `with_extension_mutation_rounds()`, `with_extension_elite_count()`.
+- **Population diversity metric**: `GenerationStats` now exposes a `diversity` field (fitness standard deviation) updated every generation. Extension strategies and adaptive mutation use it internally; users can read it in callbacks and reporters.
+- **List genotype**: `genotypes::List<T>` and `chromosomes::ListChromosome<T>` for problems over finite symbolic alphabets (colors, directions, categories, etc.). Works with all existing operators. Includes `list_random_initialization` and `list_random_initialization_without_repetitions` initializers, plus a new `Mutation::ListValue` operator.
+- **Reporter trait**: attach lifecycle observers to `Ga` via `.with_reporter(Box::new(r))`. Hooks: `on_start`, `on_generation_complete(&GenerationStats)`, `on_new_best(generation, chromosome)`, `on_finish(TerminationCause, &[GenerationStats])`. Zero overhead when no reporter is configured. Built-in: `NoopReporter`, `SimpleReporter` (stdout every N gens), `DurationReporter` (wall-clock timing summary).
+- **Visualization** (`visualization` feature): generate PNG or SVG charts from run statistics — `plot_fitness`, `plot_diversity`, `plot_histogram`. Format detected from path extension. Powered by `plotters`; absent from the binary unless the feature is enabled.
+
+---
+
 ## [2.1.0] - Unreleased
 
 ### Added
@@ -425,7 +465,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[2.1.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/2.0.0...HEAD
+[2.3.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/2.2.0...HEAD
+[2.2.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/2.1.0...2.2.0
+[2.1.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/2.0.0...2.1.0
 [2.0.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/1.6.0...2.0.0
 [1.6.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/1.5.0...1.6.0
 [1.5.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/1.4.2...1.5.0

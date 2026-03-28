@@ -12,7 +12,7 @@ use genetic_algorithms::operations::mutation::insertion;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::population::Population;
 use genetic_algorithms::traits::{
-    ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+    ChromosomeT, ConfigurationT, CrossoverConfig, GeneT, MutationConfig, SelectionConfig, StoppingConfig,
 };
 use std::borrow::Cow;
 
@@ -248,4 +248,123 @@ fn test_list_full_ga_run() {
         final_pop.best_chromosome.fitness() >= 0.0,
         "best fitness must be >= 0.0"
     );
+}
+
+// ── Unit tests migrated from src/chromosomes/list.rs ─────────────────────────
+
+fn make_gene(id: i32, alleles: Vec<char>) -> List<char> {
+    List::new(id, alleles, 'a').unwrap()
+}
+
+#[test]
+fn list_chromosome_new_has_empty_dna_nan_fitness_age_zero() {
+    let c = ListChromosome::<char>::new();
+    assert!(c.dna().is_empty());
+    assert!(c.fitness().is_nan());
+    assert_eq!(c.age(), 0);
+}
+
+#[test]
+fn list_chromosome_default_same_as_new() {
+    let c: ListChromosome<char> = Default::default();
+    assert!(c.dna().is_empty());
+    assert!(c.fitness().is_nan());
+    assert_eq!(c.age(), 0);
+}
+
+#[test]
+fn list_chromosome_set_dna_owned() {
+    let mut c = ListChromosome::<char>::new();
+    let genes = vec![make_gene(0, vec!['a', 'b']), make_gene(1, vec!['a', 'b'])];
+    c.set_dna(Cow::Owned(genes.clone()));
+    assert_eq!(c.dna().len(), 2);
+    assert_eq!(c.dna()[0].id(), 0);
+    assert_eq!(c.dna()[1].id(), 1);
+}
+
+#[test]
+fn list_chromosome_set_dna_borrowed() {
+    let mut c = ListChromosome::<char>::new();
+    let genes = vec![make_gene(0, vec!['x', 'y', 'z'])];
+    c.set_dna(Cow::Borrowed(&genes));
+    assert_eq!(c.dna().len(), 1);
+    assert_eq!(c.dna()[0].value(), 'x');
+}
+
+#[test]
+fn list_chromosome_dna_mut_modifications_visible() {
+    let mut c = ListChromosome::<char>::new();
+    c.dna.push(make_gene(0, vec!['a', 'b', 'c']));
+    c.dna_mut()[0].set_id(2);
+    assert_eq!(c.dna()[0].value(), 'c');
+}
+
+#[test]
+fn list_chromosome_set_fitness_and_get() {
+    let mut c = ListChromosome::<char>::new();
+    c.set_fitness(42.0);
+    assert_eq!(c.fitness(), 42.0);
+}
+
+#[test]
+fn list_chromosome_set_age_and_get() {
+    let mut c = ListChromosome::<char>::new();
+    c.set_age(5);
+    assert_eq!(c.age(), 5);
+}
+
+#[test]
+fn list_chromosome_calculate_fitness_using_fn() {
+    let mut c = ListChromosome::<char>::new();
+    c.dna.push(make_gene(0, vec!['a', 'b']));
+    c.dna.push(make_gene(1, vec!['a', 'b']));
+    c.set_fitness_fn(|dna| dna.len() as f64);
+    c.calculate_fitness();
+    assert_eq!(c.fitness(), 2.0);
+}
+
+#[test]
+fn list_chromosome_clone_is_independent() {
+    let mut c = ListChromosome::<char>::new();
+    c.dna.push(make_gene(0, vec!['a', 'b', 'c']));
+    c.set_fitness(1.0);
+    let mut cloned = c.clone();
+    cloned.set_fitness(99.0);
+    cloned.dna.push(make_gene(1, vec!['a', 'b', 'c']));
+    assert_eq!(c.fitness(), 1.0);
+    assert_eq!(c.dna().len(), 1);
+}
+
+#[test]
+fn list_chromosome_phenotype_formats_values() {
+    let mut c = ListChromosome::<char>::new();
+    c.dna.push(make_gene(0, vec!['a', 'b', 'c'])); // value = 'a'
+    c.dna.push(make_gene(2, vec!['a', 'b', 'c'])); // value = 'c'
+    let p = c.phenotype();
+    assert_eq!(p, "'a', 'c'");
+}
+
+#[test]
+fn list_chromosome_display_format() {
+    let mut c = ListChromosome::<char>::new();
+    c.dna.push(make_gene(0, vec!['a', 'b'])); // value 'a'
+    c.set_fitness(std::f64::consts::PI);
+    let s = format!("{}", c);
+    assert!(s.contains("fitness="), "display was: {}", s);
+}
+
+#[cfg(feature = "serde")]
+#[test]
+fn list_chromosome_serde_roundtrip() {
+    let mut c = ListChromosome::<char>::new();
+    c.dna.push(make_gene(1, vec!['a', 'b', 'c']));
+    c.set_fitness(7.0);
+    c.set_age(3);
+    let json = serde_json::to_string(&c).expect("serialize");
+    let restored: ListChromosome<char> = serde_json::from_str(&json).expect("deserialize");
+    assert_eq!(restored.dna.len(), 1);
+    assert_eq!(restored.dna[0].id(), 1);
+    assert_eq!(restored.fitness(), 7.0);
+    assert_eq!(restored.age(), 3);
+    // fitness_fn is skipped — that's OK
 }

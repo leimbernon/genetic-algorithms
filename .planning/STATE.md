@@ -3,87 +3,82 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 12-01-PLAN.md
-last_updated: "2026-03-22T14:17:23.532Z"
+stopped_at: Completed 18-02-PLAN.md (Observer API Polish plan 2 - final)
+last_updated: "2026-03-28T16:59:50.525Z"
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 15
-  completed_plans: 15
+  total_phases: 6
+  completed_phases: 6
+  total_plans: 14
+  completed_plans: 14
 ---
 
-# Project State
-
-## Project Reference
-
-See: .planning/PROJECT.md (updated 2026-03-21)
-
-**Core value:** The simplest correct way to run a genetic algorithm in Rust — generic enough for any problem domain, fast enough for real workloads.
-**Current focus:** Phase 12 — documentation
+# State
 
 ## Current Position
 
-Phase: 12 (documentation) — EXECUTING
-Plan: 1 of 1
+Phase: 18 (observer-api-polish) — EXECUTING
+Plan: 2 of 2
 
-## Performance Metrics
+## Project Reference
 
-**Velocity:**
+See: .planning/PROJECT.md (updated 2026-03-25)
 
-- Total plans completed: 0
-- Average duration: — min
-- Total execution time: — hours
-
-**By Phase:**
-
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| - | - | - | - |
-
-*Updated after each plan completion*
-| Phase 10 P01 | 1 | 1 tasks | 1 files |
-| Phase 10 P03 | 1 | 1 tasks | 1 files |
-| Phase 10 P02 | 1 | 1 tasks | 1 files |
-| Phase 11 P01 | 5 | 1 tasks | 1 files |
-| Phase 11 P02 | 1 | 1 tasks | 1 files |
-| Phase 11 P03 | 2 | 1 tasks | 1 files |
-| Phase 12 P01 | 1 | 1 tasks | 1 files |
+**Core value:** Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library
+**Current focus:** Phase 18 — observer-api-polish
 
 ## Accumulated Context
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
+- v2.1.0 shipped: diversity metric, List genotype, Reporter trait, visualization feature flag, 6 examples
+- Observer stored as `Option<Arc<dyn GaObserver<U> + Send + Sync>>` — Arc for island thread sharing, Option for zero-cost when absent (contrasts with Reporter's Box)
+- `Reporter<U>` and `GaObserver<U>` coexist as separate fields; removing Reporter is a breaking change
+- All hooks use `&self` (not `&mut self`) — required for rayon parallel regions
+- Feature flags: `observer-tracing` and `observer-metrics` off by default; naming follows existing `serde` precedent
+- [Phase 13]: GaObserver<U> uses &self and Send+Sync supertraits for Arc-based island sharing
+- [Phase 13]: Reporter<U> and with_reporter() soft-deprecated since 2.2.0, removed in v3.0.0
+- [Phase 13]: on_mutation_complete and on_fitness_evaluation_complete fire with Duration::ZERO since parent_crossover is opaque — timing separation requires future refactor
+- [Phase 13]: Instant::now() gated behind observer.is_some() — zero overhead when no observer attached
+- [Phase 14]: LogObserver reorders dynamic mutation block before on_generation_end so stats carry dynamic_mutation_probability
+- [Phase 14]: log::warn! kept with EXT-02 comment — on_checkpoint_failed hook deferred, serde-gated, fires only on I/O errors
+- [Phase 15-tracingobserver]: TracingObserver stores Mutex<Option<Span>> not EnteredSpan — EnteredSpan is !Send, breaking GaObserver: Send+Sync
+- [Phase 15-tracingobserver]: Zero log::* calls in tracing_observer.rs — prevents LogTracer infinite recursion when LogObserver and TracingObserver both active (TRAC-03)
+- [Phase 15-tracingobserver]: observer-tracing feature flag off by default — default builds do not pull in tracing crate (TRAC-02)
+- [Phase 15-tracingobserver]: Integration tests use #![cfg(feature = "observer-tracing")] at file top (single gate) — entire file skipped in default cargo test (TRAC-02 verification)
+- [Phase 15-tracingobserver]: LogTracer coexistence test uses tracing::subscriber::with_default (scoped) not set_global_default — avoids test suite subscriber state poisoning
+- [Phase 16-sub-traits]: IslandGaObserver and Nsga2Observer are independent sub-traits (not GaObserver extensions) — allows engine-specific impls without full GaObserver surface
+- [Phase 16-sub-traits]: LogObserver implements all three observer traits in a single zero-sized struct — no separate IslandLogObserver or Nsga2LogObserver needed
+- [Phase 16-sub-traits]: island_id=0 passed to run-level hooks (on_island_run_start, on_island_run_end) — IslandGa is a single logical run, island-thread hooks use idx
+- [Phase 16-sub-traits]: test files using IslandGa struct literals must be updated to constructor pattern when private fields are added — public API is correct for external tests
+- [Phase 16-sub-traits]: Nsga2Observer hooks fire only on initial sort+crowding phase (not combined population sort) — observer reports algorithmic steps, not environmental selection
+- [Phase 16-sub-traits]: on_pareto_front_assigned fires unconditionally — count event, no timing gate needed
+- [Phase 17]: AllObserver<U> is a pure supertrait marker (no methods) — object-safe, enabling dyn AllObserver<U> for CompositeObserver storage
+- [Phase 17]: CompositeObserver uses Vec<Arc<dyn AllObserver<U>>> — allows sharing inner observers across multiple GA engine instances
+- [Phase 17]: MetricsObserver uses &'static str run_id (not Arc) — avoids heap overhead, user provides stable string literal
+- [Phase 17]: observer-metrics feature flag off by default — default builds do not pull in metrics crate (COMP-02/COMP-03)
+- [Phase 17]: All metrics::* calls in sequential hook bodies only — zero metrics calls inside par_iter closures (COMP-03)
+- [Phase 17]: CountingAllObserver implements all three observer traits in one struct — enables fan-out tests across GaObserver, IslandGaObserver, Nsga2Observer without separate types
+- [Phase 18]: elapsed (combined crossover+mutation+fitness time) passed to on_mutation_complete and on_fitness_evaluation_complete — per-operator separation deferred to EXT-01 (v2.3+)
+- [Phase 18]: Extension block moved before reporter and on_generation_end in ga.rs — restores pre-v2.2.0 hook ordering where on_extension_triggered fires before on_generation_end within same generation
+- [Phase 18]: Crate-root re-exports added: NoopObserver, ExtensionEvent (observer module), TerminationCause (ga module) — closes OBS-01 and OBS-02
 
-- Branch naming: `feat/<number>-<description>` from milestone branch (not from main)
-- GitHub auth: always use `GITHUB_TOKEN= gh <command>` to force keyring credentials
-- PRs target milestone branch, not main
-- No breaking changes to `ChromosomeT` or operator trait signatures
-- Enum + factory pattern for all operators (no dyn Trait overhead in operator dispatch)
-- [Phase 09]: plotters text labels omitted from PNG — ab_glyph requires registered font bytes; SVG works without font registration
-- [Phase 10]: RangeGenotype::new() first arg is i32 id, not T — plan template had type mismatch (0.0_f64 → 0)
-- [Phase 10]: Rastrigin example uses Gaussian mutation + Tournament selection + Minimization mode for continuous optimization
-- [Phase 10 P03]: NichingConfig must be imported explicitly from genetic_algorithms::traits for builder methods to compile
-- [Phase 10 P03]: SIGMA_SHARE=1.5, POP_SIZE=150 reliably covers all 3 peaks in 300 generations
-- [Phase 10]: Adaptive GA requires explicit crossover probability bounds (max/min) — always pair with_adaptive_ga(true) with with_crossover_probability_max/min builder calls
-- [Phase 11]: Nsga2Ga::run() has no callback hook — document API limitation in example doc block and stdout
-- [Phase 11]: GaConfiguration for NSGA-II: set limit_configuration fields directly since Nsga2Ga does not expose ConfigurationT builder
-- [Phase 11]: IslandGa::run() used directly — evolve_islands_one_generation() and global_best() are private, so no per-migration progress; API limitation documented in example doc block
-- [Phase 11]: Crossover::Order + Mutation::Insertion as permutation-safe operator pair for job scheduling example
-- [Phase 11]: PROCESSING_TIMES as module-level const to avoid closure capture issues in fitness_fn
-- [Phase 12]: README ## Examples section is single authoritative place for all 10 examples; ### Run Examples under Development removed
+### Quick Tasks Completed
 
-### Pending Todos
-
-None yet.
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260327-h4k | Move all unit tests from src/ to tests/ folder | 2026-03-27 | c81faf4 | [260327-h4k-move-all-unit-tests-from-src-to-tests-fo](./quick/260327-h4k-move-all-unit-tests-from-src-to-tests-fo/) |
+| 260327-kkp | Add observability to examples and document observer API in README | 2026-03-27 | e4e7115 | [260327-kkp-add-observability-to-examples-and-docume](./quick/260327-kkp-add-observability-to-examples-and-docume/) |
 
 ### Blockers/Concerns
 
-None yet.
+- Phase 14: Log migration must be atomic per module — never leave both direct log!() call and observer dispatch active simultaneously (~94 call sites across 9 targets)
+- Phase 15: `tracing::Span::enter()` must never be called inside rayon closures; use `in_scope()` or `event!()` only
+- Phase 15: `TracingObserver` must emit only via `tracing::event!()`, never `log::*` — prevents LogTracer infinite recursion
+- Phase 16: Island `par_iter_mut()` requires same clone-once-before-parallel pattern as Phase 13
+- Warn users: attaching `LogObserver` alongside an existing `SimpleReporter` produces duplicate per-generation log output
 
 ## Session Continuity
 
-Last session: 2026-03-22T14:14:59.336Z
-Stopped at: Completed 12-01-PLAN.md
+Last session: 2026-03-28T16:41:25.363Z
+Stopped at: Completed 18-02-PLAN.md (Observer API Polish plan 2 - final)
 Resume file: None

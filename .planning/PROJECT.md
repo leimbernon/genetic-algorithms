@@ -2,11 +2,11 @@
 
 ## What This Is
 
-A Rust library for genetic algorithms published on crates.io as `genetic_algorithms`. Provides single-objective (`Ga<U>`), multi-objective (NSGA-II), and island model execution modes. Generic over chromosome/gene types via traits, with a rich operator library for selection, crossover, mutation, and survivor selection.
+A modular, concurrent Genetic Algorithms library for Rust. Provides composable operators (selection, crossover, mutation, survivor), multi-threaded execution via `rayon`, Island Model GA, NSGA-II multi-objective optimization, adaptive GA mode, elitism/stopping criteria, population diversity tracking, a `Reporter<U>` lifecycle trait, an optional visualization feature (PNG/SVG charts), and a `List<T>` genotype for finite symbolic alphabets. Published on crates.io as `genetic_algorithms` with six runnable examples covering every major GA mode.
 
 ## Core Value
 
-The simplest correct way to run a genetic algorithm in Rust — generic enough for any problem domain, fast enough for real workloads.
+Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library.
 
 ## Requirements
 
@@ -14,74 +14,93 @@ The simplest correct way to run a genetic algorithm in Rust — generic enough f
 
 <!-- Shipped and confirmed valuable. -->
 
-- ✓ Population diversity estimation metric — v2.1.0 (Phase 6)
-- ✓ List genotype `List<T>` / `ListChromosome<T>` — v2.1.0 (Phase 7)
-- ✓ Reporter trait with lifecycle hooks — v2.1.0 (Phase 8)
-- ✓ Visualization module (`plot_fitness`, `plot_diversity`, `plot_histogram`) — v2.1.0 (Phase 9)
-- ✓ Single-population GA (`Ga<U>`) with builder pattern — core library
-- ✓ Multi-objective NSGA-II (`Nsga2Ga`) — pareto front, crowding distance
-- ✓ Island model (`IslandGa`) — multi-population + migration topologies
-- ✓ 6 selection operators: Tournament, FitnessProportionate, Rank, Boltzmann, Truncation, Random
-- ✓ 11 crossover operators: SinglePoint, Multipoint, Uniform, Cycle, Order, PMX, SBX, BlendAlpha, Arithmetic, Clone, Rejuvenate
-- ✓ 10 mutation operators: Swap, Inversion, Scramble, Value, BitFlip, Creep, Gaussian, Polynomial, NonUniform, Insertion
-- ✓ 4 survivor operators: Fitness, Age, MuPlusLambda, MuCommaLambda
-- ✓ 4 extension/diversity operators: MassExtinction, MassGenesis, MassDegeneration, MassDeduplication
-- ✓ LRU fitness caching — avoids redundant evaluations for identical DNA
-- ✓ Dynamic mutation probability based on population cardinality
-- ✓ Extension strategies (diversity threshold-based rescue)
-- ✓ Serde checkpoint/restore (feature-gated)
-- ✓ Adaptive GA parameter updates
-- ✓ Fitness sharing / niching
+- ✓ Core GA engine with configurable operators — v1.0
+- ✓ Binary and Range<T> genotypes — v1.0
+- ✓ Selection: Random, RouletteWheel, SUS, Tournament, Rank, Boltzmann, Truncation — v2.0
+- ✓ Crossover: Cycle, MultiPoint, Uniform, SinglePoint, Order, SBX, BlendAlpha, PMX, Arithmetic — v2.0
+- ✓ Mutation: Swap, Inversion, Scramble, Value, BitFlip, Creep, Gaussian, Polynomial, NonUniform, Insertion — v2.0
+- ✓ Survivor: Fitness, Age, μ+λ, μ,λ — v2.0
+- ✓ Island Model GA with migration topologies — v2.0
+- ✓ NSGA-II multi-objective optimization — v2.0
+- ✓ Island + NSGA-II hybrid — v2.0
+- ✓ Fitness sharing / niching — v2.0
+- ✓ Elitism support — v2.0
+- ✓ Compound stopping criteria (stagnation, convergence, time limit) — v2.0
+- ✓ Structured error handling (GaError) — v2.0
+- ✓ Serde support (feature flag) — v2.0
+- ✓ Checkpoint save/load — v2.0
+- ✓ Seedable RNG — v2.0
+- ✓ Adaptive GA (dynamic crossover/mutation probabilities) — v2.0
+- ✓ Per-generation statistics (GenerationStats) — v2.0
+- ✓ Rayon-based parallelism — v2.0
+- ✓ Population diversity metric (`GenerationStats.diversity`) wired into extension trigger and dynamic mutation — v2.1.0
+- ✓ `List<T>` gene and `ListChromosome<T>` for finite symbolic alphabets, compatible with all operators — v2.1.0
+- ✓ `Reporter<U>` trait with `on_start`, `on_generation_complete`, `on_new_best`, `on_finish` hooks; zero overhead when unset — v2.1.0
+- ✓ `visualization` feature flag: `plot_fitness`, `plot_diversity`, `plot_histogram` (PNG/SVG via plotters) — v2.1.0
+- ✓ Six runnable examples: `rastrigin`, `feature_selection`, `niching`, `nsga2_zdt1`, `island_model`, `job_scheduling` — v2.1.0
+- ✓ README `## Examples` table documenting all 10 examples with `cargo run` commands — v2.1.0
 
 ### Active
 
-<!-- Current scope — Milestone v2.1.0 New Examples -->
+<!-- Current scope. Building toward these. -->
 
-- [ ] Rastrigin continuous optimization example using `Range<f64>` chromosomes (#154)
-- [ ] NSGA-II multi-objective example (ZDT1 benchmark) (#155)
-- [ ] Island Model GA example (parallel multi-population) (#156)
-- [ ] Job Scheduling example (minimize makespan, permutation) (#157)
-- [ ] Feature Selection example (Binary chromosomes + adaptive GA) (#158)
-- [ ] Niching / Fitness Sharing example (multimodal optimization) (#159)
-- [x] README updated to document all examples with run commands — v2.1.0 (Phase 12)
+- ✓ GaObserver trait with lifecycle, operator, and special event hooks — Validated in Phase 13: GaObserver Base Trait
+- ✓ LogObserver replacing hardcoded log!() calls — Validated in Phase 14: LogObserver + Log Migration
+- ✓ TracingObserver behind `observer-tracing` feature flag (#184) — Validated in Phase 15: TracingObserver
+- ✓ Island GA and NSGA-II specialized observer sub-traits (#185) — Validated in Phase 16: Sub-Traits
+- ✓ CompositeObserver for combining multiple observers (#186) — Validated in Phase 17: CompositeObserver + MetricsObserver
+- ✓ MetricsObserver behind `observer-metrics` feature flag (#186) — Validated in Phase 17: CompositeObserver + MetricsObserver
+- ✓ Observer API polish: TracingObserver composability, hook ordering, real operator timing, crate-root re-exports — Validated in Phase 18: Observer API Polish
 
 ### Out of Scope
 
-- Breaking API changes — deferred to milestone v3.0+ (Advanced Representations)
-- NSGA-III / MOEA/D / SPEA2 — deferred to Advanced Multi-Objective milestone
-- Differential Evolution engine — deferred to Alt. Metaheuristics milestone
+<!-- Explicit boundaries. Includes reasoning to prevent re-adding. -->
+
+- GUI/interactive visualization — library generates static PNG/SVG charts; interactive dashboards are users' concern
+- Specific telemetry backends (Prometheus, Jaeger) — facade pattern lets users pick
+- Per-gene hooks in observer — too granular, unacceptable overhead in hot loops
+
+## Current Milestone: v2.2.0 Observability & Traceability
+
+**Goal:** Implement a generic, telemetry-agnostic observability system enabling full metrics, tracing, and alerting without coupling to any specific tool.
+
+**Target features:**
+- GaObserver trait with zero-overhead opt-in
+- LogObserver (backward-compatible migration of existing logging)
+- TracingObserver (structured spans via `tracing` crate)
+- Island GA & NSGA-II observer extensions
+- CompositeObserver + MetricsObserver
 
 ## Context
 
-- Crate version: 2.1.0 on crates.io
-- Rust library, no binary or UI component
-- All operators follow enum + factory-function pattern (runtime dispatch)
-- `ChromosomeT` uses `Cow<[Gene]>` for zero-copy DNA operations
-- Parallel fitness evaluation via rayon; seeded RNG for reproducibility
-- No breaking changes allowed without explicit milestone designation
+- Library is published on crates.io, backward compatibility matters
+- v2.1.0 shipped: ~14,600 LOC Rust, 10 runnable examples, `visualization` feature, `Reporter<U>` trait, `List<T>` genotype
+- Current logging uses hardcoded `log!()` macros with 8 log targets in ga.rs — migration to observer is the v2.2.0 goal
+- Observer pattern must have zero overhead when no observer is set
+- Feature flags keep optional dependencies (tracing, metrics) out of default builds
+- All observer traits use default no-op methods for forward compatibility
+- `Reporter<U>` (v2.1.0) is a simpler precursor to `GaObserver<U>` (v2.2.0) — both will coexist
 
 ## Constraints
 
-- **Compatibility**: No breaking changes to public traits (`ChromosomeT`, operator traits) — new features via new enums, builder methods, or optional traits
-- **Feature flags**: New optional dependencies must be behind feature flags (e.g., `visualization`, `observer-tracing`)
-- **Testing**: All PRs must pass `cargo test`, `cargo test --features serde`, `cargo clippy`, zero rustdoc warnings
+- **Backward compatibility**: LogObserver must reproduce identical log output to current behavior
+- **Zero overhead**: `Option::None` branch when no observer — no allocations, no measurements
+- **Feature flags**: `observer-tracing` and `observer-metrics` off by default
+- **Rust edition**: 2021, MSRV 1.81.0
+- **Thread safety**: All observers must be `Send + Sync` (used across rayon threads)
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Enum + factory for operators | Runtime dispatch without dyn Trait overhead; easy to extend | ✓ Good |
-| `Cow<[Gene]>` in ChromosomeT | Zero-copy DNA reads; only clone on mutation | ✓ Good |
-| LRU cache keyed on Debug string | Simple to implement; correctness risk if Debug is non-deterministic | ⚠️ Revisit |
-| Rayon for parallelism | Fits workload; overhead on small populations | ✓ Good |
-
-## Current Milestone: v2.1.0 — New Examples
-
-**Goal:** Add runnable examples covering all major GA modes and operators, and update README to document them.
-
-**Target features:**
-- 6 runnable examples: Rastrigin, NSGA-II (ZDT1), Island Model, Job Scheduling, Feature Selection, Niching
-- README updated with examples section and `cargo run --example <name>` commands
+| fitness_std_dev as diversity metric | Simple, allocation-free, one pass over fitness values | ✓ Good — wired cleanly into extension and dynamic mutation |
+| Stats computed once per generation, then passed to subsystems | Eliminates duplicate computation; diversity is authoritative | ✓ Good — removed compute_cardinality call from ga.rs |
+| `Reporter<U>` as `Option<Box<dyn Reporter<U> + Send>>` | Simpler than Arc for single-owner; Box is fine for non-shared | ✓ Good — zero overhead confirmed via if-let guard |
+| plotters 0.3.7 for visualization | Widely used, pure Rust, no C deps, good PNG/SVG support | ✓ Good — compiles cleanly behind feature flag |
+| RangeChromosome<i32> for job_scheduling permutation | `list_random_initialization(..., Some(false))` achieves unique IDs | ⚠ Revisit — ListChromosome would be more semantic |
+| Facade pattern (log, tracing, metrics crates) | Users choose their own backends; library stays agnostic | — Pending |
+| Observer via `Option<Arc<dyn GaObserver<U>>>` | Zero cost when unused, shared across threads | — Pending |
+| Default no-op methods on traits | Forward-compatible: new events don't break existing observers | — Pending |
 
 ---
-*Last updated: 2026-03-22 — milestone v2.1.0 New Examples complete (Phase 12)*
+*Last updated: 2026-03-28 — Phase 18 complete: Observer API Polish shipped; all v2.2.0 observer gaps closed*

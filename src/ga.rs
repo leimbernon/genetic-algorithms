@@ -27,6 +27,8 @@
 
 use crate::configuration::GaConfiguration;
 use crate::error::GaError;
+use crate::observer::{ExtensionEvent, GaObserver};
+#[allow(deprecated)]
 use crate::reporter::Reporter;
 use crate::stats::GenerationStats;
 use crate::traits::{FitnessFn, InitializationFn};
@@ -40,7 +42,6 @@ use crate::{
         MutationConfig, NichingConfig, SelectionConfig, StoppingConfig,
     },
 };
-use log::{debug, info, trace};
 use rand::Rng;
 use rayon::prelude::*;
 use std::fmt::Debug;
@@ -95,6 +96,7 @@ pub enum TerminationCause {
 /// - Manage configuration, alleles, population and termination state.
 /// - Provide builder-like configuration methods (`ConfigurationT`) to compose the run.
 /// - Coordinate the GA cycle: initialization, selection, crossover, mutation, survivor, evaluation.
+#[allow(deprecated)]
 pub struct Ga<U>
 where
     U: ChromosomeT,
@@ -127,8 +129,13 @@ where
     /// Optional lifecycle reporter. When `None` (the default), no hook
     /// calls are made and there is zero overhead.
     reporter: Option<Box<dyn Reporter<U> + Send>>,
+
+    /// Optional structured lifecycle observer. When `None` (the default),
+    /// no hook calls or timing measurements are performed (zero overhead).
+    observer: Option<Arc<dyn GaObserver<U> + Send + Sync>>,
 }
 
+#[allow(deprecated)]
 impl<U> Default for Ga<U>
 where
     U: ChromosomeT,
@@ -147,6 +154,7 @@ where
             dynamic_mutation_probability: 1.0,
             fitness_cache_size: None,
             reporter: None,
+            observer: None,
         }
     }
 }
@@ -520,9 +528,34 @@ where
     /// Attaches a lifecycle reporter that receives hooks during execution.
     ///
     /// See [`Reporter`](crate::reporter::Reporter) for the hook contract.
+    #[allow(deprecated)]
+    #[deprecated(
+        since = "2.2.0",
+        note = "use with_observer() instead. Reporter will be removed in v3.0.0."
+    )]
     pub fn with_reporter(mut self, reporter: Box<dyn Reporter<U> + Send>) -> Self {
         self.reporter = Some(reporter);
         self
+    }
+
+    /// Attaches a structured lifecycle observer that receives hooks during execution.
+    ///
+    /// The observer is stored as an `Arc` for thread-safe sharing (required by the
+    /// island model). All hooks receive `&self`, so observers that need interior
+    /// mutability should use `Mutex`, `AtomicU64`, or similar.
+    ///
+    /// See [`GaObserver`](crate::observer::GaObserver) for the hook contract.
+    pub fn with_observer(mut self, observer: Arc<dyn GaObserver<U> + Send + Sync>) -> Self {
+        self.observer = Some(observer);
+        self
+    }
+
+    /// Dispatches an observer hook if an observer is attached. No-op when `self.observer` is `None`.
+    #[inline]
+    fn notify<F: FnOnce(&dyn GaObserver<U>)>(&self, f: F) {
+        if let Some(ref obs) = self.observer {
+            f(obs.as_ref());
+        }
     }
 
     /// Enables an LRU fitness cache with the given capacity.
@@ -574,8 +607,6 @@ where
 
         //Before starting the run, we will check the conditions
         ValidatorFactory::validate::<U>(Some(&self.configuration), None, Some(&self.alleles))?;
-
-        info!("Initialization started");
 
         let population_size = self.configuration.limit_configuration.population_size;
         let genes_per_chromosome = self.configuration.limit_configuration.genes_per_chromosome;
@@ -630,6 +661,7 @@ where
     /// 4) Survivor selection to prune population, 5) Best chromosome update, 6) Stop check.
     ///
     /// Logging is controlled by configuration log level; adaptive GA updates use f_avg and f_max.
+    #[allow(deprecated)]
     pub fn run_with_callback<F>(
         &mut self,
         callback: Option<F>,
@@ -711,26 +743,30 @@ where
         if let Some(ref mut r) = self.reporter {
             r.on_start();
         }
+        self.notify(|obs| obs.on_run_start());
 
         //We start the cycles
         for i in 0..self.configuration.limit_configuration.max_generations {
-            info!(target="ga_events", method="run"; "Generation number: {}", i+1);
             age += 1;
+            self.notify(|obs| obs.on_generation_start(i));
 
             //1- Parent selection for reproduction
+            let t_sel = if self.observer.is_some() { Some(Instant::now()) } else { None };
             let parents = selection::factory(
                 &self.population.chromosomes,
                 self.configuration.selection_configuration,
                 self.configuration.number_of_threads,
             )?;
-            debug!(target="ga_events", method="run"; "Parents selected for reproduction");
-
+            if let Some(t) = t_sel {
+                self.notify(|obs| obs.on_selection_complete(i, t.elapsed(), parents.len()));
+            }
             //2- Getting the offspring
             let dynamic_prob = if self.configuration.mutation_configuration.dynamic_mutation {
                 Some(self.dynamic_mutation_probability)
             } else {
                 None
             };
+            let t_cx = if self.observer.is_some() { Some(Instant::now()) } else { None };
             let mut offspring = parent_crossover(
                 &parents,
                 &self.population.chromosomes,
@@ -740,8 +776,16 @@ where
                 self.population.f_avg,
                 dynamic_prob,
             )?;
-            debug!(target="ga_events", method="run"; "Offspring created");
-
+            if let Some(t) = t_cx {
+                let elapsed = t.elapsed();
+                let offspring_count = offspring.len();
+                let pop_size = self.population.chromosomes.len();
+                self.notify(|obs| obs.on_crossover_complete(i, elapsed, offspring_count));
+                // NOTE: elapsed covers combined crossover+mutation+fitness time (EXT-01)
+                self.notify(|obs| obs.on_mutation_complete(i, elapsed, pop_size));
+                // NOTE: elapsed covers combined crossover+mutation+fitness time (EXT-01)
+                self.notify(|obs| obs.on_fitness_evaluation_complete(i, elapsed, pop_size));
+            }
             //3- Insert the children in the population
             self.population.add_chromosomes(&mut offspring);
 
@@ -757,12 +801,17 @@ where
             };
 
             //4- Survivor selection
+            let t_surv = if self.observer.is_some() { Some(Instant::now()) } else { None };
             survivor::factory(
                 self.configuration.survivor,
                 &mut self.population.chromosomes,
                 initial_population_size,
                 self.configuration.limit_configuration,
             )?;
+            if let Some(t) = t_surv {
+                let pop_size = self.population.chromosomes.len();
+                self.notify(|obs| obs.on_survivor_selection_complete(i, t.elapsed(), pop_size));
+            }
 
             // Reinsert elite individuals, replacing the worst survivors if needed
             if !elite.is_empty() {
@@ -835,8 +884,6 @@ where
                 }
             }
 
-            debug!(target="ga_events", method="run"; "Survivors selected");
-
             //5- Sets the best chromosome (scan by index, clone only the winner)
             {
                 let ps = self.configuration.limit_configuration.problem_solving;
@@ -862,8 +909,6 @@ where
                     }
                 }
             }
-            debug!(target="ga_events", method="run"; "Best chromosome calculated - generation {}", i+1);
-
             // Collect per-generation statistics
             let fitness_values: Vec<f64> = self
                 .population
@@ -874,10 +919,6 @@ where
             let gen_stats =
                 GenerationStats::from_fitness_values(i, &fitness_values, is_maximization);
             self.stats.push(gen_stats.clone());
-
-            if let Some(ref mut r) = self.reporter {
-                r.on_generation_complete(&gen_stats);
-            }
 
             // Update dynamic mutation probability based on population diversity
             if self.configuration.mutation_configuration.dynamic_mutation {
@@ -911,13 +952,10 @@ where
                     p_min,
                 );
 
-                debug!(
-                    target = "ga_events",
-                    method = "run";
-                    "Dynamic mutation: diversity={:.4}, probability={:.4}",
-                    gen_stats.diversity,
-                    self.dynamic_mutation_probability
-                );
+                // Update the pushed stats entry with the current dynamic mutation probability
+                if let Some(last) = self.stats.last_mut() {
+                    last.dynamic_mutation_probability = Some(self.dynamic_mutation_probability);
+                }
             }
 
             // Apply extension strategy if configured and diversity is low
@@ -925,14 +963,6 @@ where
                 if ext_config.method != Extension::Noop
                     && gen_stats.diversity < ext_config.diversity_threshold
                 {
-                    info!(
-                        target = "extension_events",
-                        method = "run";
-                        "Extension triggered: diversity={:.6} < threshold={:.6}",
-                        gen_stats.diversity,
-                        ext_config.diversity_threshold
-                    );
-
                     extension::factory(
                         ext_config.method,
                         &mut self.population.chromosomes,
@@ -940,6 +970,12 @@ where
                         self.configuration.limit_configuration.problem_solving,
                         ext_config,
                     )?;
+                    self.notify(|obs| obs.on_extension_triggered(ExtensionEvent {
+                        generation: i,
+                        diversity: gen_stats.diversity,
+                        extension_type: ext_config.method.as_str(),
+                        threshold: ext_config.diversity_threshold,
+                    }));
 
                     // Regrow population if extension reduced it
                     if self.population.chromosomes.len() < initial_population_size {
@@ -987,6 +1023,14 @@ where
                 }
             }
 
+            // Reporter (legacy) — fires after extension, matching pre-v2.2.0 order
+            if let Some(ref mut r) = self.reporter {
+                r.on_generation_complete(&gen_stats);
+            }
+            // Notify with the (possibly updated) stats entry that includes dynamic_mutation_probability
+            let notify_stats = self.stats.last().cloned().unwrap_or(gen_stats.clone());
+            self.notify(|obs| obs.on_generation_end(&notify_stats));
+
             // Save checkpoint to disk if configured (requires serde feature)
             #[cfg(feature = "serde")]
             {
@@ -1004,6 +1048,9 @@ where
                     let path = std::path::Path::new(&spc.save_progress_path)
                         .join(format!("checkpoint_gen_{}.json", i + 1));
                     if let Err(e) = crate::checkpoint::save_checkpoint(&ckpt, &path) {
+                        // Exception: this log::warn! cannot migrate to LogObserver because no
+                        // on_checkpoint_failed hook exists (deferred per REQUIREMENTS.md EXT-02).
+                        // It is feature-gated (#[cfg(feature = "serde")]) and only fires on I/O errors.
                         log::warn!("Failed to save checkpoint at generation {}: {}", i + 1, e);
                     }
                 }
@@ -1048,8 +1095,10 @@ where
                 if let Some(ref mut r) = self.reporter {
                     r.on_new_best(i, self.population.best_chromosome.clone());
                 }
+                self.notify(|obs| obs.on_new_best(i, self.population.best_chromosome.clone()));
             } else {
                 stagnation_count += 1;
+                self.notify(|obs| obs.on_stagnation(i, stagnation_count));
             }
 
             if let Some(max_stagnation) =
@@ -1095,6 +1144,7 @@ where
         if let Some(ref mut r) = self.reporter {
             r.on_finish(self.termination_cause, &self.stats);
         }
+        self.notify(|obs| obs.on_run_end(self.termination_cause, &self.stats));
 
         // If we want to perform a callback and the generation limit was just reached
         if let Some(func) = &callback {
@@ -1131,14 +1181,12 @@ fn limit_reached<U>(limit: LimitConfiguration, chromosomes: &[U]) -> bool
 where
     U: ChromosomeT,
 {
-    debug!(target="ga_events", method="limit_reached"; "Started limit reached method");
     let mut result = false;
 
     if limit.problem_solving == ProblemSolving::Minimization {
         //If the problem-solving is minimization, fitness must be 0
         for chromosome in chromosomes {
             if chromosome.fitness() == 0.0 {
-                trace!(target="ga_events", method="limit_reached"; "limit reached for minimization");
                 result = true;
                 break;
             }
@@ -1148,7 +1196,6 @@ where
         if let Some(target) = limit.fitness_target {
             for chromosome in chromosomes {
                 if chromosome.fitness() == target {
-                    trace!(target="ga_events", method="limit_reached"; "limit reached for fixed fitness");
                     result = true;
                     break;
                 }
@@ -1156,7 +1203,6 @@ where
         }
     }
 
-    debug!(target="ga_events", method="limit_reached"; "Limit reached method finished");
     result
 }
 
@@ -1178,8 +1224,6 @@ fn parent_crossover<U>(
 where
     U: ChromosomeT + Send + Sync + 'static + Clone + mutation::ValueMutable,
 {
-    debug!(target="ga_events", method="parent_crossover"; "Started the parent crossover");
-
     /*
         Gets the static crossover probability config and the static mutation probability config
         This way we avoid of passing by these conditions at each thread if it's not necessary
@@ -1261,8 +1305,6 @@ where
                     )
                 };
 
-            debug!(target="ga_events", method="parent_crossover"; "Processing parent pair");
-
             let mut child_1: U;
             let mut child_2: U;
 
@@ -1278,8 +1320,6 @@ where
                 child_1 = parent_1;
                 child_2 = parent_2;
             }
-
-            debug!(target="ga_events", method="parent_crossover"; "mutation_probability_config {} - mutation probability {}", effective_mutation_prob, mutation_probability);
 
             if mutation_probability < effective_mutation_prob {
                 mutation::factory_with_params(
@@ -1317,7 +1357,6 @@ where
         offspring.extend(result?);
     }
 
-    debug!(target="ga_events", method="parent_crossover"; "Parent crossover finished");
     Ok(offspring)
 }
 

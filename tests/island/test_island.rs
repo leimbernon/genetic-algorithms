@@ -95,14 +95,7 @@ fn test_island_ga_config_for_island_cycles_last() {
 #[test]
 fn test_island_ga_validate_empty_configs() {
     let island_config = IslandConfiguration::new().with_num_islands(2);
-    let island_ga = IslandGa::<Binary> {
-        island_config,
-        ga_configs: vec![],
-        islands: Vec::new(),
-        alleles: Vec::new(),
-        initialization_fn: None,
-        fitness_fn: None,
-    };
+    let island_ga = IslandGa::<Binary>::with_heterogeneous_configs(island_config, vec![]);
 
     let result = island_ga.validate();
     assert!(result.is_err());
