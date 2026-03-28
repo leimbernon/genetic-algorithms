@@ -56,6 +56,9 @@ impl<U: ChromosomeT> CompositeObserver<U> {
     /// Registers an inner observer and returns `self` for chaining.
     ///
     /// Observers are called in the order they are added.
+    // `add` is the idiomatic builder-pattern name here and does not implement
+    // arithmetic — suppress the false-positive `should_implement_trait` lint.
+    #[allow(clippy::should_implement_trait)]
     pub fn add(mut self, obs: Arc<dyn AllObserver<U> + Send + Sync>) -> Self {
         self.observers.push(obs);
         self

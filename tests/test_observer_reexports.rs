@@ -25,9 +25,6 @@ fn test_reexport_extension_event() {
 #[test]
 fn test_reexport_termination_cause() {
     let cause = TerminationCause::GenerationLimitReached;
-    match cause {
-        TerminationCause::GenerationLimitReached => {},
-        _ => {},
-    }
+    assert!(matches!(cause, TerminationCause::GenerationLimitReached));
     // If this compiles, OBS-01 (TerminationCause) is satisfied.
 }
