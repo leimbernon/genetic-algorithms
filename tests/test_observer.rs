@@ -145,13 +145,33 @@ fn test_observer_on_run_end_fires_once() {
 }
 
 /// Test 5: on_new_best fires at least once
+///
+/// Uses an all-false initializer so the initial best fitness is 0.0 and any
+/// bit-flip mutation is guaranteed to trigger on_new_best.
 #[test]
 fn test_observer_on_new_best_fires() {
+    fn all_false_init(size: usize, _alleles: Option<&[BinaryGene]>, _repeat: Option<bool>) -> Vec<BinaryGene> {
+        (0..size).map(|i| BinaryGene { id: i as i32, value: false }).collect()
+    }
+
     let data = Arc::new(SpyData::default());
     let spy = Arc::new(SpyObserver::new(Arc::clone(&data)));
-    let mut ga = build_test_ga_with_observer(10, spy);
+    let mut ga = Ga::new()
+        .with_population_size(20)
+        .with_genes_per_chromosome(8)
+        .with_initialization_fn(all_false_init)
+        .with_fitness_fn(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64)
+        .with_selection_method(Selection::Tournament)
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::BitFlip)
+        .with_survivor_method(Survivor::Fitness)
+        .with_problem_solving(ProblemSolving::Maximization)
+        .with_max_generations(10)
+        .with_observer(spy)
+        .build()
+        .expect("valid config");
     ga.run().expect("GA run should succeed");
-    assert!(data.new_best.load(Ordering::Relaxed) >= 1);
+    assert!(data.new_best.load(Ordering::Relaxed) >= 1, "on_new_best should fire at least once when starting from all-zero fitness");
 }
 
 /// Test 6: operator hooks fire each generation
