@@ -144,7 +144,7 @@ Plans:
   2. `on_extension_triggered` fires before `on_generation_end` within the same generation — LogObserver output order matches pre-v2.2.0
   3. `on_mutation_complete` and `on_fitness_evaluation_complete` receive real `Duration` values (not `Duration::ZERO`) — MetricsObserver histograms record non-zero timing
   4. `use genetic_algorithms::{NoopObserver, ExtensionEvent};` and `use genetic_algorithms::ga::TerminationCause;` all compile from crate root or standard path
-**Plans:** 0/2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 18-01-PLAN.md — TracingObserver AllObserver compatibility + ga.rs hook ordering + operator timing accuracy
@@ -169,4 +169,4 @@ Phases execute in numeric order: 13 → 14 → 15 → 16 → 17 → 18
 | 15. TracingObserver | 2/2 | Complete    | 2026-03-26 | - |
 | 16. Sub-Traits | 3/3 | Complete    | 2026-03-27 | - |
 | 17. CompositeObserver + MetricsObserver | 3/3 | Complete    | 2026-03-27 | - |
-| 18. Observer API Polish | v2.2.0 | 0/2 | Not started | - |
+| 18. Observer API Polish | 1/2 | In Progress|  | - |

@@ -3,28 +3,28 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 17-03-PLAN.md (Integration Tests)
-last_updated: "2026-03-27T11:00:08.696Z"
+stopped_at: Completed 18-01-PLAN.md (Observer API Polish plan 1)
+last_updated: "2026-03-28T16:31:09.247Z"
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 5
-  total_plans: 12
-  completed_plans: 12
+  total_plans: 14
+  completed_plans: 13
 ---
 
 # State
 
 ## Current Position
 
-Phase: 17 (compositeobserver-metricsobserver) — EXECUTING
-Plan: 2 of 3
+Phase: 18 (observer-api-polish) — EXECUTING
+Plan: 2 of 2
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library
-**Current focus:** Phase 17 — compositeobserver-metricsobserver
+**Current focus:** Phase 18 — observer-api-polish
 
 ## Accumulated Context
 
@@ -58,6 +58,8 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 - [Phase 17]: observer-metrics feature flag off by default — default builds do not pull in metrics crate (COMP-02/COMP-03)
 - [Phase 17]: All metrics::* calls in sequential hook bodies only — zero metrics calls inside par_iter closures (COMP-03)
 - [Phase 17]: CountingAllObserver implements all three observer traits in one struct — enables fan-out tests across GaObserver, IslandGaObserver, Nsga2Observer without separate types
+- [Phase 18]: elapsed (combined crossover+mutation+fitness time) passed to on_mutation_complete and on_fitness_evaluation_complete — per-operator separation deferred to EXT-01 (v2.3+)
+- [Phase 18]: Extension block moved before reporter and on_generation_end in ga.rs — restores pre-v2.2.0 hook ordering where on_extension_triggered fires before on_generation_end within same generation
 
 ### Quick Tasks Completed
 
@@ -76,6 +78,6 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 
 ## Session Continuity
 
-Last session: 2026-03-27
-Stopped at: Completed quick task 260327-kkp (Add observability to examples and document observer API in README)
+Last session: 2026-03-28T16:31:09.245Z
+Stopped at: Completed 18-01-PLAN.md (Observer API Polish plan 1)
 Resume file: None
