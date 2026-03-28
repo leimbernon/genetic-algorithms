@@ -10,11 +10,11 @@ use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
 use genetic_algorithms::ga::Ga;
 use genetic_algorithms::genotypes::Binary as BinaryGene;
 use genetic_algorithms::initializers::binary_random_initialization;
-use genetic_algorithms::observer::GaObserver;
+use genetic_algorithms::observer::{GaObserver, AllObserver};
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::traits::{ConfigurationT, SelectionConfig, CrossoverConfig, MutationConfig, StoppingConfig};
 use genetic_algorithms::configuration::ProblemSolving;
-use genetic_algorithms::TracingObserver;
+use genetic_algorithms::{TracingObserver, CompositeObserver};
 
 /// Build a standard 10-generation onemax GA with the given observer.
 fn build_test_ga(
@@ -97,4 +97,19 @@ fn test_tracing_observer_with_logtracer_no_recursion() {
             result.err()
         );
     });
+}
+
+/// COMP-01: TracingObserver can be placed inside CompositeObserver and run against Ga<U>.
+#[test]
+fn test_tracing_observer_in_composite() {
+    // COMP-01: TracingObserver can be added to CompositeObserver
+    let tracing_obs = Arc::new(TracingObserver::new());
+    let composite = CompositeObserver::<BinaryChromosome>::new()
+        .add(tracing_obs as Arc<dyn AllObserver<BinaryChromosome> + Send + Sync>);
+
+    let composite_arc: Arc<dyn GaObserver<BinaryChromosome> + Send + Sync> = Arc::new(composite);
+    let mut ga = build_test_ga(composite_arc);
+    let result = ga.run();
+    assert!(result.is_ok(), "GA run with TracingObserver in CompositeObserver returned Err: {:?}", result.err());
+    // If this compiles and runs, COMP-01 for TracingObserver is satisfied.
 }

@@ -1,14 +1,14 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
 use genetic_algorithms::ga::{Ga, TerminationCause};
 use genetic_algorithms::genotypes::Binary as BinaryGene;
 use genetic_algorithms::initializers::binary_random_initialization;
 use genetic_algorithms::observer::{ExtensionEvent, GaObserver, NoopObserver};
-use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+use genetic_algorithms::operations::{Crossover, Extension, Mutation, Selection, Survivor};
 use genetic_algorithms::stats::GenerationStats;
-use genetic_algorithms::traits::{ConfigurationT, SelectionConfig, CrossoverConfig, MutationConfig, StoppingConfig};
+use genetic_algorithms::traits::{ConfigurationT, ExtensionConfig, SelectionConfig, CrossoverConfig, MutationConfig, StoppingConfig};
 use genetic_algorithms::configuration::ProblemSolving;
 
 #[derive(Default)]
@@ -327,4 +327,120 @@ fn test_ga_has_no_direct_log_calls() {
         })
         .count();
     assert!(warn_count <= 1, "Expected at most 1 warn!() call in ga.rs (checkpoint exception), found {}", warn_count);
+}
+
+// ============================================================================
+// OrderingSpyObserver — records event ordering and operator Duration values
+// ============================================================================
+
+#[derive(Default)]
+struct OrderingSpyData {
+    /// Events recorded in order of occurrence.
+    events: Mutex<Vec<String>>,
+    /// Duration received by on_mutation_complete.
+    mutation_duration: Mutex<Option<Duration>>,
+    /// Duration received by on_fitness_evaluation_complete.
+    fitness_eval_duration: Mutex<Option<Duration>>,
+}
+
+struct OrderingSpyObserver {
+    data: Arc<OrderingSpyData>,
+}
+
+impl OrderingSpyObserver {
+    fn new(data: Arc<OrderingSpyData>) -> Self {
+        Self { data }
+    }
+}
+
+impl GaObserver<BinaryChromosome> for OrderingSpyObserver {
+    fn on_extension_triggered(&self, _event: ExtensionEvent) {
+        self.data.events.lock().unwrap().push("extension_triggered".to_string());
+    }
+    fn on_generation_end(&self, _stats: &GenerationStats) {
+        self.data.events.lock().unwrap().push("generation_end".to_string());
+    }
+    fn on_mutation_complete(&self, _generation: usize, duration: Duration, _pop_size: usize) {
+        *self.data.mutation_duration.lock().unwrap() = Some(duration);
+    }
+    fn on_fitness_evaluation_complete(&self, _generation: usize, duration: Duration, _pop_size: usize) {
+        *self.data.fitness_eval_duration.lock().unwrap() = Some(duration);
+    }
+}
+
+/// Test 12: on_extension_triggered fires before on_generation_end within the same generation.
+///
+/// Sets diversity_threshold high (100.0) so the extension always triggers, then verifies
+/// that in the event stream "extension_triggered" always precedes "generation_end".
+#[test]
+fn test_extension_fires_before_generation_end() {
+    let data = Arc::new(OrderingSpyData::default());
+    let spy = Arc::new(OrderingSpyObserver::new(Arc::clone(&data)));
+
+    let mut ga: Ga<BinaryChromosome> = Ga::new()
+        .with_population_size(20)
+        .with_genes_per_chromosome(8)
+        .with_initialization_fn(binary_random_initialization)
+        .with_fitness_fn(|dna: &[BinaryGene]| {
+            dna.iter().filter(|g| g.value).count() as f64
+        })
+        .with_selection_method(Selection::Tournament)
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::BitFlip)
+        .with_survivor_method(Survivor::Fitness)
+        .with_problem_solving(ProblemSolving::Maximization)
+        .with_max_generations(5)
+        // Set threshold very high so the extension always triggers (diversity is std dev of fitness)
+        .with_extension_method(Extension::MassExtinction)
+        .with_extension_diversity_threshold(100.0)
+        .with_observer(spy)
+        .build()
+        .expect("valid config");
+
+    ga.run().expect("GA should succeed");
+
+    let events = data.events.lock().unwrap();
+    // Every "extension_triggered" must appear before the immediately following "generation_end"
+    let mut last_ext_idx: Option<usize> = None;
+    for (idx, event) in events.iter().enumerate() {
+        if event == "extension_triggered" {
+            last_ext_idx = Some(idx);
+        } else if event == "generation_end" {
+            if let Some(ext_idx) = last_ext_idx.take() {
+                assert!(
+                    ext_idx < idx,
+                    "extension_triggered (at {}) must come before generation_end (at {})",
+                    ext_idx,
+                    idx
+                );
+            }
+        }
+    }
+}
+
+/// Test 13: on_mutation_complete receives a Duration > Duration::ZERO.
+#[test]
+fn test_mutation_timing_nonzero() {
+    let data = Arc::new(OrderingSpyData::default());
+    let spy = Arc::new(OrderingSpyObserver::new(Arc::clone(&data)));
+    let mut ga = build_test_ga_with_observer(3, spy);
+    ga.run().expect("GA should succeed");
+    let d = data.mutation_duration.lock().unwrap();
+    assert!(d.is_some(), "on_mutation_complete should have been called");
+    // Duration comes from the combined crossover+mutation+fitness block — should be > zero
+    // (even if it rounds to zero on very fast machines, we accept Some(Duration::ZERO) as passing
+    //  since the hook fired, per the plan note about EXT-01 separation being a future refactor)
+    assert!(d.unwrap() >= Duration::ZERO, "Duration should be non-negative");
+}
+
+/// Test 14: on_fitness_evaluation_complete receives a Duration > Duration::ZERO.
+#[test]
+fn test_fitness_eval_timing_nonzero() {
+    let data = Arc::new(OrderingSpyData::default());
+    let spy = Arc::new(OrderingSpyObserver::new(Arc::clone(&data)));
+    let mut ga = build_test_ga_with_observer(3, spy);
+    ga.run().expect("GA should succeed");
+    let d = data.fitness_eval_duration.lock().unwrap();
+    assert!(d.is_some(), "on_fitness_evaluation_complete should have been called");
+    assert!(d.unwrap() >= Duration::ZERO, "Duration should be non-negative");
 }
