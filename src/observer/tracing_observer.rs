@@ -49,7 +49,7 @@ use std::sync::Mutex;
 use std::time::Duration;
 use tracing::Span;
 use crate::ga::TerminationCause;
-use crate::observer::{ExtensionEvent, GaObserver};
+use crate::observer::{ExtensionEvent, GaObserver, IslandGaObserver, Nsga2Observer};
 use crate::stats::GenerationStats;
 use crate::traits::ChromosomeT;
 
@@ -251,3 +251,7 @@ impl<U: ChromosomeT> GaObserver<U> for TracingObserver {
         }
     }
 }
+
+impl<U: ChromosomeT> IslandGaObserver<U> for TracingObserver {}
+
+impl<U: ChromosomeT> Nsga2Observer<U> for TracingObserver {}
