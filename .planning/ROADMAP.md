@@ -5,7 +5,7 @@
 - ✅ **v2.1 — Improve Usability (partial)** — Phases 1-5 (shipped 2026-03-20)
 - ✅ **v2.2 — Improve Usability (completion)** — Phases 6-9 (shipped 2026-03-21)
 - ✅ **v2.1.0 — New Examples** — Phases 10-12 (shipped 2026-03-22)
-- 🚧 **v2.2.0 — Observability & Traceability** — Phases 13-17 (in progress)
+- 🚧 **v2.2.0 — Observability & Traceability** — Phases 13-18 (in progress)
 
 ## Phases
 
@@ -56,6 +56,7 @@ Issues: #182, #183, #184, #185, #186
 - [x] **Phase 15: TracingObserver** — Structured tracing spans behind `observer-tracing` feature flag (completed 2026-03-26)
 - [x] **Phase 16: Sub-Traits** — `IslandGaObserver` and `Nsga2Observer` for engine-specific events (completed 2026-03-27)
 - [x] **Phase 17: CompositeObserver + MetricsObserver** — Fan-out composition and metrics facade behind `observer-metrics` flag (completed 2026-03-27)
+- [ ] **Phase 18: Observer API Polish** — Close audit gaps: TracingObserver AllObserver compatibility, ga.rs hook ordering and timing accuracy, lib.rs public API re-exports
 
 ## Phase Details
 
@@ -133,10 +134,26 @@ Plans:
 - [ ] 17-02-PLAN.md — MetricsObserver behind observer-metrics feature flag (11 metric calls)
 - [ ] 17-03-PLAN.md — Integration tests (COMP-01/02/03) + criterion benchmark
 
+### Phase 18: Observer API Polish
+**Goal**: Close all audit gaps from v2.2.0: TracingObserver gains AllObserver compatibility, ga.rs gets accurate hook ordering and operator timing, and lib.rs exposes the complete observer public API surface
+**Depends on**: Phases 13, 14, 15, 16, 17
+**Requirements**: OBS-01, OBS-02, LOG-01, TRAC-01, COMP-01, COMP-02
+**Gap Closure**: Closes gaps from v2.2.0-MILESTONE-AUDIT.md (tech_debt items)
+**Success Criteria** (what must be TRUE):
+  1. `Arc::new(TracingObserver::new())` can be passed to `CompositeObserver::add()` and the composite runs against `Ga<U>`, `IslandGa<U>`, and `Nsga2Ga<U>` without compile errors
+  2. `on_extension_triggered` fires before `on_generation_end` within the same generation — LogObserver output order matches pre-v2.2.0
+  3. `on_mutation_complete` and `on_fitness_evaluation_complete` receive real `Duration` values (not `Duration::ZERO`) — MetricsObserver histograms record non-zero timing
+  4. `use genetic_algorithms::{NoopObserver, ExtensionEvent};` and `use genetic_algorithms::ga::TerminationCause;` all compile from crate root or standard path
+**Plans:** 0/2 plans
+
+Plans:
+- [ ] 18-01-PLAN.md — TracingObserver AllObserver compatibility + ga.rs hook ordering + operator timing accuracy
+- [ ] 18-02-PLAN.md — lib.rs public API surface: NoopObserver, ExtensionEvent, TerminationCause re-exports + tests
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 13 → 14 → 15 → 16 → 17
+Phases execute in numeric order: 13 → 14 → 15 → 16 → 17 → 18
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -152,3 +169,4 @@ Phases execute in numeric order: 13 → 14 → 15 → 16 → 17
 | 15. TracingObserver | 2/2 | Complete    | 2026-03-26 | - |
 | 16. Sub-Traits | 3/3 | Complete    | 2026-03-27 | - |
 | 17. CompositeObserver + MetricsObserver | 3/3 | Complete    | 2026-03-27 | - |
+| 18. Observer API Polish | v2.2.0 | 0/2 | Not started | - |

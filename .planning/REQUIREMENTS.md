@@ -73,15 +73,27 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SUB-01 | Phase 16 | Complete |
 | SUB-02 | Phase 16 | Complete |
 | SUB-03 | Phase 16 | Complete |
-| COMP-01 | Phase 17 | Complete |
-| COMP-02 | Phase 17 | Complete |
+| COMP-01 | Phase 17, Phase 18 | Complete (gap closure: Phase 18) |
+| COMP-02 | Phase 17, Phase 18 | Complete (gap closure: Phase 18) |
 | COMP-03 | Phase 17 | Complete |
+
+### Gap Closure Phase (v2.2.0-MILESTONE-AUDIT.md)
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| OBS-01 | Phase 18 | Pending — hook ordering + Duration::ZERO fix |
+| OBS-02 | Phase 18 | Pending — NoopObserver re-export |
+| LOG-01 | Phase 18 | Pending — hook ordering fix |
+| TRAC-01 | Phase 18 | Pending — TracingObserver AllObserver compatibility |
+| COMP-01 | Phase 18 | Pending — TracingObserver composable |
+| COMP-02 | Phase 18 | Pending — operator timing accuracy |
 
 **Coverage:**
 - v2.2.0 requirements: 16 total
 - Mapped to phases: 16
+- Gap closure (Phase 18): 6 requirements with partial findings addressed
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-25*
-*Last updated: 2026-03-25 — traceability filled after roadmap creation*
+*Last updated: 2026-03-28 — Phase 18 gap closure added after v2.2.0 milestone audit*
