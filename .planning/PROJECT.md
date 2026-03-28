@@ -50,6 +50,7 @@ Users can solve complex optimization problems with composable, performant geneti
 - ✓ Island GA and NSGA-II specialized observer sub-traits (#185) — Validated in Phase 16: Sub-Traits
 - ✓ CompositeObserver for combining multiple observers (#186) — Validated in Phase 17: CompositeObserver + MetricsObserver
 - ✓ MetricsObserver behind `observer-metrics` feature flag (#186) — Validated in Phase 17: CompositeObserver + MetricsObserver
+- ✓ Observer API polish: TracingObserver composability, hook ordering, real operator timing, crate-root re-exports — Validated in Phase 18: Observer API Polish
 
 ### Out of Scope
 
@@ -102,4 +103,4 @@ Users can solve complex optimization problems with composable, performant geneti
 | Default no-op methods on traits | Forward-compatible: new events don't break existing observers | — Pending |
 
 ---
-*Last updated: 2026-03-27 — Phase 17 complete: CompositeObserver + MetricsObserver shipped; v2.2.0 milestone complete*
+*Last updated: 2026-03-28 — Phase 18 complete: Observer API Polish shipped; all v2.2.0 observer gaps closed*
