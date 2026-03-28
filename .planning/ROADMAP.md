@@ -56,7 +56,7 @@ Issues: #182, #183, #184, #185, #186
 - [x] **Phase 15: TracingObserver** — Structured tracing spans behind `observer-tracing` feature flag (completed 2026-03-26)
 - [x] **Phase 16: Sub-Traits** — `IslandGaObserver` and `Nsga2Observer` for engine-specific events (completed 2026-03-27)
 - [x] **Phase 17: CompositeObserver + MetricsObserver** — Fan-out composition and metrics facade behind `observer-metrics` flag (completed 2026-03-27)
-- [ ] **Phase 18: Observer API Polish** — Close audit gaps: TracingObserver AllObserver compatibility, ga.rs hook ordering and timing accuracy, lib.rs public API re-exports
+- [x] **Phase 18: Observer API Polish** — Close audit gaps: TracingObserver AllObserver compatibility, ga.rs hook ordering and timing accuracy, lib.rs public API re-exports (completed 2026-03-28)
 
 ## Phase Details
 
@@ -144,7 +144,7 @@ Plans:
   2. `on_extension_triggered` fires before `on_generation_end` within the same generation — LogObserver output order matches pre-v2.2.0
   3. `on_mutation_complete` and `on_fitness_evaluation_complete` receive real `Duration` values (not `Duration::ZERO`) — MetricsObserver histograms record non-zero timing
   4. `use genetic_algorithms::{NoopObserver, ExtensionEvent};` and `use genetic_algorithms::ga::TerminationCause;` all compile from crate root or standard path
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 18-01-PLAN.md — TracingObserver AllObserver compatibility + ga.rs hook ordering + operator timing accuracy
@@ -169,4 +169,4 @@ Phases execute in numeric order: 13 → 14 → 15 → 16 → 17 → 18
 | 15. TracingObserver | 2/2 | Complete    | 2026-03-26 | - |
 | 16. Sub-Traits | 3/3 | Complete    | 2026-03-27 | - |
 | 17. CompositeObserver + MetricsObserver | 3/3 | Complete    | 2026-03-27 | - |
-| 18. Observer API Polish | 1/2 | In Progress|  | - |
+| 18. Observer API Polish | 2/2 | Complete   | 2026-03-28 | - |

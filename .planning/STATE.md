@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 18-01-PLAN.md (Observer API Polish plan 1)
-last_updated: "2026-03-28T16:31:09.247Z"
+stopped_at: Completed 18-02-PLAN.md (Observer API Polish plan 2 - final)
+last_updated: "2026-03-28T16:41:25.366Z"
 progress:
   total_phases: 6
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 14
-  completed_plans: 13
+  completed_plans: 14
 ---
 
 # State
@@ -60,6 +60,7 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 - [Phase 17]: CountingAllObserver implements all three observer traits in one struct — enables fan-out tests across GaObserver, IslandGaObserver, Nsga2Observer without separate types
 - [Phase 18]: elapsed (combined crossover+mutation+fitness time) passed to on_mutation_complete and on_fitness_evaluation_complete — per-operator separation deferred to EXT-01 (v2.3+)
 - [Phase 18]: Extension block moved before reporter and on_generation_end in ga.rs — restores pre-v2.2.0 hook ordering where on_extension_triggered fires before on_generation_end within same generation
+- [Phase 18]: Crate-root re-exports added: NoopObserver, ExtensionEvent (observer module), TerminationCause (ga module) — closes OBS-01 and OBS-02
 
 ### Quick Tasks Completed
 
@@ -78,6 +79,6 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 
 ## Session Continuity
 
-Last session: 2026-03-28T16:31:09.245Z
-Stopped at: Completed 18-01-PLAN.md (Observer API Polish plan 1)
+Last session: 2026-03-28T16:41:25.363Z
+Stopped at: Completed 18-02-PLAN.md (Observer API Polish plan 2 - final)
 Resume file: None
