@@ -102,3 +102,6 @@ pub use observer::MetricsObserver;
 pub use observer::AllObserver;
 pub use observer::CompositeObserver;
 pub use observer::GaObserver;
+pub use observer::NoopObserver;
+pub use observer::ExtensionEvent;
+pub use ga::TerminationCause;
