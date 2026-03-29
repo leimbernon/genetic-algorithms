@@ -5,7 +5,7 @@
 - ✅ **v2.1 — Improve Usability (partial)** — Phases 1-5 (shipped 2026-03-20)
 - ✅ **v2.2 — Improve Usability (completion)** — Phases 6-9 (shipped 2026-03-21)
 - ✅ **v2.1.0 — New Examples** — Phases 10-12 (shipped 2026-03-22)
-- 🚧 **v2.2.0 — Observability & Traceability** — Phases 13-18 (in progress)
+- ✅ **v2.2.0 — Observability & Traceability** — Phases 13-18 (shipped 2026-03-28)
 
 ## Phases
 
@@ -45,11 +45,10 @@ Full archive: `.planning/milestones/v2.1.0-ROADMAP.md`
 
 </details>
 
-### 🚧 v2.2.0 — Observability & Traceability (In Progress)
+<details>
+<summary>✅ v2.2.0 — Observability & Traceability (Phases 13-18) — SHIPPED 2026-03-28</summary>
 
-**Milestone goal:** Implement a generic, telemetry-agnostic observability system — `GaObserver` trait, `LogObserver`, `TracingObserver`, Island/NSGA-II sub-traits, `CompositeObserver`, `MetricsObserver`.
-
-Issues: #182, #183, #184, #185, #186
+Issues closed: #182, #183, #184, #185, #186
 
 - [x] **Phase 13: GaObserver Base Trait** — Core trait + `Ga<U>` integration; foundation all other phases depend on (completed 2026-03-25)
 - [x] **Phase 14: LogObserver + Log Migration** — Backward-compatible log migration; validates Phase 13 end-to-end (completed 2026-03-25)
@@ -58,105 +57,19 @@ Issues: #182, #183, #184, #185, #186
 - [x] **Phase 17: CompositeObserver + MetricsObserver** — Fan-out composition and metrics facade behind `observer-metrics` flag (completed 2026-03-27)
 - [x] **Phase 18: Observer API Polish** — Close audit gaps: TracingObserver AllObserver compatibility, ga.rs hook ordering and timing accuracy, lib.rs public API re-exports (completed 2026-03-28)
 
-## Phase Details
+Full archive: `.planning/milestones/v2.2.0-ROADMAP.md`
 
-### Phase 13: GaObserver Base Trait
-**Goal**: Users can attach a structured observer to `Ga<U>` and receive lifecycle notifications with zero overhead when no observer is attached
-**Depends on**: Nothing (first phase of this milestone)
-**Requirements**: OBS-01, OBS-02, OBS-03, OBS-04
-**Success Criteria** (what must be TRUE):
-  1. User can call `ga.with_observer(arc_observer)` and have `on_run_start`, `on_generation_end`, `on_new_best`, `on_run_end`, `on_stagnation`, and `on_extension_triggered` fire at the correct points in the GA loop
-  2. A custom observer that implements only one hook compiles without error — all other hooks have default no-op bodies
-  3. Running `Ga<U>` with no observer attached produces identical output and timing to pre-v2.2.0 (zero-overhead branch confirmed by benchmarks)
-  4. A custom observer type that is not `Send + Sync` is rejected at compile time when passed to `with_observer()`
-**Plans:** 2/2 plans complete
+</details>
 
-Plans:
-- [ ] 13-01-PLAN.md — GaObserver trait definition, ExtensionEvent, NoopObserver, Extension::as_str(), Reporter deprecation
-- [ ] 13-02-PLAN.md — Ga<U> integration (observer field, builder, notify helper, 12 call sites) + integration tests
+### 📋 Next Milestone
 
-### Phase 14: LogObserver + Log Migration
-**Goal**: Users can reproduce all pre-v2.2.0 log output by attaching `LogObserver`, and no hardcoded `log!()` calls remain in the GA execution paths
-**Depends on**: Phase 13
-**Requirements**: LOG-01, LOG-02, LOG-03
-**Success Criteria** (what must be TRUE):
-  1. User can attach `LogObserver` to `Ga<U>` and observe log output at the same targets, levels, and message formats as produced by v2.1.0
-  2. A `grep` for `info!\|debug!\|trace!\|warn!` in `src/ga.rs`, `src/island/`, and `src/nsga2/` returns results only inside `log_observer.rs` itself — no call sites remain in the execution loops
-  3. `cargo build` (default features) and `cargo build --features serde` both succeed with zero new dependencies added
-**Plans:** 2/2 plans complete
-
-Plans:
-- [ ] 14-01-PLAN.md — LogObserver struct, ExtensionEvent/GenerationStats extensions, module registration, tests
-- [ ] 14-02-PLAN.md — Remove all 17 log!() calls from ga.rs, grep regression test
-
-### Phase 15: TracingObserver
-**Goal**: Users can attach `TracingObserver` to emit structured tracing spans and events per generation, enabling integration with OpenTelemetry, Jaeger, or any `tracing`-compatible subscriber
-**Depends on**: Phase 14
-**Requirements**: TRAC-01, TRAC-02, TRAC-03
-**Success Criteria** (what must be TRUE):
-  1. User can add `features = ["observer-tracing"]` to their `Cargo.toml`, attach `TracingObserver`, and observe `tracing::event!()` emissions per generation in their subscriber
-  2. `cargo build` (default features, no `observer-tracing`) succeeds without pulling in the `tracing` crate
-  3. A CI test running 10 generations with `LogTracer::init()` and `TracingObserver` both active completes without stack overflow or infinite recursion
-**Plans:** 2/2 plans complete
-
-Plans:
-- [ ] 15-01-PLAN.md — Feature flag wiring, TracingObserver implementation (all 12 hooks), module re-exports
-- [ ] 15-02-PLAN.md — Integration tests (TRAC-01 attach/run/Send+Sync, TRAC-02 feature gate, TRAC-03 LogTracer coexistence)
-
-### Phase 16: Sub-Traits
-**Goal**: Users can attach engine-specific observers to `IslandGa<U>` and `Nsga2Ga<U>` and receive events unique to each engine's execution model
-**Depends on**: Phase 13
-**Requirements**: SUB-01, SUB-02, SUB-03
-**Success Criteria** (what must be TRUE):
-  1. User can call `island_ga.with_observer(arc_observer)` with an `IslandGaObserver` implementation and receive `on_migration_triggered`, `on_island_run_start`, `on_island_run_end`, and `on_island_generation_end` events
-  2. User can call `nsga2_ga.with_observer(arc_observer)` with a `Nsga2Observer` implementation and receive `on_pareto_front_assigned`, `on_non_dominated_sort_complete`, and `on_crowding_distance_calculated` events
-  3. A single `LogObserver` instance implements all three observer traits (`GaObserver`, `IslandGaObserver`, `Nsga2Observer`) and can be passed to any of the three GA engines
-**Plans:** 3 plans complete
-
-Plans:
-- [ ] 16-01-PLAN.md — IslandGaObserver + Nsga2Observer trait definitions, LogObserver multi-trait impl, module re-exports
-- [ ] 16-02-PLAN.md — IslandGa<U> integration (observer field, hooks, migration dispatch)
-- [ ] 16-03-PLAN.md — Nsga2Ga<U> integration + integration tests for all three sub-traits
-
-### Phase 17: CompositeObserver + MetricsObserver
-**Goal**: Users can combine multiple observers in a single run and optionally record per-generation metrics counters, gauges, and histograms via the `metrics` facade
-**Depends on**: Phases 13, 14, 15, 16
-**Requirements**: COMP-01, COMP-02, COMP-03
-**Success Criteria** (what must be TRUE):
-  1. User can build a `CompositeObserver` with two or more observers and all three trait interfaces (`GaObserver`, `IslandGaObserver`, `Nsga2Observer`) fan out to every attached observer
-  2. User can add `features = ["observer-metrics"]` and attach `MetricsObserver`; per-generation counters and gauges are recorded via the `metrics` facade without installing any backend in the library
-  3. `cargo build` (default features, no `observer-metrics`) succeeds without pulling in the `metrics` crate
-  4. A criterion benchmark shows `MetricsObserver` used inside island parallel execution produces no data races or panics (metric calls are sequential-only)
-**Plans:** 3/3 plans complete
-
-Plans:
-- [ ] 17-01-PLAN.md — AllObserver<U> supertrait + CompositeObserver<U> with fan-out for all 19 hooks
-- [ ] 17-02-PLAN.md — MetricsObserver behind observer-metrics feature flag (11 metric calls)
-- [ ] 17-03-PLAN.md — Integration tests (COMP-01/02/03) + criterion benchmark
-
-### Phase 18: Observer API Polish
-**Goal**: Close all audit gaps from v2.2.0: TracingObserver gains AllObserver compatibility, ga.rs gets accurate hook ordering and operator timing, and lib.rs exposes the complete observer public API surface
-**Depends on**: Phases 13, 14, 15, 16, 17
-**Requirements**: OBS-01, OBS-02, LOG-01, TRAC-01, COMP-01, COMP-02
-**Gap Closure**: Closes gaps from v2.2.0-MILESTONE-AUDIT.md (tech_debt items)
-**Success Criteria** (what must be TRUE):
-  1. `Arc::new(TracingObserver::new())` can be passed to `CompositeObserver::add()` and the composite runs against `Ga<U>`, `IslandGa<U>`, and `Nsga2Ga<U>` without compile errors
-  2. `on_extension_triggered` fires before `on_generation_end` within the same generation — LogObserver output order matches pre-v2.2.0
-  3. `on_mutation_complete` and `on_fitness_evaluation_complete` receive real `Duration` values (not `Duration::ZERO`) — MetricsObserver histograms record non-zero timing
-  4. `use genetic_algorithms::{NoopObserver, ExtensionEvent};` and `use genetic_algorithms::ga::TerminationCause;` all compile from crate root or standard path
-**Plans:** 2/2 plans complete
-
-Plans:
-- [ ] 18-01-PLAN.md — TracingObserver AllObserver compatibility + ga.rs hook ordering + operator timing accuracy
-- [ ] 18-02-PLAN.md — lib.rs public API surface: NoopObserver, ExtensionEvent, TerminationCause re-exports + tests
+Planning in progress. Run `/gsd:new-milestone` to define scope.
 
 ## Progress
 
-**Execution Order:**
-Phases execute in numeric order: 13 → 14 → 15 → 16 → 17 → 18
-
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
+| 1-5. Usability foundations | v2.1 | — | Complete | 2026-03-20 |
 | 6. Diversity Estimation | v2.2 | 2/2 | Complete | 2026-03-20 |
 | 7. List Genotype | v2.2 | 2/2 | Complete | 2026-03-21 |
 | 8. Reporter Trait | v2.2 | 2/2 | Complete | 2026-03-21 |
@@ -164,9 +77,9 @@ Phases execute in numeric order: 13 → 14 → 15 → 16 → 17 → 18
 | 10. Single-population Examples | v2.1.0 | 3/3 | Complete | 2026-03-22 |
 | 11. Advanced Mode Examples | v2.1.0 | 3/3 | Complete | 2026-03-22 |
 | 12. Documentation | v2.1.0 | 1/1 | Complete | 2026-03-22 |
-| 13. GaObserver Base Trait | 2/2 | Complete    | 2026-03-25 | - |
-| 14. LogObserver + Log Migration | 2/2 | Complete    | 2026-03-25 | - |
-| 15. TracingObserver | 2/2 | Complete    | 2026-03-26 | - |
-| 16. Sub-Traits | 3/3 | Complete    | 2026-03-27 | - |
-| 17. CompositeObserver + MetricsObserver | 3/3 | Complete    | 2026-03-27 | - |
-| 18. Observer API Polish | 2/2 | Complete    | 2026-03-28 | - |
+| 13. GaObserver Base Trait | v2.2.0 | 2/2 | Complete | 2026-03-25 |
+| 14. LogObserver + Log Migration | v2.2.0 | 2/2 | Complete | 2026-03-25 |
+| 15. TracingObserver | v2.2.0 | 2/2 | Complete | 2026-03-26 |
+| 16. Sub-Traits | v2.2.0 | 3/3 | Complete | 2026-03-27 |
+| 17. CompositeObserver + MetricsObserver | v2.2.0 | 3/3 | Complete | 2026-03-27 |
+| 18. Observer API Polish | v2.2.0 | 2/2 | Complete | 2026-03-28 |
