@@ -69,8 +69,6 @@ extern crate core;
 
 #[cfg(feature = "serde")]
 pub mod checkpoint;
-#[cfg(feature = "visualization")]
-pub mod visualization;
 pub mod chromosomes;
 pub mod configuration;
 pub mod error;
@@ -87,21 +85,23 @@ pub mod rng;
 pub mod stats;
 pub mod traits;
 pub mod validators;
+#[cfg(feature = "visualization")]
+pub mod visualization;
 
 pub mod island;
 pub mod niching;
 pub mod nsga2;
 
-pub use observer::LogObserver;
+pub use ga::TerminationCause;
+pub use observer::AllObserver;
+pub use observer::CompositeObserver;
+pub use observer::ExtensionEvent;
+pub use observer::GaObserver;
 pub use observer::IslandGaObserver;
+pub use observer::LogObserver;
+#[cfg(feature = "observer-metrics")]
+pub use observer::MetricsObserver;
+pub use observer::NoopObserver;
 pub use observer::Nsga2Observer;
 #[cfg(feature = "observer-tracing")]
 pub use observer::TracingObserver;
-#[cfg(feature = "observer-metrics")]
-pub use observer::MetricsObserver;
-pub use observer::AllObserver;
-pub use observer::CompositeObserver;
-pub use observer::GaObserver;
-pub use observer::NoopObserver;
-pub use observer::ExtensionEvent;
-pub use ga::TerminationCause;

@@ -99,4 +99,3 @@ fn hypercube_neighbors(index: usize, num_islands: usize) -> Vec<usize> {
     }
     result
 }
-

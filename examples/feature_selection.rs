@@ -21,7 +21,6 @@ cargo run --example feature_selection
 ```
 */
 
-use std::sync::Arc;
 use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::{Ga, TerminationCause};
@@ -34,6 +33,7 @@ use genetic_algorithms::traits::{
     ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
 };
 use genetic_algorithms::LogObserver;
+use std::sync::Arc;
 
 fn main() {
     // --- Problem parameters ---

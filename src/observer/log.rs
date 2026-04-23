@@ -23,11 +23,11 @@
 //! per-generation output, since both emit lifecycle information. Prefer
 //! using only one.
 
-use std::time::Duration;
 use crate::ga::TerminationCause;
 use crate::observer::{ExtensionEvent, GaObserver, IslandGaObserver, Nsga2Observer};
 use crate::stats::GenerationStats;
 use crate::traits::ChromosomeT;
+use std::time::Duration;
 
 /// Zero-sized observer that reproduces pre-v2.2.0 log output via the `log` crate.
 ///
@@ -54,12 +54,22 @@ impl<U: ChromosomeT> GaObserver<U> for LogObserver {
         log::info!(target="ga_events", method="run"; "Generation number: {}", generation + 1);
     }
 
-    fn on_selection_complete(&self, _generation: usize, _duration: Duration, _population_size: usize) {
+    fn on_selection_complete(
+        &self,
+        _generation: usize,
+        _duration: Duration,
+        _population_size: usize,
+    ) {
         // Reproduces ga.rs line 768
         log::debug!(target="ga_events", method="run"; "Parents selected for reproduction");
     }
 
-    fn on_crossover_complete(&self, _generation: usize, _duration: Duration, _offspring_count: usize) {
+    fn on_crossover_complete(
+        &self,
+        _generation: usize,
+        _duration: Duration,
+        _offspring_count: usize,
+    ) {
         // Reproduces ga.rs lines 1254, 794, and 1392 (parent_crossover start/finish + offspring created)
         // Lines inside the rayon par_iter (per-pair data) are dropped — not available at hook level
         log::debug!(target="ga_events", method="parent_crossover"; "Started the parent crossover");
@@ -67,15 +77,30 @@ impl<U: ChromosomeT> GaObserver<U> for LogObserver {
         log::debug!(target="ga_events", method="parent_crossover"; "Parent crossover finished");
     }
 
-    fn on_mutation_complete(&self, _generation: usize, _duration: Duration, _population_size: usize) {
+    fn on_mutation_complete(
+        &self,
+        _generation: usize,
+        _duration: Duration,
+        _population_size: usize,
+    ) {
         // No direct log call existed for mutation complete in the original code
     }
 
-    fn on_fitness_evaluation_complete(&self, _generation: usize, _duration: Duration, _population_size: usize) {
+    fn on_fitness_evaluation_complete(
+        &self,
+        _generation: usize,
+        _duration: Duration,
+        _population_size: usize,
+    ) {
         // No direct log call existed for fitness evaluation complete in the original code
     }
 
-    fn on_survivor_selection_complete(&self, _generation: usize, _duration: Duration, _population_size: usize) {
+    fn on_survivor_selection_complete(
+        &self,
+        _generation: usize,
+        _duration: Duration,
+        _population_size: usize,
+    ) {
         // Reproduces ga.rs line 894
         log::debug!(target="ga_events", method="run"; "Survivors selected");
     }
@@ -139,7 +164,12 @@ impl<U: ChromosomeT> IslandGaObserver<U> for LogObserver {
         // No direct log call existed for island run end in the original code
         log::info!(target: "island_events", "Island model GA ended");
     }
-    fn on_island_generation_end(&self, _island_id: usize, generation: usize, stats: &GenerationStats) {
+    fn on_island_generation_end(
+        &self,
+        _island_id: usize,
+        generation: usize,
+        stats: &GenerationStats,
+    ) {
         // Reproduces island/mod.rs: debug!(target: "island_events", "Generation {} complete", gen)
         log::debug!(target: "island_events", "Best chromosome calculated - generation {}", generation + 1);
         if let Some(prob) = stats.dynamic_mutation_probability {
@@ -158,7 +188,12 @@ impl<U: ChromosomeT> IslandGaObserver<U> for LogObserver {
 }
 
 impl<U: ChromosomeT> Nsga2Observer<U> for LogObserver {
-    fn on_pareto_front_assigned(&self, generation: usize, front_count: usize, population_size: usize) {
+    fn on_pareto_front_assigned(
+        &self,
+        generation: usize,
+        front_count: usize,
+        population_size: usize,
+    ) {
         // Reproduces nsga2/mod.rs: debug!(target: "nsga2_events", "Generation {} complete, population size = {}", gen, population.len())
         log::debug!(target: "nsga2_events", "Generation {} complete, population size = {}, fronts = {}", generation, population_size, front_count);
     }

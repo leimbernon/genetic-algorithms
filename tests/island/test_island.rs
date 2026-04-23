@@ -48,12 +48,10 @@ fn test_island_ga_heterogeneous_configs() {
     config2.limit_configuration.population_size = 30;
 
     let island_config = IslandConfiguration::new().with_num_islands(2);
-    let island_ga = IslandGa::<Binary>::with_heterogeneous_configs(
-        island_config,
-        vec![config1, config2],
-    )
-    .with_initialization_fn(|_, _, _| vec![])
-    .with_fitness_fn(|_| 0.0);
+    let island_ga =
+        IslandGa::<Binary>::with_heterogeneous_configs(island_config, vec![config1, config2])
+            .with_initialization_fn(|_, _, _| vec![])
+            .with_fitness_fn(|_| 0.0);
 
     assert_eq!(island_ga.ga_configs.len(), 2);
     assert_eq!(

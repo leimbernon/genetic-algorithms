@@ -26,12 +26,12 @@
 //! corresponding hook on each inner observer. Errors in one observer do not
 //! affect the others (all hooks return `()`).
 
-use std::sync::Arc;
-use std::time::Duration;
 use crate::ga::TerminationCause;
 use crate::observer::{AllObserver, ExtensionEvent, GaObserver, IslandGaObserver, Nsga2Observer};
 use crate::stats::GenerationStats;
 use crate::traits::ChromosomeT;
+use std::sync::Arc;
+use std::time::Duration;
 
 /// Fan-out observer that dispatches all 19 lifecycle hooks to every inner
 /// observer in insertion order.
@@ -123,13 +123,23 @@ impl<U: ChromosomeT> GaObserver<U> for CompositeObserver<U> {
         }
     }
 
-    fn on_fitness_evaluation_complete(&self, generation: usize, duration: Duration, population_size: usize) {
+    fn on_fitness_evaluation_complete(
+        &self,
+        generation: usize,
+        duration: Duration,
+        population_size: usize,
+    ) {
         for obs in &self.observers {
             obs.on_fitness_evaluation_complete(generation, duration, population_size);
         }
     }
 
-    fn on_survivor_selection_complete(&self, generation: usize, duration: Duration, population_size: usize) {
+    fn on_survivor_selection_complete(
+        &self,
+        generation: usize,
+        duration: Duration,
+        population_size: usize,
+    ) {
         for obs in &self.observers {
             obs.on_survivor_selection_complete(generation, duration, population_size);
         }
@@ -183,7 +193,12 @@ impl<U: ChromosomeT> IslandGaObserver<U> for CompositeObserver<U> {
         }
     }
 
-    fn on_island_generation_end(&self, island_id: usize, generation: usize, stats: &GenerationStats) {
+    fn on_island_generation_end(
+        &self,
+        island_id: usize,
+        generation: usize,
+        stats: &GenerationStats,
+    ) {
         for obs in &self.observers {
             obs.on_island_generation_end(island_id, generation, stats);
         }
@@ -201,7 +216,12 @@ impl<U: ChromosomeT> IslandGaObserver<U> for CompositeObserver<U> {
 // ---------------------------------------------------------------------------
 
 impl<U: ChromosomeT> Nsga2Observer<U> for CompositeObserver<U> {
-    fn on_pareto_front_assigned(&self, generation: usize, front_count: usize, population_size: usize) {
+    fn on_pareto_front_assigned(
+        &self,
+        generation: usize,
+        front_count: usize,
+        population_size: usize,
+    ) {
         for obs in &self.observers {
             obs.on_pareto_front_assigned(generation, front_count, population_size);
         }
@@ -222,4 +242,3 @@ impl<U: ChromosomeT> Nsga2Observer<U> for CompositeObserver<U> {
 
 // Note: CompositeObserver<U> automatically satisfies AllObserver<U> via the
 // blanket impl in src/observer/mod.rs — no explicit `impl AllObserver` needed.
-

@@ -5,16 +5,18 @@
 //! skips this file entirely, satisfying TRAC-02: default builds do not pull in
 //! the tracing crate.
 
-use std::sync::Arc;
 use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
+use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::Ga;
 use genetic_algorithms::genotypes::Binary as BinaryGene;
 use genetic_algorithms::initializers::binary_random_initialization;
-use genetic_algorithms::observer::{GaObserver, AllObserver};
+use genetic_algorithms::observer::{AllObserver, GaObserver};
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
-use genetic_algorithms::traits::{ConfigurationT, SelectionConfig, CrossoverConfig, MutationConfig, StoppingConfig};
-use genetic_algorithms::configuration::ProblemSolving;
-use genetic_algorithms::{TracingObserver, CompositeObserver};
+use genetic_algorithms::traits::{
+    ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+};
+use genetic_algorithms::{CompositeObserver, TracingObserver};
+use std::sync::Arc;
 
 /// Build a standard 10-generation onemax GA with the given observer.
 fn build_test_ga(
@@ -24,9 +26,7 @@ fn build_test_ga(
         .with_genes_per_chromosome(8)
         .with_population_size(50)
         .with_initialization_fn(binary_random_initialization)
-        .with_fitness_fn(|dna: &[BinaryGene]| {
-            dna.iter().filter(|g| g.value).count() as f64
-        })
+        .with_fitness_fn(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
         .with_mutation_method(Mutation::BitFlip)
@@ -45,7 +45,11 @@ fn test_tracing_observer_attaches_and_runs() {
     let observer = Arc::new(TracingObserver::new());
     let mut ga = build_test_ga(observer);
     let result = ga.run();
-    assert!(result.is_ok(), "GA run with TracingObserver returned Err: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "GA run with TracingObserver returned Err: {:?}",
+        result.err()
+    );
 }
 
 /// TRAC-01: TracingObserver satisfies Send + Sync — compile-time assertion.
@@ -110,6 +114,10 @@ fn test_tracing_observer_in_composite() {
     let composite_arc: Arc<dyn GaObserver<BinaryChromosome> + Send + Sync> = Arc::new(composite);
     let mut ga = build_test_ga(composite_arc);
     let result = ga.run();
-    assert!(result.is_ok(), "GA run with TracingObserver in CompositeObserver returned Err: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "GA run with TracingObserver in CompositeObserver returned Err: {:?}",
+        result.err()
+    );
     // If this compiles and runs, COMP-01 for TracingObserver is satisfied.
 }

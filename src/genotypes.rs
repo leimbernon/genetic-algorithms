@@ -8,9 +8,9 @@
 //! - [`List`] — a gene that holds a value drawn from a finite set of alleles.
 
 pub mod binary;
-pub mod range;
 pub mod list;
+pub mod range;
 
 pub use binary::Binary;
-pub use range::Range;
 pub use list::List;
+pub use range::Range;

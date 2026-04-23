@@ -25,11 +25,7 @@ pub fn swap<U: ChromosomeT>(chromosome: &mut U) {
     let index_2 = rng.random_range(0..chromosome.dna().len());
     trace!(target="mutation_events", method="swap"; "Mutation index 1: {}, mutation index 2: {}", index_1, index_2);
 
-    let gene_1 = chromosome.dna().get(index_1).cloned().unwrap();
-    let gene_2 = chromosome.dna().get(index_2).cloned().unwrap();
-
-    //Swapping both genes
-    chromosome.set_gene(index_1, gene_2);
-    chromosome.set_gene(index_2, gene_1);
+    //Swapping both genes in-place
+    chromosome.dna_mut().swap(index_1, index_2);
     debug!(target="mutation_events", method="swap"; "Swap mutation finished");
 }

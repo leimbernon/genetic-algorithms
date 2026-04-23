@@ -76,8 +76,8 @@ pub fn cycle<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaErr
         cycle_count += 1;
     }
 
-    let mut child_1 = parent_1.clone();
-    let mut child_2 = parent_2.clone();
+    let mut child_1 = U::new();
+    let mut child_2 = U::new();
     child_1.set_dna(Cow::Owned(child_1_dna));
     child_2.set_dna(Cow::Owned(child_2_dna));
     debug!(target="crossover_events", method="cycle_crossover"; "Cycle crossover finished");

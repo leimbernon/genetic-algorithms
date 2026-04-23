@@ -9,13 +9,13 @@
 //! - [`SimpleReporter`] — prints progress to stdout every N generations
 //! - [`DurationReporter`] — reports total wall-clock timing at run end
 
+mod duration;
 mod noop;
 mod simple;
-mod duration;
 
+pub use duration::DurationReporter;
 pub use noop::NoopReporter;
 pub use simple::SimpleReporter;
-pub use duration::DurationReporter;
 
 use crate::ga::TerminationCause;
 use crate::stats::GenerationStats;
@@ -49,4 +49,3 @@ pub trait Reporter<U: ChromosomeT>: Send {
     /// and the full per-generation statistics history.
     fn on_finish(&mut self, _cause: TerminationCause, _all_stats: &[GenerationStats]) {}
 }
-

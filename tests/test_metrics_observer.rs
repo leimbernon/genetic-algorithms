@@ -17,7 +17,9 @@ use genetic_algorithms::island::configuration::IslandConfiguration;
 use genetic_algorithms::island::IslandGa;
 use genetic_algorithms::observer::GaObserver;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
-use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig};
+use genetic_algorithms::traits::{
+    ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+};
 use genetic_algorithms::MetricsObserver;
 
 // ============================================================================

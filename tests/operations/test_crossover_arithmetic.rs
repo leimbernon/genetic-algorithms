@@ -52,6 +52,51 @@ fn arithmetic_children_stay_within_range() {
 }
 
 #[test]
+fn arithmetic_crossover_children_start_with_fresh_metadata() {
+    // CLONE-02: children must be built via RangeChromosome::new(), not parent.clone().
+    // The observable consequence is that children have age==0 even when
+    // parents carry a non-zero age.
+    let mut p1 = RangeChromosome::<f64>::new();
+    let mut p2 = RangeChromosome::<f64>::new();
+    let dna1 = vec![
+        RangeGenotype::new(0, vec![(0.0, 100.0)], 20.0),
+        RangeGenotype::new(1, vec![(0.0, 100.0)], 80.0),
+    ];
+    let dna2 = vec![
+        RangeGenotype::new(0, vec![(0.0, 100.0)], 60.0),
+        RangeGenotype::new(1, vec![(0.0, 100.0)], 40.0),
+    ];
+    p1.set_dna(Cow::Owned(dna1));
+    p2.set_dna(Cow::Owned(dna2));
+
+    // Simulate parents that have lived through several generations
+    p1.set_age(3);
+    p1.set_fitness(42.0);
+    p2.set_age(3);
+    p2.set_fitness(17.0);
+
+    assert_eq!(p1.age(), 3);
+    assert_eq!(p2.age(), 3);
+
+    let children = arithmetic(&p1, &p2, 0.5).unwrap();
+    assert_eq!(children.len(), 2);
+
+    // age must be 0: proves RangeChromosome::new() was used, not parent.clone()
+    assert_eq!(
+        children[0].age(),
+        0,
+        "child_1 must have age=0 (RangeChromosome::new()), not inherit parent age {}",
+        p1.age()
+    );
+    assert_eq!(
+        children[1].age(),
+        0,
+        "child_2 must have age=0 (RangeChromosome::new()), not inherit parent age {}",
+        p2.age()
+    );
+}
+
+#[test]
 fn arithmetic_error_on_different_lengths() {
     let mut p1 = RangeChromosome::<f64>::new();
     let mut p2 = RangeChromosome::<f64>::new();

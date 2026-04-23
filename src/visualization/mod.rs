@@ -64,8 +64,14 @@ fn compute_y_range(stats: &[GenerationStats]) -> (f64, f64) {
     let mut y_min = f64::INFINITY;
     let mut y_max = f64::NEG_INFINITY;
     for s in stats {
-        y_min = y_min.min(s.best_fitness).min(s.avg_fitness).min(s.worst_fitness);
-        y_max = y_max.max(s.best_fitness).max(s.avg_fitness).max(s.worst_fitness);
+        y_min = y_min
+            .min(s.best_fitness)
+            .min(s.avg_fitness)
+            .min(s.worst_fitness);
+        y_max = y_max
+            .max(s.best_fitness)
+            .max(s.avg_fitness)
+            .max(s.worst_fitness);
     }
     if (y_max - y_min).abs() < f64::EPSILON {
         y_max = y_min + 1.0;
@@ -180,10 +186,7 @@ where
 {
     const NUM_BINS: u32 = 20;
 
-    let min = fitness_values
-        .iter()
-        .cloned()
-        .fold(f64::INFINITY, f64::min);
+    let min = fitness_values.iter().cloned().fold(f64::INFINITY, f64::min);
     let max = fitness_values
         .iter()
         .cloned()
@@ -210,9 +213,7 @@ where
             .style(BLUE.mix(0.5).filled())
             .margin(1)
             .data(fitness_values.iter().map(|&v| {
-                let bin = ((v - min) / bin_width)
-                    .min((NUM_BINS - 1) as f64)
-                    .max(0.0) as u32;
+                let bin = ((v - min) / bin_width).min((NUM_BINS - 1) as f64).max(0.0) as u32;
                 (bin, 1u32)
             })),
     )?;

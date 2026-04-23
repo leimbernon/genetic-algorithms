@@ -40,7 +40,7 @@ use std::fmt::Debug;
         deserialize = "T: serde::de::DeserializeOwned"
     ))
 )]
-pub struct Range<T: Sync + Send + Clone + Default + Debug> {
+pub struct Range<T: Sync + Send + Copy + Default + Debug> {
     pub dna: Vec<RangeGenotype<T>>,
     pub fitness: f64,
     pub age: usize,
@@ -48,7 +48,7 @@ pub struct Range<T: Sync + Send + Clone + Default + Debug> {
     pub fitness_fn: FitnessFnWrapper<RangeGenotype<T>>,
 }
 
-impl<T: Sync + Send + Clone + Default + Debug> Default for Range<T> {
+impl<T: Sync + Send + Copy + Default + Debug> Default for Range<T> {
     fn default() -> Self {
         Self {
             dna: Vec::new(),
@@ -59,7 +59,7 @@ impl<T: Sync + Send + Clone + Default + Debug> Default for Range<T> {
     }
 }
 
-impl<T: Sync + Send + Clone + Default + Debug> Range<T> {
+impl<T: Sync + Send + Copy + Default + Debug> Range<T> {
     /// Creates a new `Range`.
     ///
     /// # Returns
@@ -109,7 +109,7 @@ impl<T: Sync + Send + Clone + Default + Debug> Range<T> {
     }
 }
 
-impl<T: Sync + Send + Clone + Default + Debug + 'static> ChromosomeT for Range<T> {
+impl<T: Sync + Send + Copy + Default + Debug + 'static> ChromosomeT for Range<T> {
     type Gene = RangeGenotype<T>;
 
     fn dna(&self) -> &[Self::Gene] {
@@ -163,7 +163,7 @@ impl<T: Sync + Send + Clone + Default + Debug + 'static> ChromosomeT for Range<T
     }
 }
 
-impl<T: Sync + Send + Clone + Default + Debug + fmt::Display> fmt::Display for Range<T> {
+impl<T: Sync + Send + Copy + Default + Debug + fmt::Display> fmt::Display for Range<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[{}] fitness={:.6}", self.phenotype(), self.fitness)
     }

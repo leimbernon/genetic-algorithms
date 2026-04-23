@@ -65,4 +65,3 @@ pub fn assign_crowding_distance(objectives: &[&[f64]], crowding: &mut [f64]) {
         }
     }
 }
-

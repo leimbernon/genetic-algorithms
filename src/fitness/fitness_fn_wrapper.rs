@@ -50,6 +50,7 @@ impl<G: GeneT> FitnessFnWrapper<G> {
     }
 
     /// Evaluates the wrapped fitness function on the given DNA.
+    #[inline]
     pub fn call(&self, dna: &[G]) -> f64 {
         (self.0)(dna)
     }

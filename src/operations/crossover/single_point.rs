@@ -46,8 +46,8 @@ pub fn single_point<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>
     child_dna_2.extend_from_slice(&dna2[..point]);
     child_dna_2.extend_from_slice(&dna1[point..]);
 
-    let mut child_1 = parent_1.clone();
-    let mut child_2 = parent_2.clone();
+    let mut child_1 = U::new();
+    let mut child_2 = U::new();
     child_1.set_dna(Cow::Owned(child_dna_1));
     child_2.set_dna(Cow::Owned(child_dna_2));
 

@@ -10,7 +10,6 @@ use crate::chromosomes::Range as RangeChromosome;
 use crate::traits::ChromosomeT;
 use rand::distr::uniform::SampleUniform;
 use rand::Rng;
-use std::borrow::Cow;
 use std::fmt::Debug;
 
 /// Creep mutation for `Range<T>` chromosomes.
@@ -48,8 +47,7 @@ where
     let mut rng = crate::rng::make_rng();
     let idx = rng.random_range(0..len);
 
-    let mut dna = individual.dna().to_vec();
-    let mut gene = dna[idx].clone();
+    let mut gene = individual.dna()[idx].clone();
 
     if gene.ranges.is_empty() {
         return;
@@ -73,7 +71,5 @@ where
 
     let new_val = rng.random_range(perturb_lo..=perturb_hi);
     gene.value = new_val;
-    dna[idx] = gene;
-
-    individual.set_dna(Cow::Owned(dna));
+    individual.set_gene(idx, gene);
 }

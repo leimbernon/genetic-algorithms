@@ -116,10 +116,7 @@ pub fn hash_dna<G: Debug>(dna: &[G]) -> u64 {
 /// evaluation entirely.
 ///
 /// The cache is shared across all chromosomes and threads via `Arc<Mutex<...>>`.
-pub fn wrap_with_cache<G>(
-    fitness_fn: Arc<FitnessFn<G>>,
-    cache_size: usize,
-) -> Arc<FitnessFn<G>>
+pub fn wrap_with_cache<G>(fitness_fn: Arc<FitnessFn<G>>, cache_size: usize) -> Arc<FitnessFn<G>>
 where
     G: GeneT + Debug + 'static,
 {

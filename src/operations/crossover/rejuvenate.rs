@@ -3,6 +3,7 @@
 use crate::error::GaError;
 use crate::traits::ChromosomeT;
 use log::debug;
+use std::borrow::Cow;
 
 /// Rejuvenate crossover: clones parents as offspring and resets their ages to zero.
 ///
@@ -30,11 +31,11 @@ pub fn rejuvenate<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, 
 
     debug!(target="crossover_events", method="rejuvenate"; "Starting rejuvenate crossover");
 
-    let mut child_1 = parent_1.clone();
-    let mut child_2 = parent_2.clone();
+    let mut child_1 = U::new();
+    let mut child_2 = U::new();
 
-    child_1.set_age(0);
-    child_2.set_age(0);
+    child_1.set_dna(Cow::Borrowed(parent_1.dna()));
+    child_2.set_dna(Cow::Borrowed(parent_2.dna()));
 
     debug!(target="crossover_events", method="rejuvenate"; "Rejuvenate crossover finished");
     Ok(vec![child_1, child_2])

@@ -17,8 +17,7 @@ fn test_nsga2_validate_no_init_fn() {
 fn test_nsga2_validate_zero_objectives() {
     let config = Nsga2Configuration::new().with_num_objectives(0);
     let ga_config = GaConfiguration::default();
-    let nsga2 = Nsga2Ga::<Binary>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![]);
+    let nsga2 = Nsga2Ga::<Binary>::new(config, ga_config).with_initialization_fn(|_, _, _| vec![]);
 
     let result = nsga2.validate();
     assert!(result.is_err());

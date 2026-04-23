@@ -25,15 +25,10 @@ pub fn scramble<U: ChromosomeT>(chromosome: &mut U) {
     let index_2 = rng.random_range(index_1 + 1..chromosome.dna().len());
     trace!(target="mutation_events", method="scramble"; "Mutation index 1: {}, mutation index 2: {}", index_1, index_2);
 
-    //We scramble genes
+    //We scramble genes in-place
     for i in index_1..index_2 {
         let random_index = rng.random_range(index_1..index_2);
-
-        let current_gene = chromosome.dna().get(i).cloned().unwrap();
-        let random_gene = chromosome.dna().get(random_index).cloned().unwrap();
-
-        chromosome.set_gene(i, random_gene);
-        chromosome.set_gene(random_index, current_gene);
+        chromosome.dna_mut().swap(i, random_index);
     }
 
     debug!(target="mutation_events", method="scramble"; "Scramble mutation finished");

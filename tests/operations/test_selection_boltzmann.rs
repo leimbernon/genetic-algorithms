@@ -1,8 +1,7 @@
 #[cfg(test)]
 use crate::structures::{Chromosome, Gene};
 use genetic_algorithms::{
-    fitness::FitnessFnWrapper,
-    operations::selection::boltzmann::boltzmann_selection,
+    fitness::FitnessFnWrapper, operations::selection::boltzmann::boltzmann_selection,
 };
 
 fn make_chromosome(fitness: f64) -> Chromosome {

@@ -7,9 +7,9 @@
 //! - [`ListChromosome`] — a chromosome whose DNA is a vector of [`genotypes::List`](crate::genotypes::List) genes.
 
 pub mod binary;
-mod range;
 pub mod list;
+mod range;
 
 pub use binary::Binary;
-pub use range::Range;
 pub use list::ListChromosome;
+pub use range::Range;

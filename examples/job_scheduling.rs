@@ -44,7 +44,6 @@ cargo run --example job_scheduling
 ```
 */
 
-use std::sync::Arc;
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::{Ga, TerminationCause};
@@ -57,25 +56,26 @@ use genetic_algorithms::traits::{
     ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
 };
 use genetic_algorithms::LogObserver;
+use std::sync::Arc;
 
 /// Processing times matrix: PROCESSING_TIMES[job][machine] = time units for job on that machine.
 /// 15 jobs x 5 machines, values in range 1-20.
 const PROCESSING_TIMES: [[u32; 5]; 15] = [
-    [5, 10, 6, 3, 7],   // Job 0
-    [8, 3, 12, 5, 9],   // Job 1
-    [4, 7, 3, 11, 6],   // Job 2
-    [9, 5, 8, 4, 12],   // Job 3
-    [3, 12, 7, 9, 5],   // Job 4
-    [11, 4, 9, 6, 3],   // Job 5
-    [6, 8, 5, 12, 10],  // Job 6
-    [7, 6, 11, 3, 8],   // Job 7
-    [12, 9, 4, 7, 5],   // Job 8
-    [5, 11, 8, 10, 4],  // Job 9
-    [8, 3, 6, 5, 11],   // Job 10
-    [4, 10, 12, 8, 7],  // Job 11
-    [10, 7, 3, 6, 9],   // Job 12
-    [6, 5, 9, 12, 3],   // Job 13
-    [3, 8, 10, 4, 6],   // Job 14
+    [5, 10, 6, 3, 7],  // Job 0
+    [8, 3, 12, 5, 9],  // Job 1
+    [4, 7, 3, 11, 6],  // Job 2
+    [9, 5, 8, 4, 12],  // Job 3
+    [3, 12, 7, 9, 5],  // Job 4
+    [11, 4, 9, 6, 3],  // Job 5
+    [6, 8, 5, 12, 10], // Job 6
+    [7, 6, 11, 3, 8],  // Job 7
+    [12, 9, 4, 7, 5],  // Job 8
+    [5, 11, 8, 10, 4], // Job 9
+    [8, 3, 6, 5, 11],  // Job 10
+    [4, 10, 12, 8, 7], // Job 11
+    [10, 7, 3, 6, 9],  // Job 12
+    [6, 5, 9, 12, 3],  // Job 13
+    [3, 8, 10, 4, 6],  // Job 14
 ];
 
 fn main() {
@@ -170,10 +170,7 @@ fn main() {
                 .collect::<Vec<_>>()
                 .join(", ");
             println!("-------------------------------------------------------");
-            println!(
-                "Best makespan: {:.0}",
-                population.best_chromosome.fitness
-            );
+            println!("Best makespan: {:.0}", population.best_chromosome.fitness);
             println!("Best ordering: [{}]", ordering);
         }
         Err(e) => {

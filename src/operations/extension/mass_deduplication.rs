@@ -7,7 +7,8 @@
 use crate::configuration::ProblemSolving;
 use crate::traits::{ChromosomeT, GeneT};
 use log::info;
-use std::collections::HashSet;
+use std::collections::HashMap;
+use std::hash::{DefaultHasher, Hash, Hasher};
 
 /// Applies mass deduplication: removes chromosomes with duplicate gene-ID sequences.
 ///
@@ -42,11 +43,34 @@ pub fn mass_deduplication<U: ChromosomeT>(
         }
     }
 
-    // Use gene IDs as the deduplication key
-    let mut seen: HashSet<Vec<i32>> = HashSet::new();
+    // Use gene IDs as the deduplication key via incremental DefaultHasher.
+    // On the common path (no collision), no Vec<i32> is allocated.
+    let mut seen: HashMap<u64, Vec<i32>> = HashMap::new();
     chromosomes.retain(|c| {
-        let key: Vec<i32> = c.dna().iter().map(|g| g.id()).collect();
-        seen.insert(key)
+        // Incremental hash of gene IDs — no Vec<i32> allocation on common path
+        let mut hasher = DefaultHasher::new();
+        for g in c.dna() {
+            g.id().hash(&mut hasher);
+        }
+        let h = hasher.finish();
+
+        match seen.entry(h) {
+            std::collections::hash_map::Entry::Vacant(e) => {
+                // First chromosome with this hash — store gene IDs for collision check
+                let ids: Vec<i32> = c.dna().iter().map(|g| g.id()).collect();
+                e.insert(ids);
+                true // keep
+            }
+            std::collections::hash_map::Entry::Occupied(e) => {
+                // Hash collision — exact compare gene IDs
+                let ids: Vec<i32> = c.dna().iter().map(|g| g.id()).collect();
+                if ids != *e.get() {
+                    true // hash collision but distinct chromosome — keep
+                } else {
+                    false // true duplicate — remove (best was kept via prior sort)
+                }
+            }
+        }
     });
 
     let removed = original_len - chromosomes.len();

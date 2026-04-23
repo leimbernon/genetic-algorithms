@@ -6,7 +6,9 @@
 #![cfg(feature = "visualization")]
 
 use genetic_algorithms::stats::GenerationStats;
-use genetic_algorithms::visualization::{plot_diversity, plot_fitness, plot_histogram, VisualizationError};
+use genetic_algorithms::visualization::{
+    plot_diversity, plot_fitness, plot_histogram, VisualizationError,
+};
 
 fn make_stats(n: usize) -> Vec<GenerationStats> {
     (0..n)
@@ -32,7 +34,11 @@ fn test_plot_fitness_png() {
     let _ = std::fs::remove_file(&path);
 
     let result = plot_fitness(&stats, path_str);
-    assert!(result.is_ok(), "plot_fitness PNG failed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "plot_fitness PNG failed: {:?}",
+        result.err()
+    );
     assert!(path.exists(), "PNG file was not created");
     assert!(
         std::fs::metadata(&path).unwrap().len() > 0,
@@ -52,7 +58,11 @@ fn test_plot_fitness_svg() {
     let _ = std::fs::remove_file(&path);
 
     let result = plot_fitness(&stats, path_str);
-    assert!(result.is_ok(), "plot_fitness SVG failed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "plot_fitness SVG failed: {:?}",
+        result.err()
+    );
     assert!(path.exists(), "SVG file was not created");
     assert!(
         std::fs::metadata(&path).unwrap().len() > 0,
@@ -128,7 +138,11 @@ fn test_plot_diversity_png() {
     let _ = std::fs::remove_file(&path);
 
     let result = plot_diversity(&stats, path_str);
-    assert!(result.is_ok(), "plot_diversity PNG failed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "plot_diversity PNG failed: {:?}",
+        result.err()
+    );
     assert!(path.exists(), "PNG file was not created");
     assert!(
         std::fs::metadata(&path).unwrap().len() > 0,
@@ -147,7 +161,11 @@ fn test_plot_diversity_svg() {
     let _ = std::fs::remove_file(&path);
 
     let result = plot_diversity(&stats, path_str);
-    assert!(result.is_ok(), "plot_diversity SVG failed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "plot_diversity SVG failed: {:?}",
+        result.err()
+    );
     assert!(path.exists(), "SVG file was not created");
     assert!(
         std::fs::metadata(&path).unwrap().len() > 0,
@@ -196,7 +214,11 @@ fn test_plot_histogram_png() {
     let _ = std::fs::remove_file(&path);
 
     let result = plot_histogram(&values, path_str);
-    assert!(result.is_ok(), "plot_histogram PNG failed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "plot_histogram PNG failed: {:?}",
+        result.err()
+    );
     assert!(path.exists(), "PNG file was not created");
     assert!(
         std::fs::metadata(&path).unwrap().len() > 0,
@@ -215,7 +237,11 @@ fn test_plot_histogram_svg() {
     let _ = std::fs::remove_file(&path);
 
     let result = plot_histogram(&values, path_str);
-    assert!(result.is_ok(), "plot_histogram SVG failed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "plot_histogram SVG failed: {:?}",
+        result.err()
+    );
     assert!(path.exists(), "SVG file was not created");
     assert!(
         std::fs::metadata(&path).unwrap().len() > 0,
@@ -249,8 +275,15 @@ fn test_plot_histogram_identical_values() {
 
     // Must NOT panic even when all values are identical (bin_width == 0 edge case)
     let result = plot_histogram(&values, path_str);
-    assert!(result.is_ok(), "plot_histogram identical values failed: {:?}", result.err());
-    assert!(path.exists(), "PNG file was not created for identical values");
+    assert!(
+        result.is_ok(),
+        "plot_histogram identical values failed: {:?}",
+        result.err()
+    );
+    assert!(
+        path.exists(),
+        "PNG file was not created for identical values"
+    );
 
     let _ = std::fs::remove_file(&path);
 }

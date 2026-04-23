@@ -28,10 +28,10 @@
 //!
 //! [`Reporter`]: crate::reporter::Reporter
 
-use std::time::Duration;
 use crate::ga::TerminationCause;
 use crate::stats::GenerationStats;
 use crate::traits::ChromosomeT;
+use std::time::Duration;
 
 /// Payload for the [`GaObserver::on_extension_triggered`] hook.
 ///
@@ -68,15 +68,45 @@ pub trait GaObserver<U: ChromosomeT>: Send + Sync {
     /// Called at the start of each generation, before any operators run.
     fn on_generation_start(&self, _generation: usize) {}
     /// Called after parent selection completes.
-    fn on_selection_complete(&self, _generation: usize, _duration: Duration, _population_size: usize) {}
+    fn on_selection_complete(
+        &self,
+        _generation: usize,
+        _duration: Duration,
+        _population_size: usize,
+    ) {
+    }
     /// Called after crossover produces offspring.
-    fn on_crossover_complete(&self, _generation: usize, _duration: Duration, _offspring_count: usize) {}
+    fn on_crossover_complete(
+        &self,
+        _generation: usize,
+        _duration: Duration,
+        _offspring_count: usize,
+    ) {
+    }
     /// Called after mutation is applied to offspring.
-    fn on_mutation_complete(&self, _generation: usize, _duration: Duration, _population_size: usize) {}
+    fn on_mutation_complete(
+        &self,
+        _generation: usize,
+        _duration: Duration,
+        _population_size: usize,
+    ) {
+    }
     /// Called after fitness evaluation of the new population.
-    fn on_fitness_evaluation_complete(&self, _generation: usize, _duration: Duration, _population_size: usize) {}
+    fn on_fitness_evaluation_complete(
+        &self,
+        _generation: usize,
+        _duration: Duration,
+        _population_size: usize,
+    ) {
+    }
     /// Called after survivor selection prunes the population.
-    fn on_survivor_selection_complete(&self, _generation: usize, _duration: Duration, _population_size: usize) {}
+    fn on_survivor_selection_complete(
+        &self,
+        _generation: usize,
+        _duration: Duration,
+        _population_size: usize,
+    ) {
+    }
     /// Called when the population's best fitness improves.
     fn on_new_best(&self, _generation: usize, _best: U) {}
     /// Called each time the stagnation counter increments.
@@ -106,7 +136,13 @@ pub trait IslandGaObserver<U: ChromosomeT>: Send + Sync {
     /// Called when an island run ends.
     fn on_island_run_end(&self, _island_id: usize) {}
     /// Called at the end of each generation for each island.
-    fn on_island_generation_end(&self, _island_id: usize, _generation: usize, _stats: &GenerationStats) {}
+    fn on_island_generation_end(
+        &self,
+        _island_id: usize,
+        _generation: usize,
+        _stats: &GenerationStats,
+    ) {
+    }
     /// Called when migration is triggered between islands.
     fn on_migration_triggered(&self, _generation: usize, _migration_count: usize) {}
 }
@@ -117,7 +153,13 @@ pub trait IslandGaObserver<U: ChromosomeT>: Send + Sync {
 /// supertraits are required for safe sharing across rayon threads via `Arc`.
 pub trait Nsga2Observer<U: ChromosomeT>: Send + Sync {
     /// Called after Pareto fronts are assigned.
-    fn on_pareto_front_assigned(&self, _generation: usize, _front_count: usize, _population_size: usize) {}
+    fn on_pareto_front_assigned(
+        &self,
+        _generation: usize,
+        _front_count: usize,
+        _population_size: usize,
+    ) {
+    }
     /// Called after non-dominated sorting completes.
     fn on_non_dominated_sort_complete(&self, _generation: usize, _duration_ms: f64) {}
     /// Called after crowding distance calculation completes.
@@ -134,13 +176,15 @@ pub trait Nsga2Observer<U: ChromosomeT>: Send + Sync {
 /// marker and is object-safe: `dyn AllObserver<U>` is valid.
 pub trait AllObserver<U: ChromosomeT>:
     GaObserver<U> + IslandGaObserver<U> + Nsga2Observer<U> + Send + Sync
-{}
+{
+}
 
 impl<U, T> AllObserver<U> for T
 where
     U: ChromosomeT,
     T: GaObserver<U> + IslandGaObserver<U> + Nsga2Observer<U> + Send + Sync,
-{}
+{
+}
 
 mod log;
 pub use log::LogObserver;

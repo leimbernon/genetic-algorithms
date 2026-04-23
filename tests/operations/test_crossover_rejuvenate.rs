@@ -128,7 +128,9 @@ fn test_rejuvenate_via_enum_dispatch() {
         fitness_fn: FitnessFnWrapper::default(),
     };
 
-    let offspring = Crossover::Rejuvenate.crossover(&parent_1, &parent_2).unwrap();
+    let offspring = Crossover::Rejuvenate
+        .crossover(&parent_1, &parent_2)
+        .unwrap();
     assert_eq!(offspring.len(), 2);
     assert_eq!(offspring[0].age, 0);
     assert_eq!(offspring[1].age, 0);

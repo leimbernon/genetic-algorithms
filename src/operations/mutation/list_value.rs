@@ -63,4 +63,3 @@ impl<T: Clone + Sync + Send + Default + Debug + 'static> ValueMutable for ListCh
         list_value_mutation(self);
     }
 }
-

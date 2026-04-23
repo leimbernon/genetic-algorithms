@@ -46,8 +46,8 @@ pub fn order<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaErr
     let child_dna_1 = ox_build_child(parent_1.dna(), parent_2.dna(), p1, p2);
     let child_dna_2 = ox_build_child(parent_2.dna(), parent_1.dna(), p1, p2);
 
-    let mut child_1 = parent_1.clone();
-    let mut child_2 = parent_2.clone();
+    let mut child_1 = U::new();
+    let mut child_2 = U::new();
     child_1.set_dna(Cow::Owned(child_dna_1));
     child_2.set_dna(Cow::Owned(child_dna_2));
 

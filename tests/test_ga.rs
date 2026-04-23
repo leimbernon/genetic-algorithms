@@ -2052,28 +2052,147 @@ fn test_ga_with_dynamic_mutation() {
 
     ga.initialization().expect("initialization should succeed");
     let result = ga.run();
-    assert!(result.is_ok(), "GA with dynamic mutation should complete successfully");
+    assert!(
+        result.is_ok(),
+        "GA with dynamic mutation should complete successfully"
+    );
 
     // Verify configuration was stored correctly
     assert!(ga.configuration.mutation_configuration.dynamic_mutation);
-    assert!((ga.configuration.mutation_configuration.target_cardinality.unwrap() - 0.5).abs() < f64::EPSILON);
-    assert!((ga.configuration.mutation_configuration.probability_step.unwrap() - 0.02).abs() < f64::EPSILON);
+    assert!(
+        (ga.configuration
+            .mutation_configuration
+            .target_cardinality
+            .unwrap()
+            - 0.5)
+            .abs()
+            < f64::EPSILON
+    );
+    assert!(
+        (ga.configuration
+            .mutation_configuration
+            .probability_step
+            .unwrap()
+            - 0.02)
+            .abs()
+            < f64::EPSILON
+    );
 }
 
 #[test]
 fn test_ga_stats_diversity_populated() {
     // Run a simple GA for a few generations and verify diversity is populated in stats
     let chromosomes = vec![
-        Chromosome { dna: vec![Gene { id: 1 }, Gene { id: 2 }, Gene { id: 3 }, Gene { id: 4 }], fitness: 1.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
-        Chromosome { dna: vec![Gene { id: 2 }, Gene { id: 3 }, Gene { id: 4 }, Gene { id: 1 }], fitness: 2.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
-        Chromosome { dna: vec![Gene { id: 3 }, Gene { id: 4 }, Gene { id: 1 }, Gene { id: 2 }], fitness: 3.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
-        Chromosome { dna: vec![Gene { id: 4 }, Gene { id: 1 }, Gene { id: 2 }, Gene { id: 3 }], fitness: 4.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
-        Chromosome { dna: vec![Gene { id: 2 }, Gene { id: 1 }, Gene { id: 3 }, Gene { id: 4 }], fitness: 5.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
-        Chromosome { dna: vec![Gene { id: 1 }, Gene { id: 3 }, Gene { id: 4 }, Gene { id: 2 }], fitness: 6.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
-        Chromosome { dna: vec![Gene { id: 3 }, Gene { id: 4 }, Gene { id: 2 }, Gene { id: 1 }], fitness: 7.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
-        Chromosome { dna: vec![Gene { id: 4 }, Gene { id: 2 }, Gene { id: 1 }, Gene { id: 3 }], fitness: 8.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
-        Chromosome { dna: vec![Gene { id: 2 }, Gene { id: 1 }, Gene { id: 4 }, Gene { id: 3 }], fitness: 9.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
-        Chromosome { dna: vec![Gene { id: 1 }, Gene { id: 4 }, Gene { id: 3 }, Gene { id: 2 }], fitness: 10.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
+        Chromosome {
+            dna: vec![
+                Gene { id: 1 },
+                Gene { id: 2 },
+                Gene { id: 3 },
+                Gene { id: 4 },
+            ],
+            fitness: 1.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        },
+        Chromosome {
+            dna: vec![
+                Gene { id: 2 },
+                Gene { id: 3 },
+                Gene { id: 4 },
+                Gene { id: 1 },
+            ],
+            fitness: 2.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        },
+        Chromosome {
+            dna: vec![
+                Gene { id: 3 },
+                Gene { id: 4 },
+                Gene { id: 1 },
+                Gene { id: 2 },
+            ],
+            fitness: 3.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        },
+        Chromosome {
+            dna: vec![
+                Gene { id: 4 },
+                Gene { id: 1 },
+                Gene { id: 2 },
+                Gene { id: 3 },
+            ],
+            fitness: 4.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        },
+        Chromosome {
+            dna: vec![
+                Gene { id: 2 },
+                Gene { id: 1 },
+                Gene { id: 3 },
+                Gene { id: 4 },
+            ],
+            fitness: 5.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        },
+        Chromosome {
+            dna: vec![
+                Gene { id: 1 },
+                Gene { id: 3 },
+                Gene { id: 4 },
+                Gene { id: 2 },
+            ],
+            fitness: 6.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        },
+        Chromosome {
+            dna: vec![
+                Gene { id: 3 },
+                Gene { id: 4 },
+                Gene { id: 2 },
+                Gene { id: 1 },
+            ],
+            fitness: 7.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        },
+        Chromosome {
+            dna: vec![
+                Gene { id: 4 },
+                Gene { id: 2 },
+                Gene { id: 1 },
+                Gene { id: 3 },
+            ],
+            fitness: 8.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        },
+        Chromosome {
+            dna: vec![
+                Gene { id: 2 },
+                Gene { id: 1 },
+                Gene { id: 4 },
+                Gene { id: 3 },
+            ],
+            fitness: 9.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        },
+        Chromosome {
+            dna: vec![
+                Gene { id: 1 },
+                Gene { id: 4 },
+                Gene { id: 3 },
+                Gene { id: 2 },
+            ],
+            fitness: 10.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        },
     ];
 
     let population = Population::new(chromosomes);
@@ -2090,7 +2209,10 @@ fn test_ga_stats_diversity_populated() {
     assert!(!stats.is_empty(), "Stats should have at least one entry");
     for s in stats {
         assert!(s.diversity >= 0.0, "Diversity must be non-negative");
-        assert_eq!(s.diversity, s.fitness_std_dev, "Diversity must equal fitness_std_dev");
+        assert_eq!(
+            s.diversity, s.fitness_std_dev,
+            "Diversity must equal fitness_std_dev"
+        );
     }
     // For a non-trivial population with varied fitness, at least one generation should have diversity > 0
     assert!(

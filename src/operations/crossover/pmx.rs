@@ -53,8 +53,8 @@ pub fn pmx<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError
     let child_dna_1 = pmx_build_child(parent_1.dna(), parent_2.dna(), start, end);
     let child_dna_2 = pmx_build_child(parent_2.dna(), parent_1.dna(), start, end);
 
-    let mut child_1 = parent_1.clone();
-    let mut child_2 = parent_2.clone();
+    let mut child_1 = U::new();
+    let mut child_2 = U::new();
     child_1.set_dna(Cow::Owned(child_dna_1));
     child_2.set_dna(Cow::Owned(child_dna_2));
 
@@ -68,16 +68,19 @@ pub fn pmx<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError
 /// `donor` provides the copied segment; `other` provides the remaining genes
 /// and the mapping source.
 fn pmx_build_child<G: GeneT>(donor: &[G], other: &[G], start: usize, end: usize) -> Vec<G> {
-    let len = donor.len();
-    let mut child: Vec<Option<G>> = vec![None; len];
+    // Pre-fill child from `other`; the segment will be overwritten from `donor`.
+    let mut child = other.to_vec();
 
-    // Step 1: Copy the segment from the donor parent.
-    for i in start..=end {
-        child[i] = Some(donor[i].clone());
-    }
+    // Step 1: Copy the segment from the donor parent (overwrites pre-filled values).
+    child[start..=end].clone_from_slice(&donor[start..=end]);
 
-    // Build a set of gene IDs already placed in the child (the segment).
+    // Build a set of gene IDs already placed in the child (the donor segment).
     let segment_ids: HashMap<i32, usize> = (start..=end).map(|i| (donor[i].id(), i)).collect();
+
+    // Build a position map for `other`: gene ID → index. O(n) lookup replaces
+    // the previous O(n) linear scan inside the chain-following loop.
+    let pos_in_other: HashMap<i32, usize> =
+        other.iter().enumerate().map(|(i, g)| (g.id(), i)).collect();
 
     // Step 2: For each position in the segment of `other`, if that gene is not
     // already in the child's segment, follow the mapping chain to find the
@@ -93,42 +96,22 @@ fn pmx_build_child<G: GeneT>(donor: &[G], other: &[G], start: usize, end: usize)
         // in the child; find where `gene` should go by following the chain.
         let mut mapped_id = donor[i].id();
         loop {
-            // Find where `mapped_id` sits in `other`.
-            let pos_in_other = other
-                .iter()
-                .position(|g| g.id() == mapped_id)
+            // O(1) HashMap lookup replaces the previous O(n) linear scan.
+            let pos = *pos_in_other
+                .get(&mapped_id)
                 .expect("PMX: gene ID not found in other parent — parents must be permutations");
 
-            if pos_in_other < start || pos_in_other > end {
-                // This position is outside the segment and free in the child.
-                child[pos_in_other] = Some(gene.clone());
+            if pos < start || pos > end {
+                // This position is outside the segment; the pre-fill already
+                // placed other[pos] here, so overwrite it with `gene`.
+                child[pos] = gene.clone();
                 break;
             }
 
             // The position is inside the segment, so follow the chain one more step.
-            mapped_id = donor[pos_in_other].id();
-        }
-    }
-
-    // Step 3: Fill remaining empty positions from `other`.
-    for i in 0..len {
-        if child[i].is_none() {
-            child[i] = Some(other[i].clone());
+            mapped_id = donor[pos].id();
         }
     }
 
     child
-        .into_iter()
-        .enumerate()
-        .map(|(i, g)| {
-            g.unwrap_or_else(|| {
-                panic!(
-                    "PMX crossover: child position {} was not filled. \
-                     This indicates non-unique gene IDs in the parents.",
-                    i
-                )
-            })
-        })
-        .collect()
 }
-

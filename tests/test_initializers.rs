@@ -80,8 +80,10 @@ fn test_range_random_initialization() {
 
 // ── Unit tests migrated from src/initializers/list_initializer.rs ────────────
 
-use genetic_algorithms::initializers::{list_random_initialization, list_random_initialization_without_repetitions};
 use genetic_algorithms::genotypes::List;
+use genetic_algorithms::initializers::{
+    list_random_initialization, list_random_initialization_without_repetitions,
+};
 use std::collections::HashSet;
 
 fn make_list_templates() -> Vec<List<char>> {
@@ -156,8 +158,7 @@ fn list_initializer_without_repetitions_no_duplicate_ids() {
     let templates = make_list_templates();
     for seed in 0..20u64 {
         genetic_algorithms::rng::set_seed(Some(seed));
-        let genes =
-            list_random_initialization_without_repetitions(4, Some(&templates), None);
+        let genes = list_random_initialization_without_repetitions(4, Some(&templates), None);
         let ids: HashSet<i32> = genes.iter().map(|g| g.id).collect();
         assert_eq!(
             ids.len(),

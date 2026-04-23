@@ -303,45 +303,35 @@ where
     fn with_extension_method(mut self, method: crate::operations::Extension) -> Self {
         self.configuration
             .extension_configuration
-            .get_or_insert_with(
-                crate::extension::configuration::ExtensionConfiguration::default,
-            )
+            .get_or_insert_with(crate::extension::configuration::ExtensionConfiguration::default)
             .method = method;
         self
     }
     fn with_extension_diversity_threshold(mut self, threshold: f64) -> Self {
         self.configuration
             .extension_configuration
-            .get_or_insert_with(
-                crate::extension::configuration::ExtensionConfiguration::default,
-            )
+            .get_or_insert_with(crate::extension::configuration::ExtensionConfiguration::default)
             .diversity_threshold = threshold;
         self
     }
     fn with_extension_survival_rate(mut self, rate: f64) -> Self {
         self.configuration
             .extension_configuration
-            .get_or_insert_with(
-                crate::extension::configuration::ExtensionConfiguration::default,
-            )
+            .get_or_insert_with(crate::extension::configuration::ExtensionConfiguration::default)
             .survival_rate = rate;
         self
     }
     fn with_extension_mutation_rounds(mut self, rounds: usize) -> Self {
         self.configuration
             .extension_configuration
-            .get_or_insert_with(
-                crate::extension::configuration::ExtensionConfiguration::default,
-            )
+            .get_or_insert_with(crate::extension::configuration::ExtensionConfiguration::default)
             .mutation_rounds = rounds;
         self
     }
     fn with_extension_elite_count(mut self, count: usize) -> Self {
         self.configuration
             .extension_configuration
-            .get_or_insert_with(
-                crate::extension::configuration::ExtensionConfiguration::default,
-            )
+            .get_or_insert_with(crate::extension::configuration::ExtensionConfiguration::default)
             .elite_count = count;
         self
     }
@@ -487,8 +477,9 @@ where
         // Wrap fitness function with LRU cache if configured
         if let Some(cache_size) = self.fitness_cache_size {
             if let Some(fitness_fn) = self.fitness_fn.take() {
-                self.fitness_fn =
-                    Some(crate::fitness::cache::wrap_with_cache(fitness_fn, cache_size));
+                self.fitness_fn = Some(crate::fitness::cache::wrap_with_cache(
+                    fitness_fn, cache_size,
+                ));
             }
         }
 
@@ -751,7 +742,11 @@ where
             self.notify(|obs| obs.on_generation_start(i));
 
             //1- Parent selection for reproduction
-            let t_sel = if self.observer.is_some() { Some(Instant::now()) } else { None };
+            let t_sel = if self.observer.is_some() {
+                Some(Instant::now())
+            } else {
+                None
+            };
             let parents = selection::factory(
                 &self.population.chromosomes,
                 self.configuration.selection_configuration,
@@ -766,7 +761,11 @@ where
             } else {
                 None
             };
-            let t_cx = if self.observer.is_some() { Some(Instant::now()) } else { None };
+            let t_cx = if self.observer.is_some() {
+                Some(Instant::now())
+            } else {
+                None
+            };
             let mut offspring = parent_crossover(
                 &parents,
                 &self.population.chromosomes,
@@ -775,6 +774,7 @@ where
                 self.population.f_max,
                 self.population.f_avg,
                 dynamic_prob,
+                self.fitness_fn.clone(),
             )?;
             if let Some(t) = t_cx {
                 let elapsed = t.elapsed();
@@ -801,7 +801,11 @@ where
             };
 
             //4- Survivor selection
-            let t_surv = if self.observer.is_some() { Some(Instant::now()) } else { None };
+            let t_surv = if self.observer.is_some() {
+                Some(Instant::now())
+            } else {
+                None
+            };
             survivor::factory(
                 self.configuration.survivor,
                 &mut self.population.chromosomes,
@@ -825,17 +829,17 @@ where
                 self.population.recalculate_aga();
             }
 
+            // Collect fitness values once per generation; reused by niching and stats.
+            let mut fitness_values: Vec<f64> = self
+                .population
+                .chromosomes
+                .iter()
+                .map(|c| c.fitness())
+                .collect();
+
             // Apply niching / fitness sharing if configured
             if let Some(ref niching_config) = self.configuration.niching_configuration {
                 if niching_config.enabled {
-                    // Extract fitness values
-                    let mut fitness_values: Vec<f64> = self
-                        .population
-                        .chromosomes
-                        .iter()
-                        .map(|c| c.fitness())
-                        .collect();
-
                     // Extract DNA slices for distance computation
                     let dna_slices: Vec<&[U::Gene]> = self
                         .population
@@ -844,8 +848,9 @@ where
                         .map(|c| c.dna())
                         .collect();
 
-                    // Compute distance matrix using gene ID comparison
-                    let distances = crate::niching::sharing::compute_distance_matrix(
+                    // Compute fitness sharing on-the-fly (no O(n^2) matrix allocation)
+                    crate::niching::sharing::apply_fitness_sharing_with_dna(
+                        &mut fitness_values,
                         &dna_slices,
                         |dna_a: &[U::Gene], dna_b: &[U::Gene]| {
                             let max_len = dna_a.len().max(dna_b.len());
@@ -862,12 +867,6 @@ where
                             }
                             diff as f64
                         },
-                    );
-
-                    // Apply fitness sharing
-                    crate::niching::sharing::apply_fitness_sharing(
-                        &mut fitness_values,
-                        &distances,
                         niching_config.sigma_share,
                         niching_config.alpha,
                     );
@@ -884,17 +883,35 @@ where
                 }
             }
 
-            //5- Sets the best chromosome (scan by index, clone only the winner)
+            //5- Sets the best chromosome (scan fitness_values, no second chromosome traversal)
             {
                 let ps = self.configuration.limit_configuration.problem_solving;
-                let chromosomes = &self.population.chromosomes;
-                if let Some(best_idx) = best_chromosome_index(chromosomes, ps) {
+                if !fitness_values.is_empty() {
+                    let best_idx =
+                        fitness_values
+                            .iter()
+                            .enumerate()
+                            .fold(0usize, |best, (i, &f)| {
+                                let best_f = fitness_values[best];
+                                let is_better = match ps {
+                                    ProblemSolving::Maximization | ProblemSolving::FixedFitness => {
+                                        f > best_f
+                                    }
+                                    ProblemSolving::Minimization => f < best_f,
+                                };
+                                if is_better {
+                                    i
+                                } else {
+                                    best
+                                }
+                            });
+
                     if !self.population.best_chromosome_is_set {
                         self.population.best_chromosome =
                             self.population.chromosomes[best_idx].clone();
                         self.population.best_chromosome_is_set = true;
                     } else {
-                        let candidate = self.population.chromosomes[best_idx].fitness();
+                        let candidate = fitness_values[best_idx];
                         let current = self.population.best_chromosome.fitness();
                         let better = match ps {
                             ProblemSolving::Maximization | ProblemSolving::FixedFitness => {
@@ -909,16 +926,10 @@ where
                     }
                 }
             }
+
             // Collect per-generation statistics
-            let fitness_values: Vec<f64> = self
-                .population
-                .chromosomes
-                .iter()
-                .map(|c| c.fitness())
-                .collect();
-            let gen_stats =
+            let mut gen_stats =
                 GenerationStats::from_fitness_values(i, &fitness_values, is_maximization);
-            self.stats.push(gen_stats.clone());
 
             // Update dynamic mutation probability based on population diversity
             if self.configuration.mutation_configuration.dynamic_mutation {
@@ -952,10 +963,8 @@ where
                     p_min,
                 );
 
-                // Update the pushed stats entry with the current dynamic mutation probability
-                if let Some(last) = self.stats.last_mut() {
-                    last.dynamic_mutation_probability = Some(self.dynamic_mutation_probability);
-                }
+                // Set the field directly on gen_stats before push (no last_mut needed)
+                gen_stats.dynamic_mutation_probability = Some(self.dynamic_mutation_probability);
             }
 
             // Apply extension strategy if configured and diversity is low
@@ -970,46 +979,53 @@ where
                         self.configuration.limit_configuration.problem_solving,
                         ext_config,
                     )?;
-                    self.notify(|obs| obs.on_extension_triggered(ExtensionEvent {
-                        generation: i,
-                        diversity: gen_stats.diversity,
-                        extension_type: ext_config.method.as_str(),
-                        threshold: ext_config.diversity_threshold,
-                    }));
+                    self.notify(|obs| {
+                        obs.on_extension_triggered(ExtensionEvent {
+                            generation: i,
+                            diversity: gen_stats.diversity,
+                            extension_type: ext_config.method.as_str(),
+                            threshold: ext_config.diversity_threshold,
+                        })
+                    });
 
                     // Regrow population if extension reduced it
                     if self.population.chromosomes.len() < initial_population_size {
                         if let Some(ref init_fn) = self.initialization_fn {
                             let deficit =
                                 initial_population_size - self.population.chromosomes.len();
-                            for _ in 0..deficit {
-                                let alleles_ref = if self.alleles.is_empty() {
-                                    None
-                                } else {
-                                    Some(self.alleles.as_slice())
-                                };
-                                let genes = init_fn(
-                                    self.configuration
-                                        .limit_configuration
-                                        .genes_per_chromosome,
-                                    alleles_ref,
-                                    Some(
-                                        self.configuration
-                                            .limit_configuration
-                                            .alleles_can_be_repeated,
-                                    ),
-                                );
-                                let mut new_chromosome = U::new();
-                                new_chromosome.set_dna(std::borrow::Cow::Owned(genes));
-                                if let Some(ref ff) = self.fitness_fn {
-                                    let ff_clone = Arc::clone(ff);
+                            let genes_per_chromosome =
+                                self.configuration.limit_configuration.genes_per_chromosome;
+                            let alleles_can_be_repeated = self
+                                .configuration
+                                .limit_configuration
+                                .alleles_can_be_repeated;
+                            let alleles_ref: Option<&[U::Gene]> = if self.alleles.is_empty() {
+                                None
+                            } else {
+                                Some(self.alleles.as_slice())
+                            };
+                            let ff = self.fitness_fn.as_ref().map(Arc::clone);
+
+                            let new_chromosomes: Vec<U> = (0..deficit)
+                                .into_par_iter()
+                                .map(|_| {
+                                    let genes = init_fn(
+                                        genes_per_chromosome,
+                                        alleles_ref,
+                                        Some(alleles_can_be_repeated),
+                                    );
+                                    let mut new_chromosome = U::new();
+                                    new_chromosome.set_dna(std::borrow::Cow::Owned(genes));
+                                    if let Some(ref ff) = ff {
+                                        let ff_clone = Arc::clone(ff);
+                                        new_chromosome.set_fitness_fn(move |genes| ff_clone(genes));
+                                    }
+                                    new_chromosome.calculate_fitness();
+                                    new_chromosome.set_age(0);
                                     new_chromosome
-                                        .set_fitness_fn(move |genes| ff_clone(genes));
-                                }
-                                new_chromosome.calculate_fitness();
-                                new_chromosome.set_age(0);
-                                self.population.chromosomes.push(new_chromosome);
-                            }
+                                })
+                                .collect();
+                            self.population.chromosomes.extend(new_chromosomes);
                         }
                     }
 
@@ -1027,8 +1043,13 @@ where
             if let Some(ref mut r) = self.reporter {
                 r.on_generation_complete(&gen_stats);
             }
-            // Notify with the (possibly updated) stats entry that includes dynamic_mutation_probability
-            let notify_stats = self.stats.last().cloned().unwrap_or(gen_stats.clone());
+
+            // Move gen_stats into the history vec (no clone)
+            self.stats.push(gen_stats);
+
+            // Notify with the pushed stats entry that includes dynamic_mutation_probability
+            // Snapshot into local to avoid nested borrow of self (notify takes &self)
+            let notify_stats = self.stats.last().unwrap().clone();
             self.notify(|obs| obs.on_generation_end(&notify_stats));
 
             // Save checkpoint to disk if configured (requires serde feature)
@@ -1059,7 +1080,14 @@ where
             // If we want to perform a periodic callback
             if let Some(func) = &callback {
                 if (generation_callback_count + 1) == generations_to_callback {
-                    if func(&i, &self.population, &gen_stats, &self.termination_cause).is_break() {
+                    if func(
+                        &i,
+                        &self.population,
+                        self.stats.last().unwrap(),
+                        &self.termination_cause,
+                    )
+                    .is_break()
+                    {
                         self.termination_cause = TerminationCause::CallbackRequested;
                         break;
                     }
@@ -1076,7 +1104,12 @@ where
             ) {
                 self.termination_cause = TerminationCause::FitnessTargetReached;
                 if let Some(func) = &callback {
-                    let _ = func(&i, &self.population, &gen_stats, &self.termination_cause);
+                    let _ = func(
+                        &i,
+                        &self.population,
+                        self.stats.last().unwrap(),
+                        &self.termination_cause,
+                    );
                 }
                 break;
             }
@@ -1107,7 +1140,12 @@ where
                 if stagnation_count >= max_stagnation {
                     self.termination_cause = TerminationCause::StagnationReached;
                     if let Some(func) = &callback {
-                        let _ = func(&i, &self.population, &gen_stats, &self.termination_cause);
+                        let _ = func(
+                            &i,
+                            &self.population,
+                            self.stats.last().unwrap(),
+                            &self.termination_cause,
+                        );
                     }
                     break;
                 }
@@ -1115,10 +1153,15 @@ where
 
             // Convergence check (fitness std dev below threshold)
             if let Some(threshold) = self.configuration.stopping_criteria.convergence_threshold {
-                if gen_stats.fitness_std_dev < threshold {
+                if self.stats.last().unwrap().fitness_std_dev < threshold {
                     self.termination_cause = TerminationCause::ConvergenceReached;
                     if let Some(func) = &callback {
-                        let _ = func(&i, &self.population, &gen_stats, &self.termination_cause);
+                        let _ = func(
+                            &i,
+                            &self.population,
+                            self.stats.last().unwrap(),
+                            &self.termination_cause,
+                        );
                     }
                     break;
                 }
@@ -1129,7 +1172,12 @@ where
                 if start_time.elapsed().as_secs_f64() >= max_secs {
                     self.termination_cause = TerminationCause::TimeLimitReached;
                     if let Some(func) = &callback {
-                        let _ = func(&i, &self.population, &gen_stats, &self.termination_cause);
+                        let _ = func(
+                            &i,
+                            &self.population,
+                            self.stats.last().unwrap(),
+                            &self.termination_cause,
+                        );
                     }
                     break;
                 }
@@ -1220,6 +1268,7 @@ fn parent_crossover<U>(
     f_max: f64,
     f_avg: f64,
     dynamic_mutation_prob: Option<f64>,
+    fitness_fn: Option<Arc<FitnessFn<U::Gene>>>,
 ) -> Result<Vec<U>, GaError>
 where
     U: ChromosomeT + Send + Sync + 'static + Clone + mutation::ValueMutable,
@@ -1265,51 +1314,62 @@ where
                     key,
                     chromosomes.len()
                 ))
-            })?.clone();
+            })?;
             let parent_2 = chromosomes.get(*value).ok_or_else(|| {
                 GaError::SelectionError(format!(
                     "Selection returned out-of-bounds index {} (population size {})",
                     value,
                     chromosomes.len()
                 ))
-            })?.clone();
+            })?;
 
             // Making the crossover of the parents when the random number is below or equal to the given probability
             let crossover_probability = rng.random_range(0.0..1.0);
-            let effective_crossover_prob =
-                if let Some(p) = crossover_probability_config {
-                    p
-                } else {
-                    crossover::aga_probability(
-                        &parent_1,
-                        &parent_2,
-                        f_max,
-                        f_avg,
-                        configuration.crossover_configuration.probability_max.unwrap_or(1.0),
-                        configuration.crossover_configuration.probability_min.unwrap_or(0.0),
-                    )
-                };
+            let effective_crossover_prob = if let Some(p) = crossover_probability_config {
+                p
+            } else {
+                crossover::aga_probability(
+                    parent_1,
+                    parent_2,
+                    f_max,
+                    f_avg,
+                    configuration
+                        .crossover_configuration
+                        .probability_max
+                        .unwrap_or(1.0),
+                    configuration
+                        .crossover_configuration
+                        .probability_min
+                        .unwrap_or(0.0),
+                )
+            };
 
             // Making the mutation of each child when the random number is below or equal the given probability
             let mut mutation_probability = rng.random_range(0.0..1.0);
-            let effective_mutation_prob =
-                if let Some(p) = mutation_probability_config {
-                    p
-                } else {
-                    mutation::aga_probability(
-                        &parent_1,
-                        &parent_2,
-                        f_avg,
-                        configuration.mutation_configuration.probability_max.unwrap_or(1.0),
-                        configuration.mutation_configuration.probability_min.unwrap_or(0.0),
-                    )
-                };
+            let effective_mutation_prob = if let Some(p) = mutation_probability_config {
+                p
+            } else {
+                mutation::aga_probability(
+                    parent_1,
+                    parent_2,
+                    f_avg,
+                    configuration
+                        .mutation_configuration
+                        .probability_max
+                        .unwrap_or(1.0),
+                    configuration
+                        .mutation_configuration
+                        .probability_min
+                        .unwrap_or(0.0),
+                )
+            };
 
             let mut child_1: U;
             let mut child_2: U;
 
             if crossover_probability <= effective_crossover_prob {
-                let mut children = crossover::factory(&parent_1, &parent_2, configuration.crossover_configuration)?;
+                let mut children =
+                    crossover::factory(parent_1, parent_2, configuration.crossover_configuration)?;
                 child_2 = children.pop().ok_or_else(|| {
                     GaError::CrossoverError("Crossover returned fewer than 2 children".to_string())
                 })?;
@@ -1317,8 +1377,8 @@ where
                     GaError::CrossoverError("Crossover returned fewer than 2 children".to_string())
                 })?;
             } else {
-                child_1 = parent_1;
-                child_2 = parent_2;
+                child_1 = parent_1.clone();
+                child_2 = parent_2.clone();
             }
 
             if mutation_probability < effective_mutation_prob {
@@ -1338,6 +1398,16 @@ where
                     configuration.mutation_configuration.step,
                     configuration.mutation_configuration.sigma,
                 )?;
+            }
+
+            // Inject fitness function into children built via U::new() (which start with the
+            // default no-op fitness fn). Children from parent.clone() (the else branch above)
+            // already carry the correct fitness fn from their parent.
+            if let Some(ref ff) = fitness_fn {
+                let ff1 = Arc::clone(ff);
+                child_1.set_fitness_fn(move |genes| ff1(genes));
+                let ff2 = Arc::clone(ff);
+                child_2.set_fitness_fn(move |genes| ff2(genes));
             }
 
             // Calculate the fitness of both children and set their age
@@ -1398,49 +1468,28 @@ fn reinsert_elite<U: ChromosomeT>(
     elite: Vec<U>,
     problem_solving: ProblemSolving,
 ) {
-    // Sort population so worst are at the end
-    chromosomes.sort_by(|a, b| {
+    let k = elite.len().min(chromosomes.len());
+    if k == 0 {
+        return;
+    }
+
+    // Partition so the k worst chromosomes end up at indices 0..k (O(n) instead of O(n log n)).
+    // The comparator puts the worst individuals first:
+    //   - Maximization: natural order (lower fitness first) = worst first
+    //   - Minimization/FixedFitness: reversed order (higher fitness first) = worst first
+    chromosomes.select_nth_unstable_by(k - 1, |a, b| {
         let cmp = a
             .fitness()
             .partial_cmp(&b.fitness())
             .unwrap_or(std::cmp::Ordering::Equal);
         match problem_solving {
-            ProblemSolving::Maximization => cmp.reverse(),
-            _ => cmp,
+            ProblemSolving::Maximization => cmp,
+            _ => cmp.reverse(),
         }
     });
 
-    // Replace the worst individuals with elite (guard against more elite than population)
-    let pop_len = chromosomes.len();
-    let count = elite.len().min(pop_len);
-    for (i, elite_individual) in elite.into_iter().take(count).enumerate() {
-        let replace_idx = pop_len - 1 - i;
-        chromosomes[replace_idx] = elite_individual;
+    // Overwrite the k worst slots with the elite individuals.
+    for (i, elite_individual) in elite.into_iter().take(k).enumerate() {
+        chromosomes[i] = elite_individual;
     }
-}
-
-/// Finds the index of the best chromosome according to the problem objective.
-///
-/// Returns `None` for an empty slice.
-fn best_chromosome_index<U: ChromosomeT>(
-    chromosomes: &[U],
-    problem_solving: ProblemSolving,
-) -> Option<usize> {
-    if chromosomes.is_empty() {
-        return None;
-    }
-    let mut best = 0;
-    let mut best_fit = chromosomes[0].fitness();
-    for (i, c) in chromosomes.iter().enumerate().skip(1) {
-        let f = c.fitness();
-        let is_better = match problem_solving {
-            ProblemSolving::Maximization | ProblemSolving::FixedFitness => f > best_fit,
-            ProblemSolving::Minimization => f < best_fit,
-        };
-        if is_better {
-            best = i;
-            best_fit = f;
-        }
-    }
-    Some(best)
 }

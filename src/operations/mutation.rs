@@ -24,10 +24,10 @@ pub mod creep;
 pub mod gaussian;
 pub mod insertion;
 pub mod inversion;
+pub mod list_value;
 pub mod non_uniform;
 pub mod polynomial;
 pub mod scramble;
-pub mod list_value;
 pub mod swap;
 pub mod value;
 

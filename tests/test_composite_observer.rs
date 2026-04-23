@@ -14,10 +14,12 @@ use genetic_algorithms::island::configuration::IslandConfiguration;
 use genetic_algorithms::island::IslandGa;
 use genetic_algorithms::nsga2::configuration::Nsga2Configuration;
 use genetic_algorithms::nsga2::Nsga2Ga;
+use genetic_algorithms::observer::LogObserver;
 use genetic_algorithms::observer::{GaObserver, IslandGaObserver, Nsga2Observer};
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
-use genetic_algorithms::traits::{ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig};
-use genetic_algorithms::observer::LogObserver;
+use genetic_algorithms::traits::{
+    ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+};
 use genetic_algorithms::{AllObserver, CompositeObserver};
 
 // ============================================================================
@@ -44,7 +46,12 @@ impl IslandGaObserver<BinaryChromosome> for CountingAllObserver {
 }
 
 impl Nsga2Observer<BinaryChromosome> for CountingAllObserver {
-    fn on_pareto_front_assigned(&self, _generation: usize, _front_count: usize, _population_size: usize) {
+    fn on_pareto_front_assigned(
+        &self,
+        _generation: usize,
+        _front_count: usize,
+        _population_size: usize,
+    ) {
         self.nsga2_hooks.fetch_add(1, Ordering::Relaxed);
     }
 }
@@ -132,7 +139,9 @@ fn test_composite_observer_island_hooks() {
     let mut island_ga = IslandGa::<BinaryChromosome>::new(island_config, ga_config)
         .with_initialization_fn(binary_random_initialization)
         .with_fitness_fn(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64)
-        .with_observer(Arc::new(composite) as Arc<dyn IslandGaObserver<BinaryChromosome> + Send + Sync>)
+        .with_observer(
+            Arc::new(composite) as Arc<dyn IslandGaObserver<BinaryChromosome> + Send + Sync>
+        )
         .build()
         .expect("IslandGa configuration should be valid");
 
@@ -177,7 +186,9 @@ fn test_composite_observer_nsga2_hooks() {
             Box::new(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64),
             Box::new(|dna: &[BinaryGene]| dna.iter().filter(|g| !g.value).count() as f64),
         ])
-        .with_observer(Arc::new(composite) as Arc<dyn Nsga2Observer<BinaryChromosome> + Send + Sync>);
+        .with_observer(
+            Arc::new(composite) as Arc<dyn Nsga2Observer<BinaryChromosome> + Send + Sync>
+        );
 
     nsga2.run().expect("Nsga2Ga run should succeed");
 

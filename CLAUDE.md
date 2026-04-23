@@ -110,6 +110,10 @@ All PRs must pass: `cargo test`, `cargo test --features serde`, `cargo clippy`, 
 
 Future flags planned: `observer-tracing`, `observer-metrics`, `benchmarks`.
 
+## Tool Use Discipline
+
+Do not re-read files already read in the current session unless explicitly asked to. Work from context already loaded — minimize tool calls.
+
 ## Important Constraints
 
 ### No Breaking Changes (default policy)

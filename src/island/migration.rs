@@ -6,6 +6,7 @@ use crate::population::Population;
 use crate::traits::ChromosomeT;
 use log::debug;
 use rand::Rng;
+use std::sync::Arc;
 
 /// Performs migration between islands.
 ///
@@ -56,7 +57,7 @@ where
 
     // Collect migrants from each island based on policy
     let mut rng = crate::rng::make_rng();
-    let mut all_migrants: Vec<Vec<U>> = Vec::with_capacity(num_islands);
+    let mut all_migrants: Vec<Arc<Vec<U>>> = Vec::with_capacity(num_islands);
     for island in islands.iter() {
         let migrants = match config.migration_policy {
             MigrationPolicy::BestReplaceWorst => {
@@ -69,28 +70,27 @@ where
                 select_tournament(island, config.migration_count, problem_solving, &mut rng)
             }
         };
-        all_migrants.push(migrants);
+        all_migrants.push(Arc::new(migrants));
     }
 
     // Distribute migrants to neighbors
     for (source_idx, source_migrants) in all_migrants.iter().enumerate() {
-        let neighbors = neighbors(source_idx, num_islands, &config.topology);
-        for &dest_idx in &neighbors {
-            let migrants = source_migrants.clone();
+        let neighbor_list = neighbors(source_idx, num_islands, &config.topology);
+        for &dest_idx in &neighbor_list {
             match config.migration_policy {
                 MigrationPolicy::BestReplaceWorst
                 | MigrationPolicy::RandomReplaceWorst
                 | MigrationPolicy::TournamentMigrant => {
-                    replace_worst(&mut islands[dest_idx], &migrants, problem_solving);
+                    replace_worst(&mut islands[dest_idx], source_migrants, problem_solving);
                 }
                 MigrationPolicy::RandomReplaceRandom => {
-                    replace_random(&mut islands[dest_idx], &migrants, &mut rng);
+                    replace_random(&mut islands[dest_idx], source_migrants, &mut rng);
                 }
             }
             debug!(
                 target: "island_events",
                 "Migrated {} individuals from island {} to island {} (policy={:?})",
-                migrants.len(),
+                source_migrants.len(),
                 source_idx,
                 dest_idx,
                 config.migration_policy
@@ -111,7 +111,11 @@ where
     U: ChromosomeT,
 {
     let mut indices: Vec<usize> = (0..population.size()).collect();
-    indices.sort_by(|&a, &b| {
+    let k = count.min(population.size());
+    if k == 0 {
+        return Vec::new();
+    }
+    indices.select_nth_unstable_by(k - 1, |&a, &b| {
         let fa = population.chromosomes[a].fitness();
         let fb = population.chromosomes[b].fitness();
         match problem_solving {
@@ -123,9 +127,9 @@ where
             }
         }
     });
+    indices.truncate(k);
     indices
         .into_iter()
-        .take(count)
         .map(|i| population.chromosomes[i].clone())
         .collect()
 }
@@ -191,9 +195,13 @@ where
         return;
     }
 
+    let replace_count = migrants.len().min(population.size());
+    if replace_count == 0 {
+        return;
+    }
     let mut indices: Vec<usize> = (0..population.size()).collect();
-    // Sort by worst first
-    indices.sort_by(|&a, &b| {
+    // Partition by worst first
+    indices.select_nth_unstable_by(replace_count - 1, |&a, &b| {
         let fa = population.chromosomes[a].fitness();
         let fb = population.chromosomes[b].fitness();
         match problem_solving {
@@ -206,7 +214,6 @@ where
         }
     });
 
-    let replace_count = migrants.len().min(population.size());
     for (m_idx, &worst_idx) in indices.iter().take(replace_count).enumerate() {
         population.chromosomes[worst_idx] = migrants[m_idx].clone();
     }
@@ -348,4 +355,3 @@ where
         island[worst_idx] = migrants[m_idx].clone();
     }
 }
-

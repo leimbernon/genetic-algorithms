@@ -97,4 +97,3 @@ impl Nsga2Configuration {
         }
     }
 }
-

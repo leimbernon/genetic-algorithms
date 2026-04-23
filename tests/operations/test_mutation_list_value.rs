@@ -1,10 +1,10 @@
 use genetic_algorithms::chromosomes::ListChromosome;
+use genetic_algorithms::error::GaError;
 use genetic_algorithms::genotypes::List;
 use genetic_algorithms::operations::mutation::factory;
 use genetic_algorithms::operations::mutation::factory_non_value;
 use genetic_algorithms::operations::mutation::list_value::list_value_mutation;
 use genetic_algorithms::operations::Mutation;
-use genetic_algorithms::error::GaError;
 
 fn make_gene(id: i32, alleles: Vec<char>) -> List<char> {
     List::new(id, alleles, 'a').unwrap()

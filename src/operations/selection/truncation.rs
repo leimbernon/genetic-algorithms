@@ -42,16 +42,19 @@ pub fn truncation_selection<U: ChromosomeT>(
         return Vec::new();
     }
 
-    // Build (original_index, fitness) pairs and sort descending by fitness
+    // Truncation point: top 50%, but at least 2 individuals
+    let truncation_size = (n / 2).max(2).min(n);
+
+    // Build (original_index, fitness) pairs and partition top-k in O(n)
     let mut indexed: Vec<(usize, f64)> = chromosomes
         .iter()
         .enumerate()
         .map(|(i, c)| (i, c.fitness()))
         .collect();
-    indexed.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+    indexed.select_nth_unstable_by(truncation_size - 1, |a, b| {
+        b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal)
+    });
 
-    // Truncation point: top 50%, but at least 2 individuals
-    let truncation_size = (n / 2).max(2).min(n);
     let elite = &indexed[..truncation_size];
 
     trace!(
@@ -59,10 +62,10 @@ pub fn truncation_selection<U: ChromosomeT>(
         "Population size {}, truncation size {}", n, truncation_size
     );
 
-    for (rank, &(original_idx, fit)) in elite.iter().enumerate() {
+    for &(original_idx, fit) in elite.iter() {
         trace!(
             target="selection_events", method="truncation";
-            "Elite rank {} -> index {} fitness {}", rank, original_idx, fit
+            "Elite member -> index {} fitness {}", original_idx, fit
         );
     }
 

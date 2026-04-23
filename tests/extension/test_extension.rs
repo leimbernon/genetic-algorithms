@@ -28,11 +28,7 @@ fn make_population(specs: &[(&[i32], f64)]) -> Vec<Chromosome> {
 
 #[test]
 fn noop_does_not_modify_population() {
-    let mut pop = make_population(&[
-        (&[1, 2, 3], 10.0),
-        (&[4, 5, 6], 5.0),
-        (&[7, 8, 9], 1.0),
-    ]);
+    let mut pop = make_population(&[(&[1, 2, 3], 10.0), (&[4, 5, 6], 5.0), (&[7, 8, 9], 1.0)]);
     let original = pop.clone();
     let config = ExtensionConfiguration::new();
 
@@ -337,11 +333,7 @@ fn mass_deduplication_keeps_best_minimization() {
 
 #[test]
 fn mass_deduplication_all_unique() {
-    let mut pop = make_population(&[
-        (&[1, 2, 3], 10.0),
-        (&[4, 5, 6], 20.0),
-        (&[7, 8, 9], 30.0),
-    ]);
+    let mut pop = make_population(&[(&[1, 2, 3], 10.0), (&[4, 5, 6], 20.0), (&[7, 8, 9], 30.0)]);
 
     let config = ExtensionConfiguration::new();
 
@@ -402,13 +394,8 @@ fn factory_dispatches_all_variants() {
             .with_elite_count(1)
             .with_diversity_threshold(0.01);
 
-        let result = extension::factory(
-            *variant,
-            &mut pop,
-            3,
-            ProblemSolving::Maximization,
-            &config,
-        );
+        let result =
+            extension::factory(*variant, &mut pop, 3, ProblemSolving::Maximization, &config);
 
         assert!(result.is_ok(), "Factory failed for {:?}", variant);
     }
@@ -442,12 +429,14 @@ fn extension_config_builder() {
 fn ga_extension_triggers_on_diversity() {
     // Create a population where all chromosomes have identical fitness (diversity = 0.0)
     // and configure extension with diversity_threshold = 1.0 so it triggers (0.0 < 1.0).
+    use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
     use genetic_algorithms::ga::Ga;
     use genetic_algorithms::initializers::binary_random_initialization;
     use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
-    use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig, ExtensionConfig,
-        MutationConfig, SelectionConfig, StoppingConfig};
-    use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
+    use genetic_algorithms::traits::{
+        ConfigurationT, CrossoverConfig, ExtensionConfig, MutationConfig, SelectionConfig,
+        StoppingConfig,
+    };
 
     // All chromosomes return the same fitness so diversity (std-dev) = 0.0, guaranteeing
     // the extension trigger fires on every generation (0.0 < 1.0 threshold).
@@ -472,7 +461,10 @@ fn ga_extension_triggers_on_diversity() {
         .expect("Configuration should be valid");
 
     let result = ga.run();
-    assert!(result.is_ok(), "GA with extension should complete successfully");
+    assert!(
+        result.is_ok(),
+        "GA with extension should complete successfully"
+    );
 
     // Verify all stats entries have diversity >= 0.0 (extension uses diversity from stats)
     let stats = ga.stats();
@@ -484,12 +476,14 @@ fn ga_extension_triggers_on_diversity() {
 
 #[test]
 fn ga_builder_with_extension_config() {
+    use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
     use genetic_algorithms::ga::Ga;
     use genetic_algorithms::initializers::binary_random_initialization;
     use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
-    use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig, ExtensionConfig,
-        MutationConfig, SelectionConfig, StoppingConfig};
-    use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
+    use genetic_algorithms::traits::{
+        ConfigurationT, CrossoverConfig, ExtensionConfig, MutationConfig, SelectionConfig,
+        StoppingConfig,
+    };
 
     fn fitness_fn(dna: &[genetic_algorithms::genotypes::Binary]) -> f64 {
         dna.iter().filter(|g| g.value).count() as f64

@@ -87,10 +87,7 @@ fn make_population(fitnesses: &[f64]) -> Population<MigrationTestChromosome> {
     Population::new(chromosomes)
 }
 
-fn make_pareto_individual(
-    rank: usize,
-    crowding: f64,
-) -> ParetoIndividual<MigrationTestChromosome> {
+fn make_pareto_individual(rank: usize, crowding: f64) -> ParetoIndividual<MigrationTestChromosome> {
     let mut ind = ParetoIndividual::new(
         MigrationTestChromosome {
             dna: vec![],
@@ -151,8 +148,7 @@ fn test_migrate_ring_topology_transfers_best() {
     let result = migrate(&mut islands, &config, ProblemSolving::Minimization);
     assert!(result.is_ok());
 
-    let island1_fitnesses: Vec<f64> =
-        islands[1].chromosomes.iter().map(|c| c.fitness()).collect();
+    let island1_fitnesses: Vec<f64> = islands[1].chromosomes.iter().map(|c| c.fitness()).collect();
     assert!(
         island1_fitnesses.contains(&10.0),
         "Island 1 should contain migrated individual with fitness 10.0"
@@ -273,8 +269,7 @@ fn test_migrate_random_replace_worst_policy() {
     let result = migrate(&mut islands, &config, ProblemSolving::Minimization);
     assert!(result.is_ok());
 
-    let island1_fitnesses: Vec<f64> =
-        islands[1].chromosomes.iter().map(|c| c.fitness()).collect();
+    let island1_fitnesses: Vec<f64> = islands[1].chromosomes.iter().map(|c| c.fitness()).collect();
     let has_original_worst = island1_fitnesses.contains(&300.0);
     let has_migrant = island1_fitnesses
         .iter()
@@ -300,8 +295,7 @@ fn test_migrate_random_replace_random_policy() {
     let result = migrate(&mut islands, &config, ProblemSolving::Minimization);
     assert!(result.is_ok());
 
-    let island1_fitnesses: Vec<f64> =
-        islands[1].chromosomes.iter().map(|c| c.fitness()).collect();
+    let island1_fitnesses: Vec<f64> = islands[1].chromosomes.iter().map(|c| c.fitness()).collect();
     let has_migrant = island1_fitnesses
         .iter()
         .any(|f| [10.0, 20.0, 30.0].contains(f));
@@ -326,8 +320,7 @@ fn test_migrate_tournament_policy() {
     let result = migrate(&mut islands, &config, ProblemSolving::Minimization);
     assert!(result.is_ok());
 
-    let island1_fitnesses: Vec<f64> =
-        islands[1].chromosomes.iter().map(|c| c.fitness()).collect();
+    let island1_fitnesses: Vec<f64> = islands[1].chromosomes.iter().map(|c| c.fitness()).collect();
     let has_migrant = island1_fitnesses
         .iter()
         .any(|f| [10.0, 20.0, 30.0].contains(f));

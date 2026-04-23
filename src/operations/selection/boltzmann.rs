@@ -91,7 +91,7 @@ pub fn boltzmann_selection<U: ChromosomeT>(
 
     for _ in 0..total_parents {
         let r: f64 = rng.random_range(0.0..1.0);
-        let idx = cumulative.iter().position(|&cp| cp >= r).unwrap_or(n - 1);
+        let idx = cumulative.partition_point(|&cp| cp < r).min(n - 1);
         selected.push(idx);
     }
 

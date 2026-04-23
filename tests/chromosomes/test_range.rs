@@ -18,7 +18,7 @@ fn test_phenotype() {
     let mut chromosome = Range::<i32>::new();
     chromosome.dna.push(RangeGenotype {
         id: 10,
-        ranges: vec![(0, 10)],
+        ranges: vec![(0, 10)].into(),
         value: 5,
     });
     let phenotype = chromosome.phenotype();
@@ -31,12 +31,12 @@ fn test_set_dna() {
     let dna = vec![
         RangeGenotype {
             id: 10,
-            ranges: vec![(0, 10)],
+            ranges: vec![(0, 10)].into(),
             value: 5,
         },
         RangeGenotype {
             id: 20,
-            ranges: vec![(10, 20)],
+            ranges: vec![(10, 20)].into(),
             value: 15,
         },
     ];

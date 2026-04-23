@@ -34,16 +34,8 @@ pub fn inversion<U: ChromosomeT>(individual: &mut U) {
 
     trace!(target="mutation_events", method="inversion"; "Mutation lower index: {}, mutation higher index: {}", lower_index, higher_index);
 
-    // Swap genes between the selected indices
-    for i in 0..(higher_index - lower_index) / 2 {
-        // Retrieve genes at both ends
-        let gene_start = individual.dna()[lower_index + i].clone();
-        let gene_end = individual.dna()[higher_index - i].clone();
-
-        // Swap the genes using `set_gene` directly
-        individual.set_gene(lower_index + i, gene_end);
-        individual.set_gene(higher_index - i, gene_start);
-    }
+    // Reverse the sub-sequence in-place
+    individual.dna_mut()[lower_index..=higher_index].reverse();
 
     debug!(target="mutation_events", method="inversion"; "Inversion mutation finished");
 }

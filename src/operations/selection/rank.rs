@@ -66,11 +66,7 @@ pub fn rank_selection<U: ChromosomeT>(chromosomes: &[U], couples: usize) -> Vec<
 
     for _ in 0..total_parents {
         let r: f64 = rng.random_range(0.0..1.0);
-        // Find the first individual whose cumulative probability >= r
-        let idx = cumulative
-            .iter()
-            .position(|&(_, cp)| cp >= r)
-            .unwrap_or(n - 1);
+        let idx = cumulative.partition_point(|&(_, cp)| cp < r).min(n - 1);
         selected.push(cumulative[idx].0);
     }
 

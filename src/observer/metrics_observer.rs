@@ -33,10 +33,10 @@
 //!     .unwrap();
 //! ```
 
-use std::time::Duration;
 use crate::observer::{ExtensionEvent, GaObserver, IslandGaObserver, Nsga2Observer};
 use crate::stats::GenerationStats;
 use crate::traits::ChromosomeT;
+use std::time::Duration;
 
 /// Observer that records per-generation metrics via the [`metrics`] facade crate.
 ///
@@ -73,27 +73,52 @@ impl Default for MetricsObserver {
 }
 
 impl<U: ChromosomeT> GaObserver<U> for MetricsObserver {
-    fn on_selection_complete(&self, _generation: usize, duration: Duration, _population_size: usize) {
+    fn on_selection_complete(
+        &self,
+        _generation: usize,
+        duration: Duration,
+        _population_size: usize,
+    ) {
         metrics::histogram!("ga.operator.selection_ms", "run_id" => self.run_id)
             .record(duration.as_secs_f64() * 1000.0);
     }
 
-    fn on_crossover_complete(&self, _generation: usize, duration: Duration, _offspring_count: usize) {
+    fn on_crossover_complete(
+        &self,
+        _generation: usize,
+        duration: Duration,
+        _offspring_count: usize,
+    ) {
         metrics::histogram!("ga.operator.crossover_ms", "run_id" => self.run_id)
             .record(duration.as_secs_f64() * 1000.0);
     }
 
-    fn on_mutation_complete(&self, _generation: usize, duration: Duration, _population_size: usize) {
+    fn on_mutation_complete(
+        &self,
+        _generation: usize,
+        duration: Duration,
+        _population_size: usize,
+    ) {
         metrics::histogram!("ga.operator.mutation_ms", "run_id" => self.run_id)
             .record(duration.as_secs_f64() * 1000.0);
     }
 
-    fn on_fitness_evaluation_complete(&self, _generation: usize, duration: Duration, _population_size: usize) {
+    fn on_fitness_evaluation_complete(
+        &self,
+        _generation: usize,
+        duration: Duration,
+        _population_size: usize,
+    ) {
         metrics::histogram!("ga.operator.fitness_eval_ms", "run_id" => self.run_id)
             .record(duration.as_secs_f64() * 1000.0);
     }
 
-    fn on_survivor_selection_complete(&self, _generation: usize, duration: Duration, _population_size: usize) {
+    fn on_survivor_selection_complete(
+        &self,
+        _generation: usize,
+        duration: Duration,
+        _population_size: usize,
+    ) {
         metrics::histogram!("ga.operator.survivor_ms", "run_id" => self.run_id)
             .record(duration.as_secs_f64() * 1000.0);
     }
@@ -111,8 +136,10 @@ impl<U: ChromosomeT> GaObserver<U> for MetricsObserver {
     }
 
     fn on_generation_end(&self, stats: &GenerationStats) {
-        metrics::gauge!("ga.generation.best_fitness", "run_id" => self.run_id).set(stats.best_fitness);
-        metrics::gauge!("ga.generation.mean_fitness", "run_id" => self.run_id).set(stats.avg_fitness);
+        metrics::gauge!("ga.generation.best_fitness", "run_id" => self.run_id)
+            .set(stats.best_fitness);
+        metrics::gauge!("ga.generation.mean_fitness", "run_id" => self.run_id)
+            .set(stats.avg_fitness);
         metrics::gauge!("ga.generation.diversity", "run_id" => self.run_id).set(stats.diversity);
     }
 }
@@ -120,4 +147,3 @@ impl<U: ChromosomeT> GaObserver<U> for MetricsObserver {
 impl<U: ChromosomeT> IslandGaObserver<U> for MetricsObserver {}
 
 impl<U: ChromosomeT> Nsga2Observer<U> for MetricsObserver {}
-

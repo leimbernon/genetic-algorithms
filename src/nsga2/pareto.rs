@@ -144,4 +144,3 @@ pub fn constrained_dominates(
         (false, false) => a_violation < b_violation,
     }
 }
-

@@ -20,7 +20,6 @@ cargo run --example rastrigin
 ```
 */
 
-use std::sync::Arc;
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::{Ga, TerminationCause};
@@ -32,9 +31,10 @@ use genetic_algorithms::stats::GenerationStats;
 use genetic_algorithms::traits::{
     ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
 };
-use genetic_algorithms::{CompositeObserver, LogObserver};
 #[cfg(feature = "observer-metrics")]
 use genetic_algorithms::MetricsObserver;
+use genetic_algorithms::{CompositeObserver, LogObserver};
+use std::sync::Arc;
 
 fn main() {
     // --- Problem parameters ---
@@ -48,7 +48,8 @@ fn main() {
         let a = 10.0;
         let n = dna.len() as f64;
         a * n
-            + dna.iter()
+            + dna
+                .iter()
                 .map(|g| g.value.powi(2) - a * (2.0 * std::f64::consts::PI * g.value).cos())
                 .sum::<f64>()
     };
@@ -58,8 +59,7 @@ fn main() {
     let alleles_clone = alleles.clone();
 
     // --- Build composite observer (LogObserver always active; MetricsObserver when feature flag set) ---
-    let composite = CompositeObserver::new()
-        .add(Arc::new(LogObserver));
+    let composite = CompositeObserver::new().add(Arc::new(LogObserver));
     #[cfg(feature = "observer-metrics")]
     let composite = composite.add(Arc::new(MetricsObserver::new("rastrigin")));
 

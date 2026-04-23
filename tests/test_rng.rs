@@ -1,7 +1,7 @@
 use genetic_algorithms::rng;
 use rand::rngs::SmallRng;
-use rand::SeedableRng;
 use rand::Rng;
+use rand::SeedableRng;
 
 /// Verifies that `SmallRng::seed_from_u64` with the same seed always
 /// produces the same first random value. This tests our deterministic

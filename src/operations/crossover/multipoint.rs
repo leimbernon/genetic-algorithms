@@ -23,8 +23,8 @@ pub fn multipoint<U: ChromosomeT>(
             parent_1.dna().len(), parent_2.dna().len())));
     }
 
-    let mut child_1 = parent_1.clone();
-    let mut child_2 = parent_2.clone();
+    let mut child_1 = U::new();
+    let mut child_2 = U::new();
 
     let mut dna_child_1 = Vec::new();
     let mut dna_child_2 = Vec::new();

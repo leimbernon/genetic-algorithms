@@ -19,7 +19,6 @@ cargo run --example onemax_extension
 ```
 */
 
-use std::sync::Arc;
 use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::fitness::count_true;
@@ -34,6 +33,7 @@ use genetic_algorithms::traits::{
     StoppingConfig,
 };
 use genetic_algorithms::LogObserver;
+use std::sync::Arc;
 
 fn main() {
     // --- Problem parameters ---
@@ -78,9 +78,7 @@ fn main() {
         "Chromosome: {} bits, Population: {}, Max generations: {}",
         N_BITS, POP_SIZE, MAX_GENERATIONS
     );
-    println!(
-        "Extension: MassDeduplication (threshold=1.0, elite=2)"
-    );
+    println!("Extension: MassDeduplication (threshold=1.0, elite=2)");
     println!("-------------------------------------------------------");
 
     // --- Run the GA with a progress callback ---

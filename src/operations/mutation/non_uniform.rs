@@ -13,7 +13,6 @@ use crate::error::GaError;
 use crate::traits::ChromosomeT;
 use log::debug;
 use rand::Rng;
-use std::borrow::Cow;
 use std::fmt::Debug;
 
 /// Non-uniform mutation for `Range<T>` chromosomes.
@@ -70,8 +69,7 @@ where
     let mut rng = crate::rng::make_rng();
     let idx = rng.random_range(0..len);
 
-    let mut dna = individual.dna().to_vec();
-    let mut gene = dna[idx].clone();
+    let mut gene = individual.dna()[idx].clone();
 
     if gene.ranges.is_empty() {
         debug!(target="mutation_events", method="non_uniform"; "Gene {} has no ranges, skipping", idx);
@@ -102,9 +100,7 @@ where
 
     let clamped = new_val_f64.clamp(lo_f64, hi_f64);
     gene.value = T::from_f64(clamped);
-    dna[idx] = gene;
-
-    individual.set_dna(Cow::Owned(dna));
+    individual.set_gene(idx, gene);
 
     debug!(
         target="mutation_events", method="non_uniform";

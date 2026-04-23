@@ -11,7 +11,6 @@
 use crate::chromosomes::Range as RangeChromosome;
 use crate::traits::ChromosomeT;
 use rand::Rng;
-use std::borrow::Cow;
 use std::fmt::Debug;
 
 /// Gaussian mutation for `Range<T>` chromosomes where `T` can be converted to/from `f64`.
@@ -37,8 +36,7 @@ where
     let mut rng = crate::rng::make_rng();
     let idx = rng.random_range(0..len);
 
-    let mut dna = individual.dna().to_vec();
-    let mut gene = dna[idx].clone();
+    let mut gene = individual.dna()[idx].clone();
 
     if gene.ranges.is_empty() {
         return;
@@ -58,9 +56,7 @@ where
     let new_val_f64 = (current + noise).clamp(lo_f64, hi_f64);
 
     gene.value = T::from_f64(new_val_f64);
-    dna[idx] = gene;
-
-    individual.set_dna(Cow::Owned(dna));
+    individual.set_gene(idx, gene);
 }
 
 /// Trait for types that can be converted to/from an f64 value.

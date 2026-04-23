@@ -82,8 +82,8 @@ where
         child_dna_2.push(gene2);
     }
 
-    let mut child_1 = parent_1.clone();
-    let mut child_2 = parent_2.clone();
+    let mut child_1 = RangeChromosome::<T>::new();
+    let mut child_2 = RangeChromosome::<T>::new();
     child_1.set_dna(Cow::Owned(child_dna_1));
     child_2.set_dna(Cow::Owned(child_dna_2));
 
@@ -134,4 +134,3 @@ impl ArithmeticConvertible for i64 {
         val as f64
     }
 }
-

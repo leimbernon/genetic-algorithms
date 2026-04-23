@@ -1,14 +1,16 @@
 #![allow(deprecated)]
-use std::sync::{Arc, Mutex};
 use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
+use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::{Ga, TerminationCause};
 use genetic_algorithms::genotypes::Binary as BinaryGene;
 use genetic_algorithms::initializers::binary_random_initialization;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::reporter::Reporter;
 use genetic_algorithms::stats::GenerationStats;
-use genetic_algorithms::traits::{ConfigurationT, SelectionConfig, CrossoverConfig, MutationConfig, StoppingConfig};
-use genetic_algorithms::configuration::ProblemSolving;
+use genetic_algorithms::traits::{
+    ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+};
+use std::sync::{Arc, Mutex};
 
 #[derive(Default)]
 struct SpyData {
@@ -53,9 +55,7 @@ fn build_test_ga(max_gens: usize, spy: SpyReporter) -> Ga<BinaryChromosome> {
         .with_population_size(20)
         .with_genes_per_chromosome(8)
         .with_initialization_fn(binary_random_initialization)
-        .with_fitness_fn(|dna: &[BinaryGene]| {
-            dna.iter().filter(|g| g.value).count() as f64
-        })
+        .with_fitness_fn(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
         .with_mutation_method(Mutation::BitFlip)
@@ -100,7 +100,10 @@ fn test_reporter_on_new_best_fires() {
     let mut ga = build_test_ga(10, spy);
     ga.run().expect("GA run should succeed");
     let d = data.lock().unwrap();
-    assert!(d.new_best_count >= 1, "on_new_best should fire at least once");
+    assert!(
+        d.new_best_count >= 1,
+        "on_new_best should fire at least once"
+    );
 }
 
 /// Test 4: on_new_best fires fewer times than on_generation_complete (not every gen improves)
@@ -113,9 +116,7 @@ fn test_reporter_on_new_best_less_than_total_gens() {
         .with_population_size(50)
         .with_genes_per_chromosome(8)
         .with_initialization_fn(binary_random_initialization)
-        .with_fitness_fn(|dna: &[BinaryGene]| {
-            dna.iter().filter(|g| g.value).count() as f64
-        })
+        .with_fitness_fn(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
         .with_mutation_method(Mutation::BitFlip)
@@ -182,9 +183,7 @@ fn test_no_reporter_default() {
         .with_population_size(20)
         .with_genes_per_chromosome(8)
         .with_initialization_fn(binary_random_initialization)
-        .with_fitness_fn(|dna: &[BinaryGene]| {
-            dna.iter().filter(|g| g.value).count() as f64
-        })
+        .with_fitness_fn(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
         .with_mutation_method(Mutation::BitFlip)
@@ -193,7 +192,8 @@ fn test_no_reporter_default() {
         .with_max_generations(10)
         .build()
         .expect("valid config");
-    ga.run().expect("GA without reporter should complete without panic");
+    ga.run()
+        .expect("GA without reporter should complete without panic");
     assert_ne!(
         ga.termination_cause,
         TerminationCause::NotTerminated,

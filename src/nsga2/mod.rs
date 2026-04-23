@@ -230,10 +230,16 @@ where
 
         for gen in 0..max_gens {
             // Non-dominated sorting (direction-aware, optionally constrained)
-            let t_sort = if self.observer.is_some() { Some(Instant::now()) } else { None };
+            let t_sort = if self.observer.is_some() {
+                Some(Instant::now())
+            } else {
+                None
+            };
             let fronts = self.perform_sorting(&population, &directions, has_constraints);
             if let Some(start) = t_sort {
-                self.notify(|obs| obs.on_non_dominated_sort_complete(gen, start.elapsed().as_secs_f64() * 1000.0));
+                self.notify(|obs| {
+                    obs.on_non_dominated_sort_complete(gen, start.elapsed().as_secs_f64() * 1000.0)
+                });
             }
 
             // Assign ranks
@@ -244,7 +250,11 @@ where
             }
 
             // Assign crowding distance per front
-            let t_crowd = if self.observer.is_some() { Some(Instant::now()) } else { None };
+            let t_crowd = if self.observer.is_some() {
+                Some(Instant::now())
+            } else {
+                None
+            };
             for front in &fronts {
                 let front_objectives: Vec<&[f64]> = front
                     .iter()
@@ -257,7 +267,9 @@ where
                 }
             }
             if let Some(start) = t_crowd {
-                self.notify(|obs| obs.on_crowding_distance_calculated(gen, start.elapsed().as_secs_f64() * 1000.0));
+                self.notify(|obs| {
+                    obs.on_crowding_distance_calculated(gen, start.elapsed().as_secs_f64() * 1000.0)
+                });
             }
             self.notify(|obs| obs.on_pareto_front_assigned(gen, fronts.len(), population.len()));
 
@@ -510,4 +522,3 @@ where
     }
     constraint_fns.iter().map(|f| f(dna).max(0.0)).sum()
 }
-

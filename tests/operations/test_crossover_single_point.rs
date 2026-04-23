@@ -109,6 +109,60 @@ fn single_point_crossover_error_on_different_lengths() {
 }
 
 #[test]
+fn single_point_crossover_children_start_with_fresh_metadata() {
+    // CLONE-02: children must be built via U::new(), not parent.clone().
+    // The observable consequence is that children have age==0 and fitness==0.0
+    // even when parents carry non-zero age and non-zero fitness.
+    let mut parent_1 = Chromosome {
+        dna: vec![
+            Gene { id: 1 },
+            Gene { id: 2 },
+            Gene { id: 3 },
+            Gene { id: 4 },
+        ],
+        fitness: 99.0,
+        age: 5,
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+    let mut parent_2 = Chromosome {
+        dna: vec![
+            Gene { id: 5 },
+            Gene { id: 6 },
+            Gene { id: 7 },
+            Gene { id: 8 },
+        ],
+        fitness: 77.0,
+        age: 5,
+        fitness_fn: FitnessFnWrapper::default(),
+    };
+
+    // Confirm parents have the non-zero metadata we expect
+    assert_eq!(parent_1.age, 5);
+    assert_eq!(parent_2.age, 5);
+
+    let offspring = single_point(&parent_1, &parent_2).unwrap();
+    assert_eq!(offspring.len(), 2);
+
+    // Children must start with fresh metadata regardless of parent age/fitness.
+    // age == 0 proves U::new() was used instead of parent.clone().
+    assert_eq!(
+        offspring[0].age, 0,
+        "child_1 must have age=0 (U::new()), not inherit parent age {}",
+        parent_1.age
+    );
+    assert_eq!(
+        offspring[1].age, 0,
+        "child_2 must have age=0 (U::new()), not inherit parent age {}",
+        parent_2.age
+    );
+
+    // Suppress unused-mut warnings from the compiler; parents are set up this way
+    // to mirror real GA usage where parents accumulate age over generations.
+    let _ = &mut parent_1;
+    let _ = &mut parent_2;
+}
+
+#[test]
 fn single_point_crossover_error_on_too_short() {
     let parent_1 = Chromosome {
         dna: vec![Gene { id: 1 }],

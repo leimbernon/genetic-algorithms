@@ -4,8 +4,8 @@ mod operations {
     mod test_crossover_blend_alpha;
     mod test_crossover_clone;
     mod test_crossover_order;
-    mod test_crossover_rejuvenate;
     mod test_crossover_pmx;
+    mod test_crossover_rejuvenate;
     mod test_crossover_sbx;
     mod test_crossover_single_point;
     mod test_crossover_uniform;

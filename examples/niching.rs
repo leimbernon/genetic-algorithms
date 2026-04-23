@@ -22,7 +22,6 @@ cargo run --example niching
 ```
 */
 
-use std::sync::Arc;
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::{Ga, TerminationCause};
@@ -36,6 +35,7 @@ use genetic_algorithms::traits::{
     StoppingConfig,
 };
 use genetic_algorithms::LogObserver;
+use std::sync::Arc;
 
 fn main() {
     // --- Problem parameters ---
@@ -149,9 +149,7 @@ fn main() {
 
             let peaks_found = peaks
                 .iter()
-                .filter(|(center, _)| {
-                    positions.iter().any(|&x| (x - center).abs() < SIGMA_SHARE)
-                })
+                .filter(|(center, _)| positions.iter().any(|&x| (x - center).abs() < SIGMA_SHARE))
                 .count();
             if peaks_found >= 3 {
                 println!("SUCCESS: Population covers all {peaks_found} peaks!");

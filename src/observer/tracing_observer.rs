@@ -45,13 +45,13 @@
 //! when a `LogTracer` is installed (which routes `log` events into the `tracing`
 //! subscriber — emitting `log::*` here would loop).
 
-use std::sync::Mutex;
-use std::time::Duration;
-use tracing::Span;
 use crate::ga::TerminationCause;
 use crate::observer::{ExtensionEvent, GaObserver, IslandGaObserver, Nsga2Observer};
 use crate::stats::GenerationStats;
 use crate::traits::ChromosomeT;
+use std::sync::Mutex;
+use std::time::Duration;
+use tracing::Span;
 
 /// Tracing-based [`GaObserver`] that emits structured spans and events for all 12 hooks.
 ///
@@ -125,7 +125,12 @@ impl<U: ChromosomeT> GaObserver<U> for TracingObserver {
             .and_then(|opt| opt.as_ref())
             .map(|span| span.enter());
         let duration_ms = duration.as_secs_f64() * 1000.0;
-        tracing::trace!(generation, duration_ms, population_size, "selection_complete");
+        tracing::trace!(
+            generation,
+            duration_ms,
+            population_size,
+            "selection_complete"
+        );
     }
 
     /// Emits a TRACE event with crossover timing inside the current generation span.
@@ -136,7 +141,12 @@ impl<U: ChromosomeT> GaObserver<U> for TracingObserver {
             .and_then(|opt| opt.as_ref())
             .map(|span| span.enter());
         let duration_ms = duration.as_secs_f64() * 1000.0;
-        tracing::trace!(generation, duration_ms, offspring_count, "crossover_complete");
+        tracing::trace!(
+            generation,
+            duration_ms,
+            offspring_count,
+            "crossover_complete"
+        );
     }
 
     /// Emits a TRACE event with mutation timing inside the current generation span.
@@ -147,29 +157,54 @@ impl<U: ChromosomeT> GaObserver<U> for TracingObserver {
             .and_then(|opt| opt.as_ref())
             .map(|span| span.enter());
         let duration_ms = duration.as_secs_f64() * 1000.0;
-        tracing::trace!(generation, duration_ms, population_size, "mutation_complete");
+        tracing::trace!(
+            generation,
+            duration_ms,
+            population_size,
+            "mutation_complete"
+        );
     }
 
     /// Emits a TRACE event with fitness evaluation timing inside the current generation span.
-    fn on_fitness_evaluation_complete(&self, generation: usize, duration: Duration, population_size: usize) {
+    fn on_fitness_evaluation_complete(
+        &self,
+        generation: usize,
+        duration: Duration,
+        population_size: usize,
+    ) {
         let guard = self.gen_span.lock().ok();
         let _entered = guard
             .as_deref()
             .and_then(|opt| opt.as_ref())
             .map(|span| span.enter());
         let duration_ms = duration.as_secs_f64() * 1000.0;
-        tracing::trace!(generation, duration_ms, population_size, "fitness_evaluation_complete");
+        tracing::trace!(
+            generation,
+            duration_ms,
+            population_size,
+            "fitness_evaluation_complete"
+        );
     }
 
     /// Emits a TRACE event with survivor selection timing inside the current generation span.
-    fn on_survivor_selection_complete(&self, generation: usize, duration: Duration, population_size: usize) {
+    fn on_survivor_selection_complete(
+        &self,
+        generation: usize,
+        duration: Duration,
+        population_size: usize,
+    ) {
         let guard = self.gen_span.lock().ok();
         let _entered = guard
             .as_deref()
             .and_then(|opt| opt.as_ref())
             .map(|span| span.enter());
         let duration_ms = duration.as_secs_f64() * 1000.0;
-        tracing::trace!(generation, duration_ms, population_size, "survivor_selection_complete");
+        tracing::trace!(
+            generation,
+            duration_ms,
+            population_size,
+            "survivor_selection_complete"
+        );
     }
 
     /// Emits an INFO event with the new best fitness inside the current generation span.

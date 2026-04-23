@@ -1,15 +1,18 @@
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
-use std::time::Duration;
 use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
+use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::{Ga, TerminationCause};
 use genetic_algorithms::genotypes::Binary as BinaryGene;
 use genetic_algorithms::initializers::binary_random_initialization;
 use genetic_algorithms::observer::{ExtensionEvent, GaObserver, NoopObserver};
 use genetic_algorithms::operations::{Crossover, Extension, Mutation, Selection, Survivor};
 use genetic_algorithms::stats::GenerationStats;
-use genetic_algorithms::traits::{ConfigurationT, ExtensionConfig, SelectionConfig, CrossoverConfig, MutationConfig, StoppingConfig};
-use genetic_algorithms::configuration::ProblemSolving;
+use genetic_algorithms::traits::{
+    ConfigurationT, CrossoverConfig, ExtensionConfig, MutationConfig, SelectionConfig,
+    StoppingConfig,
+};
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 #[derive(Default)]
 struct SpyData {
@@ -55,10 +58,22 @@ impl GaObserver<BinaryChromosome> for SpyObserver {
     fn on_mutation_complete(&self, _generation: usize, _duration: Duration, _pop_size: usize) {
         self.data.mutation_complete.fetch_add(1, Ordering::Relaxed);
     }
-    fn on_fitness_evaluation_complete(&self, _generation: usize, _duration: Duration, _pop_size: usize) {
-        self.data.fitness_eval_complete.fetch_add(1, Ordering::Relaxed);
+    fn on_fitness_evaluation_complete(
+        &self,
+        _generation: usize,
+        _duration: Duration,
+        _pop_size: usize,
+    ) {
+        self.data
+            .fitness_eval_complete
+            .fetch_add(1, Ordering::Relaxed);
     }
-    fn on_survivor_selection_complete(&self, _generation: usize, _duration: Duration, _pop_size: usize) {
+    fn on_survivor_selection_complete(
+        &self,
+        _generation: usize,
+        _duration: Duration,
+        _pop_size: usize,
+    ) {
         self.data.survivor_complete.fetch_add(1, Ordering::Relaxed);
     }
     fn on_new_best(&self, _generation: usize, _best: BinaryChromosome) {
@@ -68,7 +83,9 @@ impl GaObserver<BinaryChromosome> for SpyObserver {
         self.data.stagnation.fetch_add(1, Ordering::Relaxed);
     }
     fn on_extension_triggered(&self, _event: ExtensionEvent) {
-        self.data.extension_triggered.fetch_add(1, Ordering::Relaxed);
+        self.data
+            .extension_triggered
+            .fetch_add(1, Ordering::Relaxed);
     }
     fn on_generation_end(&self, _stats: &GenerationStats) {
         self.data.generation_end.fetch_add(1, Ordering::Relaxed);
@@ -76,18 +93,21 @@ impl GaObserver<BinaryChromosome> for SpyObserver {
     fn on_run_end(&self, cause: TerminationCause, all_stats: &[GenerationStats]) {
         self.data.run_end.fetch_add(1, Ordering::Relaxed);
         *self.data.run_end_cause.lock().unwrap() = Some(cause);
-        self.data.run_end_stats_len.store(all_stats.len(), Ordering::Relaxed);
+        self.data
+            .run_end_stats_len
+            .store(all_stats.len(), Ordering::Relaxed);
     }
 }
 
-fn build_test_ga_with_observer(max_gens: usize, observer: Arc<dyn GaObserver<BinaryChromosome> + Send + Sync>) -> Ga<BinaryChromosome> {
+fn build_test_ga_with_observer(
+    max_gens: usize,
+    observer: Arc<dyn GaObserver<BinaryChromosome> + Send + Sync>,
+) -> Ga<BinaryChromosome> {
     Ga::new()
         .with_population_size(20)
         .with_genes_per_chromosome(8)
         .with_initialization_fn(binary_random_initialization)
-        .with_fitness_fn(|dna: &[BinaryGene]| {
-            dna.iter().filter(|g| g.value).count() as f64
-        })
+        .with_fitness_fn(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
         .with_mutation_method(Mutation::BitFlip)
@@ -150,8 +170,17 @@ fn test_observer_on_run_end_fires_once() {
 /// bit-flip mutation is guaranteed to trigger on_new_best.
 #[test]
 fn test_observer_on_new_best_fires() {
-    fn all_false_init(size: usize, _alleles: Option<&[BinaryGene]>, _repeat: Option<bool>) -> Vec<BinaryGene> {
-        (0..size).map(|i| BinaryGene { id: i as i32, value: false }).collect()
+    fn all_false_init(
+        size: usize,
+        _alleles: Option<&[BinaryGene]>,
+        _repeat: Option<bool>,
+    ) -> Vec<BinaryGene> {
+        (0..size)
+            .map(|i| BinaryGene {
+                id: i as i32,
+                value: false,
+            })
+            .collect()
     }
 
     let data = Arc::new(SpyData::default());
@@ -171,7 +200,10 @@ fn test_observer_on_new_best_fires() {
         .build()
         .expect("valid config");
     ga.run().expect("GA run should succeed");
-    assert!(data.new_best.load(Ordering::Relaxed) >= 1, "on_new_best should fire at least once when starting from all-zero fitness");
+    assert!(
+        data.new_best.load(Ordering::Relaxed) >= 1,
+        "on_new_best should fire at least once when starting from all-zero fitness"
+    );
 }
 
 /// Test 6: operator hooks fire each generation
@@ -195,9 +227,7 @@ fn test_no_observer_default() {
         .with_population_size(20)
         .with_genes_per_chromosome(8)
         .with_initialization_fn(binary_random_initialization)
-        .with_fitness_fn(|dna: &[BinaryGene]| {
-            dna.iter().filter(|g| g.value).count() as f64
-        })
+        .with_fitness_fn(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
         .with_mutation_method(Mutation::BitFlip)
@@ -206,7 +236,8 @@ fn test_no_observer_default() {
         .with_max_generations(10)
         .build()
         .expect("valid config");
-    ga.run().expect("GA without observer should complete without panic");
+    ga.run()
+        .expect("GA without observer should complete without panic");
     assert_ne!(ga.termination_cause, TerminationCause::NotTerminated);
 }
 
@@ -243,9 +274,7 @@ fn test_observer_stagnation_fires() {
         .with_population_size(50)
         .with_genes_per_chromosome(8)
         .with_initialization_fn(binary_random_initialization)
-        .with_fitness_fn(|dna: &[BinaryGene]| {
-            dna.iter().filter(|g| g.value).count() as f64
-        })
+        .with_fitness_fn(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
         .with_mutation_method(Mutation::BitFlip)
@@ -259,7 +288,11 @@ fn test_observer_stagnation_fires() {
     // stagnation_count + new_best_count should equal max_generations
     let stag = data.stagnation.load(Ordering::Relaxed);
     let best = data.new_best.load(Ordering::Relaxed);
-    assert_eq!(stag + best, 50, "stagnation + new_best should equal total generations");
+    assert_eq!(
+        stag + best,
+        50,
+        "stagnation + new_best should equal total generations"
+    );
 }
 
 /// LogObserver: implements GaObserver for BinaryChromosome (compile check)
@@ -291,7 +324,8 @@ fn test_log_observer_attaches_and_runs() {
     use genetic_algorithms::observer::LogObserver;
     let obs: Arc<dyn GaObserver<BinaryChromosome> + Send + Sync> = Arc::new(LogObserver);
     let mut ga = build_test_ga_with_observer(5, obs);
-    ga.run().expect("GA with LogObserver should complete without panic");
+    ga.run()
+        .expect("GA with LogObserver should complete without panic");
 }
 
 /// LogObserver: is re-exported from crate root
@@ -315,38 +349,49 @@ fn test_ga_has_no_direct_log_calls() {
         // These macros must not appear outside comments
         assert!(
             !trimmed.starts_with("info!("),
-            "Found direct info!() call in ga.rs: {}", trimmed
+            "Found direct info!() call in ga.rs: {}",
+            trimmed
         );
         assert!(
             !trimmed.starts_with("debug!("),
-            "Found direct debug!() call in ga.rs: {}", trimmed
+            "Found direct debug!() call in ga.rs: {}",
+            trimmed
         );
         assert!(
             !trimmed.starts_with("trace!("),
-            "Found direct trace!() call in ga.rs: {}", trimmed
+            "Found direct trace!() call in ga.rs: {}",
+            trimmed
         );
         // log::info!, log::debug!, log::trace! forms
         assert!(
             !trimmed.starts_with("log::info!("),
-            "Found direct log::info!() call in ga.rs: {}", trimmed
+            "Found direct log::info!() call in ga.rs: {}",
+            trimmed
         );
         assert!(
             !trimmed.starts_with("log::debug!("),
-            "Found direct log::debug!() call in ga.rs: {}", trimmed
+            "Found direct log::debug!() call in ga.rs: {}",
+            trimmed
         );
         assert!(
             !trimmed.starts_with("log::trace!("),
-            "Found direct log::trace!() call in ga.rs: {}", trimmed
+            "Found direct log::trace!() call in ga.rs: {}",
+            trimmed
         );
     }
     // log::warn! is allowed (checkpoint failure, serde-gated) — verify it exists exactly once
-    let warn_count = ga_source.lines()
+    let warn_count = ga_source
+        .lines()
         .filter(|l| {
             let t = l.trim();
             !t.starts_with("//") && (t.starts_with("log::warn!(") || t.starts_with("warn!("))
         })
         .count();
-    assert!(warn_count <= 1, "Expected at most 1 warn!() call in ga.rs (checkpoint exception), found {}", warn_count);
+    assert!(
+        warn_count <= 1,
+        "Expected at most 1 warn!() call in ga.rs (checkpoint exception), found {}",
+        warn_count
+    );
 }
 
 // ============================================================================
@@ -375,15 +420,28 @@ impl OrderingSpyObserver {
 
 impl GaObserver<BinaryChromosome> for OrderingSpyObserver {
     fn on_extension_triggered(&self, _event: ExtensionEvent) {
-        self.data.events.lock().unwrap().push("extension_triggered".to_string());
+        self.data
+            .events
+            .lock()
+            .unwrap()
+            .push("extension_triggered".to_string());
     }
     fn on_generation_end(&self, _stats: &GenerationStats) {
-        self.data.events.lock().unwrap().push("generation_end".to_string());
+        self.data
+            .events
+            .lock()
+            .unwrap()
+            .push("generation_end".to_string());
     }
     fn on_mutation_complete(&self, _generation: usize, duration: Duration, _pop_size: usize) {
         *self.data.mutation_duration.lock().unwrap() = Some(duration);
     }
-    fn on_fitness_evaluation_complete(&self, _generation: usize, duration: Duration, _pop_size: usize) {
+    fn on_fitness_evaluation_complete(
+        &self,
+        _generation: usize,
+        duration: Duration,
+        _pop_size: usize,
+    ) {
         *self.data.fitness_eval_duration.lock().unwrap() = Some(duration);
     }
 }
@@ -401,9 +459,7 @@ fn test_extension_fires_before_generation_end() {
         .with_population_size(20)
         .with_genes_per_chromosome(8)
         .with_initialization_fn(binary_random_initialization)
-        .with_fitness_fn(|dna: &[BinaryGene]| {
-            dna.iter().filter(|g| g.value).count() as f64
-        })
+        .with_fitness_fn(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
         .with_mutation_method(Mutation::BitFlip)
@@ -450,7 +506,10 @@ fn test_mutation_timing_nonzero() {
     // Duration comes from the combined crossover+mutation+fitness block — should be > zero
     // (even if it rounds to zero on very fast machines, we accept Some(Duration::ZERO) as passing
     //  since the hook fired, per the plan note about EXT-01 separation being a future refactor)
-    assert!(d.unwrap() >= Duration::ZERO, "Duration should be non-negative");
+    assert!(
+        d.unwrap() >= Duration::ZERO,
+        "Duration should be non-negative"
+    );
 }
 
 /// Test 14: on_fitness_evaluation_complete receives a Duration > Duration::ZERO.
@@ -461,6 +520,12 @@ fn test_fitness_eval_timing_nonzero() {
     let mut ga = build_test_ga_with_observer(3, spy);
     ga.run().expect("GA should succeed");
     let d = data.fitness_eval_duration.lock().unwrap();
-    assert!(d.is_some(), "on_fitness_evaluation_complete should have been called");
-    assert!(d.unwrap() >= Duration::ZERO, "Duration should be non-negative");
+    assert!(
+        d.is_some(),
+        "on_fitness_evaluation_complete should have been called"
+    );
+    assert!(
+        d.unwrap() >= Duration::ZERO,
+        "Duration should be non-negative"
+    );
 }

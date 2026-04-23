@@ -147,11 +147,10 @@ fn chromosome_length_ok_when_smaller() {
 #[test]
 fn chromosome_length_err_when_bigger() {
     let alleles = vec![make_binary_gene(0)];
-    let err =
-        generic_validator::chromosome_length_not_bigger_than_alleles::<BinaryChromosome>(
-            &alleles, 5,
-        )
-        .unwrap_err();
+    let err = generic_validator::chromosome_length_not_bigger_than_alleles::<BinaryChromosome>(
+        &alleles, 5,
+    )
+    .unwrap_err();
     let msg = err.to_string();
     assert!(msg.contains("should not be higher"), "got: {msg}");
 }

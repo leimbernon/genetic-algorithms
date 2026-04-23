@@ -172,4 +172,3 @@ impl<T: Sync + Send + Clone + Default + Debug> fmt::Display for ListChromosome<T
         write!(f, "[{}] fitness={:.6}", self.phenotype(), self.fitness)
     }
 }
-

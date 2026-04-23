@@ -33,9 +33,6 @@ where
     pub best_chromosome: U,
     pub(crate) best_chromosome_is_set: bool,
 
-    /// Generation numbers associated with this population (optional tracking).
-    pub generation_numbers: Vec<usize>,
-
     /// Average fitness across the population.
     pub f_avg: f64,
 
@@ -51,7 +48,6 @@ where
     pub fn new_empty() -> Population<U> {
         Population {
             chromosomes: vec![],
-            generation_numbers: vec![],
             f_avg: 0.0,
             f_max: 0.0,
             best_chromosome: U::new(),
@@ -63,7 +59,6 @@ where
     pub fn new(chromosomes: Vec<U>) -> Population<U> {
         Population {
             chromosomes,
-            generation_numbers: vec![],
             f_avg: 0.0,
             f_max: 0.0,
             best_chromosome: U::new(),
@@ -206,7 +201,6 @@ impl<U: ChromosomeT + Clone> Clone for Population<U> {
             chromosomes: self.chromosomes.clone(),
             best_chromosome: self.best_chromosome.clone(),
             best_chromosome_is_set: self.best_chromosome_is_set,
-            generation_numbers: self.generation_numbers.clone(),
             f_avg: self.f_avg,
             f_max: self.f_max,
         }
@@ -295,11 +289,10 @@ mod serde_impl {
         U: ChromosomeT + Serialize,
     {
         fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-            let mut state = serializer.serialize_struct("Population", 6)?;
+            let mut state = serializer.serialize_struct("Population", 5)?;
             state.serialize_field("chromosomes", &self.chromosomes)?;
             state.serialize_field("best_chromosome", &self.best_chromosome)?;
             state.serialize_field("best_chromosome_is_set", &self.best_chromosome_is_set)?;
-            state.serialize_field("generation_numbers", &self.generation_numbers)?;
             state.serialize_field("f_avg", &self.f_avg)?;
             state.serialize_field("f_max", &self.f_max)?;
             state.end()
@@ -317,7 +310,6 @@ mod serde_impl {
                 Chromosomes,
                 BestChromosome,
                 BestChromosomeIsSet,
-                GenerationNumbers,
                 FAvg,
                 FMax,
             }
@@ -338,7 +330,6 @@ mod serde_impl {
                     let mut chromosomes: Option<Vec<U>> = None;
                     let mut best_chromosome: Option<U> = None;
                     let mut best_chromosome_is_set: Option<bool> = None;
-                    let mut generation_numbers: Option<Vec<usize>> = None;
                     let mut f_avg: Option<f64> = None;
                     let mut f_max: Option<f64> = None;
 
@@ -352,9 +343,6 @@ mod serde_impl {
                             }
                             Field::BestChromosomeIsSet => {
                                 best_chromosome_is_set = Some(map.next_value()?);
-                            }
-                            Field::GenerationNumbers => {
-                                generation_numbers = Some(map.next_value()?);
                             }
                             Field::FAvg => {
                                 f_avg = Some(map.next_value()?);
@@ -372,8 +360,6 @@ mod serde_impl {
                             .ok_or_else(|| de::Error::missing_field("best_chromosome"))?,
                         best_chromosome_is_set: best_chromosome_is_set
                             .ok_or_else(|| de::Error::missing_field("best_chromosome_is_set"))?,
-                        generation_numbers: generation_numbers
-                            .ok_or_else(|| de::Error::missing_field("generation_numbers"))?,
                         f_avg: f_avg.ok_or_else(|| de::Error::missing_field("f_avg"))?,
                         f_max: f_max.ok_or_else(|| de::Error::missing_field("f_max"))?,
                     })
@@ -384,7 +370,6 @@ mod serde_impl {
                 "chromosomes",
                 "best_chromosome",
                 "best_chromosome_is_set",
-                "generation_numbers",
                 "f_avg",
                 "f_max",
             ];

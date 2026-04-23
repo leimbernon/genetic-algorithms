@@ -29,7 +29,7 @@ log = { version = "0.4.22", features = ["std", "serde", "kv_unstable"] }
 tracing = { version = "0.1", optional = true }
 metrics = { version = "0.24", optional = true }
 env_logger = "0.11.5"
-serde = { version = "1", features = ["derive"], optional = true }
+serde = { version = "1", features = ["derive", "rc"], optional = true }
 serde_json = { version = "1", optional = true }
 plotters = { version = "0.3.7", default-features = false, features = ["bitmap_backend", "bitmap_encoder", "svg_backend", "line_series", "histogram", "ab_glyph"], optional = true }
 

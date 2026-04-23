@@ -145,4 +145,3 @@ pub fn assign_ranks(ranks: &mut [usize], fronts: &[Vec<usize>]) {
         }
     }
 }
-

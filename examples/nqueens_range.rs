@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::Ga;
@@ -12,6 +11,7 @@ use genetic_algorithms::traits::{
     ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
 };
 use genetic_algorithms::LogObserver;
+use std::sync::Arc;
 
 const N: usize = 8; // Size of the chessboard (N-Queens problem)
 

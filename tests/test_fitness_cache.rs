@@ -89,8 +89,18 @@ fn cache_capacity_one() {
 #[test]
 fn hash_dna_identical_produces_same_hash() {
     let dna1: Vec<BinaryGene> = vec![
-        { let mut g = <BinaryGene as Default>::default(); g.set_id(1); g.value = true; g },
-        { let mut g = <BinaryGene as Default>::default(); g.set_id(2); g.value = false; g },
+        {
+            let mut g = <BinaryGene as Default>::default();
+            g.set_id(1);
+            g.value = true;
+            g
+        },
+        {
+            let mut g = <BinaryGene as Default>::default();
+            g.set_id(2);
+            g.value = false;
+            g
+        },
     ];
     let dna2 = dna1.clone();
     assert_eq!(hash_dna(&dna1), hash_dna(&dna2));
@@ -98,23 +108,33 @@ fn hash_dna_identical_produces_same_hash() {
 
 #[test]
 fn hash_dna_different_produces_different_hash() {
-    let dna1: Vec<BinaryGene> = vec![
-        { let mut g = <BinaryGene as Default>::default(); g.set_id(1); g.value = true; g },
-    ];
-    let dna2: Vec<BinaryGene> = vec![
-        { let mut g = <BinaryGene as Default>::default(); g.set_id(1); g.value = false; g },
-    ];
+    let dna1: Vec<BinaryGene> = vec![{
+        let mut g = <BinaryGene as Default>::default();
+        g.set_id(1);
+        g.value = true;
+        g
+    }];
+    let dna2: Vec<BinaryGene> = vec![{
+        let mut g = <BinaryGene as Default>::default();
+        g.set_id(1);
+        g.value = false;
+        g
+    }];
     assert_ne!(hash_dna(&dna1), hash_dna(&dna2));
 }
 
 #[test]
 fn hash_dna_different_ids_produces_different_hash() {
-    let dna1: Vec<BinaryGene> = vec![
-        { let mut g = <BinaryGene as Default>::default(); g.set_id(1); g },
-    ];
-    let dna2: Vec<BinaryGene> = vec![
-        { let mut g = <BinaryGene as Default>::default(); g.set_id(2); g },
-    ];
+    let dna1: Vec<BinaryGene> = vec![{
+        let mut g = <BinaryGene as Default>::default();
+        g.set_id(1);
+        g
+    }];
+    let dna2: Vec<BinaryGene> = vec![{
+        let mut g = <BinaryGene as Default>::default();
+        g.set_id(2);
+        g
+    }];
     assert_ne!(hash_dna(&dna1), hash_dna(&dna2));
 }
 
@@ -147,11 +167,13 @@ fn hash_dna_range_f64_different_values() {
 #[test]
 fn ga_with_fitness_cache_builds_successfully() {
     use genetic_algorithms::chromosomes::Binary;
+    use genetic_algorithms::configuration::ProblemSolving;
     use genetic_algorithms::ga::Ga;
     use genetic_algorithms::initializers::binary_random_initialization;
     use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
-    use genetic_algorithms::configuration::ProblemSolving;
-    use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig};
+    use genetic_algorithms::traits::{
+        ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+    };
 
     let ga = Ga::<Binary>::new()
         .with_population_size(20)
@@ -173,11 +195,13 @@ fn ga_with_fitness_cache_builds_successfully() {
 #[test]
 fn ga_with_fitness_cache_runs_correctly() {
     use genetic_algorithms::chromosomes::Binary;
+    use genetic_algorithms::configuration::ProblemSolving;
     use genetic_algorithms::ga::Ga;
     use genetic_algorithms::initializers::binary_random_initialization;
     use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
-    use genetic_algorithms::configuration::ProblemSolving;
-    use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig};
+    use genetic_algorithms::traits::{
+        ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+    };
 
     let mut ga = Ga::<Binary>::new()
         .with_population_size(20)
@@ -203,12 +227,14 @@ fn ga_with_fitness_cache_runs_correctly() {
 #[test]
 fn ga_with_fitness_cache_range_chromosome() {
     use genetic_algorithms::chromosomes::Range as RangeChromosome;
-    use genetic_algorithms::genotypes::Range as RangeGene;
+    use genetic_algorithms::configuration::ProblemSolving;
     use genetic_algorithms::ga::Ga;
+    use genetic_algorithms::genotypes::Range as RangeGene;
     use genetic_algorithms::initializers::range_random_initialization;
     use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
-    use genetic_algorithms::configuration::ProblemSolving;
-    use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig};
+    use genetic_algorithms::traits::{
+        ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+    };
 
     let alleles = vec![RangeGene::new(0, vec![(0.0, 10.0)], 0.0)];
     let alleles_clone = alleles.clone();
@@ -217,9 +243,7 @@ fn ga_with_fitness_cache_range_chromosome() {
         .with_population_size(20)
         .with_genes_per_chromosome(3)
         .with_alleles(alleles)
-        .with_fitness_fn(|dna: &[RangeGene<f64>]| {
-            dna.iter().map(|g| g.value).sum::<f64>()
-        })
+        .with_fitness_fn(|dna: &[RangeGene<f64>]| dna.iter().map(|g| g.value).sum::<f64>())
         .with_initialization_fn(move |n, _, _| {
             range_random_initialization(n, Some(&alleles_clone), Some(false))
         })

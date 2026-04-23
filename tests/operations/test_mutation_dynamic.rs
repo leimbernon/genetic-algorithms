@@ -16,9 +16,24 @@ fn test_compute_cardinality_empty() {
 #[test]
 fn test_compute_cardinality_all_unique() {
     let chromosomes = vec![
-        Chromosome { dna: vec![], fitness: 1.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
-        Chromosome { dna: vec![], fitness: 2.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
-        Chromosome { dna: vec![], fitness: 3.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
+        Chromosome {
+            dna: vec![],
+            fitness: 1.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        },
+        Chromosome {
+            dna: vec![],
+            fitness: 2.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        },
+        Chromosome {
+            dna: vec![],
+            fitness: 3.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        },
     ];
     assert!((compute_cardinality(&chromosomes) - 1.0).abs() < 1e-10);
 }
@@ -26,10 +41,30 @@ fn test_compute_cardinality_all_unique() {
 #[test]
 fn test_compute_cardinality_all_same() {
     let chromosomes = vec![
-        Chromosome { dna: vec![], fitness: 5.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
-        Chromosome { dna: vec![], fitness: 5.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
-        Chromosome { dna: vec![], fitness: 5.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
-        Chromosome { dna: vec![], fitness: 5.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
+        Chromosome {
+            dna: vec![],
+            fitness: 5.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        },
+        Chromosome {
+            dna: vec![],
+            fitness: 5.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        },
+        Chromosome {
+            dna: vec![],
+            fitness: 5.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        },
+        Chromosome {
+            dna: vec![],
+            fitness: 5.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        },
     ];
     assert!((compute_cardinality(&chromosomes) - 0.25).abs() < 1e-10);
 }
@@ -37,10 +72,30 @@ fn test_compute_cardinality_all_same() {
 #[test]
 fn test_compute_cardinality_partial() {
     let chromosomes = vec![
-        Chromosome { dna: vec![], fitness: 1.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
-        Chromosome { dna: vec![], fitness: 1.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
-        Chromosome { dna: vec![], fitness: 2.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
-        Chromosome { dna: vec![], fitness: 3.0, age: 0, fitness_fn: FitnessFnWrapper::default() },
+        Chromosome {
+            dna: vec![],
+            fitness: 1.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        },
+        Chromosome {
+            dna: vec![],
+            fitness: 1.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        },
+        Chromosome {
+            dna: vec![],
+            fitness: 2.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        },
+        Chromosome {
+            dna: vec![],
+            fitness: 3.0,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+        },
     ];
     // 3 unique out of 4
     assert!((compute_cardinality(&chromosomes) - 0.75).abs() < 1e-10);

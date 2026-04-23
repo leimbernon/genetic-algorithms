@@ -1,9 +1,9 @@
-use std::time::{Duration, Instant};
+#[allow(deprecated)]
+use super::Reporter;
 use crate::ga::TerminationCause;
 use crate::stats::GenerationStats;
 use crate::traits::ChromosomeT;
-#[allow(deprecated)]
-use super::Reporter;
+use std::time::{Duration, Instant};
 
 /// Reports total wall-clock run time and per-generation average at the end of a run.
 ///
@@ -56,13 +56,13 @@ impl<U: ChromosomeT> Reporter<U> for DurationReporter {
     }
 
     fn on_finish(&mut self, cause: TerminationCause, all_stats: &[GenerationStats]) {
-        let elapsed = self
-            .start
-            .map(|s| s.elapsed())
-            .unwrap_or(Duration::ZERO);
+        let elapsed = self.start.map(|s| s.elapsed()).unwrap_or(Duration::ZERO);
         let gens = all_stats.len();
 
-        println!("Run complete ({:?}) in {:.2?} over {} generations", cause, elapsed, gens);
+        println!(
+            "Run complete ({:?}) in {:.2?} over {} generations",
+            cause, elapsed, gens
+        );
         if gens > 0 {
             let avg = elapsed / gens as u32;
             println!("  Avg per generation: {:.2?}", avg);
@@ -72,4 +72,3 @@ impl<U: ChromosomeT> Reporter<U> for DurationReporter {
         }
     }
 }
-

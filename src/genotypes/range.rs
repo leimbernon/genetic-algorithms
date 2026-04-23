@@ -8,6 +8,7 @@
 use crate::traits::GeneT;
 use std::fmt;
 use std::hash::{Hash, Hasher};
+use std::sync::Arc;
 
 /// A range gene with an identifier, a list of ranges, and a value.
 ///
@@ -42,7 +43,7 @@ use std::hash::{Hash, Hasher};
 )]
 pub struct Range<T> {
     pub id: i32,
-    pub ranges: Vec<(T, T)>,
+    pub ranges: Arc<[(T, T)]>,
     pub value: T,
 }
 
@@ -51,7 +52,7 @@ impl<T: Eq> Eq for Range<T> {}
 impl<T: Hash> Hash for Range<T> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.id.hash(state);
-        for (lo, hi) in &self.ranges {
+        for (lo, hi) in self.ranges.iter() {
             lo.hash(state);
             hi.hash(state);
         }
@@ -69,13 +70,13 @@ impl<T: Default> Default for Range<T> {
     fn default() -> Self {
         Self {
             id: 0,
-            ranges: Vec::new(),
+            ranges: Arc::from([]),
             value: Default::default(),
         }
     }
 }
 
-impl<T: Sync + Send + Clone + Default> GeneT for Range<T> {
+impl<T: Sync + Send + Copy + Default> GeneT for Range<T> {
     fn id(&self) -> i32 {
         self.id
     }
@@ -85,7 +86,7 @@ impl<T: Sync + Send + Clone + Default> GeneT for Range<T> {
     }
 }
 
-impl<T: Clone + Default> Range<T> {
+impl<T: Copy + Default> Range<T> {
     /// Creates a new `Range` gene with the given identifier, ranges, and value.
     ///
     /// # Arguments
@@ -98,12 +99,16 @@ impl<T: Clone + Default> Range<T> {
     ///
     /// A mutable reference to `self`.
     pub fn new(id: i32, ranges: Vec<(T, T)>, value: T) -> Self {
-        Self { id, ranges, value }
+        Self {
+            id,
+            ranges: ranges.into_boxed_slice().into(),
+            value,
+        }
     }
 
     /// Returns the value of the gene.
     pub fn value(&self) -> T {
-        self.value.clone()
+        self.value
     }
 
     /// Sets the value of the gene.

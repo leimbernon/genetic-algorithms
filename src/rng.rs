@@ -47,11 +47,11 @@ static COUNTER: AtomicU64 = AtomicU64::new(0);
 pub fn set_seed(seed: Option<u64>) {
     match seed {
         Some(s) => {
-            SEED.store(s as i64, Ordering::SeqCst);
-            COUNTER.store(0, Ordering::SeqCst);
+            SEED.store(s as i64, Ordering::Release);
+            COUNTER.store(0, Ordering::Release);
         }
         None => {
-            SEED.store(-1, Ordering::SeqCst);
+            SEED.store(-1, Ordering::Release);
         }
     }
 }
@@ -66,10 +66,10 @@ pub fn set_seed(seed: Option<u64>) {
 /// When no seed is set, the RNG is seeded from operating-system entropy
 /// (equivalent to the default `rand::rng()` behaviour).
 pub fn make_rng() -> SmallRng {
-    let raw = SEED.load(Ordering::SeqCst);
+    let raw = SEED.load(Ordering::Acquire);
     if raw >= 0 {
         let base_seed = raw as u64;
-        let n = COUNTER.fetch_add(1, Ordering::SeqCst);
+        let n = COUNTER.fetch_add(1, Ordering::Relaxed);
         // Combine base seed with counter via a simple mixing function
         // to avoid correlated streams.
         let combined = base_seed

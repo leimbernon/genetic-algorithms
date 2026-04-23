@@ -1,5 +1,6 @@
 use genetic_algorithms::niching::sharing::{
-    apply_fitness_sharing, compute_distance_matrix, sharing_function,
+    apply_fitness_sharing, apply_fitness_sharing_with_dna, compute_distance_matrix,
+    sharing_function,
 };
 
 #[test]
@@ -97,4 +98,78 @@ fn test_compute_distance_matrix_symmetric() {
     assert!((matrix[0][1] - matrix[1][0]).abs() < 1e-10);
     // Diagonal is 0
     assert!((matrix[0][0] - 0.0).abs() < 1e-10);
+}
+
+#[test]
+fn test_apply_fitness_sharing_with_dna_matches_matrix_version() {
+    let dna1 = vec![1i32, 2, 3];
+    let dna2 = vec![1i32, 3, 3];
+    let dna3 = vec![4i32, 5, 6];
+    let slices: Vec<&[i32]> = vec![&dna1, &dna2, &dna3];
+
+    let mut fitnesses_matrix = vec![10.0f64, 20.0, 30.0];
+    let mut fitnesses_dna = vec![10.0f64, 20.0, 30.0];
+
+    let hamming_fn = |a: &[i32], b: &[i32]| -> f64 {
+        a.iter().zip(b.iter()).filter(|(x, y)| x != y).count() as f64
+    };
+
+    let distances = compute_distance_matrix(&slices, hamming_fn);
+    apply_fitness_sharing(&mut fitnesses_matrix, &distances, 2.0, 1.0);
+    apply_fitness_sharing_with_dna(&mut fitnesses_dna, &slices, hamming_fn, 2.0, 1.0);
+
+    for i in 0..3 {
+        assert!(
+            (fitnesses_matrix[i] - fitnesses_dna[i]).abs() < 1e-10,
+            "Mismatch at index {}: matrix={}, dna={}",
+            i,
+            fitnesses_matrix[i],
+            fitnesses_dna[i]
+        );
+    }
+}
+
+#[test]
+fn test_apply_fitness_sharing_with_dna_empty() {
+    let mut fitnesses: Vec<f64> = vec![];
+    let slices: Vec<&[i32]> = vec![];
+    let hamming_fn = |a: &[i32], b: &[i32]| -> f64 {
+        a.iter().zip(b.iter()).filter(|(x, y)| x != y).count() as f64
+    };
+    apply_fitness_sharing_with_dna(&mut fitnesses, &slices, hamming_fn, 1.0, 1.0);
+    assert!(fitnesses.is_empty());
+}
+
+#[test]
+fn test_apply_fitness_sharing_with_dna_distant() {
+    let dna1 = vec![0i32, 0, 0];
+    let dna2 = vec![10i32, 10, 10];
+    let dna3 = vec![20i32, 20, 20];
+    let slices: Vec<&[i32]> = vec![&dna1, &dna2, &dna3];
+
+    let mut fitnesses = vec![10.0f64, 20.0, 30.0];
+
+    let hamming_fn = |a: &[i32], b: &[i32]| -> f64 {
+        a.iter().zip(b.iter()).filter(|(x, y)| x != y).count() as f64
+    };
+
+    // sigma_share=0.5 means all non-self distances (>=1.0) are > sigma_share,
+    // so each individual only counts itself (distance 0 => sh(0) = 1.0)
+    apply_fitness_sharing_with_dna(&mut fitnesses, &slices, hamming_fn, 0.5, 1.0);
+
+    assert!(
+        (fitnesses[0] - 10.0).abs() < 1e-10,
+        "Expected 10.0, got {}",
+        fitnesses[0]
+    );
+    assert!(
+        (fitnesses[1] - 20.0).abs() < 1e-10,
+        "Expected 20.0, got {}",
+        fitnesses[1]
+    );
+    assert!(
+        (fitnesses[2] - 30.0).abs() < 1e-10,
+        "Expected 30.0, got {}",
+        fitnesses[2]
+    );
 }

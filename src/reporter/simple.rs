@@ -1,8 +1,8 @@
+#[allow(deprecated)]
+use super::Reporter;
 use crate::ga::TerminationCause;
 use crate::stats::GenerationStats;
 use crate::traits::ChromosomeT;
-#[allow(deprecated)]
-use super::Reporter;
 
 /// Prints a one-line progress summary to stdout every N generations.
 ///
@@ -56,4 +56,3 @@ impl<U: ChromosomeT> Reporter<U> for SimpleReporter {
         }
     }
 }
-

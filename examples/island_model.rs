@@ -49,7 +49,6 @@ cargo run --example island_model
 ```
 */
 
-use std::sync::Arc;
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::{GaConfiguration, ProblemSolving};
 use genetic_algorithms::genotypes::Range as RangeGenotype;
@@ -59,9 +58,10 @@ use genetic_algorithms::island::topology::MigrationTopology;
 use genetic_algorithms::island::IslandGa;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::traits::ChromosomeT;
-use genetic_algorithms::{CompositeObserver, IslandGaObserver, LogObserver};
 #[cfg(feature = "observer-metrics")]
 use genetic_algorithms::MetricsObserver;
+use genetic_algorithms::{CompositeObserver, IslandGaObserver, LogObserver};
+use std::sync::Arc;
 
 fn main() {
     // --- Problem parameters ---
@@ -78,7 +78,8 @@ fn main() {
         let a = 10.0;
         let n = dna.len() as f64;
         a * n
-            + dna.iter()
+            + dna
+                .iter()
                 .map(|g| g.value.powi(2) - a * (2.0 * std::f64::consts::PI * g.value).cos())
                 .sum::<f64>()
     };
@@ -116,8 +117,7 @@ fn main() {
 
     // --- Build composite observer (LogObserver always active; MetricsObserver when feature flag set) ---
     // CompositeObserver implements IslandGaObserver — forwards all island hooks to inner observers.
-    let composite = CompositeObserver::new()
-        .add(Arc::new(LogObserver));
+    let composite = CompositeObserver::new().add(Arc::new(LogObserver));
     #[cfg(feature = "observer-metrics")]
     let composite = composite.add(Arc::new(MetricsObserver::new("island_model")));
 
@@ -133,10 +133,7 @@ fn main() {
         "Topology: Ring, Migration: every {} gens, {} migrants",
         MIGRATION_INTERVAL, MIGRATION_COUNT
     );
-    println!(
-        "Mutation probs per island: {:?}",
-        mutation_probs
-    );
+    println!("Mutation probs per island: {:?}", mutation_probs);
     println!("Max generations: {}", MAX_GENERATIONS);
     println!("-------------------------------------------------------");
 
@@ -153,7 +150,8 @@ fn main() {
             })
             .with_fitness_fn(fitness_fn)
             // Observer: CompositeObserver fans out to LogObserver (and MetricsObserver if feature enabled)
-            .with_observer(Arc::new(composite) as Arc<dyn IslandGaObserver<RangeChromosome<f64>> + Send + Sync>)
+            .with_observer(Arc::new(composite)
+                as Arc<dyn IslandGaObserver<RangeChromosome<f64>> + Send + Sync>)
             .build()
             .expect("Failed to build island GA");
 

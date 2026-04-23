@@ -1,8 +1,8 @@
 //! Compile-time verification that observer-related types are re-exported at crate root.
 //! Covers OBS-01 (TerminationCause, ExtensionEvent) and OBS-02 (NoopObserver).
 
-use genetic_algorithms::NoopObserver;
 use genetic_algorithms::ExtensionEvent;
+use genetic_algorithms::NoopObserver;
 use genetic_algorithms::TerminationCause;
 
 #[test]

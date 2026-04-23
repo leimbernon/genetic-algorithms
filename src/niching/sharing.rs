@@ -134,3 +134,59 @@ where
 
     matrix
 }
+
+/// Applies fitness sharing by computing distances on-the-fly from DNA slices,
+/// avoiding allocation of an O(n^2) distance matrix.
+///
+/// This is functionally equivalent to calling [`compute_distance_matrix`]
+/// followed by [`apply_fitness_sharing`], but uses O(n) memory instead of O(n^2).
+///
+/// # Arguments
+///
+/// * `fitness_values` - Mutable slice of fitness values to be adjusted in-place.
+/// * `dna_slices` - Slice of DNA slice references.
+/// * `distance_fn` - A function that computes distance between two DNA slices.
+/// * `sigma_share` - Sharing radius.
+/// * `alpha` - Shape parameter for the sharing function.
+pub fn apply_fitness_sharing_with_dna<G, F>(
+    fitness_values: &mut [f64],
+    dna_slices: &[&[G]],
+    distance_fn: F,
+    sigma_share: f64,
+    alpha: f64,
+) where
+    F: Fn(&[G], &[G]) -> f64,
+{
+    let n = fitness_values.len();
+    if n == 0 {
+        return;
+    }
+
+    let raw_fitnesses: Vec<f64> = fitness_values.to_vec();
+    let mut niche_counts = vec![0.0f64; n];
+
+    for i in 0..n {
+        for j in 0..n {
+            let d = if i < dna_slices.len() && j < dna_slices.len() {
+                distance_fn(dna_slices[i], dna_slices[j])
+            } else {
+                f64::INFINITY
+            };
+            niche_counts[i] += sharing_function(d, sigma_share, alpha);
+        }
+    }
+
+    for i in 0..n {
+        if niche_counts[i] > 0.0 {
+            fitness_values[i] = raw_fitnesses[i] / niche_counts[i];
+        }
+    }
+
+    debug!(
+        target: "niching_events",
+        "Applied fitness sharing (with_dna) to {} individuals with sigma_share={}, alpha={}",
+        n,
+        sigma_share,
+        alpha
+    );
+}

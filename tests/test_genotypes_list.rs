@@ -1,6 +1,6 @@
+use genetic_algorithms::error::GaError;
 use genetic_algorithms::genotypes::List;
 use genetic_algorithms::traits::GeneT;
-use genetic_algorithms::error::GaError;
 
 // ── List::new ────────────────────────────────────────────────────────────
 

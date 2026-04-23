@@ -30,8 +30,8 @@ pub fn uniform<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaE
     let mut dna_child_2 = Vec::with_capacity(len);
     debug!(target="crossover_events", method="uniform"; "Starting the  uniform crossover");
 
-    let mut child_1 = parent_1.clone();
-    let mut child_2 = parent_2.clone();
+    let mut child_1 = U::new();
+    let mut child_2 = U::new();
 
     for i in 0..len {
         let crossover = rng.random_range(0..2);

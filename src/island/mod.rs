@@ -493,11 +493,8 @@ where
                 if let Some(ref obs) = observer_clone {
                     let fitness_values: Vec<f64> =
                         island.chromosomes.iter().map(|c| c.fitness()).collect();
-                    let stats = GenerationStats::from_fitness_values(
-                        gen,
-                        &fitness_values,
-                        is_maximization,
-                    );
+                    let stats =
+                        GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
                     obs.on_island_generation_end(idx, gen, &stats);
                 }
 
@@ -505,4 +502,3 @@ where
             })
     }
 }
-

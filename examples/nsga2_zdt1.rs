@@ -43,7 +43,6 @@ cargo run --example nsga2_zdt1
 ```
 */
 
-use std::sync::Arc;
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::GaConfiguration;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
@@ -51,6 +50,7 @@ use genetic_algorithms::initializers::range_random_initialization;
 use genetic_algorithms::nsga2::configuration::{Nsga2Configuration, ObjectiveDirection};
 use genetic_algorithms::nsga2::Nsga2Ga;
 use genetic_algorithms::{LogObserver, Nsga2Observer};
+use std::sync::Arc;
 
 fn main() {
     // --- Problem parameters ---
@@ -98,7 +98,9 @@ fn main() {
             range_random_initialization(n, Some(&alleles_clone), Some(true))
         })
         .with_objective_fns(vec![Box::new(obj_f1), Box::new(obj_f2)])
-        .with_observer(Arc::new(LogObserver) as Arc<dyn Nsga2Observer<RangeChromosome<f64>> + Send + Sync>)
+        .with_observer(
+            Arc::new(LogObserver) as Arc<dyn Nsga2Observer<RangeChromosome<f64>> + Send + Sync>
+        )
         .build()
         .expect("Failed to build NSGA-II");
 
@@ -137,8 +139,7 @@ fn main() {
             for i in (0..n).step_by(step).take(10) {
                 println!(
                     "  f1={:.4}, f2={:.4}",
-                    front.individuals[i].objectives[0],
-                    front.individuals[i].objectives[1]
+                    front.individuals[i].objectives[0], front.individuals[i].objectives[1]
                 );
             }
         }

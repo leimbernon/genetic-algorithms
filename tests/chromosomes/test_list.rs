@@ -5,14 +5,15 @@ use genetic_algorithms::genotypes::List;
 use genetic_algorithms::initializers::list_random_initialization;
 use genetic_algorithms::operations::crossover;
 use genetic_algorithms::operations::mutation;
-use genetic_algorithms::operations::mutation::swap;
+use genetic_algorithms::operations::mutation::insertion;
 use genetic_algorithms::operations::mutation::inversion;
 use genetic_algorithms::operations::mutation::scramble;
-use genetic_algorithms::operations::mutation::insertion;
+use genetic_algorithms::operations::mutation::swap;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::population::Population;
 use genetic_algorithms::traits::{
-    ChromosomeT, ConfigurationT, CrossoverConfig, GeneT, MutationConfig, SelectionConfig, StoppingConfig,
+    ChromosomeT, ConfigurationT, CrossoverConfig, GeneT, MutationConfig, SelectionConfig,
+    StoppingConfig,
 };
 use std::borrow::Cow;
 
@@ -69,7 +70,11 @@ fn test_list_swap_mutation() {
 fn test_list_inversion_mutation() {
     let mut c = make_list_chromosome(5);
     inversion(&mut c);
-    assert_eq!(c.dna().len(), 5, "DNA length must be unchanged after inversion");
+    assert_eq!(
+        c.dna().len(),
+        5,
+        "DNA length must be unchanged after inversion"
+    );
 }
 
 // ── Mutation: Scramble ────────────────────────────────────────────────────────
@@ -78,7 +83,11 @@ fn test_list_inversion_mutation() {
 fn test_list_scramble_mutation() {
     let mut c = make_list_chromosome(5);
     scramble(&mut c);
-    assert_eq!(c.dna().len(), 5, "DNA length must be unchanged after scramble");
+    assert_eq!(
+        c.dna().len(),
+        5,
+        "DNA length must be unchanged after scramble"
+    );
 }
 
 // ── Mutation: Insertion ───────────────────────────────────────────────────────
@@ -88,7 +97,11 @@ fn test_list_insertion_mutation() {
     let mut c = make_list_chromosome(5);
     let result = insertion::insertion_mutation(&mut c);
     assert!(result.is_ok(), "insertion_mutation should return Ok(())");
-    assert_eq!(c.dna().len(), 5, "DNA length must be unchanged after insertion");
+    assert_eq!(
+        c.dna().len(),
+        5,
+        "DNA length must be unchanged after insertion"
+    );
 }
 
 // ── Mutation: ListValue via factory ──────────────────────────────────────────
@@ -103,14 +116,22 @@ fn test_list_value_mutation_via_factory() {
 
         let result = mutation::factory(Mutation::ListValue, &mut c);
 
-        assert!(result.is_ok(), "factory(ListValue) should return Ok(()) (seed {})", seed);
+        assert!(
+            result.is_ok(),
+            "factory(ListValue) should return Ok(()) (seed {})",
+            seed
+        );
         let changed = c
             .dna
             .iter()
             .enumerate()
             .filter(|(i, g)| g.id != original_ids[*i])
             .count();
-        assert_eq!(changed, 1, "ListValue must change exactly 1 gene (seed {})", seed);
+        assert_eq!(
+            changed, 1,
+            "ListValue must change exactly 1 gene (seed {})",
+            seed
+        );
     }
     genetic_algorithms::rng::set_seed(None);
 }
@@ -140,7 +161,11 @@ fn test_list_crossover_single_point() {
     let offspring = result.unwrap();
     assert!(!offspring.is_empty(), "Should produce offspring");
     for child in &offspring {
-        assert_eq!(child.dna().len(), 5, "Offspring DNA length must match parents");
+        assert_eq!(
+            child.dna().len(),
+            5,
+            "Offspring DNA length must match parents"
+        );
     }
 }
 
@@ -167,7 +192,11 @@ fn test_list_crossover_uniform() {
     assert!(result.is_ok(), "Uniform crossover should succeed");
     let offspring = result.unwrap();
     for child in &offspring {
-        assert_eq!(child.dna().len(), 5, "Offspring DNA length must match parents");
+        assert_eq!(
+            child.dna().len(),
+            5,
+            "Offspring DNA length must match parents"
+        );
     }
 }
 
@@ -178,14 +207,22 @@ fn test_list_initialization_roundtrip() {
     let templates = vec![List::new(0, vec!['a', 'b', 'c', 'd'], 'a').unwrap()];
     let dna = list_random_initialization(4, Some(&templates), None);
 
-    assert_eq!(dna.len(), 4, "initializer must produce correct number of genes");
+    assert_eq!(
+        dna.len(),
+        4,
+        "initializer must produce correct number of genes"
+    );
 
     let mut c = ListChromosome::<char>::new();
     c.set_dna(Cow::Owned(dna));
     c.set_fitness_fn(|genes| genes.len() as f64);
     c.calculate_fitness();
 
-    assert_eq!(c.fitness(), 4.0, "fitness function should run on initialized chromosome");
+    assert_eq!(
+        c.fitness(),
+        4.0,
+        "fitness function should run on initialized chromosome"
+    );
 }
 
 // ── Serde roundtrip (feature-gated) ──────────────────────────────────────────
@@ -198,7 +235,8 @@ fn test_list_serde_roundtrip() {
     c.set_age(2);
 
     let json = serde_json::to_string(&c).expect("serialize ListChromosome");
-    let restored: ListChromosome<char> = serde_json::from_str(&json).expect("deserialize ListChromosome");
+    let restored: ListChromosome<char> =
+        serde_json::from_str(&json).expect("deserialize ListChromosome");
 
     assert_eq!(restored.dna.len(), 3, "dna length must be preserved");
     assert_eq!(restored.fitness(), 7.5, "fitness must be preserved");
@@ -242,7 +280,11 @@ fn test_list_full_ga_run() {
         });
     let result = ga.run();
 
-    assert!(result.is_ok(), "full GA run must succeed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "full GA run must succeed: {:?}",
+        result.err()
+    );
     let final_pop = result.unwrap();
     assert!(
         final_pop.best_chromosome.fitness() >= 0.0,

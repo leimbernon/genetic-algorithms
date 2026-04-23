@@ -5,6 +5,9 @@ use std::sync::Arc;
 
 use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
 use genetic_algorithms::configuration::GaConfiguration;
+use genetic_algorithms::configuration::ProblemSolving;
+use genetic_algorithms::genotypes::Binary as BinaryGene;
+use genetic_algorithms::initializers::binary_random_initialization;
 use genetic_algorithms::island::configuration::IslandConfiguration;
 use genetic_algorithms::island::IslandGa;
 use genetic_algorithms::nsga2::configuration::Nsga2Configuration;
@@ -12,10 +15,9 @@ use genetic_algorithms::nsga2::Nsga2Ga;
 use genetic_algorithms::observer::{GaObserver, IslandGaObserver, LogObserver, Nsga2Observer};
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::stats::GenerationStats;
-use genetic_algorithms::traits::{ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig};
-use genetic_algorithms::configuration::ProblemSolving;
-use genetic_algorithms::genotypes::Binary as BinaryGene;
-use genetic_algorithms::initializers::binary_random_initialization;
+use genetic_algorithms::traits::{
+    ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+};
 
 // ============================================================================
 // SUB-01: IslandGaObserver hooks fire on IslandGa
@@ -40,11 +42,18 @@ impl IslandGaObserver<BinaryChromosome> for CountingIslandObserver {
     fn on_island_run_end(&self, _island_id: usize) {
         self.counters.run_end.fetch_add(1, Ordering::Relaxed);
     }
-    fn on_island_generation_end(&self, _island_id: usize, _generation: usize, _stats: &GenerationStats) {
+    fn on_island_generation_end(
+        &self,
+        _island_id: usize,
+        _generation: usize,
+        _stats: &GenerationStats,
+    ) {
         self.counters.generation_end.fetch_add(1, Ordering::Relaxed);
     }
     fn on_migration_triggered(&self, _generation: usize, _migration_count: usize) {
-        self.counters.migration_triggered.fetch_add(1, Ordering::Relaxed);
+        self.counters
+            .migration_triggered
+            .fetch_add(1, Ordering::Relaxed);
     }
 }
 
@@ -80,11 +89,23 @@ fn test_island_observer_hooks_fire() {
 
     island_ga.run().expect("IslandGa run should succeed");
 
-    assert!(counters.run_start.load(Ordering::Relaxed) >= 1, "on_island_run_start should fire at least once");
-    assert!(counters.run_end.load(Ordering::Relaxed) >= 1, "on_island_run_end should fire at least once");
-    assert!(counters.generation_end.load(Ordering::Relaxed) >= 1, "on_island_generation_end should fire at least once");
+    assert!(
+        counters.run_start.load(Ordering::Relaxed) >= 1,
+        "on_island_run_start should fire at least once"
+    );
+    assert!(
+        counters.run_end.load(Ordering::Relaxed) >= 1,
+        "on_island_run_end should fire at least once"
+    );
+    assert!(
+        counters.generation_end.load(Ordering::Relaxed) >= 1,
+        "on_island_generation_end should fire at least once"
+    );
     // migration_interval=2, max_generations=5 => migration fires at gen 2 and gen 4
-    assert!(counters.migration_triggered.load(Ordering::Relaxed) >= 1, "on_migration_triggered should fire at least once");
+    assert!(
+        counters.migration_triggered.load(Ordering::Relaxed) >= 1,
+        "on_migration_triggered should fire at least once"
+    );
 }
 
 // ============================================================================
@@ -103,14 +124,21 @@ struct CountingNsga2Observer {
 }
 
 impl Nsga2Observer<BinaryChromosome> for CountingNsga2Observer {
-    fn on_pareto_front_assigned(&self, _generation: usize, _front_count: usize, _population_size: usize) {
+    fn on_pareto_front_assigned(
+        &self,
+        _generation: usize,
+        _front_count: usize,
+        _population_size: usize,
+    ) {
         self.counters.pareto_front.fetch_add(1, Ordering::Relaxed);
     }
     fn on_non_dominated_sort_complete(&self, _generation: usize, _duration_ms: f64) {
         self.counters.sort_complete.fetch_add(1, Ordering::Relaxed);
     }
     fn on_crowding_distance_calculated(&self, _generation: usize, _duration_ms: f64) {
-        self.counters.crowding_distance.fetch_add(1, Ordering::Relaxed);
+        self.counters
+            .crowding_distance
+            .fetch_add(1, Ordering::Relaxed);
     }
 }
 
@@ -141,9 +169,18 @@ fn test_nsga2_observer_hooks_fire() {
 
     nsga2.run().expect("Nsga2Ga run should succeed");
 
-    assert!(counters.pareto_front.load(Ordering::Relaxed) >= 1, "on_pareto_front_assigned should fire at least once");
-    assert!(counters.sort_complete.load(Ordering::Relaxed) >= 1, "on_non_dominated_sort_complete should fire at least once");
-    assert!(counters.crowding_distance.load(Ordering::Relaxed) >= 1, "on_crowding_distance_calculated should fire at least once");
+    assert!(
+        counters.pareto_front.load(Ordering::Relaxed) >= 1,
+        "on_pareto_front_assigned should fire at least once"
+    );
+    assert!(
+        counters.sort_complete.load(Ordering::Relaxed) >= 1,
+        "on_non_dominated_sort_complete should fire at least once"
+    );
+    assert!(
+        counters.crowding_distance.load(Ordering::Relaxed) >= 1,
+        "on_crowding_distance_calculated should fire at least once"
+    );
 }
 
 // ============================================================================
