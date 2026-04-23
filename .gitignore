@@ -21,6 +21,7 @@ node_modules/
 __pycache__/
 *.pyc
 
-# Claude Code local settings (keep commands/)
-.claude/settings.local.json
+# Claude Code & planning (local only)
+.claude/
+.planning/
 .DS_Store
