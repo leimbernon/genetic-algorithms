@@ -72,6 +72,10 @@ name = "de"
 harness = false
 
 [[bench]]
+name = "scatter"
+harness = false
+
+[[bench]]
 name = "metrics_observer"
 harness = false
 required-features = ["observer-metrics"]
