@@ -68,6 +68,10 @@ name = "island_ga"
 harness = false
 
 [[bench]]
+name = "de"
+harness = false
+
+[[bench]]
 name = "metrics_observer"
 harness = false
 required-features = ["observer-metrics"]

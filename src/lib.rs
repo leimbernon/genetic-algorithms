@@ -95,6 +95,8 @@ pub mod validators;
 #[path = "observe/visualization/mod.rs"]
 pub mod visualization;
 
+#[path = "engines/de/mod.rs"]
+pub mod de;
 #[path = "engines/island/mod.rs"]
 pub mod island;
 pub mod niching;
