@@ -518,7 +518,7 @@ where
 
     /// Attaches a lifecycle reporter that receives hooks during execution.
     ///
-    /// See [`Reporter`](crate::reporter::Reporter) for the hook contract.
+    /// See [`Reporter`] for the hook contract.
     #[allow(deprecated)]
     #[deprecated(
         since = "2.2.0",
@@ -535,7 +535,7 @@ where
     /// island model). All hooks receive `&self`, so observers that need interior
     /// mutability should use `Mutex`, `AtomicU64`, or similar.
     ///
-    /// See [`GaObserver`](crate::observer::GaObserver) for the hook contract.
+    /// See [`GaObserver`] for the hook contract.
     pub fn with_observer(mut self, observer: Arc<dyn GaObserver<U> + Send + Sync>) -> Self {
         self.observer = Some(observer);
         self
@@ -1260,6 +1260,7 @@ where
 /// - Splits work among threads considering available parent pairs.
 /// - Computes adaptive probabilities when enabled; otherwise uses static ones.
 /// - Produces children, mutates them, computes their fitness, and returns the offspring.
+#[allow(clippy::too_many_arguments)]
 fn parent_crossover<U>(
     parents: &[(usize, usize)],
     chromosomes: &[U],

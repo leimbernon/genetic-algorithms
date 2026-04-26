@@ -68,28 +68,37 @@
 extern crate core;
 
 #[cfg(feature = "serde")]
+#[path = "observe/checkpoint.rs"]
 pub mod checkpoint;
+#[path = "types/chromosomes/mod.rs"]
 pub mod chromosomes;
 pub mod configuration;
 pub mod error;
 pub mod extension;
 pub mod fitness;
+#[path = "engines/ga.rs"]
 pub mod ga;
+#[path = "types/genotypes/mod.rs"]
 pub mod genotypes;
 pub mod initializers;
+#[path = "observe/observer/mod.rs"]
 pub mod observer;
 pub mod operations;
 pub mod population;
+#[path = "observe/reporter/mod.rs"]
 pub mod reporter;
 pub mod rng;
 pub mod stats;
 pub mod traits;
 pub mod validators;
 #[cfg(feature = "visualization")]
+#[path = "observe/visualization/mod.rs"]
 pub mod visualization;
 
+#[path = "engines/island/mod.rs"]
 pub mod island;
 pub mod niching;
+#[path = "engines/nsga2/mod.rs"]
 pub mod nsga2;
 
 pub use ga::TerminationCause;
