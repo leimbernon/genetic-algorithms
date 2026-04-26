@@ -166,7 +166,7 @@ where
     /// All hooks receive `&self`, so observers that need interior mutability should use
     /// `Mutex`, `AtomicU64`, or similar.
     ///
-    /// See [`IslandGaObserver`](crate::observer::IslandGaObserver) for the hook contract.
+    /// See [`IslandGaObserver`] for the hook contract.
     pub fn with_observer(mut self, obs: Arc<dyn IslandGaObserver<U> + Send + Sync>) -> Self {
         self.observer = Some(obs);
         self

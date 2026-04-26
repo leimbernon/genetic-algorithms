@@ -99,7 +99,7 @@ where
     /// The observer is stored as an `Arc` for thread-safe sharing. All hooks receive
     /// `&self`, so observers needing interior mutability should use `Mutex` or atomics.
     ///
-    /// See [`Nsga2Observer`](crate::observer::Nsga2Observer) for the hook contract.
+    /// See [`Nsga2Observer`] for the hook contract.
     pub fn with_observer(mut self, obs: Arc<dyn Nsga2Observer<U> + Send + Sync>) -> Self {
         self.observer = Some(obs);
         self
