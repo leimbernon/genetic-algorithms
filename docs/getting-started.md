@@ -256,6 +256,23 @@ Compound stopping criteria struct.
 | `convergence_threshold` | `Option<f64>`  | Stop when fitness std. deviation drops below threshold.   |
 | `max_duration_secs`     | `Option<f64>`  | Stop after specified elapsed time (seconds).              |
 
+## Alternative Engines
+
+Beyond the standard `Ga<U>` single-population engine, the library provides five specialised
+engines for different problem structures:
+
+| Engine           | Module                  | When to use                                                       |
+|------------------|-------------------------|-------------------------------------------------------------------|
+| `IslandGa<U>`    | `engines::island`       | Maintain diversity across parallel sub-populations with migration |
+| `Nsga2Ga<U>`     | `engines::nsga2`        | Multi-objective optimisation (Pareto-front output)                |
+| `AlpsEngine<U>`  | `engines::alps`         | Prevent premature convergence via age-layered populations         |
+| `CellularEngine<U>` | `engines::cellular`  | Spatial locality — each cell competes only with its neighbourhood |
+| `DeEngine`       | `engines::de`           | Continuous parameter optimisation (Differential Evolution)        |
+| `ScatterEngine<U>` | `engines::scatter`    | Small reference-set search with linear combination and local search |
+
+Each engine has its own configuration builder. See [engines.md](engines.md) for a
+comprehensive overview and usage examples for each engine.
+
 ## Related
 
 - [Configuration](configuration.md)
