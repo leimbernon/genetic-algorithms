@@ -49,15 +49,15 @@
 
 | REQ-ID | Phase | Plan |
 |--------|-------|------|
-| OBS-01 | — | — |
-| OBS-02 | — | — |
-| OBS-03 | — | — |
-| OBS-04 | — | — |
-| OBS-05 | — | — |
-| SEL-01 | — | — |
-| SRV-01 | — | — |
-| CRS-01 | — | — |
-| MUT-01 | — | — |
-| MUT-02 | — | — |
-| MUT-03 | — | — |
-| MUT-04 | — | — |
+| OBS-01 | Phase 30 | — |
+| OBS-02 | Phase 30 | — |
+| OBS-03 | Phase 30 | — |
+| OBS-04 | Phase 30 | — |
+| OBS-05 | Phase 30 | — |
+| SEL-01 | Phase 31 | — |
+| SRV-01 | Phase 31 | — |
+| CRS-01 | Phase 32 | — |
+| MUT-04 | Phase 32 | — |
+| MUT-01 | Phase 33 | — |
+| MUT-02 | Phase 33 | — |
+| MUT-03 | Phase 33 | — |

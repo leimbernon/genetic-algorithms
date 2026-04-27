@@ -8,6 +8,7 @@
 - ✅ **v2.2.0 — Observability & Traceability** — Phases 13-18 (shipped 2026-03-28)
 - ✅ **v2.2.1 — Performance Optimizations** — Phases 19-24 (shipped 2026-04-23)
 - ✅ **v2.3.0 — Alternative Metaheuristics & Population Models** — Phases 25-29 (shipped 2026-04-27)
+- 🚧 **v2.4.0 — Observer Integration & New Operators** — Phases 30-33 (in progress)
 
 ## Phases
 
@@ -94,6 +95,65 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 
 </details>
 
+### 🚧 v2.4.0 — Observer Integration & New Operators (In Progress)
+
+**Milestone Goal:** Wire GaObserver lifecycle hooks into all 4 new engines, close v2.3.0 deferred tech debt, and expand the operator library with 7 new strategies.
+
+- [ ] **Phase 30: Observer Wiring & DE Benchmark** — Wire GaObserver into all 4 new engines and add DE-vs-GA convergence benchmark
+- [ ] **Phase 31: Selection & Survivor Diversity Operators** — Clearing selection and Deterministic Crowding survivor strategy
+- [ ] **Phase 32: Crossover & Differential Mutation** — Edge Recombination crossover and DE-style differential mutation for standard GA
+- [ ] **Phase 33: Scalar Mutation Operators** — Cauchy, Lévy Flight, and Uniform mutation operators
+
+## Phase Details
+
+### Phase 30: Observer Wiring & DE Benchmark
+**Goal**: Users can attach a GaObserver to any of the four new engines and observe the same lifecycle events they get from the standard GA, with DE-vs-GA convergence data available as a benchmark
+**Depends on**: Phase 29
+**Requirements**: OBS-01, OBS-02, OBS-03, OBS-04, OBS-05
+**Success Criteria** (what must be TRUE):
+  1. User can pass an `Option<Arc<dyn GaObserver<U>>>` to `DeEngine` and receive `on_start`, `on_generation_start`, `on_generation_end`, `on_new_best`, and `on_finish` calls during a run
+  2. User can do the same with `ScatterEngine`, `CellularEngine`, and `AlpsEngine` — identical hook set, same zero-overhead guarantee when observer is `None`
+  3. Running `cargo bench --bench de` produces a comparison report showing DE convergence curves alongside an equivalent GA run on the same problem
+  4. All existing tests for the four engines continue to pass with no behavioral changes (observer is purely additive)
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 31: Selection & Survivor Diversity Operators
+**Goal**: Users can promote population diversity through two new operator strategies — Clearing selection that removes similar individuals within a niche radius, and Deterministic Crowding that replaces parents with more-similar offspring
+**Depends on**: Phase 30
+**Requirements**: SEL-01, SRV-01
+**Success Criteria** (what must be TRUE):
+  1. User can set `Selection::Clearing` with a configurable niche radius; individuals within that radius of a niche winner are cleared from the selection pool each generation
+  2. User can set `Survivor::DeterministicCrowding`; each offspring is compared against its most-similar parent, and the fitter of the two survives
+  3. Both operators compose with all existing crossover and mutation operators without compile errors or panics
+  4. Tests in `tests/` verify the diversity-preserving behavior of each operator in isolation
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 32: Crossover & Differential Mutation
+**Goal**: Users can configure Edge Recombination crossover for permutation problems and Differential mutation (DE-style) for real-valued standard GAs
+**Depends on**: Phase 31
+**Requirements**: CRS-01, MUT-04
+**Success Criteria** (what must be TRUE):
+  1. User can set `Crossover::EdgeRecombination`; offspring adjacency lists are built from both parents and the resulting chromosome preserves adjacency relationships found in either parent
+  2. User can set `Mutation::Differential` with a configurable F scale factor; the mutant vector is computed from three random population members and the operator is available in the standard `Ga<U>` engine
+  3. Both operators follow the enum + factory pattern and integrate with `ConfigurationT` builder methods without new required parameters on existing configurations
+  4. Tests in `tests/` cover edge cases for Edge Recombination (short chromosomes, duplicate edges) and Differential mutation (population size bounds for three-member sampling)
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 33: Scalar Mutation Operators
+**Goal**: Users can apply three additional real-valued mutation strategies — Cauchy heavy-tail perturbations, Lévy Flight long-range jumps, and Uniform random reset — each with configurable parameters
+**Depends on**: Phase 32
+**Requirements**: MUT-01, MUT-02, MUT-03
+**Success Criteria** (what must be TRUE):
+  1. User can set `Mutation::Cauchy` with a configurable scale parameter; gene perturbations follow a Cauchy (Lorentzian) distribution, producing occasional large steps
+  2. User can set `Mutation::LevyFlight` with a configurable stability index; gene perturbations follow a Lévy distribution, enabling long-range jumps beyond what Gaussian mutation produces
+  3. User can set `Mutation::Uniform`; each selected gene is reset to a uniformly random value within the gene's valid range
+  4. All three operators follow the enum + factory pattern; `cargo test` and `cargo clippy` pass with no warnings; tests confirm distributional properties in `tests/`
+**Plans**: TBD
+**UI hint**: no
+
 ## Progress
 
 | Phase | Milestone | Plans | Status | Completed |
@@ -123,3 +183,7 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 | 27. Scatter Search Engine | v2.3.0 | 1/1 | Complete | 2026-04-26 |
 | 28. Cellular GA Engine | v2.3.0 | 1/1 | Complete | 2026-04-27 |
 | 29. ALPS Engine | v2.3.0 | 1/1 | Complete | 2026-04-27 |
+| 30. Observer Wiring & DE Benchmark | v2.4.0 | 0/TBD | Not started | - |
+| 31. Selection & Survivor Diversity Operators | v2.4.0 | 0/TBD | Not started | - |
+| 32. Crossover & Differential Mutation | v2.4.0 | 0/TBD | Not started | - |
+| 33. Scalar Mutation Operators | v2.4.0 | 0/TBD | Not started | - |
