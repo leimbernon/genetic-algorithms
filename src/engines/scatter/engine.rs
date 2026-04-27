@@ -84,15 +84,20 @@ where
         }
 
         // ── 2. Reference-set construction ─────────────────────────────────────
+        assert!(!pool.is_empty(), "ScatterEngine: init_fn returned an empty population");
+
         // Sort pool by fitness; take top b/2 as quality members
         self.sort_by_fitness(&mut pool);
         let quality_count = b / 2;
         let diverse_count = b - quality_count;
 
-        let mut ref_set: Vec<U> = pool[..quality_count.min(pool.len())].to_vec();
+        // Clamp so both slices are always in-bounds regardless of pool size.
+        let actual_quality = quality_count.min(pool.len());
+        let (quality_slice, remaining_slice) = pool.split_at(actual_quality);
+        let mut ref_set: Vec<U> = quality_slice.to_vec();
 
         // Fill the rest with the most diverse solutions (Euclidean distance)
-        let mut remaining: Vec<U> = pool[quality_count..].to_vec();
+        let mut remaining: Vec<U> = remaining_slice.to_vec();
         for _ in 0..diverse_count {
             if remaining.is_empty() { break; }
             let idx = self.most_diverse_index(&ref_set, &remaining);
