@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.3.0
-milestone_name: Alternative Metaheuristics & Population Models
-status: complete
+milestone: v2.4.0
+milestone_name: Observer Integration & New Operators
+status: planning
 stopped_at: ""
 last_updated: "2026-04-27T00:00:00.000Z"
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 8
-  completed_plans: 8
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
@@ -19,15 +19,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-27)
 
 **Core value:** Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library
-**Current focus:** v2.3.0 ARCHIVED — ready for next milestone planning
+**Current focus:** v2.4.0 — Observer Integration & New Operators
 
 ## Current Position
 
-Phase: — (milestone complete)
+Phase: Not started (defining requirements)
 Plan: —
-Status: v2.3.0 archived; git tag v2.3.0 created; ready for `/gsd-new-milestone`
+Status: Defining requirements
+Last activity: 2026-04-27 — Milestone v2.4.0 started
 
-Progress: [##########] 5/5 phases complete
+Progress: [----------] 0/0 phases complete
 
 ## Accumulated Context
 
@@ -38,11 +39,6 @@ Progress: [##########] 5/5 phases complete
 - v2.3.0: New engines land in `src/engines/` with their own subdirectory; `src/lib.rs` adds the re-export
 - v2.3.0: `DeGene` trait extension pattern for engines requiring type-specific arithmetic (f64)
 
-### Known Tech Debt for Next Milestone
-
-- Observer hooks (GaObserver) not wired into DeEngine, ScatterEngine, CellularEngine, AlpsEngine
-- DE-vs-GA head-to-head benchmark not added to benches/de.rs
-
 ### Blockers/Concerns
 
 (none)
@@ -50,5 +46,5 @@ Progress: [##########] 5/5 phases complete
 ## Session Continuity
 
 Last session: 2026-04-27
-Stopped at: v2.3.0 milestone archived
+Stopped at: v2.4.0 milestone started
 Resume file: (none)
