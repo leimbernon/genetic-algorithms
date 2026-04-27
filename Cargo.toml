@@ -76,6 +76,10 @@ name = "scatter"
 harness = false
 
 [[bench]]
+name = "alps"
+harness = false
+
+[[bench]]
 name = "cellular"
 harness = false
 

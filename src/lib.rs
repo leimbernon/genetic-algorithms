@@ -95,6 +95,8 @@ pub mod validators;
 #[path = "observe/visualization/mod.rs"]
 pub mod visualization;
 
+#[path = "engines/alps/mod.rs"]
+pub mod alps;
 #[path = "engines/cellular/mod.rs"]
 pub mod cellular;
 #[path = "engines/de/mod.rs"]
