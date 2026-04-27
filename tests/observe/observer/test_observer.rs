@@ -337,7 +337,7 @@ fn test_log_observer_crate_reexport() {
 /// Regression: no direct info!/debug!/trace! calls remain in ga.rs
 #[test]
 fn test_ga_has_no_direct_log_calls() {
-    let ga_source = include_str!("../src/engines/ga.rs");
+    let ga_source = include_str!("../../../src/engines/ga.rs");
     // Count occurrences of direct log macro invocations
     // The only allowed log call is log::warn! inside #[cfg(feature = "serde")]
     for line in ga_source.lines() {

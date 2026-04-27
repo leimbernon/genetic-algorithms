@@ -1,5 +1,3 @@
-#[cfg(test)]
-mod structures;
 
 use crate::structures::{Chromosome, Gene};
 use genetic_algorithms::configuration::StoppingCriteria;

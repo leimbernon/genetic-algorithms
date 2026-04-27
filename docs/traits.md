@@ -298,6 +298,82 @@ Trait for genetic algorithm configuration.
 | `with_elitism`                | `fn with_elitism(&mut self, elitism_count: usize) -> &mut Self`  | Sets number of elite chromosomes.                    |
 | `with_stopping_criteria`      | `fn with_stopping_criteria(&mut self, criteria: StoppingCriteria) -> &mut Self`| Sets compound stopping criteria.           |
 
+## Observer Traits
+
+The observer system provides structured, lifecycle-aware hooks into the GA run loop. Unlike
+the legacy `Reporter` trait, observers are stored as `Arc<dyn GaObserver + Send + Sync>` and
+receive `&self` references, enabling interior mutability and safe sharing across island threads.
+
+### `GaObserver<U>`
+
+Defined in `src/observe/observer/mod.rs`. All methods have default no-op implementations.
+
+| Hook                             | When it fires                                           |
+|----------------------------------|---------------------------------------------------------|
+| `on_run_start`                   | Once before the first generation                        |
+| `on_generation_start`            | Start of each generation, before any operators          |
+| `on_selection_complete`          | After parent selection                                  |
+| `on_crossover_complete`          | After crossover produces offspring                      |
+| `on_mutation_complete`           | After mutation is applied                               |
+| `on_fitness_evaluation_complete` | After fitness evaluation of the new population          |
+| `on_survivor_selection_complete` | After survivor selection prunes the population          |
+| `on_new_best`                    | When the population's best fitness improves             |
+| `on_stagnation`                  | Each time the stagnation counter increments             |
+| `on_extension_triggered`         | When an extension strategy fires due to low diversity   |
+| `on_generation_end`              | End of each generation, after statistics collected      |
+| `on_run_end`                     | Once after the GA loop exits                            |
+
+Attach via `.with_observer(Arc::new(my_observer))` on the `Ga` builder.
+
+### `IslandGaObserver<U>`
+
+Island-model-specific hooks. Implement alongside `GaObserver<U>` to observe island
+runs and migration events.
+
+| Hook                        | When it fires                                  |
+|-----------------------------|------------------------------------------------|
+| `on_island_run_start`       | When an island's run starts                    |
+| `on_island_run_end`         | When an island's run ends                      |
+| `on_island_generation_end`  | At the end of each generation per island       |
+| `on_migration_triggered`    | When migration between islands fires           |
+
+### `Nsga2Observer<U>`
+
+NSGA-II-specific hooks for observing Pareto front assignment and sort timing.
+
+| Hook                           | When it fires                                       |
+|--------------------------------|-----------------------------------------------------|
+| `on_pareto_front_assigned`     | After Pareto fronts are assigned                    |
+| `on_non_dominated_sort_complete` | After non-dominated sorting completes             |
+| `on_crowding_distance_calculated` | After crowding distance calculation completes    |
+
+### `AllObserver<U>`
+
+Supertrait that combines `GaObserver<U>`, `IslandGaObserver<U>`, and `Nsga2Observer<U>`.
+A blanket `impl` automatically applies to any type implementing all three. Used internally
+by `CompositeObserver`.
+
+### Built-in Observer Implementations
+
+| Type                  | Feature flag        | Description                                                              |
+|-----------------------|---------------------|--------------------------------------------------------------------------|
+| `NoopObserver`        | always available    | Zero-sized no-op observer. Useful as a placeholder.                      |
+| `LogObserver`         | always available    | Logs generation statistics using the `log` crate.                        |
+| `CompositeObserver<U>` | always available   | Fan-out dispatch: forwards every hook to a list of inner observers.      |
+| `TracingObserver`     | `observer-tracing`  | Emits structured `tracing` spans and events per hook.                    |
+| `MetricsObserver`     | `observer-metrics`  | Collects numeric metrics into a thread-safe `MetricsStore`.              |
+
+### Comparison: `Reporter` vs `GaObserver`
+
+| Aspect          | `Reporter`                         | `GaObserver`                               |
+|-----------------|------------------------------------|--------------------------------------------|
+| Storage         | `Box<dyn Reporter + Send>`         | `Arc<dyn GaObserver + Send + Sync>`        |
+| Mutability      | `&mut self`                        | `&self` (interior mutability)              |
+| Hooks           | 4 lifecycle hooks                  | 12 hooks (lifecycle + operator + special)  |
+| Thread safety   | `Send` only                        | `Send + Sync`                              |
+| Island support  | No                                 | Yes (via `IslandGaObserver`)               |
+| NSGA-II support | No                                 | Yes (via `Nsga2Observer`)                  |
+
 ## Related
 
 - [chromosomes.md](chromosomes.md)

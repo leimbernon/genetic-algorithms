@@ -146,10 +146,19 @@ let _population = ga
 | `configuration`     | Configuration options and builder API                            |
 | `error`             | Error types for GA operations                                    |
 | `fitness`           | Fitness evaluation helpers                                       |
-| `ga`                | Genetic algorithm orchestrator (`Ga`)                            |
+| `ga`                | Single-population GA orchestrator (`Ga`)                         |
+| `engines::alps`     | Age-Layered Population Structure engine (`AlpsEngine`)           |
+| `engines::cellular` | Cellular GA engine on 2D toroidal grid (`CellularEngine`)        |
+| `engines::de`       | Differential Evolution engine (`DeEngine`)                       |
+| `engines::island`   | Island model multi-population engine (`IslandGa`)                |
+| `engines::nsga2`    | NSGA-II multi-objective engine (`Nsga2Ga`)                       |
+| `engines::scatter`  | Scatter Search engine with reference set (`ScatterEngine`)       |
 | `genotypes`         | Concrete gene types (`Binary`, `Range`)                          |
 | `initializers`      | Population initialization utilities                              |
 | `extension`         | Extension strategy configuration for diversity control           |
+| `observe::observer` | `GaObserver` trait and built-in observers                        |
+| `observe::reporter` | Legacy `Reporter` trait                                          |
+| `observe::visualization` | Visualization utilities for GA runs                         |
 | `operations`        | Selection, crossover, mutation, survivor, extension operators    |
 | `population`        | Population management and best tracking                          |
 | `stats`             | Statistics tracking for GA runs                                  |
@@ -364,6 +373,124 @@ Error type for GA operations.
 | Name           | Signature                                              | Description                          |
 |----------------|--------------------------------------------------------|--------------------------------------|
 | `new`          | `fn new(msg: &str) -> Self`                            | Creates a new error                  |
+
+---
+
+### Alternative Engines
+
+The library ships several engine alternatives to the standard `Ga<U>` for specialized use cases:
+
+#### `engines::alps::AlpsEngine`
+
+Age-Layered Population Structure. Maintains `n_layers` sub-populations; individuals are
+promoted to higher layers as they age, preventing premature convergence.
+
+| Type                  | Description                                                           |
+|-----------------------|-----------------------------------------------------------------------|
+| `AlpsEngine`          | Engine entry point. Call `.run()` to execute.                         |
+| `AlpsResult`          | Return type containing the best chromosome and per-layer populations. |
+| `AlpsConfiguration`   | Builder for ALPS parameters.                                          |
+| `AlpsAgeScheme`       | `Linear`, `Fibonacci`, `Polynomial` — controls per-layer age limits.  |
+
+#### `engines::cellular::CellularEngine`
+
+Cellular GA. Individuals are placed on a 2D toroidal grid; each cell evolves by
+competing with its neighbourhood only, promoting diversity through spatial structure.
+
+| Type                     | Description                                                          |
+|--------------------------|----------------------------------------------------------------------|
+| `CellularEngine`         | Engine entry point. Call `.run()` to execute.                        |
+| `CellularResult`         | Return type containing the best chromosome and final grid state.     |
+| `CellularConfiguration`  | Builder for grid size, neighbourhood type, and update mode.          |
+| `Neighborhood`           | `VonNeumann` (4 cells) or `Moore` (8 cells).                         |
+| `UpdateMode`             | `Synchronous` (all cells at once) or `Asynchronous` (random order).  |
+
+#### `engines::de::DeEngine`
+
+Differential Evolution. Continuous optimisation engine with 5 mutation strategies and 2
+crossover modes. Supports JADE and L-SHADE adaptive parameter control.
+
+| Type                  | Description                                                           |
+|-----------------------|-----------------------------------------------------------------------|
+| `DeEngine`            | Engine entry point. Call `.run()` to execute.                         |
+| `DeResult`            | Return type containing the best solution vector and fitness.          |
+| `DeConfiguration`     | Builder for population size, `F`, `CR`, strategy, and adaptation.    |
+| `DeMutationStrategy`  | `Rand1`, `Best1`, `CurrentToBest1`, `Rand2`, `Best2`.                 |
+| `DeCrossoverMode`     | `Binomial` or `Exponential`.                                          |
+| `DeAdaptive`          | `None`, `Jade`, or `LShade` adaptive parameter control.               |
+| `DeGene`              | Gene type carrying a continuous `f64` value for DE chromosomes.       |
+
+#### `engines::island::IslandGa`
+
+Island model. Runs multiple independent sub-populations (islands) in parallel, periodically
+exchanging migrants according to a configurable topology and migration policy.
+
+See `IslandConfiguration` in `configuration.md` for full parameter documentation.
+
+#### `engines::nsga2::Nsga2Ga`
+
+NSGA-II multi-objective optimisation. Ranks the population into Pareto fronts, uses
+crowding-distance tie-breaking, and returns a Pareto-front set rather than a single best.
+
+See `Nsga2Configuration` in `configuration.md` for full parameter documentation.
+
+#### `engines::scatter::ScatterEngine`
+
+Scatter Search. Maintains a small reference set of high-quality and diverse solutions.
+New candidates are generated by linear combination of reference-set members, with
+optional local search refinement.
+
+| Type                   | Description                                                          |
+|------------------------|----------------------------------------------------------------------|
+| `ScatterEngine`        | Engine entry point. Call `.run()` to execute.                        |
+| `ScatterResult`        | Return type containing the final reference set and best chromosome.  |
+| `ScatterConfiguration` | Builder for reference-set size, diversification rate, and local search. |
+
+---
+
+### `observe::observer::GaObserver`
+
+Structured lifecycle observer trait for `Ga<U>`. All hook methods have default no-op
+implementations — implement only the hooks you need.
+
+```rust
+pub trait GaObserver<U: ChromosomeT>: Send + Sync {
+    fn on_run_start(&self) {}
+    fn on_generation_start(&self, generation: usize) {}
+    fn on_selection_complete(&self, generation: usize, duration: Duration, pop_size: usize) {}
+    fn on_crossover_complete(&self, generation: usize, duration: Duration, offspring: usize) {}
+    fn on_mutation_complete(&self, generation: usize, duration: Duration, pop_size: usize) {}
+    fn on_fitness_evaluation_complete(&self, generation: usize, duration: Duration, pop_size: usize) {}
+    fn on_survivor_selection_complete(&self, generation: usize, duration: Duration, pop_size: usize) {}
+    fn on_new_best(&self, generation: usize, best: U) {}
+    fn on_stagnation(&self, generation: usize, stagnation_count: usize) {}
+    fn on_extension_triggered(&self, event: ExtensionEvent) {}
+    fn on_generation_end(&self, stats: &GenerationStats) {}
+    fn on_run_end(&self, cause: TerminationCause, all_stats: &[GenerationStats]) {}
+}
+```
+
+Attach an observer via `.with_observer(Arc<dyn GaObserver<U>>)` on the `Ga` builder.
+
+#### Built-in observers
+
+| Type                 | Feature flag         | Description                                                             |
+|----------------------|----------------------|-------------------------------------------------------------------------|
+| `NoopObserver`       | always available     | Zero-sized no-op; useful as a placeholder or compile check.             |
+| `LogObserver`        | always available     | Logs generation stats using the `log` crate.                            |
+| `CompositeObserver`  | always available     | Fan-out: dispatches every hook to a list of inner observers.            |
+| `TracingObserver`    | `observer-tracing`   | Emits structured `tracing` spans and events per hook.                   |
+| `MetricsObserver`    | `observer-metrics`   | Collects numeric metrics into a thread-safe `MetricsStore`.             |
+
+#### Related observer traits
+
+| Trait                 | Description                                                          |
+|-----------------------|----------------------------------------------------------------------|
+| `IslandGaObserver<U>` | Island-specific hooks: `on_island_run_start/end`, `on_migration_triggered`. |
+| `Nsga2Observer<U>`    | NSGA-II hooks: `on_pareto_front_assigned`, sort/crowding timing.     |
+| `AllObserver<U>`      | Supertrait combining `GaObserver`, `IslandGaObserver`, `Nsga2Observer`. Used by `CompositeObserver`. |
+
+---
 
 ## Related
 
