@@ -95,14 +95,14 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 
 </details>
 
-### 🚧 v2.4.0 — Observer Integration & New Operators (In Progress)
+### v2.4.0 — Observer Integration & New Operators (In Progress)
 
 **Milestone Goal:** Wire GaObserver lifecycle hooks into all 4 new engines, close v2.3.0 deferred tech debt, and expand the operator library with 7 new strategies.
 
 - [ ] **Phase 30: Observer Wiring & DE Benchmark** — Wire GaObserver into all 4 new engines and add DE-vs-GA convergence benchmark
 - [ ] **Phase 31: Selection & Survivor Diversity Operators** — Clearing selection and Deterministic Crowding survivor strategy
 - [ ] **Phase 32: Crossover & Differential Mutation** — Edge Recombination crossover and DE-style differential mutation for standard GA
-- [ ] **Phase 33: Scalar Mutation Operators** — Cauchy, Lévy Flight, and Uniform mutation operators
+- [ ] **Phase 33: Scalar Mutation Operators** — Cauchy, Levy Flight, and Uniform mutation operators
 
 ## Phase Details
 
@@ -115,7 +115,13 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
   2. User can do the same with `ScatterEngine`, `CellularEngine`, and `AlpsEngine` — identical hook set, same zero-overhead guarantee when observer is `None`
   3. Running `cargo bench --bench de` produces a comparison report showing DE convergence curves alongside an equivalent GA run on the same problem
   4. All existing tests for the four engines continue to pass with no behavioral changes (observer is purely additive)
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 30-01-PLAN.md — Wire GaObserver into DeEngine and ScatterEngine
+- [ ] 30-02-PLAN.md — Wire GaObserver into CellularEngine and AlpsEngine
+- [ ] 30-03-PLAN.md — DE-vs-GA convergence benchmark
+
 **UI hint**: no
 
 ### Phase 31: Selection & Survivor Diversity Operators
@@ -143,12 +149,12 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 **UI hint**: no
 
 ### Phase 33: Scalar Mutation Operators
-**Goal**: Users can apply three additional real-valued mutation strategies — Cauchy heavy-tail perturbations, Lévy Flight long-range jumps, and Uniform random reset — each with configurable parameters
+**Goal**: Users can apply three additional real-valued mutation strategies — Cauchy heavy-tail perturbations, Levy Flight long-range jumps, and Uniform random reset — each with configurable parameters
 **Depends on**: Phase 32
 **Requirements**: MUT-01, MUT-02, MUT-03
 **Success Criteria** (what must be TRUE):
   1. User can set `Mutation::Cauchy` with a configurable scale parameter; gene perturbations follow a Cauchy (Lorentzian) distribution, producing occasional large steps
-  2. User can set `Mutation::LevyFlight` with a configurable stability index; gene perturbations follow a Lévy distribution, enabling long-range jumps beyond what Gaussian mutation produces
+  2. User can set `Mutation::LevyFlight` with a configurable stability index; gene perturbations follow a Levy distribution, enabling long-range jumps beyond what Gaussian mutation produces
   3. User can set `Mutation::Uniform`; each selected gene is reset to a uniformly random value within the gene's valid range
   4. All three operators follow the enum + factory pattern; `cargo test` and `cargo clippy` pass with no warnings; tests confirm distributional properties in `tests/`
 **Plans**: TBD
@@ -183,7 +189,7 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 | 27. Scatter Search Engine | v2.3.0 | 1/1 | Complete | 2026-04-26 |
 | 28. Cellular GA Engine | v2.3.0 | 1/1 | Complete | 2026-04-27 |
 | 29. ALPS Engine | v2.3.0 | 1/1 | Complete | 2026-04-27 |
-| 30. Observer Wiring & DE Benchmark | v2.4.0 | 0/TBD | Not started | - |
+| 30. Observer Wiring & DE Benchmark | v2.4.0 | 0/3 | Not started | - |
 | 31. Selection & Survivor Diversity Operators | v2.4.0 | 0/TBD | Not started | - |
 | 32. Crossover & Differential Mutation | v2.4.0 | 0/TBD | Not started | - |
 | 33. Scalar Mutation Operators | v2.4.0 | 0/TBD | Not started | - |
