@@ -1,4 +1,4 @@
-# genetic_algorithms (v2.1.0)
+# genetic_algorithms (v2.3.0)
 
 [![Rust Unit Tests](https://github.com/leimbernon/rust_genetic_algorithms/actions/workflows/rust-unit-tests.yml/badge.svg)](https://github.com/leimbernon/rust_genetic_algorithms/actions/workflows/rust-unit-tests.yml)
 
