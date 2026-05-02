@@ -370,9 +370,16 @@ where
                     a.fitness().partial_cmp(&b.fitness()).unwrap_or(std::cmp::Ordering::Equal)
                 });
             }
-            _ => {
+            ProblemSolving::Maximization => {
                 pop.sort_unstable_by(|a, b| {
                     b.fitness().partial_cmp(&a.fitness()).unwrap_or(std::cmp::Ordering::Equal)
+                });
+            }
+            ProblemSolving::FixedFitness => {
+                let t = self.config.fitness_target.unwrap_or(0.0);
+                pop.sort_unstable_by(|a, b| {
+                    (a.fitness() - t).abs().partial_cmp(&(b.fitness() - t).abs())
+                        .unwrap_or(std::cmp::Ordering::Equal)
                 });
             }
         }
