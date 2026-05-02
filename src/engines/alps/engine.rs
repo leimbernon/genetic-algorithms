@@ -304,9 +304,11 @@ where
                 .iter()
                 .flat_map(|layer| layer.iter().map(|ind| ind.fitness()))
                 .collect();
-            let gen_stats = GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
-            stats_history.push(gen_stats);
-            self.notify(|obs| obs.on_generation_end(stats_history.last().unwrap()));
+            if !fitness_values.is_empty() {
+                let gen_stats = GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
+                stats_history.push(gen_stats);
+                self.notify(|obs| obs.on_generation_end(stats_history.last().unwrap()));
+            }
 
             generations += 1;
 
