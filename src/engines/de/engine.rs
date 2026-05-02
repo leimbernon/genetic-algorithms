@@ -254,6 +254,7 @@ where
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     fn find_best(&self, pop: &[U]) -> (usize, f64) {
+        assert!(!pop.is_empty(), "find_best called on empty population");
         let mut best_idx = 0;
         let mut best_fit = pop[0].fitness();
         for (i, ind) in pop.iter().enumerate().skip(1) {
