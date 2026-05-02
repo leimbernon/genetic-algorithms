@@ -134,10 +134,18 @@ where
         layers[0] = self.fresh_individuals(self.config.layer_size);
 
         // ── Best tracking ─────────────────────────────────────────────────────
-        let mut best_fitness = layers[0]
-            .iter()
-            .map(|u| u.fitness())
-            .fold(f64::NAN, |acc, f| if self.is_better(f, acc) { f } else { acc });
+        // Use a direction-aware sentinel so prev_best_fitness is never NaN on
+        // generation 0, which would cause is_better(real, NaN) → true and fire
+        // on_new_best unconditionally on the very first generation.
+        let mut best_fitness = match self.config.problem_solving {
+            ProblemSolving::Minimization | ProblemSolving::FixedFitness => f64::MAX,
+            ProblemSolving::Maximization => f64::MIN,
+        };
+        for ind in &layers[0] {
+            if self.is_better(ind.fitness(), best_fitness) {
+                best_fitness = ind.fitness();
+            }
+        }
         let mut best = layers[0]
             .iter()
             .max_by(|a, b| {
