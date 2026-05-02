@@ -20,8 +20,11 @@
 use std::sync::Arc;
 
 use crate::configuration::{CrossoverConfiguration, ProblemSolving};
+use crate::ga::TerminationCause;
+use crate::observer::GaObserver;
 use crate::operations::mutation::ValueMutable;
 use crate::operations::{crossover, mutation};
+use crate::stats::GenerationStats;
 use crate::traits::SelectionOperator;
 use crate::rng::make_rng;
 use crate::traits::{ChromosomeT, FitnessFn};
@@ -75,6 +78,7 @@ pub struct CellularEngine<U: ChromosomeT> {
     config: CellularConfiguration,
     init_fn: Arc<dyn Fn(usize) -> Vec<U> + Send + Sync>,
     fitness_fn: Arc<FitnessFn<U::Gene>>,
+    observer: Option<Arc<dyn GaObserver<U> + Send + Sync>>,
 }
 
 impl<U> CellularEngine<U>
@@ -96,7 +100,14 @@ where
             config,
             init_fn: Arc::new(init_fn),
             fitness_fn: Arc::new(fitness_fn),
+            observer: None,
         }
+    }
+
+    /// Attach a lifecycle observer. Zero overhead when not set.
+    pub fn with_observer(mut self, observer: Arc<dyn GaObserver<U> + Send + Sync>) -> Self {
+        self.observer = Some(observer);
+        self
     }
 }
 
@@ -104,6 +115,13 @@ impl<U> CellularEngine<U>
 where
     U: ChromosomeT + Clone + ValueMutable + 'static,
 {
+    #[inline]
+    fn notify<F: FnOnce(&dyn GaObserver<U>)>(&self, f: F) {
+        if let Some(ref obs) = self.observer {
+            f(obs.as_ref());
+        }
+    }
+
     /// Run the Cellular GA and return the result.
     pub fn run(&mut self) -> CellularResult<U> {
         let rows = self.config.rows;
@@ -134,9 +152,13 @@ where
 
         let mut rng = make_rng();
         let mut generations = 0usize;
+        let is_maximization = matches!(self.config.problem_solving, ProblemSolving::Maximization);
+        let mut stats_history: Vec<GenerationStats> = Vec::new();
+        self.notify(|obs| obs.on_run_start());
 
         // ── Main loop ─────────────────────────────────────────────────────────
-        for _gen in 0..self.config.max_generations {
+        for gen in 0..self.config.max_generations {
+            self.notify(|obs| obs.on_generation_start(gen));
             let source: Vec<U> = match self.config.update_mode {
                 UpdateMode::Synchronous => pop.clone(), // read from snapshot
                 UpdateMode::Asynchronous => vec![],     // unused; reads directly from pop
@@ -145,6 +167,8 @@ where
             let is_sync = matches!(self.config.update_mode, UpdateMode::Synchronous);
             // For synchronous mode, collect replacements and apply after the sweep.
             let mut replacements: Vec<(usize, U)> = Vec::new();
+            // Snapshot best before inner sweep — on_new_best fires once per generation
+            let prev_best_fitness = best_fitness;
 
             for row in 0..rows {
                 for col in 0..cols {
@@ -225,6 +249,17 @@ where
 
             generations += 1;
 
+            // Observer: on_new_best fires ONCE per generation if global best improved
+            if self.is_better(best_fitness, prev_best_fitness) {
+                self.notify(|obs| obs.on_new_best(gen, best.clone()));
+            }
+
+            // Observer: on_generation_end with stats from full grid
+            let fitness_values: Vec<f64> = pop.iter().map(|c| c.fitness()).collect();
+            let gen_stats = GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
+            stats_history.push(gen_stats);
+            self.notify(|obs| obs.on_generation_end(stats_history.last().unwrap()));
+
             // Early stopping
             if let Some(target) = self.config.fitness_target {
                 if self.reached_target(best_fitness, target) {
@@ -232,6 +267,13 @@ where
                 }
             }
         }
+
+        let cause = if generations < self.config.max_generations {
+            TerminationCause::FitnessTargetReached
+        } else {
+            TerminationCause::GenerationLimitReached
+        };
+        self.notify(|obs| obs.on_run_end(cause, &stats_history));
 
         CellularResult { population: pop, best, best_fitness, generations }
     }
