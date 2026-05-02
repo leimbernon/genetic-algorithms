@@ -256,6 +256,8 @@ where
                 ind.set_gene(j, revert);
             }
         }
+        // Sync the chromosome's stored fitness to the final accepted value.
+        ind.set_fitness(current_fitness);
     }
 
     fn sort_by_fitness(&self, pop: &mut [U]) {
