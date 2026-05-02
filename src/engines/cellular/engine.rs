@@ -128,6 +128,11 @@ where
         let cols = self.config.cols;
         let pop_size = rows * cols;
 
+        assert!(
+            rows * cols >= 2,
+            "CellularEngine requires a grid with at least 2 cells"
+        );
+
         // ── Initialise ────────────────────────────────────────────────────────
         let mut pop: Vec<U> = (self.init_fn)(pop_size);
         for ind in &mut pop {
