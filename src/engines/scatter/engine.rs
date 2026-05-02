@@ -13,6 +13,9 @@ use crate::de::gene::DeGene;
 use super::configuration::ScatterConfiguration;
 use crate::rng::make_rng;
 use crate::traits::{ChromosomeT, FitnessFn};
+use crate::observer::GaObserver;
+use crate::stats::GenerationStats;
+use crate::ga::TerminationCause;
 use rand::Rng;
 
 /// Result returned by [`ScatterEngine::run`].
@@ -52,6 +55,7 @@ where
     config: ScatterConfiguration,
     init_fn: Arc<dyn Fn(usize) -> Vec<U> + Send + Sync>,
     fitness_fn: Arc<FitnessFn<U::Gene>>,
+    observer: Option<Arc<dyn GaObserver<U> + Send + Sync>>,
 }
 
 impl<U: ChromosomeT + Clone> ScatterEngine<U>
@@ -68,6 +72,20 @@ where
             config,
             init_fn: Arc::new(init_fn),
             fitness_fn: Arc::new(fitness_fn),
+            observer: None,
+        }
+    }
+
+    /// Attach a lifecycle observer. Zero overhead when not set.
+    pub fn with_observer(mut self, observer: Arc<dyn GaObserver<U> + Send + Sync>) -> Self {
+        self.observer = Some(observer);
+        self
+    }
+
+    #[inline]
+    fn notify<F: FnOnce(&dyn GaObserver<U>)>(&self, f: F) {
+        if let Some(ref obs) = self.observer {
+            f(obs.as_ref());
         }
     }
 
@@ -110,8 +128,15 @@ where
 
         let mut iterations = 0usize;
 
+        let is_maximization = matches!(self.config.problem_solving, ProblemSolving::Maximization);
+        let mut stats_history: Vec<GenerationStats> = Vec::new();
+        let mut prev_best_fitness = best_fitness;
+        self.notify(|obs| obs.on_run_start());
+
         // ── 4. Main loop ──────────────────────────────────────────────────────
-        for _iter in 0..self.config.max_iterations {
+        for iter in 0..self.config.max_iterations {
+            self.notify(|obs| obs.on_generation_start(iter));
+
             let n = ref_set.len();
             let mut new_candidates: Vec<U> = Vec::new();
 
@@ -147,12 +172,31 @@ where
 
             iterations += 1;
 
+            // Observer: on_new_best fires if global best improved this iteration
+            if self.is_better(best_fitness, prev_best_fitness) {
+                prev_best_fitness = best_fitness;
+                self.notify(|obs| obs.on_new_best(iter, best.clone()));
+            }
+
+            // Observer: on_generation_end with stats from ref_set
+            let fitness_values: Vec<f64> = ref_set.iter().map(|c| c.fitness()).collect();
+            let gen_stats = GenerationStats::from_fitness_values(iter, &fitness_values, is_maximization);
+            stats_history.push(gen_stats);
+            self.notify(|obs| obs.on_generation_end(stats_history.last().unwrap()));
+
             if let Some(target) = self.config.fitness_target {
                 if self.reached_target(best_fitness, target) {
                     break;
                 }
             }
         }
+
+        let cause = if iterations < self.config.max_iterations {
+            TerminationCause::FitnessTargetReached
+        } else {
+            TerminationCause::GenerationLimitReached
+        };
+        self.notify(|obs| obs.on_run_end(cause, &stats_history));
 
         ScatterResult { reference_set: ref_set, best, best_fitness, iterations }
     }
