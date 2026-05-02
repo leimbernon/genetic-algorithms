@@ -22,9 +22,12 @@
 use std::sync::Arc;
 
 use crate::configuration::{CrossoverConfiguration, ProblemSolving};
+use crate::ga::TerminationCause;
+use crate::observer::GaObserver;
 use crate::operations::mutation::ValueMutable;
 use crate::operations::{crossover, mutation};
 use crate::rng::make_rng;
+use crate::stats::GenerationStats;
 use crate::traits::{ChromosomeT, FitnessFn};
 use rand::Rng;
 
@@ -77,6 +80,7 @@ pub struct AlpsEngine<U: ChromosomeT> {
     config: AlpsConfiguration,
     init_fn: Arc<dyn Fn(usize) -> Vec<U> + Send + Sync>,
     fitness_fn: Arc<FitnessFn<U::Gene>>,
+    observer: Option<Arc<dyn GaObserver<U> + Send + Sync>>,
 }
 
 impl<U: ChromosomeT> AlpsEngine<U> {
@@ -95,7 +99,14 @@ impl<U: ChromosomeT> AlpsEngine<U> {
             config,
             init_fn: Arc::new(init_fn),
             fitness_fn: Arc::new(fitness_fn),
+            observer: None,
         }
+    }
+
+    /// Attach a lifecycle observer. Zero overhead when not set.
+    pub fn with_observer(mut self, observer: Arc<dyn GaObserver<U> + Send + Sync>) -> Self {
+        self.observer = Some(observer);
+        self
     }
 }
 
@@ -103,6 +114,13 @@ impl<U> AlpsEngine<U>
 where
     U: ChromosomeT + Clone + ValueMutable + 'static,
 {
+    #[inline]
+    fn notify<F: FnOnce(&dyn GaObserver<U>)>(&self, f: F) {
+        if let Some(ref obs) = self.observer {
+            f(obs.as_ref());
+        }
+    }
+
     /// Run the ALPS algorithm and return the result.
     pub fn run(&mut self) -> AlpsResult<U> {
         let max_ages = self.config.max_ages();
@@ -134,9 +152,16 @@ where
 
         let mut rng = make_rng();
         let mut generations = 0usize;
+        let is_maximization = matches!(self.config.problem_solving, ProblemSolving::Maximization);
+        let mut stats_history: Vec<GenerationStats> = Vec::new();
+        self.notify(|obs| obs.on_run_start());
 
         // ── Main loop ─────────────────────────────────────────────────────────
         for gen in 0..self.config.max_generations {
+            self.notify(|obs| obs.on_generation_start(gen));
+            // Snapshot best before any evolution this generation — on_new_best fires once per generation
+            let prev_best_fitness = best_fitness;
+
             // --- Evolve each layer -------------------------------------------
             for layer_idx in 0..self.config.n_layers {
                 if layers[layer_idx].is_empty() {
@@ -247,6 +272,9 @@ where
                     }
                 }
             }
+            if self.is_better(best_fitness, prev_best_fitness) {
+                self.notify(|obs| obs.on_new_best(gen, best.clone()));
+            }
 
             // --- Periodic injection into layer 0 -----------------------------
             if self.config.injection_interval > 0
@@ -262,6 +290,15 @@ where
                 }
             }
 
+            // Observer: merged fitness stats across all layers (D-06)
+            let fitness_values: Vec<f64> = layers
+                .iter()
+                .flat_map(|layer| layer.iter().map(|ind| ind.fitness()))
+                .collect();
+            let gen_stats = GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
+            stats_history.push(gen_stats);
+            self.notify(|obs| obs.on_generation_end(stats_history.last().unwrap()));
+
             generations += 1;
 
             // --- Early stopping ----------------------------------------------
@@ -271,6 +308,13 @@ where
                 }
             }
         }
+
+        let cause = if generations < self.config.max_generations {
+            TerminationCause::FitnessTargetReached
+        } else {
+            TerminationCause::GenerationLimitReached
+        };
+        self.notify(|obs| obs.on_run_end(cause, &stats_history));
 
         AlpsResult { layers, best, best_fitness, generations }
     }
