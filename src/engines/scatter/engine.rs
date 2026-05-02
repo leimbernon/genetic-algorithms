@@ -127,6 +127,7 @@ where
         let mut best = ref_set[best_idx].clone();
 
         let mut iterations = 0usize;
+        let mut target_reached = false;
 
         let is_maximization = matches!(self.config.problem_solving, ProblemSolving::Maximization);
         let mut stats_history: Vec<GenerationStats> = Vec::new();
@@ -186,12 +187,13 @@ where
 
             if let Some(target) = self.config.fitness_target {
                 if self.reached_target(best_fitness, target) {
+                    target_reached = true;
                     break;
                 }
             }
         }
 
-        let cause = if iterations < self.config.max_iterations {
+        let cause = if target_reached {
             TerminationCause::FitnessTargetReached
         } else {
             TerminationCause::GenerationLimitReached

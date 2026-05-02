@@ -123,6 +123,7 @@ where
         let mut archive: Vec<U> = Vec::new();
 
         let mut generations = 0usize;
+        let mut target_reached = false;
 
         let is_maximization = matches!(self.config.problem_solving, ProblemSolving::Maximization);
         let mut stats_history: Vec<GenerationStats> = Vec::new();
@@ -236,12 +237,13 @@ where
             // Early stopping
             if let Some(target) = self.config.fitness_target {
                 if self.reached_target(best_fitness, target) {
+                    target_reached = true;
                     break;
                 }
             }
         }
 
-        let cause = if generations < self.config.max_generations {
+        let cause = if target_reached {
             TerminationCause::FitnessTargetReached
         } else {
             TerminationCause::GenerationLimitReached
