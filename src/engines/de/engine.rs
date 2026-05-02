@@ -11,6 +11,9 @@ use super::mutation::{mutate, JadeState, LShadeState};
 use rand::Rng;
 use crate::rng::make_rng;
 use crate::traits::{ChromosomeT, FitnessFn};
+use crate::observer::GaObserver;
+use crate::stats::GenerationStats;
+use crate::ga::TerminationCause;
 
 /// Result returned by [`DeEngine::run`].
 pub struct DeResult<U: ChromosomeT> {
@@ -54,6 +57,7 @@ where
     config: DeConfiguration,
     init_fn: Arc<dyn Fn(usize) -> Vec<U> + Send + Sync>,
     fitness_fn: Arc<FitnessFn<U::Gene>>,
+    observer: Option<Arc<dyn GaObserver<U> + Send + Sync>>,
 }
 
 impl<U: ChromosomeT + Clone> DeEngine<U>
@@ -75,6 +79,20 @@ where
             config,
             init_fn: Arc::new(init_fn),
             fitness_fn: Arc::new(fitness_fn),
+            observer: None,
+        }
+    }
+
+    /// Attach a lifecycle observer. Zero overhead when not set.
+    pub fn with_observer(mut self, observer: Arc<dyn GaObserver<U> + Send + Sync>) -> Self {
+        self.observer = Some(observer);
+        self
+    }
+
+    #[inline]
+    fn notify<F: FnOnce(&dyn GaObserver<U>)>(&self, f: F) {
+        if let Some(ref obs) = self.observer {
+            f(obs.as_ref());
         }
     }
 
@@ -106,8 +124,15 @@ where
 
         let mut generations = 0usize;
 
+        let is_maximization = matches!(self.config.problem_solving, ProblemSolving::Maximization);
+        let mut stats_history: Vec<GenerationStats> = Vec::new();
+        let mut prev_best_fitness = best_fitness;
+        self.notify(|obs| obs.on_run_start());
+
         // ── Main loop ─────────────────────────────────────────────────────────
-        for _gen in 0..self.config.max_generations {
+        for gen in 0..self.config.max_generations {
+            self.notify(|obs| obs.on_generation_start(gen));
+
             // Determine effective strategy (JADE uses current-to-pbest/1)
             let eff_strategy = match &self.config.adaptive {
                 DeAdaptive::Jade { p, .. } => {
@@ -196,6 +221,18 @@ where
                 best = pop[bi].clone();
             }
 
+            // Observer: on_new_best fires once per generation if global best improved
+            if self.is_better(best_fitness, prev_best_fitness) {
+                prev_best_fitness = best_fitness;
+                self.notify(|obs| obs.on_new_best(gen, best.clone()));
+            }
+
+            // Observer: on_generation_end with stats
+            let fitness_values: Vec<f64> = pop.iter().map(|c| c.fitness()).collect();
+            let gen_stats = GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
+            stats_history.push(gen_stats);
+            self.notify(|obs| obs.on_generation_end(stats_history.last().unwrap()));
+
             // Early stopping
             if let Some(target) = self.config.fitness_target {
                 if self.reached_target(best_fitness, target) {
@@ -203,6 +240,13 @@ where
                 }
             }
         }
+
+        let cause = if generations < self.config.max_generations {
+            TerminationCause::FitnessTargetReached
+        } else {
+            TerminationCause::GenerationLimitReached
+        };
+        self.notify(|obs| obs.on_run_end(cause, &stats_history));
 
         DeResult { population: pop, best, best_fitness, generations }
     }
