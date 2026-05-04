@@ -6,6 +6,7 @@
 //! [`Survivor`] variant in the configuration.
 
 pub use self::age::age_based;
+pub use self::deterministic_crowding::deterministic_crowding;
 pub use self::fitness::fitness_based;
 pub use self::mu_comma_lambda::mu_comma_lambda;
 pub use self::mu_plus_lambda::mu_plus_lambda;
@@ -15,6 +16,7 @@ use crate::traits::{ChromosomeT, SurvivorOperator};
 
 use super::Survivor;
 pub mod age;
+pub mod deterministic_crowding;
 pub mod fitness;
 pub mod mu_comma_lambda;
 pub mod mu_plus_lambda;
@@ -35,6 +37,7 @@ impl SurvivorOperator for Survivor {
             Survivor::MuCommaLambda => {
                 mu_comma_lambda(chromosomes, population_size, limit_configuration)
             }
+            Survivor::DeterministicCrowding => deterministic_crowding(chromosomes),
         }
         Ok(())
     }
