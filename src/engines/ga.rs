@@ -171,6 +171,10 @@ where
         self.configuration.selection_configuration.method = selection_method;
         self
     }
+    fn with_niche_radius(mut self, niche_radius: f64) -> Self {
+        self.configuration.selection_configuration.niche_radius = niche_radius;
+        self
+    }
 }
 
 impl<U> CrossoverConfig for Ga<U>

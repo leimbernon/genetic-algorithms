@@ -20,9 +20,11 @@ mod operations {
     mod test_mutation_range_value;
     mod test_selection;
     mod test_selection_boltzmann;
+    mod test_selection_clearing;
     mod test_selection_rank;
     mod test_selection_truncation;
     mod test_survivor;
+    mod test_survivor_deterministic_crowding;
     mod test_survivor_mu_comma_lambda;
     mod test_survivor_mu_plus_lambda;
 }

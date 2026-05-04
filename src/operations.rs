@@ -36,6 +36,12 @@ pub enum Selection {
     /// Truncation selection: only the top portion of the population is eligible
     /// for reproduction, providing very high selective pressure.
     Truncation,
+    /// Clearing selection: identifies niche winners (the best individual within
+    /// `niche_radius` in fitness space) and removes all other individuals in each
+    /// niche from the selection pool. Eligible individuals are then paired randomly.
+    /// Promotes population diversity by preventing niche domination.
+    /// Configure `niche_radius` via [`SelectionConfiguration::niche_radius`].
+    Clearing,
 }
 
 /// Crossover (recombination) strategies.
@@ -127,6 +133,11 @@ pub enum Survivor {
     MuPlusLambda,
     /// (mu,lambda) strategy: only offspring (age == 0) are eligible for survival.
     MuCommaLambda,
+    /// Deterministic Crowding: each offspring (identified by `age() == 0`) is
+    /// paired with its most similar parent (lowest Hamming distance on gene IDs),
+    /// and the fitter of the two survives. Unpaired offspring survive unconditionally.
+    /// Promotes population diversity by replacing similar individuals.
+    DeterministicCrowding,
 }
 
 /// Extension strategies for population diversity control.

@@ -11,6 +11,7 @@ use crate::error::GaError;
 use crate::traits::{ChromosomeT, SelectionOperator};
 
 pub use self::boltzmann::boltzmann_selection;
+pub use self::clearing::clearing_selection;
 pub use self::fitness_proportionate::roulette_wheel_selection;
 pub use self::fitness_proportionate::stochastic_universal_sampling;
 pub use self::random::random;
@@ -21,6 +22,7 @@ pub use self::truncation::truncation_selection;
 use super::Selection;
 
 pub mod boltzmann;
+pub mod clearing;
 pub mod fitness_proportionate;
 pub mod random;
 pub mod rank;
@@ -47,6 +49,9 @@ impl SelectionOperator for Selection {
             Selection::Rank => rank_selection(chromosomes, number_of_couples),
             Selection::Boltzmann => boltzmann_selection(chromosomes, number_of_couples, 1.0),
             Selection::Truncation => truncation_selection(chromosomes, number_of_couples),
+            // Clearing requires niche_radius from configuration; use a default here
+            // (the factory path provides the correct configured value).
+            Selection::Clearing => clearing_selection(chromosomes, 0.1),
         }
     }
 }
@@ -88,6 +93,7 @@ where
             configuration.number_of_couples,
             configuration.boltzmann_temperature,
         ),
+        Selection::Clearing => clearing_selection(chromosomes, configuration.niche_radius),
         _ => configuration.method.select(
             chromosomes,
             configuration.number_of_couples,
