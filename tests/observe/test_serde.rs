@@ -124,6 +124,7 @@ fn serde_ga_configuration_with_values() {
             number_of_couples: 50,
             method: Selection::Boltzmann,
             boltzmann_temperature: 2.5,
+            niche_radius: 0.1,
         },
         crossover_configuration: CrossoverConfiguration {
             number_of_points: Some(3),
