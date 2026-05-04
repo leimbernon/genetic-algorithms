@@ -61,7 +61,7 @@ async function analyzeIssue(
 }> {
   const systemPrompt = loadPrompt("triage");
   const agentInstructions = readFileSafe(
-    join(REPO_ROOT, "AGENT_INSTRUCTIONS.md"),
+    join(REPO_ROOT, "AGENTS.md"),
   );
   const contributingGuide = readFileSafe(join(REPO_ROOT, "CONTRIBUTING.md"));
 

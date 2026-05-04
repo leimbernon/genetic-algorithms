@@ -99,7 +99,7 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 
 **Milestone Goal:** Wire GaObserver lifecycle hooks into all 4 new engines, close v2.3.0 deferred tech debt, and expand the operator library with 7 new strategies.
 
-- [ ] **Phase 30: Observer Wiring & DE Benchmark** — Wire GaObserver into all 4 new engines and add DE-vs-GA convergence benchmark
+- [x] **Phase 30: Observer Wiring & DE Benchmark** — Wire GaObserver into all 4 new engines and add DE-vs-GA convergence benchmark (completed 2026-05-02)
 - [ ] **Phase 31: Selection & Survivor Diversity Operators** — Clearing selection and Deterministic Crowding survivor strategy
 - [ ] **Phase 32: Crossover & Differential Mutation** — Edge Recombination crossover and DE-style differential mutation for standard GA
 - [ ] **Phase 33: Scalar Mutation Operators** — Cauchy, Levy Flight, and Uniform mutation operators
@@ -118,9 +118,9 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 **Plans:** 3 plans
 
 Plans:
-- [ ] 30-01-PLAN.md — Wire GaObserver into DeEngine and ScatterEngine
-- [ ] 30-02-PLAN.md — Wire GaObserver into CellularEngine and AlpsEngine
-- [ ] 30-03-PLAN.md — DE-vs-GA convergence benchmark
+- [x] 30-01-PLAN.md — Wire GaObserver into DeEngine and ScatterEngine
+- [x] 30-02-PLAN.md — Wire GaObserver into CellularEngine and AlpsEngine
+- [x] 30-03-PLAN.md — DE-vs-GA convergence benchmark
 
 **UI hint**: no
 
@@ -189,7 +189,7 @@ Plans:
 | 27. Scatter Search Engine | v2.3.0 | 1/1 | Complete | 2026-04-26 |
 | 28. Cellular GA Engine | v2.3.0 | 1/1 | Complete | 2026-04-27 |
 | 29. ALPS Engine | v2.3.0 | 1/1 | Complete | 2026-04-27 |
-| 30. Observer Wiring & DE Benchmark | v2.4.0 | 0/3 | Not started | - |
+| 30. Observer Wiring & DE Benchmark | v2.4.0 | 3/3 | Complete | 2026-05-02 |
 | 31. Selection & Survivor Diversity Operators | v2.4.0 | 0/TBD | Not started | - |
 | 32. Crossover & Differential Mutation | v2.4.0 | 0/TBD | Not started | - |
 | 33. Scalar Mutation Operators | v2.4.0 | 0/TBD | Not started | - |
