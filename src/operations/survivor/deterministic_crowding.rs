@@ -87,10 +87,16 @@ pub fn deterministic_crowding<U: ChromosomeT>(chromosomes: &mut Vec<U>) {
             .expect("available_parents is non-empty");
 
         // Keep the fitter individual; remove the other.
+        // Use partial_cmp so that NaN is treated as -infinity: a NaN chromosome
+        // always loses, preventing silent wrong-winner selection on either side.
         let off_fitness = chromosomes[off_idx].fitness();
         let par_fitness = chromosomes[best_parent_idx].fitness();
+        let off_wins = off_fitness
+            .partial_cmp(&par_fitness)
+            .map(|ord| ord != std::cmp::Ordering::Less)
+            .unwrap_or(false); // NaN on either side -> offspring loses
 
-        if off_fitness >= par_fitness {
+        if off_wins {
             // Offspring wins — remove parent.
             survive[best_parent_idx] = false;
             trace!(target="survivor_events", method="deterministic_crowding";
