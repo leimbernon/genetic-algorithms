@@ -14,6 +14,11 @@ pub trait SelectionConfig {
     fn with_number_of_couples(self, number_of_couples: usize) -> Self;
     /// Sets the selection strategy (e.g., tournament, roulette wheel).
     fn with_selection_method(self, selection_method: Selection) -> Self;
+    /// Sets the niche radius for [`Selection::Clearing`] (fitness-space distance).
+    ///
+    /// Individuals within `niche_radius` of a niche winner are cleared from
+    /// the mating pool each generation. Default is `0.1`.
+    fn with_niche_radius(self, niche_radius: f64) -> Self;
 }
 
 /// Configuration for crossover operators.

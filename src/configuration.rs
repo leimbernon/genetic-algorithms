@@ -79,6 +79,11 @@ pub struct SelectionConfiguration {
     /// high values → uniform selection, low values → strong selective pressure.
     /// Only used when `method` is `Selection::Boltzmann`. Default is `1.0`.
     pub boltzmann_temperature: f64,
+    /// Niche radius for Clearing selection, measured in fitness space (`|f_a - f_b|`).
+    /// Within each niche (defined by the best individual in that radius), all other
+    /// individuals are cleared from the selection pool. Default is `0.1`.
+    /// Only used when `method` is `Selection::Clearing`.
+    pub niche_radius: f64,
 }
 impl Default for SelectionConfiguration {
     fn default() -> Self {
@@ -86,6 +91,7 @@ impl Default for SelectionConfiguration {
             number_of_couples: 0,
             method: Selection::Tournament,
             boltzmann_temperature: 1.0,
+            niche_radius: 0.1,
         }
     }
 }
@@ -305,6 +311,10 @@ impl SelectionConfig for GaConfiguration {
     }
     fn with_selection_method(mut self, selection_method: Selection) -> Self {
         self.selection_configuration.method = selection_method;
+        self
+    }
+    fn with_niche_radius(mut self, niche_radius: f64) -> Self {
+        self.selection_configuration.niche_radius = niche_radius;
         self
     }
 }
