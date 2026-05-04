@@ -100,7 +100,7 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 **Milestone Goal:** Wire GaObserver lifecycle hooks into all 4 new engines, close v2.3.0 deferred tech debt, and expand the operator library with 7 new strategies.
 
 - [x] **Phase 30: Observer Wiring & DE Benchmark** — Wire GaObserver into all 4 new engines and add DE-vs-GA convergence benchmark (completed 2026-05-02)
-- [ ] **Phase 31: Selection & Survivor Diversity Operators** — Clearing selection and Deterministic Crowding survivor strategy
+- [x] **Phase 31: Selection & Survivor Diversity Operators** — Clearing selection and Deterministic Crowding survivor strategy (completed 2026-05-04)
 - [ ] **Phase 32: Crossover & Differential Mutation** — Edge Recombination crossover and DE-style differential mutation for standard GA
 - [ ] **Phase 33: Scalar Mutation Operators** — Cauchy, Levy Flight, and Uniform mutation operators
 
@@ -133,15 +133,15 @@ Plans:
   2. User can set `Survivor::DeterministicCrowding`; each offspring is compared against its most-similar parent, and the fitter of the two survives
   3. Both operators compose with all existing crossover and mutation operators without compile errors or panics
   4. Tests in `tests/` verify the diversity-preserving behavior of each operator in isolation
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 **UI hint**: no
 
 Plans:
 **Wave 1**
-- [ ] 31-01-PLAN.md — Clearing selection operator (SEL-01)
+- [x] 31-01-PLAN.md — Clearing selection operator (SEL-01)
 
 **Wave 2** *(blocked on Wave 1 completion)*
-- [ ] 31-02-PLAN.md — DeterministicCrowding survivor operator (SRV-01)
+- [x] 31-02-PLAN.md — DeterministicCrowding survivor operator (SRV-01)
 
 ### Phase 32: Crossover & Differential Mutation
 **Goal**: Users can configure Edge Recombination crossover for permutation problems and Differential mutation (DE-style) for real-valued standard GAs
@@ -197,6 +197,6 @@ Plans:
 | 28. Cellular GA Engine | v2.3.0 | 1/1 | Complete | 2026-04-27 |
 | 29. ALPS Engine | v2.3.0 | 1/1 | Complete | 2026-04-27 |
 | 30. Observer Wiring & DE Benchmark | v2.4.0 | 3/3 | Complete | 2026-05-02 |
-| 31. Selection & Survivor Diversity Operators | v2.4.0 | 0/2 | Not started | - |
+| 31. Selection & Survivor Diversity Operators | v2.4.0 | 2/2 | Complete    | 2026-05-04 |
 | 32. Crossover & Differential Mutation | v2.4.0 | 0/TBD | Not started | - |
 | 33. Scalar Mutation Operators | v2.4.0 | 0/TBD | Not started | - |

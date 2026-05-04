@@ -40,6 +40,7 @@ fn serde_selection_enum() {
         Selection::Truncation,
         Selection::Rank,
         Selection::StochasticUniversalSampling,
+        Selection::Clearing,
     ];
     for v in &variants {
         assert_eq!(&round_trip(v), v);
@@ -91,6 +92,7 @@ fn serde_survivor_enum() {
         Survivor::Age,
         Survivor::MuPlusLambda,
         Survivor::MuCommaLambda,
+        Survivor::DeterministicCrowding,
     ];
     for v in &variants {
         assert_eq!(&round_trip(v), v);
