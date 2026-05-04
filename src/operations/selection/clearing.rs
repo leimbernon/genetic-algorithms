@@ -24,11 +24,14 @@ use log::{debug, trace};
 /// * `chromosomes` - Population slice to select from.
 /// * `niche_radius` - Fitness-space radius; individuals within this distance of
 ///   a niche winner are ineligible for reproduction.
+/// * `number_of_couples` - Target number of parent pairs to produce. Pairs are
+///   drawn with replacement when the eligible pool is smaller than required.
 pub fn clearing_selection<U: ChromosomeT>(
     chromosomes: &[U],
     niche_radius: f64,
+    number_of_couples: usize,
 ) -> Vec<(usize, usize)> {
-    debug!(target="selection_events", method="clearing"; "Starting clearing selection with niche_radius={}", niche_radius);
+    debug!(target="selection_events", method="clearing"; "Starting clearing selection with niche_radius={} number_of_couples={}", niche_radius, number_of_couples);
 
     let n = chromosomes.len();
 
@@ -70,25 +73,27 @@ pub fn clearing_selection<U: ChromosomeT>(
 
     trace!(target="selection_events", method="clearing"; "Eligible pool size: {}", eligible.len());
 
-    // Pair eligible individuals randomly (Fisher-Yates partial shuffle).
+    // Need at least 2 eligible individuals to form any pair.
+    if eligible.len() < 2 {
+        debug!(target="selection_events", method="clearing"; "Clearing selection finished: 0 pairs (eligible pool too small)");
+        return Vec::new();
+    }
+
+    // Draw exactly `number_of_couples` pairs from the eligible pool.
+    // Pairs are sampled with replacement so that the full requested count is
+    // always produced even when the eligible pool is smaller than
+    // 2 * number_of_couples. Each pair consists of two distinct indices.
     let mut rng = crate::rng::make_rng();
-    let mut pool = eligible;
-    let mut remaining = pool.len();
-    let pair_count = remaining / 2;
-    let mut mating = Vec::with_capacity(pair_count);
+    let mut mating = Vec::with_capacity(number_of_couples);
 
     use rand::Rng;
-    while remaining >= 2 {
-        let r1 = rng.random_range(0..remaining);
-        let idx1 = pool[r1];
-        remaining -= 1;
-        pool.swap(r1, remaining);
-
-        let r2 = rng.random_range(0..remaining);
-        let idx2 = pool[r2];
-        remaining -= 1;
-        pool.swap(r2, remaining);
-
+    while mating.len() < number_of_couples {
+        let i1 = rng.random_range(0..eligible.len());
+        // Pick a second index different from i1 by offsetting into the remaining range.
+        let i2_raw = rng.random_range(0..(eligible.len() - 1));
+        let i2 = if i2_raw >= i1 { i2_raw + 1 } else { i2_raw };
+        let idx1 = eligible[i1];
+        let idx2 = eligible[i2];
         mating.push((idx1, idx2));
         trace!(target="selection_events", method="clearing"; "Mating index {} with index {}", idx1, idx2);
     }
