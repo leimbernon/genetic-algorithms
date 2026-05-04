@@ -49,9 +49,16 @@ impl SelectionOperator for Selection {
             Selection::Rank => rank_selection(chromosomes, number_of_couples),
             Selection::Boltzmann => boltzmann_selection(chromosomes, number_of_couples, 1.0),
             Selection::Truncation => truncation_selection(chromosomes, number_of_couples),
-            // Clearing requires niche_radius from configuration; use a sensible
-            // default here (the factory path provides the correct configured value).
+            // WARNING: The `SelectionOperator` trait does not carry operator-specific
+            // configuration, so `niche_radius` defaults to 0.1 on this path.
+            // Island-model and NSGA-II callers that use `Selection::Clearing` with
+            // a custom `niche_radius` must go through `selection::factory` instead.
+            // The single-population GA always uses the factory path and is unaffected.
             Selection::Clearing => {
+                log::warn!(target: "selection_events",
+                    "Selection::Clearing called through SelectionOperator trait: \
+                     niche_radius defaults to 0.1 (configured value ignored). \
+                     Use selection::factory for the full configuration.");
                 clearing_selection(chromosomes, 0.1, number_of_couples)
             }
         }
