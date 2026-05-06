@@ -52,6 +52,14 @@ where
         ));
     }
 
+    if target_idx >= chromosomes.len() {
+        return Err(GaError::MutationError(format!(
+            "Differential mutation: target_idx {} is out of bounds (population size {})",
+            target_idx,
+            chromosomes.len()
+        )));
+    }
+
     debug!(target: "mutation_events", "Starting differential mutation f={}", f);
 
     macro_rules! try_type {
