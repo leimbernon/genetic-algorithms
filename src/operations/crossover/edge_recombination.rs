@@ -86,8 +86,22 @@ pub fn erx<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError
     let child_ids_1 = erx_build_child(start_1, &mut adj.clone(), &all_ids, &mut rng);
     let child_ids_2 = erx_build_child(start_2, &mut adj, &all_ids, &mut rng);
 
-    let dna_1: Vec<U::Gene> = child_ids_1.iter().map(|id| gene_by_id[id].clone()).collect();
-    let dna_2: Vec<U::Gene> = child_ids_2.iter().map(|id| gene_by_id[id].clone()).collect();
+    let dna_1: Vec<U::Gene> = child_ids_1
+        .iter()
+        .map(|id| {
+            gene_by_id.get(id).cloned().ok_or_else(|| {
+                GaError::CrossoverError(format!("ERX: gene id {} not found in parent_1", id))
+            })
+        })
+        .collect::<Result<_, _>>()?;
+    let dna_2: Vec<U::Gene> = child_ids_2
+        .iter()
+        .map(|id| {
+            gene_by_id.get(id).cloned().ok_or_else(|| {
+                GaError::CrossoverError(format!("ERX: gene id {} not found in parent_1", id))
+            })
+        })
+        .collect::<Result<_, _>>()?;
 
     let mut child_1 = U::new();
     let mut child_2 = U::new();
