@@ -1390,7 +1390,7 @@ where
                 child_2 = parent_2.clone();
             }
 
-            if mutation_probability < effective_mutation_prob {
+            if mutation_probability <= effective_mutation_prob {
                 if configuration.mutation_configuration.method == crate::operations::Mutation::Differential {
                     let f = configuration.mutation_configuration.differential_f.unwrap_or(0.5);
                     crate::operations::mutation::differential::differential_mutation(
