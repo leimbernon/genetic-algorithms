@@ -60,6 +60,7 @@ fn serde_crossover_enum() {
         Crossover::BlendAlpha,
         Crossover::Arithmetic,
         Crossover::Clone,
+        Crossover::EdgeRecombination,
     ];
     for v in &variants {
         assert_eq!(&round_trip(v), v);
@@ -79,6 +80,7 @@ fn serde_mutation_enum() {
         Mutation::Polynomial,
         Mutation::NonUniform,
         Mutation::Insertion,
+        Mutation::Differential,
     ];
     for v in &variants {
         assert_eq!(&round_trip(v), v);
