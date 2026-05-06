@@ -145,6 +145,7 @@ fn serde_ga_configuration_with_values() {
             sigma: Some(1.5),
             polynomial_eta: Some(30.0),
             non_uniform_b: Some(3.0),
+            differential_f: None,
             dynamic_mutation: false,
             target_cardinality: None,
             probability_step: None,
