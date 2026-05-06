@@ -384,6 +384,10 @@ impl MutationConfig for GaConfiguration {
         self.mutation_configuration.probability_step = Some(step);
         self
     }
+    fn with_differential_f(mut self, f: f64) -> Self {
+        self.mutation_configuration.differential_f = Some(f);
+        self
+    }
 }
 
 impl StoppingConfig for GaConfiguration {
