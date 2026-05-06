@@ -153,6 +153,10 @@ pub struct MutationConfiguration {
     /// Decay parameter for NonUniform mutation. Controls how fast mutation
     /// magnitude decreases over generations. Typical range: 2–5. Default is 2.0.
     pub non_uniform_b: Option<f64>,
+    /// F scale factor for Differential mutation. Controls perturbation magnitude.
+    /// Typical range: 0.4–1.0. Default is 0.5 when `None`.
+    /// Only used when `method` is `Mutation::Differential`.
+    pub differential_f: Option<f64>,
     /// Enable dynamic mutation probability adjustment based on population cardinality.
     /// When enabled, mutation probability is adjusted each generation: increased when
     /// diversity is low and decreased when diversity is high.
@@ -173,6 +177,7 @@ impl Default for MutationConfiguration {
             sigma: None,
             polynomial_eta: None,
             non_uniform_b: None,
+            differential_f: None,
             dynamic_mutation: false,
             target_cardinality: None,
             probability_step: None,

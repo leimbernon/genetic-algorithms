@@ -120,6 +120,13 @@ pub enum Mutation {
     /// List-value mutation — replaces a single gene's value with a different allele
     /// from that gene's allele set. Requires a `ListChromosome<T>`.
     ListValue,
+    /// DE-style differential mutation for `Range<T>` chromosomes.
+    /// Computes mutant vector as `x_r1 + F * (x_r2 - x_r3)` from three distinct
+    /// random population members (all distinct from the target), clamped to gene
+    /// ranges. Configure F via `MutationConfiguration::differential_f` (default 0.5).
+    /// Requires `population_size >= 4`. Applied automatically by the standard GA
+    /// engine — do not call `factory_with_params` for this variant.
+    Differential,
 }
 
 /// Survivor-selection strategies.

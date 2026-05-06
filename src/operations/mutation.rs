@@ -21,6 +21,7 @@ use std::any::Any;
 
 pub mod bit_flip;
 pub mod creep;
+pub mod differential;
 pub mod gaussian;
 pub mod insertion;
 pub mod inversion;
@@ -163,6 +164,13 @@ impl MutationOperator for Mutation {
                 return insertion::insertion_mutation(individual);
             }
             Mutation::ListValue => individual.value_mutate(),
+            Mutation::Differential => {
+                return Err(GaError::MutationError(
+                    "Mutation::Differential requires population context. \
+                     It is applied automatically by the GA engine when configured — \
+                     do not call factory_with_params() directly.".to_string(),
+                ));
+            }
         }
         Ok(())
     }
@@ -268,6 +276,10 @@ where
             "Mutation::ListValue requires a ListChromosome type. \
                  Use Swap, Inversion, or Scramble instead."
                 .to_string(),
+        )),
+        Mutation::Differential => Err(GaError::MutationError(
+            "Mutation::Differential requires Range<T> chromosomes and population context. \
+             Use Swap, Inversion, or Scramble instead.".to_string(),
         )),
     }
 }
