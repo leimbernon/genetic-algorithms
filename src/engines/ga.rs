@@ -243,6 +243,10 @@ where
         self.configuration.mutation_configuration.probability_step = Some(step);
         self
     }
+    fn with_differential_f(mut self, f: f64) -> Self {
+        self.configuration.mutation_configuration.differential_f = Some(f);
+        self
+    }
 }
 
 impl<U> StoppingConfig for Ga<U>
@@ -1387,22 +1391,42 @@ where
             }
 
             if mutation_probability < effective_mutation_prob {
-                mutation::factory_with_params(
-                    configuration.mutation_configuration.method,
-                    &mut child_1,
-                    configuration.mutation_configuration.step,
-                    configuration.mutation_configuration.sigma,
-                )?;
+                if configuration.mutation_configuration.method == crate::operations::Mutation::Differential {
+                    let f = configuration.mutation_configuration.differential_f.unwrap_or(0.5);
+                    crate::operations::mutation::differential::differential_mutation(
+                        &mut child_1,
+                        chromosomes,
+                        *key,
+                        f,
+                    )?;
+                } else {
+                    mutation::factory_with_params(
+                        configuration.mutation_configuration.method,
+                        &mut child_1,
+                        configuration.mutation_configuration.step,
+                        configuration.mutation_configuration.sigma,
+                    )?;
+                }
             }
 
             mutation_probability = rng.random_range(0.0..1.0);
             if mutation_probability <= effective_mutation_prob {
-                mutation::factory_with_params(
-                    configuration.mutation_configuration.method,
-                    &mut child_2,
-                    configuration.mutation_configuration.step,
-                    configuration.mutation_configuration.sigma,
-                )?;
+                if configuration.mutation_configuration.method == crate::operations::Mutation::Differential {
+                    let f = configuration.mutation_configuration.differential_f.unwrap_or(0.5);
+                    crate::operations::mutation::differential::differential_mutation(
+                        &mut child_2,
+                        chromosomes,
+                        *value,
+                        f,
+                    )?;
+                } else {
+                    mutation::factory_with_params(
+                        configuration.mutation_configuration.method,
+                        &mut child_2,
+                        configuration.mutation_configuration.step,
+                        configuration.mutation_configuration.sigma,
+                    )?;
+                }
             }
 
             // Inject fitness function into children built via U::new() (which start with the

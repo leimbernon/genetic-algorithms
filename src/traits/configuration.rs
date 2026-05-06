@@ -57,10 +57,7 @@ pub trait MutationConfig {
     fn with_mutation_probability_step(self, step: f64) -> Self;
     /// Sets the F scale factor for Differential mutation (DE-style).
     /// Typical range: 0.4–1.0. Default is 0.5 when not set.
-    fn with_differential_f(self, f: f64) -> Self where Self: Sized {
-        let _ = f;
-        self
-    }
+    fn with_differential_f(self, f: f64) -> Self;
 }
 
 /// Configuration for stopping / termination criteria.
