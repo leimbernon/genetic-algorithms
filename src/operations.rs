@@ -79,6 +79,10 @@ pub enum Crossover {
     /// Useful for combating population aging: top performers are preserved but treated as new
     /// individuals, preventing age-based survivor selection from eliminating them.
     Rejuvenate,
+    /// Edge Recombination Crossover for permutation chromosomes (TSP, scheduling).
+    /// Builds a union adjacency list from both parents and constructs offspring that
+    /// preserve adjacency relationships found in either parent. Requires unique gene IDs.
+    EdgeRecombination,
 }
 
 /// Mutation strategies.
