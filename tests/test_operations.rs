@@ -17,6 +17,7 @@ mod operations {
     mod test_mutation_insertion;
     mod test_mutation_list_value;
     mod test_mutation_non_uniform;
+    mod test_mutation_differential;
     mod test_mutation_polynomial;
     mod test_mutation_range_value;
     mod test_selection;
