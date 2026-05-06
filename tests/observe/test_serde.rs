@@ -60,6 +60,7 @@ fn serde_crossover_enum() {
         Crossover::BlendAlpha,
         Crossover::Arithmetic,
         Crossover::Clone,
+        Crossover::Rejuvenate,
         Crossover::EdgeRecombination,
     ];
     for v in &variants {
