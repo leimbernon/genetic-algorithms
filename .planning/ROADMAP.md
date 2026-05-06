@@ -101,7 +101,7 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 
 - [x] **Phase 30: Observer Wiring & DE Benchmark** — Wire GaObserver into all 4 new engines and add DE-vs-GA convergence benchmark (completed 2026-05-02)
 - [x] **Phase 31: Selection & Survivor Diversity Operators** — Clearing selection and Deterministic Crowding survivor strategy (completed 2026-05-04)
-- [ ] **Phase 32: Crossover & Differential Mutation** — Edge Recombination crossover and DE-style differential mutation for standard GA
+- [x] **Phase 32: Crossover & Differential Mutation** — Edge Recombination crossover and DE-style differential mutation for standard GA (completed 2026-05-06)
 - [ ] **Phase 33: Scalar Mutation Operators** — Cauchy, Levy Flight, and Uniform mutation operators
 
 ## Phase Details
@@ -152,18 +152,18 @@ Plans:
   2. User can set `Mutation::Differential` with a configurable F scale factor; the mutant vector is computed from three random population members and the operator is available in the standard `Ga<U>` engine
   3. Both operators follow the enum + factory pattern and integrate with `ConfigurationT` builder methods without new required parameters on existing configurations
   4. Tests in `tests/` cover edge cases for Edge Recombination (short chromosomes, duplicate edges) and Differential mutation (population size bounds for three-member sampling)
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 **UI hint**: no
 
 Plans:
 **Wave 1**
-- [ ] 32-01-PLAN.md — Edge Recombination crossover (CRS-01)
+- [x] 32-01-PLAN.md — Edge Recombination crossover (CRS-01)
 
 **Wave 2** *(blocked on Wave 1)*
-- [ ] 32-02-PLAN.md — Differential mutation operator + config + builder (MUT-04)
+- [x] 32-02-PLAN.md — Differential mutation operator + config + builder (MUT-04)
 
 **Wave 3** *(blocked on Waves 1-2)*
-- [ ] 32-03-PLAN.md — Engine dispatch + serde test updates (CRS-01, MUT-04)
+- [x] 32-03-PLAN.md — Engine dispatch + serde test updates (CRS-01, MUT-04)
 
 ### Phase 33: Scalar Mutation Operators
 **Goal**: Users can apply three additional real-valued mutation strategies — Cauchy heavy-tail perturbations, Levy Flight long-range jumps, and Uniform random reset — each with configurable parameters
@@ -208,5 +208,5 @@ Plans:
 | 29. ALPS Engine | v2.3.0 | 1/1 | Complete | 2026-04-27 |
 | 30. Observer Wiring & DE Benchmark | v2.4.0 | 3/3 | Complete | 2026-05-02 |
 | 31. Selection & Survivor Diversity Operators | v2.4.0 | 2/2 | Complete    | 2026-05-04 |
-| 32. Crossover & Differential Mutation | v2.4.0 | 0/3   | Not started | - |
+| 32. Crossover & Differential Mutation | v2.4.0 | 3/3 | Complete   | 2026-05-06 |
 | 33. Scalar Mutation Operators | v2.4.0 | 0/TBD | Not started | - |
