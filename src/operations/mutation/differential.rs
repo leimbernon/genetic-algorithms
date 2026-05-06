@@ -26,7 +26,9 @@ use std::borrow::Cow;
 ///
 /// # Arguments
 ///
-/// * `individual` - The target chromosome to mutate (mutated in-place).
+/// * `individual` - The target chromosome whose DNA will be replaced with the
+///   DE/rand/1 mutant vector `x_r1 + F * (x_r2 - x_r3)`. The target's own
+///   gene values are not used as the base (this is the "rand" variant, not "current-to-rand").
 /// * `chromosomes` - The full population slice (including `individual` at `target_idx`).
 /// * `target_idx` - Index of `individual` within `chromosomes`.
 /// * `f` - The differential weight (scale factor). Typical range: 0.4–1.0.
