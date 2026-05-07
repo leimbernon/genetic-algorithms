@@ -7,12 +7,13 @@
 //! wasm32-unknown-unknown` in CI (`.github/workflows/wasm-check.yml`).
 
 use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
-use genetic_algorithms::configuration::StoppingCriteria;
+use genetic_algorithms::configuration::{ProblemSolving, StoppingCriteria};
 use genetic_algorithms::ga::Ga;
 use genetic_algorithms::initializers::binary_random_initialization;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::traits::{
-    ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+    ConfigurationT, CrossoverConfig, MutationConfig, ProblemSolvingConfig, SelectionConfig,
+    StoppingConfig,
 };
 
 fn count_ones(genes: &[genetic_algorithms::genotypes::Binary]) -> f64 {
@@ -33,6 +34,7 @@ fn ga_runs_with_max_duration_secs() {
         .with_crossover_method(Crossover::Uniform)
         .with_mutation_method(Mutation::BitFlip)
         .with_survivor_method(Survivor::Fitness)
+        .with_problem_solving(ProblemSolving::Maximization)
         .with_max_generations(5)
         .with_stopping_criteria(StoppingCriteria {
             max_duration_secs: Some(60.0),
