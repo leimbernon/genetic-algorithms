@@ -447,7 +447,13 @@ where
             for child in children.iter_mut() {
                 let mp: f64 = rng.random();
                 if mp <= mut_prob {
-                    if mutation_config.method == crate::operations::Mutation::Cauchy {
+                    if mutation_config.method == crate::operations::Mutation::Differential {
+                        return Err(GaError::MutationError(
+                            "Differential mutation is not supported in NSGA-II; \
+                             use Cauchy, LevyFlight, Polynomial, or a standard mutation method instead."
+                                .to_string(),
+                        ));
+                    } else if mutation_config.method == crate::operations::Mutation::Cauchy {
                         mutation::factory_with_params(
                             mutation_config.method,
                             child,
