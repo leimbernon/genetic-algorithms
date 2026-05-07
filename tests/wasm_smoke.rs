@@ -12,8 +12,7 @@ use genetic_algorithms::ga::Ga;
 use genetic_algorithms::initializers::binary_random_initialization;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::traits::{
-    ConfigurationT, CrossoverConfig, MutationConfig, ProblemSolvingConfig, SelectionConfig,
-    StoppingConfig,
+    ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
 };
 
 fn count_ones(genes: &[genetic_algorithms::genotypes::Binary]) -> f64 {
