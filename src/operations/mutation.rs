@@ -23,6 +23,7 @@ pub mod bit_flip;
 pub mod cauchy;
 pub mod creep;
 pub mod levy_flight;
+pub mod uniform;
 pub mod differential;
 pub mod gaussian;
 pub mod insertion;
@@ -94,6 +95,28 @@ fn try_levy<U: ChromosomeT + 'static>(
         ($t:ty) => {
             if let Some(ind) = (individual as &mut dyn Any).downcast_mut::<RangeChromosome<$t>>() {
                 levy_flight::levy_flight_mutation(ind, alpha);
+                return Some(Ok(()));
+            }
+        };
+    }
+    try_type!(f64);
+    try_type!(f32);
+    try_type!(i32);
+    try_type!(i64);
+    None
+}
+
+/// Attempt Uniform mutation by downcasting a generic individual to `Range<T>`.
+///
+/// Tries `f64`, `f32`, `i32`, `i64` in order. Returns `Some(Ok(()))` if the type
+/// matched and mutation succeeded, `None` if no supported type matched.
+fn try_uniform<U: ChromosomeT + 'static>(
+    individual: &mut U,
+) -> Option<Result<(), GaError>> {
+    macro_rules! try_type {
+        ($t:ty) => {
+            if let Some(ind) = (individual as &mut dyn Any).downcast_mut::<RangeChromosome<$t>>() {
+                uniform::uniform_mutation(ind);
                 return Some(Ok(()));
             }
         };
@@ -237,7 +260,14 @@ impl MutationOperator for Mutation {
                     ))
                 });
             }
-            Mutation::Uniform => unimplemented!("Uniform mutation lands in Phase 33 Plan 03"),
+            Mutation::Uniform => {
+                return try_uniform(individual).unwrap_or_else(|| {
+                    Err(GaError::MutationError(
+                        "Uniform mutation requires Range<T> chromosomes where T is f64, f32, i32, or i64."
+                            .to_string(),
+                    ))
+                });
+            }
         }
         Ok(())
     }
@@ -358,7 +388,8 @@ where
              Use Swap, Inversion, or Scramble for non-Range chromosomes.".to_string(),
         )),
         Mutation::Uniform => Err(GaError::MutationError(
-            "Mutation::Uniform is not yet implemented (lands in Phase 33 Plan 03).".to_string(),
+            "Mutation::Uniform requires Range<T> chromosomes where T is f64, f32, i32, or i64. \
+             Use Swap, Inversion, or Scramble for non-Range chromosomes.".to_string(),
         )),
     }
 }
