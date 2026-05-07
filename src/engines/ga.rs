@@ -48,7 +48,6 @@ use rayon::prelude::*;
 use std::fmt::Debug;
 use std::ops::ControlFlow;
 use std::sync::Arc;
-#[cfg(not(target_arch = "wasm32"))]
 use std::time::Instant;
 
 /// Marker trait that resolves to `serde::Serialize` when the `serde` feature is
@@ -769,7 +768,7 @@ where
             self.notify(|obs| obs.on_generation_start(i));
 
             //1- Parent selection for reproduction
-            let t_sel = if self.observer.is_some() {
+            let t_sel: Option<Instant> = if self.observer.is_some() {
                 #[cfg(not(target_arch = "wasm32"))]
                 { Some(Instant::now()) }
                 #[cfg(target_arch = "wasm32")]
@@ -791,7 +790,7 @@ where
             } else {
                 None
             };
-            let t_cx = if self.observer.is_some() {
+            let t_cx: Option<Instant> = if self.observer.is_some() {
                 #[cfg(not(target_arch = "wasm32"))]
                 { Some(Instant::now()) }
                 #[cfg(target_arch = "wasm32")]
@@ -834,7 +833,7 @@ where
             };
 
             //4- Survivor selection
-            let t_surv = if self.observer.is_some() {
+            let t_surv: Option<Instant> = if self.observer.is_some() {
                 #[cfg(not(target_arch = "wasm32"))]
                 { Some(Instant::now()) }
                 #[cfg(target_arch = "wasm32")]

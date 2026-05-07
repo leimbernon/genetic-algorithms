@@ -47,7 +47,6 @@ use rand::Rng;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
 use std::sync::Arc;
-#[cfg(not(target_arch = "wasm32"))]
 use std::time::Instant;
 
 /// Type alias for a single objective function.
@@ -232,7 +231,7 @@ where
 
         for gen in 0..max_gens {
             // Non-dominated sorting (direction-aware, optionally constrained)
-            let t_sort = if self.observer.is_some() {
+            let t_sort: Option<Instant> = if self.observer.is_some() {
                 #[cfg(not(target_arch = "wasm32"))]
                 { Some(Instant::now()) }
                 #[cfg(target_arch = "wasm32")]
@@ -255,7 +254,7 @@ where
             }
 
             // Assign crowding distance per front
-            let t_crowd = if self.observer.is_some() {
+            let t_crowd: Option<Instant> = if self.observer.is_some() {
                 #[cfg(not(target_arch = "wasm32"))]
                 { Some(Instant::now()) }
                 #[cfg(target_arch = "wasm32")]
