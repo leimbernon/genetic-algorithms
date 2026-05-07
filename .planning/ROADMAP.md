@@ -220,3 +220,19 @@ Plans:
 | 31. Selection & Survivor Diversity Operators | v2.4.0 | 2/2 | Complete    | 2026-05-04 |
 | 32. Crossover & Differential Mutation | v2.4.0 | 3/3 | Complete   | 2026-05-06 |
 | 33. Scalar Mutation Operators | v2.4.0 | 3/3 | Complete    | 2026-05-07 |
+
+### Phase 34: WASM support — fix time-based panics for wasm32-unknown-unknown targets (issue #236)
+
+**Goal:** Users can compile and run a standard `Ga` or `Nsga2Ga` cycle on `wasm32-unknown-unknown` without panics from `Instant::now()` or rayon thread-pool initialization, while native parallel/timed behavior is preserved unchanged.
+**Requirements**: N/A (issue-driven phase — see #236)
+**Depends on:** Phase 33
+**Plans:** 3/4 plans executed
+
+Plans:
+**Wave 1** *(disjoint files — run in parallel)*
+- [x] 34-01-PLAN.md — cfg-gate Instant in DurationReporter
+- [x] 34-02-PLAN.md — cfg-gate Instant + rayon + max_duration warning in src/engines/ga.rs
+- [x] 34-03-PLAN.md — cfg-gate Instant + rayon in src/engines/nsga2/mod.rs
+
+**Wave 2** *(blocked on Wave 1)*
+- [ ] 34-04-PLAN.md — wasm32 CI compile-check + host smoke test + phase verification gate
