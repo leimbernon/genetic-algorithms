@@ -505,13 +505,6 @@ fn test_mutation_timing_nonzero() {
     ga.run().expect("GA should succeed");
     let d = data.mutation_duration.lock().unwrap();
     assert!(d.is_some(), "on_mutation_complete should have been called");
-    // Duration comes from the combined crossover+mutation+fitness block — should be > zero
-    // (even if it rounds to zero on very fast machines, we accept Some(Duration::ZERO) as passing
-    //  since the hook fired, per the plan note about EXT-01 separation being a future refactor)
-    assert!(
-        d.unwrap() >= Duration::ZERO,
-        "Duration should be non-negative"
-    );
 }
 
 /// Test 14: on_fitness_evaluation_complete receives a Duration > Duration::ZERO.
@@ -525,9 +518,5 @@ fn test_fitness_eval_timing_nonzero() {
     assert!(
         d.is_some(),
         "on_fitness_evaluation_complete should have been called"
-    );
-    assert!(
-        d.unwrap() >= Duration::ZERO,
-        "Duration should be non-negative"
     );
 }
