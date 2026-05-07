@@ -133,9 +133,16 @@ pub enum Mutation {
     /// or the [`crate::traits::MutationConfig::with_cauchy_scale`] builder. Default scale: `1.0`.
     /// Returns `GaError::MutationError` for non-`Range<T>` chromosomes (Binary, List).
     Cauchy,
-    /// Lévy Flight mutation for `Range<T>` chromosomes (placeholder — implemented in Phase 33 Plan 02).
+    /// Lévy Flight mutation for `Range<T>` chromosomes (Mantegna's algorithm).
+    /// Generates heavy-tailed steps via `step = σ_u * u / |v|^(1/α)`.
+    /// Configure the stability index (α) via [`crate::configuration::MutationConfiguration::levy_alpha`]
+    /// or [`crate::traits::MutationConfig::with_levy_alpha`]. Valid range: (0.0, 2.0). Default α: `1.5`.
+    /// Returns `GaError::MutationError` for non-`Range<T>` chromosomes.
     LevyFlight,
-    /// Uniform reset mutation for `Range<T>` chromosomes (placeholder — implemented in Phase 33 Plan 03).
+    /// Uniform reset mutation for `Range<T>` chromosomes.
+    /// Resets a single randomly chosen gene to a uniform sample within its declared range.
+    /// Equivalent to gene re-initialization. No configuration parameters required.
+    /// Returns `GaError::MutationError` for non-`Range<T>` chromosomes.
     Uniform,
 }
 
