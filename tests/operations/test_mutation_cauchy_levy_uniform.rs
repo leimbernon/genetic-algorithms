@@ -217,34 +217,76 @@ fn levy_flight_default_alpha_when_sigma_none() {
     }
 }
 
-// ---- Uniform scaffolded (Plan 03 will activate) ----
+// ---- Uniform active tests ----
 
 #[test]
-#[ignore]
 fn uniform_mutation_via_factory_changes_value() {
-    todo!("Activated in Phase 33 Plan 03")
+    let mut c = build_f64_chromosome(5);
+    let mut changed = false;
+    for _ in 0..200 {
+        let before: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
+        // Uniform takes no parameter — pass None for both step and sigma.
+        mutation::factory_with_params(Mutation::Uniform, &mut c, None, None).unwrap();
+        let after: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
+        if before.iter().zip(after.iter()).any(|(b, a)| b != a) {
+            changed = true;
+            break;
+        }
+    }
+    assert!(changed, "Uniform mutation never changed a value across 200 iterations");
 }
 
 #[test]
-#[ignore]
 fn uniform_mutation_via_factory_stays_in_range() {
-    todo!("Activated in Phase 33 Plan 03")
+    let mut c = build_f64_chromosome(8);
+    for _ in 0..200 {
+        mutation::factory_with_params(Mutation::Uniform, &mut c, None, None).unwrap();
+        for gene in c.dna().iter() {
+            let (lo, hi) = gene.ranges[0];
+            assert!(
+                gene.value >= lo && gene.value <= hi,
+                "Uniform: value {} out of range [{}, {}]",
+                gene.value, lo, hi
+            );
+        }
+    }
 }
 
 #[test]
-#[ignore]
 fn uniform_mutation_changes_at_most_one_gene() {
-    todo!("Activated in Phase 33 Plan 03")
+    let mut c = build_f64_chromosome(10);
+    for _ in 0..50 {
+        let before: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
+        mutation::factory_with_params(Mutation::Uniform, &mut c, None, None).unwrap();
+        let after: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
+        let changed_count = before.iter().zip(after.iter()).filter(|(b, a)| b != a).count();
+        assert!(
+            changed_count <= 1,
+            "Uniform changed {} genes in one call (expected <= 1)",
+            changed_count
+        );
+    }
 }
 
 #[test]
-#[ignore]
 fn uniform_mutation_works_on_i32() {
-    todo!("Activated in Phase 33 Plan 03")
+    let mut c = build_i32_chromosome(6);
+    for _ in 0..200 {
+        mutation::factory_with_params(Mutation::Uniform, &mut c, None, None).unwrap();
+        for gene in c.dna().iter() {
+            let (lo, hi) = gene.ranges[0];
+            assert!(gene.value >= lo && gene.value <= hi);
+        }
+    }
 }
 
 #[test]
-#[ignore]
 fn uniform_mutation_errors_on_binary_chromosome() {
-    todo!("Activated in Phase 33 Plan 03")
+    let mut c = BinaryChromosome::new();
+    let result = mutation::factory_with_params(Mutation::Uniform, &mut c, None, None);
+    assert!(
+        result.is_err(),
+        "Uniform mutation must error on Binary chromosomes (got {:?})",
+        result
+    );
 }
