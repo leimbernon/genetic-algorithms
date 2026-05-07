@@ -157,6 +157,12 @@ pub struct MutationConfiguration {
     /// Typical range: 0.4–1.0. Default is 0.5 when `None`.
     /// Only used when `method` is `Mutation::Differential`.
     pub differential_f: Option<f64>,
+    /// Scale parameter (γ) for `Mutation::Cauchy`. Default is `1.0` when `None`.
+    /// Only consulted when `method == Mutation::Cauchy`.
+    pub cauchy_scale: Option<f64>,
+    /// Stability index (α) for `Mutation::LevyFlight`. Valid range: (0.0, 2.0). Default is `1.5` when `None`.
+    /// Only consulted when `method == Mutation::LevyFlight`.
+    pub levy_alpha: Option<f64>,
     /// Enable dynamic mutation probability adjustment based on population cardinality.
     /// When enabled, mutation probability is adjusted each generation: increased when
     /// diversity is low and decreased when diversity is high.
@@ -178,6 +184,8 @@ impl Default for MutationConfiguration {
             polynomial_eta: None,
             non_uniform_b: None,
             differential_f: None,
+            cauchy_scale: None,
+            levy_alpha: None,
             dynamic_mutation: false,
             target_cardinality: None,
             probability_step: None,
@@ -386,6 +394,14 @@ impl MutationConfig for GaConfiguration {
     }
     fn with_differential_f(mut self, f: f64) -> Self {
         self.mutation_configuration.differential_f = Some(f);
+        self
+    }
+    fn with_cauchy_scale(mut self, scale: f64) -> Self {
+        self.mutation_configuration.cauchy_scale = Some(scale);
+        self
+    }
+    fn with_levy_alpha(mut self, alpha: f64) -> Self {
+        self.mutation_configuration.levy_alpha = Some(alpha);
         self
     }
 }

@@ -58,6 +58,12 @@ pub trait MutationConfig {
     /// Sets the F scale factor for Differential mutation (DE-style).
     /// Typical range: 0.4–1.0. Default is 0.5 when not set.
     fn with_differential_f(self, f: f64) -> Self;
+    /// Sets the scale parameter (γ) for Cauchy mutation. Default is 1.0.
+    /// Only used when the mutation method is `Mutation::Cauchy`.
+    fn with_cauchy_scale(self, scale: f64) -> Self;
+    /// Sets the stability index (α) for Lévy Flight mutation. Valid range: (0.0, 2.0). Default is 1.5.
+    /// Only used when the mutation method is `Mutation::LevyFlight`.
+    fn with_levy_alpha(self, alpha: f64) -> Self;
 }
 
 /// Configuration for stopping / termination criteria.

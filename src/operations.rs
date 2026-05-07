@@ -127,6 +127,16 @@ pub enum Mutation {
     /// Requires `population_size >= 4`. Applied automatically by the standard GA
     /// engine — do not call `factory_with_params` for this variant.
     Differential,
+    /// Cauchy (Lorentzian) perturbation for `Range<T>` chromosomes.
+    /// Uses the inverse-CDF method: `noise = scale * tan(π * (u - 0.5))`, where `u ~ Uniform(0, 1)`.
+    /// Configure scale via [`crate::configuration::MutationConfiguration::cauchy_scale`]
+    /// or the [`crate::traits::MutationConfig::with_cauchy_scale`] builder. Default scale: `1.0`.
+    /// Returns `GaError::MutationError` for non-`Range<T>` chromosomes (Binary, List).
+    Cauchy,
+    /// Lévy Flight mutation for `Range<T>` chromosomes (placeholder — implemented in Phase 33 Plan 02).
+    LevyFlight,
+    /// Uniform reset mutation for `Range<T>` chromosomes (placeholder — implemented in Phase 33 Plan 03).
+    Uniform,
 }
 
 /// Survivor-selection strategies.

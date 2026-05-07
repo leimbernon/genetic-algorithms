@@ -219,12 +219,28 @@ where
                     };
 
                     // Mutate offspring
-                    let _ = mutation::factory_with_params(
-                        self.config.mutation,
-                        &mut offspring,
-                        self.config.mutation_step,
-                        self.config.mutation_sigma,
-                    );
+                    let _ = if self.config.mutation == crate::operations::Mutation::Cauchy {
+                        mutation::factory_with_params(
+                            self.config.mutation,
+                            &mut offspring,
+                            self.config.mutation_step,
+                            None,
+                        )
+                    } else if self.config.mutation == crate::operations::Mutation::LevyFlight {
+                        mutation::factory_with_params(
+                            self.config.mutation,
+                            &mut offspring,
+                            None,
+                            self.config.mutation_sigma,
+                        )
+                    } else {
+                        mutation::factory_with_params(
+                            self.config.mutation,
+                            &mut offspring,
+                            self.config.mutation_step,
+                            self.config.mutation_sigma,
+                        )
+                    };
 
                     // Evaluate
                     let offspring_fitness = (self.fitness_fn)(offspring.dna());

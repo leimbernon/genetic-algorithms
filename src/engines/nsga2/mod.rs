@@ -428,12 +428,28 @@ where
             for child in children.iter_mut() {
                 let mp: f64 = rng.random();
                 if mp <= mut_prob {
-                    mutation::factory_with_params(
-                        mutation_config.method,
-                        child,
-                        mutation_config.step,
-                        mutation_config.sigma,
-                    )?;
+                    if mutation_config.method == crate::operations::Mutation::Cauchy {
+                        mutation::factory_with_params(
+                            mutation_config.method,
+                            child,
+                            mutation_config.cauchy_scale,
+                            None,
+                        )?;
+                    } else if mutation_config.method == crate::operations::Mutation::LevyFlight {
+                        mutation::factory_with_params(
+                            mutation_config.method,
+                            child,
+                            None,
+                            mutation_config.levy_alpha,
+                        )?;
+                    } else {
+                        mutation::factory_with_params(
+                            mutation_config.method,
+                            child,
+                            mutation_config.step,
+                            mutation_config.sigma,
+                        )?;
+                    }
                 }
             }
 
