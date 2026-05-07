@@ -30,6 +30,7 @@ use crate::rng::make_rng;
 use crate::stats::GenerationStats;
 use crate::traits::{ChromosomeT, FitnessFn};
 use rand::Rng;
+use log::warn;
 
 use super::configuration::AlpsConfiguration;
 
@@ -220,7 +221,7 @@ where
                         _ => layers[layer_idx][a].clone(),
                     };
 
-                    let _ = if self.config.mutation == crate::operations::Mutation::Cauchy {
+                    let mutation_result = if self.config.mutation == crate::operations::Mutation::Cauchy {
                         mutation::factory_with_params(
                             self.config.mutation,
                             &mut offspring,
@@ -242,6 +243,9 @@ where
                             self.config.mutation_sigma,
                         )
                     };
+                    if let Err(e) = mutation_result {
+                        warn!(target: "mutation_events", "Mutation error (skipped): {}", e);
+                    }
 
                     let f = (self.fitness_fn)(offspring.dna());
                     offspring.set_fitness(f);

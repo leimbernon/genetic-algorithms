@@ -29,6 +29,7 @@ use crate::traits::SelectionOperator;
 use crate::rng::make_rng;
 use crate::traits::{ChromosomeT, FitnessFn};
 use rand::Rng;
+use log::warn;
 
 use super::configuration::{CellularConfiguration, Neighborhood, UpdateMode};
 
@@ -219,7 +220,7 @@ where
                     };
 
                     // Mutate offspring
-                    let _ = if self.config.mutation == crate::operations::Mutation::Cauchy {
+                    let mutation_result = if self.config.mutation == crate::operations::Mutation::Cauchy {
                         mutation::factory_with_params(
                             self.config.mutation,
                             &mut offspring,
@@ -241,6 +242,9 @@ where
                             self.config.mutation_sigma,
                         )
                     };
+                    if let Err(e) = mutation_result {
+                        warn!(target: "mutation_events", "Mutation error (skipped): {}", e);
+                    }
 
                     // Evaluate
                     let offspring_fitness = (self.fitness_fn)(offspring.dna());
