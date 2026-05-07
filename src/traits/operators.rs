@@ -117,8 +117,10 @@ pub trait MutationOperator {
     /// # Arguments
     ///
     /// * `individual` - The chromosome to mutate.
-    /// * `step` - Optional step size (used by Creep mutation).
-    /// * `sigma` - Optional standard deviation (used by Gaussian mutation).
+    /// * `step` - Optional step size (used by Creep mutation); **also used as the
+    ///   `scale` (γ) parameter for `Mutation::Cauchy`** (default 1.0 when `None`).
+    /// * `sigma` - Optional standard deviation (used by Gaussian mutation); **also
+    ///   used as the stability index `α` for `Mutation::LevyFlight`** (default 1.5 when `None`).
     fn mutate<U>(
         &self,
         individual: &mut U,

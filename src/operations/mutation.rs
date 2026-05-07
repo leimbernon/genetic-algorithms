@@ -297,8 +297,10 @@ where
 ///
 /// * `mutation` - The mutation variant to apply.
 /// * `individual` - Mutable reference to the chromosome to mutate.
-/// * `step` - Optional step size for Creep mutation.
-/// * `sigma` - Optional sigma for Gaussian mutation.
+/// * `step` - Step size for Creep mutation; **also used as the `scale` (γ) parameter
+///   for `Mutation::Cauchy`** (default 1.0 when `None`).
+/// * `sigma` - Sigma for Gaussian mutation; **also used as the stability index `α`
+///   for `Mutation::LevyFlight`** (default 1.5 when `None`).
 pub fn factory_with_params<U>(
     mutation: Mutation,
     individual: &mut U,
