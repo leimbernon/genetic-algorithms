@@ -24,9 +24,9 @@
 
 ### MUT — Mutation Operators
 
-- [ ] **MUT-01**: User can configure Cauchy mutation to apply heavy-tailed perturbations to real-valued genes with a configurable scale parameter
-- [ ] **MUT-02**: User can configure Lévy Flight mutation to apply long-range jumps to real-valued genes with a configurable stability index
-- [ ] **MUT-03**: User can configure Uniform mutation to randomly reset gene values uniformly within the gene's valid range
+- [x] **MUT-01**: User can configure Cauchy mutation to apply heavy-tailed perturbations to real-valued genes with a configurable scale parameter
+- [x] **MUT-02**: User can configure Lévy Flight mutation to apply long-range jumps to real-valued genes with a configurable stability index
+- [x] **MUT-03**: User can configure Uniform mutation to randomly reset gene values uniformly within the gene's valid range
 - [ ] **MUT-04**: User can configure Differential mutation (DE-style) in the standard GA, using three random population members to generate a mutant vector with configurable F scale factor
 
 ## Future Requirements
@@ -58,6 +58,6 @@
 | SRV-01 | Phase 31 | — |
 | CRS-01 | Phase 32 | — |
 | MUT-04 | Phase 32 | — |
-| MUT-01 | Phase 33 | — |
-| MUT-02 | Phase 33 | — |
-| MUT-03 | Phase 33 | — |
+| MUT-01 | Phase 33 | 33-01-PLAN.md |
+| MUT-02 | Phase 33 | 33-02-PLAN.md |
+| MUT-03 | Phase 33 | 33-03-PLAN.md |
