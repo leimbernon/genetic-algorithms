@@ -82,6 +82,9 @@ fn serde_mutation_enum() {
         Mutation::NonUniform,
         Mutation::Insertion,
         Mutation::Differential,
+        Mutation::Cauchy,
+        Mutation::LevyFlight,
+        Mutation::Uniform,
     ];
     for v in &variants {
         assert_eq!(&round_trip(v), v);
@@ -149,6 +152,8 @@ fn serde_ga_configuration_with_values() {
             polynomial_eta: Some(30.0),
             non_uniform_b: Some(3.0),
             differential_f: None,
+            cauchy_scale: None,
+            levy_alpha: None,
             dynamic_mutation: false,
             target_cardinality: None,
             probability_step: None,
