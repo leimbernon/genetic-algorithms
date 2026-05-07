@@ -44,8 +44,10 @@ use crate::observer::Nsga2Observer;
 use crate::operations::mutation;
 use crate::traits::{ChromosomeT, InitializationFn};
 use rand::Rng;
+#[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
 use std::sync::Arc;
+#[cfg(not(target_arch = "wasm32"))]
 use std::time::Instant;
 
 /// Type alias for a single objective function.
@@ -231,7 +233,10 @@ where
         for gen in 0..max_gens {
             // Non-dominated sorting (direction-aware, optionally constrained)
             let t_sort = if self.observer.is_some() {
-                Some(Instant::now())
+                #[cfg(not(target_arch = "wasm32"))]
+                { Some(Instant::now()) }
+                #[cfg(target_arch = "wasm32")]
+                { None }
             } else {
                 None
             };
@@ -251,7 +256,10 @@ where
 
             // Assign crowding distance per front
             let t_crowd = if self.observer.is_some() {
-                Some(Instant::now())
+                #[cfg(not(target_arch = "wasm32"))]
+                { Some(Instant::now()) }
+                #[cfg(target_arch = "wasm32")]
+                { None }
             } else {
                 None
             };
@@ -375,8 +383,20 @@ where
         // Wrap each chromosome in a ParetoIndividual with evaluated objectives
         let objective_fns = &self.objective_fns;
         let constraint_fns = &self.constraint_fns;
+        #[cfg(not(target_arch = "wasm32"))]
         let population = chromosomes
             .into_par_iter()
+            .map(|chrom| {
+                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
+                let constraint_violation = evaluate_constraints(chrom.dna(), constraint_fns);
+                let mut ind = ParetoIndividual::new(chrom, objectives);
+                ind.constraint_violation = constraint_violation;
+                ind
+            })
+            .collect();
+        #[cfg(target_arch = "wasm32")]
+        let population = chromosomes
+            .into_iter()
             .map(|chrom| {
                 let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
                 let constraint_violation = evaluate_constraints(chrom.dna(), constraint_fns);
@@ -472,8 +492,20 @@ where
         // Evaluate objectives in parallel
         let objective_fns = &self.objective_fns;
         let constraint_fns = &self.constraint_fns;
+        #[cfg(not(target_arch = "wasm32"))]
         let offspring = raw_offspring
             .into_par_iter()
+            .map(|chrom| {
+                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
+                let constraint_violation = evaluate_constraints(chrom.dna(), constraint_fns);
+                let mut ind = ParetoIndividual::new(chrom, objectives);
+                ind.constraint_violation = constraint_violation;
+                ind
+            })
+            .collect();
+        #[cfg(target_arch = "wasm32")]
+        let offspring = raw_offspring
+            .into_iter()
             .map(|chrom| {
                 let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
                 let constraint_violation = evaluate_constraints(chrom.dna(), constraint_fns);
