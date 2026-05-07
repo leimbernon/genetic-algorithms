@@ -43,10 +43,12 @@ use crate::{
     },
 };
 use rand::Rng;
+#[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
 use std::fmt::Debug;
 use std::ops::ControlFlow;
 use std::sync::Arc;
+#[cfg(not(target_arch = "wasm32"))]
 use std::time::Instant;
 
 /// Marker trait that resolves to `serde::Serialize` when the `serde` feature is
@@ -747,7 +749,12 @@ where
         );
 
         // Compound stopping criteria tracking
+        #[cfg(not(target_arch = "wasm32"))]
         let start_time = Instant::now();
+        #[cfg(target_arch = "wasm32")]
+        if self.configuration.stopping_criteria.max_duration_secs.is_some() {
+            log::warn!(target: "ga_events", "max_duration_secs is not supported on wasm32 — time limit will be ignored");
+        }
         let mut best_fitness_so_far = self.population.best_chromosome.fitness();
         let mut stagnation_count: usize = 0;
 
@@ -763,7 +770,10 @@ where
 
             //1- Parent selection for reproduction
             let t_sel = if self.observer.is_some() {
-                Some(Instant::now())
+                #[cfg(not(target_arch = "wasm32"))]
+                { Some(Instant::now()) }
+                #[cfg(target_arch = "wasm32")]
+                { None }
             } else {
                 None
             };
@@ -782,7 +792,10 @@ where
                 None
             };
             let t_cx = if self.observer.is_some() {
-                Some(Instant::now())
+                #[cfg(not(target_arch = "wasm32"))]
+                { Some(Instant::now()) }
+                #[cfg(target_arch = "wasm32")]
+                { None }
             } else {
                 None
             };
@@ -822,7 +835,10 @@ where
 
             //4- Survivor selection
             let t_surv = if self.observer.is_some() {
-                Some(Instant::now())
+                #[cfg(not(target_arch = "wasm32"))]
+                { Some(Instant::now()) }
+                #[cfg(target_arch = "wasm32")]
+                { None }
             } else {
                 None
             };
@@ -1026,8 +1042,28 @@ where
                             };
                             let ff = self.fitness_fn.as_ref().map(Arc::clone);
 
+                            #[cfg(not(target_arch = "wasm32"))]
                             let new_chromosomes: Vec<U> = (0..deficit)
                                 .into_par_iter()
+                                .map(|_| {
+                                    let genes = init_fn(
+                                        genes_per_chromosome,
+                                        alleles_ref,
+                                        Some(alleles_can_be_repeated),
+                                    );
+                                    let mut new_chromosome = U::new();
+                                    new_chromosome.set_dna(std::borrow::Cow::Owned(genes));
+                                    if let Some(ref ff) = ff {
+                                        let ff_clone = Arc::clone(ff);
+                                        new_chromosome.set_fitness_fn(move |genes| ff_clone(genes));
+                                    }
+                                    new_chromosome.calculate_fitness();
+                                    new_chromosome.set_age(0);
+                                    new_chromosome
+                                })
+                                .collect();
+                            #[cfg(target_arch = "wasm32")]
+                            let new_chromosomes: Vec<U> = (0..deficit)
                                 .map(|_| {
                                     let genes = init_fn(
                                         genes_per_chromosome,
@@ -1187,7 +1223,8 @@ where
                 }
             }
 
-            // Time limit check
+            // Time limit check (not available on wasm32 — see warning emitted at run start)
+            #[cfg(not(target_arch = "wasm32"))]
             if let Some(max_secs) = self.configuration.stopping_criteria.max_duration_secs {
                 if start_time.elapsed().as_secs_f64() >= max_secs {
                     self.termination_cause = TerminationCause::TimeLimitReached;
@@ -1322,9 +1359,197 @@ where
         Some(1.0)
     };
 
-    // Use rayon to process parent pairs in parallel
+    // Use rayon to process parent pairs in parallel (sequential fallback on wasm32)
+    #[cfg(not(target_arch = "wasm32"))]
     let results: Vec<Result<Vec<U>, GaError>> = parents
         .par_iter()
+        .map(|(key, value)| {
+            let mut rng = crate::rng::make_rng();
+
+            // Getting the parent 1 and 2 for crossover
+            let parent_1 = chromosomes.get(*key).ok_or_else(|| {
+                GaError::SelectionError(format!(
+                    "Selection returned out-of-bounds index {} (population size {})",
+                    key,
+                    chromosomes.len()
+                ))
+            })?;
+            let parent_2 = chromosomes.get(*value).ok_or_else(|| {
+                GaError::SelectionError(format!(
+                    "Selection returned out-of-bounds index {} (population size {})",
+                    value,
+                    chromosomes.len()
+                ))
+            })?;
+
+            // Making the crossover of the parents when the random number is below or equal to the given probability
+            let crossover_probability = rng.random_range(0.0..1.0);
+            let effective_crossover_prob = if let Some(p) = crossover_probability_config {
+                p
+            } else {
+                crossover::aga_probability(
+                    parent_1,
+                    parent_2,
+                    f_max,
+                    f_avg,
+                    configuration
+                        .crossover_configuration
+                        .probability_max
+                        .unwrap_or(1.0),
+                    configuration
+                        .crossover_configuration
+                        .probability_min
+                        .unwrap_or(0.0),
+                )
+            };
+
+            // Making the mutation of each child when the random number is below or equal the given probability
+            let mut mutation_probability = rng.random_range(0.0..1.0);
+            let effective_mutation_prob = if let Some(p) = mutation_probability_config {
+                p
+            } else {
+                mutation::aga_probability(
+                    parent_1,
+                    parent_2,
+                    f_avg,
+                    configuration
+                        .mutation_configuration
+                        .probability_max
+                        .unwrap_or(1.0),
+                    configuration
+                        .mutation_configuration
+                        .probability_min
+                        .unwrap_or(0.0),
+                )
+            };
+
+            let mut child_1: U;
+            let mut child_2: U;
+
+            if crossover_probability <= effective_crossover_prob {
+                let mut children =
+                    crossover::factory(parent_1, parent_2, configuration.crossover_configuration)?;
+                child_2 = children.pop().ok_or_else(|| {
+                    GaError::CrossoverError("Crossover returned fewer than 2 children".to_string())
+                })?;
+                child_1 = children.pop().ok_or_else(|| {
+                    GaError::CrossoverError("Crossover returned fewer than 2 children".to_string())
+                })?;
+            } else {
+                child_1 = parent_1.clone();
+                child_2 = parent_2.clone();
+            }
+
+            if mutation_probability <= effective_mutation_prob {
+                if configuration.mutation_configuration.method == crate::operations::Mutation::Differential {
+                    let f = configuration.mutation_configuration.differential_f.unwrap_or(0.5);
+                    crate::operations::mutation::differential::differential_mutation(
+                        &mut child_1,
+                        chromosomes,
+                        *key,
+                        f,
+                    )?;
+                } else if configuration.mutation_configuration.method == crate::operations::Mutation::Cauchy {
+                    mutation::factory_with_params(
+                        configuration.mutation_configuration.method,
+                        &mut child_1,
+                        configuration.mutation_configuration.cauchy_scale,
+                        None,
+                    )?;
+                } else if configuration.mutation_configuration.method == crate::operations::Mutation::LevyFlight {
+                    mutation::factory_with_params(
+                        configuration.mutation_configuration.method,
+                        &mut child_1,
+                        None,
+                        configuration.mutation_configuration.levy_alpha,
+                    )?;
+                } else if configuration.mutation_configuration.method == crate::operations::Mutation::Polynomial {
+                    // Use dedicated `polynomial_eta` field if set; fall back to `step` for
+                    // backward compatibility with callers that used `with_mutation_step` for eta.
+                    let eta = configuration.mutation_configuration.polynomial_eta
+                        .or(configuration.mutation_configuration.step);
+                    mutation::factory_with_params(
+                        configuration.mutation_configuration.method,
+                        &mut child_1,
+                        eta,
+                        None,
+                    )?;
+                } else {
+                    mutation::factory_with_params(
+                        configuration.mutation_configuration.method,
+                        &mut child_1,
+                        configuration.mutation_configuration.step,
+                        configuration.mutation_configuration.sigma,
+                    )?;
+                }
+            }
+
+            mutation_probability = rng.random_range(0.0..1.0);
+            if mutation_probability <= effective_mutation_prob {
+                if configuration.mutation_configuration.method == crate::operations::Mutation::Differential {
+                    let f = configuration.mutation_configuration.differential_f.unwrap_or(0.5);
+                    crate::operations::mutation::differential::differential_mutation(
+                        &mut child_2,
+                        chromosomes,
+                        *value,
+                        f,
+                    )?;
+                } else if configuration.mutation_configuration.method == crate::operations::Mutation::Cauchy {
+                    mutation::factory_with_params(
+                        configuration.mutation_configuration.method,
+                        &mut child_2,
+                        configuration.mutation_configuration.cauchy_scale,
+                        None,
+                    )?;
+                } else if configuration.mutation_configuration.method == crate::operations::Mutation::LevyFlight {
+                    mutation::factory_with_params(
+                        configuration.mutation_configuration.method,
+                        &mut child_2,
+                        None,
+                        configuration.mutation_configuration.levy_alpha,
+                    )?;
+                } else if configuration.mutation_configuration.method == crate::operations::Mutation::Polynomial {
+                    let eta = configuration.mutation_configuration.polynomial_eta
+                        .or(configuration.mutation_configuration.step);
+                    mutation::factory_with_params(
+                        configuration.mutation_configuration.method,
+                        &mut child_2,
+                        eta,
+                        None,
+                    )?;
+                } else {
+                    mutation::factory_with_params(
+                        configuration.mutation_configuration.method,
+                        &mut child_2,
+                        configuration.mutation_configuration.step,
+                        configuration.mutation_configuration.sigma,
+                    )?;
+                }
+            }
+
+            // Inject fitness function into children built via U::new() (which start with the
+            // default no-op fitness fn). Children from parent.clone() (the else branch above)
+            // already carry the correct fitness fn from their parent.
+            if let Some(ref ff) = fitness_fn {
+                let ff1 = Arc::clone(ff);
+                child_1.set_fitness_fn(move |genes| ff1(genes));
+                let ff2 = Arc::clone(ff);
+                child_2.set_fitness_fn(move |genes| ff2(genes));
+            }
+
+            // Calculate the fitness of both children and set their age
+            child_1.calculate_fitness();
+            child_2.calculate_fitness();
+
+            child_1.set_age(age);
+            child_2.set_age(age);
+
+            Ok(vec![child_1, child_2])
+        })
+        .collect();
+    #[cfg(target_arch = "wasm32")]
+    let results: Vec<Result<Vec<U>, GaError>> = parents
+        .iter()
         .map(|(key, value)| {
             let mut rng = crate::rng::make_rng();
 
