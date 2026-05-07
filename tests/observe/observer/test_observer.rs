@@ -379,7 +379,9 @@ fn test_ga_has_no_direct_log_calls() {
             trimmed
         );
     }
-    // log::warn! is allowed (checkpoint failure, serde-gated) — verify it exists exactly once
+    // log::warn! is allowed for two exceptions:
+    // 1. serde-gated checkpoint I/O failure (no on_checkpoint_failed hook yet)
+    // 2. wasm32-gated max_duration_secs unsupported warning (fires before observer is ready)
     let warn_count = ga_source
         .lines()
         .filter(|l| {
@@ -388,8 +390,8 @@ fn test_ga_has_no_direct_log_calls() {
         })
         .count();
     assert!(
-        warn_count <= 1,
-        "Expected at most 1 warn!() call in ga.rs (checkpoint exception), found {}",
+        warn_count <= 2,
+        "Expected at most 2 warn!() calls in ga.rs (checkpoint + wasm32 exceptions), found {}",
         warn_count
     );
 }
