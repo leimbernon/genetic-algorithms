@@ -8,9 +8,9 @@ A modular, concurrent Genetic Algorithms library for Rust. Provides composable o
 
 Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library.
 
-## Current Milestone: v2.4.0 — Observer Integration & New Operators
+## Current Milestone: v2.4.0 — Observer Integration, New Operators & Advanced Multi-Objective
 
-**Goal:** Wire GaObserver lifecycle hooks into all 4 new engines, close v2.3.0 deferred tech debt, and expand the operator library with 7 new strategies.
+**Goal:** Wire GaObserver lifecycle hooks into all 4 new engines, expand the operator library with 7 new strategies, and extend multi-objective optimization with NSGA-III, MOEA/D, SPEA2, SMS-EMOA/IBEA, and shared quality indicators.
 
 **Target features:**
 - GaObserver hooks in DeEngine, ScatterEngine, CellularEngine, AlpsEngine
@@ -20,6 +20,7 @@ Users can solve complex optimization problems with composable, performant geneti
 - Edge Recombination crossover (#198)
 - DE crossover/mutation operators for standard GA (#199)
 - Cauchy mutation (#200), Lévy Flight mutation (#201), Uniform mutation (#202)
+- NSGA-III (#203), MOEA/D (#204), SPEA2 (#205), SMS-EMOA/IBEA (#206), quality indicators (#207)
 
 ## Last Milestone: v2.3.0 — Alternative Metaheuristics & Population Models (Shipped 2026-04-27)
 
@@ -84,19 +85,23 @@ Eliminated unnecessary heap allocations, reduced algorithmic complexity, and imp
 
 - [ ] GaObserver wired into DeEngine, ScatterEngine, CellularEngine, AlpsEngine — v2.4.0
 - [ ] DE-vs-GA head-to-head convergence benchmark — v2.4.0
-- [ ] Clearing selection operator (#196) — v2.4.0
-- [ ] Deterministic Crowding survivor strategy (#197) — v2.4.0
+- ✓ Clearing selection operator (#196) — v2.4.0 (Validated in Phase 31)
+- ✓ Deterministic Crowding survivor strategy (#197) — v2.4.0 (Validated in Phase 31)
 - [ ] Edge Recombination crossover (#198) — v2.4.0
 - [ ] DE crossover/mutation operators for standard GA (#199) — v2.4.0
 - [ ] Cauchy mutation (#200) — v2.4.0
 - [ ] Lévy Flight mutation (#201) — v2.4.0
 - [ ] Uniform mutation (#202) — v2.4.0
+- [ ] NSGA-III for many-objective optimization (#203) — v2.4.0
+- [ ] MOEA/D decomposition-based multi-objective (#204) — v2.4.0
+- [ ] SPEA2 strength Pareto evolutionary algorithm (#205) — v2.4.0
+- [ ] SMS-EMOA and IBEA indicator-based MOEAs (#206) — v2.4.0
+- [ ] Multi-objective quality indicators: Hypervolume, GD, IGD, Spread (#207) — v2.4.0
 
 ### Future
 
 <!-- Validated direction, not yet scheduled. -->
 
-- [ ] Advanced Multi-Objective: NSGA-III, MOEA/D, SPEA2 — issues #203–#207
 - [ ] Framework extensions: constraint handling, memetic algorithms, warm start, AOS — issues #212–#219
 
 ### Out of Scope
@@ -182,4 +187,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-27 — started v2.4.0 milestone (Observer Integration & New Operators).*
+*Last updated: 2026-05-07 — Phase 33 complete: Cauchy, Lévy Flight, and Uniform scalar mutation operators added for Range<T> chromosomes (MUT-01, MUT-02, MUT-03).*

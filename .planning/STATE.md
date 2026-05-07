@@ -1,11 +1,11 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.5.0
-milestone_name: — Advanced Multi-Objective Optimization
+milestone: v2.4.0
+milestone_name: — Observer Integration, New Operators & Advanced Multi-Objective
 status: executing
 stopped_at: Phase 35 context gathered
 last_updated: "2026-05-07T16:15:17.380Z"
-last_activity: 2026-05-07 -- v2.5.0 milestone started; Cargo.toml bumped to 2.5.0
+last_activity: 2026-05-07 -- phases 35-39 moved to v2.4.0; Cargo.toml reverted to 2.4.0
 progress:
   total_phases: 5
   completed_phases: 0
@@ -20,13 +20,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-27)
 
 **Core value:** Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library
-**Current focus:** v2.5.0 — Advanced Multi-Objective Optimization (phases 35-39)
+**Current focus:** v2.4.0 — Advanced Multi-Objective Optimization (phases 35-39)
 
 ## Current Position
 
 Phase: 35 (nsga-iii-for-many-objective-optimization) — NOT STARTED
-Status: v2.4.0 complete (phases 30-34). v2.5.0 in progress — ready to plan phase 35.
-Last activity: 2026-05-07 -- v2.5.0 milestone started; Cargo.toml bumped to 2.5.0
+Status: v2.4.0 in progress — phases 30-34 complete, phase 35 context gathered, ready to plan.
+Last activity: 2026-05-07 -- phases 35-39 moved to v2.4.0; Cargo.toml reverted to 2.4.0
 
 Progress: [----------] 0/5 phases complete
 
@@ -47,10 +47,8 @@ Progress: [----------] 0/5 phases complete
 ### Roadmap Evolution
 
 - Phase 34 added: WASM support — fix time-based panics for wasm32-unknown-unknown targets (issue #236)
-- v2.4.0 marked complete (phases 30-34 shipped 2026-05-07)
-- v2.5.0 started: Advanced Multi-Objective Optimization (GitHub milestone 8, issues #203-#207)
-- Phases 35-39 added: NSGA-III, MOEA/D, SPEA2, SMS-EMOA/IBEA, quality indicators
-- Cargo.toml bumped to 2.5.0
+- Phases 35-39 added to v2.4.0: NSGA-III, MOEA/D, SPEA2, SMS-EMOA/IBEA, quality indicators (GitHub milestone 8, issues #203-#207)
+- Cargo.toml reverted to 2.4.0 — phases 35-39 remain within v2.4.0 milestone
 
 ### Blockers/Concerns
 

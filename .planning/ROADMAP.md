@@ -8,8 +8,7 @@
 - ✅ **v2.2.0 — Observability & Traceability** — Phases 13-18 (shipped 2026-03-28)
 - ✅ **v2.2.1 — Performance Optimizations** — Phases 19-24 (shipped 2026-04-23)
 - ✅ **v2.3.0 — Alternative Metaheuristics & Population Models** — Phases 25-29 (shipped 2026-04-27)
-- ✅ **v2.4.0 — Observer Integration & New Operators** — Phases 30-34 (shipped 2026-05-07)
-- 🚧 **v2.5.0 — Advanced Multi-Objective Optimization** — Phases 35-39 (in progress)
+- 🚧 **v2.4.0 — Observer Integration & New Operators + Advanced Multi-Objective** — Phases 30-39 (in progress)
 
 ## Phases
 
@@ -96,9 +95,9 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 
 </details>
 
-### v2.4.0 — Observer Integration & New Operators (In Progress)
+### v2.4.0 — Observer Integration, New Operators & Advanced Multi-Objective (In Progress)
 
-**Milestone Goal:** Wire GaObserver lifecycle hooks into all 4 new engines, close v2.3.0 deferred tech debt, and expand the operator library with 7 new strategies.
+**Milestone Goal:** Wire GaObserver lifecycle hooks into all 4 new engines, close v2.3.0 deferred tech debt, expand the operator library with 7 new strategies, and extend multi-objective optimization with NSGA-III, MOEA/D, SPEA2, SMS-EMOA/IBEA, and shared quality indicators.
 
 - [x] **Phase 30: Observer Wiring & DE Benchmark** — Wire GaObserver into all 4 new engines and add DE-vs-GA convergence benchmark (completed 2026-05-02)
 - [x] **Phase 31: Selection & Survivor Diversity Operators** — Clearing selection and Deterministic Crowding survivor strategy (completed 2026-05-04)
@@ -222,11 +221,11 @@ Plans:
 | 32. Crossover & Differential Mutation | v2.4.0 | 3/3 | Complete | 2026-05-06 |
 | 33. Scalar Mutation Operators | v2.4.0 | 3/3 | Complete | 2026-05-07 |
 | 34. WASM support — wasm32-unknown-unknown compatibility | v2.4.0 | 4/4 | Complete | 2026-05-07 |
-| 35. NSGA-III for many-objective optimization | v2.5.0 | -- | Not started | -- |
-| 36. MOEA/D decomposition-based multi-objective | v2.5.0 | -- | Not started | -- |
-| 37. SPEA2 strength pareto evolutionary algorithm | v2.5.0 | -- | Not started | -- |
-| 38. Indicator-based MOEAs — SMS-EMOA and IBEA | v2.5.0 | -- | Not started | -- |
-| 39. Multi-objective quality indicators | v2.5.0 | -- | Not started | -- |
+| 35. NSGA-III for many-objective optimization | v2.4.0 | -- | Not started | -- |
+| 36. MOEA/D decomposition-based multi-objective | v2.4.0 | -- | Not started | -- |
+| 37. SPEA2 strength pareto evolutionary algorithm | v2.4.0 | -- | Not started | -- |
+| 38. Indicator-based MOEAs — SMS-EMOA and IBEA | v2.4.0 | -- | Not started | -- |
+| 39. Multi-objective quality indicators | v2.4.0 | -- | Not started | -- |
 
 ### Phase 34: WASM support — fix time-based panics for wasm32-unknown-unknown targets (issue #236)
 
@@ -244,7 +243,7 @@ Plans:
 **Wave 2** *(blocked on Wave 1)*
 - [x] 34-04-PLAN.md — wasm32 CI compile-check + host smoke test + phase verification gate
 
-### v2.5.0 — Advanced Multi-Objective Optimization (In Progress)
+### v2.4.0 (continued) — Advanced Multi-Objective Optimization
 
 **Milestone Goal:** Extend the multi-objective engine beyond NSGA-II with three new algorithms (NSGA-III, MOEA/D, SPEA2), two indicator-based methods (SMS-EMOA, IBEA), and a shared quality-indicator library. All as new independent modules following the existing `src/engines/nsga2/` pattern.
 
