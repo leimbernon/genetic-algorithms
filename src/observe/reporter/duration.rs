@@ -3,7 +3,9 @@ use super::Reporter;
 use crate::ga::TerminationCause;
 use crate::stats::GenerationStats;
 use crate::traits::ChromosomeT;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::Instant;
 
 /// Reports total wall-clock run time and per-generation average at the end of a run.
 ///
@@ -33,13 +35,17 @@ use std::time::{Duration, Instant};
 /// Per-operator timing is deferred to the Observability milestone (GaObserver
 /// trait, issues #182-#186).
 pub struct DurationReporter {
+    #[cfg(not(target_arch = "wasm32"))]
     start: Option<Instant>,
 }
 
 impl DurationReporter {
     /// Creates a new duration reporter.
     pub fn new() -> Self {
-        Self { start: None }
+        Self {
+            #[cfg(not(target_arch = "wasm32"))]
+            start: None,
+        }
     }
 }
 
@@ -52,11 +58,17 @@ impl Default for DurationReporter {
 #[allow(deprecated)]
 impl<U: ChromosomeT> Reporter<U> for DurationReporter {
     fn on_start(&mut self) {
-        self.start = Some(Instant::now());
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            self.start = Some(Instant::now());
+        }
     }
 
     fn on_finish(&mut self, cause: TerminationCause, all_stats: &[GenerationStats]) {
+        #[cfg(not(target_arch = "wasm32"))]
         let elapsed = self.start.map(|s| s.elapsed()).unwrap_or(Duration::ZERO);
+        #[cfg(target_arch = "wasm32")]
+        let elapsed = Duration::ZERO;
         let gens = all_stats.len();
 
         println!(
@@ -67,6 +79,7 @@ impl<U: ChromosomeT> Reporter<U> for DurationReporter {
             let avg = elapsed / gens as u32;
             println!("  Avg per generation: {:.2?}", avg);
         }
+        #[cfg(not(target_arch = "wasm32"))]
         if self.start.is_none() {
             log::warn!("DurationReporter: on_start was not called before on_finish");
         }
