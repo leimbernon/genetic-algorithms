@@ -397,10 +397,17 @@ impl MutationConfig for GaConfiguration {
         self
     }
     fn with_cauchy_scale(mut self, scale: f64) -> Self {
+        // A scale of 0 or negative makes the perturbation a no-op or invalid.
+        debug_assert!(scale > 0.0, "cauchy_scale must be positive; got {}", scale);
         self.mutation_configuration.cauchy_scale = Some(scale);
         self
     }
     fn with_levy_alpha(mut self, alpha: f64) -> Self {
+        debug_assert!(
+            alpha > 0.0 && alpha < 2.0,
+            "levy_alpha must be in (0.0, 2.0); got {}. Values outside this range are clamped.",
+            alpha
+        );
         self.mutation_configuration.levy_alpha = Some(alpha);
         self
     }
