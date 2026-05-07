@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.4.0
-milestone_name: — Observer Integration & New Operators
-status: completed
-stopped_at: Phase 34 context gathered
-last_updated: "2026-05-07T11:40:14.146Z"
-last_activity: 2026-05-07
+milestone: v2.5.0
+milestone_name: — Advanced Multi-Objective Optimization
+status: planning
+stopped_at: Phases 35-39 added, ready to plan
+last_updated: "2026-05-07T00:00:00.000Z"
+last_activity: 2026-05-07 -- v2.5.0 milestone started; phases 35-39 added (GitHub milestone 8)
 progress:
   total_phases: 5
-  completed_phases: 4
-  total_plans: 11
-  completed_plans: 11
-  percent: 100
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -21,16 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-27)
 
 **Core value:** Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library
-**Current focus:** Phase 33 — scalar-mutation-operators
+**Current focus:** v2.5.0 — Advanced Multi-Objective Optimization (phases 35-39)
 
 ## Current Position
 
-Phase: 33
-Plan: Not started
-Status: Milestone complete
-Last activity: 2026-05-07
+Phase: 35 (nsga-iii-for-many-objective-optimization) — NOT STARTED
+Status: v2.4.0 complete (phases 30-34). v2.5.0 in progress — ready to plan phase 35.
+Last activity: 2026-05-07 -- v2.5.0 milestone started; Cargo.toml bumped to 2.5.0
 
-Progress: [##--------] 1/4 phases complete
+Progress: [----------] 0/5 phases complete
 
 ## Accumulated Context
 
@@ -49,6 +48,10 @@ Progress: [##--------] 1/4 phases complete
 ### Roadmap Evolution
 
 - Phase 34 added: WASM support — fix time-based panics for wasm32-unknown-unknown targets (issue #236)
+- v2.4.0 marked complete (phases 30-34 shipped 2026-05-07)
+- v2.5.0 started: Advanced Multi-Objective Optimization (GitHub milestone 8, issues #203-#207)
+- Phases 35-39 added: NSGA-III, MOEA/D, SPEA2, SMS-EMOA/IBEA, quality indicators
+- Cargo.toml bumped to 2.5.0
 
 ### Blockers/Concerns
 

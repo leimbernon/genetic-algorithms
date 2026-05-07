@@ -8,7 +8,8 @@
 - ✅ **v2.2.0 — Observability & Traceability** — Phases 13-18 (shipped 2026-03-28)
 - ✅ **v2.2.1 — Performance Optimizations** — Phases 19-24 (shipped 2026-04-23)
 - ✅ **v2.3.0 — Alternative Metaheuristics & Population Models** — Phases 25-29 (shipped 2026-04-27)
-- 🚧 **v2.4.0 — Observer Integration & New Operators** — Phases 30-33 (in progress)
+- ✅ **v2.4.0 — Observer Integration & New Operators** — Phases 30-34 (shipped 2026-05-07)
+- 🚧 **v2.5.0 — Advanced Multi-Objective Optimization** — Phases 35-39 (in progress)
 
 ## Phases
 
@@ -217,16 +218,22 @@ Plans:
 | 28. Cellular GA Engine | v2.3.0 | 1/1 | Complete | 2026-04-27 |
 | 29. ALPS Engine | v2.3.0 | 1/1 | Complete | 2026-04-27 |
 | 30. Observer Wiring & DE Benchmark | v2.4.0 | 3/3 | Complete | 2026-05-02 |
-| 31. Selection & Survivor Diversity Operators | v2.4.0 | 2/2 | Complete    | 2026-05-04 |
-| 32. Crossover & Differential Mutation | v2.4.0 | 3/3 | Complete   | 2026-05-06 |
-| 33. Scalar Mutation Operators | v2.4.0 | 3/3 | Complete    | 2026-05-07 |
+| 31. Selection & Survivor Diversity Operators | v2.4.0 | 2/2 | Complete | 2026-05-04 |
+| 32. Crossover & Differential Mutation | v2.4.0 | 3/3 | Complete | 2026-05-06 |
+| 33. Scalar Mutation Operators | v2.4.0 | 3/3 | Complete | 2026-05-07 |
+| 34. WASM support — wasm32-unknown-unknown compatibility | v2.4.0 | 4/4 | Complete | 2026-05-07 |
+| 35. NSGA-III for many-objective optimization | v2.5.0 | -- | Not started | -- |
+| 36. MOEA/D decomposition-based multi-objective | v2.5.0 | -- | Not started | -- |
+| 37. SPEA2 strength pareto evolutionary algorithm | v2.5.0 | -- | Not started | -- |
+| 38. Indicator-based MOEAs — SMS-EMOA and IBEA | v2.5.0 | -- | Not started | -- |
+| 39. Multi-objective quality indicators | v2.5.0 | -- | Not started | -- |
 
 ### Phase 34: WASM support — fix time-based panics for wasm32-unknown-unknown targets (issue #236)
 
 **Goal:** Users can compile and run a standard `Ga` or `Nsga2Ga` cycle on `wasm32-unknown-unknown` without panics from `Instant::now()` or rayon thread-pool initialization, while native parallel/timed behavior is preserved unchanged.
 **Requirements**: N/A (issue-driven phase — see #236)
 **Depends on:** Phase 33
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 **Wave 1** *(disjoint files — run in parallel)*
@@ -235,4 +242,71 @@ Plans:
 - [x] 34-03-PLAN.md — cfg-gate Instant + rayon in src/engines/nsga2/mod.rs
 
 **Wave 2** *(blocked on Wave 1)*
-- [ ] 34-04-PLAN.md — wasm32 CI compile-check + host smoke test + phase verification gate
+- [x] 34-04-PLAN.md — wasm32 CI compile-check + host smoke test + phase verification gate
+
+### v2.5.0 — Advanced Multi-Objective Optimization (In Progress)
+
+**Milestone Goal:** Extend the multi-objective engine beyond NSGA-II with three new algorithms (NSGA-III, MOEA/D, SPEA2), two indicator-based methods (SMS-EMOA, IBEA), and a shared quality-indicator library. All as new independent modules following the existing `src/engines/nsga2/` pattern.
+
+- [ ] **Phase 35: NSGA-III for many-objective optimization** — Reference-point based NSGA-III (#203)
+- [ ] **Phase 36: MOEA/D — Decomposition-based multi-objective** — Weight-vector decomposition with Tchebycheff or PBI scalarisation (#204)
+- [ ] **Phase 37: SPEA2 — Strength Pareto Evolutionary Algorithm 2** — Archive-based strength Pareto selection (#205)
+- [ ] **Phase 38: Indicator-based MOEAs — SMS-EMOA and IBEA** — Hypervolume-based (SMS-EMOA) and indicator-based (IBEA) selection (#206)
+- [ ] **Phase 39: Multi-objective quality indicators** — Shared library: Hypervolume, GD, IGD, Spread (#207)
+
+---
+
+### Phase 35: NSGA-III for many-objective optimization
+
+**Goal:** Users can run NSGA-III on problems with 3+ objectives; reference points are auto-generated (Das-Dennis simplex lattice) or user-supplied, and the algorithm selects survivors via reference-point association rather than crowding distance
+**Requirements**: MOO-01
+**Issue**: #203
+**Depends on:** Phase 34
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 35 to break down)
+
+### Phase 36: MOEA/D — Decomposition-based multi-objective optimization
+
+**Goal:** Users can run MOEA/D with configurable weight vectors and either Tchebycheff or PBI scalarisation; each sub-problem maintains a neighbourhood of similar weight vectors and offspring compete only within that neighbourhood
+**Requirements**: MOO-02
+**Issue**: #204
+**Depends on:** Phase 35
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 36 to break down)
+
+### Phase 37: SPEA2 — Strength Pareto Evolutionary Algorithm 2
+
+**Goal:** Users can run SPEA2 with a configurable archive size; fitness is computed from raw strength + density (k-nearest-neighbour), and the archive is truncated using the Euclidean crowding criterion
+**Requirements**: MOO-03
+**Issue**: #205
+**Depends on:** Phase 36
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 37 to break down)
+
+### Phase 38: Indicator-based MOEAs — SMS-EMOA and IBEA
+
+**Goal:** Users can run SMS-EMOA (hypervolume contribution-based steady-state removal) and IBEA (additive epsilon-indicator fitness); both share the quality-indicator library from Phase 39 and follow the same engine pattern
+**Requirements**: MOO-04
+**Issue**: #206
+**Depends on:** Phase 39
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 38 to break down)
+
+### Phase 39: Multi-objective quality indicators — Hypervolume, GD, IGD, Spread
+
+**Goal:** A shared `src/engines/nsga2/indicators.rs` (or equivalent module) exposes Hypervolume, Generational Distance, Inverted Generational Distance, and Spread as pure functions usable by any multi-objective engine and callable from user code for post-run analysis
+**Requirements**: MOO-05
+**Issue**: #207
+**Depends on:** Phase 37
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 39 to break down)
