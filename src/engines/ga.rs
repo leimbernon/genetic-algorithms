@@ -247,6 +247,14 @@ where
         self.configuration.mutation_configuration.differential_f = Some(f);
         self
     }
+    fn with_cauchy_scale(mut self, scale: f64) -> Self {
+        self.configuration.mutation_configuration.cauchy_scale = Some(scale);
+        self
+    }
+    fn with_levy_alpha(mut self, alpha: f64) -> Self {
+        self.configuration.mutation_configuration.levy_alpha = Some(alpha);
+        self
+    }
 }
 
 impl<U> StoppingConfig for Ga<U>
@@ -1399,6 +1407,20 @@ where
                         *key,
                         f,
                     )?;
+                } else if configuration.mutation_configuration.method == crate::operations::Mutation::Cauchy {
+                    mutation::factory_with_params(
+                        configuration.mutation_configuration.method,
+                        &mut child_1,
+                        configuration.mutation_configuration.cauchy_scale,
+                        None,
+                    )?;
+                } else if configuration.mutation_configuration.method == crate::operations::Mutation::LevyFlight {
+                    mutation::factory_with_params(
+                        configuration.mutation_configuration.method,
+                        &mut child_1,
+                        None,
+                        configuration.mutation_configuration.levy_alpha,
+                    )?;
                 } else {
                     mutation::factory_with_params(
                         configuration.mutation_configuration.method,
@@ -1418,6 +1440,20 @@ where
                         chromosomes,
                         *value,
                         f,
+                    )?;
+                } else if configuration.mutation_configuration.method == crate::operations::Mutation::Cauchy {
+                    mutation::factory_with_params(
+                        configuration.mutation_configuration.method,
+                        &mut child_2,
+                        configuration.mutation_configuration.cauchy_scale,
+                        None,
+                    )?;
+                } else if configuration.mutation_configuration.method == crate::operations::Mutation::LevyFlight {
+                    mutation::factory_with_params(
+                        configuration.mutation_configuration.method,
+                        &mut child_2,
+                        None,
+                        configuration.mutation_configuration.levy_alpha,
                     )?;
                 } else {
                     mutation::factory_with_params(

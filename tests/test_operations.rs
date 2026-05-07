@@ -12,6 +12,7 @@ mod operations {
     mod test_crossover_uniform;
     mod test_mutation;
     mod test_mutation_bit_flip;
+    mod test_mutation_cauchy_levy_uniform;
     mod test_mutation_creep_gaussian;
     mod test_mutation_dynamic;
     mod test_mutation_insertion;
