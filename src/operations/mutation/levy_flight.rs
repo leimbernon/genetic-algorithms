@@ -82,7 +82,14 @@ where
     let v_normal: f64 = (-2.0 * bv1.ln()).sqrt() * bv2.cos();
 
     // Mantegna step, scaled by gene range width (Pitfall 3).
-    let levy_step: f64 = u_normal / v_normal.abs().powf(1.0 / alpha_clamped);
+    // Guard against v_abs == 0 (can occur when bv2.cos() == 0): skip perturbation
+    // rather than producing ±inf that would snap the gene to its boundary.
+    let v_abs = v_normal.abs().powf(1.0 / alpha_clamped);
+    let levy_step: f64 = if v_abs < f64::MIN_POSITIVE {
+        0.0 // degenerate sample; skip perturbation this call
+    } else {
+        u_normal / v_abs
+    };
     let noise: f64 = levy_step * (hi_f64 - lo_f64);
 
     let new_val_f64 = (current + noise).clamp(lo_f64, hi_f64);
