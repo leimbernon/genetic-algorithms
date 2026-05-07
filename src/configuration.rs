@@ -396,6 +396,10 @@ impl MutationConfig for GaConfiguration {
         self.mutation_configuration.differential_f = Some(f);
         self
     }
+    fn with_polynomial_eta(mut self, eta: f64) -> Self {
+        self.mutation_configuration.polynomial_eta = Some(eta);
+        self
+    }
     fn with_cauchy_scale(mut self, scale: f64) -> Self {
         // A scale of 0 or negative makes the perturbation a no-op or invalid.
         debug_assert!(scale > 0.0, "cauchy_scale must be positive; got {}", scale);

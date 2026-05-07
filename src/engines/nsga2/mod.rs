@@ -442,6 +442,14 @@ where
                             None,
                             mutation_config.levy_alpha,
                         )?;
+                    } else if mutation_config.method == crate::operations::Mutation::Polynomial {
+                        let eta = mutation_config.polynomial_eta.or(mutation_config.step);
+                        mutation::factory_with_params(
+                            mutation_config.method,
+                            child,
+                            eta,
+                            None,
+                        )?;
                     } else {
                         mutation::factory_with_params(
                             mutation_config.method,

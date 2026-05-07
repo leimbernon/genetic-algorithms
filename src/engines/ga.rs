@@ -247,6 +247,10 @@ where
         self.configuration.mutation_configuration.differential_f = Some(f);
         self
     }
+    fn with_polynomial_eta(mut self, eta: f64) -> Self {
+        self.configuration.mutation_configuration.polynomial_eta = Some(eta);
+        self
+    }
     fn with_cauchy_scale(mut self, scale: f64) -> Self {
         self.configuration.mutation_configuration.cauchy_scale = Some(scale);
         self
@@ -1421,6 +1425,17 @@ where
                         None,
                         configuration.mutation_configuration.levy_alpha,
                     )?;
+                } else if configuration.mutation_configuration.method == crate::operations::Mutation::Polynomial {
+                    // Use dedicated `polynomial_eta` field if set; fall back to `step` for
+                    // backward compatibility with callers that used `with_mutation_step` for eta.
+                    let eta = configuration.mutation_configuration.polynomial_eta
+                        .or(configuration.mutation_configuration.step);
+                    mutation::factory_with_params(
+                        configuration.mutation_configuration.method,
+                        &mut child_1,
+                        eta,
+                        None,
+                    )?;
                 } else {
                     mutation::factory_with_params(
                         configuration.mutation_configuration.method,
@@ -1454,6 +1469,15 @@ where
                         &mut child_2,
                         None,
                         configuration.mutation_configuration.levy_alpha,
+                    )?;
+                } else if configuration.mutation_configuration.method == crate::operations::Mutation::Polynomial {
+                    let eta = configuration.mutation_configuration.polynomial_eta
+                        .or(configuration.mutation_configuration.step);
+                    mutation::factory_with_params(
+                        configuration.mutation_configuration.method,
+                        &mut child_2,
+                        eta,
+                        None,
                     )?;
                 } else {
                     mutation::factory_with_params(

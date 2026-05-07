@@ -58,6 +58,10 @@ pub trait MutationConfig {
     /// Sets the F scale factor for Differential mutation (DE-style).
     /// Typical range: 0.4–1.0. Default is 0.5 when not set.
     fn with_differential_f(self, f: f64) -> Self;
+    /// Sets the distribution index (η_m) for Polynomial mutation.
+    /// Higher values produce smaller perturbations. Typical range: 20–100. Default is 20.0.
+    /// Only used when the mutation method is `Mutation::Polynomial`.
+    fn with_polynomial_eta(self, eta: f64) -> Self;
     /// Sets the scale parameter (γ) for Cauchy mutation. Default is 1.0.
     /// Only used when the mutation method is `Mutation::Cauchy`.
     fn with_cauchy_scale(self, scale: f64) -> Self;
