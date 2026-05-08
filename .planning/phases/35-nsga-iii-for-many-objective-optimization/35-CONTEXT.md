@@ -14,6 +14,7 @@ As part of this phase, the shared utilities currently in `src/engines/nsga2/` (`
 - `src/engines/multi_objective/` — extract non_dominated_sort.rs, pareto.rs from nsga2; expose as `pub mod multi_objective` in lib.rs; nsga2 keeps pub use re-exports
 - `src/engines/nsga3/` — Nsga3Ga<U> engine, Nsga3Configuration, Das-Dennis reference point generator
 - `Nsga3Observer<U>` sub-trait in `src/observe/observer/mod.rs` — mirrors Nsga2Observer pattern, NSGA-III algorithm-specific hooks only (on_pareto_front_assigned, on_non_dominated_sort_complete), no on_reference_association hook
+- `LogObserver` gains an `impl Nsga3Observer<U>` block in `src/observe/observer/log.rs` (default-no-op style, with debug-level messages on the `nsga3_events` target — mirrors how `LogObserver` already implements `Nsga2Observer`)
 - `tests/engines/nsga3/` — integration tests mirroring NSGA-II test structure
 - `examples/nsga3_dtlz2.rs` — runnable example for 3-objective DTLZ2
 
@@ -22,6 +23,7 @@ As part of this phase, the shared utilities currently in `src/engines/nsga2/` (`
 - Two-layer Das-Dennis reference points for very large M (can be added later)
 - Updating AllObserver<U> to include Nsga3Observer<U> — impacts existing implementors; defer to a follow-up phase
 - WASM-specific example for NSGA-III
+- `on_new_best` tracking on Nsga3Ga (deferred — see Deferred Ideas below; rationale: `Nsga3Observer` is intentionally decoupled from `GaObserver`, and the concept of "best" is ambiguous in many-objective settings)
 
 </domain>
 
@@ -38,7 +40,7 @@ As part of this phase, the shared utilities currently in `src/engines/nsga2/` (`
 
 - **D-04:** `Nsga3Configuration` exposes `with_reference_points_auto(p: usize)` — triggers Das-Dennis simplex lattice generation with subdivision count `p`. With `M` objectives, generates `C(p+M-1, M-1)` uniformly spaced points on the unit hyperplane.
 - **D-05:** `Nsga3Configuration` also exposes `with_reference_points(Vec<Vec<f64>>)` for user-supplied custom reference points. Library validates at `validate()` time that each inner Vec has length == `num_objectives`.
-- **D-06:** If neither `with_reference_points_auto` nor `with_reference_points` is called, `validate()` returns `GaError::ConfigurationError` with a descriptive message. Fail-fast before any computation starts — consistent with how Nsga2Configuration validates `num_objectives`.
+- **D-06:** If neither `with_reference_points_auto` nor `with_reference_points` is called, `validate()` returns `GaError::InvalidNsga3Configuration` with a descriptive message. Fail-fast before any computation starts — consistent with how Nsga2Configuration validates `num_objectives` via `GaError::InvalidNsga2Configuration`.
 - **D-07:** Auto and custom are mutually exclusive. The last builder call wins (same pattern as other config fields).
 
 ### Observer Pattern
@@ -49,16 +51,15 @@ As part of this phase, the shared utilities currently in `src/engines/nsga2/` (`
   - All methods have default no-op implementations.
 - **D-09:** `Nsga3Ga<U>` stores `Option<Arc<dyn Nsga3Observer<U> + Send + Sync>>` — zero overhead when `None`. Same `with_observer()` + `notify()` pattern as NSGA-II.
 - **D-10:** `AllObserver<U>` is NOT updated in this phase to include `Nsga3Observer<U>` — avoids a breaking change on existing `AllObserver` implementors. Deferred.
+- **D-14:** `LogObserver` (`src/observe/observer/log.rs`) MUST implement `Nsga3Observer<U>` so users can attach the same zero-sized observer to `Nsga3Ga` that they already attach to `Ga`/`IslandGa`/`Nsga2Ga`. Implementation mirrors the existing `impl<U: ChromosomeT> Nsga2Observer<U> for LogObserver` block — debug-level log messages on a `"nsga3_events"` target, default no-op behaviour preserved by writing only debug logs.
 
 ### Return Type / Output API
 
 - **D-11:** `Nsga3Ga<U>::run()` returns `Result<ParetoFront<U>, GaError>` — identical signature to `Nsga2Ga<U>::run()`. `ParetoFront<U>` is a type alias from `multi_objective`, re-exported by nsga2 and nsga3.
-- **D-12:** `on_new_best` (from `GaObserver<U>`) tracks the individual in the first Pareto front with the best value on objective 0. Same semantics as NSGA-II — predictable, consistent across engines.
-- **D-13:** `Nsga3Ga<U>` does NOT carry `GaObserver<U>` — it carries `Nsga3Observer<U>` (which covers the NSGA-III lifecycle hooks). Basic lifecycle hooks (on_start, on_finish, etc.) are exposed through `Nsga3Observer<U>` or through a separate `GaObserver<U>` field — **Claude's discretion:** pick whichever pattern requires the least duplication and is closest to how Nsga2Ga handles this.
+- **D-13:** `Nsga3Ga<U>` does NOT carry `GaObserver<U>` — it carries `Nsga3Observer<U>` (which covers the NSGA-III lifecycle hooks). Basic lifecycle hooks (on_start, on_finish, etc.) are intentionally NOT exposed in Phase 35 — mirrors Nsga2Ga which also only carries `Nsga2Observer`.
 
 ### Claude's Discretion
 
-- Whether `Nsga3Ga<U>` holds a single observer field (`Nsga3Observer<U>`) or separate `GaObserver<U>` + `Nsga3Observer<U>` fields — choose the pattern that matches Nsga2Ga most closely.
 - Das-Dennis generator implementation details (recursive enumeration vs iterative, internal function name).
 - Reference point normalization: store raw points as-is or normalize to unit hyperplane on construction.
 - WASM cfg-gating: apply same `#[cfg(not(target_arch = "wasm32"))]` / `#[cfg(target_arch = "wasm32")]` pattern to all `Instant::now()` and `par_iter()` call sites in Nsga3Ga (mandatory — CLAUDE.md constraint).
@@ -80,6 +81,7 @@ As part of this phase, the shared utilities currently in `src/engines/nsga2/` (`
 ### Observer Infrastructure
 - `src/observe/observer/mod.rs` lines 150–167 — `Nsga2Observer<U>` trait definition: hook signatures, default no-op pattern, Send+Sync supertraits. **Nsga3Observer<U> goes in the same file, mirrors this exactly.**
 - `src/observe/observer/mod.rs` lines 177–187 — `AllObserver<U>` blanket impl — DO NOT modify in Phase 35 (deferred)
+- `src/observe/observer/log.rs` lines 190–206 — `impl<U: ChromosomeT> Nsga2Observer<U> for LogObserver` block — exact pattern to mirror for `impl Nsga3Observer<U> for LogObserver` (per D-14)
 
 ### Module Placement Pattern
 - `src/lib.rs` lines 109–110 — `#[path = "engines/nsga2/mod.rs"] pub mod nsga2;` pattern — replicate for `nsga3` and `multi_objective`
@@ -110,6 +112,7 @@ As part of this phase, the shared utilities currently in `src/engines/nsga2/` (`
 - `src/engines/nsga2/non_dominated_sort.rs::non_dominated_sort_with_directions()` — NSGA-III's first step is identical: sort all individuals into fronts by non-dominance. Will be in multi_objective after extraction.
 - `src/engines/nsga2/pareto.rs::ParetoIndividual<U>` — NSGA-III wraps each chromosome the same way: objectives vector, constraint violation, rank. Will be in multi_objective.
 - `src/observe/observer/mod.rs` — `Nsga3Observer<U>` gets added here, below the existing `Nsga2Observer<U>` definition.
+- `src/observe/observer/log.rs` — `impl Nsga3Observer<U> for LogObserver` gets added here, below the existing `impl Nsga2Observer<U> for LogObserver` block (per D-14).
 - `crate::rng::make_rng()` — Das-Dennis generator doesn't need randomness, but nsga3's crossover/mutation step does.
 - `src/engines/nsga2/mod.rs::ObjectiveFn<G>` type alias — move to `multi_objective` as shared type alias; both engines use it.
 
@@ -124,6 +127,7 @@ As part of this phase, the shared utilities currently in `src/engines/nsga2/` (`
 - `src/lib.rs` — add `pub mod multi_objective` and `pub mod nsga3` re-exports
 - `src/engines/nsga2/mod.rs` — add `pub use crate::multi_objective::pareto::*` and `pub use crate::multi_objective::non_dominated_sort::*`
 - `src/observe/observer/mod.rs` — add `Nsga3Observer<U>` trait definition
+- `src/observe/observer/log.rs` — add `impl<U: ChromosomeT> Nsga3Observer<U> for LogObserver` block (per D-14)
 - `src/lib.rs::observer` re-export — add `Nsga3Observer` to the public observer exports
 
 </code_context>
@@ -144,6 +148,7 @@ As part of this phase, the shared utilities currently in `src/engines/nsga2/` (`
 - Constraint handling for NSGA-III — Nsga2Ga already has constraint_fns; NSGA-III can add it in a follow-up
 - Updating `AllObserver<U>` to include `Nsga3Observer<U>` — deferred to avoid breaking existing AllObserver implementors
 - Adaptive normalization (online ideal/nadir point estimation) — advanced feature, Phase 35 uses batch normalization per generation
+- **`on_new_best` tracking on `Nsga3Ga`** (formerly D-12) — deferred to a future phase. Rationale: (1) `Nsga3Observer` is intentionally decoupled from `GaObserver`/`AllObserver` per D-10, so adding an `on_new_best` hook would require either widening `Nsga3Observer` (which risks duplicating the GaObserver surface) or attaching a separate `GaObserver<U>` field to `Nsga3Ga` (which contradicts D-13). (2) The notion of "best" is ambiguous in many-objective settings — Deb & Jain 2014 do not define a single best individual; "best obj-0 in front 0" is a stand-in that may mislead users. A future phase can introduce a richer hook (e.g., hypervolume-based or reference-point-weighted "best") and decide where it lives. Until then, users who need per-generation summary data can use `on_pareto_front_assigned` and inspect the returned `ParetoFront<U>` after `run()`.
 
 </deferred>
 
@@ -151,3 +156,4 @@ As part of this phase, the shared utilities currently in `src/engines/nsga2/` (`
 
 *Phase: 35-nsga-iii-for-many-objective-optimization*
 *Context gathered: 2026-05-07*
+*Revised: 2026-05-08 — D-12 deferred (on_new_best tracking); D-06 reworded to use GaError::InvalidNsga3Configuration (mirrors InvalidNsga2Configuration); added D-14 (LogObserver Nsga3Observer impl).*

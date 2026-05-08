@@ -261,10 +261,17 @@ Plans:
 **Requirements**: MOO-01
 **Issue**: #203
 **Depends on:** Phase 34
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 35 to break down)
+**Wave 1**
+- [ ] 35-01-PLAN.md — Extract shared multi_objective module from nsga2 (MOO-01)
+
+**Wave 2** *(blocked on Wave 1)*
+- [ ] 35-02-PLAN.md — NSGA-III scaffolding: error variant, Nsga3Observer trait, Nsga3Configuration, Das-Dennis generator, stub Nsga3Ga + Wave 0 tests (MOO-01)
+
+**Wave 3** *(blocked on Waves 1-2)*
+- [ ] 35-03-PLAN.md — Implement Nsga3Ga::run(): reference-point environmental selection, run() integration tests, DTLZ2 example, phase verification gate (MOO-01)
 
 ### Phase 36: MOEA/D — Decomposition-based multi-objective optimization
 
