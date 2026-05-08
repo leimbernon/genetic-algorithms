@@ -36,10 +36,10 @@ use crate::configuration::GaConfiguration;
 use crate::error::GaError;
 use crate::nsga2::configuration::{Nsga2Configuration, ObjectiveDirection};
 use crate::nsga2::crowding_distance::assign_crowding_distance;
-use crate::nsga2::non_dominated_sort::{
+use crate::multi_objective::non_dominated_sort::{
     assign_ranks, non_dominated_sort_constrained, non_dominated_sort_with_directions,
 };
-use crate::nsga2::pareto::{ParetoFront, ParetoIndividual};
+use crate::multi_objective::pareto::{ParetoFront, ParetoIndividual};
 use crate::observer::Nsga2Observer;
 use crate::operations::mutation;
 use crate::traits::{ChromosomeT, InitializationFn};
@@ -49,8 +49,8 @@ use rayon::prelude::*;
 use std::sync::Arc;
 use std::time::Instant;
 
-/// Type alias for a single objective function.
-pub type ObjectiveFn<G> = dyn Fn(&[G]) -> f64 + Send + Sync;
+/// Type alias for a single objective function (re-exported from the shared module).
+pub use crate::multi_objective::ObjectiveFn;
 
 /// NSGA-II multi-objective genetic algorithm orchestrator.
 ///
