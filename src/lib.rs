@@ -106,6 +106,8 @@ pub mod scatter;
 #[path = "engines/island/mod.rs"]
 pub mod island;
 pub mod niching;
+#[path = "engines/multi_objective/mod.rs"]
+pub mod multi_objective;
 #[path = "engines/nsga2/mod.rs"]
 pub mod nsga2;
 
