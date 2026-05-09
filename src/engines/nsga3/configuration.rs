@@ -93,8 +93,8 @@ impl Nsga3Configuration {
     /// Configures auto-generated reference points via the Das-Dennis simplex
     /// lattice with subdivision count `p`. Produces `C(p + M - 1, M - 1)` points.
     ///
-    /// Calling this clears any previously-set custom reference points
-    /// (last-call-wins semantics — see CONTEXT.md D-07).
+    /// Calling this clears any previously-set custom reference points.
+    /// The last reference-point builder call wins when both are chained.
     pub fn with_reference_points_auto(mut self, p: usize) -> Self {
         self.reference_points_auto_p = Some(p);
         self.reference_points_custom = None;
@@ -104,8 +104,8 @@ impl Nsga3Configuration {
     /// Configures user-supplied reference points. Each inner `Vec<f64>` must
     /// have length equal to `num_objectives` (validated by the engine).
     ///
-    /// Calling this clears any previously-set auto subdivision count
-    /// (last-call-wins semantics — see CONTEXT.md D-07).
+    /// Calling this clears any previously-set auto subdivision count.
+    /// The last reference-point builder call wins when both are chained.
     pub fn with_reference_points(mut self, points: Vec<Vec<f64>>) -> Self {
         self.reference_points_custom = Some(points);
         self.reference_points_auto_p = None;

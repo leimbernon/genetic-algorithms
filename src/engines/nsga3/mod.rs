@@ -672,7 +672,7 @@ fn nsga3_environmental_selection<U: ChromosomeT>(
 /// Translates by the per-objective ideal (min) and scales by intercepts derived
 /// from the M extreme points (ASF minimization). Falls back to the per-objective
 /// nadir when the hyperplane is degenerate. Intercepts are clamped to `f64::EPSILON`
-/// to prevent division by zero (RESEARCH.md Pitfall 1).
+/// to prevent division by zero when all individuals collapse onto the ideal point.
 ///
 /// For Maximize objectives, signs are flipped before normalization so all dimensions
 /// behave as minimization (smaller is better in the normalized frame).
