@@ -35,6 +35,8 @@ pub enum GaError {
     InvalidNsga2Configuration(String),
     /// An NSGA-III configuration parameter is invalid.
     InvalidNsga3Configuration(String),
+    /// A MOEA/D configuration parameter is invalid.
+    InvalidMoeaDConfiguration(String),
     /// A migration operation between islands failed.
     MigrationError(String),
     /// A checkpoint save or load operation failed.
@@ -61,6 +63,9 @@ impl fmt::Display for GaError {
             }
             GaError::InvalidNsga3Configuration(msg) => {
                 write!(f, "Invalid NSGA-III configuration: {}", msg)
+            }
+            GaError::InvalidMoeaDConfiguration(msg) => {
+                write!(f, "Invalid MOEA/D configuration: {}", msg)
             }
             GaError::MigrationError(msg) => write!(f, "Migration error: {}", msg),
             GaError::CheckpointError(msg) => write!(f, "Checkpoint error: {}", msg),

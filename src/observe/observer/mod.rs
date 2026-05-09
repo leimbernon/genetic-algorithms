@@ -190,6 +190,30 @@ pub trait Nsga3Observer<U: ChromosomeT>: Send + Sync {
     fn on_non_dominated_sort_complete(&self, _generation: usize, _duration_ms: f64) {}
 }
 
+/// Observer for [`MoeaDGa<U>`](crate::moead::MoeaDGa) engine-specific events.
+///
+/// All methods have default no-op implementations. The `Send + Sync`
+/// supertraits are required for safe sharing across rayon threads via `Arc`.
+///
+/// # Note: not in `AllObserver`
+///
+/// `AllObserver<U>` does NOT include `MoeaDObserver<U>` in Phase 36 — adding it
+/// would be a breaking change for existing `AllObserver` implementors. Use
+/// [`MoeaDGa::with_observer`](crate::moead::MoeaDGa::with_observer) to attach
+/// a `MoeaDObserver` independently.
+pub trait MoeaDObserver<U: ChromosomeT>: Send + Sync {
+    /// Called after Pareto fronts are assigned for the current generation.
+    fn on_pareto_front_assigned(
+        &self,
+        _generation: usize,
+        _front_count: usize,
+        _population_size: usize,
+    ) {
+    }
+    /// Called after non-dominated sorting completes for the current generation.
+    fn on_non_dominated_sort_complete(&self, _generation: usize, _duration_ms: f64) {}
+}
+
 /// Combined observer bound for use with [`CompositeObserver`].
 ///
 /// Any type that implements [`GaObserver<U>`], [`IslandGaObserver<U>`],

@@ -24,7 +24,9 @@
 //! using only one.
 
 use crate::ga::TerminationCause;
-use crate::observer::{ExtensionEvent, GaObserver, IslandGaObserver, Nsga2Observer, Nsga3Observer};
+use crate::observer::{
+    ExtensionEvent, GaObserver, IslandGaObserver, MoeaDObserver, Nsga2Observer, Nsga3Observer,
+};
 use crate::stats::GenerationStats;
 use crate::traits::ChromosomeT;
 use std::time::Duration;
@@ -216,5 +218,23 @@ impl<U: ChromosomeT> Nsga3Observer<U> for LogObserver {
     }
     fn on_non_dominated_sort_complete(&self, generation: usize, duration_ms: f64) {
         log::debug!(target: "nsga3_events", "Non-dominated sort complete at generation {} ({:.2}ms)", generation, duration_ms);
+    }
+}
+
+impl<U: ChromosomeT> MoeaDObserver<U> for LogObserver {
+    fn on_pareto_front_assigned(
+        &self,
+        generation: usize,
+        front_count: usize,
+        population_size: usize,
+    ) {
+        log::debug!(target: "moead_events",
+            "Generation {} complete, population size = {}, fronts = {}",
+            generation, population_size, front_count);
+    }
+    fn on_non_dominated_sort_complete(&self, generation: usize, duration_ms: f64) {
+        log::debug!(target: "moead_events",
+            "Non-dominated sort complete at generation {} ({:.2}ms)",
+            generation, duration_ms);
     }
 }

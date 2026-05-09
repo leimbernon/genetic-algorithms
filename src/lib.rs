@@ -113,6 +113,9 @@ pub mod nsga2;
 #[path = "engines/nsga3/mod.rs"]
 pub mod nsga3;
 
+#[path = "engines/moead/mod.rs"]
+pub mod moead;
+
 pub use ga::TerminationCause;
 pub use observer::AllObserver;
 pub use observer::CompositeObserver;
@@ -120,6 +123,7 @@ pub use observer::ExtensionEvent;
 pub use observer::GaObserver;
 pub use observer::IslandGaObserver;
 pub use observer::LogObserver;
+pub use observer::MoeaDObserver;
 #[cfg(feature = "observer-metrics")]
 pub use observer::MetricsObserver;
 pub use observer::NoopObserver;
