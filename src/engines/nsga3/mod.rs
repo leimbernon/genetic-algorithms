@@ -146,6 +146,14 @@ where
                 self.nsga3_config.num_objectives
             )));
         }
+        // Das-Dennis subdivision count must be >= 1 to avoid a degenerate all-zero point.
+        if let Some(p) = self.nsga3_config.reference_points_auto_p() {
+            if p == 0 {
+                return Err(GaError::InvalidNsga3Configuration(
+                    "Das-Dennis subdivision count p must be >= 1".to_string(),
+                ));
+            }
+        }
         // Reference points must be configured (auto or custom).
         let ref_points = self.nsga3_config.effective_reference_points();
         match ref_points {

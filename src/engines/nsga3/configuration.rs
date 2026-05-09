@@ -128,6 +128,13 @@ impl Nsga3Configuration {
         }
     }
 
+    /// Returns the Das-Dennis subdivision count `p` if auto reference points are configured.
+    ///
+    /// Used by the engine's `validate()` to reject `p == 0` before materialising points.
+    pub(crate) fn reference_points_auto_p(&self) -> Option<usize> {
+        self.reference_points_auto_p
+    }
+
     /// Returns the effective directions, defaulting to `Minimize` for each
     /// objective when `objective_directions` is empty.
     pub fn effective_directions(&self) -> Vec<ObjectiveDirection> {
