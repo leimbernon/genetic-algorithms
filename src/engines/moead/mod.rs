@@ -16,11 +16,18 @@ pub mod configuration;
 
 use crate::configuration::GaConfiguration;
 use crate::error::GaError;
-use crate::moead::configuration::MoeaDConfiguration;
+use crate::moead::configuration::{MoeaDConfiguration, ScalarizationFn};
+use crate::multi_objective::non_dominated_sort::{assign_ranks, non_dominated_sort_with_directions};
+use crate::multi_objective::pareto::{ParetoFront, ParetoIndividual};
 use crate::multi_objective::ObjectiveFn;
 use crate::observer::MoeaDObserver;
+use crate::operations::{crossover, mutation};
 use crate::traits::{ChromosomeT, InitializationFn};
+use rand::Rng;
+#[cfg(not(target_arch = "wasm32"))]
+use rayon::prelude::*;
 use std::sync::Arc;
+use std::time::Instant;
 
 /// MOEA/D decomposition-based multi-objective genetic algorithm orchestrator.
 ///
@@ -244,5 +251,366 @@ where
             }
         }
         Ok(vecs)
+    }
+}
+
+impl<U> MoeaDGa<U>
+where
+    U: ChromosomeT + mutation::ValueMutable,
+{
+    /// Runs the MOEA/D algorithm and returns the post-hoc Pareto front.
+    ///
+    /// Implements Zhang & Li 2007 Algorithm 1:
+    /// 1. Validate and materialise weight vectors (single Das-Dennis call).
+    /// 2. Precompute T nearest neighbours per sub-problem in weight-vector space.
+    /// 3. Initialize population (one chromosome per sub-problem) and evaluate objectives.
+    /// 4. Initialise ideal point z* from the starting population.
+    /// 5. For each generation, iterate all N sub-problems. Per sub-problem i:
+    ///    a. Sample two parents from neighbours[i] uniformly at random.
+    ///    b. Apply crossover + mutation to produce one offspring chromosome.
+    ///    c. Evaluate offspring objectives.
+    ///    d. Update z* per component: z*[k] = min(z*[k], f_k(offspring)).
+    ///    e. Walk neighbours[i] in order; for each j, if g(offspring, w_j, z*) <
+    ///    g(pop[j].objectives, w_j, z*), replace population[j] with the offspring;
+    /// 6. Post-hoc non-dominated sort over the final population; return rank-0 individuals as ParetoFront.
+    ///
+    /// # Errors
+    ///
+    /// - `GaError::InvalidMoeaDConfiguration` when configuration is incomplete.
+    /// - `GaError::MutationError` when `Mutation::Differential` is configured (incompatible with MOEA/D's
+    ///   per-sub-problem single-offspring loop, which lacks the population context Differential requires).
+    /// - `GaError::CrossoverError` / `GaError::InitializationError` on operator failures.
+    pub fn run(&mut self) -> Result<ParetoFront<U>, GaError> {
+        // Single materialisation of weight vectors (avoids the double-Das-Dennis bug from NSGA-III WR-02).
+        let weight_vectors = self.validate_and_get_weight_vectors()?;
+        crate::rng::set_seed(self.ga_config.rng_seed);
+
+        let pop_size = self.moead_config.population_size;
+        let max_gens = self.moead_config.max_generations;
+        let directions = self.moead_config.effective_directions();
+        let scalarization = self.moead_config.scalarization;
+        let num_objectives = self.moead_config.num_objectives;
+        let max_replacements = self.moead_config.max_neighbor_replacements;
+
+        // T capped at the population size to avoid out-of-bounds neighbour indices when
+        // user supplies T > population_size (e.g., default T=20 with pop_size=15 in tests).
+        let t_neigh = self.moead_config.neighborhood_size.min(weight_vectors.len()).max(1);
+
+        // Step 2: precompute neighbourhoods.
+        let neighbourhoods = precompute_neighbourhoods(&weight_vectors, t_neigh);
+
+        // Step 3: initialise population (one individual per sub-problem; pop_size aligned with N).
+        let mut population = self.initialize_population()?;
+
+        // Step 4: initialise ideal point z* across all initial individuals.
+        let mut ideal_point = vec![f64::INFINITY; num_objectives];
+        for ind in &population {
+            for (k, &f) in ind.objectives.iter().enumerate() {
+                if f < ideal_point[k] {
+                    ideal_point[k] = f;
+                }
+            }
+        }
+        // If any component is still INFINITY (empty population — defensive), fall back to 0.
+        for v in ideal_point.iter_mut() {
+            if !v.is_finite() {
+                *v = 0.0;
+            }
+        }
+
+        let n_subproblems = population.len();
+
+        // Step 5: generation loop.
+        for gen in 0..max_gens {
+            let t_sort: Option<Instant> = if self.observer.is_some() {
+                #[cfg(not(target_arch = "wasm32"))]
+                {
+                    Some(Instant::now())
+                }
+                #[cfg(target_arch = "wasm32")]
+                {
+                    None
+                }
+            } else {
+                None
+            };
+
+            // Sub-problem update loop.
+            let mut rng = crate::rng::make_rng();
+            for i in 0..n_subproblems {
+                // 5a: sample two parents from neighbours[i].
+                let neigh = &neighbourhoods[i];
+                let parent_a_idx = neigh[rng.random_range(0..neigh.len())];
+                let parent_b_idx = neigh[rng.random_range(0..neigh.len())];
+
+                // 5b: produce one offspring via crossover + mutation.
+                let offspring_chrom = self.create_offspring_for_subproblem(
+                    &population[parent_a_idx].chromosome,
+                    &population[parent_b_idx].chromosome,
+                    &mut rng,
+                )?;
+
+                // 5c: evaluate offspring objectives.
+                let offspring_objectives: Vec<f64> = self
+                    .objective_fns
+                    .iter()
+                    .map(|f| f(offspring_chrom.dna()))
+                    .collect();
+
+                // 5d: update ideal point z* incrementally per component.
+                for (k, &f) in offspring_objectives.iter().enumerate() {
+                    if f < ideal_point[k] {
+                        ideal_point[k] = f;
+                    }
+                }
+
+                // 5e: neighbourhood replacement, capped at max_replacements.
+                let mut replacement_count = 0usize;
+                for &j in neigh {
+                    if replacement_count >= max_replacements {
+                        break;
+                    }
+                    let g_offspring = scalarize(
+                        &offspring_objectives,
+                        &weight_vectors[i],
+                        &ideal_point,
+                        scalarization,
+                    );
+                    let g_current = scalarize(
+                        &population[j].objectives,
+                        &weight_vectors[j],
+                        &ideal_point,
+                        scalarization,
+                    );
+                    if g_offspring < g_current {
+                        population[j] = ParetoIndividual::new(
+                            offspring_chrom.clone(),
+                            offspring_objectives.clone(),
+                        );
+                        replacement_count += 1;
+                    }
+                }
+            }
+
+            // Per-generation observer hooks: derive front_count from current population's ranks.
+            // Compute fronts (used both for observer front_count and for stamping ranks).
+            let obj_slices: Vec<&[f64]> = population.iter().map(|ind| ind.objectives.as_slice()).collect();
+            let fronts = non_dominated_sort_with_directions(&obj_slices, &directions);
+            let mut ranks = vec![0usize; population.len()];
+            assign_ranks(&mut ranks, &fronts);
+            for (i, &r) in ranks.iter().enumerate() {
+                population[i].rank = r;
+            }
+            let front_count = fronts.len();
+
+            if let Some(start) = t_sort {
+                self.notify(|obs| {
+                    obs.on_non_dominated_sort_complete(
+                        gen,
+                        start.elapsed().as_secs_f64() * 1000.0,
+                    )
+                });
+            }
+            self.notify(|obs| {
+                obs.on_pareto_front_assigned(gen, front_count, population.len())
+            });
+
+            // Suppress pop_size dead-store warning when pop_size differs from n_subproblems.
+            let _ = pop_size;
+        }
+
+        let front_individuals: Vec<ParetoIndividual<U>> =
+            population.into_iter().filter(|ind| ind.rank == 0).collect();
+        Ok(ParetoFront::new(front_individuals))
+    }
+
+    /// Initializes the population with random chromosomes and evaluates objectives in parallel.
+    fn initialize_population(&self) -> Result<Vec<ParetoIndividual<U>>, GaError> {
+        let init_fn = self.initialization_fn.as_ref().ok_or_else(|| {
+            GaError::InitializationError("No initialization function set".to_string())
+        })?;
+
+        let pop_size = self.moead_config.population_size;
+        let genes_per_chrom = self.ga_config.limit_configuration.genes_per_chromosome;
+        let alleles_can_repeat = self.ga_config.limit_configuration.alleles_can_be_repeated;
+
+        let alleles = if self.alleles.is_empty() {
+            None
+        } else {
+            Some(self.alleles.as_slice())
+        };
+
+        let chromosomes: Vec<U> = crate::traits::initialize_chromosomes(
+            pop_size,
+            genes_per_chrom,
+            alleles,
+            Some(alleles_can_repeat),
+            init_fn,
+            None,
+            0,
+        );
+
+        let objective_fns = &self.objective_fns;
+        #[cfg(not(target_arch = "wasm32"))]
+        let population: Vec<ParetoIndividual<U>> = chromosomes
+            .into_par_iter()
+            .map(|chrom| {
+                let objectives: Vec<f64> =
+                    objective_fns.iter().map(|f| f(chrom.dna())).collect();
+                ParetoIndividual::new(chrom, objectives)
+            })
+            .collect();
+        #[cfg(target_arch = "wasm32")]
+        let population: Vec<ParetoIndividual<U>> = chromosomes
+            .into_iter()
+            .map(|chrom| {
+                let objectives: Vec<f64> =
+                    objective_fns.iter().map(|f| f(chrom.dna())).collect();
+                ParetoIndividual::new(chrom, objectives)
+            })
+            .collect();
+
+        Ok(population)
+    }
+
+    /// Produces one offspring chromosome from two parents via crossover + mutation.
+    ///
+    /// Used only inside the MOEA/D sub-problem update loop. Differs from the
+    /// NSGA-III batch `create_offspring()` because MOEA/D needs exactly one
+    /// offspring per sub-problem per generation, not pop_size offspring per
+    /// generation.
+    fn create_offspring_for_subproblem(
+        &self,
+        parent_a: &U,
+        parent_b: &U,
+        rng: &mut impl Rng,
+    ) -> Result<U, GaError> {
+        let crossover_config = self.ga_config.crossover_configuration;
+        let mutation_config = self.ga_config.mutation_configuration;
+        let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
+        let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
+
+        let p: f64 = rng.random();
+        let mut children = if p <= crossover_prob {
+            crossover::factory(parent_a, parent_b, crossover_config)?
+        } else {
+            vec![parent_a.clone(), parent_b.clone()]
+        };
+
+        // Pick a single offspring from the children vec (use first; defensive empty handling).
+        let mut child = children
+            .pop()
+            .unwrap_or_else(|| parent_a.clone());
+        // Drop the rest deterministically (no use for the second child in MOEA/D).
+        drop(children);
+
+        // Mutation dispatch — mirrors NSGA-III's per-method parameter routing exactly.
+        let mp: f64 = rng.random();
+        if mp <= mut_prob {
+            if mutation_config.method == crate::operations::Mutation::Differential {
+                return Err(GaError::MutationError(
+                    "Differential mutation is not supported in MOEA/D; \
+                     use Cauchy, LevyFlight, Polynomial, or a standard mutation method instead."
+                        .to_string(),
+                ));
+            } else if mutation_config.method == crate::operations::Mutation::Cauchy {
+                mutation::factory_with_params(
+                    mutation_config.method,
+                    &mut child,
+                    mutation_config.cauchy_scale,
+                    None,
+                )?;
+            } else if mutation_config.method == crate::operations::Mutation::LevyFlight {
+                mutation::factory_with_params(
+                    mutation_config.method,
+                    &mut child,
+                    None,
+                    mutation_config.levy_alpha,
+                )?;
+            } else if mutation_config.method == crate::operations::Mutation::Polynomial {
+                let eta = mutation_config.polynomial_eta.or(mutation_config.step);
+                mutation::factory_with_params(
+                    mutation_config.method,
+                    &mut child,
+                    eta,
+                    None,
+                )?;
+            } else {
+                mutation::factory_with_params(
+                    mutation_config.method,
+                    &mut child,
+                    mutation_config.step,
+                    mutation_config.sigma,
+                )?;
+            }
+        }
+
+        Ok(child)
+    }
+}
+
+/// Precomputes T nearest neighbours per sub-problem using Euclidean distance in weight-vector space.
+///
+/// `t` is the requested neighbourhood size; capped internally at `weight_vectors.len()`.
+/// Each result vector starts with `i` itself (distance 0.0) and contains the t closest indices.
+fn precompute_neighbourhoods(weight_vectors: &[Vec<f64>], t: usize) -> Vec<Vec<usize>> {
+    let n = weight_vectors.len();
+    let t = t.min(n).max(1);
+    let mut neighbourhoods: Vec<Vec<usize>> = Vec::with_capacity(n);
+    for i in 0..n {
+        let mut dists: Vec<(usize, f64)> = (0..n)
+            .map(|j| {
+                let d_sq: f64 = weight_vectors[i]
+                    .iter()
+                    .zip(weight_vectors[j].iter())
+                    .map(|(a, b)| (a - b).powi(2))
+                    .sum();
+                (j, d_sq.sqrt())
+            })
+            .collect();
+        dists.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
+        neighbourhoods.push(dists.into_iter().take(t).map(|(j, _)| j).collect());
+    }
+    neighbourhoods
+}
+
+/// Dispatches to Tchebycheff or PBI scalarization. See module docs for formulas.
+fn scalarize(
+    objectives: &[f64],
+    weights: &[f64],
+    ideal: &[f64],
+    scalarization: ScalarizationFn,
+) -> f64 {
+    match scalarization {
+        ScalarizationFn::Tchebycheff => objectives
+            .iter()
+            .zip(weights.iter())
+            .zip(ideal.iter())
+            .map(|((f_i, w_i), z_i)| w_i * (f_i - z_i).abs())
+            .fold(f64::NEG_INFINITY, f64::max),
+        ScalarizationFn::Pbi { theta } => {
+            // d1 = signed projection of (f - z*) onto the unit weight direction.
+            // d2 = perpendicular distance from (f - z*) to the line spanned by w.
+            let w_norm_sq: f64 = weights.iter().map(|w| w * w).sum::<f64>().max(f64::EPSILON);
+            let w_norm = w_norm_sq.sqrt();
+            let d1: f64 = objectives
+                .iter()
+                .zip(ideal.iter())
+                .zip(weights.iter())
+                .map(|((f_i, z_i), w_i)| (f_i - z_i) * w_i)
+                .sum::<f64>()
+                / w_norm;
+            let d2_sq: f64 = objectives
+                .iter()
+                .zip(ideal.iter())
+                .zip(weights.iter())
+                .map(|((f_i, z_i), w_i)| {
+                    let diff = f_i - z_i;
+                    let proj = d1 * w_i / w_norm;
+                    (diff - proj).powi(2)
+                })
+                .sum();
+            d1.abs() + theta * d2_sq.sqrt()
+        }
     }
 }
