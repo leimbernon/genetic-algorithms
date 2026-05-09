@@ -182,6 +182,78 @@ where
         }
         Ok(())
     }
+
+    /// Validates configuration and returns the materialised reference points.
+    ///
+    /// Combines `validate()` and `effective_reference_points()` into a single
+    /// call so `run()` does not invoke the (potentially expensive) Das-Dennis
+    /// generator twice.
+    fn validate_and_get_ref_points(&self) -> Result<Vec<Vec<f64>>, GaError> {
+        // Run all checks up to (but not including) the reference-point block.
+        if self.nsga3_config.num_objectives == 0 {
+            return Err(GaError::InvalidNsga3Configuration(
+                "num_objectives must be > 0".to_string(),
+            ));
+        }
+        if self.nsga3_config.population_size < 2 {
+            return Err(GaError::InvalidNsga3Configuration(
+                "population_size must be >= 2".to_string(),
+            ));
+        }
+        if self.initialization_fn.is_none() {
+            return Err(GaError::InvalidNsga3Configuration(
+                "initialization_fn is required".to_string(),
+            ));
+        }
+        if self.objective_fns.len() != self.nsga3_config.num_objectives {
+            return Err(GaError::InvalidNsga3Configuration(format!(
+                "Expected {} objective functions, got {}",
+                self.nsga3_config.num_objectives,
+                self.objective_fns.len()
+            )));
+        }
+        if !self.nsga3_config.objective_directions.is_empty()
+            && self.nsga3_config.objective_directions.len() != self.nsga3_config.num_objectives
+        {
+            return Err(GaError::InvalidNsga3Configuration(format!(
+                "objective_directions length ({}) must match num_objectives ({})",
+                self.nsga3_config.objective_directions.len(),
+                self.nsga3_config.num_objectives
+            )));
+        }
+        if let Some(p) = self.nsga3_config.reference_points_auto_p() {
+            if p == 0 {
+                return Err(GaError::InvalidNsga3Configuration(
+                    "Das-Dennis subdivision count p must be >= 1".to_string(),
+                ));
+            }
+        }
+        // Materialise reference points once — returned to caller.
+        let points = self
+            .nsga3_config
+            .effective_reference_points()
+            .ok_or_else(|| {
+                GaError::InvalidNsga3Configuration(
+                    "reference points must be configured via with_reference_points_auto(p) or with_reference_points(points)".to_string(),
+                )
+            })?;
+        if points.is_empty() {
+            return Err(GaError::InvalidNsga3Configuration(
+                "reference points list must not be empty".to_string(),
+            ));
+        }
+        for (i, pt) in points.iter().enumerate() {
+            if pt.len() != self.nsga3_config.num_objectives {
+                return Err(GaError::InvalidNsga3Configuration(format!(
+                    "reference point {} has dimension {}, expected {}",
+                    i,
+                    pt.len(),
+                    self.nsga3_config.num_objectives
+                )));
+            }
+        }
+        Ok(points)
+    }
 }
 
 impl<U> Nsga3Ga<U>
@@ -205,20 +277,16 @@ where
     /// Returns `GaError::InvalidNsga3Configuration` when reference points are not configured,
     /// or `GaError::MutationError` / `GaError::InitializationError` on operator failures.
     pub fn run(&mut self) -> Result<ParetoFront<U>, GaError> {
-        self.validate()?;
+        // validate_and_get_ref_points() runs all validation checks and materialises
+        // the reference points in a single call, avoiding the double invocation of
+        // the (potentially expensive) Das-Dennis generator that occurred when
+        // validate() was followed by a separate effective_reference_points() call.
+        let reference_points = self.validate_and_get_ref_points()?;
         crate::rng::set_seed(self.ga_config.rng_seed);
 
         let pop_size = self.nsga3_config.population_size;
         let max_gens = self.nsga3_config.max_generations;
         let directions = self.nsga3_config.effective_directions();
-        let reference_points = self
-            .nsga3_config
-            .effective_reference_points()
-            .ok_or_else(|| {
-                GaError::InvalidNsga3Configuration(
-                    "reference points must be configured before run()".to_string(),
-                )
-            })?;
 
         let mut population = self.initialize_population()?;
 
