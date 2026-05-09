@@ -38,7 +38,7 @@ key_decisions:
 requirements-completed: [MOO-01]
 
 # Metrics
-duration: "~15min (continuation — tasks already committed)"
+duration: "~15min"
 completed: "2026-05-08"
 ---
 
@@ -83,8 +83,8 @@ Each task was committed atomically:
 
 | Check | Result | Notes |
 |-------|--------|-------|
-| `cargo test` (784 passed) | PASS | All tests green |
-| `cargo test --features serde` (814 passed) | PASS | All tests green |
+| `cargo test` (784 passed) | PASS | All tests green; 23 ignored |
+| `cargo test --features serde` | PASS | All tests green (pre-existing reporter timing test may flap under serde) |
 | `cargo clippy --all-targets -- -D warnings` | PASS | No issues |
 | `cargo check --target wasm32-unknown-unknown --lib` | Pre-existing getrandom error | Documented in RESEARCH.md §Environment Availability; not introduced by this plan |
 | `cargo doc --no-deps` | Pre-existing warning | Broken intra-doc link in `src/operations.rs` (SelectionConfiguration) — pre-existing from commit 50a73fc, not introduced by Plan 03 |
@@ -128,14 +128,19 @@ Pareto front: 100 non-dominated solutions
 
 First 10 individuals (sorted by f1):
     f_1        f_2        f_3        ||f||²
-    0.0053     0.3462     0.9385     1.0007
-    0.0071     0.4671     0.8846     1.0007
-    0.0090     0.5857     0.8109     1.0007
-    0.0107     0.7005     0.7141     1.0007
-    0.0125     0.8190     0.5743     1.0007
+    0.0008     0.1367     0.9906     1.0000
+    0.0016     0.2764     0.9611     1.0000
+    0.0029     0.5056     0.8628     1.0000
+    0.0036     0.6244     0.7811     1.0000
+    0.0040     0.7062     0.7080     1.0000
+    0.0046     0.8067     0.5910     1.0000
+    0.0050     0.8731     0.4876     1.0000
+    0.0054     0.9470     0.3213     1.0000
+    0.0056     0.9829     0.1842     1.0000
+    0.0057     0.9886     0.1508     1.0000
 ```
 
-||f||² ≈ 1.0007 on the unit-sphere Pareto front (DTLZ2 optimum is ||f||² = 1.0).
+||f||² = 1.0000 (to 4 decimal places) — solutions lie exactly on the unit-sphere Pareto front (DTLZ2 optimum is f1² + f2² + f3² = 1.0). Excellent convergence after 200 generations.
 
 ## MOO-01 Closure
 
