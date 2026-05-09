@@ -9,7 +9,7 @@ use genetic_algorithms::configuration::GaConfiguration;
 use genetic_algorithms::error::GaError;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::initializers::range_random_initialization;
-use genetic_algorithms::nsga3::configuration::Nsga3Configuration;
+use genetic_algorithms::nsga3::configuration::{Nsga3Configuration, ObjectiveDirection};
 use genetic_algorithms::nsga3::Nsga3Ga;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -100,6 +100,23 @@ fn test_nsga3_validate_passes_with_complete_config() {
         .with_initialization_fn(|_, _, _| vec![])
         .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0), Box::new(|_| 0.0)]);
     assert!(nsga3.validate().is_ok());
+}
+
+#[test]
+fn test_nsga3_validate_mismatched_objective_directions() {
+    // objective_directions has 1 entry but num_objectives is 3 — should fail.
+    let config = Nsga3Configuration::new()
+        .with_num_objectives(3)
+        .with_objective_directions(vec![ObjectiveDirection::Minimize]) // 1 != 3
+        .with_reference_points_auto(4);
+    let ga_config = GaConfiguration::default();
+    let nsga3 = Nsga3Ga::<RangeChromosome<f64>>::new(config, ga_config)
+        .with_initialization_fn(|_, _, _| vec![])
+        .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0), Box::new(|_| 0.0)]);
+    assert!(matches!(
+        nsga3.validate(),
+        Err(GaError::InvalidNsga3Configuration(ref msg)) if msg.contains("objective_directions")
+    ));
 }
 
 // ===== Run() integration tests — added by Plan 35-03 =====
