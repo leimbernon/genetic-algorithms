@@ -222,7 +222,7 @@ Plans:
 | 33. Scalar Mutation Operators | v2.4.0 | 3/3 | Complete | 2026-05-07 |
 | 34. WASM support — wasm32-unknown-unknown compatibility | v2.4.0 | 4/4 | Complete | 2026-05-07 |
 | 35. NSGA-III for many-objective optimization | v2.4.0 | 3/3 | Complete    | 2026-05-09 |
-| 36. MOEA/D decomposition-based multi-objective | v2.4.0 | -- | Not started | -- |
+| 36. MOEA/D decomposition-based multi-objective | v2.4.0 | 0/3 | Planned     | -- |
 | 37. SPEA2 strength pareto evolutionary algorithm | v2.4.0 | -- | Not started | -- |
 | 38. Indicator-based MOEAs — SMS-EMOA and IBEA | v2.4.0 | -- | Not started | -- |
 | 39. Multi-objective quality indicators | v2.4.0 | -- | Not started | -- |
@@ -279,10 +279,17 @@ Plans:
 **Requirements**: MOO-02
 **Issue**: #204
 **Depends on:** Phase 35
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 36 to break down)
+**Wave 1**
+- [ ] 36-01-PLAN.md — Scaffolding: error variant, MoeaDObserver trait, LogObserver impl, lib.rs re-exports, MoeaDConfiguration + ScalarizationFn, stub MoeaDGa with validate(), Wave 0 tests (MOO-02)
+
+**Wave 2** *(blocked on Wave 1)*
+- [ ] 36-02-PLAN.md — MoeaDGa::run() with neighbourhood precomputation, Tchebycheff/PBI scalarization, ideal-point tracking, sub-problem update loop, WASM cfg-gating, integration tests (MOO-02)
+
+**Wave 3** *(blocked on Waves 1-2)*
+- [ ] 36-03-PLAN.md — examples/moead_dtlz2.rs + LogObserver smoke test + example registration + phase verification gate (MOO-02)
 
 ### Phase 37: SPEA2 — Strength Pareto Evolutionary Algorithm 2
 
