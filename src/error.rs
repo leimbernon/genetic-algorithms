@@ -33,6 +33,8 @@ pub enum GaError {
     InvalidNichingConfiguration(String),
     /// An NSGA-II configuration parameter is invalid.
     InvalidNsga2Configuration(String),
+    /// An NSGA-III configuration parameter is invalid.
+    InvalidNsga3Configuration(String),
     /// A migration operation between islands failed.
     MigrationError(String),
     /// A checkpoint save or load operation failed.
@@ -56,6 +58,9 @@ impl fmt::Display for GaError {
             }
             GaError::InvalidNsga2Configuration(msg) => {
                 write!(f, "Invalid NSGA-II configuration: {}", msg)
+            }
+            GaError::InvalidNsga3Configuration(msg) => {
+                write!(f, "Invalid NSGA-III configuration: {}", msg)
             }
             GaError::MigrationError(msg) => write!(f, "Migration error: {}", msg),
             GaError::CheckpointError(msg) => write!(f, "Checkpoint error: {}", msg),
