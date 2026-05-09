@@ -33,4 +33,8 @@ mod engines {
         mod test_nsga3;
         mod test_nsga3_configuration;
     }
+    mod moead {
+        mod test_moead;
+        mod test_moead_configuration;
+    }
 }
