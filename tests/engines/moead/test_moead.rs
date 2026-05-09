@@ -11,6 +11,7 @@ use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::initializers::range_random_initialization;
 use genetic_algorithms::moead::configuration::{MoeaDConfiguration, ObjectiveDirection, ScalarizationFn};
 use genetic_algorithms::moead::MoeaDGa;
+use genetic_algorithms::LogObserver;
 use genetic_algorithms::MoeaDObserver;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -339,4 +340,23 @@ fn test_moead_run_rejects_differential_mutation() {
     moead.ga_config.mutation_configuration.probability_max = Some(1.0);
     let result = moead.run();
     assert!(matches!(result, Err(GaError::MutationError(ref msg)) if msg.contains("Differential mutation is not supported in MOEA/D")));
+}
+
+#[test]
+fn test_moead_log_observer() {
+    // D-12 smoke test: confirm `impl<U> MoeaDObserver<U> for LogObserver` compiles
+    // and runs without panic.
+    let mut moead = build_test_moead(15, 3, ScalarizationFn::Tchebycheff)
+        .with_observer(
+            Arc::new(LogObserver) as Arc<dyn MoeaDObserver<RangeChromosome<f64>> + Send + Sync>,
+        );
+
+    let result = moead.run();
+    assert!(
+        result.is_ok(),
+        "MoeaD run with LogObserver should succeed: {:?}",
+        result.err()
+    );
+    let front = result.unwrap();
+    assert!(!front.is_empty(), "front should be non-empty under LogObserver");
 }
