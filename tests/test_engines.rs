@@ -28,4 +28,9 @@ mod engines {
         mod test_nsga2_configuration;
         mod test_pareto;
     }
+    mod nsga3 {
+        mod test_das_dennis;
+        mod test_nsga3;
+        mod test_nsga3_configuration;
+    }
 }
