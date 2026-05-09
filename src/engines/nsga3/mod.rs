@@ -155,6 +155,11 @@ where
                 ));
             }
             Some(points) => {
+                if points.is_empty() {
+                    return Err(GaError::InvalidNsga3Configuration(
+                        "reference points list must not be empty".to_string(),
+                    ));
+                }
                 for (i, pt) in points.iter().enumerate() {
                     if pt.len() != self.nsga3_config.num_objectives {
                         return Err(GaError::InvalidNsga3Configuration(format!(
