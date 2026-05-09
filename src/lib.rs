@@ -110,6 +110,8 @@ pub mod niching;
 pub mod multi_objective;
 #[path = "engines/nsga2/mod.rs"]
 pub mod nsga2;
+#[path = "engines/nsga3/mod.rs"]
+pub mod nsga3;
 
 pub use ga::TerminationCause;
 pub use observer::AllObserver;
@@ -122,5 +124,6 @@ pub use observer::LogObserver;
 pub use observer::MetricsObserver;
 pub use observer::NoopObserver;
 pub use observer::Nsga2Observer;
+pub use observer::Nsga3Observer;
 #[cfg(feature = "observer-tracing")]
 pub use observer::TracingObserver;
