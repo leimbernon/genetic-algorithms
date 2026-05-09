@@ -1,5 +1,5 @@
 use super::pareto::{constrained_dominates, dominates, dominates_with_directions};
-use crate::nsga2::configuration::ObjectiveDirection;
+use super::ObjectiveDirection;
 
 /// Performs non-dominated sorting on a population.
 ///

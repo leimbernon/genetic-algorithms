@@ -11,5 +11,18 @@
 pub mod non_dominated_sort;
 pub mod pareto;
 
+/// Direction of optimization for a single objective.
+///
+/// This is the canonical definition. Both `nsga2::configuration` and
+/// `nsga3::configuration` re-export this type for backward compatibility.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum ObjectiveDirection {
+    /// Minimize this objective (lower is better).
+    Minimize,
+    /// Maximize this objective (higher is better).
+    Maximize,
+}
+
 /// Type alias for a single objective function shared across multi-objective engines.
 pub type ObjectiveFn<G> = dyn Fn(&[G]) -> f64 + Send + Sync;

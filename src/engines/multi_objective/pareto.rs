@@ -1,4 +1,4 @@
-use crate::nsga2::configuration::ObjectiveDirection;
+use super::ObjectiveDirection;
 use crate::traits::ChromosomeT;
 
 /// Wrapper around a chromosome that holds multi-objective evaluation results.

@@ -1,12 +1,8 @@
-/// Direction of optimization for a single objective.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum ObjectiveDirection {
-    /// Minimize this objective (lower is better).
-    Minimize,
-    /// Maximize this objective (higher is better).
-    Maximize,
-}
+/// Re-export the canonical `ObjectiveDirection` from the shared `multi_objective` module.
+///
+/// Preserved here for backward compatibility — existing code that imports
+/// `genetic_algorithms::nsga2::configuration::ObjectiveDirection` continues to work.
+pub use crate::multi_objective::ObjectiveDirection;
 
 /// Configuration for the NSGA-II multi-objective genetic algorithm.
 ///
