@@ -221,7 +221,7 @@ Plans:
 | 32. Crossover & Differential Mutation | v2.4.0 | 3/3 | Complete | 2026-05-06 |
 | 33. Scalar Mutation Operators | v2.4.0 | 3/3 | Complete | 2026-05-07 |
 | 34. WASM support — wasm32-unknown-unknown compatibility | v2.4.0 | 4/4 | Complete | 2026-05-07 |
-| 35. NSGA-III for many-objective optimization | v2.4.0 | 3/3 | Complete   | 2026-05-09 |
+| 35. NSGA-III for many-objective optimization | v2.4.0 | 3/3 | Complete    | 2026-05-09 |
 | 36. MOEA/D decomposition-based multi-objective | v2.4.0 | -- | Not started | -- |
 | 37. SPEA2 strength pareto evolutionary algorithm | v2.4.0 | -- | Not started | -- |
 | 38. Indicator-based MOEAs — SMS-EMOA and IBEA | v2.4.0 | -- | Not started | -- |
