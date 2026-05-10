@@ -214,6 +214,39 @@ pub trait MoeaDObserver<U: ChromosomeT>: Send + Sync {
     fn on_non_dominated_sort_complete(&self, _generation: usize, _duration_ms: f64) {}
 }
 
+/// Observer for [`Spea2Ga<U>`](crate::spea2::Spea2Ga) engine-specific events.
+///
+/// All methods have default no-op implementations. The `Send + Sync`
+/// supertraits are required for safe sharing across rayon threads via `Arc`.
+///
+/// # Note: not in `AllObserver`
+///
+/// `AllObserver<U>` does NOT include `Spea2Observer<U>` in Phase 37 — adding it
+/// would be a breaking change for existing `AllObserver` implementors (D-07). Use
+/// [`Spea2Ga::with_observer`](crate::spea2::Spea2Ga::with_observer) to attach
+/// a `Spea2Observer` independently.
+pub trait Spea2Observer<U: ChromosomeT>: Send + Sync {
+    /// Called after strength + density fitness is assigned to all individuals
+    /// in the combined population + archive set.
+    fn on_fitness_assigned(
+        &self,
+        _generation: usize,
+        _duration_ms: f64,
+        _pop_size: usize,
+        _archive_size: usize,
+    ) {
+    }
+    /// Called after environmental selection completes and the archive is updated
+    /// (including truncation if necessary).
+    fn on_archive_updated(
+        &self,
+        _generation: usize,
+        _archive_size: usize,
+        _non_dominated_count: usize,
+    ) {
+    }
+}
+
 /// Combined observer bound for use with [`CompositeObserver`].
 ///
 /// Any type that implements [`GaObserver<U>`], [`IslandGaObserver<U>`],
