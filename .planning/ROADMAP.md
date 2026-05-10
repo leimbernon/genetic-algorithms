@@ -225,7 +225,7 @@ Plans:
 | 36. MOEA/D decomposition-based multi-objective | v2.4.0 | 3/3 | Complete    | 2026-05-10 |
 | 37. SPEA2 strength pareto evolutionary algorithm | v2.4.0 | 3/3 | Complete    | 2026-05-10 |
 | 38. Indicator-based MOEAs — SMS-EMOA and IBEA | v2.4.0 | -- | Not started | -- |
-| 39. Multi-objective quality indicators | v2.4.0 | 3/3 | Planned | -- |
+| 39. Multi-objective quality indicators | v2.4.0 | 1/3 | In Progress|  |
 
 ### Phase 34: WASM support — fix time-based panics for wasm32-unknown-unknown targets (issue #236)
 
@@ -327,11 +327,11 @@ Plans:
 **Requirements**: MOO-05
 **Issue**: #207
 **Depends on:** Phase 37
-**Plans:** 3/3 plans planned
+**Plans:** 1/3 plans executed
 
 Plans:
 **Wave 1**
-- [ ] 39-01-PLAN.md — Foundation: `GaError::InvalidIndicatorConfiguration` variant, wire `indicators/` module into `multi_objective`, shared validation helpers (MOO-05)
+- [x] 39-01-PLAN.md — Foundation: `GaError::InvalidIndicatorConfiguration` variant, wire `indicators/` module into `multi_objective`, shared validation helpers (MOO-05)
 
 **Wave 2** *(parallel, both depend on Wave 1)*
 - [ ] 39-02-PLAN.md — Hypervolume + Generational Distance implementations and integration tests (MOO-05)
