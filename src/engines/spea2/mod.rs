@@ -547,7 +547,7 @@ where
 
         let mut offspring: Vec<U> = Vec::with_capacity(pop_size);
         // Produce pop_size offspring via tournament from archive, pairing to produce 2 children each
-        let pairs_needed = (pop_size + 1) / 2; // ceil division
+        let pairs_needed = (pop_size + 1).div_ceil(2);
 
         for _ in 0..pairs_needed {
             let p1_idx = Self::binary_tournament_from_archive(archive, &population, &mut rng);
