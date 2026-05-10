@@ -297,10 +297,18 @@ Plans:
 **Requirements**: MOO-03
 **Issue**: #205
 **Depends on:** Phase 36
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 37 to break down)
+**Wave 1**
+- [ ] 37-01-PLAN.md — Scaffolding: GaError variant, Spea2Configuration builder, Spea2Observer trait + LogObserver impl, lib.rs re-exports, stub Spea2Ga with validate(), Wave 0 tests (MOO-03)
+
+**Wave 2** *(blocked on Wave 1)*
+- [ ] 37-02-PLAN.md — Spea2Ga::run() with fitness assignment (strength + density), archive management (environmental selection + Euclidean truncation), binary tournament mating, WASM cfg-gating, observer hooks, integration tests (MOO-03)
+
+**Wave 3** *(blocked on Waves 1-2)*
+- [ ] 37-03-PLAN.md — examples/spea2_zdt1.rs + LogObserver smoke test + example registration + phase verification gate (MOO-03)
+
 
 ### Phase 38: Indicator-based MOEAs — SMS-EMOA and IBEA
 
