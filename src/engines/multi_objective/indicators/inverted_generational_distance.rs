@@ -34,9 +34,34 @@ pub fn inverted_generational_distance(
     true_front: &[Vec<f64>],
     power: f64,
 ) -> Result<f64, GaError> {
-    // RED phase: stub that always returns 0.0 — tests will fail
-    let _ = (approx_front, true_front, power);
-    Ok(0.0)
+    validate_non_empty("approx_front", approx_front)?;
+    validate_non_empty("true_front", true_front)?;
+    let approx_dim = validate_dimension_consistency(approx_front)?;
+    let true_dim = validate_dimension_consistency(true_front)?;
+
+    if approx_dim != true_dim {
+        return Err(GaError::InvalidIndicatorConfiguration(
+            format!(
+                "Dimension mismatch: approx_front has {} dimensions, true_front has {}",
+                approx_dim, true_dim,
+            ),
+        ));
+    }
+
+    if power <= 0.0 {
+        return Err(GaError::InvalidIndicatorConfiguration(
+            "Power must be positive".to_string(),
+        ));
+    }
+
+    // Key difference from GD: iterate over TRUE front, find nearest in APPROX
+    let sum: f64 = true_front
+        .iter()
+        .map(|point| nearest_distance(point, approx_front, power))
+        .sum();
+
+    let mean = sum / true_front.len() as f64;
+    Ok(mean.powf(1.0 / power))
 }
 
 #[cfg(test)]
