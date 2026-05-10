@@ -223,7 +223,7 @@ Plans:
 | 34. WASM support — wasm32-unknown-unknown compatibility | v2.4.0 | 4/4 | Complete | 2026-05-07 |
 | 35. NSGA-III for many-objective optimization | v2.4.0 | 3/3 | Complete    | 2026-05-09 |
 | 36. MOEA/D decomposition-based multi-objective | v2.4.0 | 3/3 | Complete    | 2026-05-10 |
-| 37. SPEA2 strength pareto evolutionary algorithm | v2.4.0 | 2/3 | In Progress|  |
+| 37. SPEA2 strength pareto evolutionary algorithm | v2.4.0 | 3/3 | Complete   | 2026-05-10 |
 | 38. Indicator-based MOEAs — SMS-EMOA and IBEA | v2.4.0 | -- | Not started | -- |
 | 39. Multi-objective quality indicators | v2.4.0 | -- | Not started | -- |
 
@@ -249,7 +249,7 @@ Plans:
 
 - [x] **Phase 35: NSGA-III for many-objective optimization** — Reference-point based NSGA-III (#203) (completed 2026-05-09)
 - [x] **Phase 36: MOEA/D — Decomposition-based multi-objective** — Weight-vector decomposition with Tchebycheff or PBI scalarisation (#204) (completed 2026-05-10)
-- [ ] **Phase 37: SPEA2 — Strength Pareto Evolutionary Algorithm 2** — Archive-based strength Pareto selection (#205)
+- [x] **Phase 37: SPEA2 — Strength Pareto Evolutionary Algorithm 2** — Archive-based strength Pareto selection (#205) (completed 2026-05-10)
 - [ ] **Phase 38: Indicator-based MOEAs — SMS-EMOA and IBEA** — Hypervolume-based (SMS-EMOA) and indicator-based (IBEA) selection (#206)
 - [ ] **Phase 39: Multi-objective quality indicators** — Shared library: Hypervolume, GD, IGD, Spread (#207)
 
@@ -297,7 +297,7 @@ Plans:
 **Requirements**: MOO-03
 **Issue**: #205
 **Depends on:** Phase 36
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 **Wave 1**
@@ -307,7 +307,7 @@ Plans:
 - [x] 37-02-PLAN.md — Spea2Ga::run() with fitness assignment (strength + density), archive management (environmental selection + Euclidean truncation), binary tournament mating, WASM cfg-gating, observer hooks, integration tests (MOO-03)
 
 **Wave 3** *(blocked on Waves 1-2)*
-- [ ] 37-03-PLAN.md — examples/spea2_zdt1.rs + LogObserver smoke test + example registration + phase verification gate (MOO-03)
+- [x] 37-03-PLAN.md — examples/spea2_zdt1.rs + LogObserver smoke test + example registration + phase verification gate (MOO-03)
 
 
 ### Phase 38: Indicator-based MOEAs — SMS-EMOA and IBEA
