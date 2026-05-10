@@ -12,13 +12,18 @@ pub mod configuration;
 
 use crate::configuration::GaConfiguration;
 use crate::error::GaError;
-use crate::multi_objective::pareto::ParetoIndividual;
+use crate::multi_objective::pareto::{ParetoFront, ParetoIndividual};
 use crate::multi_objective::ObjectiveFn;
 use crate::nsga2::configuration::ObjectiveDirection;
 use crate::observer::Spea2Observer;
+use crate::operations::{crossover, mutation};
 use crate::spea2::configuration::Spea2Configuration;
 use crate::traits::{ChromosomeT, InitializationFn};
+#[cfg(not(target_arch = "wasm32"))]
+use rayon::prelude::*;
+use rand::Rng;
 use std::sync::Arc;
+use std::time::Instant;
 
 /// SPEA2 strength-Pareto multi-objective genetic algorithm orchestrator.
 ///
@@ -349,5 +354,253 @@ where
         } else {
             j
         }
+    }
+}
+
+impl<U> Spea2Ga<U>
+where
+    U: ChromosomeT + mutation::ValueMutable,
+{
+    /// Runs the SPEA2 algorithm and returns the Pareto front from the final archive.
+    ///
+    /// Implements Zitzler, Laumanns & Thiele 2001 Algorithm 1:
+    /// 1. Validate configuration and extract directions.
+    /// 2. Initialize population and evaluate objectives (parallel via rayon).
+    /// 3. Initialize empty archive.
+    /// 4. For each generation:
+    ///    a. Compute SPEA2 fitness (strength + density) on population + archive.
+    ///    b. Notify `on_fitness_assigned` observer hook.
+    ///    c. Environmental selection: copy non-dominated to archive, fill or truncate.
+    ///    d. Notify `on_archive_updated` observer hook.
+    ///    e. Binary tournament selection from archive -> create offspring population.
+    /// 5. Post-hoc non-dominated sort over the final archive; return rank-0 as ParetoFront.
+    ///
+    /// # Errors
+    ///
+    /// - `GaError::InvalidSpea2Configuration` when configuration is incomplete.
+    /// - `GaError::CrossoverError` / `GaError::MutationError` / `GaError::InitializationError` on operator failures.
+    pub fn run(&mut self) -> Result<ParetoFront<U>, GaError> {
+        self.validate()?;
+        crate::rng::set_seed(self.ga_config.rng_seed);
+
+        let archive_size = self.spea2_config.archive_size;
+        let max_gens = self.spea2_config.max_generations;
+        let directions = self.spea2_config.effective_directions();
+
+        // Step 2: Initialize population and evaluate objectives in parallel
+        let mut population = self.initialize_population()?;
+
+        // Step 3: Initialize empty archive
+        let mut archive: Vec<ParetoIndividual<U>> = Vec::with_capacity(archive_size);
+
+        // Step 4: Generation loop
+        for gen in 0..max_gens {
+            // Timing for observer -- Instant::now() gated per WASM requirement
+            let t_fitness: Option<Instant> = if self.observer.is_some() {
+                #[cfg(not(target_arch = "wasm32"))]
+                {
+                    Some(Instant::now())
+                }
+                #[cfg(target_arch = "wasm32")]
+                {
+                    None
+                }
+            } else {
+                None
+            };
+
+            // 4a: Compute SPEA2 fitness on combined population + archive
+            let fitness = Self::assign_spea2_fitness(&population, &archive, &directions);
+
+            // 4b: Observer -- on_fitness_assigned
+            if let Some(start) = t_fitness {
+                self.notify(|obs| {
+                    obs.on_fitness_assigned(
+                        gen,
+                        start.elapsed().as_secs_f64() * 1000.0,
+                        population.len(),
+                        archive.len(),
+                    )
+                });
+            }
+
+            // 4c: Environmental selection -- build new archive
+            archive = Self::environmental_selection(
+                &population,
+                &archive,
+                &fitness,
+                archive_size,
+            );
+
+            // Compute non-dominated count for observer
+            let nd_count = {
+                let mut nd = 0usize;
+                for i in 0..archive.len() {
+                    let mut dominated = false;
+                    for j in 0..archive.len() {
+                        if j != i && crate::multi_objective::pareto::dominates_with_directions(
+                            &archive[j].objectives,
+                            &archive[i].objectives,
+                            &directions,
+                        ) {
+                            dominated = true;
+                            break;
+                        }
+                    }
+                    if !dominated {
+                        nd += 1;
+                    }
+                }
+                nd
+            };
+
+            // 4d: Observer -- on_archive_updated
+            self.notify(|obs| {
+                obs.on_archive_updated(gen, archive.len(), nd_count)
+            });
+
+            // 4e: Binary tournament from archive -> produce new population
+            population = self.create_offspring(&archive)?;
+        }
+
+        // Step 5: Post-hoc non-dominated sort on final archive -> ParetoFront
+        let obj_slices: Vec<&[f64]> = archive.iter().map(|ind| ind.objectives.as_slice()).collect();
+        let fronts = crate::multi_objective::non_dominated_sort::non_dominated_sort_with_directions(
+            &obj_slices,
+            &directions,
+        );
+        let mut ranks = vec![0usize; archive.len()];
+        crate::multi_objective::non_dominated_sort::assign_ranks(&mut ranks, &fronts);
+        for (i, &r) in ranks.iter().enumerate() {
+            archive[i].rank = r;
+        }
+        let front_individuals: Vec<ParetoIndividual<U>> =
+            archive.into_iter().filter(|ind| ind.rank == 0).collect();
+        Ok(ParetoFront::new(front_individuals))
+    }
+
+    /// Initializes the population with random chromosomes and evaluates objectives in parallel.
+    fn initialize_population(&self) -> Result<Vec<ParetoIndividual<U>>, GaError> {
+        let init_fn = self.initialization_fn.as_ref().ok_or_else(|| {
+            GaError::InitializationError("No initialization function set".to_string())
+        })?;
+
+        let pop_size = self.spea2_config.population_size;
+        let genes_per_chrom = self.ga_config.limit_configuration.genes_per_chromosome;
+        let alleles_can_repeat = self.ga_config.limit_configuration.alleles_can_be_repeated;
+
+        let alleles = if self.alleles.is_empty() {
+            None
+        } else {
+            Some(self.alleles.as_slice())
+        };
+
+        let chromosomes: Vec<U> = crate::traits::initialize_chromosomes(
+            pop_size,
+            genes_per_chrom,
+            alleles,
+            Some(alleles_can_repeat),
+            init_fn,
+            None,
+            0,
+        );
+
+        let objective_fns = &self.objective_fns;
+        #[cfg(not(target_arch = "wasm32"))]
+        let population: Vec<ParetoIndividual<U>> = chromosomes
+            .into_par_iter()
+            .map(|chrom| {
+                let objectives: Vec<f64> =
+                    objective_fns.iter().map(|f| f(chrom.dna())).collect();
+                ParetoIndividual::new(chrom, objectives)
+            })
+            .collect();
+        #[cfg(target_arch = "wasm32")]
+        let population: Vec<ParetoIndividual<U>> = chromosomes
+            .into_iter()
+            .map(|chrom| {
+                let objectives: Vec<f64> =
+                    objective_fns.iter().map(|f| f(chrom.dna())).collect();
+                ParetoIndividual::new(chrom, objectives)
+            })
+            .collect();
+
+        Ok(population)
+    }
+
+    /// Produces offspring chromosomes via binary tournament selection from archive,
+    /// followed by crossover + mutation on each selected pair.
+    fn create_offspring(
+        &self,
+        archive: &[ParetoIndividual<U>],
+    ) -> Result<Vec<ParetoIndividual<U>>, GaError> {
+        let pop_size = self.spea2_config.population_size;
+        let mut rng = crate::rng::make_rng();
+
+        // For the tournament fallback: a temporary empty population vec.
+        let population: Vec<ParetoIndividual<U>> = Vec::new();
+
+        let crossover_config = self.ga_config.crossover_configuration;
+        let mutation_config = self.ga_config.mutation_configuration;
+        let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
+        let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
+
+        let mut offspring: Vec<U> = Vec::with_capacity(pop_size);
+        // Produce pop_size offspring via tournament from archive, pairing to produce 2 children each
+        let pairs_needed = (pop_size + 1) / 2; // ceil division
+
+        for _ in 0..pairs_needed {
+            let p1_idx = Self::binary_tournament_from_archive(archive, &population, &mut rng);
+            let p2_idx = Self::binary_tournament_from_archive(archive, &population, &mut rng);
+
+            let parent_a = &archive[p1_idx].chromosome;
+            let parent_b = &archive[p2_idx].chromosome;
+
+            let p: f64 = rng.random();
+            let children = if p <= crossover_prob {
+                crossover::factory(parent_a, parent_b, crossover_config)?
+            } else {
+                vec![parent_a.clone(), parent_b.clone()]
+            };
+
+            for mut child in children {
+                let mp: f64 = rng.random();
+                if mp <= mut_prob {
+                    mutation::factory_with_params(
+                        mutation_config.method,
+                        &mut child,
+                        mutation_config.step,
+                        mutation_config.sigma,
+                    )?;
+                }
+                offspring.push(child);
+                if offspring.len() >= pop_size {
+                    break;
+                }
+            }
+        }
+
+        // Evaluate objectives for all offspring
+        let objective_fns = &self.objective_fns;
+        #[cfg(not(target_arch = "wasm32"))]
+        let evaluated: Vec<ParetoIndividual<U>> = offspring
+            .into_par_iter()
+            .map(|chrom| {
+                let objectives: Vec<f64> =
+                    objective_fns.iter().map(|f| f(chrom.dna())).collect();
+                ParetoIndividual::new(chrom, objectives)
+            })
+            .collect();
+        #[cfg(target_arch = "wasm32")]
+        let evaluated: Vec<ParetoIndividual<U>> = offspring
+            .into_iter()
+            .map(|chrom| {
+                let objectives: Vec<f64> =
+                    objective_fns.iter().map(|f| f(chrom.dna())).collect();
+                ParetoIndividual::new(chrom, objectives)
+            })
+            .collect();
+
+        Ok(evaluated)
     }
 }
