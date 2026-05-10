@@ -10,6 +10,7 @@
 
 pub mod non_dominated_sort;
 pub mod pareto;
+pub mod indicators;
 
 /// Direction of optimization for a single objective.
 ///
