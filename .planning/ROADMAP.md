@@ -223,7 +223,7 @@ Plans:
 | 34. WASM support — wasm32-unknown-unknown compatibility | v2.4.0 | 4/4 | Complete | 2026-05-07 |
 | 35. NSGA-III for many-objective optimization | v2.4.0 | 3/3 | Complete    | 2026-05-09 |
 | 36. MOEA/D decomposition-based multi-objective | v2.4.0 | 3/3 | Complete    | 2026-05-10 |
-| 37. SPEA2 strength pareto evolutionary algorithm | v2.4.0 | 3/3 | Complete   | 2026-05-10 |
+| 37. SPEA2 strength pareto evolutionary algorithm | v2.4.0 | 3/3 | Complete    | 2026-05-10 |
 | 38. Indicator-based MOEAs — SMS-EMOA and IBEA | v2.4.0 | -- | Not started | -- |
 | 39. Multi-objective quality indicators | v2.4.0 | -- | Not started | -- |
 
