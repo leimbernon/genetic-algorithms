@@ -32,7 +32,7 @@
 ### MOO — Advanced Multi-Objective Optimization
 
 - [x] **MOO-01**: User can run NSGA-III on problems with 3+ objectives; reference points are auto-generated (Das-Dennis simplex lattice) or user-supplied, and the algorithm selects survivors via reference-point association rather than crowding distance (#203)
-- [ ] **MOO-02**: User can run MOEA/D with configurable weight vectors and either Tchebycheff or PBI scalarisation; each sub-problem maintains a neighbourhood of similar weight vectors and offspring compete only within that neighbourhood (#204)
+- [x] **MOO-02**: User can run MOEA/D with configurable weight vectors and either Tchebycheff or PBI scalarisation; each sub-problem maintains a neighbourhood of similar weight vectors and offspring compete only within that neighbourhood (#204)
 - [ ] **MOO-03**: User can run SPEA2 with a configurable archive size; fitness is computed from raw strength + density (k-nearest-neighbour), and the archive is truncated using the Euclidean crowding criterion (#205)
 - [ ] **MOO-04**: User can run SMS-EMOA (hypervolume contribution-based steady-state removal) and IBEA (additive epsilon-indicator fitness); both share the quality-indicator library (#206)
 - [ ] **MOO-05**: User can compute Hypervolume, Generational Distance (GD), Inverted GD (IGD), and Spread from any set of Pareto-front solutions via a shared quality-indicator module (#207)

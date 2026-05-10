@@ -222,7 +222,7 @@ Plans:
 | 33. Scalar Mutation Operators | v2.4.0 | 3/3 | Complete | 2026-05-07 |
 | 34. WASM support — wasm32-unknown-unknown compatibility | v2.4.0 | 4/4 | Complete | 2026-05-07 |
 | 35. NSGA-III for many-objective optimization | v2.4.0 | 3/3 | Complete    | 2026-05-09 |
-| 36. MOEA/D decomposition-based multi-objective | v2.4.0 | 2/3 | In Progress|  |
+| 36. MOEA/D decomposition-based multi-objective | v2.4.0 | 3/3 | Complete    | 2026-05-10 |
 | 37. SPEA2 strength pareto evolutionary algorithm | v2.4.0 | -- | Not started | -- |
 | 38. Indicator-based MOEAs — SMS-EMOA and IBEA | v2.4.0 | -- | Not started | -- |
 | 39. Multi-objective quality indicators | v2.4.0 | -- | Not started | -- |
@@ -248,7 +248,7 @@ Plans:
 **Milestone Goal:** Extend the multi-objective engine beyond NSGA-II with three new algorithms (NSGA-III, MOEA/D, SPEA2), two indicator-based methods (SMS-EMOA, IBEA), and a shared quality-indicator library. All as new independent modules following the existing `src/engines/nsga2/` pattern.
 
 - [x] **Phase 35: NSGA-III for many-objective optimization** — Reference-point based NSGA-III (#203) (completed 2026-05-09)
-- [ ] **Phase 36: MOEA/D — Decomposition-based multi-objective** — Weight-vector decomposition with Tchebycheff or PBI scalarisation (#204)
+- [x] **Phase 36: MOEA/D — Decomposition-based multi-objective** — Weight-vector decomposition with Tchebycheff or PBI scalarisation (#204) (completed 2026-05-10)
 - [ ] **Phase 37: SPEA2 — Strength Pareto Evolutionary Algorithm 2** — Archive-based strength Pareto selection (#205)
 - [ ] **Phase 38: Indicator-based MOEAs — SMS-EMOA and IBEA** — Hypervolume-based (SMS-EMOA) and indicator-based (IBEA) selection (#206)
 - [ ] **Phase 39: Multi-objective quality indicators** — Shared library: Hypervolume, GD, IGD, Spread (#207)
@@ -279,7 +279,7 @@ Plans:
 **Requirements**: MOO-02
 **Issue**: #204
 **Depends on:** Phase 35
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 **Wave 1**
@@ -289,7 +289,7 @@ Plans:
 - [x] 36-02-PLAN.md — MoeaDGa::run() with neighbourhood precomputation, Tchebycheff/PBI scalarization, ideal-point tracking, sub-problem update loop, WASM cfg-gating, integration tests (MOO-02)
 
 **Wave 3** *(blocked on Waves 1-2)*
-- [ ] 36-03-PLAN.md — examples/moead_dtlz2.rs + LogObserver smoke test + example registration + phase verification gate (MOO-02)
+- [x] 36-03-PLAN.md — examples/moead_dtlz2.rs + LogObserver smoke test + example registration + phase verification gate (MOO-02)
 
 ### Phase 37: SPEA2 — Strength Pareto Evolutionary Algorithm 2
 
