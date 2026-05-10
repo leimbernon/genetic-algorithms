@@ -37,4 +37,8 @@ mod engines {
         mod test_moead;
         mod test_moead_configuration;
     }
+    mod spea2 {
+        mod test_spea2;
+        mod test_spea2_configuration;
+    }
 }
