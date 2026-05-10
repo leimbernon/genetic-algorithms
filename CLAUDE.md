@@ -79,8 +79,9 @@ main
 ```
 
 1. Check if the milestone branch exists. If not, create it from `main`.
-2. Create `feat/<issue>` or `fix/<issue>` from the milestone branch.
-3. PR targets the milestone branch, not `main`.
+2. **CRITICAL — Cargo version bump**: The very first commit on every new milestone branch must update the `version` field in `Cargo.toml` to match the milestone's version. No phase work is merged before this bump exists.
+3. Create `feat/<issue>` or `fix/<issue>` from the milestone branch.
+4. PR targets the milestone branch, not `main`.
 
 ### GitHub Authentication
 
@@ -124,6 +125,21 @@ Prefer non-breaking additions:
 - Feature flags for optional dependencies
 
 When breaking changes are unavoidable, use parallel traits/wrappers (see issues labeled `breaking-change`).
+
+### WASM Compatibility (mandatory)
+
+Every new feature **must compile for `wasm32-unknown-unknown`**. This target has no threads and no `std::time`. Apply these rules at implementation time, not as a retrofit:
+
+- **`std::time::Instant` / `SystemTime`** — never call `.now()` or `.elapsed()` unconditionally. Gate the call: `#[cfg(not(target_arch = "wasm32"))]`. The type annotation (`Option<Instant>`) can remain un-gated; only the instantiation must be gated.
+- **`rayon` parallelism** — never call `.par_iter()` unconditionally. Duplicate only the iterator expression behind cfg gates; keep the closure body shared:
+  ```rust
+  #[cfg(not(target_arch = "wasm32"))]
+  let results: Vec<_> = items.par_iter().map(|x| process(x)).collect();
+  #[cfg(target_arch = "wasm32")]
+  let results: Vec<_> = items.iter().map(|x| process(x)).collect();
+  ```
+- **Verify during implementation** — run `cargo check --target wasm32-unknown-unknown` before considering a feature complete. CI enforces this via `.github/workflows/wasm-check.yml`, but catching it locally is cheaper.
+- **New dependencies** — check that any new crate either supports `wasm32-unknown-unknown` or is gated behind a non-wasm cfg.
 
 ### Performance Awareness
 

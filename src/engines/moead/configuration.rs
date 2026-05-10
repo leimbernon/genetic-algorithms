@@ -10,19 +10,14 @@ pub use crate::nsga2::configuration::ObjectiveDirection;
 /// - `Pbi { theta }` — penalty-based boundary intersection (eq. 5):
 ///   `g = d1 + theta * d2`. Common values for `theta` are 1.0–10.0; Zhang & Li
 ///   use 5.0.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum ScalarizationFn {
     /// Classic Tchebycheff: `g = max_i { w_i * |f_i - z*_i| }`.
+    #[default]
     Tchebycheff,
     /// Penalty-based boundary intersection: `g = d1 + theta * d2`.
     Pbi { theta: f64 },
-}
-
-impl Default for ScalarizationFn {
-    fn default() -> Self {
-        ScalarizationFn::Tchebycheff
-    }
 }
 
 /// Configuration for the MOEA/D decomposition-based multi-objective genetic algorithm.
