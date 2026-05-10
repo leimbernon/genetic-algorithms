@@ -225,7 +225,7 @@ Plans:
 | 36. MOEA/D decomposition-based multi-objective | v2.4.0 | 3/3 | Complete    | 2026-05-10 |
 | 37. SPEA2 strength pareto evolutionary algorithm | v2.4.0 | 3/3 | Complete    | 2026-05-10 |
 | 38. Indicator-based MOEAs — SMS-EMOA and IBEA | v2.4.0 | -- | Not started | -- |
-| 39. Multi-objective quality indicators | v2.4.0 | -- | Not started | -- |
+| 39. Multi-objective quality indicators | v2.4.0 | 3/3 | Planned | -- |
 
 ### Phase 34: WASM support — fix time-based panics for wasm32-unknown-unknown targets (issue #236)
 
@@ -323,11 +323,16 @@ Plans:
 
 ### Phase 39: Multi-objective quality indicators — Hypervolume, GD, IGD, Spread
 
-**Goal:** A shared `src/engines/nsga2/indicators.rs` (or equivalent module) exposes Hypervolume, Generational Distance, Inverted Generational Distance, and Spread as pure functions usable by any multi-objective engine and callable from user code for post-run analysis
+**Goal:** A shared `src/engines/multi_objective/indicators/` directory exposes Hypervolume (2D Lebesgue), Generational Distance, Inverted Generational Distance, and Spread (Deb et al. 2002) as pure functions usable by any multi-objective engine and callable from user code for post-run analysis
 **Requirements**: MOO-05
 **Issue**: #207
 **Depends on:** Phase 37
-**Plans:** 0 plans
+**Plans:** 3/3 plans planned
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 39 to break down)
+**Wave 1**
+- [ ] 39-01-PLAN.md — Foundation: `GaError::InvalidIndicatorConfiguration` variant, wire `indicators/` module into `multi_objective`, shared validation helpers (MOO-05)
+
+**Wave 2** *(parallel, both depend on Wave 1)*
+- [ ] 39-02-PLAN.md — Hypervolume + Generational Distance implementations and integration tests (MOO-05)
+- [ ] 39-03-PLAN.md — Inverted Generational Distance + Spread implementations, integration tests, phase verification gate (MOO-05)
