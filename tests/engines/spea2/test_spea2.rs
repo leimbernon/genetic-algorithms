@@ -10,6 +10,7 @@ use genetic_algorithms::error::GaError;
 use genetic_algorithms::spea2::configuration::{Spea2Configuration, ObjectiveDirection};
 use genetic_algorithms::spea2::Spea2Ga;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use genetic_algorithms::LogObserver;
 use std::sync::Arc;
 
 #[test]
@@ -268,4 +269,23 @@ fn test_spea2_run_invokes_observer_hooks() {
         "on_fitness_assigned should fire once per generation");
     assert_eq!(observer_handle.archive_count.load(Ordering::Relaxed), 5,
         "on_archive_updated should fire once per generation");
+}
+
+#[test]
+fn test_spea2_log_observer() {
+    // D-06 smoke test: confirm `impl<U> Spea2Observer<U> for LogObserver` compiles
+    // and runs without panic.
+    let mut spea2 = build_test_spea2(15, 10, 3)
+        .with_observer(
+            Arc::new(LogObserver) as Arc<dyn genetic_algorithms::Spea2Observer<RangeChromosome<f64>> + Send + Sync>,
+        );
+
+    let result = spea2.run();
+    assert!(
+        result.is_ok(),
+        "Spea2 run with LogObserver should succeed: {:?}",
+        result.err()
+    );
+    let front = result.unwrap();
+    assert!(!front.is_empty(), "front should be non-empty under LogObserver");
 }
