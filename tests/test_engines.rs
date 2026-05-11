@@ -26,6 +26,7 @@ mod engines {
         mod test_non_dominated_sort;
         mod test_nsga2;
         mod test_nsga2_configuration;
+        mod test_nsga2_constraints;
         mod test_pareto;
     }
     mod nsga3 {
@@ -40,5 +41,13 @@ mod engines {
     mod spea2 {
         mod test_spea2;
         mod test_spea2_configuration;
+    }
+    mod sms_emoa {
+        mod test_sms_emoa;
+        mod test_sms_emoa_configuration;
+    }
+    mod ibea {
+        mod test_ibea;
+        mod test_ibea_configuration;
     }
 }
