@@ -73,6 +73,7 @@ pub mod checkpoint;
 #[path = "types/chromosomes/mod.rs"]
 pub mod chromosomes;
 pub mod configuration;
+pub mod constraints;
 pub mod error;
 pub mod extension;
 pub mod fitness;
@@ -88,6 +89,7 @@ pub mod population;
 #[path = "observe/reporter/mod.rs"]
 pub mod reporter;
 pub mod rng;
+pub mod hall_of_fame;
 pub mod stats;
 pub mod traits;
 pub mod validators;
@@ -119,6 +121,12 @@ pub mod moead;
 #[path = "engines/spea2/mod.rs"]
 pub mod spea2;
 
+#[path = "engines/sms_emoa/mod.rs"]
+pub mod sms_emoa;
+
+#[path = "engines/ibea/mod.rs"]
+pub mod ibea;
+
 pub use ga::TerminationCause;
 pub use observer::AllObserver;
 pub use observer::CompositeObserver;
@@ -127,6 +135,8 @@ pub use observer::GaObserver;
 pub use observer::IslandGaObserver;
 pub use observer::LogObserver;
 pub use observer::MoeaDObserver;
+pub use observer::IbeaObserver;
+pub use observer::SmsEmoaObserver;
 pub use observer::Spea2Observer;
 #[cfg(feature = "observer-metrics")]
 pub use observer::MetricsObserver;
@@ -135,3 +145,6 @@ pub use observer::Nsga2Observer;
 pub use observer::Nsga3Observer;
 #[cfg(feature = "observer-tracing")]
 pub use observer::TracingObserver;
+pub use constraints::ConstraintHandling;
+pub use constraints::PenaltyStrategy;
+pub use hall_of_fame::{DistanceMetric, HallOfFame, HallOfFameConfig};

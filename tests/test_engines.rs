@@ -50,4 +50,7 @@ mod engines {
         mod test_ibea;
         mod test_ibea_configuration;
     }
+    mod hall_of_fame {
+        mod test_hall_of_fame;
+    }
 }
