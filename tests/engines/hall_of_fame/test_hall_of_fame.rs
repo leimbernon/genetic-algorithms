@@ -378,3 +378,142 @@ fn hof_genotypic_distance_different_lengths() {
     assert!(hof.try_insert(&c2, 0)); // Should be admitted (different DNA)
     assert_eq!(hof.len(), 2);
 }
+
+// ---------------------------------------------------------------------------
+// GA Integration Test 1: Full GA run with HallOfFame
+// ---------------------------------------------------------------------------
+#[test]
+fn test_hof_ga_builder_and_run() {
+    use genetic_algorithms::chromosomes::Range as RangeChromosome;
+    use genetic_algorithms::configuration::ProblemSolving;
+    use genetic_algorithms::ga::Ga;
+    use genetic_algorithms::genotypes::Range as RangeGene;
+    use genetic_algorithms::hall_of_fame::{HallOfFameConfig, DistanceMetric};
+    use genetic_algorithms::initializers::range_random_initialization;
+    use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+    use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig};
+
+    let n: i32 = 8;
+    let alleles = vec![RangeGene::new(0, vec![(0, n - 1)], 0)];
+    let alleles_clone = alleles.clone();
+
+    let config = HallOfFameConfig {
+        capacity: 10,
+        distance_metric: DistanceMetric::Fitness { min_distance: 0.0 },
+    };
+
+    let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
+        .with_genes_per_chromosome(n.try_into().unwrap())
+        .with_population_size(30)
+        .with_initialization_fn(move |genes_per_chromosome, _, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        })
+        .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
+        .with_selection_method(Selection::Tournament)
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::Swap)
+        .with_problem_solving(ProblemSolving::Maximization)
+        .with_survivor_method(Survivor::Fitness)
+        .with_max_generations(20)
+        .with_hall_of_fame(config)
+        .build()
+        .expect("Failed to build GA with HallOfFame");
+
+    let result = ga.run();
+    assert!(result.is_ok(), "GA run should succeed");
+
+    let hof = ga.hall_of_fame();
+    assert!(hof.is_some(), "hall_of_fame() should return Some after run");
+    let hof = hof.unwrap();
+    assert!(!hof.is_empty(), "Hall of Fame should not be empty after a run");
+    assert!(hof.len() <= 10, "Hall of Fame should respect capacity");
+    assert_eq!(hof.solutions().len(), hof.len());
+}
+
+// ---------------------------------------------------------------------------
+// GA Integration Test 2: GA without HallOfFame returns None
+// ---------------------------------------------------------------------------
+#[test]
+fn test_hof_ga_without_hof_returns_none() {
+    use genetic_algorithms::chromosomes::Range as RangeChromosome;
+    use genetic_algorithms::configuration::ProblemSolving;
+    use genetic_algorithms::ga::Ga;
+    use genetic_algorithms::genotypes::Range as RangeGene;
+    use genetic_algorithms::initializers::range_random_initialization;
+    use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+    use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig};
+
+    let n: i32 = 8;
+    let alleles = vec![RangeGene::new(0, vec![(0, n - 1)], 0)];
+    let alleles_clone = alleles.clone();
+
+    let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
+        .with_genes_per_chromosome(n.try_into().unwrap())
+        .with_population_size(15)
+        .with_initialization_fn(move |genes_per_chromosome, _, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        })
+        .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
+        .with_selection_method(Selection::Random)
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::Swap)
+        .with_problem_solving(ProblemSolving::Maximization)
+        .with_survivor_method(Survivor::Fitness)
+        .with_max_generations(5)
+        .build()
+        .expect("build");
+
+    let _ = ga.run();
+    assert!(ga.hall_of_fame().is_none(), "hall_of_fame() should be None when not configured");
+}
+
+// ---------------------------------------------------------------------------
+// GA Integration Test 3: GA with Genotypic distance filter
+// ---------------------------------------------------------------------------
+#[test]
+fn test_hof_ga_genotypic_distance() {
+    use genetic_algorithms::chromosomes::Range as RangeChromosome;
+    use genetic_algorithms::configuration::ProblemSolving;
+    use genetic_algorithms::ga::Ga;
+    use genetic_algorithms::genotypes::Range as RangeGene;
+    use genetic_algorithms::hall_of_fame::{HallOfFameConfig, DistanceMetric};
+    use genetic_algorithms::initializers::range_random_initialization;
+    use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+    use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig};
+
+    let n: i32 = 8;
+    let alleles = vec![RangeGene::new(0, vec![(0, n - 1)], 0)];
+    let alleles_clone = alleles.clone();
+
+    // Genotypic distance 0.3 means at most 30% of genes can differ
+    let config = HallOfFameConfig {
+        capacity: 20,
+        distance_metric: DistanceMetric::Genotypic { min_distance: 0.3 },
+    };
+
+    let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
+        .with_genes_per_chromosome(n.try_into().unwrap())
+        .with_population_size(30)
+        .with_initialization_fn(move |genes_per_chromosome, _, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        })
+        .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
+        .with_selection_method(Selection::Tournament)
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::Swap)
+        .with_problem_solving(ProblemSolving::Maximization)
+        .with_survivor_method(Survivor::Fitness)
+        .with_max_generations(15)
+        .with_hall_of_fame(config)
+        .build()
+        .expect("build with genotypic distance");
+
+    let result = ga.run();
+    assert!(result.is_ok());
+
+    let hof = ga.hall_of_fame();
+    assert!(hof.is_some());
+    let hof = hof.unwrap();
+    assert!(!hof.is_empty(), "Hall of Fame with genotypic filter should have entries");
+    assert!(hof.len() <= 20, "Should respect capacity");
+}
