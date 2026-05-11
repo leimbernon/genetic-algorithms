@@ -8,7 +8,7 @@
 - ✅ **v2.2.0 — Observability & Traceability** — Phases 13-18 (shipped 2026-03-28)
 - ✅ **v2.2.1 — Performance Optimizations** — Phases 19-24 (shipped 2026-04-23)
 - ✅ **v2.3.0 — Alternative Metaheuristics & Population Models** — Phases 25-29 (shipped 2026-04-27)
-- 🚧 **v2.4.0 — Observer Integration & New Operators + Advanced Multi-Objective** — Phases 30-39 (in progress)
+- 🚧 **v2.4.0 — Observer Integration & New Operators + Advanced Multi-Objective** — Phases 30-45 (in progress)
 
 ## Phases
 
@@ -95,14 +95,26 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 
 </details>
 
-### v2.4.0 — Observer Integration, New Operators & Advanced Multi-Objective (In Progress)
+### v2.4.0 — Observer Integration, New Operators, Advanced Multi-Objective & Framework Extensions (In Progress)
 
-**Milestone Goal:** Wire GaObserver lifecycle hooks into all 4 new engines, close v2.3.0 deferred tech debt, expand the operator library with 7 new strategies, and extend multi-objective optimization with NSGA-III, MOEA/D, SPEA2, SMS-EMOA/IBEA, and shared quality indicators.
+**Milestone Goal:** Wire GaObserver lifecycle hooks into all 4 new engines, close v2.3.0 deferred tech debt, expand the operator library with 7 new strategies, extend multi-objective optimization with NSGA-III, MOEA/D, SPEA2, SMS-EMOA/IBEA, and shared quality indicators, and extend the core GA framework with constraint handling, Hall of Fame, warm starting, adaptive operator selection, benchmarks, and memetic algorithms.
 
 - [x] **Phase 30: Observer Wiring & DE Benchmark** — Wire GaObserver into all 4 new engines and add DE-vs-GA convergence benchmark (completed 2026-05-02)
 - [x] **Phase 31: Selection & Survivor Diversity Operators** — Clearing selection and Deterministic Crowding survivor strategy (completed 2026-05-04)
 - [x] **Phase 32: Crossover & Differential Mutation** — Edge Recombination crossover and DE-style differential mutation for standard GA (completed 2026-05-06)
 - [x] **Phase 33: Scalar Mutation Operators** — Cauchy, Levy Flight, and Uniform mutation operators (completed 2026-05-07)
+- [x] **Phase 34: WASM support** — Fix time-based panics for wasm32-unknown-unknown targets (completed 2026-05-07)
+- [x] **Phase 35: NSGA-III** — Reference-point based NSGA-III for many-objective optimization (completed 2026-05-09)
+- [x] **Phase 36: MOEA/D** — Weight-vector decomposition with Tchebycheff or PBI scalarisation (completed 2026-05-10)
+- [x] **Phase 37: SPEA2** — Archive-based strength Pareto selection (completed 2026-05-10)
+- [x] **Phase 38: SMS-EMOA and IBEA** — Hypervolume-based and indicator-based MOEAs (completed 2026-05-11)
+- [x] **Phase 39: Quality indicators** — Hypervolume, GD, IGD, Spread (completed 2026-05-11)
+- [x] **Phase 40: Constraint Handling** — Penalty functions, Deb's feasibility rules, RepairOperator (#212, #213, #214) (completed 2026-05-11)
+- [ ] **Phase 41: Hall of Fame / Solution Archive** — Bounded archive with deduplication and min-distance diversity (#217)
+- [ ] **Phase 42: Warm Starting & Population Seeding** — Initial population, seeded population, checkpoint resumption (#216)
+- [ ] **Phase 43: Adaptive Operator Selection (AOS)** — Operator portfolio with Probability Matching, Adaptive Pursuit, MAB (#218)
+- [ ] **Phase 44: Standard Benchmark Functions Suite** — Unimodal, multimodal, ZDT, DTLZ behind `benchmarks` feature flag (#219)
+- [ ] **Phase 45: Memetic Algorithm Framework** — LocalSearchOperator with Lamarckian/Baldwinian modes (#215)
 
 ## Phase Details
 
@@ -224,8 +236,14 @@ Plans:
 | 35. NSGA-III for many-objective optimization | v2.4.0 | 3/3 | Complete    | 2026-05-09 |
 | 36. MOEA/D decomposition-based multi-objective | v2.4.0 | 3/3 | Complete    | 2026-05-10 |
 | 37. SPEA2 strength pareto evolutionary algorithm | v2.4.0 | 3/3 | Complete    | 2026-05-10 |
-| 38. Indicator-based MOEAs — SMS-EMOA and IBEA | v2.4.0 | -- | Not started | -- |
-| 39. Multi-objective quality indicators | v2.4.0 | 1/3 | In Progress|  |
+| 38. Indicator-based MOEAs — SMS-EMOA and IBEA | v2.4.0 | 3/3 | Complete | 2026-05-11 |
+| 39. Multi-objective quality indicators | v2.4.0 | 3/3 | Complete | 2026-05-11 |
+| 40. Constraint Handling | v2.4.0 | 3/3 | Complete    | 2026-05-11 |
+| 41. Hall of Fame / Solution Archive | v2.4.0 | 2/3 | In Progress | — |
+| 42. Warm Starting & Population Seeding | v2.4.0 | 0/0 | Pending | — |
+| 43. Adaptive Operator Selection (AOS) | v2.4.0 | 0/0 | Pending | — |
+| 44. Standard Benchmark Functions Suite | v2.4.0 | 0/0 | Pending | — |
+| 45. Memetic Algorithm Framework | v2.4.0 | 0/0 | Pending | — |
 
 ### Phase 34: WASM support — fix time-based panics for wasm32-unknown-unknown targets (issue #236)
 
@@ -243,17 +261,6 @@ Plans:
 **Wave 2** *(blocked on Wave 1)*
 - [x] 34-04-PLAN.md — wasm32 CI compile-check + host smoke test + phase verification gate
 
-### v2.4.0 (continued) — Advanced Multi-Objective Optimization
-
-**Milestone Goal:** Extend the multi-objective engine beyond NSGA-II with three new algorithms (NSGA-III, MOEA/D, SPEA2), two indicator-based methods (SMS-EMOA, IBEA), and a shared quality-indicator library. All as new independent modules following the existing `src/engines/nsga2/` pattern.
-
-- [x] **Phase 35: NSGA-III for many-objective optimization** — Reference-point based NSGA-III (#203) (completed 2026-05-09)
-- [x] **Phase 36: MOEA/D — Decomposition-based multi-objective** — Weight-vector decomposition with Tchebycheff or PBI scalarisation (#204) (completed 2026-05-10)
-- [x] **Phase 37: SPEA2 — Strength Pareto Evolutionary Algorithm 2** — Archive-based strength Pareto selection (#205) (completed 2026-05-10)
-- [ ] **Phase 38: Indicator-based MOEAs — SMS-EMOA and IBEA** — Hypervolume-based (SMS-EMOA) and indicator-based (IBEA) selection (#206)
-- [ ] **Phase 39: Multi-objective quality indicators** — Shared library: Hypervolume, GD, IGD, Spread (#207)
-
----
 
 ### Phase 35: NSGA-III for many-objective optimization
 
@@ -316,10 +323,16 @@ Plans:
 **Requirements**: MOO-04
 **Issue**: #206
 **Depends on:** Phase 39
-**Plans:** 0 plans
+**Plans:** 3/3 plans complete
+**Completed:** 2026-05-11
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 38 to break down)
+**Wave 1** *(parallel, disjoint files)*
+- [x] 38-01-PLAN.md — SMS-EMOA scaffolding: error variant, SmsEmoaObserver trait, LogObserver impl, SmsEmoaConfiguration + builder, stub SmsEmoaGa + Wave 0 tests (MOO-04)
+- [x] 38-02-PLAN.md — IBEA scaffolding: error variant, IbeaObserver trait, LogObserver impl, IbeaConfiguration + builder, stub IbeaGa + Wave 0 tests (MOO-04)
+
+**Wave 2** *(blocked on Wave 1)*
+- [x] 38-03-PLAN.md — SmsEmoaGa::run() + IbeaGa::run() full run loops + observer hooks + WASM gating + integration tests + examples/sms_emoa_zdt1.rs + examples/ibea_zdt1.rs + phase verification gate (MOO-04)
 
 ### Phase 39: Multi-objective quality indicators — Hypervolume, GD, IGD, Spread
 
@@ -327,12 +340,74 @@ Plans:
 **Requirements**: MOO-05
 **Issue**: #207
 **Depends on:** Phase 37
-**Plans:** 1/3 plans executed
+**Plans:** 3/3 plans complete
+**Completed:** 2026-05-11
 
 Plans:
 **Wave 1**
 - [x] 39-01-PLAN.md — Foundation: `GaError::InvalidIndicatorConfiguration` variant, wire `indicators/` module into `multi_objective`, shared validation helpers (MOO-05)
 
 **Wave 2** *(parallel, both depend on Wave 1)*
-- [ ] 39-02-PLAN.md — Hypervolume + Generational Distance implementations and integration tests (MOO-05)
-- [ ] 39-03-PLAN.md — Inverted Generational Distance + Spread implementations, integration tests, phase verification gate (MOO-05)
+- [x] 39-02-PLAN.md — Hypervolume + Generational Distance implementations and integration tests (MOO-05)
+- [x] 39-03-PLAN.md — Inverted Generational Distance + Spread implementations, integration tests, phase verification gate (MOO-05)
+
+
+### Phase 40: Constraint Handling — Penalty Functions, Feasibility Rules, RepairOperator
+
+**Goal:** Users can solve constrained optimization problems by configuring penalty functions (static, dynamic, adaptive), Deb's feasibility rules for selection/survivor comparison, and a RepairOperator trait for fixing infeasible chromosomes after mutation
+**Requirements**: CNS-01, CNS-02, CNS-03
+**Issues**: #212, #213, #214
+**Plans:** 3/3 plans complete
+
+Plans:
+- [x] 40-01-PLAN.md -- Fix test_constraints.rs compilation + add Adaptive Penalty / FeasibilityRules GA integration tests (CNS-01, CNS-02, CNS-03)
+- [x] 40-02-PLAN.md -- NSGA-II constraint integration test module (CNS-01, CNS-02)
+- [x] 40-03-PLAN.md -- Constrained G1 optimization example (CNS-01, CNS-02, CNS-03)
+
+### Phase 41: Hall of Fame / Solution Archive
+
+**Goal:** Users can maintain an archive of top-N unique solutions across the entire run, with optional minimum-distance diversity filtering, accessible after run completion
+**Requirements**: ARC-01
+**Issue**: #217
+**Depends on:** Phase 40
+**Plans:** 3 plans
+
+Plans:
+**Wave 1**
+- [x] 41-01-PLAN.md — HallOfFame module foundation with core API and unit tests (HOF-01, HOF-02, HOF-03, HOF-05, HOF-07)
+
+**Wave 2** *(blocked on Wave 1)*
+- [x] 41-02-PLAN.md — Ga integration: struct field, builder, run loop, accessor, integration tests (HOF-04, HOF-06, HOF-09)
+- [ ] 41-03-PLAN.md — Serde round-trip, example, WASM check, phase verification gate (HOF-08, HOF-10)
+
+### Phase 42: Warm Starting & Population Seeding
+
+**Goal:** Users can initialize populations from known solutions, seeded individuals plus random fill, or deserialized checkpoints — enabling hot-start and transfer learning workflows
+**Requirements**: WSM-01
+**Issue**: #216
+**Depends on:** Phase 41
+**Plans:** 0/0 plans - not yet planned
+
+### Phase 43: Adaptive Operator Selection (AOS)
+
+**Goal:** Users can configure portfolios of crossover and mutation operators, with Probability Matching, Adaptive Pursuit, or Multi-Armed Bandit selection dynamically choosing the best operator based on recent fitness-improvement credit
+**Requirements**: AOS-01
+**Issue**: #218
+**Depends on:** Phase 42
+**Plans:** 0/0 plans - not yet planned
+
+### Phase 44: Standard Benchmark Functions Suite
+
+**Goal:** Users can evaluate algorithms against 15+ standard benchmark functions (Sphere, Rastrigin, Ackley, ZDT1-6, DTLZ1-7) behind a `benchmarks` feature flag, each with metadata and verified optima
+**Requirements**: BEN-01
+**Issue**: #219
+**Depends on:** Phase 43
+**Plans:** 0/0 plans - not yet planned
+
+### Phase 45: Memetic Algorithm Framework
+
+**Goal:** Users can attach a LocalSearchOperator to the GA loop with configurable application strategies (AllOffspring, BestN, Probabilistic, EveryNGenerations) and Lamarckian/Baldwinian modes, with parallel execution via rayon
+**Requirements**: MEM-01
+**Issue**: #215
+**Depends on:** Phase 44
+**Plans:** 0/0 plans - not yet planned
