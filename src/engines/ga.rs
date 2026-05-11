@@ -26,7 +26,9 @@
 //! [`crate::nsga2`] for multi-objective optimization.
 
 use crate::configuration::GaConfiguration;
+use crate::constraints::{ConstraintHandling, PenaltyStrategy};
 use crate::error::GaError;
+use crate::hall_of_fame::{HallOfFame, HallOfFameConfig};
 use crate::observer::{ExtensionEvent, GaObserver};
 #[allow(deprecated)]
 use crate::reporter::Reporter;
@@ -134,6 +136,31 @@ where
     /// Optional structured lifecycle observer. When `None` (the default),
     /// no hook calls or timing measurements are performed (zero overhead).
     observer: Option<Arc<dyn GaObserver<U> + Send + Sync>>,
+
+    /// Optional constraint violation functions.
+    /// Each function returns a violation >= 0 for a DNA slice (0 means satisfied).
+    constraint_fns: Option<Vec<Arc<dyn Fn(&[U::Gene]) -> f64 + Send + Sync>>>,
+
+    /// Strategy for applying penalty to infeasible solutions.
+    penalty_strategy: PenaltyStrategy,
+
+    /// Optional constraint handling method for comparisons.
+    constraint_handling: Option<ConstraintHandling>,
+
+    /// Optional repair operator. Applied after mutation, before fitness evaluation.
+    repair_operator: Option<Arc<dyn Fn(&mut U) -> Result<(), GaError> + Send + Sync>>,
+
+    /// Current penalty coefficient (used by adaptive penalty).
+    penalty_coefficient: f64,
+
+    /// Generation counter for adaptive penalty tracking.
+    /// Tracks how many generations the best individual has been feasible (positive)
+    /// or infeasible (negative) within the current window.
+    adaptive_penalty_counter: isize,
+
+    /// Optional Hall of Fame / solution archive. When `None` (default), no
+    /// archive is maintained and there is zero overhead.
+    hall_of_fame: Option<HallOfFame<U>>,
 }
 
 #[allow(deprecated)]
@@ -156,6 +183,13 @@ where
             fitness_cache_size: None,
             reporter: None,
             observer: None,
+            constraint_fns: None,
+            penalty_strategy: PenaltyStrategy::None,
+            constraint_handling: None,
+            repair_operator: None,
+            penalty_coefficient: 0.0,
+            adaptive_penalty_counter: 0,
+            hall_of_fame: None,
         }
     }
 }
@@ -504,6 +538,9 @@ where
             }
         }
 
+        // Validate constraint configuration
+        crate::constraints::validate_penalty_strategy(&self.penalty_strategy)?;
+
         Ok(self)
     }
 
@@ -587,6 +624,65 @@ where
         self
     }
 
+    // ---------------------------------------------------------------------------
+    // Constraint handling builder methods
+    // ---------------------------------------------------------------------------
+
+    /// Sets one or more constraint violation functions.
+    ///
+    /// Each function receives a chromosome's DNA slice and returns a violation
+    /// value >= 0, where 0 means the constraint is fully satisfied. Multiple
+    /// constraint functions can be provided; the total violation is the sum
+    /// of all individual violation values.
+    ///
+    /// Combined with `with_penalty_strategy()` to define how violations
+    /// affect fitness, or with `with_constraint_handling()` for Deb's
+    /// feasibility rules.
+    pub fn with_constraint_fns<F>(mut self, fns: Vec<F>) -> Self
+    where
+        F: Fn(&[U::Gene]) -> f64 + Send + Sync + 'static,
+    {
+        self.constraint_fns = Some(fns.into_iter().map(|f| Arc::new(f) as Arc<_>).collect());
+        self
+    }
+
+    /// Sets the penalty strategy for constraint handling.
+    ///
+    /// Use with `with_constraint_fns()`. The strategy determines how
+    /// constraint violations are added to raw fitness.
+    ///
+    /// Default: `PenaltyStrategy::None` (no penalty applied).
+    pub fn with_penalty_strategy(mut self, strategy: PenaltyStrategy) -> Self {
+        self.penalty_strategy = strategy;
+        self
+    }
+
+    /// Sets the constraint handling method for comparisons.
+    ///
+    /// Use with `with_constraint_fns()`. When set, the comparison behavior
+    /// in selection, survivor, and elite operations is modified according
+    /// to the chosen method (e.g., Deb's feasibility rules).
+    pub fn with_constraint_handling(mut self, handling: ConstraintHandling) -> Self {
+        self.constraint_handling = Some(handling);
+        self
+    }
+
+    /// Sets the repair operator for fixing infeasible chromosomes.
+    ///
+    /// The repair operator is applied after mutation and before fitness
+    /// evaluation, allowing chromosomes to be modified in-place to satisfy
+    /// problem-specific constraints (e.g., knapsack capacity, TSP validity).
+    ///
+    /// The operator receives a mutable reference to the chromosome and must
+    /// return `Ok(())` after modifying it to satisfy constraints.
+    pub fn with_repair_operator<F>(mut self, operator: F) -> Self
+    where
+        F: Fn(&mut U) -> Result<(), GaError> + Send + Sync + 'static,
+    {
+        self.repair_operator = Some(Arc::new(operator));
+        self
+    }
+
     /// Sets the initialization function used to create chromosome DNA.
     ///
     /// The closure receives `(genes_per_chromosome, alleles, needs_unique_ids)`
@@ -597,6 +693,18 @@ where
         F: Fn(usize, Option<&[U::Gene]>, Option<bool>) -> Vec<U::Gene> + Send + Sync + 'static,
     {
         self.initialization_fn = Some(Arc::new(initialization_fn));
+        self
+    }
+
+    /// Configures a Hall of Fame / solution archive.
+    ///
+    /// When configured, the GA will maintain a bounded archive of the top-N
+    /// unique solutions encountered across all generations. Accessible after
+    /// `run()` completes via `.hall_of_fame()`.
+    ///
+    /// Uses `HallOfFameConfig` for capacity and diversity filtering settings.
+    pub fn with_hall_of_fame(mut self, config: HallOfFameConfig) -> Self {
+        self.hall_of_fame = Some(HallOfFame::new(config));
         self
     }
 
@@ -647,6 +755,15 @@ where
                 new_population.size() / 2;
         }
         self.population = new_population;
+
+        // Apply repair operator to initial population if configured
+        if let Some(ref repair_op) = self.repair_operator {
+            for c in self.population.chromosomes.iter_mut() {
+                repair_op(c)?;
+                c.calculate_fitness();
+            }
+        }
+
         Ok(self)
     }
 
@@ -735,6 +852,11 @@ where
             self.configuration.limit_configuration.problem_solving,
         );
 
+        // Apply constraint processing to initial population if configured
+        if self.constraint_fns.is_some() {
+            self.process_constraints_population(0)?;
+        }
+
         // Starting counting the generations for the callback
         let mut generation_callback_count = 0usize;
 
@@ -818,8 +940,66 @@ where
                 // NOTE: elapsed covers combined crossover+mutation+fitness time (EXT-01)
                 self.notify(|obs| obs.on_fitness_evaluation_complete(i, elapsed, pop_size));
             }
+
+            // Apply repair operator to offspring if configured
+            if let Some(ref repair_op) = self.repair_operator {
+                for c in offspring.iter_mut() {
+                    repair_op(c)?;
+                    c.calculate_fitness();
+                }
+            }
+
+            // Apply constraint penalty to offspring if configured
+            if self.constraint_fns.is_some() {
+                for c in offspring.iter_mut() {
+                    let dna = c.dna();
+                    let total_viol: f64 = self
+                        .constraint_fns
+                        .as_ref()
+                        .unwrap()
+                        .iter()
+                        .map(|f| f(dna))
+                        .sum();
+                    if total_viol > 0.0 {
+                        match self.penalty_strategy {
+                            PenaltyStrategy::None => {}
+                            PenaltyStrategy::Static { coefficient } => {
+                                c.set_fitness(c.fitness() + coefficient * total_viol);
+                            }
+                            PenaltyStrategy::Dynamic { c: dc, alpha, beta } => {
+                                let penalized = crate::constraints::apply_dynamic_penalty(
+                                    c.fitness(),
+                                    total_viol,
+                                    age,
+                                    dc,
+                                    alpha,
+                                    beta,
+                                );
+                                c.set_fitness(penalized);
+                            }
+                            PenaltyStrategy::Adaptive { .. } => {
+                                // Adaptive penalty uses the current coefficient
+                                let coeff = if self.penalty_coefficient == 0.0 {
+                                    0.0 // Will be initialized at generation boundary
+                                } else {
+                                    self.penalty_coefficient
+                                };
+                                c.set_fitness(c.fitness() + coeff * total_viol);
+                            }
+                        }
+                    }
+                }
+            }
+
             //3- Insert the children in the population
             self.population.add_chromosomes(&mut offspring);
+
+            //3b- Hall of Fame update: evaluate all population chromosomes for archive entry
+            if let Some(ref mut hof) = self.hall_of_fame {
+                for c in self.population.chromosomes.iter() {
+                    hof.try_insert(c, i as u64);
+                }
+            }
 
             //3.5- Elitism: preserve the top N individuals
             let elite = if self.configuration.elitism_count > 0 {
@@ -1274,6 +1454,178 @@ where
     /// at the start of each new run. Each entry corresponds to one generation.
     pub fn stats(&self) -> &[GenerationStats] {
         &self.stats
+    }
+
+    /// Returns the Hall of Fame / solution archive, if configured.
+    ///
+    /// Returns `None` if no Hall of Fame was configured.
+    /// Returns `Some(&HallOfFame<U>)` if configured, populated with the top-N
+    /// unique solutions encountered across all generations during the run.
+    pub fn hall_of_fame(&self) -> Option<&HallOfFame<U>> {
+        self.hall_of_fame.as_ref()
+    }
+
+    // ---------------------------------------------------------------------------
+    // Constraint handling helpers
+    // ---------------------------------------------------------------------------
+
+    /// Applies constraint violation penalty to the entire population.
+    ///
+    /// Called after initial fitness calculation and after offspring are added to
+    /// the population each generation. Modifies fitness values in-place according
+    /// to the configured penalty strategy or feasibility rules.
+    fn process_constraints_population(&mut self, generation: usize) -> Result<(), GaError> {
+        let constraint_fns = match self.constraint_fns {
+            Some(ref fns) => fns,
+            None => return Ok(()),
+        };
+
+        // Compute constraint violations for all chromosomes
+        let violations: Vec<f64> = self
+            .population
+            .chromosomes
+            .iter()
+            .map(|c| {
+                let dna = c.dna();
+                constraint_fns.iter().map(|f| f(dna)).sum()
+            })
+            .collect();
+
+        // Apply feasibility rules or penalty strategy
+        match self.constraint_handling {
+            Some(ConstraintHandling::FeasibilityRules) => {
+                self.apply_feasibility_rules(&violations);
+            }
+            None => {
+                self.apply_penalty_to_chromosomes(&violations, generation);
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Applies feasibility rules to modify fitness values so that feasible
+    /// individuals always compare better than infeasible ones, and infeasible
+    /// individuals are ordered by total violation.
+    fn apply_feasibility_rules(&mut self, violations: &[f64]) {
+        let (feasible_count, worst_feasible) = {
+            let mut wf = f64::NEG_INFINITY;
+            let mut bf = f64::INFINITY;
+            let mut count = 0usize;
+            for (c, &v) in self.population.chromosomes.iter().zip(violations.iter()) {
+                if v <= 0.0 {
+                    count += 1;
+                    let f = c.fitness();
+                    if f > wf {
+                        wf = f;
+                    }
+                    if f < bf {
+                        bf = f;
+                    }
+                }
+            }
+            (count, wf)
+        };
+
+        let is_maximization = matches!(
+            self.configuration.limit_configuration.problem_solving,
+            ProblemSolving::Maximization
+        );
+
+        for (c, &v) in self.population.chromosomes.iter_mut().zip(violations.iter()) {
+            if v > 0.0 {
+                // Infeasible — encode violation so that:
+                // - All feasible beat all infeasible
+                // - Within infeasible, lower violation is better
+                if feasible_count > 0 {
+                    if is_maximization {
+                        // For maximization: feasible values are higher, so infeasible
+                        // get fitness = worst_feasible - violation (lower = worse)
+                        c.set_fitness(worst_feasible - v);
+                    } else {
+                        // For minimization: feasible values are lower, so infeasible
+                        // get fitness = worst_feasible + violation (higher = worse)
+                        c.set_fitness(worst_feasible + v);
+                    }
+                } else {
+                    // No feasible solutions — sort by violation only
+                    if is_maximization {
+                        c.set_fitness(-v);
+                    } else {
+                        c.set_fitness(v);
+                    }
+                }
+            }
+        }
+    }
+
+    /// Applies the configured penalty strategy to all chromosomes.
+    fn apply_penalty_to_chromosomes(&mut self, violations: &[f64], generation: usize) {
+        match self.penalty_strategy {
+            PenaltyStrategy::None => {}
+            PenaltyStrategy::Static { coefficient } => {
+                for (c, &v) in self.population.chromosomes.iter_mut().zip(violations.iter()) {
+                    if v > 0.0 {
+                        c.set_fitness(c.fitness() + coefficient * v);
+                    }
+                }
+            }
+            PenaltyStrategy::Dynamic { c, alpha, beta } => {
+                for (chr, &v) in self.population.chromosomes.iter_mut().zip(violations.iter()) {
+                    if v > 0.0 {
+                        let raw = chr.fitness();
+                        let penalized =
+                            crate::constraints::apply_dynamic_penalty(raw, v, generation, c, alpha, beta);
+                        chr.set_fitness(penalized);
+                    }
+                }
+            }
+            PenaltyStrategy::Adaptive {
+                initial_coefficient,
+                window_size,
+            } => {
+                let coeff = if self.penalty_coefficient == 0.0 {
+                    initial_coefficient
+                } else {
+                    self.penalty_coefficient
+                };
+                // Track feasibility of best individual for adaptive adjustment
+                if generation > 0 && generation % window_size == 0 {
+                    let best_violation = violations
+                        .iter()
+                        .zip(self.population.chromosomes.iter())
+                        .find(|(_, c)| {
+                            c.fitness()
+                                == self.population.chromosomes.iter().map(|x| x.fitness()).fold(
+                                    f64::NEG_INFINITY,
+                                    |a, b| a.max(b),
+                                )
+                        })
+                        .map(|(v, _)| *v)
+                        .unwrap_or(0.0);
+                    self.adaptive_penalty_counter = if best_violation <= 0.0 {
+                        self.adaptive_penalty_counter + 1
+                    } else {
+                        self.adaptive_penalty_counter - 1
+                    };
+                    if self.adaptive_penalty_counter > 0 {
+                        // Best has been feasible — increase penalty pressure
+                        let new_coeff = self.penalty_coefficient * 1.1;
+                        self.penalty_coefficient = new_coeff;
+                    } else if self.adaptive_penalty_counter < 0 {
+                        // Best has been infeasible — decrease penalty pressure
+                        let new_coeff = (self.penalty_coefficient / 1.1).max(0.001);
+                        self.penalty_coefficient = new_coeff;
+                    }
+                }
+
+                for (c, &v) in self.population.chromosomes.iter_mut().zip(violations.iter()) {
+                    if v > 0.0 {
+                        c.set_fitness(c.fitness() + coeff * v);
+                    }
+                }
+            }
+        }
     }
 }
 
