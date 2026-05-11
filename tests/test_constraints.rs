@@ -120,3 +120,90 @@ fn test_repair_operator() {
 
     let _population = ga.run().expect("GA run failed");
 }
+
+#[test]
+fn test_constraint_handling_adaptive_penalty() {
+    let n: i32 = 8;
+    let alleles = vec![RangeGene::new(0, vec![(0, n - 1)], 0)];
+    let alleles_clone = alleles.clone();
+
+    // Constraint: sum must be >= 20 (violation = max(0, 20 - sum))
+    let constraint = |dna: &[RangeGene<i32>]| {
+        let sum: i32 = dna.iter().map(|g| g.value()).sum();
+        (20.0 - sum as f64).max(0.0)
+    };
+
+    let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
+        .with_genes_per_chromosome(n.try_into().unwrap())
+        .with_population_size(50)
+        .with_initialization_fn(move |genes_per_chromosome, _, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        })
+        .with_fitness_fn(|dna: &[RangeGene<i32>]| {
+            let sum: i32 = dna.iter().map(|g| g.value()).sum();
+            -(sum as f64)
+        })
+        .with_selection_method(Selection::Tournament)
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::Swap)
+        .with_problem_solving(ProblemSolving::Minimization)
+        .with_survivor_method(Survivor::Fitness)
+        .with_max_generations(50)
+        .with_constraint_fns(vec![constraint])
+        .with_penalty_strategy(PenaltyStrategy::Adaptive {
+            initial_coefficient: 50.0,
+            window_size: 10,
+        })
+        .build()
+        .expect("Failed to build GA with adaptive penalty");
+
+    let result = ga.run();
+    assert!(
+        result.is_ok(),
+        "GA with adaptive penalty should succeed, got: {:?}",
+        result.err()
+    );
+}
+
+#[test]
+fn test_constraint_handling_feasibility_rules() {
+    use genetic_algorithms::constraints::ConstraintHandling;
+
+    let n: i32 = 8;
+    let alleles = vec![RangeGene::new(0, vec![(0, n - 1)], 0)];
+    let alleles_clone = alleles.clone();
+
+    // Constraint: sum must be >= 24 (violation = max(0, 24 - sum))
+    let constraint = |dna: &[RangeGene<i32>]| {
+        let sum: i32 = dna.iter().map(|g| g.value()).sum();
+        (24.0 - sum as f64).max(0.0)
+    };
+
+    let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
+        .with_genes_per_chromosome(n.try_into().unwrap())
+        .with_population_size(50)
+        .with_initialization_fn(move |genes_per_chromosome, _, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        })
+        .with_fitness_fn(|dna: &[RangeGene<i32>]| {
+            let sum: i32 = dna.iter().map(|g| g.value()).sum();
+            -(sum as f64)
+        })
+        .with_selection_method(Selection::Tournament)
+        .with_crossover_method(Crossover::Uniform)
+        .with_mutation_method(Mutation::Swap)
+        .with_problem_solving(ProblemSolving::Minimization)
+        .with_survivor_method(Survivor::Fitness)
+        .with_max_generations(50)
+        .with_constraint_fns(vec![constraint])
+        .with_constraint_handling(ConstraintHandling::FeasibilityRules)
+        .build()
+        .expect("Failed to build GA with feasibility rules");
+
+    let result = ga.run();
+    assert!(
+        result.is_ok(),
+        "GA with feasibility rules should succeed, got: {:?}",
+        result.err()
+    );
+}
