@@ -1,5 +1,4 @@
 use crate::error::GaError;
-use super::generational_distance::DEFAULT_POWER;
 use super::{nearest_distance, validate_dimension_consistency, validate_non_empty};
 
 /// Computes the Inverted Generational Distance (IGD) indicator.

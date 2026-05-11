@@ -1,4 +1,4 @@
-use crate::GaError;
+use crate::error::GaError;
 use super::{validate_non_empty, validate_dimension_consistency, validate_dimension};
 
 /// Computes the 2D Hypervolume indicator (Lebesgue measure).

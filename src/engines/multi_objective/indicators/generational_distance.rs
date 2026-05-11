@@ -1,8 +1,5 @@
-use crate::GaError;
+use crate::error::GaError;
 use super::{nearest_distance, validate_dimension_consistency, validate_non_empty};
-
-/// Default power for GD/IGD: p=2 gives Euclidean norm.
-pub(crate) const DEFAULT_POWER: f64 = 2.0;
 
 /// Computes the Generational Distance (GD) indicator.
 ///
