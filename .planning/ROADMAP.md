@@ -110,7 +110,7 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 - [x] **Phase 38: SMS-EMOA and IBEA** — Hypervolume-based and indicator-based MOEAs (completed 2026-05-11)
 - [x] **Phase 39: Quality indicators** — Hypervolume, GD, IGD, Spread (completed 2026-05-11)
 - [x] **Phase 40: Constraint Handling** — Penalty functions, Deb's feasibility rules, RepairOperator (#212, #213, #214) (completed 2026-05-11)
-- [ ] **Phase 41: Hall of Fame / Solution Archive** — Bounded archive with deduplication and min-distance diversity (#217)
+- [x] **Phase 41: Hall of Fame / Solution Archive** — Bounded archive with deduplication and min-distance diversity (#217)
 - [ ] **Phase 42: Warm Starting & Population Seeding** — Initial population, seeded population, checkpoint resumption (#216)
 - [ ] **Phase 43: Adaptive Operator Selection (AOS)** — Operator portfolio with Probability Matching, Adaptive Pursuit, MAB (#218)
 - [ ] **Phase 44: Standard Benchmark Functions Suite** — Unimodal, multimodal, ZDT, DTLZ behind `benchmarks` feature flag (#219)
@@ -239,8 +239,8 @@ Plans:
 | 38. Indicator-based MOEAs — SMS-EMOA and IBEA | v2.4.0 | 3/3 | Complete | 2026-05-11 |
 | 39. Multi-objective quality indicators | v2.4.0 | 3/3 | Complete | 2026-05-11 |
 | 40. Constraint Handling | v2.4.0 | 3/3 | Complete    | 2026-05-11 |
-| 41. Hall of Fame / Solution Archive | v2.4.0 | 2/3 | In Progress | — |
-| 42. Warm Starting & Population Seeding | v2.4.0 | 0/0 | Pending | — |
+| 41. Hall of Fame / Solution Archive | v2.4.0 | 3/3 | Complete | 2026-05-12 |
+| 42. Warm Starting & Population Seeding | v2.4.0 | 1/3 | In Progress|  |
 | 43. Adaptive Operator Selection (AOS) | v2.4.0 | 0/0 | Pending | — |
 | 44. Standard Benchmark Functions Suite | v2.4.0 | 0/0 | Pending | — |
 | 45. Memetic Algorithm Framework | v2.4.0 | 0/0 | Pending | — |
@@ -368,6 +368,7 @@ Plans:
 
 **Goal:** Users can maintain an archive of top-N unique solutions across the entire run, with optional minimum-distance diversity filtering, accessible after run completion
 **Requirements**: ARC-01
+**Completed:** 2026-05-12
 **Issue**: #217
 **Depends on:** Phase 40
 **Plans:** 3 plans
@@ -378,7 +379,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1)*
 - [x] 41-02-PLAN.md — Ga integration: struct field, builder, run loop, accessor, integration tests (HOF-04, HOF-06, HOF-09)
-- [ ] 41-03-PLAN.md — Serde round-trip, example, WASM check, phase verification gate (HOF-08, HOF-10)
+- [x] 41-03-PLAN.md — Serde round-trip, example, WASM check, phase verification gate (HOF-08, HOF-10)
 
 ### Phase 42: Warm Starting & Population Seeding
 
@@ -386,7 +387,17 @@ Plans:
 **Requirements**: WSM-01
 **Issue**: #216
 **Depends on:** Phase 41
-**Plans:** 0/0 plans - not yet planned
+**Plans:** 1/3 plans executed
+
+Plans:
+**Wave 1**
+- [x] 42-01-PLAN.md — Ga struct fields, builder methods, build-time validation, test scaffolding (WSM-01-A, WSM-01-D, WSM-01-J, WSM-01-K)
+
+**Wave 2** *(blocked on Wave 1)*
+- [ ] 42-02-PLAN.md — Seed-based initialization with genotypic dedup, trusted fitness, HOF admission (WSM-01-A, WSM-01-B, WSM-01-C, WSM-01-H, WSM-01-J, WSM-01-K)
+
+**Wave 3** *(blocked on Wave 1)*
+- [ ] 42-03-PLAN.md — Checkpoint resumption with hybrid config override, absolute counting, stats preservation (WSM-01-D, WSM-01-E, WSM-01-F, WSM-01-G, WSM-01-I, WSM-01-J, WSM-01-K, WSM-01-L)
 
 ### Phase 43: Adaptive Operator Selection (AOS)
 
@@ -394,7 +405,17 @@ Plans:
 **Requirements**: AOS-01
 **Issue**: #218
 **Depends on:** Phase 42
-**Plans:** 0/0 plans - not yet planned
+**Plans:** 3 plans
+
+Plans:
+**Wave 1**
+- [ ] 42-01-PLAN.md — Ga struct fields, builder methods, build-time validation, test scaffolding (WSM-01-A, WSM-01-D, WSM-01-J, WSM-01-K)
+
+**Wave 2** *(blocked on Wave 1)*
+- [ ] 42-02-PLAN.md — Seed-based initialization with genotypic dedup, trusted fitness, HOF admission (WSM-01-A, WSM-01-B, WSM-01-C, WSM-01-H, WSM-01-J, WSM-01-K)
+
+**Wave 3** *(blocked on Wave 1)*
+- [ ] 42-03-PLAN.md — Checkpoint resumption with hybrid config override, absolute counting, stats preservation (WSM-01-D, WSM-01-E, WSM-01-F, WSM-01-G, WSM-01-I, WSM-01-J, WSM-01-K, WSM-01-L)
 
 ### Phase 44: Standard Benchmark Functions Suite
 
@@ -402,7 +423,17 @@ Plans:
 **Requirements**: BEN-01
 **Issue**: #219
 **Depends on:** Phase 43
-**Plans:** 0/0 plans - not yet planned
+**Plans:** 3 plans
+
+Plans:
+**Wave 1**
+- [ ] 42-01-PLAN.md — Ga struct fields, builder methods, build-time validation, test scaffolding (WSM-01-A, WSM-01-D, WSM-01-J, WSM-01-K)
+
+**Wave 2** *(blocked on Wave 1)*
+- [ ] 42-02-PLAN.md — Seed-based initialization with genotypic dedup, trusted fitness, HOF admission (WSM-01-A, WSM-01-B, WSM-01-C, WSM-01-H, WSM-01-J, WSM-01-K)
+
+**Wave 3** *(blocked on Wave 1)*
+- [ ] 42-03-PLAN.md — Checkpoint resumption with hybrid config override, absolute counting, stats preservation (WSM-01-D, WSM-01-E, WSM-01-F, WSM-01-G, WSM-01-I, WSM-01-J, WSM-01-K, WSM-01-L)
 
 ### Phase 45: Memetic Algorithm Framework
 
@@ -410,4 +441,14 @@ Plans:
 **Requirements**: MEM-01
 **Issue**: #215
 **Depends on:** Phase 44
-**Plans:** 0/0 plans - not yet planned
+**Plans:** 3 plans
+
+Plans:
+**Wave 1**
+- [ ] 42-01-PLAN.md — Ga struct fields, builder methods, build-time validation, test scaffolding (WSM-01-A, WSM-01-D, WSM-01-J, WSM-01-K)
+
+**Wave 2** *(blocked on Wave 1)*
+- [ ] 42-02-PLAN.md — Seed-based initialization with genotypic dedup, trusted fitness, HOF admission (WSM-01-A, WSM-01-B, WSM-01-C, WSM-01-H, WSM-01-J, WSM-01-K)
+
+**Wave 3** *(blocked on Wave 1)*
+- [ ] 42-03-PLAN.md — Checkpoint resumption with hybrid config override, absolute counting, stats preservation (WSM-01-D, WSM-01-E, WSM-01-F, WSM-01-G, WSM-01-I, WSM-01-J, WSM-01-K, WSM-01-L)
