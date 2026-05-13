@@ -34,6 +34,7 @@ use crate::observer::{ExtensionEvent, GaObserver};
 use crate::reporter::Reporter;
 use crate::stats::GenerationStats;
 use crate::traits::{FitnessFn, InitializationFn};
+use crate::aos::AosState;
 use crate::validators::validator_factory as ValidatorFactory;
 use crate::{
     configuration::{LimitConfiguration, LogLevel, ProblemSolving},
@@ -50,7 +51,7 @@ use rayon::prelude::*;
 use std::fmt::Debug;
 use std::ops::ControlFlow;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 /// Marker trait that resolves to `serde::Serialize` when the `serde` feature is
@@ -191,6 +192,18 @@ where
     /// builder config wins for operator settings (hybrid config per D-04).
     /// When `None` (default), no checkpoint loading occurs. Zero overhead when None.
     checkpoint_path: Option<PathBuf>,
+
+    /// Optional AOS crossover operator selection state (Phase 43).
+    /// Runtime state wrapped in Mutex for safe shared access across rayon threads.
+    /// When `Some(Mutex<AosState>)`, each offspring couple uses AOS to select the crossover operator.
+    /// Default: None (standard single-operator dispatch).
+    aos_crossover: Option<Mutex<AosState>>,
+
+    /// Optional AOS mutation operator selection state (Phase 43).
+    /// Runtime state wrapped in Mutex for safe shared access across rayon threads.
+    /// When `Some(Mutex<AosState>)`, each offspring couple uses AOS to select the mutation operator.
+    /// Default: None (standard single-operator dispatch).
+    aos_mutation: Option<Mutex<AosState>>,
 }
 
 #[allow(deprecated)]
@@ -222,6 +235,8 @@ where
             hall_of_fame: None,
             seeds: None,
             checkpoint_path: None,
+            aos_crossover: None,
+            aos_mutation: None,
         }
     }
 }
@@ -1179,6 +1194,22 @@ where
         //Initialize the adaptive ga
         if self.configuration.adaptive_ga {
             self.population.recalculate_aga();
+        }
+
+        // Initialize AOS state if portfolios are configured (Phase 43)
+        if let Some(ref xover_pf) = self.configuration.crossover_portfolio {
+            self.aos_crossover = Some(Mutex::new(AosState::new(
+                xover_pf.len(),
+                self.configuration.aos_strategy.clone(),
+                self.configuration.aos_reward_window,
+            )));
+        }
+        if let Some(ref mut_pf) = self.configuration.mutation_portfolio {
+            self.aos_mutation = Some(Mutex::new(AosState::new(
+                mut_pf.len(),
+                self.configuration.aos_strategy.clone(),
+                self.configuration.aos_reward_window,
+            )));
         }
 
         // Initialize dynamic mutation probability
