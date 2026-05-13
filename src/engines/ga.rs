@@ -38,7 +38,7 @@ use crate::aos::AosState;
 use crate::validators::validator_factory as ValidatorFactory;
 use crate::{
     configuration::{LimitConfiguration, LogLevel, ProblemSolving},
-    operations::{crossover, extension, mutation, selection, survivor, Extension},
+    operations::{crossover, extension, mutation, selection, survivor, Crossover, Extension, Mutation},
     population::Population,
     traits::{
         ChromosomeT, ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, GeneT,
@@ -1321,6 +1321,14 @@ where
                 self.population.f_avg,
                 dynamic_prob,
                 self.fitness_fn.clone(),
+                // AOS parameters (Phase 43)
+                self.configuration.crossover_portfolio.as_ref(),
+                self.configuration.mutation_portfolio.as_ref(),
+                self.aos_crossover.as_ref(),
+                self.aos_mutation.as_ref(),
+                i,
+                best_fitness_so_far,
+                is_maximization,
             )?;
             if let Some(t) = t_cx {
                 let elapsed = t.elapsed();
@@ -2070,6 +2078,14 @@ fn parent_crossover<U>(
     f_avg: f64,
     dynamic_mutation_prob: Option<f64>,
     fitness_fn: Option<Arc<FitnessFn<U::Gene>>>,
+    // ---- AOS parameters (Phase 43) ----
+    crossover_portfolio: Option<&Vec<Crossover>>,
+    mutation_portfolio: Option<&Vec<Mutation>>,
+    aos_crossover_state: Option<&Mutex<AosState>>,
+    aos_mutation_state: Option<&Mutex<AosState>>,
+    generation: usize,
+    best_fitness: f64,
+    is_maximization: bool,
 ) -> Result<Vec<U>, GaError>
 where
     U: ChromosomeT + Send + Sync + 'static + Clone + mutation::ValueMutable,
@@ -2102,6 +2118,21 @@ where
         Some(1.0)
     };
 
+    // Create AOS reward accumulators (Phase 43)
+    // These are shared across rayon threads via Arc<Mutex<Vec<(usize, f64)>>>
+    let crossover_reward_acc: Option<Arc<Mutex<Vec<(usize, f64)>>>> =
+        if aos_crossover_state.is_some() {
+            Some(Arc::new(Mutex::new(Vec::new())))
+        } else {
+            None
+        };
+    let mutation_reward_acc: Option<Arc<Mutex<Vec<(usize, f64)>>>> =
+        if aos_mutation_state.is_some() {
+            Some(Arc::new(Mutex::new(Vec::new())))
+        } else {
+            None
+        };
+
     // Shared per-pair closure: produces two children from one (key, value) parent pair.
     // cfg-gated only for the iterator kind (par_iter on native, iter on wasm32).
     let process_pair = |(key, value): &(usize, usize)| -> Result<Vec<U>, GaError> {
@@ -2122,6 +2153,28 @@ where
                 chromosomes.len()
             ))
         })?;
+
+        // Select operators via AOS if portfolios are configured (Phase 43)
+        // AOS returns (operator_index, operator_enum) for reward tracking
+        let selected_crossover: Option<(usize, Crossover)> =
+            if let (Some(portfolio), Some(aos_state)) = (crossover_portfolio, aos_crossover_state)
+            {
+                let mut state = aos_state.lock().unwrap();
+                let op_idx = state.select_operator(&mut rng, generation);
+                Some((op_idx, portfolio[op_idx]))
+            } else {
+                None
+            };
+
+        let selected_mutation: Option<(usize, Mutation)> =
+            if let (Some(portfolio), Some(aos_state)) = (mutation_portfolio, aos_mutation_state)
+            {
+                let mut state = aos_state.lock().unwrap();
+                let op_idx = state.select_operator(&mut rng, generation);
+                Some((op_idx, portfolio[op_idx]))
+            } else {
+                None
+            };
 
         // Making the crossover of the parents when the random number is below or equal to the given probability
         let crossover_probability = rng.random_range(0.0..1.0);
@@ -2168,8 +2221,15 @@ where
         let mut child_2: U;
 
         if crossover_probability <= effective_crossover_prob {
-            let mut children =
-                crossover::factory(parent_1, parent_2, configuration.crossover_configuration)?;
+            let mut children = if let Some((_op_idx, cx_op)) = selected_crossover {
+                // Use AOS-selected operator (Phase 43)
+                let mut cx_config = configuration.crossover_configuration;
+                cx_config.method = cx_op;
+                crossover::factory(parent_1, parent_2, cx_config)?
+            } else {
+                // Standard single-operator dispatch
+                crossover::factory(parent_1, parent_2, configuration.crossover_configuration)?
+            };
             child_2 = children.pop().ok_or_else(|| {
                 GaError::CrossoverError("Crossover returned fewer than 2 children".to_string())
             })?;
@@ -2181,8 +2241,13 @@ where
             child_2 = parent_2.clone();
         }
 
+        // Determine mutation method: AOS-selected or configured single operator
+        let mutation_method = selected_mutation
+            .map(|(_, op)| op)
+            .unwrap_or(configuration.mutation_configuration.method);
+
         if mutation_probability <= effective_mutation_prob {
-            if configuration.mutation_configuration.method == crate::operations::Mutation::Differential {
+            if mutation_method == crate::operations::Mutation::Differential {
                 let f = configuration.mutation_configuration.differential_f.unwrap_or(0.5);
                 crate::operations::mutation::differential::differential_mutation(
                     &mut child_1,
@@ -2190,34 +2255,34 @@ where
                     *key,
                     f,
                 )?;
-            } else if configuration.mutation_configuration.method == crate::operations::Mutation::Cauchy {
+            } else if mutation_method == crate::operations::Mutation::Cauchy {
                 mutation::factory_with_params(
-                    configuration.mutation_configuration.method,
+                    mutation_method,
                     &mut child_1,
                     configuration.mutation_configuration.cauchy_scale,
                     None,
                 )?;
-            } else if configuration.mutation_configuration.method == crate::operations::Mutation::LevyFlight {
+            } else if mutation_method == crate::operations::Mutation::LevyFlight {
                 mutation::factory_with_params(
-                    configuration.mutation_configuration.method,
+                    mutation_method,
                     &mut child_1,
                     None,
                     configuration.mutation_configuration.levy_alpha,
                 )?;
-            } else if configuration.mutation_configuration.method == crate::operations::Mutation::Polynomial {
+            } else if mutation_method == crate::operations::Mutation::Polynomial {
                 // Use dedicated `polynomial_eta` field if set; fall back to `step` for
                 // backward compatibility with callers that used `with_mutation_step` for eta.
                 let eta = configuration.mutation_configuration.polynomial_eta
                     .or(configuration.mutation_configuration.step);
                 mutation::factory_with_params(
-                    configuration.mutation_configuration.method,
+                    mutation_method,
                     &mut child_1,
                     eta,
                     None,
                 )?;
             } else {
                 mutation::factory_with_params(
-                    configuration.mutation_configuration.method,
+                    mutation_method,
                     &mut child_1,
                     configuration.mutation_configuration.step,
                     configuration.mutation_configuration.sigma,
@@ -2227,7 +2292,7 @@ where
 
         mutation_probability = rng.random_range(0.0..1.0);
         if mutation_probability <= effective_mutation_prob {
-            if configuration.mutation_configuration.method == crate::operations::Mutation::Differential {
+            if mutation_method == crate::operations::Mutation::Differential {
                 let f = configuration.mutation_configuration.differential_f.unwrap_or(0.5);
                 crate::operations::mutation::differential::differential_mutation(
                     &mut child_2,
@@ -2235,32 +2300,32 @@ where
                     *value,
                     f,
                 )?;
-            } else if configuration.mutation_configuration.method == crate::operations::Mutation::Cauchy {
+            } else if mutation_method == crate::operations::Mutation::Cauchy {
                 mutation::factory_with_params(
-                    configuration.mutation_configuration.method,
+                    mutation_method,
                     &mut child_2,
                     configuration.mutation_configuration.cauchy_scale,
                     None,
                 )?;
-            } else if configuration.mutation_configuration.method == crate::operations::Mutation::LevyFlight {
+            } else if mutation_method == crate::operations::Mutation::LevyFlight {
                 mutation::factory_with_params(
-                    configuration.mutation_configuration.method,
+                    mutation_method,
                     &mut child_2,
                     None,
                     configuration.mutation_configuration.levy_alpha,
                 )?;
-            } else if configuration.mutation_configuration.method == crate::operations::Mutation::Polynomial {
+            } else if mutation_method == crate::operations::Mutation::Polynomial {
                 let eta = configuration.mutation_configuration.polynomial_eta
                     .or(configuration.mutation_configuration.step);
                 mutation::factory_with_params(
-                    configuration.mutation_configuration.method,
+                    mutation_method,
                     &mut child_2,
                     eta,
                     None,
                 )?;
             } else {
                 mutation::factory_with_params(
-                    configuration.mutation_configuration.method,
+                    mutation_method,
                     &mut child_2,
                     configuration.mutation_configuration.step,
                     configuration.mutation_configuration.sigma,
@@ -2285,6 +2350,32 @@ where
         child_1.set_age(age);
         child_2.set_age(age);
 
+        // Accumulate AOS rewards (Phase 43)
+        // Crossover reward: compare parent vs child fitness
+        if let Some(ref acc) = crossover_reward_acc {
+            if let Some((c_op_idx, _)) = selected_crossover {
+                let (p, c) = if is_maximization {
+                    (child_1.fitness(), parent_1.fitness())
+                } else {
+                    (parent_1.fitness(), child_1.fitness())
+                };
+                let reward = crate::aos::compute_normalized_reward(p, c, best_fitness);
+                acc.lock().unwrap().push((c_op_idx, reward));
+            }
+        }
+        // Mutation reward: compare parent vs child fitness
+        if let Some(ref acc) = mutation_reward_acc {
+            if let Some((m_op_idx, _)) = selected_mutation {
+                let (p, c) = if is_maximization {
+                    (child_1.fitness(), parent_1.fitness())
+                } else {
+                    (parent_1.fitness(), child_1.fitness())
+                };
+                let reward = crate::aos::compute_normalized_reward(p, c, best_fitness);
+                acc.lock().unwrap().push((m_op_idx, reward));
+            }
+        }
+
         Ok(vec![child_1, child_2])
     };
 
@@ -2298,6 +2389,28 @@ where
     let mut offspring = Vec::new();
     for result in results {
         offspring.extend(result?);
+    }
+
+    // Apply AOS reward updates after collecting all rewards (Phase 43)
+    if let Some(acc) = crossover_reward_acc {
+        let rewards = acc.lock().unwrap().drain(..).collect::<Vec<_>>();
+        if !rewards.is_empty() {
+            if let Some(ref aos_state) = aos_crossover_state {
+                let mut state = aos_state.lock().unwrap();
+                state.record_rewards(&rewards);
+                state.update();
+            }
+        }
+    }
+    if let Some(acc) = mutation_reward_acc {
+        let rewards = acc.lock().unwrap().drain(..).collect::<Vec<_>>();
+        if !rewards.is_empty() {
+            if let Some(ref aos_state) = aos_mutation_state {
+                let mut state = aos_state.lock().unwrap();
+                state.record_rewards(&rewards);
+                state.update();
+            }
+        }
     }
 
     Ok(offspring)
