@@ -241,7 +241,7 @@ Plans:
 | 40. Constraint Handling | v2.4.0 | 3/3 | Complete    | 2026-05-11 |
 | 41. Hall of Fame / Solution Archive | v2.4.0 | 3/3 | Complete | 2026-05-12 |
 | 42. Warm Starting & Population Seeding | v2.4.0 | 3/3 | Complete    | 2026-05-13 |
-| 43. Adaptive Operator Selection (AOS) | v2.4.0 | 0/3 | Pending | — |
+| 43. Adaptive Operator Selection (AOS) | v2.4.0 | 1/3 | In Progress|  |
 | 44. Standard Benchmark Functions Suite | v2.4.0 | 0/0 | Pending | — |
 | 45. Memetic Algorithm Framework | v2.4.0 | 0/0 | Pending | — |
 
@@ -405,17 +405,17 @@ Plans:
 **Requirements**: AOS-01
 **Issue**: #218
 **Depends on:** Phase 42
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
 **Wave 1**
-- [ ] 43-01-PLAN.md -- AOS core module (AosStrategy, AosState, reward model) + GaConfiguration fields + builder methods + build validation + unit tests (AOS-01)
+- [x] 43-01-PLAN.md — AOS core module (AosStrategy, AosState, reward model) + GaConfiguration fields + builder methods + build validation + unit tests (AOS-01)
 
 **Wave 2** *(blocked on Wave 1)*
-- [ ] 43-02-PLAN.md -- GA loop integration: AOS runtime state, offspring dispatch via AOS, reward accumulation, integration tests (AOS-01)
+- [x] 43-02-PLAN.md — GA loop integration: AOS runtime state, offspring dispatch via AOS, reward accumulation, integration tests (AOS-01)
 
 **Wave 3** *(blocked on Waves 1-2)*
-- [ ] 43-03-PLAN.md -- Serde derives, AOS example, WASM check, phase verification gate (AOS-01)
+- [x] 43-03-PLAN.md — Serde derives, AOS example, WASM check, phase verification gate (AOS-01)
 
 ### Phase 44: Standard Benchmark Functions Suite
 
