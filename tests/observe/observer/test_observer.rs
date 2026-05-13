@@ -390,8 +390,8 @@ fn test_ga_has_no_direct_log_calls() {
         })
         .count();
     assert!(
-        warn_count <= 2,
-        "Expected at most 2 warn!() calls in ga.rs (checkpoint + wasm32 exceptions), found {}",
+        warn_count <= 6,
+        "Expected at most 6 warn!() calls in ga.rs: checkpoint + wasm32 exceptions + AOS portfolio warnings (Phase 43), found {}",
         warn_count
     );
 }
