@@ -163,4 +163,19 @@ pub trait ConfigurationT:
     ///
     /// Two runs with the same seed (and thread count) produce identical results.
     fn with_rng_seed(self, seed: u64) -> Self;
+
+    // --- Adaptive Operator Selection (AOS) configuration ---
+
+    /// Sets a crossover operator portfolio for AOS.
+    /// When configured, AOS selects among these operators dynamically
+    /// instead of using the single crossover configured via with_crossover_method().
+    fn with_crossover_portfolio(self, portfolio: Vec<Crossover>) -> Self;
+    /// Sets a mutation operator portfolio for AOS.
+    fn with_mutation_portfolio(self, portfolio: Vec<Mutation>) -> Self;
+    /// Sets the AOS strategy for portfolio selection.
+    /// Default: AosStrategy::ProbabilityMatching with literature-standard parameters.
+    fn with_aos_strategy(self, strategy: crate::aos::AosStrategy) -> Self;
+    /// Sets the sliding window size for AOS reward history (default: 50).
+    /// The exploration phase lasts window_size / 2 generations.
+    fn with_reward_window(self, window: usize) -> Self;
 }

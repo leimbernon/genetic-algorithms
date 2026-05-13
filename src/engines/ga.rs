@@ -503,6 +503,23 @@ where
         self.configuration.rng_seed = Some(seed);
         self
     }
+
+    fn with_crossover_portfolio(mut self, portfolio: Vec<crate::operations::Crossover>) -> Self {
+        self.configuration.crossover_portfolio = Some(portfolio);
+        self
+    }
+    fn with_mutation_portfolio(mut self, portfolio: Vec<crate::operations::Mutation>) -> Self {
+        self.configuration.mutation_portfolio = Some(portfolio);
+        self
+    }
+    fn with_aos_strategy(mut self, strategy: crate::aos::AosStrategy) -> Self {
+        self.configuration.aos_strategy = strategy;
+        self
+    }
+    fn with_reward_window(mut self, window: usize) -> Self {
+        self.configuration.aos_reward_window = window;
+        self
+    }
 }
 
 impl<U> Ga<U>
@@ -604,6 +621,40 @@ where
                     checkpoint_path.display(),
                 )));
             }
+        }
+
+        // AOS portfolio validation (Phase 43)
+        if let Some(ref xover_pf) = self.configuration.crossover_portfolio {
+            if xover_pf.is_empty() {
+                return Err(GaError::ConfigurationError(
+                    "AOS crossover portfolio is empty: provide at least 2 operators".to_string(),
+                ));
+            }
+            if xover_pf.len() == 1 {
+                log::warn!(target: "ga_events", "AOS crossover portfolio has only 1 operator; portfolio mode is effectively the same as single-operator mode");
+            }
+        }
+        if let Some(ref mut_pf) = self.configuration.mutation_portfolio {
+            if mut_pf.is_empty() {
+                return Err(GaError::ConfigurationError(
+                    "AOS mutation portfolio is empty: provide at least 2 operators".to_string(),
+                ));
+            }
+            if mut_pf.len() == 1 {
+                log::warn!(target: "ga_events", "AOS mutation portfolio has only 1 operator; portfolio mode is effectively the same as single-operator mode");
+            }
+        }
+        // Warn if both portfolio and single-operator are configured
+        if self.configuration.crossover_portfolio.is_some()
+            && self.configuration.crossover_configuration.method != crate::operations::Crossover::Uniform
+        {
+            // The default method is Uniform, so only warn if the user explicitly changed it
+            log::warn!(target: "ga_events", "Both crossover portfolio and with_crossover_method() are configured. with_crossover_method() will be ignored when portfolio is set");
+        }
+        if self.configuration.mutation_portfolio.is_some()
+            && self.configuration.mutation_configuration.method != crate::operations::Mutation::Swap
+        {
+            log::warn!(target: "ga_events", "Both mutation portfolio and with_mutation_method() are configured. with_mutation_method() will be ignored when portfolio is set");
         }
 
         Ok(self)

@@ -285,6 +285,18 @@ pub struct GaConfiguration {
     /// deterministically from this value. Two runs with the same seed
     /// (and the same thread count) will produce identical results.
     pub rng_seed: Option<u64>,
+    /// Optional crossover operator portfolio for AOS.
+    /// When `Some(Vec<Crossover>)`, AOS selects among these operators dynamically.
+    /// Default: None (uses single crossover method).
+    pub crossover_portfolio: Option<Vec<Crossover>>,
+    /// Optional mutation operator portfolio for AOS.
+    pub mutation_portfolio: Option<Vec<Mutation>>,
+    /// The AOS strategy for portfolio selection.
+    /// Default: AosStrategy::ProbabilityMatching.
+    pub aos_strategy: crate::aos::AosStrategy,
+    /// Sliding window size for AOS reward history.
+    /// Default: 50. Exploration phase = window / 2 generations.
+    pub aos_reward_window: usize,
 }
 impl Default for GaConfiguration {
     fn default() -> Self {
@@ -313,6 +325,10 @@ impl Default for GaConfiguration {
             niching_configuration: None,
             extension_configuration: None,
             rng_seed: None,
+            crossover_portfolio: None,
+            mutation_portfolio: None,
+            aos_strategy: crate::aos::AosStrategy::pm_default(),
+            aos_reward_window: 50,
         }
     }
 }
@@ -552,6 +568,23 @@ impl ConfigurationT for GaConfiguration {
 
     fn with_rng_seed(mut self, seed: u64) -> Self {
         self.rng_seed = Some(seed);
+        self
+    }
+
+    fn with_crossover_portfolio(mut self, portfolio: Vec<Crossover>) -> Self {
+        self.crossover_portfolio = Some(portfolio);
+        self
+    }
+    fn with_mutation_portfolio(mut self, portfolio: Vec<Mutation>) -> Self {
+        self.mutation_portfolio = Some(portfolio);
+        self
+    }
+    fn with_aos_strategy(mut self, strategy: crate::aos::AosStrategy) -> Self {
+        self.aos_strategy = strategy;
+        self
+    }
+    fn with_reward_window(mut self, window: usize) -> Self {
+        self.aos_reward_window = window;
         self
     }
 }

@@ -278,10 +278,9 @@ impl AosState {
             .map(|i| self.arms[i].mean_reward())
             .collect();
 
-        for i in 0..self.num_arms {
-            let credit = credits[i];
-            let new_prob = self.probabilities[i] + alpha * (credit - self.probabilities[i]);
-            self.probabilities[i] = new_prob.clamp(p_min, 1.0);
+        for (prob, credit) in self.probabilities.iter_mut().zip(credits.iter()) {
+            let new_prob = *prob + alpha * (credit - *prob);
+            *prob = new_prob.clamp(p_min, 1.0);
         }
 
         self.normalize_probabilities();
