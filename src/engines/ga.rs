@@ -1032,6 +1032,7 @@ where
     ) -> Result<&Population<U>, GaError>
     where
         U: ChromosomeT + Send + Sync + 'static + Clone,
+        #[cfg(feature = "serde")] U: for<'de> serde::Deserialize<'de>,
         F: Fn(&usize, &Population<U>, &GenerationStats, &TerminationCause) -> ControlFlow<()>,
     {
         //Before starting the run, we will check the conditions
@@ -1040,8 +1041,54 @@ where
         // Apply RNG seed if configured (must be done before any random operations)
         crate::rng::set_seed(self.configuration.rng_seed);
 
-        //If we want to initialize the population randomly
-        if self.population.size() == 0 && self.initialization_fn.is_some() {
+        // Checkpoint resumption: load checkpoint if configured
+        let mut checkpoint_generation: Option<usize> = None;
+        if self.checkpoint_path.is_some() {
+            #[cfg(feature = "serde")]
+            {
+                let path = self.checkpoint_path.take().unwrap();
+                let ckpt = crate::checkpoint::load_checkpoint::<U>(&path)
+                    .map_err(|e| GaError::CheckpointError(format!(
+                        "Failed to load checkpoint '{}': {}", path.display(), e
+                    )))?;
+
+                // Hybrid config override (D-04): builder operators win, checkpoint state wins
+                // 1. Save builder's operator settings
+                let builder_selection = self.configuration.selection_configuration.method;
+                let builder_crossover = self.configuration.crossover_configuration.method;
+                let builder_mutation = self.configuration.mutation_configuration.method;
+                let builder_survivor = self.configuration.survivor;
+                let builder_problem_solving = self.configuration.limit_configuration.problem_solving;
+
+                // 2. Override configuration from checkpoint (but keep builder's max_generations)
+                let builder_max_generations = self.configuration.limit_configuration.max_generations;
+                let builder_population_size = self.configuration.limit_configuration.population_size;
+                self.configuration = ckpt.configuration;
+
+                // 3. Restore builder's operator settings (D-04)
+                self.configuration.selection_configuration.method = builder_selection;
+                self.configuration.crossover_configuration.method = builder_crossover;
+                self.configuration.mutation_configuration.method = builder_mutation;
+                self.configuration.survivor = builder_survivor;
+                self.configuration.limit_configuration.problem_solving = builder_problem_solving;
+
+                // 4. Restore builder's max_generations (user controls this, D-05)
+                self.configuration.limit_configuration.max_generations = builder_max_generations;
+                self.configuration.limit_configuration.population_size = builder_population_size;
+
+                // 5. Restore checkpoint population and stats
+                self.population = ckpt.population;
+                self.stats = ckpt.stats;  // Preserve accumulated stats (D-06)
+                checkpoint_generation = Some(ckpt.generation);
+            }
+            #[cfg(not(feature = "serde"))]
+            {
+                return Err(GaError::CheckpointError(
+                    "Checkpoint loading requires the 'serde' feature. Enable it in Cargo.toml: genetic_algorithms = { features = [\"serde\"] }".to_string(),
+                ));
+            }
+        } else if self.population.size() == 0 && self.initialization_fn.is_some() {
+            // Standard initialization (no checkpoint, no population)
             self.initialization()?;
         } else if self.population.size() == 0 && self.initialization_fn.is_none() {
             return Err(GaError::InitializationError(
@@ -1094,8 +1141,10 @@ where
         // Starting counting the generations for the callback
         let mut generation_callback_count = 0usize;
 
-        // Reset per-generation stats
-        self.stats.clear();
+        // Reset per-generation stats (only when not resuming from checkpoint, D-06)
+        if checkpoint_generation.is_none() {
+            self.stats.clear();
+        }
 
         // Determine if this is a maximization problem
         let is_maximization = matches!(
@@ -1119,7 +1168,18 @@ where
         self.notify(|obs| obs.on_run_start());
 
         //We start the cycles
-        for i in 0..self.configuration.limit_configuration.max_generations {
+        // Absolute generation counting (D-05):
+        // When resuming from checkpoint, the effective total generations is
+        // checkpoint.generation + max_generations. The loop variable `i` is the
+        // absolute generation number used in observer hooks, statistics, and HOF.
+        let start_gen = checkpoint_generation.unwrap_or(0);
+        let total_gens = if checkpoint_generation.is_some() {
+            start_gen + self.configuration.limit_configuration.max_generations
+        } else {
+            self.configuration.limit_configuration.max_generations
+        };
+
+        for i in start_gen..total_gens {
             age += 1;
             self.notify(|obs| obs.on_generation_start(i));
 
