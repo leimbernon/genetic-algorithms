@@ -468,3 +468,43 @@ fn test_aos_ga_with_adaptive_ga_coexists() {
     let result = ga.run();
     assert!(result.is_ok(), "AOS + Adaptive GA should run without errors");
 }
+
+// ---------------------------------------------------------------------------
+// Serde round-trip tests (behind #[cfg(feature = "serde")])
+// ---------------------------------------------------------------------------
+
+#[cfg(feature = "serde")]
+#[test]
+fn test_aos_serde_strategy_roundtrip() {
+    let pm = AosStrategy::pm_default();
+    let json = serde_json::to_string(&pm).expect("Serialize PM");
+    let deserialized: AosStrategy = serde_json::from_str(&json).expect("Deserialize PM");
+    assert_eq!(pm, deserialized, "PM strategy serde round-trip");
+
+    let ap = AosStrategy::ap_default();
+    let json = serde_json::to_string(&ap).expect("Serialize AP");
+    let deserialized: AosStrategy = serde_json::from_str(&json).expect("Deserialize AP");
+    assert_eq!(ap, deserialized, "AP strategy serde round-trip");
+
+    let mab = AosStrategy::mab_default();
+    let json = serde_json::to_string(&mab).expect("Serialize MAB");
+    let deserialized: AosStrategy = serde_json::from_str(&json).expect("Deserialize MAB");
+    assert_eq!(mab, deserialized, "MAB strategy serde round-trip");
+}
+
+#[cfg(feature = "serde")]
+#[test]
+fn test_aos_serde_state_roundtrip() {
+    // Create an AOS state, record some rewards, update, then round-trip
+    let mut state = AosState::new(3, AosStrategy::pm_default(), 10);
+    state.record_rewards(&[(0, 0.5), (1, 0.3), (2, 0.1)]);
+    state.update();
+
+    let json = serde_json::to_string(&state).expect("Serialize AosState");
+    let mut deserialized: AosState = serde_json::from_str(&json).expect("Deserialize AosState");
+
+    // Verify select_operator still works on deserialized state
+    let mut rng = make_rng();
+    let op = deserialized.select_operator(&mut rng, 100); // post-exploration
+    assert!(op < 3, "Deserialized state select_operator returns valid index");
+}

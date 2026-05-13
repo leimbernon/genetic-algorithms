@@ -77,6 +77,7 @@ impl AosStrategy {
 
 /// Per-arm sliding window reward buffer (ring buffer).
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 struct ArmState {
     /// Circular buffer of recent rewards.
     rewards: Vec<f64>,
@@ -113,6 +114,7 @@ impl ArmState {
 /// selection counts (for MAB UCB). Provides methods to select operators,
 /// record rewards, and update probabilities.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct AosState {
     /// Number of operators (arms) in the portfolio.
     num_arms: usize,
