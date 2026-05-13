@@ -241,7 +241,7 @@ Plans:
 | 40. Constraint Handling | v2.4.0 | 3/3 | Complete    | 2026-05-11 |
 | 41. Hall of Fame / Solution Archive | v2.4.0 | 3/3 | Complete | 2026-05-12 |
 | 42. Warm Starting & Population Seeding | v2.4.0 | 3/3 | Complete    | 2026-05-13 |
-| 43. Adaptive Operator Selection (AOS) | v2.4.0 | 1/3 | In Progress|  |
+| 43. Adaptive Operator Selection (AOS) | v2.4.0 | 2/3 | In Progress|  |
 | 44. Standard Benchmark Functions Suite | v2.4.0 | 0/0 | Pending | — |
 | 45. Memetic Algorithm Framework | v2.4.0 | 0/0 | Pending | — |
 
@@ -405,7 +405,7 @@ Plans:
 **Requirements**: AOS-01
 **Issue**: #218
 **Depends on:** Phase 42
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 **Wave 1**

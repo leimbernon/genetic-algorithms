@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v2.4.0
 milestone_name: — Observer Integration, New Operators, Advanced Multi-Objective & Framework Extensions
 status: in_progress
-stopped_at: Phase 43 Wave 1 complete (plan 43-01 done)
+stopped_at: Phase 43 Wave 2 complete (plan 43-02 done)
 last_updated: "2026-05-13T20:52:00.000Z"
 progress:
   total_phases: 16
