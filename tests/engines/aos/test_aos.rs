@@ -4,6 +4,15 @@
 //! record_rewards(), update(), and compute_normalized_reward().
 
 use genetic_algorithms::aos::{AosState, AosStrategy, compute_normalized_reward};
+use genetic_algorithms::chromosomes::Range as RangeChromosome;
+use genetic_algorithms::configuration::ProblemSolving;
+use genetic_algorithms::ga::Ga;
+use genetic_algorithms::genotypes::Range as RangeGene;
+use genetic_algorithms::initializers::range_random_initialization;
+use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+use genetic_algorithms::traits::{
+    ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+};
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
 
@@ -279,4 +288,183 @@ fn test_aos_strategy_mab_default() {
         }
         _ => panic!("Expected MultiArmedBandit"),
     }
+}
+
+// ---------------------------------------------------------------------------
+// GA Integration Tests (Phase 43, Plan 02 -- require Ga engine)
+// ---------------------------------------------------------------------------
+
+/// Helper: build a basic GA with AOS crossover portfolio (3 operators).
+fn aos_ga_xover() -> Ga<RangeChromosome<i32>> {
+    let n: i32 = 8;
+    let alleles = vec![RangeGene::new(0, vec![(0_i32, 100_i32)], 0)];
+    let alleles_clone = alleles.clone();
+
+    Ga::new()
+        .with_genes_per_chromosome(n as usize)
+        .with_population_size(30)
+        .with_initialization_fn(move |genes_per_chromosome, _, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        })
+        .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
+        .with_selection_method(Selection::Tournament)
+        .with_crossover_portfolio(vec![
+            Crossover::Uniform,
+            Crossover::SinglePoint,
+            Crossover::Clone,
+        ])
+        .with_mutation_method(Mutation::Swap)
+        .with_aos_strategy(AosStrategy::pm_default())
+        .with_problem_solving(ProblemSolving::Minimization)
+        .with_survivor_method(Survivor::Fitness)
+        .with_max_generations(10)
+        .with_alleles(alleles)
+}
+
+/// Helper: build a GA with both crossover and mutation AOS portfolios.
+fn aos_ga_both() -> Ga<RangeChromosome<i32>> {
+    let n: i32 = 8;
+    let alleles = vec![RangeGene::new(0, vec![(0_i32, 100_i32)], 0)];
+    let alleles_clone = alleles.clone();
+
+    Ga::new()
+        .with_genes_per_chromosome(n as usize)
+        .with_population_size(30)
+        .with_initialization_fn(move |genes_per_chromosome, _, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        })
+        .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
+        .with_selection_method(Selection::Tournament)
+        .with_crossover_portfolio(vec![
+            Crossover::Uniform,
+            Crossover::SinglePoint,
+        ])
+        .with_mutation_portfolio(vec![
+            Mutation::Swap,
+            Mutation::Inversion,
+            Mutation::Scramble,
+        ])
+        .with_aos_strategy(AosStrategy::pm_default())
+        .with_problem_solving(ProblemSolving::Minimization)
+        .with_survivor_method(Survivor::Fitness)
+        .with_max_generations(10)
+        .with_alleles(alleles)
+}
+
+#[test]
+fn test_aos_ga_crossover_portfolio_builds_and_runs() {
+    let mut ga = aos_ga_xover()
+        .build()
+        .expect("AOS GA with crossover portfolio should build");
+    let result = ga.run();
+    result.expect("AOS GA should run without errors");
+}
+
+#[test]
+fn test_aos_ga_both_portfolios_builds_and_runs() {
+    let mut ga = aos_ga_both()
+        .build()
+        .expect("AOS GA with both portfolios should build");
+    let result = ga.run();
+    assert!(result.is_ok(), "AOS GA with both portfolios should run without errors");
+}
+
+#[test]
+fn test_aos_ga_mab_strategy_runs() {
+    let n: i32 = 8;
+    let alleles = vec![RangeGene::new(0, vec![(0_i32, 100_i32)], 0)];
+    let alleles_clone = alleles.clone();
+
+    let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
+        .with_genes_per_chromosome(n as usize)
+        .with_population_size(30)
+        .with_initialization_fn(move |genes_per_chromosome, _, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        })
+        .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
+        .with_selection_method(Selection::Tournament)
+        .with_crossover_portfolio(vec![
+            Crossover::Uniform,
+            Crossover::SinglePoint,
+            Crossover::Clone,
+        ])
+        .with_mutation_method(Mutation::Swap)
+        .with_aos_strategy(AosStrategy::mab_default())
+        .with_problem_solving(ProblemSolving::Minimization)
+        .with_survivor_method(Survivor::Fitness)
+        .with_max_generations(10)
+        .with_alleles(alleles)
+        .build()
+        .expect("MAB strategy GA should build");
+    let result = ga.run();
+    result.expect("MAB strategy GA should run without errors");
+}
+
+#[test]
+fn test_aos_ga_adaptive_pursuit_runs() {
+    let n: i32 = 8;
+    let alleles = vec![RangeGene::new(0, vec![(0_i32, 100_i32)], 0)];
+    let alleles_clone = alleles.clone();
+
+    let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
+        .with_genes_per_chromosome(n as usize)
+        .with_population_size(30)
+        .with_initialization_fn(move |genes_per_chromosome, _, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        })
+        .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
+        .with_selection_method(Selection::Tournament)
+        .with_crossover_portfolio(vec![
+            Crossover::Uniform,
+            Crossover::SinglePoint,
+        ])
+        .with_mutation_method(Mutation::Swap)
+        .with_aos_strategy(AosStrategy::ap_default())
+        .with_problem_solving(ProblemSolving::Minimization)
+        .with_survivor_method(Survivor::Fitness)
+        .with_max_generations(10)
+        .with_alleles(alleles)
+        .build()
+        .expect("Adaptive Pursuit strategy GA should build");
+    let result = ga.run();
+    assert!(result.is_ok(), "Adaptive Pursuit GA should run without errors");
+}
+
+#[test]
+fn test_aos_ga_with_adaptive_ga_coexists() {
+    // AOS + Adaptive GA can both be enabled (D-13)
+    let n: i32 = 8;
+    let alleles = vec![RangeGene::new(0, vec![(0_i32, 100_i32)], 0)];
+    let alleles_clone = alleles.clone();
+
+    let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
+        .with_genes_per_chromosome(n as usize)
+        .with_population_size(30)
+        .with_initialization_fn(move |genes_per_chromosome, _, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        })
+        .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
+        .with_selection_method(Selection::Tournament)
+        .with_crossover_portfolio(vec![
+            Crossover::Uniform,
+            Crossover::SinglePoint,
+        ])
+        .with_mutation_portfolio(vec![
+            Mutation::Swap,
+            Mutation::Inversion,
+        ])
+        .with_aos_strategy(AosStrategy::pm_default())
+        .with_adaptive_ga(true)
+        .with_crossover_probability_max(1.0)
+        .with_crossover_probability_min(0.5)
+        .with_mutation_probability_max(0.1)
+        .with_mutation_probability_min(0.01)
+        .with_problem_solving(ProblemSolving::Minimization)
+        .with_survivor_method(Survivor::Fitness)
+        .with_max_generations(10)
+        .with_alleles(alleles)
+        .build()
+        .expect("AOS + Adaptive GA should build");
+    let result = ga.run();
+    assert!(result.is_ok(), "AOS + Adaptive GA should run without errors");
 }
