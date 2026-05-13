@@ -56,4 +56,7 @@ mod engines {
     mod warm_starting {
         mod test_warm_starting;
     }
+    mod aos {
+        mod test_aos;
+    }
 }
