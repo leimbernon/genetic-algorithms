@@ -247,6 +247,65 @@ pub trait Spea2Observer<U: ChromosomeT>: Send + Sync {
     }
 }
 
+/// Observer for [`SmsEmoaGa<U>`](crate::sms_emoa::SmsEmoaGa) engine-specific events.
+///
+/// All methods have default no-op implementations. The `Send + Sync`
+/// supertraits are required for safe sharing across rayon threads via `Arc`.
+///
+/// # Note: not in `AllObserver`
+///
+/// `AllObserver<U>` does NOT include `SmsEmoaObserver<U>` in Phase 38 — adding it
+/// would be a breaking change for existing `AllObserver` implementors. Use
+/// [`SmsEmoaGa::with_observer`](crate::sms_emoa::SmsEmoaGa::with_observer) to attach
+/// a `SmsEmoaObserver` independently.
+pub trait SmsEmoaObserver<U: ChromosomeT>: Send + Sync {
+    /// Called after hypervolume contribution calculation completes for the current generation.
+    fn on_hypervolume_contribution_assigned(
+        &self,
+        _generation: usize,
+        _duration_ms: f64,
+        _population_size: usize,
+    ) {
+    }
+    /// Called after steady-state (mu+1) removal in the current generation.
+    fn on_steady_state_removal(
+        &self,
+        _generation: usize,
+        _population_size: usize,
+    ) {
+    }
+}
+
+/// Observer for [`IbeaGa<U>`](crate::ibea::IbeaGa) engine-specific events.
+///
+/// All methods have default no-op implementations. The `Send + Sync`
+/// supertraits are required for safe sharing across rayon threads via `Arc`.
+///
+/// # Note: not in `AllObserver`
+///
+/// `AllObserver<U>` does NOT include `IbeaObserver<U>` in Phase 38 — adding it
+/// would be a breaking change for existing `AllObserver` implementors. Use
+/// [`IbeaGa::with_observer`](crate::ibea::IbeaGa::with_observer) to attach
+/// an `IbeaObserver` independently.
+pub trait IbeaObserver<U: ChromosomeT>: Send + Sync {
+    /// Called after indicator-based fitness assignment completes for the current generation.
+    fn on_indicator_fitness_assigned(
+        &self,
+        _generation: usize,
+        _duration_ms: f64,
+        _population_size: usize,
+    ) {
+    }
+    /// Called after environmental selection removes an individual.
+    fn on_environmental_selection(
+        &self,
+        _generation: usize,
+        _population_size: usize,
+        _removed_index: usize,
+    ) {
+    }
+}
+
 /// Combined observer bound for use with [`CompositeObserver`].
 ///
 /// Any type that implements [`GaObserver<U>`], [`IslandGaObserver<U>`],

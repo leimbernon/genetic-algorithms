@@ -63,7 +63,7 @@ fn create_seeds(count: usize, gene_value_start: i32) -> Vec<RangeChromosome<i32>
 #[test]
 fn test_wsm_with_seeds_builds_successfully() {
     let seeds = create_seeds(5, 10);
-    let ga = base_ga()
+    let _ga = base_ga()
         .with_seeds(seeds)
         .build()
         .expect("GA with seeds should build successfully");
@@ -265,7 +265,9 @@ fn test_wsm_checkpoint_save_and_resume() {
     use genetic_algorithms::genotypes::Range as RangeGene;
     use genetic_algorithms::initializers::range_random_initialization;
     use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
-    use genetic_algorithms::traits::{ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig};
+    use genetic_algorithms::traits::{
+        ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+    };
 
     let n: i32 = 8;
     let alleles = vec![RangeGene::new(0, vec![(0, n - 1)], 0)];
@@ -281,7 +283,7 @@ fn test_wsm_checkpoint_save_and_resume() {
         .with_initialization_fn(move |genes_per_chromosome, _, _| {
             range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
         })
-        .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| *g.value() as f64).sum())
+        .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
         .with_mutation_method(Mutation::Swap)
@@ -322,7 +324,7 @@ fn test_wsm_checkpoint_save_and_resume() {
         .with_initialization_fn(move |genes_per_chromosome, _, _| {
             range_random_initialization(genes_per_chromosome, Some(&alleles2_clone), Some(false))
         })
-        .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| *g.value() as f64).sum())
+        .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
         .with_mutation_method(Mutation::Swap)
@@ -401,7 +403,7 @@ fn test_wsm_checkpoint_hybrid_config_override() {
     let alleles2 = vec![RangeGene::new(0, vec![(0, n - 1)], 0)];
     let alleles2_clone = alleles2.clone();
 
-    let resumed: Ga<RangeChromosome<i32>> = Ga::new()
+    let mut resumed: Ga<RangeChromosome<i32>> = Ga::new()
         .with_genes_per_chromosome(n.try_into().unwrap())
         .with_population_size(20)
         .with_initialization_fn(move |genes_per_chromosome, _, _| {
@@ -457,7 +459,9 @@ fn test_wsm_checkpoint_example_end_to_end() {
     use genetic_algorithms::genotypes::Range as RangeGene;
     use genetic_algorithms::initializers::range_random_initialization;
     use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
-    use genetic_algorithms::traits::{ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig};
+    use genetic_algorithms::traits::{
+        ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+    };
 
     let n: i32 = 8;
     let alleles = vec![RangeGene::new(0, vec![(0, n - 1)], 0)];
@@ -472,7 +476,7 @@ fn test_wsm_checkpoint_example_end_to_end() {
         .with_initialization_fn(move |genes_per_chromosome, _, _| {
             range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
         })
-        .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| *g.value() as f64).sum())
+        .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
         .with_mutation_method(Mutation::Swap)
@@ -504,7 +508,7 @@ fn test_wsm_checkpoint_example_end_to_end() {
         .with_initialization_fn(move |genes_per_chromosome, _, _| {
             range_random_initialization(genes_per_chromosome, Some(&alleles2_clone), Some(false))
         })
-        .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| *g.value() as f64).sum())
+        .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
         .with_mutation_method(Mutation::Swap)

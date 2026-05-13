@@ -247,6 +247,11 @@ impl<U: ChromosomeT> HallOfFame<U> {
         self.entries.len()
     }
 
+    /// Returns the maximum capacity of the archive.
+    pub fn capacity(&self) -> usize {
+        self.capacity
+    }
+
     /// Returns `true` if the archive is empty.
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty()

@@ -39,6 +39,12 @@ pub enum GaError {
     InvalidMoeaDConfiguration(String),
     /// A SPEA2 configuration parameter is invalid.
     InvalidSpea2Configuration(String),
+    /// An SMS-EMOA configuration parameter is invalid.
+    InvalidSmsEmoaConfiguration(String),
+    /// An IBEA configuration parameter is invalid.
+    InvalidIbeaConfiguration(String),
+    /// A constraint processing configuration parameter is invalid.
+    InvalidConstraintConfiguration(String),
     /// An indicator configuration parameter is invalid.
     InvalidIndicatorConfiguration(String),
     /// A migration operation between islands failed.
@@ -73,6 +79,15 @@ impl fmt::Display for GaError {
             }
             GaError::InvalidSpea2Configuration(msg) => {
                 write!(f, "Invalid SPEA2 configuration: {}", msg)
+            }
+            GaError::InvalidSmsEmoaConfiguration(msg) => {
+                write!(f, "Invalid SMS-EMOA configuration: {}", msg)
+            }
+            GaError::InvalidIbeaConfiguration(msg) => {
+                write!(f, "Invalid IBEA configuration: {}", msg)
+            }
+            GaError::InvalidConstraintConfiguration(msg) => {
+                write!(f, "Invalid constraint configuration: {}", msg)
             }
             GaError::InvalidIndicatorConfiguration(msg) => {
                 write!(f, "Invalid indicator configuration: {}", msg)

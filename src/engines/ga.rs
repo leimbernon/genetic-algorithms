@@ -70,6 +70,21 @@ pub trait MaybeSerialize {}
 #[cfg(not(feature = "serde"))]
 impl<T> MaybeSerialize for T {}
 
+#[cfg(not(feature = "serde"))]
+pub trait MaybeDeserialize {}
+#[cfg(not(feature = "serde"))]
+impl<T> MaybeDeserialize for T {}
+
+/// Marker trait that resolves to `serde::Deserialize` when the `serde` feature is
+/// enabled, or to an auto-implemented blanket trait otherwise.
+///
+/// This mirrors the `MaybeSerialize` pattern for conditional deserialization
+/// support (needed for checkpoint loading in `run_with_callback`).
+#[cfg(feature = "serde")]
+pub trait MaybeDeserialize: for<'de> serde::Deserialize<'de> {}
+#[cfg(feature = "serde")]
+impl<T: for<'de> serde::Deserialize<'de>> MaybeDeserialize for T {}
+
 /// Indicates why a GA run terminated.
 ///
 /// - `GenerationLimitReached`: the maximum number of generations was reached.
@@ -499,7 +514,8 @@ where
         + Clone
         + Debug
         + mutation::ValueMutable
-        + MaybeSerialize,
+        + MaybeSerialize
+        + MaybeDeserialize,
     U::Gene: 'static + Debug,
 {
     /// Validates configuration and adjusts defaults, returning a ready-to-run instance.
@@ -1031,8 +1047,7 @@ where
         generations_to_callback: usize,
     ) -> Result<&Population<U>, GaError>
     where
-        U: ChromosomeT + Send + Sync + 'static + Clone,
-        #[cfg(feature = "serde")] U: for<'de> serde::Deserialize<'de>,
+        U: ChromosomeT + Send + Sync + 'static + Clone + MaybeDeserialize,
         F: Fn(&usize, &Population<U>, &GenerationStats, &TerminationCause) -> ControlFlow<()>,
     {
         //Before starting the run, we will check the conditions
@@ -1042,6 +1057,7 @@ where
         crate::rng::set_seed(self.configuration.rng_seed);
 
         // Checkpoint resumption: load checkpoint if configured
+        #[allow(unused_mut)]
         let mut checkpoint_generation: Option<usize> = None;
         if self.checkpoint_path.is_some() {
             #[cfg(feature = "serde")]

@@ -53,4 +53,7 @@ mod engines {
     mod hall_of_fame {
         mod test_hall_of_fame;
     }
+    mod warm_starting {
+        mod test_warm_starting;
+    }
 }

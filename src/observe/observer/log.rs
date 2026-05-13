@@ -25,8 +25,8 @@
 
 use crate::ga::TerminationCause;
 use crate::observer::{
-    ExtensionEvent, GaObserver, IslandGaObserver, MoeaDObserver, Nsga2Observer, Nsga3Observer,
-    Spea2Observer,
+    ExtensionEvent, GaObserver, IbeaObserver, IslandGaObserver, MoeaDObserver, Nsga2Observer,
+    Nsga3Observer, SmsEmoaObserver, Spea2Observer,
 };
 use crate::stats::GenerationStats;
 use crate::traits::ChromosomeT;
@@ -261,5 +261,50 @@ impl<U: ChromosomeT> Spea2Observer<U> for LogObserver {
         log::debug!(target: "spea2_events",
             "Archive updated at generation {} — size={}, non-dominated={}",
             generation, archive_size, non_dominated_count);
+    }
+}
+
+impl<U: ChromosomeT> SmsEmoaObserver<U> for LogObserver {
+    fn on_hypervolume_contribution_assigned(
+        &self,
+        generation: usize,
+        duration_ms: f64,
+        population_size: usize,
+    ) {
+        log::debug!(target: "sms_emoa_events",
+            "Hypervolume contribution assigned at generation {} ({:.2}ms) — pop={}",
+            generation, duration_ms, population_size);
+    }
+    fn on_steady_state_removal(
+        &self,
+        generation: usize,
+        population_size: usize,
+    ) {
+        log::debug!(target: "sms_emoa_events",
+            "Steady-state removal at generation {} — pop={}",
+            generation, population_size);
+    }
+}
+
+impl<U: ChromosomeT> IbeaObserver<U> for LogObserver {
+    fn on_indicator_fitness_assigned(
+        &self,
+        generation: usize,
+        duration_ms: f64,
+        population_size: usize,
+    ) {
+        log::debug!(target: "ibea_events",
+            "Indicator fitness assigned at generation {} ({:.2}ms) — pop={}",
+            generation, duration_ms, population_size);
+    }
+    fn on_environmental_selection(
+        &self,
+        generation: usize,
+        population_size: usize,
+        _removed_index: usize,
+    ) {
+        log::debug!(target: "ibea_events",
+            "Environmental selection at generation {} — pop={}",
+            generation, population_size);
     }
 }
