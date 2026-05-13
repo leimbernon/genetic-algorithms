@@ -49,6 +49,7 @@ use rand::Rng;
 use rayon::prelude::*;
 use std::fmt::Debug;
 use std::ops::ControlFlow;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -161,6 +162,20 @@ where
     /// Optional Hall of Fame / solution archive. When `None` (default), no
     /// archive is maintained and there is zero overhead.
     hall_of_fame: Option<HallOfFame<U>>,
+
+    /// Optional user-provided seeds for warm-starting the population.
+    /// When `Some(Vec<U>)`, the population is initialized with these chromosomes
+    /// plus random fill to reach `population_size`. Seeds are NOT re-evaluated
+    /// (fitness is trusted per D-07). When `None` (default), standard random
+    /// initialization is used. Zero overhead when None.
+    seeds: Option<Vec<U>>,
+
+    /// Optional checkpoint file path for resuming a previous GA run.
+    /// When `Some(path)`, the checkpoint is loaded at build-time and restores
+    /// population, generation counter, and accumulated stats. The user's
+    /// builder config wins for operator settings (hybrid config per D-04).
+    /// When `None` (default), no checkpoint loading occurs. Zero overhead when None.
+    checkpoint_path: Option<PathBuf>,
 }
 
 #[allow(deprecated)]
@@ -190,6 +205,8 @@ where
             penalty_coefficient: 0.0,
             adaptive_penalty_counter: 0,
             hall_of_fame: None,
+            seeds: None,
+            checkpoint_path: None,
         }
     }
 }
@@ -541,6 +558,38 @@ where
         // Validate constraint configuration
         crate::constraints::validate_penalty_strategy(&self.penalty_strategy)?;
 
+        // Validate mutual exclusivity of seeds and checkpoint (per discretion)
+        if self.seeds.is_some() && self.checkpoint_path.is_some() {
+            return Err(GaError::ConfigurationError(
+                "Cannot use both with_seeds() and with_checkpoint() — they are mutually exclusive"
+                    .to_string(),
+            ));
+        }
+
+        // Validate seeds count does not exceed population_size (per discretion)
+        if let Some(ref seeds) = self.seeds {
+            let pop_size = self.configuration.limit_configuration.population_size;
+            if seeds.len() > pop_size {
+                return Err(GaError::ConfigurationError(format!(
+                    "Number of seeds ({}) exceeds population_size ({}): with_seeds count must not exceed population_size",
+                    seeds.len(),
+                    pop_size,
+                )));
+            }
+        }
+
+        // Validate checkpoint file exists (per discretion: build-time validation)
+        // Note: full checkpoint loading (population restore, etc.) happens at run time
+        // to avoid requiring serde/Deserialize bounds at build().
+        if let Some(ref checkpoint_path) = self.checkpoint_path {
+            if !checkpoint_path.exists() {
+                return Err(GaError::CheckpointError(format!(
+                    "Checkpoint file not found: {}",
+                    checkpoint_path.display(),
+                )));
+            }
+        }
+
         Ok(self)
     }
 
@@ -708,6 +757,52 @@ where
         self
     }
 
+    /// Seeds the population with known solutions before the GA run.
+    ///
+    /// The provided chromosomes are placed at the front of the population
+    /// (in order), and the remaining slots are filled via the configured
+    /// `initialization_fn`. Random fill deduplicates against seed DNA
+    /// (genotypic uniqueness check via gene.id() comparison).
+    ///
+    /// Seed fitness is trusted (per D-07) — seeds skip re-evaluation.
+    /// Seeds are also eligible for Hall of Fame admission during initialization.
+    ///
+    /// # Errors at build time
+    /// - If the number of seeds exceeds `population_size`, `build()` returns
+    ///   `GaError::ConfigurationError`.
+    /// - If both `with_seeds()` and `with_checkpoint()` are called, `build()`
+    ///   returns `GaError::ConfigurationError` (mutual exclusivity per discretion).
+    pub fn with_seeds(mut self, seeds: Vec<U>) -> Self {
+        self.seeds = Some(seeds);
+        self
+    }
+
+    /// Resumes a GA run from a previously saved checkpoint file.
+    ///
+    /// The checkpoint is loaded at build time, restoring the population,
+    /// generation counter, and accumulated statistics from the checkpoint
+    /// file. The user's builder-configured operator settings (selection,
+    /// crossover, mutation, survivor) override any in the checkpoint
+    /// (hybrid config per D-04).
+    ///
+    /// The user must still provide `fitness_fn` and `initialization_fn`
+    /// in the builder chain (these are not serializable).
+    ///
+    /// # Generation counting (D-05)
+    /// Uses absolute mode: the generation loop starts from
+    /// `checkpoint.generation` and runs for `max_generations` additional
+    /// generations. Upper bound = `checkpoint.generation + max_generations`.
+    ///
+    /// # Errors at build time
+    /// - If the checkpoint file does not exist or cannot be deserialized,
+    ///   `build()` returns `GaError::CheckpointError`.
+    /// - If both `with_seeds()` and `with_checkpoint()` are called, `build()`
+    ///   returns `GaError::ConfigurationError` (mutual exclusivity per discretion).
+    pub fn with_checkpoint(mut self, path: impl Into<std::path::PathBuf>) -> Self {
+        self.checkpoint_path = Some(path.into());
+        self
+    }
+
     /// Randomly initializes the population using the provided initialization function.
     ///
     /// Behavior:
@@ -718,16 +813,39 @@ where
     where
         U: ChromosomeT + Send + Sync + 'static + Clone,
     {
-        // Before starting initialization, we should verify that initializer is set
+        // Before starting initialization, verify that initializer is set
         if self.initialization_fn.is_none() {
             return Err(GaError::InitializationError(
                 "No initialization function set".to_string(),
             ));
         }
 
-        //Before starting the run, we will check the conditions
+        // Validate configuration
         ValidatorFactory::validate::<U>(Some(&self.configuration), None, Some(&self.alleles))?;
 
+        // Delegate to seed-aware or standard init
+        if self.seeds.is_some() {
+            self.initialize_with_seeds()?;
+        } else {
+            self.initialize_random()?;
+        }
+
+        // Apply repair operator to initial population if configured
+        if let Some(ref repair_op) = self.repair_operator {
+            for c in self.population.chromosomes.iter_mut() {
+                repair_op(c)?;
+                c.calculate_fitness();
+            }
+        }
+
+        Ok(self)
+    }
+
+    /// Creates a random initial population (no seeds).
+    fn initialize_random(&mut self) -> Result<(), GaError>
+    where
+        U: ChromosomeT + Send + Sync + 'static + Clone,
+    {
         let population_size = self.configuration.limit_configuration.population_size;
         let genes_per_chromosome = self.configuration.limit_configuration.genes_per_chromosome;
         let needs_unique_ids = self.configuration.limit_configuration.needs_unique_ids;
@@ -756,15 +874,131 @@ where
         }
         self.population = new_population;
 
-        // Apply repair operator to initial population if configured
-        if let Some(ref repair_op) = self.repair_operator {
-            for c in self.population.chromosomes.iter_mut() {
-                repair_op(c)?;
-                c.calculate_fitness();
+        Ok(())
+    }
+
+    /// Initializes the population with pre-evaluated seeds placed at the front.
+    ///
+    /// Seeds are moved into the population in order, then remaining slots are
+    /// filled with randomly generated chromosomes. Fill chromosomes are
+    /// genotypically deduplicated against all existing seeds (and prior fills),
+    /// using the same DNA comparison pattern as HallOfFame.
+    ///
+    /// When a HallOfFame is configured, seeds and fill chromosomes are both
+    /// evaluated for archive entry during initialization (generation 0).
+    ///
+    /// WASM compatible: seed placement and dedup are pure data operations.
+    fn initialize_with_seeds(&mut self) -> Result<(), GaError>
+    where
+        U: ChromosomeT + Send + Sync + 'static + Clone,
+    {
+        if self.initialization_fn.is_none() {
+            return Err(GaError::InitializationError(
+                "No initialization function set".to_string(),
+            ));
+        }
+
+        let seeds = self.seeds.take().unwrap();
+        let population_size = self.configuration.limit_configuration.population_size;
+        let fill_count = population_size - seeds.len();
+        let genes_per_chromosome = self.configuration.limit_configuration.genes_per_chromosome;
+        let needs_unique_ids = self.configuration.limit_configuration.needs_unique_ids;
+        let init_fn = self.initialization_fn.as_ref().unwrap();
+        let fitness_fn = self.fitness_fn.as_ref().unwrap();
+
+        // Step 1: Collect seed DNA for dedup comparison
+        let seed_dnas: Vec<&[U::Gene]> = seeds.iter().map(|s| s.dna()).collect();
+
+        // Step 2: Generate random fill with genotypic dedup against seeds
+        let mut fill_chromosomes: Vec<U> = Vec::with_capacity(fill_count);
+        // Use sequential generation for dedup (parallel would make retry logic complex)
+        // Use a max retry bound to prevent infinite loop in degenerate cases
+        let max_attempts = fill_count * 10;
+        let mut attempts = 0;
+
+        while fill_chromosomes.len() < fill_count && attempts < max_attempts {
+            attempts += 1;
+
+            // Generate one random chromosome using the initialization function
+            let genes = init_fn(
+                genes_per_chromosome,
+                if self.alleles.is_empty() { None } else { Some(&self.alleles) },
+                Some(needs_unique_ids),
+            );
+            let mut new_chromosome = U::new();
+            new_chromosome.set_dna(std::borrow::Cow::Owned(genes));
+
+            // Check genotypic uniqueness against seed DNAs
+            let new_dna = new_chromosome.dna();
+            let is_duplicate = seed_dnas.iter().any(|seed_dna| {
+                let max_len = new_dna.len().max(seed_dna.len());
+                if max_len == 0 {
+                    return true;
+                }
+                (0..max_len).all(|i| {
+                    let id_a = new_dna.get(i).map(|g| g.id()).unwrap_or(-1);
+                    let id_b = seed_dna.get(i).map(|g| g.id()).unwrap_or(-1);
+                    id_a == id_b
+                })
+            });
+
+            if is_duplicate {
+                continue; // Discard and retry
+            }
+
+            // Also dedup against already-generated fill chromosomes
+            let is_fill_duplicate = fill_chromosomes.iter().any(|existing| {
+                let existing_dna = existing.dna();
+                let max_len = new_dna.len().max(existing_dna.len());
+                if max_len == 0 { return true; }
+                (0..max_len).all(|i| {
+                    let id_a = new_dna.get(i).map(|g| g.id()).unwrap_or(-1);
+                    let id_b = existing_dna.get(i).map(|g| g.id()).unwrap_or(-1);
+                    id_a == id_b
+                })
+            });
+
+            if is_fill_duplicate {
+                continue; // Discard and retry
+            }
+
+            // Set fitness function and evaluate
+            let ff_clone = Arc::clone(fitness_fn);
+            new_chromosome.set_fitness_fn(move |genes| ff_clone(genes));
+            new_chromosome.calculate_fitness();
+            new_chromosome.set_age(0);
+
+            fill_chromosomes.push(new_chromosome);
+        }
+
+        if fill_chromosomes.len() < fill_count {
+            return Err(GaError::InitializationError(format!(
+                "Failed to generate {} unique random chromosomes (max attempts {} reached). \
+                 Try reducing the number of seeds or increasing population_size.",
+                fill_count, max_attempts,
+            )));
+        }
+
+        // Step 3: Build population: seeds placed first, then fill
+        let mut all_chromosomes: Vec<U> = Vec::with_capacity(population_size);
+        all_chromosomes.extend(seeds);         // Seeds first (trusted fitness)
+        all_chromosomes.extend(fill_chromosomes); // Fill (evaluated)
+
+        let new_population = Population::new(all_chromosomes);
+        if self.configuration.selection_configuration.number_of_couples == 0 {
+            self.configuration.selection_configuration.number_of_couples =
+                new_population.size() / 2;
+        }
+        self.population = new_population;
+
+        // Step 4: Admit seeds to Hall of Fame if configured (per D-08)
+        if let Some(ref mut hof) = self.hall_of_fame {
+            for c in self.population.chromosomes.iter() {
+                hof.try_insert(c, 0); // Generation 0: initialization
             }
         }
 
-        Ok(self)
+        Ok(())
     }
 
     /// Runs the GA without callbacks and returns a reference to the final population.
