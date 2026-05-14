@@ -1,4 +1,4 @@
-//! Checkpoint save / load support for resuming GA runs.
+//! Checkpoint — serialization support for resuming GA runs (serde feature).
 //!
 //! This module is only available when the `serde` feature is enabled.
 //! It provides [`Checkpoint`], a serializable snapshot of the GA state
@@ -7,6 +7,19 @@
 //!
 //! The GA run loop automatically saves checkpoints at the interval
 //! configured in [`SaveProgressConfiguration`](crate::configuration::SaveProgressConfiguration).
+//!
+//! # Key items
+//!
+//! | Item | Description |
+//! |------|-------------|
+//! | [`Checkpoint`] | Serializable snapshot of GA state (generation, population, config) |
+//! | [`save_checkpoint`] | Serialize checkpoint to a JSON file |
+//! | [`load_checkpoint`] | Deserialize checkpoint from a JSON file |
+//!
+//! # When to use
+//! Enable the `serde` feature and configure checkpoint frequency via
+//! the engine builder. Useful for long-running optimization jobs where
+//! you want to resume from the last saved generation after interruption.
 
 use crate::configuration::GaConfiguration;
 use crate::error::GaError;

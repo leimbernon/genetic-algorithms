@@ -1,14 +1,33 @@
-//! GA configuration types.
+//! Configuration — builder-based GA configuration types.
 //!
 //! This module defines the configuration structs used to parameterize every
 //! aspect of the genetic algorithm: problem type, operator settings, stopping
-//! criteria, logging, checkpointing, and more.
+//! criteria, logging, checkpointing, and more. The central type is
+//! [`GaConfiguration`], which composes all sub-configs into a validated
+//! configuration object.
 //!
 //! Most users interact with these types through the builder methods on [`Ga`]
 //! (via the [`ConfigurationT`], [`SelectionConfig`], [`CrossoverConfig`], and
 //! [`MutationConfig`] traits) rather than constructing them directly.
 //!
+//! # Key items
+//!
+//! | Item | Description |
+//! |------|-------------|
+//! | [`GaConfiguration`] | Master configuration struct for the standard GA engine |
+//! | [`ProblemSolving`] | Enum: Minimization or Maximization |
+//! | [`CrossoverConfig`] | Validated crossover operator parameters |
+//! | [`SelectionConfig`] | Validated selection operator parameters |
+//! | [`MutationConfig`] | Validated mutation operator parameters |
+//! | [`SurvivorConfig`] | Validated survivor operator parameters |
+//!
+//! # When to use
+//! The configuration is created automatically when you call `.build()` on an
+//! engine builder. Direct construction is only needed when inspecting or
+//! serializing the configuration.
+//!
 //! [`Ga`]: crate::ga::Ga
+//! [`ConfigurationT`]: crate::traits::ConfigurationT
 
 use std::fmt;
 

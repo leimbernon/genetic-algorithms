@@ -1,8 +1,13 @@
-//! Lifecycle reporters for the GA execution loop.
+//! Reporter — deprecated lifecycle hooks for the GA execution loop.
 //!
 //! The [`Reporter`] trait provides four hooks that fire at key execution points:
 //! [`on_start`](Reporter::on_start), [`on_generation_complete`](Reporter::on_generation_complete),
 //! [`on_new_best`](Reporter::on_new_best), and [`on_finish`](Reporter::on_finish).
+//!
+//! **Deprecated in v2.2.0.** Superseded by the observer system (see the
+//! [`observer`] module). The [`GaObserver<U>`] trait provides 11 lifecycle hooks
+//! compared to Reporter's 4, supports `Arc<dyn>` sharing across rayon threads,
+//! and uses `&self` instead of `&mut self`. Reporter will be removed in v3.0.0.
 //!
 //! Built-in implementations:
 //! - [`NoopReporter`] — default, zero overhead (all hooks are no-ops)

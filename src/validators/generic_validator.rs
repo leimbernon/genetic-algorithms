@@ -1,3 +1,17 @@
+//! Generic configuration validator for all GA engine types.
+//!
+//! Provides the core validation logic that checks population sizes, operator
+//! compatibility, parameter bounds, and feature-flag consistency before the
+//! GA run begins. Called automatically during `.build()` on all engines.
+//!
+//! # Key items
+//!
+//! | Item | Description |
+//! |------|-------------|
+//! | [`validate`] | Main validation function checking all configuration fields |
+//!
+//! [`validate`]: crate::validators::generic_validator::validate
+
 use crate::configuration::{GaConfiguration, ProblemSolving};
 use crate::error::GaError;
 use crate::genotypes::Range;

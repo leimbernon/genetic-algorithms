@@ -1,4 +1,4 @@
-//! Hall of Fame / Solution Archive.
+//! Hall of Fame — bounded archive of best solutions across a GA run.
 //!
 //! Provides a bounded archive of top-N unique solutions across a GA run,
 //! with optional minimum-distance diversity filtering (fitness-space or
@@ -8,6 +8,19 @@
 //! fitness descending (best first). Insertion uses binary search for
 //! O(log n) position finding with O(n) shift -- acceptable for the
 //! typical archive sizes (10-100 entries).
+//!
+//! # Key items
+//!
+//! | Item | Description |
+//! |------|-------------|
+//! | [`HallOfFame<U>`] | The archive container, generic over chromosome type |
+//! | [`HallOfFameConfig`] | Builder for Hall of Fame capacity and diversity settings |
+//! | [`DistanceMetric`] | Enum: Fitness-space or genotypic distance for diversity filtering |
+//!
+//! # When to use
+//! Enable the Hall of Fame when you need to track solution quality over time
+//! or prevent loss of elite solutions during the GA run. Attach it to the
+//! engine builder via `with_hall_of_fame()`.
 
 use crate::traits::{ChromosomeT, GeneT};
 use std::cmp::Ordering;

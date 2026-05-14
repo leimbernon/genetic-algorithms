@@ -1,10 +1,22 @@
-//! Error types for the genetic algorithm library.
+//! Error — GaError enum and Result type alias for the crate.
 //!
 //! All fallible operations in this crate return [`GaError`], a single enum
 //! that covers configuration mistakes, operator failures, initialization
 //! problems, and I/O issues (checkpoints). It implements [`std::error::Error`]
 //! and [`std::fmt::Display`] for seamless integration with the `?` operator
 //! and error-reporting crates.
+//!
+//! # Key items
+//!
+//! | Item | Description |
+//! |------|-------------|
+//! | [`GaError`] | Unified error enum covering all crate failure modes |
+//! | [`GaResult<T>`] | Alias for `Result<T, GaError>` |
+//!
+//! # When to use
+//! All engine methods and operator calls return `GaResult<T>`. Match on
+//! [`GaError`] variants to handle specific failure modes in application
+//! code.
 
 use std::fmt;
 

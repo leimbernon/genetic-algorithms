@@ -1,9 +1,28 @@
-//! Genetic operators: selection, crossover, mutation, and survivor selection.
+//! Operations — operator enums, factory dispatchers, and runtime selection.
 //!
-//! Each sub-module contains the operator implementations and a `factory`
-//! function that dispatches to the correct variant at runtime based on the
-//! configuration enums defined here ([`Selection`], [`Crossover`],
-//! [`Mutation`], [`Survivor`]).
+//! Provides runtime-selectable genetic operators across five categories:
+//! Selection, Crossover, Mutation, Survivor, and Extension. Each operator
+//! follows the enum + factory function pattern for runtime dispatch, defined
+//! by the enums in this module and implemented in the sub-modules.
+//!
+//! All operators are dispatched via the configuration system: you select an
+//! operator variant in the builder (e.g., `with_selection_method(Selection::Tournament)`)
+//! and the factory function constructs the appropriate implementation.
+//!
+//! # Key items
+//!
+//! | Item | Description |
+//! |------|-------------|
+//! | [`Selection`] | Selection operator enum (Tournament, RouletteWheel, SUS, Rank, Boltzmann, Truncation, Clearing, Random) |
+//! | [`Crossover`] | Crossover operator enum (Cycle, MultiPoint, Uniform, SinglePoint, Order, PMX, SBX, BlendAlpha, Arithmetic, Edge, Clone, Rejuvenate) |
+//! | [`Mutation`] | Mutation operator enum (Swap, Inversion, Scramble, Value, BitFlip, Creep, Gaussian, Polynomial, NonUniform, Insertion, Cauchy, LevyFlight, Uniform, ListValue) |
+//! | [`Survivor`] | Survivor operator enum (Fitness, Age, MuPlusLambda, MuCommaLambda, DeterministicCrowding) |
+//! | [`Extension`] | Extension strategy enum (Noop, MassExtinction, MassGenesis, MassDegeneration, MassDeduplication) |
+//!
+//! # When to use
+//! Configure operators via the builder methods on your engine of choice. Custom
+//! operators can be implemented by implementing the corresponding operator trait
+//! ([`SelectionOperator`], [`CrossoverOperator`], etc.) in the [`traits`] module.
 
 pub mod crossover;
 pub mod extension;

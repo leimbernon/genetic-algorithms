@@ -1,3 +1,17 @@
+//! Validator factory — dispatches validation to the correct validator.
+//!
+//! Provides a factory function that selects the appropriate validator based
+//! on the engine type and configuration. Currently delegates to the generic
+//! validator for all standard GA configurations.
+//!
+//! # Key items
+//!
+//! | Item | Description |
+//! |------|-------------|
+//! | [`validate`] | Factory function that dispatches to the correct validator |
+//!
+//! [`validate`]: crate::validators::validator_factory::validate
+
 use crate::configuration::GaConfiguration;
 use crate::error::GaError;
 use crate::population::Population;
