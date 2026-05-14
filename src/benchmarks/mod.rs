@@ -7,9 +7,13 @@
 //! All functions implement the [`BenchmarkFn`] trait which provides a unified
 //! `evaluate(&[f64]) -> Vec<f64>` interface along with metadata.
 
+pub mod dtlz;
 pub mod single_objective;
+pub mod zdt;
 
+pub use dtlz::{DTLZ1, DTLZ2, DTLZ3, DTLZ4, DTLZ5, DTLZ6, DTLZ7};
 pub use single_objective::{Ackley, Rastrigin, Sphere};
+pub use zdt::{ZDT1, ZDT2, ZDT3, ZDT4, ZDT5, ZDT6};
 
 /// Shared trait for all benchmark functions.
 ///
