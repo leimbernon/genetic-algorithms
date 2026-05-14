@@ -11,7 +11,7 @@
 //! | [`ZDT1`] | [0, 1]^n | 30 | Convex |
 //! | [`ZDT2`] | [0, 1]^n | 30 | Non-convex |
 //! | [`ZDT3`] | [0, 1]^n | 30 | Disconnected (5 segments) |
-//! | [`ZDT4`] | [0,1] × [-5,5]^{n-1} | 10 | Convex, multimodal |
+//! | [`ZDT4`] | \[0,1\] × \[-5,5\]\^{n-1} | 10 | Convex, multimodal |
 //! | [`ZDT5`] | [0, 1]^n | 11 | Convex (continuous relaxation) |
 //! | [`ZDT6`] | [0, 1]^n | 10 | Non-convex, biased density |
 //!
