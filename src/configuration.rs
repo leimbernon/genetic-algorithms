@@ -14,11 +14,14 @@ use std::fmt;
 
 use crate::extension::configuration::ExtensionConfiguration;
 use crate::niching::configuration::NichingConfiguration;
+use crate::operations::local_search::{
+    HillClimbingConfig, LocalSearch, LocalSearchApplicationStrategy, LocalSearchMode,
+};
 use crate::{
     operations::{Crossover, Extension, Mutation, Selection, Survivor},
     traits::{
-        ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, MutationConfig,
-        NichingConfig, SelectionConfig, StoppingConfig,
+        ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, LocalSearchConfig,
+        MutationConfig, NichingConfig, SelectionConfig, StoppingConfig,
     },
 };
 
@@ -252,6 +255,33 @@ pub struct StoppingCriteria {
     pub max_duration_secs: Option<f64>,
 }
 
+/// Configuration for local search refinement in memetic algorithms.
+///
+/// When `None` on GaConfiguration, no local search is performed (zero overhead).
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct LocalSearchConfiguration {
+    /// The local search operator variant (e.g., HillClimbing).
+    pub method: LocalSearch,
+    /// Which offspring receive local search refinement.
+    pub application_strategy: LocalSearchApplicationStrategy,
+    /// Lamarckian (update DNA+fitness) or Baldwinian (fitness only).
+    pub mode: LocalSearchMode,
+    /// HillClimbing-specific configuration parameters.
+    pub hill_climbing: HillClimbingConfig,
+}
+
+impl Default for LocalSearchConfiguration {
+    fn default() -> Self {
+        Self {
+            method: LocalSearch::HillClimbing,
+            application_strategy: LocalSearchApplicationStrategy::AllOffspring,
+            mode: LocalSearchMode::Lamarckian,
+            hill_climbing: HillClimbingConfig::default(),
+        }
+    }
+}
+
 /// Top-level configuration for a [`Ga`](crate::ga::Ga) run.
 ///
 /// Aggregates all sub-configurations (selection, crossover, mutation,
@@ -297,6 +327,9 @@ pub struct GaConfiguration {
     /// Sliding window size for AOS reward history.
     /// Default: 50. Exploration phase = window / 2 generations.
     pub aos_reward_window: usize,
+    /// Optional local search configuration for memetic algorithms.
+    /// When `None`, no local search is performed (zero overhead).
+    pub local_search_configuration: Option<LocalSearchConfiguration>,
 }
 impl Default for GaConfiguration {
     fn default() -> Self {
@@ -329,6 +362,7 @@ impl Default for GaConfiguration {
             mutation_portfolio: None,
             aos_strategy: crate::aos::AosStrategy::pm_default(),
             aos_reward_window: 50,
+            local_search_configuration: None,
         }
     }
 }
@@ -505,6 +539,13 @@ impl ExtensionConfig for GaConfiguration {
         self.extension_configuration
             .get_or_insert_with(ExtensionConfiguration::default)
             .elite_count = count;
+        self
+    }
+}
+
+impl LocalSearchConfig for GaConfiguration {
+    fn with_local_search_configuration(mut self, config: LocalSearchConfiguration) -> Self {
+        self.local_search_configuration = Some(config);
         self
     }
 }

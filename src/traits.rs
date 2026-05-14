@@ -19,8 +19,8 @@ pub mod operators;
 pub use chromosome::ChromosomeT;
 pub use common::{initialize_chromosomes, initialize_chromosomes_par, FitnessFn, InitializationFn};
 pub use configuration::{
-    ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, MutationConfig, NichingConfig,
-    SelectionConfig, StoppingConfig,
+    ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, LocalSearchConfig,
+    MutationConfig, NichingConfig, SelectionConfig, StoppingConfig,
 };
 pub use gene::GeneT;
 pub use operators::{

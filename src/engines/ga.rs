@@ -37,12 +37,15 @@ use crate::traits::{FitnessFn, InitializationFn};
 use crate::aos::AosState;
 use crate::validators::validator_factory as ValidatorFactory;
 use crate::{
-    configuration::{LimitConfiguration, LogLevel, ProblemSolving},
-    operations::{crossover, extension, mutation, selection, survivor, Crossover, Extension, Mutation},
+    configuration::{LimitConfiguration, LogLevel, ProblemSolving, LocalSearchConfiguration},
+    operations::{
+        crossover, extension, mutation, selection, survivor, Crossover, Extension, Mutation,
+    },
+    operations::local_search::LocalSearch,
     population::Population,
     traits::{
         ChromosomeT, ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, GeneT,
-        MutationConfig, NichingConfig, SelectionConfig, StoppingConfig,
+        LocalSearchConfig, MutationConfig, NichingConfig, SelectionConfig, StoppingConfig,
     },
 };
 use rand::Rng;
@@ -435,6 +438,16 @@ where
             .extension_configuration
             .get_or_insert_with(crate::extension::configuration::ExtensionConfiguration::default)
             .elite_count = count;
+        self
+    }
+}
+
+impl<U> LocalSearchConfig for Ga<U>
+where
+    U: ChromosomeT,
+{
+    fn with_local_search_configuration(mut self, config: LocalSearchConfiguration) -> Self {
+        self.configuration.local_search_configuration = Some(config);
         self
     }
 }
@@ -882,6 +895,33 @@ where
     ///   returns `GaError::ConfigurationError` (mutual exclusivity per discretion).
     pub fn with_checkpoint(mut self, path: impl Into<std::path::PathBuf>) -> Self {
         self.checkpoint_path = Some(path.into());
+        self
+    }
+
+    /// Configures a local search operator for memetic algorithm refinement.
+    ///
+    /// When configured, the local search operator is applied to offspring
+    /// after crossover+mutation+fitness and after repair/constraints,
+    /// before population merge and survivor selection.
+    ///
+    /// The provided operator variant is stored in the configuration and
+    /// applied each generation according to the application strategy.
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// let ga = Ga::<RangeChromosome<f64>>::new()
+    ///     .with_local_search(LocalSearch::HillClimbing)
+    ///     .with_local_search_configuration(LocalSearchConfiguration {
+    ///         application_strategy: LocalSearchApplicationStrategy::BestN { n: 5 },
+    ///         ..Default::default()
+    ///     });
+    /// ```
+    pub fn with_local_search(mut self, method: LocalSearch) -> Self {
+        self.configuration
+            .local_search_configuration
+            .get_or_insert_with(LocalSearchConfiguration::default)
+            .method = method;
         self
     }
 

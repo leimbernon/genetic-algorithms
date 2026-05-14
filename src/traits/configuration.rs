@@ -6,6 +6,7 @@
 //! single supertrait.
 
 use crate::configuration::{LogLevel, ProblemSolving, StoppingCriteria};
+use crate::configuration::LocalSearchConfiguration;
 use crate::operations::{Crossover, Extension, Mutation, Selection, Survivor};
 
 /// Configuration for parent selection.
@@ -112,6 +113,16 @@ pub trait ExtensionConfig {
     fn with_extension_elite_count(self, count: usize) -> Self;
 }
 
+/// Configuration for local search / memetic algorithm refinement.
+pub trait LocalSearchConfig {
+    /// Configures the local search operator and application strategy.
+    ///
+    /// When configured, the local search operator refines selected offspring
+    /// after crossover+mutation+fitness and after repair/constraints, before
+    /// population merge and survivor selection.
+    fn with_local_search_configuration(self, config: LocalSearchConfiguration) -> Self;
+}
+
 /// Full GA configuration supertrait.
 ///
 /// Combines all focused sub-traits (`SelectionConfig`, `CrossoverConfig`,
@@ -125,6 +136,7 @@ pub trait ConfigurationT:
     + NichingConfig
     + ElitismConfig
     + ExtensionConfig
+    + LocalSearchConfig
 {
     /// Creates a new instance with default configuration values.
     fn new() -> Self;
