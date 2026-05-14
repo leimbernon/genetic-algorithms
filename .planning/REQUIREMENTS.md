@@ -39,7 +39,7 @@
 
 ### BEN — Benchmark Functions
 
-- [ ] **BEN-01**: User can evaluate GA configurations against 17+ standard benchmark functions (Sphere, Rastrigin, Ackley for single-objective; ZDT1-6 for bi-objective; DTLZ1-7 for many-objective) behind a `benchmarks` feature flag, each with metadata (name, bounds, known optimum) and a unified `BenchmarkFn` trait interface (#219)
+- [x] **BEN-01**: User can evaluate GA configurations against 17+ standard benchmark functions (Sphere, Rastrigin, Ackley for single-objective; ZDT1-6 for bi-objective; DTLZ1-7 for many-objective) behind a `benchmarks` feature flag, each with metadata (name, bounds, known optimum) and a unified `BenchmarkFn` trait interface (#219) — 44-01-PLAN.md, 44-02-PLAN.md, 44-03-PLAN.md
 
 ## Future Requirements
 
