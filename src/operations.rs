@@ -7,6 +7,7 @@
 
 pub mod crossover;
 pub mod extension;
+pub mod local_search;
 pub mod mutation;
 pub mod selection;
 pub mod survivor;

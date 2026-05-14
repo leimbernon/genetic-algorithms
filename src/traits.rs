@@ -24,5 +24,6 @@ pub use configuration::{
 };
 pub use gene::GeneT;
 pub use operators::{
-    CrossoverOperator, ExtensionOperator, MutationOperator, SelectionOperator, SurvivorOperator,
+    CrossoverOperator, ExtensionOperator, LocalSearchOperator, MutationOperator,
+    SelectionOperator, SurvivorOperator,
 };

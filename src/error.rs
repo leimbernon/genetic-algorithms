@@ -51,6 +51,8 @@ pub enum GaError {
     MigrationError(String),
     /// A checkpoint save or load operation failed.
     CheckpointError(String),
+    /// A local search operation failed.
+    LocalSearchError(String),
 }
 
 impl fmt::Display for GaError {
@@ -94,6 +96,7 @@ impl fmt::Display for GaError {
             }
             GaError::MigrationError(msg) => write!(f, "Migration error: {}", msg),
             GaError::CheckpointError(msg) => write!(f, "Checkpoint error: {}", msg),
+            GaError::LocalSearchError(msg) => write!(f, "Local search error: {}", msg),
         }
     }
 }
