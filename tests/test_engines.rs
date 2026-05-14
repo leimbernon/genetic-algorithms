@@ -2,6 +2,7 @@ mod structures;
 mod engines {
     mod test_ga;
     mod test_examples;
+    mod local_search;
     mod alps {
         mod test_alps;
     }
