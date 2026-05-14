@@ -180,11 +180,23 @@ pub trait MaybeSerialize: serde::Serialize {}
 #[cfg(feature = "serde")]
 impl<T: serde::Serialize> MaybeSerialize for T {}
 
+/// Marker trait for conditional serialization support.
+///
+/// When the `serde` feature is enabled, this resolves to `serde::Serialize`.
+/// When disabled, it is an auto-implemented blanket trait that does nothing.
+/// This pattern allows generics to require serialization unconditionally
+/// while only imposing the bound when the feature is active.
 #[cfg(not(feature = "serde"))]
 pub trait MaybeSerialize {}
 #[cfg(not(feature = "serde"))]
 impl<T> MaybeSerialize for T {}
 
+/// Marker trait for conditional deserialization support.
+///
+/// When the `serde` feature is enabled, this resolves to
+/// `for<'de> serde::Deserialize<'de>`. When disabled, it is an
+/// auto-implemented blanket trait. Mirrors the `MaybeSerialize` pattern
+/// for checkpoint loading.
 #[cfg(not(feature = "serde"))]
 pub trait MaybeDeserialize {}
 #[cfg(not(feature = "serde"))]
@@ -212,12 +224,19 @@ impl<T: for<'de> serde::Deserialize<'de>> MaybeDeserialize for T {}
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum TerminationCause {
+    /// The maximum number of generations was reached.
     GenerationLimitReached,
+    /// The specified fitness target was reached or surpassed.
     FitnessTargetReached,
+    /// No fitness improvement for N consecutive generations.
     StagnationReached,
+    /// Fitness standard deviation dropped below the convergence threshold.
     ConvergenceReached,
+    /// Elapsed wall-clock time exceeded the configured limit.
     TimeLimitReached,
+    /// The user callback returned `ControlFlow::Break`.
     CallbackRequested,
+    /// Internal state before the run finalizes, or while a callback is running mid-run.
     NotTerminated,
 }
 

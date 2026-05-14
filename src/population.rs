@@ -14,7 +14,7 @@
 //! |------|-------------|
 //! | [`Population<U>`] | Main container, generic over chromosome type |
 //! | [`Population::best_chromosome`] | The best-so-far individual |
-//! | [`Population::fitness_stats`] | Aggregate fitness statistics |
+//! | `Population::fitness_stats` | Aggregate fitness statistics |
 //!
 //! # When to use
 //! Used by all engines as the primary solution container. It is the return

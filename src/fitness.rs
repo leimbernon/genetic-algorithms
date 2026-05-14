@@ -2,7 +2,7 @@
 //!
 //! Provides built-in fitness functions and the [`FitnessFnWrapper`] for
 //! deferred fitness evaluation. Supports both single-objective (f64) and
-//! multi-objective (Vec<f64>) fitness evaluation.
+//! multi-objective (`Vec<f64>`) fitness evaluation.
 //!
 //! # Key items
 //!

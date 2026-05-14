@@ -11,7 +11,7 @@
 //! | Item | Description |
 //! |------|-------------|
 //! | [`GaError`] | Unified error enum covering all crate failure modes |
-//! | [`GaResult<T>`] | Alias for `Result<T, GaError>` |
+//! | `GaResult<T>` | Alias for `Result<T, GaError>` |
 //!
 //! # When to use
 //! All engine methods and operator calls return `GaResult<T>`. Match on

@@ -4,7 +4,7 @@
 //! [`Ga`](crate::ga::Ga) to handle constrained optimization problems.
 //! Three penalty strategies (static, dynamic, adaptive) modify fitness based
 //! on constraint violation severity. Deb's feasibility rules compare solutions
-//! by feasibility first, then fitness. The [`RepairOperator`] trait fixes
+//! by feasibility first, then fitness. The `RepairOperator` trait fixes
 //! infeasible chromosomes.
 //!
 //! # Key items
@@ -13,7 +13,7 @@
 //! |------|-------------|
 //! | [`ConstraintHandling`] | Master configuration struct for constraint enforcement |
 //! | [`PenaltyStrategy`] | Enum: Static, Dynamic, or Adaptive penalty scaling |
-//! | [`RepairOperator`] | Trait for repairing infeasible chromosomes |
+//! | `RepairOperator` | Trait for repairing infeasible chromosomes |
 //!
 //! # When to use
 //! Enable constraint handling when your optimization problem has constraints

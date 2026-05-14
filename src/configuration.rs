@@ -19,7 +19,7 @@
 //! | [`CrossoverConfig`] | Validated crossover operator parameters |
 //! | [`SelectionConfig`] | Validated selection operator parameters |
 //! | [`MutationConfig`] | Validated mutation operator parameters |
-//! | [`SurvivorConfig`] | Validated survivor operator parameters |
+//! | `SurvivorConfig` | Validated survivor operator parameters |
 //!
 //! # When to use
 //! The configuration is created automatically when you call `.build()` on an

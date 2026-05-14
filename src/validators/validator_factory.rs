@@ -19,6 +19,15 @@ use crate::traits::ChromosomeT;
 use crate::validators::generic_validator as GenericValidator;
 use std::fmt::Debug;
 
+/// Validate a GA configuration by dispatching to the appropriate validator.
+///
+/// Factory function that selects the correct validator based on engine type.
+/// Currently delegates to the generic validator for all standard configurations.
+///
+/// # Arguments
+/// * `configuration` — Optional GA configuration to validate
+/// * `population` — Optional population to validate
+/// * `alleles` — Optional allele definitions for validation
 pub fn validate<U>(
     configuration: Option<&GaConfiguration>,
     population: Option<&Population<U>>,

@@ -29,8 +29,8 @@
 //!
 //! # When to use
 //! Implement these traits when creating custom chromosome types, gene types,
-//! or operator strategies. See the [`chromosomes`], [`genotypes`], and
-//! [`operations`] modules for built-in implementations.
+//! or operator strategies. See the [`chromosomes`](crate::chromosomes), [`genotypes`](crate::genotypes), and
+//! [`operations`](crate::operations) modules for built-in implementations.
 
 pub mod chromosome;
 pub mod common;

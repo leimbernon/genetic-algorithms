@@ -21,6 +21,16 @@ use crate::traits::{ChromosomeT, GeneT};
 use std::any::TypeId;
 use std::collections::HashSet;
 
+/// Validate a GA configuration and/or population before running.
+///
+/// Checks population chromosome length consistency, configuration field
+/// validity, operator compatibility, and parameter bounds. Returns an
+/// error if any validation check fails.
+///
+/// # Arguments
+/// * `configuration` — Optional GA configuration to validate
+/// * `population` — Optional population to validate
+/// * `alleles` — Optional allele definitions for validation
 pub fn validate<U>(
     configuration: Option<&GaConfiguration>,
     population: Option<&Population<U>>,

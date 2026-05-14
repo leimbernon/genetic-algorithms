@@ -5,7 +5,7 @@
 //! [`on_new_best`](Reporter::on_new_best), and [`on_finish`](Reporter::on_finish).
 //!
 //! **Deprecated in v2.2.0.** Superseded by the observer system (see the
-//! [`observer`] module). The [`GaObserver<U>`] trait provides 11 lifecycle hooks
+//! [`observer`](crate::observer) module). The [`GaObserver`](crate::GaObserver) trait provides 11 lifecycle hooks
 //! compared to Reporter's 4, supports `Arc<dyn>` sharing across rayon threads,
 //! and uses `&self` instead of `&mut self`. Reporter will be removed in v3.0.0.
 //!

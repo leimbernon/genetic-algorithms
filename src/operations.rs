@@ -22,7 +22,7 @@
 //! # When to use
 //! Configure operators via the builder methods on your engine of choice. Custom
 //! operators can be implemented by implementing the corresponding operator trait
-//! ([`SelectionOperator`], [`CrossoverOperator`], etc.) in the [`traits`] module.
+//! `SelectionOperator`, `CrossoverOperator`, etc.) in the [`traits`](crate::traits) module.
 
 pub mod crossover;
 pub mod extension;
@@ -65,7 +65,7 @@ pub enum Selection {
     /// `niche_radius` in fitness space) and removes all other individuals in each
     /// niche from the selection pool. Eligible individuals are then paired randomly.
     /// Promotes population diversity by preventing niche domination.
-    /// Configure `niche_radius` via [`SelectionConfiguration::niche_radius`].
+    /// Configure `niche_radius` via the selection configuration.
     Clearing,
 }
 
