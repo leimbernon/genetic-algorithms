@@ -10,80 +10,85 @@ This module provides several crossover techniques, each tailored to different ch
 
 Crossover operators are typically invoked during the reproduction phase of a genetic algorithm, after parent selection and before mutation. Users can select and configure the appropriate crossover operator based on their problem requirements, and even compose custom strategies using the provided factory function.
 
-## Key Concepts
+## Available Operators
 
-The crossover module exposes several public functions and types for combining chromosomes. Each operator has specific requirements and behaviors:
+The following `Crossover` enum variants are available:
 
-| Operator         | Chromosome Type      | Description                                               |
-|------------------|---------------------|-----------------------------------------------------------|
-| `uniform`        | Any (`ChromosomeT`) | Randomly selects genes from either parent for each locus. |
-| `single_point`   | Any                 | Splits parents at a random point and swaps segments.      |
-| `multipoint`     | Any                 | Uses multiple crossover points for segment swapping.       |
-| `cycle`          | Permutation         | Preserves absolute positions from parents (cycle method).  |
-| `order`          | Permutation         | Maintains relative order from parents (order method).      |
-| `blend_alpha`    | Real-valued         | Blends gene values using an alpha parameter.              |
-| `sbx`            | Real-valued         | Simulated binary crossover for continuous genes.           |
-| `factory`        | Any                 | Returns a configured crossover operator function.          |
-| `aga_probability`| Any                 | Computes crossover probability for adaptive GA.            |
+| Variant | Chromosome Type | Description |
+|---------|----------------|-------------|
+| `Uniform` | Any (`ChromosomeT`) | Randomly selects genes from either parent for each locus |
+| `SinglePoint` | Any | Splits parents at a random point and swaps segments |
+| `MultiPoint` | Any | Uses multiple crossover points for segment swapping |
+| `Cycle` | Permutation | Preserves absolute positions from parents (cycle method) |
+| `Order` | Permutation | Maintains relative order from parents (order method) |
+| `Pmx` | Permutation | Partially Mapped Crossover — preserves absolute positions within a segment and relative order outside |
+| `Sbx` | Real-valued (`Range<T>`) | Simulated binary crossover for continuous genes |
+| `BlendAlpha` | Real-valued (`Range<T>`) | Blends gene values using an alpha parameter |
+| `Arithmetic` | Real-valued (`Range<T>`) | Child = alpha * parent1 + (1 - alpha) * parent2 |
+| `Clone` | Any | Copies parents directly as offspring |
+| `Rejuvenate` | Any | Clones parents as offspring and resets their ages to zero |
+| `EdgeRecombination` | Permutation | Preserves adjacency relationships from both parents for TSP/scheduling |
 
 ### Common Parameters
 
-| Parameter        | Type                | Description                                               |
-|------------------|---------------------|-----------------------------------------------------------|
-| `parent_1`       | `&U`                | First parent chromosome                                   |
-| `parent_2`       | `&U`                | Second parent chromosome                                  |
-| `points`         | `usize`             | Number of crossover points (for multipoint)               |
-| `alpha`          | `f64`               | Blending factor (for blend-alpha)                         |
-| `probability`    | `f64`               | Crossover probability (for factory, aga_probability)      |
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `parent_1` | `&U` | First parent chromosome |
+| `parent_2` | `&U` | Second parent chromosome |
+| `points` | `usize` | Number of crossover points (for multipoint) |
+| `alpha` | `f64` | Blending factor (for blend-alpha) |
+| `probability` | `f64` | Crossover probability (for factory, aga_probability) |
 
 ## Usage
 
 ### Basic Example
 
 ```rust
-use ga_lib::operations::crossover::uniform;
-use ga_lib::chromosomes::BinaryChromosome;
+use genetic_algorithms::chromosomes::Range;
+use genetic_algorithms::genotypes::Range as RangeGene;
+use genetic_algorithms::operations::Crossover;
+use genetic_algorithms::ga::Ga;
+use genetic_algorithms::configuration::ProblemSolving;
+use genetic_algorithms::traits::{ChromosomeT, ConfigurationT, CrossoverConfig,
+    SelectionConfig, MutationConfig, StoppingConfig};
 
-fn main() -> Result<(), ga_lib::GaError> {
-    let parent1 = BinaryChromosome::from_bits(vec![true, false, true, false]);
-    let parent2 = BinaryChromosome::from_bits(vec![false, true, false, true]);
-    let offspring = uniform(&parent1, &parent2)?;
-    println!("Offspring: {:?}", offspring);
-    Ok(())
-}
+let mut ga: Ga<Range<f64>> = Ga::new()
+    .with_crossover_method(Crossover::BlendAlpha)
+    .with_blend_alpha(0.5)
+    .with_population_size(100)
+    .with_genes_per_chromosome(10)
+    .with_fitness_fn(|dna| dna.iter().map(|g| g.value).sum())
+    .with_problem_solving(ProblemSolving::Minimization)
+    .with_max_generations(500)
+    .build()
+    .expect("valid config");
 ```
 
-### Advanced Example
+### Configuration via Builder
 
 ```rust
-use ga_lib::operations::crossover::{cycle, blend_alpha, factory};
-use ga_lib::chromosomes::{PermutationChromosome, RealChromosome};
+use genetic_algorithms::operations::Crossover;
+use genetic_algorithms::chromosomes::Range;
+use genetic_algorithms::genotypes::Range as RangeGene;
+use genetic_algorithms::ga::Ga;
+use genetic_algorithms::configuration::ProblemSolving;
+use genetic_algorithms::initializers::range_random_initialization;
+use genetic_algorithms::operations::{Mutation, Selection, Survivor};
+use genetic_algorithms::traits::{ChromosomeT, ConfigurationT, CrossoverConfig,
+    MutationConfig, SelectionConfig, StoppingConfig};
 
-fn main() -> Result<(), ga_lib::GaError> {
-    // Permutation crossover
-    let parent1 = PermutationChromosome::new(vec![1, 2, 3, 4, 5]);
-    let parent2 = PermutationChromosome::new(vec![5, 4, 3, 2, 1]);
-    let offspring_perm = cycle(&parent1, &parent2)?;
-    println!("Cycle Crossover Offspring: {:?}", offspring_perm);
-
-    // Real-valued crossover
-    let parent1 = RealChromosome::new(vec![0.1, 0.5, 0.9]);
-    let parent2 = RealChromosome::new(vec![0.9, 0.5, 0.1]);
-    let offspring_real = blend_alpha(&parent1, &parent2, 0.7)?;
-    println!("Blend-Alpha Offspring: {:?}", offspring_real);
-
-    // Using factory to configure a crossover operator
-    let crossover_fn = factory::<PermutationChromosome>("cycle", None)?;
-    let offspring = crossover_fn(&parent1, &parent2)?;
-    println!("Factory Offspring: {:?}", offspring);
-
-    Ok(())
-}
+let mut ga: Ga<Range<f64>> = Ga::new()
+    .with_crossover_method(Crossover::BlendAlpha)
+    .with_blend_alpha(0.5)
+    .with_crossover_rate(0.9)
+    // ... other configuration
+    .build()
+    .expect("valid config");
 ```
 
-## API Reference
+## Operator Details
 
-### `uniform`
+### Uniform
 
 Performs uniform crossover between two parent chromosomes. Each gene is randomly selected from either parent.
 
@@ -92,16 +97,11 @@ Performs uniform crossover between two parent chromosomes. Each gene is randomly
 pub fn uniform<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError>
 ```
 
-| Parameter   | Type           | Description                      |
-|-------------|----------------|----------------------------------|
-| `parent_1`  | `&U`           | First parent chromosome          |
-| `parent_2`  | `&U`           | Second parent chromosome         |
-
-Returns: `Result<Vec<U>, GaError>` — Vector of offspring chromosomes.
+**Variant:** `Crossover::Uniform`
 
 ---
 
-### `single_point`
+### SinglePoint
 
 Performs single-point crossover, splitting parents at a random point.
 
@@ -110,16 +110,11 @@ Performs single-point crossover, splitting parents at a random point.
 pub fn single_point<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError>
 ```
 
-| Parameter   | Type           | Description                      |
-|-------------|----------------|----------------------------------|
-| `parent_1`  | `&U`           | First parent chromosome          |
-| `parent_2`  | `&U`           | Second parent chromosome         |
-
-Returns: `Result<Vec<U>, GaError>`
+**Variant:** `Crossover::SinglePoint`
 
 ---
 
-### `multipoint`
+### MultiPoint
 
 Performs multipoint crossover using a specified number of crossover points.
 
@@ -128,17 +123,11 @@ Performs multipoint crossover using a specified number of crossover points.
 pub fn multipoint<U: ChromosomeT>(parent_1: &U, parent_2: &U, points: usize) -> Result<Vec<U>, GaError>
 ```
 
-| Parameter   | Type           | Description                      |
-|-------------|----------------|----------------------------------|
-| `parent_1`  | `&U`           | First parent chromosome          |
-| `parent_2`  | `&U`           | Second parent chromosome         |
-| `points`    | `usize`        | Number of crossover points       |
-
-Returns: `Result<Vec<U>, GaError>`
+**Variant:** `Crossover::MultiPoint`
 
 ---
 
-### `cycle`
+### Cycle
 
 Implements cycle crossover for permutation chromosomes, preserving absolute positions.
 
@@ -147,16 +136,11 @@ Implements cycle crossover for permutation chromosomes, preserving absolute posi
 pub fn cycle<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError>
 ```
 
-| Parameter   | Type           | Description                      |
-|-------------|----------------|----------------------------------|
-| `parent_1`  | `&U`           | First parent chromosome          |
-| `parent_2`  | `&U`           | Second parent chromosome         |
-
-Returns: `Result<Vec<U>, GaError>`
+**Variant:** `Crossover::Cycle`
 
 ---
 
-### `order`
+### Order (OX)
 
 Implements order crossover for permutation chromosomes, preserving relative order.
 
@@ -165,50 +149,91 @@ Implements order crossover for permutation chromosomes, preserving relative orde
 pub fn order<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError>
 ```
 
-| Parameter   | Type           | Description                      |
-|-------------|----------------|----------------------------------|
-| `parent_1`  | `&U`           | First parent chromosome          |
-| `parent_2`  | `&U`           | Second parent chromosome         |
-
-Returns: `Result<Vec<U>, GaError>`
+**Variant:** `Crossover::Order`
 
 ---
 
-### `blend_alpha`
+### PMX (Partially Mapped Crossover)
 
-Performs blend-alpha crossover for real-valued chromosomes, blending gene values using an alpha parameter.
+Implements partially mapped crossover for permutation chromosomes. Preserves absolute positions within a segment and relative order outside it.
 
 **Signature:**
 ```rust
-pub fn blend_alpha<U: ChromosomeT>(parent_1: &U, parent_2: &U, alpha: f64) -> Result<Vec<U>, GaError>
+pub fn pmx<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError>
 ```
 
-| Parameter   | Type           | Description                      |
-|-------------|----------------|----------------------------------|
-| `parent_1`  | `&U`           | First parent chromosome          |
-| `parent_2`  | `&U`           | Second parent chromosome         |
-| `alpha`     | `f64`          | Blending factor (0.0 to 1.0)     |
-
-Returns: `Result<Vec<U>, GaError>`
+**Variant:** `Crossover::Pmx`
 
 ---
 
-### `sbx`
+### SBX (Simulated Binary Crossover)
 
-Implements simulated binary crossover (SBX) for real-valued chromosomes.
+Performs simulated binary crossover for real-valued `Range<T>` chromosomes. Uses a distribution index (eta) configured via `with_sbx_eta()`.
 
-**Signature:**
-```rust
-pub fn sbx<U: ChromosomeT>(parent_1: &U, parent_2: &U, distribution_index: f64) -> Result<Vec<U>, GaError>
-```
+**Variant:** `Crossover::Sbx`
 
-| Parameter           | Type           | Description                          |
-|---------------------|----------------|--------------------------------------|
-| `parent_1`          | `&U`           | First parent chromosome              |
-| `parent_2`          | `&U`           | Second parent chromosome             |
-| `distribution_index`| `f64`          | SBX distribution index parameter     |
+| Builder Method | Default | Description |
+|---------------|---------|-------------|
+| `with_sbx_eta(f64)` | `20.0` | Distribution index — higher values produce offspring closer to parents |
 
-Returns: `Result<Vec<U>, GaError>`
+---
+
+### BlendAlpha (BLX-alpha)
+
+Performs blend-alpha crossover for real-valued `Range<T>` chromosomes, blending gene values using an alpha parameter. Offspring genes are sampled uniformly from `[min - alpha * range, max + alpha * range]`.
+
+**Variant:** `Crossover::BlendAlpha`
+
+| Builder Method | Default | Description |
+|---------------|---------|-------------|
+| `with_blend_alpha(f64)` | `0.5` | Blending factor (0.0 to 1.0) |
+
+---
+
+### Arithmetic
+
+Performs arithmetic (whole) crossover for `Range<T>` chromosomes. Offspring = alpha * parent1 + (1 - alpha) * parent2.
+
+**Variant:** `Crossover::Arithmetic`
+
+| Builder Method | Default | Description |
+|---------------|---------|-------------|
+| `with_arithmetic_alpha(f64)` | `0.5` | Blending weight |
+
+---
+
+### Clone
+
+Copies parents directly as offspring without any genetic exchange. Useful for mutation-only strategies and baseline experiments where crossover is not desired but must be present for API compatibility.
+
+**Variant:** `Crossover::Clone`
+
+---
+
+### Rejuvenate
+
+Clones parents as offspring and resets their ages to zero. Prevents age-based survivor selection from eliminating top performers.
+
+**Variant:** `Crossover::Rejuvenate`
+
+---
+
+### EdgeRecombination
+
+Preserves parental adjacency relationships by building an edge map (adjacency list) from both parents, then constructing offspring via edge recombination. Best for permutation problems (TSP, scheduling). Produces offspring that respect the adjacency relationships present in either parent.
+
+**Algorithm:**
+1. Build a union adjacency map where each gene ID maps to the set of its neighbours in either parent (circular: first and last genes are adjacent).
+2. Starting from a chosen gene, iteratively select the next gene as the unvisited neighbour with the fewest remaining unvisited neighbours.
+3. On tie or exhausted neighbour list, fall back to a random unvisited gene.
+
+**Configuration:** No additional parameters — operates on both parents' adjacency.
+
+**Variant:** `Crossover::EdgeRecombination`
+
+**When to use:** Permutation problems, TSP, scheduling, any problem where adjacency matters.
+
+**Added in:** v2.4.0
 
 ---
 
@@ -218,15 +243,19 @@ Returns a configured crossover operator function based on a string identifier an
 
 **Signature:**
 ```rust
-pub fn factory<U: ChromosomeT>(name: &str, config: Option<CrossoverConfig>) -> Result<fn(&U, &U) -> Result<Vec<U>, GaError>, GaError>
+pub fn factory<U: ChromosomeT>(pair: (&U, &U), crossover: &CrossoverConfiguration)
+    -> Result<Vec<U>, GaError>
 ```
 
-| Parameter   | Type                       | Description                                      |
-|-------------|----------------------------|--------------------------------------------------|
-| `name`      | `&str`                     | Name of the crossover operator ("uniform", etc.) |
-| `config`    | `Option<CrossoverConfig>`  | Optional configuration parameters                |
+**Parameters:**
 
-Returns: `Result<fn(&U, &U) -> Result<Vec<U>, GaError>, GaError>`
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `pair` | `(&U, &U)` | Parent pair to recombine |
+| `crossover` | `&CrossoverConfiguration` | Crossover configuration with operator and parameters |
+
+**Returns:**
+`Result<Vec<U>, GaError>`
 
 ---
 
@@ -239,12 +268,15 @@ Computes adaptive crossover probability for a chromosome.
 pub fn aga_probability<U: ChromosomeT>(chromosome: &U, base_probability: f64) -> f64
 ```
 
-| Parameter         | Type           | Description                          |
-|-------------------|----------------|--------------------------------------|
-| `chromosome`      | `&U`           | Chromosome to evaluate               |
-| `base_probability`| `f64`          | Base crossover probability           |
+**Parameters:**
 
-Returns: `f64` — Adjusted crossover probability.
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `chromosome` | `&U` | Chromosome to evaluate |
+| `base_probability` | `f64` | Base crossover probability |
+
+**Returns:**
+`f64` — Adjusted crossover probability.
 
 ## Related
 
@@ -253,10 +285,5 @@ Returns: `f64` — Adjusted crossover probability.
 - [Chromosome Types](../chromosomes.md)
 - [Genotype Definitions](../genotypes.md)
 - [Fitness Evaluation](../fitness.md)
-- [Source: `src/operations/crossover.rs`](../../src/operations/crossover.rs)
-- [Source: `src/operations/crossover/uniform_crossover.rs`](../../src/operations/crossover/uniform_crossover.rs)
-- [Source: `src/operations/crossover/cycle.rs`](../../src/operations/crossover/cycle.rs)
-- [Source: `src/operations/crossover/multipoint.rs`](../../src/operations/crossover/multipoint.rs)
-- [Source: `src/operations/crossover/blend_alpha.rs`](../../src/operations/crossover/blend_alpha.rs)
-- [Source: `src/operations/crossover/sbx.rs`](../../src/operations/crossover/sbx.rs)
+- [Source: `src/operations/crossover/`](../../src/operations/crossover/)
 - [Examples](../examples.md)
