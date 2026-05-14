@@ -234,7 +234,7 @@ Plans:
 | 41. Hall of Fame / Solution Archive | v2.4.0 | 3/3 | Complete | 2026-05-12 |
 | 42. Warm Starting & Population Seeding | v2.4.0 | 3/3 | Complete    | 2026-05-13 |
 | 43. Adaptive Operator Selection (AOS) | v2.4.0 | 3/3 | Complete | 2026-05-14 |
-| 44. Standard Benchmark Functions Suite | v2.4.0 | 0/3 | Pending | — |
+| 44. Standard Benchmark Functions Suite | v2.4.0 | 1/3 | In Progress|  |
 | 45. Memetic Algorithm Framework | v2.4.0 | 0/0 | Pending | — |
 
 ### Phase 34: WASM support — fix time-based panics for wasm32-unknown-unknown targets (issue #236)
@@ -415,11 +415,11 @@ Plans:
 **Requirements**: BEN-01
 **Issue**: #219
 **Depends on:** Phase 43
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
 **Wave 1**
-- [ ] 44-01-PLAN.md — BenchmarkFn trait + single-objective benchmarks (Sphere, Rastrigin, Ackley) + Cargo.toml feature flag + WASM check (BEN-01)
+- [x] 44-01-PLAN.md — BenchmarkFn trait + single-objective benchmarks (Sphere, Rastrigin, Ackley) + Cargo.toml feature flag + WASM check (BEN-01)
 
 **Wave 2** *(blocked on Wave 1)*
 - [ ] 44-02-PLAN.md — ZDT1-6 + DTLZ1-7 multi-objective benchmarks with unit tests + WASM check (BEN-01)
