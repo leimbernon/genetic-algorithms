@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v2.4.0
 milestone_name: — Observer Integration, New Operators, Advanced Multi-Objective & Framework Extensions
-status: complete
-stopped_at: Phase 45 execution complete
-last_updated: "2026-05-14"
+status: Pending — Documentation refactor
+stopped_at: Phase 46 context gathered
+last_updated: "2026-05-14T15:38:33.461Z"
 progress:
-  total_phases: 16
+  total_phases: 17
   completed_phases: 16
   total_plans: 48
   completed_plans: 48
@@ -20,15 +20,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-27)
 
 **Core value:** Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library
-**Current focus:** Phase 45 — Memetic Algorithm Framework (complete)
+**Current focus:** Phase 46 — Documentation refactor (not planned yet)
 
 ## Current Position
 
-Phase: 45
-Plan: Complete
-Status: Complete — Memetic Algorithm Framework
+Phase: 46
+Plan: Not planned yet
+Status: Pending — Documentation refactor
 
-Progress: [██████████] 100%
+Progress: [██████████▌] 94%
 
 ## Accumulated Context
 
@@ -55,6 +55,7 @@ Progress: [██████████] 100%
 - Phases 35-39 added to v2.4.0: NSGA-III, MOEA/D, SPEA2, SMS-EMOA/IBEA, quality indicators (GitHub milestone 8, issues #203-#207)
 - Cargo.toml reverted to 2.4.0 — phases 35-39 remain within v2.4.0 milestone
 - Phases 40-45 added to v2.4.0: Framework Extensions — constraint handling, Hall of Fame, warm starting, AOS, benchmarks, memetic algorithm
+- Phase 46 added: Update the documentation to explain in more details the different algorithms. A refactor of the documentation can happen if needed
 
 ### Blockers/Concerns
 
@@ -62,6 +63,6 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-05-14T13:06:04.160Z
-Stopped at: Phase 45 context gathered
-Resume file: None
+Last session: 2026-05-14T15:38:33.456Z
+Stopped at: Phase 46 context gathered
+Resume file: .planning/phases/46-update-the-documentation-to-explain-in-more-details-the-diff/46-CONTEXT.md
