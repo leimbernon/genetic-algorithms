@@ -39,7 +39,8 @@ Key capabilities:
 
 ## Documentation
 
-Latest published docs: [docs.rs/genetic_algorithms](https://docs.rs/genetic_algorithms/latest/genetic_algorithms)
+- [docs/ directory](docs/index.md) — Per-engine algorithm guides, operator reference, and framework extension docs
+- [docs.rs/genetic_algorithms](https://docs.rs/genetic_algorithms/latest/genetic_algorithms) — Full API reference with crate-level overview
 
 ## Installation
 
@@ -58,6 +59,9 @@ genetic_algorithms = { version = "2.4.0", features = ["visualization"] }
 
 # Checkpoint serialization (serde/serde_json)
 genetic_algorithms = { version = "2.4.0", features = ["serde"] }
+
+# Standard benchmark functions (Sphere, Rastrigin, Rosenbrock, ZDT, DTLZ) and quality indicators
+genetic_algorithms = { version = "2.4.0", features = ["benchmarks"] }
 
 # Observer integration with the `tracing` crate
 genetic_algorithms = { version = "2.4.0", features = ["observer-tracing"] }
@@ -148,15 +152,19 @@ Custom chromosomes can be added by implementing `ChromosomeT`.
 
 ### Engines
 
-| Engine | Module | Description |
-|--------|--------|-------------|
-| `Ga<U>` | `ga` | Standard single-population GA |
-| `IslandGa<U>` | `island` | Island model with configurable migration |
-| `Nsga2<U>` | `nsga2` | Multi-objective NSGA-II |
-| `De<U>` | `de` | Differential Evolution |
-| `Scatter<U>` | `scatter` | Scatter Search |
-| `CellularGa<U>` | `cellular` | Cellular GA (neighborhood-based) |
-| `Alps<U>` | `alps` | Age-Layered Population Structure |
+| Engine | Module | Objectives | Description |
+|--------|--------|------------|-------------|
+| `Ga<U>` | `ga` | Single | Standard single-population GA with full operator support, adaptive mode, elitism, and extensions |
+| `IslandGa<U>` | `island` | Single | Island model with configurable migration topology, frequency, and migrant selection |
+| `DeEngine<U>` | `de` | Single | Differential Evolution — 5 mutation strategies + JADE/L-SHADE adaptive variants |
+| `ScatterEngine<U>` | `scatter` | Single | Scatter Search with reference set diversification and combination methods |
+| `CellularEngine<U>` | `cellular` | Single | Cellular GA on a 2D toroidal grid with 4 neighborhood topologies |
+| `AlpsEngine<U>` | `alps` | Single | Age-Layered Population Structure with 3 age schemes and cross-layer mating |
+| `Nsga2Ga<U>` | `nsga2` | 2+ | NSGA-II — fast non-dominated sorting with crowding distance diversity |
+| `Nsga3Ga<U>` | `nsga3` | 3+ | NSGA-III — reference-point based selection for many-objective problems |
+| `MoeaDGa<U>` | `moead` | 2+ | MOEA/D — decomposition-based scalarization (Tchebycheff, PBI, weighted sum) |
+| `Spea2Ga<U>` | `spea2` | 2+ | SPEA2 — strength-Pareto archive with k-nearest density estimation |
+| `SmsEmoaGa<U>` / `IbeaGa<U>` | `sms_emoa`/`ibea` | 2+ | Hypervolume contribution / indicator-based MOEAs |
 
 ### Observer (GaObserver)
 
@@ -184,6 +192,11 @@ Attach a lifecycle observer via `.with_observer(Arc::new(my_observer))`. All hoo
 
 - `IslandGaObserver<U>` — additional hooks for island migration events; attach via `island::IslandGa::with_observer`.
 - `Nsga2Observer<U>` — additional hooks for NSGA-II pareto-front and crowding events; attach via `nsga2::Nsga2::with_observer`.
+- `Nsga3Observer<U>` — additional hooks for NSGA-III reference-point and normalization events.
+- `MoeaDObserver<U>` — additional hooks for MOEA/D subproblem and neighborhood updates.
+- `Spea2Observer<U>` — additional hooks for SPEA2 archive and fitness assignment events.
+- `SmsEmoaObserver<U>` — additional hooks for SMS-EMOA hypervolume contribution events.
+- `IbeaObserver<U>` — additional hooks for IBEA indicator-based fitness events.
 
 #### Built-in observers
 
@@ -307,6 +320,15 @@ Run any example directly with `cargo run --example <name>`:
 | `nqueens_range` | Constraint satisfaction | `cargo run --example nqueens_range` |
 | `onemax_binary` | Binary / baseline | `cargo run --example onemax_binary` |
 | `onemax_extension` | Binary / diversity control | `cargo run --example onemax_extension` |
+| `nsga3_dtlz2` | Many-objective (NSGA-III) | `cargo run --example nsga3_dtlz2` |
+| `moead_dtlz2` | Decomposition (MOEA/D) | `cargo run --example moead_dtlz2` |
+| `spea2_zdt1` | Strength Pareto (SPEA2) | `cargo run --example spea2_zdt1` |
+| `sms_emoa_zdt1` | Hypervolume-based (SMS-EMOA) | `cargo run --example sms_emoa_zdt1` |
+| `ibea_zdt1` | Indicator-based (IBEA) | `cargo run --example ibea_zdt1` |
+| `aos_demo` | Adaptive operator selection | `cargo run --example aos_demo` |
+| `constrained_g1` | Constraint handling | `cargo run --example constrained_g1` |
+| `hall_of_fame_demo` | Solution archive | `cargo run --example hall_of_fame_demo` |
+| `memetic_rastrigin` | Memetic algorithm | `cargo run --example memetic_rastrigin` |
 
 ## Development
 
