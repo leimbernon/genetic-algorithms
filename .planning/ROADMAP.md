@@ -458,7 +458,7 @@ Plans:
 - [ ] 46-01-PLAN.md — Crate SSOT + README expansion + docs/index.md (D-01, D-02, D-03, D-05, D-06, D-07)
 
 **Wave 2 — Engine Ficha Tecnica //! docs (parallel)**
-- [ ] 46-02-PLAN.md — Single-objective + island engine //! docs to D-04 standard (D-04)
+- [x] 46-02-PLAN.md — Single-objective + island engine //! docs to D-04 standard (D-04)
 - [ ] 46-03-PLAN.md — Multi-objective engine //! docs to D-04 standard (D-04)
 
 **Wave 3 — docs/ Guide Files (parallel)**
