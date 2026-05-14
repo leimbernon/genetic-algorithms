@@ -1,14 +1,132 @@
-//! NSGA-III many-objective genetic algorithm.
+//! NSGA-III — Reference-point-based Non-dominated Sorting Genetic Algorithm.
 //!
-//! NSGA-III extends NSGA-II for problems with three or more objectives by
-//! replacing crowding-distance survivor selection with reference-point niche
-//! association on the unit hyperplane. Reference points are either
-//! auto-generated via the Das-Dennis simplex lattice
+//! ## Description
+//!
+//! NSGA-III (Deb & Jain 2014) extends NSGA-II for **many-objective**
+//! optimisation (3+ objectives). It replaces crowding distance with
+//! **reference-point association** on the unit hyperplane, solving the
+//! crowding-distance diversity collapse that NSGA-II suffers at higher
+//! objective counts.
+//!
+//! Reference points are either auto-generated via the **Das-Dennis simplex
+//! lattice** with subdivision count `p`
 //! ([`Nsga3Configuration::with_reference_points_auto`](configuration::Nsga3Configuration::with_reference_points_auto))
 //! or user-supplied
 //! ([`Nsga3Configuration::with_reference_points`](configuration::Nsga3Configuration::with_reference_points)).
+//! The number of auto-generated points is `C(p + M - 1, M - 1)` where M is the
+//! number of objectives.
 //!
-//! Reference: Deb & Jain 2014 (IEEE-TEC 18(4):577-601).
+//! Per generation, NSGA-III:
+//! 1. **Non-dominated sort** the parent population (for tournament ranks).
+//! 2. **Create offspring** via binary tournament + crossover + mutation.
+//! 3. **Merge** parent + offspring (size 2N).
+//! 4. **Non-dominated sort** the combined population.
+//! 5. **Environmental selection:**
+//!    a. Take all fronts that fit entirely into the next population.
+//!    b. **Normalise** St (selected ∪ splitting front) onto the unit
+//!       hyperplane (translate by ideal, scale by intercepts via ASF).
+//!    c. **Associate** each individual to its nearest reference point
+//!       (perpendicular distance in normalised space).
+//!    d. **Niche preservation** — repeatedly pick from the
+//!       under-populated niche with the smallest occupancy count,
+//!       preferring the closest candidate (n = 0) or random (n > 0).
+//!
+//! ## When to Use
+//!
+//! - **Problem type:** Many-objective (3+ objectives)
+//! - **Variable type:** Continuous (real-valued), binary
+//! - **Population structure:** Single population
+//! - **Key strength:** Maintains diversity at 3–10+ objectives where
+//!   crowding distance collapses. Reference points distribute solutions
+//!   evenly across the entire Pareto front.
+//! - **Key weakness:** Reference point generation assumes the ideal and
+//!   nadir are known / computable. Degenerate cases (all solutions
+//!   collapse to a point) need epsilon clamping. The normalisation step
+//!   (ASF-based intercepts) is O(M·|St|) and can be expensive for large
+//!   populations.
+//!
+//! ## Quick Reference
+//!
+//! ### Mandatory Parameters
+//!
+//! | Parameter | Type | Default | Description |
+//! |-----------|------|---------|-------------|
+//! | `num_objectives` | `usize` | `3` | Number of objectives (≥ 3 typical). |
+//! | `population_size` | `usize` | `100` | Population size (≥ 2). |
+//! | `max_generations` | `usize` | `200` | Maximum generations. |
+//! | `init_fn` | `Fn` | — | Chromosome initialisation. |
+//! | `objective_fns` | `Vec<ObjectiveFn>` | — | One per objective. |
+//! | `reference_points` | `auto` or `custom` | — | See §Reference Points. |
+//!
+//! ### Optional Parameters
+//!
+//! | Parameter | Type | Default | Description |
+//! |-----------|------|---------|-------------|
+//! | `objective_directions` | `Vec<ObjectiveDirection>` | All `Minimize` | Per-objective Min/Max. |
+//! | `ga_config` | `GaConfiguration` | `Default` | GA operators, limits, RNG seed. |
+//! | `observer` | `Nsga3Observer<U>` | `None` | Lifecycle observer. |
+//!
+//! ### Reference Points
+//!
+//! Reference points are **mandatory** — configure either via:
+//! - `with_reference_points_auto(p)` — Das-Dennis lattice with `p` divisions
+//!   per objective. Typical `p = 12` for 3 objectives (91 points).
+//! - `with_reference_points(points)` — custom `Vec<Vec<f64>>`. Each point must
+//!   be non-negative and sum to approximately 1.0.
+//!
+//! ## Complete Example
+//!
+//! ```ignore
+//! use genetic_algorithms::nsga3::Nsga3Ga;
+//! use genetic_algorithms::nsga3::configuration::Nsga3Configuration;
+//! use genetic_algorithms::configuration::GaConfiguration;
+//!
+//! let nsga3_config = Nsga3Configuration::new()
+//!     .with_num_objectives(3)
+//!     .with_population_size(91)
+//!     .with_max_generations(300)
+//!     .with_reference_points_auto(12);
+//!
+//! let ga_config = GaConfiguration::default();
+//! let mut nsga3 = Nsga3Ga::<MyChromosome>::new(nsga3_config, ga_config)
+//!     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
+//!     .with_objective_fns(vec![
+//!         Box::new(|dna| { /* DTLZ2 f1 */ 0.0 }),
+//!         Box::new(|dna| { /* DTLZ2 f2 */ 0.0 }),
+//!         Box::new(|dna| { /* DTLZ2 f3 */ 0.0 }),
+//!     ])
+//!     .build()?;
+//!
+//! let pareto_front = nsga3.run()?;
+//! println!("Front size: {}", pareto_front.len());
+//! ```
+//!
+//! ## Configuration Tips
+//!
+//! - Population size should roughly match the number of reference points.
+//!   For Das-Dennis with 3 objectives and `p = 12`, you get 91 points
+//!   (`C(12 + 3 - 1, 3 - 1) = C(14, 2) = 91`), so set pop_size ≈ 91.
+//! - For 5+ objectives, decrease `p` to keep the reference-set size
+//!   manageable (e.g., `p = 6` for 5 objectives → 252 points).
+//! - Binary tournament in NSGA-III uses rank only (no crowding distance).
+//!   Ties are broken randomly.
+//!
+//! ## When to Choose This vs MOEA/D
+//!
+//! | Criterion | NSGA-III | MOEA/D |
+//! |-----------|----------|--------|
+//! | Mechanism | Reference-point niche | Weight-vector decomposition |
+//! | Objectives | 3+ (many-objective) | 2+ |
+//! | Selection | Niche preservation | Scalarisation + neighbourhood |
+//! | Speed | Normalise + associate per gen | Sub-problem iteration per gen |
+//! | Pareto front | Uniform reference coverage | Depends on weight distribution |
+//!
+//! ## References
+//!
+//! - Deb, K., & Jain, H. (2014). An evolutionary many-objective optimization
+//!   algorithm using reference-point-based nondominated sorting approach,
+//!   part I: solving problems with box constraints. _IEEE Trans. on
+//!   Evolutionary Computation_, 18(4), 577–601.
 
 pub mod configuration;
 pub mod das_dennis;

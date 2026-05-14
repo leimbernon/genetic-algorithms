@@ -1,12 +1,114 @@
 //! SPEA2 — Strength Pareto Evolutionary Algorithm 2.
 //!
-//! SPEA2 (Zitzler, Laumanns & Thiele 2001) is a multi-objective evolutionary
-//! algorithm that maintains a fixed-size external archive of non-dominated
-//! solutions. Fitness is computed from raw strength (domination count) plus
-//! density (k-nearest-neighbour distance), and the archive is truncated using
-//! iterative nearest-neighbour removal when it exceeds capacity.
+//! ## Description
 //!
-//! Reference: Zitzler, Laumanns & Thiele 2001 (TIK-Report 103).
+//! SPEA2 (Zitzler, Laumanns & Thiele 2001) is a multi-objective evolutionary
+//! algorithm that maintains a **fixed-size external archive** of non-dominated
+//! solutions alongside the main population.
+//!
+//! Fitness assignment combines two components:
+//! - **Raw strength** `R(i)` — sum of strength values of all individuals that
+//!   dominate `i`, where `strength(j) = count(j dominates all others)`.
+//! - **Density** `D(i)` — estimated via k-nearest-neighbour distance in
+//!   objective space: `D(i) = 1 / (σ_k + 2)`, where `k = floor(sqrt(N))` and
+//!   `σ_k` is the distance to the k-th nearest neighbour.
+//!
+//! **Final fitness** `F(i) = R(i) + D(i)` — lower is better.
+//!
+//! Per generation, SPEA2:
+//! 1. Compute fitness on the combined population + archive set.
+//! 2. **Environmental selection:** copy all non-dominated solutions (fitness <
+//!    1.0) to the new archive. If under capacity, fill with best-dominated by
+//!    fitness. If over capacity, truncate via iterative nearest-neighbour
+//!    Euclidean removal (lexicographic tie-breaking).
+//! 3. **Binary tournament** from the archive — create new offspring population
+//!    via crossover + mutation.
+//! 4. Replace the population with the offspring. The archive persists across
+//!    generations.
+//!
+//! ## When to Use
+//!
+//! - **Problem type:** Multi-objective (2+ objectives)
+//! - **Variable type:** Continuous, binary, permutation, or `List<T>`
+//! - **Population structure:** Single population with external archive
+//! - **Key strength:** The external archive preserves non-dominated solutions
+//!   even if the population loses them. The k-NN density provides fine-grained
+//!   diversity preservation across the entire Pareto front.
+//! - **Key weakness:** The fitness computation is O(N²) per generation (pairwise
+//!   domination checks). Archive truncation via iterative nearest-neighbour
+//!   removal is also O(N²). Slower than NSGA-II for large populations.
+//!
+//! ## Quick Reference
+//!
+//! ### Mandatory Parameters
+//!
+//! | Parameter | Type | Default | Description |
+//! |-----------|------|---------|-------------|
+//! | `num_objectives` | `usize` | `2` | Number of objectives. |
+//! | `population_size` | `usize` | `100` | Main population size (≥ 2). |
+//! | `archive_size` | `usize` | `100` | External archive size (≤ pop_size). |
+//! | `max_generations` | `usize` | `250` | Maximum generations. |
+//! | `init_fn` | `Fn` | — | Chromosome initialisation. |
+//! | `objective_fns` | `Vec<ObjectiveFn>` | — | One per objective. |
+//!
+//! ### Optional Parameters
+//!
+//! | Parameter | Type | Default | Description |
+//! |-----------|------|---------|-------------|
+//! | `objective_directions` | `Vec<ObjectiveDirection>` | All `Minimize` | Per-objective Min/Max. |
+//! | `ga_config` | `GaConfiguration` | `Default` | GA operators, limits, RNG seed. |
+//! | `observer` | `Spea2Observer<U>` | `None` | Lifecycle observer. |
+//!
+//! ## Complete Example
+//!
+//! ```ignore
+//! use genetic_algorithms::spea2::Spea2Ga;
+//! use genetic_algorithms::spea2::configuration::Spea2Configuration;
+//! use genetic_algorithms::configuration::GaConfiguration;
+//!
+//! let spea2_config = Spea2Configuration::new()
+//!     .with_num_objectives(2)
+//!     .with_population_size(100)
+//!     .with_archive_size(100)
+//!     .with_max_generations(250);
+//!
+//! let ga_config = GaConfiguration::default();
+//! let mut spea2 = Spea2Ga::<MyChromosome>::new(spea2_config, ga_config)
+//!     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
+//!     .with_objective_fns(vec![
+//!         Box::new(|dna| { /* ZDT1 f1 */ 0.0 }),
+//!         Box::new(|dna| { /* ZDT1 f2 */ 0.0 }),
+//!     ])
+//!     .build()?;
+//!
+//! let pareto_front = spea2.run()?;
+//! println!("Front size: {}", pareto_front.len());
+//! ```
+//!
+//! ## Configuration Tips
+//!
+//! - `archive_size` must be ≤ `population_size`. The canonical SPEA2 uses
+//!   `archive_size = population_size`. Smaller archives converge faster but
+//!   may lose diversity.
+//! - SPEA2 works well with moderate population sizes (50–200). The O(N²)
+//!   fitness computation becomes noticeable beyond typical sizes.
+//! - The archive truncation uses lexicographic nearest-neighbour removal,
+//!   which preserves boundary points (they have the largest distances).
+//!
+//! ## When to Choose This vs NSGA-II
+//!
+//! | Criterion | SPEA2 | NSGA-II |
+//! |-----------|-------|---------|
+//! | Archive | External fixed-size archive | None (elitism from sorting) |
+//! | Diversity | k-NN density | Crowding distance |
+//! | Fitness cost | O(N²) domination + O(N²) NN | O(M·N²) sort + O(N log N) crowd |
+//! | Archive quality | Preserves non-dominated across gens | Best front from combined set |
+//! | Parameter | archive_size added | Simpler config |
+//!
+//! ## References
+//!
+//! - Zitzler, E., Laumanns, M., & Thiele, L. (2001). SPEA2: Improving the
+//!   strength Pareto evolutionary algorithm. _TIK-Report 103_, ETH Zurich.
 
 pub mod configuration;
 
