@@ -12,6 +12,11 @@ pub mod mutation;
 pub mod selection;
 pub mod survivor;
 
+pub use local_search::{
+    factory, factory_with_config, HillClimbingConfig, LocalSearch,
+    LocalSearchApplicationStrategy, LocalSearchMode,
+};
+
 /// Parent-selection strategies.
 ///
 /// Determines how individuals are chosen from the current population to
