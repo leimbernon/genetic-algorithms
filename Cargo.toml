@@ -21,6 +21,7 @@ serde = ["dep:serde", "dep:serde_json"]
 visualization = ["dep:plotters"]
 observer-tracing = ["dep:tracing"]
 observer-metrics = ["dep:metrics"]
+benchmarks = []
 
 [dependencies]
 rand = "0.9.2"

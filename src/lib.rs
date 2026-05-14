@@ -91,6 +91,8 @@ pub mod reporter;
 pub mod rng;
 pub mod hall_of_fame;
 pub mod aos;
+#[cfg(feature = "benchmarks")]
+pub mod benchmarks;
 pub mod stats;
 pub mod traits;
 pub mod validators;
