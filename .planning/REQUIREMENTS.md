@@ -25,7 +25,7 @@
 ### MUT — Mutation Operators
 
 - [x] **MUT-01**: User can configure Cauchy mutation to apply heavy-tailed perturbations to real-valued genes with a configurable scale parameter
-- [x] **MUT-02**: User can configure Lévy Flight mutation to apply long-range jumps to real-valued genes with a configurable stability index
+- [x] **MUT-02**: User can configure Levy Flight mutation to apply long-range jumps to real-valued genes with a configurable stability index
 - [x] **MUT-03**: User can configure Uniform mutation to randomly reset gene values uniformly within the gene's valid range
 - [ ] **MUT-04**: User can configure Differential mutation (DE-style) in the standard GA, using three random population members to generate a mutant vector with configurable F scale factor
 
@@ -37,11 +37,15 @@
 - [ ] **MOO-04**: User can run SMS-EMOA (hypervolume contribution-based steady-state removal) and IBEA (additive epsilon-indicator fitness); both share the quality-indicator library (#206)
 - [ ] **MOO-05**: User can compute Hypervolume, Generational Distance (GD), Inverted GD (IGD), and Spread from any set of Pareto-front solutions via a shared quality-indicator module (#207)
 
+### BEN — Benchmark Functions
+
+- [ ] **BEN-01**: User can evaluate GA configurations against 17+ standard benchmark functions (Sphere, Rastrigin, Ackley for single-objective; ZDT1-6 for bi-objective; DTLZ1-7 for many-objective) behind a `benchmarks` feature flag, each with metadata (name, bounds, known optimum) and a unified `BenchmarkFn` trait interface (#219)
+
 ## Future Requirements
 
 <!-- Validated direction, not yet scheduled. -->
 
-- Framework extensions: constraint handling, memetic algorithms, warm start, AOS — issues #212–#219
+- Framework extensions: constraint handling, memetic algorithms, warm start, AOS — issues #212-#219
 
 ## Out of Scope
 
@@ -73,3 +77,4 @@
 | MOO-03 | Phase 37 | — |
 | MOO-04 | Phase 38 | — |
 | MOO-05 | Phase 39 | — |
+| BEN-01 | Phase 44 | — |

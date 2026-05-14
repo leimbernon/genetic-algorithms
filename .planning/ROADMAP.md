@@ -28,8 +28,6 @@ Phases 1-5 predate GSD tracking. Issues closed: #165, #166, #167, #168, #169.
 <details>
 <summary>✅ v2.2 — Improve Usability, completion (Phases 6-9) — SHIPPED 2026-03-21</summary>
 
-Issues closed: #170, #171, #178, #179.
-
 - [x] **Phase 6: Diversity Estimation** — `GenerationStats.diversity` wired into extension trigger and dynamic mutation (completed 2026-03-20)
 - [x] **Phase 7: List Genotype** — `List<T>` gene and `ListChromosome<T>` for finite symbolic alphabets (completed 2026-03-21)
 - [x] **Phase 8: Reporter Trait** — `Reporter<U>` with 4 lifecycle hooks, `SimpleReporter`, `DurationReporter` (completed 2026-03-21)
@@ -51,8 +49,6 @@ Full archive: `.planning/milestones/v2.1.0-ROADMAP.md`
 <details>
 <summary>✅ v2.2.0 — Observability & Traceability (Phases 13-18) — SHIPPED 2026-03-28</summary>
 
-Issues: #182, #183, #184, #185, #186
-
 - [x] **Phase 13: GaObserver Base Trait** — Core trait + `Ga<U>` integration; foundation all other phases depend on (completed 2026-03-25)
 - [x] **Phase 14: LogObserver + Log Migration** — Backward-compatible log migration; validates Phase 13 end-to-end (completed 2026-03-25)
 - [x] **Phase 15: TracingObserver** — Structured tracing spans behind `observer-tracing` feature flag (completed 2026-03-26)
@@ -67,8 +63,6 @@ Full archive: `.planning/milestones/v2.2.0-ROADMAP.md` *(in v2.2.1 archive)*
 <details>
 <summary>✅ v2.2.1 — Performance Optimizations (Phases 19-24) — SHIPPED 2026-04-23</summary>
 
-Issues: #187, #188, #189, #190, #191, #192
-
 - [x] **Phase 19: Clone Elimination** — Defer parent clones until needed; build crossover children directly; use in-place mutation for numeric and index operators (completed 2026-03-30)
 - [x] **Phase 20: Crossover Algorithm Optimization** — Replace O(n²) linear scans in PMX with O(n) HashMap position map (completed 2026-03-30)
 - [x] **Phase 21: Selection Algorithm Optimization + Allocation Reduction** — Binary search for Rank and Boltzmann selection; collect fitness values once per generation; on-the-fly niching eliminates O(n²) distance matrix (completed 2026-03-31)
@@ -82,8 +76,6 @@ Full archive: `.planning/milestones/v2.2.1-ROADMAP.md`
 
 <details>
 <summary>✅ v2.3.0 — Alternative Metaheuristics & Population Models (Phases 25-29) — SHIPPED 2026-04-27</summary>
-
-Issues: #208, #209, #210, #211
 
 - [x] **Phase 25: Directory Restructure** — Non-breaking reorganization of src/ into engines/, types/, observe/ (completed 2026-04-26)
 - [x] **Phase 26: Differential Evolution Engine** — 5 mutation strategies, binomial/exponential crossover, JADE and L-SHADE adaptive variants (completed 2026-04-26)
@@ -112,7 +104,7 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 - [x] **Phase 40: Constraint Handling** — Penalty functions, Deb's feasibility rules, RepairOperator (#212, #213, #214) (completed 2026-05-11)
 - [x] **Phase 41: Hall of Fame / Solution Archive** — Bounded archive with deduplication and min-distance diversity (#217)
 - [x] **Phase 42: Warm Starting & Population Seeding** — Initial population, seeded population, checkpoint resumption (#216) (completed 2026-05-13)
-- [ ] **Phase 43: Adaptive Operator Selection (AOS)** — Operator portfolio with Probability Matching, Adaptive Pursuit, MAB (#218)
+- [x] **Phase 43: Adaptive Operator Selection (AOS)** — Operator portfolio with Probability Matching, Adaptive Pursuit, MAB (#218)
 - [ ] **Phase 44: Standard Benchmark Functions Suite** — Unimodal, multimodal, ZDT, DTLZ behind `benchmarks` feature flag (#219)
 - [ ] **Phase 45: Memetic Algorithm Framework** — LocalSearchOperator with Lamarckian/Baldwinian modes (#215)
 
@@ -241,8 +233,8 @@ Plans:
 | 40. Constraint Handling | v2.4.0 | 3/3 | Complete    | 2026-05-11 |
 | 41. Hall of Fame / Solution Archive | v2.4.0 | 3/3 | Complete | 2026-05-12 |
 | 42. Warm Starting & Population Seeding | v2.4.0 | 3/3 | Complete    | 2026-05-13 |
-| 43. Adaptive Operator Selection (AOS) | v2.4.0 | 2/3 | In Progress|  |
-| 44. Standard Benchmark Functions Suite | v2.4.0 | 0/0 | Pending | — |
+| 43. Adaptive Operator Selection (AOS) | v2.4.0 | 3/3 | Complete | 2026-05-14 |
+| 44. Standard Benchmark Functions Suite | v2.4.0 | 0/3 | Pending | — |
 | 45. Memetic Algorithm Framework | v2.4.0 | 0/0 | Pending | — |
 
 ### Phase 34: WASM support — fix time-based panics for wasm32-unknown-unknown targets (issue #236)
@@ -405,7 +397,7 @@ Plans:
 **Requirements**: AOS-01
 **Issue**: #218
 **Depends on:** Phase 42
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 **Wave 1**
@@ -427,13 +419,13 @@ Plans:
 
 Plans:
 **Wave 1**
-- [ ] 42-01-PLAN.md — Ga struct fields, builder methods, build-time validation, test scaffolding (WSM-01-A, WSM-01-D, WSM-01-J, WSM-01-K)
+- [ ] 44-01-PLAN.md — BenchmarkFn trait + single-objective benchmarks (Sphere, Rastrigin, Ackley) + Cargo.toml feature flag + WASM check (BEN-01)
 
 **Wave 2** *(blocked on Wave 1)*
-- [ ] 42-02-PLAN.md — Seed-based initialization with genotypic dedup, trusted fitness, HOF admission (WSM-01-A, WSM-01-B, WSM-01-C, WSM-01-H, WSM-01-J, WSM-01-K)
+- [ ] 44-02-PLAN.md — ZDT1-6 + DTLZ1-7 multi-objective benchmarks with unit tests + WASM check (BEN-01)
 
-**Wave 3** *(blocked on Wave 1)*
-- [ ] 42-03-PLAN.md — Checkpoint resumption with hybrid config override, absolute counting, stats preservation (WSM-01-D, WSM-01-E, WSM-01-F, WSM-01-G, WSM-01-I, WSM-01-J, WSM-01-K, WSM-01-L)
+**Wave 3** *(blocked on Waves 1-2)*
+- [ ] 44-03-PLAN.md — Serde derives, benches/de.rs migration, example migrations, phase verification gate (BEN-01)
 
 ### Phase 45: Memetic Algorithm Framework
 
@@ -442,13 +434,3 @@ Plans:
 **Issue**: #215
 **Depends on:** Phase 44
 **Plans:** 3 plans
-
-Plans:
-**Wave 1**
-- [ ] 42-01-PLAN.md — Ga struct fields, builder methods, build-time validation, test scaffolding (WSM-01-A, WSM-01-D, WSM-01-J, WSM-01-K)
-
-**Wave 2** *(blocked on Wave 1)*
-- [ ] 42-02-PLAN.md — Seed-based initialization with genotypic dedup, trusted fitness, HOF admission (WSM-01-A, WSM-01-B, WSM-01-C, WSM-01-H, WSM-01-J, WSM-01-K)
-
-**Wave 3** *(blocked on Wave 1)*
-- [ ] 42-03-PLAN.md — Checkpoint resumption with hybrid config override, absolute counting, stats preservation (WSM-01-D, WSM-01-E, WSM-01-F, WSM-01-G, WSM-01-I, WSM-01-J, WSM-01-K, WSM-01-L)
