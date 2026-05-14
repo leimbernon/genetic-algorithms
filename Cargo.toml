@@ -71,6 +71,7 @@ harness = false
 [[bench]]
 name = "de"
 harness = false
+required-features = ["benchmarks"]
 
 [[bench]]
 name = "scatter"

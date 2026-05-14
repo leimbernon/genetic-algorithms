@@ -38,6 +38,8 @@ fn repeat_bounds(low: f64, high: f64, n: usize) -> Vec<(f64, f64)> {
 /// `f(x) = sum(x_i ^ 2)`
 ///
 /// Simple, convex, and separable. A baseline for optimization algorithms.
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Sphere {
     /// Number of decision variables.
     pub n: usize,
@@ -93,6 +95,8 @@ impl BenchmarkFn for Sphere {
 /// `f(x) = 10 * n + sum(x_i ^ 2 - 10 * cos(2 * pi * x_i))`
 ///
 /// Highly multimodal with many regularly spaced local minima.
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Rastrigin {
     /// Number of decision variables.
     pub n: usize,
@@ -153,6 +157,8 @@ impl BenchmarkFn for Rastrigin {
 ///       ` - exp((1/n) * sum(cos(2 * pi * x_i))) + 20 + e`
 ///
 /// Many local minima with a single global minimum at the origin.
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Ackley {
     /// Number of decision variables.
     pub n: usize,
@@ -294,5 +300,35 @@ mod tests {
     fn test_bounds_length_matches_dimension() {
         let sphere = Sphere::new(5);
         assert_eq!(sphere.bounds().len(), 5);
+    }
+
+    #[cfg(feature = "serde")]
+    mod serde_tests {
+        use super::*;
+
+        #[test]
+        fn test_sphere_serde_roundtrip() {
+            let s = Sphere::new(10);
+            let json = serde_json::to_string(&s).unwrap();
+            let s2: Sphere = serde_json::from_str(&json).unwrap();
+            assert_eq!(s.n, s2.n);
+            assert_eq!(s.bounds.len(), s2.bounds.len());
+        }
+
+        #[test]
+        fn test_rastrigin_serde_roundtrip() {
+            let r = Rastrigin::new(20);
+            let json = serde_json::to_string(&r).unwrap();
+            let r2: Rastrigin = serde_json::from_str(&json).unwrap();
+            assert_eq!(r.n, r2.n);
+        }
+
+        #[test]
+        fn test_ackley_serde_roundtrip() {
+            let a = Ackley::new(15);
+            let json = serde_json::to_string(&a).unwrap();
+            let a2: Ackley = serde_json::from_str(&json).unwrap();
+            assert_eq!(a.n, a2.n);
+        }
     }
 }

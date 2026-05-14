@@ -1,3 +1,5 @@
+use genetic_algorithms::benchmarks::BenchmarkFn;
+use genetic_algorithms::benchmarks::Sphere;
 use std::borrow::Cow;
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
@@ -12,7 +14,8 @@ use genetic_algorithms::traits::{ChromosomeT, ConfigurationT, CrossoverConfig, M
 use rand::Rng;
 
 fn sphere(dna: &[RangeGene<f64>]) -> f64 {
-    dna.iter().map(|g| g.value() * g.value()).sum()
+    let x: Vec<f64> = dna.iter().map(|g| g.value()).collect();
+    Sphere::new(dna.len()).evaluate(&x)[0]
 }
 
 fn make_pop(n: usize, dim: usize) -> Vec<RangeChromosome<f64>> {

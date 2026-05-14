@@ -34,6 +34,8 @@ fn bounds_01(n: usize) -> Vec<(f64, f64)> {
 /// f1 = x_0
 /// g = 1 + 9/(n-1) * sum(x_1..x_n)
 /// f2 = g * (1 - sqrt(x_0 / g))
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ZDT1 {
     n_vars: usize,
     bounds: Vec<(f64, f64)>,
@@ -85,6 +87,8 @@ impl BenchmarkFn for ZDT1 {
 /// f1 = x_0
 /// g = 1 + 9/(n-1) * sum(x_1..x_n)
 /// f2 = g * (1 - (x_0 / g)^2)
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ZDT2 {
     n_vars: usize,
     bounds: Vec<(f64, f64)>,
@@ -136,6 +140,8 @@ impl BenchmarkFn for ZDT2 {
 /// f1 = x_0
 /// g = 1 + 9/(n-1) * sum(x_1..x_n)
 /// f2 = g * (1 - sqrt(x_0/g) - (x_0/g) * sin(10*pi*x_0))
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ZDT3 {
     n_vars: usize,
     bounds: Vec<(f64, f64)>,
@@ -190,6 +196,8 @@ impl BenchmarkFn for ZDT3 {
 /// f2 = g * (1 - sqrt(x_0 / g))
 ///
 /// First variable in [0, 1]; remaining variables in [-5, 5].
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ZDT4 {
     n_vars: usize,
     bounds: Vec<(f64, f64)>,
@@ -252,6 +260,8 @@ impl BenchmarkFn for ZDT4 {
 /// g = 1 + v
 /// f1 = 1 + u
 /// f2 = g / f1
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ZDT5 {
     n_vars: usize,
     bounds: Vec<(f64, f64)>,
@@ -306,6 +316,8 @@ impl BenchmarkFn for ZDT5 {
 /// f1 = 1 - exp(-4*x_0) * sin^6(6*pi*x_0)
 /// g = 1 + 9 * ((sum(x_1..x_n) / (n-1))^0.25)
 /// f2 = g * (1 - (f1 / g)^2)
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ZDT6 {
     n_vars: usize,
     bounds: Vec<(f64, f64)>,
@@ -457,5 +469,35 @@ mod tests {
         let zdt5 = ZDT5::default();
         assert_eq!(zdt5.n_vars, 11);
         assert_eq!(zdt5.bounds().len(), 11);
+    }
+
+    #[cfg(feature = "serde")]
+    mod serde_tests {
+        use super::*;
+
+        #[test]
+        fn test_zdt1_serde_roundtrip() {
+            let z = ZDT1::new(30);
+            let json = serde_json::to_string(&z).unwrap();
+            let z2: ZDT1 = serde_json::from_str(&json).unwrap();
+            assert_eq!(z.n_vars, z2.n_vars);
+        }
+
+        #[test]
+        fn test_zdt4_serde_roundtrip() {
+            let z = ZDT4::new(10);
+            let json = serde_json::to_string(&z).unwrap();
+            let z2: ZDT4 = serde_json::from_str(&json).unwrap();
+            assert_eq!(z.bounds()[0], (0.0, 1.0));
+            assert_eq!(z2.bounds()[0], z.bounds()[0]);
+        }
+
+        #[test]
+        fn test_zdt6_serde_roundtrip() {
+            let z = ZDT6::new(10);
+            let json = serde_json::to_string(&z).unwrap();
+            let z2: ZDT6 = serde_json::from_str(&json).unwrap();
+            assert_eq!(z.n_vars, z2.n_vars);
+        }
     }
 }

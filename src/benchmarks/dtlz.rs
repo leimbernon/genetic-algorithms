@@ -34,6 +34,8 @@ fn bounds_01(n: usize) -> Vec<(f64, f64)> {
 /// f_i follow the standard multi-dimensional product formula.
 ///
 /// Has 3^k local Pareto-optimal fronts (Rastrigin-like g function).
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DTLZ1 {
     n_vars: usize,
     n_obj: usize,
@@ -104,6 +106,8 @@ impl BenchmarkFn for DTLZ1 {
 ///
 /// g = sum((xi - 0.5)^2 for xi in X_K)
 /// f_i use trigonometric product formulas producing points on a unit sphere.
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DTLZ2 {
     n_vars: usize,
     n_obj: usize,
@@ -195,6 +199,8 @@ impl DTLZ2 {
 ///
 /// Same f_i structure as DTLZ2, but with DTLZ1's Rastrigin-like g function
 /// producing 3^k local Pareto-optimal fronts.
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DTLZ3 {
     n_vars: usize,
     n_obj: usize,
@@ -251,6 +257,8 @@ impl BenchmarkFn for DTLZ3 {
 ///
 /// Same f_i structure as DTLZ2, but position variables are raised to power
 /// `alpha` (default 100) to bias solution density toward the f_M=0 edge.
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DTLZ4 {
     n_vars: usize,
     n_obj: usize,
@@ -317,6 +325,8 @@ impl BenchmarkFn for DTLZ4 {
 ///
 /// Uses theta transformation on position variables then same f structure as DTLZ2.
 /// The Pareto front is a curve regardless of M (number of objectives).
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DTLZ5 {
     n_vars: usize,
     n_obj: usize,
@@ -380,6 +390,8 @@ impl BenchmarkFn for DTLZ5 {
 ///
 /// Same theta transformation as DTLZ5 but with g(x) = sqrt(sum(x_i^3)).
 /// Produces a degenerate Pareto front regardless of M.
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DTLZ6 {
     n_vars: usize,
     n_obj: usize,
@@ -445,6 +457,8 @@ impl BenchmarkFn for DTLZ6 {
 /// f_{M-1} = (1+g) * h
 ///
 /// Produces a disconnected Pareto front due to the sin term in h.
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DTLZ7 {
     n_vars: usize,
     n_obj: usize,
@@ -682,6 +696,46 @@ mod tests {
                 assert!((high - 1.0).abs() < EPSILON,
                     "{} bound[{}].1 expected 1, got {}", name, j, high);
             }
+        }
+    }
+
+    #[cfg(feature = "serde")]
+    mod serde_tests {
+        use super::*;
+
+        #[test]
+        fn test_dtlz1_serde_roundtrip() {
+            let d = DTLZ1::new(7, 3);
+            let json = serde_json::to_string(&d).unwrap();
+            let d2: DTLZ1 = serde_json::from_str(&json).unwrap();
+            assert_eq!(d.n_vars, d2.n_vars);
+            assert_eq!(d.n_obj, d2.n_obj);
+        }
+
+        #[test]
+        fn test_dtlz2_serde_roundtrip() {
+            let d = DTLZ2::new(12, 3);
+            let json = serde_json::to_string(&d).unwrap();
+            let d2: DTLZ2 = serde_json::from_str(&json).unwrap();
+            assert_eq!(d.n_vars, d2.n_vars);
+            assert_eq!(d.n_obj, d2.n_obj);
+        }
+
+        #[test]
+        fn test_dtlz4_serde_roundtrip() {
+            let d = DTLZ4::new(10, 3);
+            let json = serde_json::to_string(&d).unwrap();
+            let d2: DTLZ4 = serde_json::from_str(&json).unwrap();
+            assert_eq!(d.alpha, d2.alpha);
+        }
+
+        #[test]
+        fn test_dtlz7_serde_roundtrip() {
+            let d = DTLZ7::new(22, 3);
+            let json = serde_json::to_string(&d).unwrap();
+            let d2: DTLZ7 = serde_json::from_str(&json).unwrap();
+            assert_eq!(d.n_vars, d2.n_vars);
+            assert_eq!(d.n_obj, d2.n_obj);
         }
     }
 }
