@@ -434,3 +434,13 @@ Plans:
 **Issue**: #215
 **Depends on:** Phase 44
 **Plans:** 3 plans
+
+Plans:
+**Wave 1**
+- [ ] 45-01-PLAN.md — Foundation: LocalSearchOperator trait, HillClimbing enum + factory, config types, serde, module wiring
+
+**Wave 2** *(blocked on Wave 1)*
+- [ ] 45-02-PLAN.md — Ga integration: struct field, builder method, generation loop, strategy dispatch, parallel execution, tests
+
+**Wave 3** *(blocked on Waves 1-2)*
+- [ ] 45-03-PLAN.md — Example (memetic_rastrigin), serde roundtrip test, WASM check, phase verification gate
