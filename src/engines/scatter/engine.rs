@@ -1,9 +1,121 @@
-//! `ScatterEngine` — the Scatter Search execution loop.
+//! # Scatter Search (ScatterEngine)
 //!
-//! Scatter Search maintains a small *reference set* of high-quality and
-//! diverse solutions.  Each iteration it generates new candidate solutions by
-//! linearly combining pairs of reference-set members, optionally improves them
-//! with a local search, and updates the reference set with the best candidates.
+//! ## Description
+//!
+//! Scatter Search is a population-based metaheuristic that maintains a small **reference set**
+//! of elite and diverse solutions. Unlike the standard GA which relies on stochastic operators,
+//! Scatter Search combines solutions **deterministically** through linear combinations and
+//! optionally refines them with local search. The algorithm follows a five-method cycle:
+//!
+//! 1. **Diversification Generation** — create a pool of diverse candidate solutions
+//! 2. **Improvement** (optional) — apply local search to refine each candidate
+//! 3. **Reference Set (RefSet) Update** — select `b/2` high-quality and `b/2` diverse solutions
+//! 4. **Subset Generation** — form all pairs from the reference set
+//! 5. **Solution Combination** — create new candidates by linear combination of each pair
+//!
+//! The cycle repeats until `max_iterations` is reached or the fitness target is met. Because the
+//! reference set is small (typically 10-20), Scatter Search excels at **intensification** around
+//! promising regions, making it well-suited for expensive fitness evaluations.
+//!
+//! ## When to Use
+//!
+//! - **Problem type:** Single-objective, continuous (genes must implement [`DeGene`](crate::de::gene::DeGene)
+//!   for linear combination arithmetic)
+//! - **Number of objectives:** 1
+//! - **Variable type:** Real-valued
+//! - **Key strength:** Excellent intensification around promising regions; small population reduces
+//!   total fitness evaluations; deterministic combination operator
+//! - **Key weakness:** Limited exploration compared to stochastic methods; not applicable to
+//!   binary, permutation, or symbolic problems
+//!
+//! ## Quick Reference
+//!
+//! ### Mandatory Parameters
+//!
+//! | Parameter | Type | Required | Default | Description |
+//! |-----------|------|----------|---------|-------------|
+//! | `population_size` | `usize` | Yes (via builder) | `50` | Total solutions generated during diversification |
+//! | `reference_set_size` | `usize` | Yes (via builder) | `10` | Size of the reference set `b` (must be \< population_size) |
+//! | `max_iterations` | `usize` | Yes (via builder) | `100` | Maximum scatter-search iterations |
+//! | `init_fn` | `Fn(usize) -> Vec<U>` | Yes (constructor) | — | Population initialization closure |
+//! | `fitness_fn` | `Fn(&[U::Gene]) -> f64` | Yes (constructor) | — | Fitness evaluation function |
+//!
+//! ### Optional Parameters
+//!
+//! | Parameter | Type | Required | Default | Description |
+//! |-----------|------|----------|---------|-------------|
+//! | `local_search` | `bool` | No | `false` | Enable local search refinement after combination |
+//! | `local_search_steps` | `usize` | No | `20` | Maximum steps for hill-climbing refinement |
+//! | `local_search_step_size` | `f64` | No | `0.1` | Perturbation magnitude for local search |
+//! | `fitness_target` | `Option<f64>` | No | `None` | Stop when best fitness reaches this |
+//! | `observer` | `Option<Arc<dyn GaObserver<U>>>` | No | `None` | Lifecycle observer |
+//!
+//! ## Complete Example
+//!
+//! ```rust,ignore
+//! use genetic_algorithms::chromosomes::Range as RangeChromosome;
+//! use genetic_algorithms::de::gene::DeGene;
+//! use genetic_algorithms::genotypes::Range as RangeGenotype;
+//! use genetic_algorithms::scatter::{ScatterConfiguration, ScatterEngine};
+//! use genetic_algorithms::traits::ChromosomeT;
+//!
+//! // Rastrigin function (minimize toward 0.0 at origin)
+//! let fitness_fn = |dna: &[RangeGenotype<f64>]| -> f64 {
+//!     let a = 10.0;
+//!     let n = dna.len() as f64;
+//!     a * n + dna.iter().map(|g| {
+//!         g.de_value().powi(2) - a * (2.0 * std::f64::consts::PI * g.de_value()).cos()
+//!     }).sum::<f64>()
+//! };
+//!
+//! let config = ScatterConfiguration::default()
+//!     .with_population_size(100)
+//!     .with_reference_set_size(20)
+//!     .with_max_iterations(200)
+//!     .with_local_search(true);
+//!
+//! let init_fn = |n: usize| -> Vec<RangeChromosome<f64>> {
+//!     (0..n).map(|_| {
+//!         let mut c = RangeChromosome::new();
+//!         for i in 0..10 {
+//!             c.dna.push(RangeGenotype::new(i as i32, vec![(-5.12, 5.12)], 0.0));
+//!         }
+//!         c
+//!     }).collect()
+//! };
+//!
+//! let mut engine = ScatterEngine::new(config, init_fn, fitness_fn);
+//! let result = engine.run();
+//! println!("Best fitness: {:?}", result.best_fitness);
+//! ```
+//!
+//! ## Configuration Tips
+//!
+//! - **Reference set size of 10-20** is the standard range; smaller = faster convergence,
+//!   larger = better diversity but slower iteration
+//! - Enable **local search** for problems with smooth fitness landscapes — the combination
+//!   + refinement loop can converge very quickly
+//! - **population_size** should be large (100-500) to ensure the diversification phase
+//!   generates sufficient coverage of the search space
+//! - Scatter Search is particularly effective when fitness evaluation is expensive — the
+//!   small reference set minimizes total evaluations
+//!
+//! ## When to Choose This vs Standard GA
+//!
+//! | Factor | ScatterEngine | Ga |
+//! |--------|---------------|-----|
+//! | Population size | Small (10-20 ref set) | Large (50-500) |
+//! | Combination | Deterministic (linear) | Stochastic (crossover) |
+//! | Local search | Built-in (optional) | External (memetic config) |
+//! | Total evaluations | Low (intensification) | Moderate-High (exploration) |
+//! | Best for | Expensive fitness functions | General exploration |
+//!
+//! ## References
+//!
+//! - Glover, F. (1977). Heuristics for Integer Programming Using Surrogate Constraints.
+//!   *Decision Sciences*, 8(1), 156–166.
+//! - Laguna, M., & Marti, R. (2003). *Scatter Search: Methodology and Implementations in C.*
+//!   Springer Science & Business Media.
 
 use std::borrow::Cow;
 use std::sync::Arc;

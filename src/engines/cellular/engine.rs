@@ -1,21 +1,143 @@
-//! `CellularEngine` — the Cellular Genetic Algorithm execution loop.
+//! # Cellular Genetic Algorithm (CellularEngine)
 //!
-//! A Cellular GA places individuals on a 2D toroidal grid.  Each cell evolves
-//! by interacting only with its local neighborhood, which promotes spatial
-//! diversity and the emergence of multiple competing niches.
+//! ## Description
 //!
-//! # Algorithm
+//! The Cellular Genetic Algorithm (cGA) places individuals on a **2D toroidal grid** where each
+//! cell holds exactly one chromosome. Unlike a standard GA where the entire population is a single
+//! breeding pool, cellular GAs restrict mating to **local neighborhoods** — individuals compete
+//! and mate only with their immediate neighbors. This spatial structure creates slow information
+//! diffusion across the grid, which naturally preserves population diversity and allows multiple
+//! competing niches to emerge.
 //!
-//! 1. **Initialisation** — fill the grid with `rows × cols` individuals via
-//!    the user-supplied `init_fn`; evaluate fitness for all of them.
-//! 2. **Evolution loop** (up to `max_generations`) — for each cell: collect
-//!    neighbors (toroidal wrapping), select a mate via the configured
-//!    `Selection` operator, apply `Crossover` and `Mutation`, evaluate the
-//!    offspring, and replace the cell if the offspring is fitter (greedy
-//!    local replacement).  In *synchronous* mode replacements are committed
-//!    after the full sweep; in *asynchronous* mode they are applied
-//!    immediately.
-//! 3. Return the final grid, best individual, and number of generations run.
+//! Each generation, for every cell on the grid:
+//!
+//! 1. Collect neighbors according to the configured neighborhood topology (toroidal wrapping)
+//! 2. Select a mate from the neighborhood using the configured Selection operator
+//! 3. Apply Crossover and Mutation to produce an offspring
+//! 4. Replace the cell if the offspring is fitter (greedy local replacement)
+//!
+//! In **synchronous** mode, all replacements are committed after the full sweep. In **asynchronous**
+//! mode, replacements are applied immediately, allowing later cells to read offspring produced
+//! earlier in the same generation (typically converges faster).
+//!
+//! ## When to Use
+//!
+//! - **Problem type:** Single-objective — continuous, binary, or permutation
+//! - **Number of objectives:** 1
+//! - **Variable type:** Any (requires [`ValueMutable`](crate::operations::mutation::ValueMutable)
+//!   for in-place mutation)
+//! - **Key strength:** Excellent diversity preservation through spatial structure; natural
+//!   parallelization (each cell evolves independently)
+//! - **Key weakness:** Slower convergence than standard GA due to restricted gene flow;
+//!   grid size introduces additional tuning parameters
+//!
+//! ## Quick Reference
+//!
+//! ### Mandatory Parameters
+//!
+//! | Parameter | Type | Required | Default | Description |
+//! |-----------|------|----------|---------|-------------|
+//! | `rows` | `usize` | Yes (via builder) | `10` | Number of rows in the toroidal grid |
+//! | `cols` | `usize` | Yes (via builder) | `10` | Number of columns in the toroidal grid |
+//! | `max_generations` | `usize` | Yes (via builder) | `1000` | Maximum number of generations |
+//! | `init_fn` | `Fn(usize) -> Vec<U>` | Yes (constructor) | — | Population initialization closure |
+//! | `fitness_fn` | `Fn(&[U::Gene]) -> f64` | Yes (constructor) | — | Fitness evaluation function |
+//!
+//! ### Optional Parameters
+//!
+//! | Parameter | Type | Required | Default | Description |
+//! |-----------|------|----------|---------|-------------|
+//! | `neighborhood` | `Neighborhood` | No | `Moore` | Cell neighborhood topology |
+//! | `update_mode` | `UpdateMode` | No | `Asynchronous` | Synchronous or asynchronous updates |
+//! | `selection` | `Selection` | No | `Tournament` | Mate selection from neighborhood |
+//! | `crossover` | `Crossover` | No | `Uniform` | Offspring crossover strategy |
+//! | `mutation` | `Mutation` | No | `Gaussian` | Gene mutation strategy |
+//! | `mutation_sigma` | `Option<f64>` | No | `0.1` | Standard deviation for Gaussian mutation |
+//! | `mutation_step` | `Option<f64>` | No | `None` | Step size for Creep mutation |
+//! | `fitness_target` | `Option<f64>` | No | `None` | Stop when best fitness reaches this |
+//! | `observer` | `Option<Arc<dyn GaObserver<U>>>` | No | `None` | Lifecycle observer |
+//!
+//! ### Neighborhood Topologies
+//!
+//! | Topology | Neighbors | Description |
+//! |----------|-----------|-------------|
+//! | [`VonNeumann`](Neighborhood::VonNeumann) | 4 | North, South, East, West (L1 distance <= 1) |
+//! | [`Moore`](Neighborhood::Moore) | 8 | 3×3 square minus center (L-inf distance <= 1) |
+//! | [`CompactR2`](Neighborhood::CompactR2) | 24 | 5×5 square minus center (L-inf distance <= 2) |
+//! | [`Linear`](Neighborhood::Linear) | 2 | Left and right in row-major order |
+//!
+//! ## Complete Example
+//!
+//! ```rust,ignore
+//! use genetic_algorithms::cellular::{
+//!     CellularConfiguration, CellularEngine, Neighborhood, UpdateMode,
+//! };
+//! use genetic_algorithms::chromosomes::Range as RangeChromosome;
+//! use genetic_algorithms::genotypes::Range as RangeGenotype;
+//! use genetic_algorithms::operations::{Crossover, Mutation, Selection};
+//! use genetic_algorithms::traits::ChromosomeT;
+//!
+//! // Rastrigin function (minimize toward 0.0 at origin)
+//! let fitness_fn = |dna: &[RangeGenotype<f64>]| -> f64 {
+//!     let a = 10.0;
+//!     let n = dna.len() as f64;
+//!     a * n + dna.iter().map(|g| {
+//!         g.value.powi(2) - a * (2.0 * std::f64::consts::PI * g.value).cos()
+//!     }).sum::<f64>()
+//! };
+//!
+//! let config = CellularConfiguration::default()
+//!     .with_grid(8, 8)
+//!     .with_neighborhood(Neighborhood::Moore)
+//!     .with_update_mode(UpdateMode::Asynchronous)
+//!     .with_max_generations(200)
+//!     .with_mutation_sigma(0.1)
+//!     .with_selection(Selection::Tournament)
+//!     .with_crossover(Crossover::Uniform)
+//!     .with_mutation(Mutation::Gaussian);
+//!
+//! let init_fn = |n: usize| -> Vec<RangeChromosome<f64>> {
+//!     (0..n).map(|_| {
+//!         let mut c = RangeChromosome::new();
+//!         for i in 0..10 {
+//!             c.dna.push(RangeGenotype::new(i as i32, vec![(-5.12, 5.12)], 0.0));
+//!         }
+//!         c
+//!     }).collect()
+//! };
+//!
+//! let mut engine = CellularEngine::new(config, init_fn, fitness_fn);
+//! let result = engine.run();
+//! println!("Best fitness: {:?}", result.best_fitness);
+//! ```
+//!
+//! ## Configuration Tips
+//!
+//! - **Moore neighborhood** is the best general-purpose starting point; larger neighborhoods
+//!   (CompactR2) increase gene flow and speed convergence at the cost of diversity
+//! - **Asynchronous update** typically converges faster than synchronous but may lose diversity
+//! - Grid size should roughly equal the population size of a standard GA (e.g., 10×10 = 100 cells,
+//!   15×15 = 225 cells). Smaller grids converge faster; larger grids preserve more diversity
+//! - The **toroidal wrapping** ensures edge cells have the same number of neighbors as center cells
+//!
+//! ## When to Choose This vs Island Model
+//!
+//! | Factor | CellularEngine | IslandGa |
+//! |--------|---------------|----------|
+//! | Structure | 2D grid, fine-grained | Sub-populations, coarse-grained |
+//! | Gene flow | Slow (local neighborhoods) | Periodic (migration events) |
+//! | Diversity | Very high (spatial) | High (isolation) |
+//! | Parallelism | Cell-level (fine-grained) | Island-level (coarse-grained) |
+//! | Topology options | 4 neighborhood types | 5 migration topologies |
+//!
+//! ## References
+//!
+//! - Whitley, D. (1993). Cellular Genetic Algorithms. *Proceedings of the 5th International
+//!   Conference on Genetic Algorithms*, 10–19.
+//! - Alba, E., & Dorronsoro, B. (2008). *Cellular Genetic Algorithms*. Springer.
+//! - Whitley, D., Rana, S., & Heckendorn, R. B. (1998). The Island Model Genetic Algorithm:
+//!   On Separability, Population Size and Convergence. *Journal of Computing and Information
+//!   Technology*.
 
 use std::sync::Arc;
 
