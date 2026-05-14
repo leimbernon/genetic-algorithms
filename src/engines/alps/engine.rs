@@ -23,7 +23,7 @@
 //!
 //! - **Problem type:** Single-objective — continuous, binary, or permutation
 //! - **Number of objectives:** 1
-//! - **Variable type:** Any (requires [`ValueMutable`](crate::operations::mutation::ValueMutable)
+//! - **Variable type:** Any (requires [`ValueMutable`]
 //!   for in-place mutation)
 //! - **Key strength:** Excellent diversity maintenance; prevents premature convergence even
 //!   on highly multimodal landscapes; anytime algorithm (useful solutions at any generation)
@@ -60,9 +60,9 @@
 //!
 //! | Scheme | Formula | Properties |
 //! |--------|---------|------------|
-//! | [`Linear`](AlpsAgeScheme::Linear) | `(i+1) * age_gap` | Even spacing; good default |
-//! | [`Fibonacci`](AlpsAgeScheme::Fibonacci) | `fib(i+2) * age_gap` | Rapid turnover in lower layers, very stable upper layers |
-//! | [`Polynomial`](AlpsAgeScheme::Polynomial) | `(i+1)^2 * age_gap` | Exponentially expanding windows; slow convergence |
+//! | `Linear` | `(i+1) * age_gap` | Even spacing; good default |
+//! | `Fibonacci` | `fib(i+2) * age_gap` | Rapid turnover in lower layers, very stable upper layers |
+//! | `Polynomial` | `(i+1)^2 * age_gap` | Exponentially expanding windows; slow convergence |
 //!
 //! ## Complete Example
 //!

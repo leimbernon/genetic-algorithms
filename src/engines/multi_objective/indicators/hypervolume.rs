@@ -4,18 +4,18 @@ use super::{validate_non_empty, validate_dimension_consistency, validate_dimensi
 /// Computes the 2D Hypervolume indicator (Lebesgue measure).
 ///
 /// The hypervolume is the area of the union of rectangles formed by each point
-/// and the reference point, bounded by [f1_i, ref[0]] x [f2_i, ref[1]].
+/// and the reference point, bounded by \[f1_i, ref\[0\]\] x \[f2_i, ref\[1\]\].
 /// A larger hypervolume indicates better convergence and spread (for minimization).
 ///
 /// # Algorithm
 ///
 /// 1. Filter points that are strictly dominated by the reference point
-///    (f1 < ref[0] AND f2 < ref[1]).
+///    (f1 < ref\[0\] AND f2 < ref\[1\]).
 /// 2. Sort by first objective ascending.
 /// 3. Sweep left-to-right, tracking the running minimum of f2. At each step,
 ///    the rectangle from the previous f1 to the current f1 has height
-///    (ref[1] - best_f2), where best_f2 is the smallest f2 seen so far.
-/// 4. Final segment from the last f1 to ref[0].
+///    (ref\[1\] - best_f2), where best_f2 is the smallest f2 seen so far.
+/// 4. Final segment from the last f1 to ref\[0\].
 ///
 /// Complexity: O(n log n) due to sorting.
 ///
@@ -26,7 +26,7 @@ use super::{validate_non_empty, validate_dimension_consistency, validate_dimensi
 /// - Points do not all have exactly 2 objectives
 /// - `reference_point` has the wrong dimension
 /// - Any point is not strictly dominated by the reference point
-///   (i.e., for each dimension i: point[i] < reference_point[i])
+///   (i.e., for each dimension i: point\[i\] < reference_point\[i\])
 ///
 /// # Panics
 ///

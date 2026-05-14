@@ -381,12 +381,12 @@ where
     /// 3. Initialize population (one chromosome per sub-problem) and evaluate objectives.
     /// 4. Initialise ideal point z* from the starting population.
     /// 5. For each generation, iterate all N sub-problems. Per sub-problem i:
-    ///    a. Sample two parents from neighbours[i] uniformly at random.
+    ///    a. Sample two parents from neighbours\[i\] uniformly at random.
     ///    b. Apply crossover + mutation to produce one offspring chromosome.
     ///    c. Evaluate offspring objectives.
-    ///    d. Update z* per component: z*[k] = min(z*[k], f_k(offspring)).
-    ///    e. Walk neighbours[i] in order; for each j, if g(offspring, w_j, z*) <
-    ///    g(pop[j].objectives, w_j, z*), replace population[j] with the offspring;
+    ///    d. Update z* per component: z\*\[k\] = min(z\*\[k\], f_k(offspring)).
+    ///    e. Walk neighbours\[i\] in order; for each j, if g(offspring, w_j, z*) <
+    ///    g(pop\[j\].objectives, w_j, z*), replace population\[j\] with the offspring;
     /// 6. Post-hoc non-dominated sort over the final population; return rank-0 individuals as ParetoFront.
     ///
     /// # Errors

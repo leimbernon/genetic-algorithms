@@ -16,12 +16,12 @@
 //! - **`non_dominated_sort`** — Fast non-dominated sorting
 //!   ([`Deb et al. 2002`](crate::nsga2::Nsga2Ga)),
 //!   direction-aware sorting, and constrained-sort variant. Provides
-//!   [`assign_ranks`] and [`non_dominated_sort_with_directions`].
+//!   `assign_ranks` and `non_dominated_sort_with_directions`.
 //!
 //! - **`pareto`** — [`ParetoIndividual<U>`](pareto::ParetoIndividual) wrapper
 //!   type (chromosome + objective vector + rank + crowding distance +
 //!   constraint violation), [`ParetoFront<U>`](pareto::ParetoFront) container,
-//!   and dominance predicates ([`dominates_with_directions`]).
+//!   and dominance predicates (`dominates_with_directions`).
 //!
 //! - **`indicators`** — Quality indicators for Pareto front evaluation:
 //!   - [`hypervolume`](indicators::hypervolume) — Dominated hypervolume

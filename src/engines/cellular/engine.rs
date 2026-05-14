@@ -24,7 +24,7 @@
 //!
 //! - **Problem type:** Single-objective — continuous, binary, or permutation
 //! - **Number of objectives:** 1
-//! - **Variable type:** Any (requires [`ValueMutable`](crate::operations::mutation::ValueMutable)
+//! - **Variable type:** Any (requires [`ValueMutable`]
 //!   for in-place mutation)
 //! - **Key strength:** Excellent diversity preservation through spatial structure; natural
 //!   parallelization (each cell evolves independently)

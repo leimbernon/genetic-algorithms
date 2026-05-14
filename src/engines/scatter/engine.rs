@@ -19,7 +19,7 @@
 //!
 //! ## When to Use
 //!
-//! - **Problem type:** Single-objective, continuous (genes must implement [`DeGene`](crate::de::gene::DeGene)
+//! - **Problem type:** Single-objective, continuous (genes must implement [`DeGene`]
 //!   for linear combination arithmetic)
 //! - **Number of objectives:** 1
 //! - **Variable type:** Real-valued
