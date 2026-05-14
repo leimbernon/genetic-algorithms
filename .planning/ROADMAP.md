@@ -8,7 +8,7 @@
 - ✅ **v2.2.0 — Observability & Traceability** — Phases 13-18 (shipped 2026-03-28)
 - ✅ **v2.2.1 — Performance Optimizations** — Phases 19-24 (shipped 2026-04-23)
 - ✅ **v2.3.0 — Alternative Metaheuristics & Population Models** — Phases 25-29 (shipped 2026-04-27)
-- 🚧 **v2.4.0 — Observer Integration & New Operators + Advanced Multi-Objective** — Phases 30-45 (in progress)
+- 🚧 **v2.4.0 — Observer Integration & New Operators + Advanced Multi-Objective** — Phases 30-46 (in progress)
 
 ## Phases
 
@@ -89,7 +89,7 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 
 ### v2.4.0 — Observer Integration, New Operators, Advanced Multi-Objective & Framework Extensions (In Progress)
 
-**Milestone Goal:** Wire GaObserver lifecycle hooks into all 4 new engines, close v2.3.0 deferred tech debt, expand the operator library with 7 new strategies, extend multi-objective optimization with NSGA-III, MOEA/D, SPEA2, SMS-EMOA/IBEA, and shared quality indicators, and extend the core GA framework with constraint handling, Hall of Fame, warm starting, adaptive operator selection, benchmarks, and memetic algorithms.
+**Milestone Goal:** Wire GaObserver lifecycle hooks into all 4 new engines, close v2.3.0 deferred tech debt, expand the operator library with 7 new strategies, extend multi-objective optimization with NSGA-III, MOEA/D, SPEA2, SMS-EMOA/IBEA, and shared quality indicators, extend the core GA framework with constraint handling, Hall of Fame, warm starting, adaptive operator selection, benchmarks, and memetic algorithms, and produce comprehensive documentation covering every algorithm, operator, and framework extension.
 
 - [x] **Phase 30: Observer Wiring & DE Benchmark** — Wire GaObserver into all 4 new engines and add DE-vs-GA convergence benchmark (completed 2026-05-02)
 - [x] **Phase 31: Selection & Survivor Diversity Operators** — Clearing selection and Deterministic Crowding survivor strategy (completed 2026-05-04)
@@ -235,7 +235,8 @@ Plans:
 | 42. Warm Starting & Population Seeding | v2.4.0 | 3/3 | Complete    | 2026-05-13 |
 | 43. Adaptive Operator Selection (AOS) | v2.4.0 | 3/3 | Complete | 2026-05-14 |
 | 44. Standard Benchmark Functions Suite | v2.4.0 | 3/3 | Complete    | 2026-05-14 |
-| 45. Memetic Algorithm Framework | v2.4.0 | 0/0 | Pending | — |
+| 45. Memetic Algorithm Framework | v2.4.0 | 3 | Pending | — |
+| 46. Documentation Refactor | v2.4.0 | 6 | Planned | — |
 
 ### Phase 34: WASM support — fix time-based panics for wasm32-unknown-unknown targets (issue #236)
 
@@ -444,3 +445,25 @@ Plans:
 
 **Wave 3** *(blocked on Waves 1-2)*
 - [ ] 45-03-PLAN.md — Example (memetic_rastrigin), serde roundtrip test, WASM check, phase verification gate
+
+### Phase 46: Update the documentation to explain in more details the different algorithms. A refactor of the documentation can happen if needed
+
+**Goal:** Users (both human developers and AI models) can read comprehensive, production-quality documentation that precisely explains how and when to use every algorithm, operator, and framework extension in the library — from any entry point (docs.rs, README, docs/ directory)
+**Requirements:** Documentation-only phase (requirements derived from CONTEXT.md decisions D-01 through D-11)
+**Depends on:** Phase 45
+**Plans:** 6 plans
+
+Plans:
+**Wave 1 — Foundation**
+- [ ] 46-01-PLAN.md — Crate SSOT + README expansion + docs/index.md (D-01, D-02, D-03, D-05, D-06, D-07)
+
+**Wave 2 — Engine Ficha Tecnica //! docs (parallel)**
+- [ ] 46-02-PLAN.md — Single-objective + island engine //! docs to D-04 standard (D-04)
+- [ ] 46-03-PLAN.md — Multi-objective engine //! docs to D-04 standard (D-04)
+
+**Wave 3 — docs/ Guide Files (parallel)**
+- [ ] 46-04-PLAN.md — 17 new docs/ guide files: per-engine guides + framework concept guides (D-03, D-04)
+- [ ] 46-05-PLAN.md — Existing docs/ updates: examples.md rewrite, engines.md expand, operator guides update (D-03)
+
+**Wave 4 — Coverage + Verification**
+- [ ] 46-06-PLAN.md — Rustdoc /// on all public items, module //! docs, example inline comments, phase verification gate (D-08, D-09, D-10, D-11)
