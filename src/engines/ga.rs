@@ -37,15 +37,20 @@ use crate::traits::{FitnessFn, InitializationFn};
 use crate::aos::AosState;
 use crate::validators::validator_factory as ValidatorFactory;
 use crate::{
-    configuration::{LimitConfiguration, LogLevel, ProblemSolving, LocalSearchConfiguration},
+    configuration::{
+        LimitConfiguration, LocalSearchConfiguration, LogLevel, ProblemSolving,
+    },
     operations::{
         crossover, extension, mutation, selection, survivor, Crossover, Extension, Mutation,
     },
-    operations::local_search::LocalSearch,
+    operations::local_search::{
+        LocalSearch, LocalSearchApplicationStrategy, LocalSearchMode,
+    },
     population::Population,
     traits::{
         ChromosomeT, ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, GeneT,
-        LocalSearchConfig, MutationConfig, NichingConfig, SelectionConfig, StoppingConfig,
+        LocalSearchConfig, LocalSearchOperator, MutationConfig, NichingConfig, SelectionConfig,
+        StoppingConfig,
     },
 };
 use rand::Rng;
@@ -1425,6 +1430,120 @@ where
                                     self.penalty_coefficient
                                 };
                                 c.set_fitness(c.fitness() + coeff * total_viol);
+                            }
+                        }
+                    }
+                }
+            }
+
+            //3a- Apply local search refinement to selected offspring before merge (Phase 45)
+            if let Some(ref ls_config) = self.configuration.local_search_configuration {
+                let strategy = ls_config.application_strategy;
+                let mode = ls_config.mode;
+
+                // Step 1: Should we apply local search this generation?
+                let should_apply = match strategy {
+                    LocalSearchApplicationStrategy::EveryNGenerations { interval } => {
+                        interval == 0 || (i + 1) % interval == 0
+                    }
+                    _ => true,
+                };
+
+                if should_apply && !offspring.is_empty() {
+                    // Step 2: Select candidates from offspring
+                    let candidates: Vec<usize> = match strategy {
+                        LocalSearchApplicationStrategy::AllOffspring => {
+                            (0..offspring.len()).collect()
+                        }
+                        LocalSearchApplicationStrategy::BestN { n } => {
+                            let mut indices: Vec<usize> = (0..offspring.len()).collect();
+                            let ps =
+                                self.configuration.limit_configuration.problem_solving;
+                            let k = n.min(indices.len());
+                            if k > 0 {
+                                indices.select_nth_unstable_by(
+                                    k.saturating_sub(1),
+                                    |&a, &b| {
+                                        let (fa, fb) =
+                                            (offspring[a].fitness(), offspring[b].fitness());
+                                        match ps {
+                                            ProblemSolving::Minimization
+                                            | ProblemSolving::FixedFitness => {
+                                                fa.partial_cmp(&fb)
+                                                    .unwrap_or(std::cmp::Ordering::Equal)
+                                            }
+                                            ProblemSolving::Maximization => {
+                                                fb.partial_cmp(&fa)
+                                                    .unwrap_or(std::cmp::Ordering::Equal)
+                                            }
+                                        }
+                                    },
+                                );
+                            }
+                            indices.truncate(k);
+                            indices
+                        }
+                        LocalSearchApplicationStrategy::Probabilistic { probability } => {
+                            let mut rng = rand::thread_rng();
+                            (0..offspring.len())
+                                .filter(|_| rng.random::<f64>() < probability)
+                                .collect()
+                        }
+                        LocalSearchApplicationStrategy::EveryNGenerations { .. } => {
+                            (0..offspring.len()).collect()
+                        }
+                    };
+
+                    let is_baldwinian = matches!(mode, LocalSearchMode::Baldwinian);
+
+                    // Save original DNA for Baldwinian restore if needed
+                    let original_dnas: Vec<Vec<U::Gene>> = if is_baldwinian {
+                        candidates
+                            .iter()
+                            .map(|&idx| offspring[idx].dna().to_vec())
+                            .collect()
+                    } else {
+                        Vec::new()
+                    };
+
+                    let ff = Arc::clone(
+                        self.fitness_fn
+                            .as_ref()
+                            .expect(
+                                "Fitness function required when local search is configured",
+                            ),
+                    );
+                    let search_method = ls_config.method;
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    {
+                        // Extract candidates, process in parallel, reinsert
+                        let mut selected: Vec<U> = candidates
+                            .iter()
+                            .map(|&idx| offspring[idx].clone())
+                            .collect();
+                        selected.par_iter_mut().for_each(|individual| {
+                            let _ = search_method.improve(individual, ff.as_ref());
+                        });
+                        for (&idx, improved) in candidates.iter().zip(selected.into_iter()) {
+                            offspring[idx] = improved;
+                        }
+                    }
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        candidates.iter().for_each(|&idx| {
+                            let _ = search_method.improve(&mut offspring[idx], ff.as_ref());
+                        });
+                    }
+
+                    // Baldwinian restore: restore original DNA, keep improved fitness
+                    if is_baldwinian {
+                        for (orig_pos, &idx) in candidates.iter().enumerate() {
+                            if let Some(orig_dna) = original_dnas.get(orig_pos) {
+                                let improved_fitness = offspring[idx].fitness();
+                                offspring[idx]
+                                    .set_dna(std::borrow::Cow::Owned(orig_dna.clone()));
+                                offspring[idx].set_fitness(improved_fitness);
                             }
                         }
                     }
