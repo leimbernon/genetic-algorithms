@@ -29,6 +29,7 @@ Each engine has a dedicated guide covering algorithm description, when-to-use gu
 - [SPEA2](spea2.md) — Strength Pareto evolutionary algorithm with archive
 - [SMS-EMOA](sms_emoa.md) — Hypervolume contribution-based steady-state MOEA
 - [IBEA](ibea.md) — Indicator-based evolutionary algorithm using I_epsilon+ indicator
+- [Multi-Objective Concepts](multi_objective.md) — Shared Pareto dominance, sorting, quality indicators, and reference point utilities
 
 ### Operators
 
