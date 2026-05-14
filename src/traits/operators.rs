@@ -208,3 +208,48 @@ pub trait ExtensionOperator {
         config: &ExtensionConfiguration,
     ) -> Result<(), GaError>;
 }
+
+/// Trait for local search refinement operators used in memetic algorithms.
+///
+/// Implement this trait to define a custom local search strategy. Built-in
+/// implementations are provided for the [`LocalSearch`](crate::operations::LocalSearch)
+/// enum variants.
+///
+/// The fitness function is received as a parameter at each call site (D-02),
+/// enabling it to be Arc::cloned across parallel refinement tasks (D-03).
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use genetic_algorithms::traits::LocalSearchOperator;
+///
+/// struct MyLocalSearch;
+///
+/// impl LocalSearchOperator for MyLocalSearch {
+///     fn improve<U: ChromosomeT + Send + Sync + 'static + Clone>(
+///         &self,
+///         individual: &mut U,
+///         fitness_fn: &dyn Fn(&[U::Gene]) -> f64,
+///     ) -> Result<usize, GaError> {
+///         // Custom local search logic here
+///         Ok(0)
+///     }
+/// }
+/// ```
+pub trait LocalSearchOperator {
+    /// Apply local search refinement to a single individual.
+    ///
+    /// # Arguments
+    /// * `individual` - The chromosome to refine in-place.
+    /// * `fitness_fn` - Fitness function for re-evaluation during refinement.
+    ///
+    /// # Returns
+    /// Number of successful improvements made, or an error.
+    fn improve<U>(
+        &self,
+        individual: &mut U,
+        fitness_fn: &dyn Fn(&[U::Gene]) -> f64,
+    ) -> Result<usize, GaError>
+    where
+        U: ChromosomeT + Send + Sync + 'static + Clone;
+}
