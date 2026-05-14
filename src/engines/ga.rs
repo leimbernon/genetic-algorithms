@@ -1,29 +1,135 @@
-//! Main genetic algorithm orchestrator.
+//! # Standard Genetic Algorithm (Ga)
 //!
-//! This module contains the [`Ga`] struct, the central entry point for
-//! configuring and running a single-objective genetic algorithm. It coordinates
-//! the full evolutionary cycle: initialization, selection, crossover, mutation,
-//! survivor selection, and fitness evaluation.
+//! ## Description
 //!
-//! # Quick start
+//! The [`Ga`] struct is the primary single-population genetic algorithm orchestrator.
+//! It implements the classic evolutionary cycle: initialization -> selection -> crossover
+//! + mutation (parallelized via rayon) -> fitness evaluation -> survivor selection ->
+//! elitism -> statistics collection. Each generation, parents are selected via a
+//! configurable [`Selection`](crate::operations::Selection) operator, offspring are
+//! produced through [`Crossover`] and
+//! [`Mutation`], and the population is updated via a
+//! [`Survivor`](crate::operations::Survivor) strategy.
 //!
-//! ```ignore
-//! use genetic_algorithms::prelude::*;
+//! Optionally supports:
+//! - **Elitism** — preserve the N best individuals unchanged between generations
+//! - **Niching / Fitness sharing** — maintain population diversity
+//! - **Extension strategies** — re-introduce diversity when the population converges
+//! - **Adaptive GA** — dynamically tune crossover/mutation rates based on diversity
+//! - **Adaptive Operator Selection (AOS)** — choose from an operator portfolio dynamically
+//! - **Memetic local search** — refine the best individuals each generation
+//! - **Constraint handling** — penalty-based or repair-based constraint satisfaction
+//! - **Observers** — lifecycle hooks for logging, tracing, metrics, and custom monitoring
+//!
+//! ## When to Use
+//!
+//! - **Problem type:** Single-objective — continuous, combinatorial, binary, or permutation
+//! - **Number of objectives:** 1
+//! - **Variable type:** Any (binary via [`chromosomes::Binary`](crate::chromosomes::Binary),
+//!   real-valued via [`chromosomes::Range`](crate::chromosomes::Range), symbolic via
+//!   [`chromosomes::ListChromosome`](crate::chromosomes::ListChromosome))
+//! - **Key strength:** General-purpose; broadest operator library; best for learning
+//! - **Key weakness:** Single-population convergence can be premature on multimodal landscapes
+//!
+//! ## Quick Reference
+//!
+//! ### Mandatory Parameters
+//!
+//! | Parameter | Type | Required | Default | Description |
+//! |-----------|------|----------|---------|-------------|
+//! | `population_size` | `usize` | Yes (via builder) | — | Number of chromosomes in the population |
+//! | `max_generations` | `usize` | Yes (via builder) | — | Maximum number of generations |
+//! | `genes_per_chromosome` | `usize` | Yes (via builder) | — | Length of each chromosome's DNA |
+//! | `fitness_fn` | `FitnessFn<U>` | Yes (via builder) | — | Function evaluating a chromosome's fitness |
+//!
+//! ### Optional Parameters
+//!
+//! | Parameter | Type | Required | Default | Description |
+//! |-----------|------|----------|---------|-------------|
+//! | `selection` | `Selection` | No | `Tournament(3)` | Parent selection strategy |
+//! | `crossover` | `Crossover` | No | `Uniform` | Offspring crossover strategy |
+//! | `mutation` | `Mutation` | No | `Swap(0.05)` | Gene mutation strategy |
+//! | `survivor` | `Survivor` | No | `Truncation` | Population replacement strategy |
+//! | `elitism_count` | `usize` | No | `0` | Number of elite chromosomes preserved |
+//! | `initialization_fn` | `InitializationFn<U>` | No | random init | Custom population initialization |
+//! | `observer` | `Option<Arc<dyn GaObserver<U>>>` | No | `None` | Lifecycle observer |
+//! | `max_duration` | `Option<Duration>` | No | `None` | Wall-clock time limit |
+//! | `fitness_target` | `Option<f64>` | No | `None` | Stop when best fitness reaches this |
+//! | `constraint_handling` | `Option<ConstraintHandling>` | No | `None` | Constraint handling strategy |
+//! | `hall_of_fame_size` | `Option<usize>` | No | `None` | Archive size for best solutions |
+//! | `aos_strategy` | `AosStrategy` | No | `ProbabilityMatching` | Adaptive operator selection |
+//! | `local_search` | `Option<Arc<dyn LocalSearchOperator<U>>>` | No | `None` | Memetic local search operator |
+//! | `adaptive_ga` | `bool` | No | `false` | Dynamic crossover/mutation tuning |
+//! | `niching` | `Option<NichingConfiguration>` | No | `None` | Fitness sharing / diversity preservation |
+//! | `extension` | `Option<ExtensionConfiguration>` | No | `None` | Diversity re-introduction strategy |
+//! | `rng_seed` | `Option<u64>` | No | `None` | Reproducible RNG seed |
+//!
+//! ## Complete Example
+//!
+//! ```rust,ignore
+//! use genetic_algorithms::chromosomes::Range as RangeChromosome;
+//! use genetic_algorithms::ga::Ga;
+//! use genetic_algorithms::genotypes::Range as RangeGenotype;
+//! use genetic_algorithms::initializers::range_random_initialization;
+//! use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+//! use genetic_algorithms::traits::{ChromosomeT, ConfigurationT, StoppingConfig};
+//!
+//! // Rastrigin function: f(x) = A*n + sum(x_i^2 - A*cos(2*pi*x_i))
+//! fn rastrigin(dna: &[RangeGenotype<f64>]) -> f64 {
+//!     let a = 10.0;
+//!     let n = dna.len() as f64;
+//!     a * n + dna.iter().map(|g| {
+//!         g.value.powi(2) - a * (2.0 * std::f64::consts::PI * g.value).cos()
+//!     }).sum::<f64>()
+//! }
+//!
+//! let alleles = vec![RangeGenotype::new(0, vec![(-5.12, 5.12)], 0.0)];
 //!
 //! let mut ga = Ga::new()
-//!     .with_population_size(100)
+//!     .with_population_size(200)
 //!     .with_max_generations(500)
-//!     .with_genes_per_chromosome(8)
-//!     .with_fitness_fn(|dna: &[MyGene]| { /* return fitness */ 0.0 })
-//!     .with_initialization_fn(generic_random_initialization)
+//!     .with_genes_per_chromosome(10)
+//!     .with_fitness_fn(rastrigin)
+//!     .with_initialization_fn(move |n, _, _| {
+//!         range_random_initialization(n, Some(&alleles), Some(false))
+//!     })
+//!     .with_selection_method(Selection::Tournament)
+//!     .with_crossover_method(Crossover::BlendAlpha)
+//!     .with_mutation_method(Mutation::Gaussian)
+//!     .with_survivor_method(Survivor::Fitness)
 //!     .build()?;
 //!
 //! let population = ga.run()?;
-//! println!("Best: {:?}", population.best_chromosome);
+//! println!("Best fitness: {:?}", population.best_chromosome.fitness);
+//! # Ok::<_, Box<dyn std::error::Error>>(())
 //! ```
+//!
+//! ## Configuration Tips
+//!
+//! - **Tournament size 3-5** is a good starting point; larger tournament = more selection pressure
+//! - **Blend crossover (BLX-alpha)** works well for continuous problems; use **Uniform** for binary
+//! - **Gaussian mutation** with sigma=0.1 and probability=0.1 is a solid default for real-valued genes
+//! - Enable **elitism (1-2)** to prevent loss of the best solution found
+//! - Attach a [`LogObserver`](crate::observer::LogObserver) during development for per-generation stats
+//! - For multimodal problems, enable **niching** or use the **Island model** instead
+//!
+//! ## When to Choose This vs Differential Evolution
+//!
+//! | Factor | Ga | DeEngine |
+//! |--------|-----|----------|
+//! | Problem type | Any (binary, real, symbolic) | Continuous only |
+//! | Convergence speed | Moderate | Fast on unimodal |
+//! | Exploration | Good | Excellent |
+//! | Operator flexibility | Very high (10+ each) | Limited |
+//! | Ease of tuning | Moderate | Easy (F, CR) |
 //!
 //! See also: [`crate::island`] for multi-population island models, and
 //! [`crate::nsga2`] for multi-objective optimization.
+//!
+//! ## References
+//!
+//! - Goldberg, D. E. (1989). *Genetic Algorithms in Search, Optimization, and Machine Learning.*
+//! - Holland, J. H. (1975). *Adaptation in Natural and Artificial Systems.*
 
 use crate::configuration::GaConfiguration;
 use crate::constraints::{ConstraintHandling, PenaltyStrategy};

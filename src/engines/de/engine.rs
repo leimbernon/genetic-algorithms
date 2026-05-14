@@ -1,4 +1,139 @@
-//! `DeEngine` — the Differential Evolution execution loop.
+//! # Differential Evolution (DeEngine)
+//!
+//! ## Description
+//!
+//! Differential Evolution (DE) is a population-based stochastic optimization algorithm
+//! designed for continuous (real-valued) search spaces. Unlike the standard GA which
+//! uses separate selection, crossover, and mutation operators, DE creates candidate
+//! solutions by adding scaled vector differences between population members to a base
+//! vector, then applies binomial or exponential crossover with the target individual,
+//! and finally performs one-to-one greedy selection (the offspring replaces the parent
+//! only if it is fitter).
+//!
+//! The core mutation formula for `DE/rand/1` is:
+//!
+//! ```text
+//! v = x_r1 + F * (x_r2 - x_r3)
+//! ```
+//!
+//! where `x_r1`, `x_r2`, `x_r3` are distinct random individuals, `F` is the differential
+//! weight (scale factor), and `v` is the mutant vector. The engine supports 5 standard
+//! mutation strategies (`DE/rand/1`, `DE/best/1`, `DE/current-to-best/1`, `DE/rand/2`,
+//! `DE/best/2`) plus two adaptive variants: **JADE** (self-adaptive F and CR with an
+//! external archive) and **L-SHADE** (success-history based adaptation with a rolling
+//! memory).
+//!
+//! The crossover step combines the mutant vector `v` with the target vector `x_i` gene
+//! by gene (binomial) or as a contiguous block (exponential), controlled by the crossover
+//! rate `CR`. Selection is deterministic: the offspring replaces the parent if and only
+//! if its fitness is better (for minimization, lower fitness wins).
+//!
+//! ## When to Use
+//!
+//! - **Problem type:** Single-objective, continuous (real-valued) optimization
+//! - **Number of objectives:** 1
+//! - **Variable type:** Real-valued only (genes must implement [`DeGene`]
+//!   for f64 arithmetic)
+//! - **Key strength:** Fast convergence on unimodal and moderately multimodal continuous landscapes;
+//!   minimal tuning required (only F and CR)
+//! - **Key weakness:** Not applicable to binary, permutation, or symbolic problems; can stagnate
+//!   early on highly multimodal landscapes without adaptive variants
+//!
+//! ## Quick Reference
+//!
+//! ### Mandatory Parameters
+//!
+//! | Parameter | Type | Required | Default | Description |
+//! |-----------|------|----------|---------|-------------|
+//! | `population_size` | `usize` | Yes (via builder) | `50` | Number of individuals in the population |
+//! | `max_generations` | `usize` | Yes (via builder) | `1000` | Maximum number of generations |
+//! | `init_fn` | `Fn(usize) -> Vec<U>` | Yes (constructor) | — | Population initialization closure |
+//! | `fitness_fn` | `Fn(&[U::Gene]) -> f64` | Yes (constructor) | — | Fitness evaluation function |
+//!
+//! ### Optional Parameters
+//!
+//! | Parameter | Type | Required | Default | Description |
+//! |-----------|------|----------|---------|-------------|
+//! | `mutation_factor` | `f64` | No | `0.8` | Differential weight `F` (0, 2] |
+//! | `crossover_rate` | `f64` | No | `0.9` | Crossover probability `CR` [0, 1] |
+//! | `mutation_strategy` | `DeMutationStrategy` | No | `Rand1` | Mutation formula variant |
+//! | `crossover_mode` | `DeCrossoverMode` | No | `Binomial` | Binomial or exponential crossover |
+//! | `adaptive` | `DeAdaptive` | No | `None` | Adaptive variant (JADE or L-SHADE) |
+//! | `fitness_target` | `Option<f64>` | No | `None` | Stop when best fitness reaches this |
+//! | `observer` | `Option<Arc<dyn GaObserver<U>>>` | No | `None` | Lifecycle observer |
+//!
+//! ## Complete Example
+//!
+//! ```rust,ignore
+//! use genetic_algorithms::chromosomes::Range as RangeChromosome;
+//! use genetic_algorithms::de::{
+//!     DeConfiguration, DeCrossoverMode, DeEngine, DeMutationStrategy,
+//! };
+//! use genetic_algorithms::genotypes::Range as RangeGenotype;
+//! use genetic_algorithms::traits::ChromosomeT;
+//! use genetic_algorithms::de::gene::DeGene;
+//!
+//! // Rastrigin function (minimize toward 0.0 at origin)
+//! let fitness_fn = |dna: &[RangeGenotype<f64>]| -> f64 {
+//!     let a = 10.0;
+//!     let n = dna.len() as f64;
+//!     a * n + dna.iter().map(|g| {
+//!         g.de_value().powi(2) - a * (2.0 * std::f64::consts::PI * g.de_value()).cos()
+//!     }).sum::<f64>()
+//! };
+//!
+//! let config = DeConfiguration::default()
+//!     .with_population_size(50)
+//!     .with_max_generations(1000)
+//!     .with_mutation_factor(0.8)
+//!     .with_crossover_rate(0.9)
+//!     .with_mutation_strategy(DeMutationStrategy::Rand1)
+//!     .with_crossover_mode(DeCrossoverMode::Binomial);
+//!
+//! let init_fn = |n: usize| -> Vec<RangeChromosome<f64>> {
+//!     (0..n).map(|_| {
+//!         let mut c = RangeChromosome::new();
+//!         for i in 0..10 {
+//!             c.dna.push(RangeGenotype::new(i as i32, vec![(-5.12, 5.12)], 0.0));
+//!         }
+//!         c
+//!     }).collect()
+//! };
+//!
+//! let mut engine = DeEngine::new(config, init_fn, fitness_fn);
+//! let result = engine.run();
+//! println!("Best fitness: {:?}", result.best_fitness);
+//! ```
+//!
+//! ## Configuration Tips
+//!
+//! - **F = 0.8 and CR = 0.9** are excellent starting points (Storn & Price recommendations)
+//! - **DE/rand/1** is the most robust strategy for general use; **DE/best/1** converges faster
+//!   but may get stuck in local optima
+//! - For multimodal problems, enable **JADE** or **L-SHADE** — they adapt F and CR dynamically
+//!   and significantly improve robustness
+//! - Population size of 30-50 is usually sufficient; larger populations improve exploration
+//!   but slow convergence
+//! - **L-SHADE** with `history_size = 5` is a good compromise between adaptation speed and memory
+//!
+//! ## When to Choose This vs Standard GA
+//!
+//! | Factor | DeEngine | Ga |
+//! |--------|----------|-----|
+//! | Variable type | Continuous only | Any (binary, real, symbolic, permutation) |
+//! | Convergence speed | Fast on unimodal | Moderate |
+//! | Exploration | Excellent | Good |
+//! | Tuning required | Minimal (F, CR) | Moderate (many operator choices) |
+//! | Adaptive variants | JADE, L-SHADE | Adaptive GA, AOS (operator portfolios) |
+//!
+//! ## References
+//!
+//! - Storn, R., & Price, K. (1997). Differential Evolution — A Simple and Efficient Heuristic
+//!   for Global Optimization over Continuous Spaces. *Journal of Global Optimization*, 11(4), 341–359.
+//! - Zhang, J., & Sanderson, A. C. (2009). JADE: Adaptive Differential Evolution with Optional
+//!   External Archive. *IEEE Transactions on Evolutionary Computation*, 13(5), 945–958.
+//! - Tanabe, R., & Fukunaga, A. S. (2014). Improving the Search Performance of SHADE Using
+//!   Linear Population Size Reduction. *IEEE CEC 2014*.
 
 use std::borrow::Cow;
 use std::sync::Arc;
