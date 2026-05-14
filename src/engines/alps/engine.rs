@@ -1,23 +1,138 @@
-//! `AlpsEngine` — the Age-Layered Population Structure execution loop.
+//! # Age-Layered Population Structure (AlpsEngine)
 //!
-//! ALPS maintains several sub-populations ("layers") ordered by individual age.
-//! Layer 0 is the youngest; layer `n_layers - 1` is the oldest.  Each layer
-//! has a maximum-age threshold determined by the chosen age scheme.  When an
-//! individual's age exceeds its layer's threshold, it is promoted to the next
-//! older layer (or discarded if it is already in the oldest layer).
+//! ## Description
 //!
-//! # Algorithm
+//! ALPS (Age-Layered Population Structure) is a metaheuristic that maintains **multiple
+//! sub-populations ("layers") ordered by individual age**. Layer 0 is the youngest, layer
+//! `n_layers - 1` is the oldest. Each layer has a maximum-age threshold determined by the
+//! chosen age scheme. When an individual's age exceeds its layer's threshold, it is promoted
+//! to the next older layer (or discarded if already in the oldest layer).
 //!
-//! 1. **Initialisation** — fill layer 0 with `layer_size` individuals; all
-//!    other layers start empty.
-//! 2. **Evolution loop** (up to `max_generations`) — each generation: evolve
-//!    every layer (random pairing, optional cross-layer mating with the best
-//!    individual from the adjacent older layer, crossover, mutation, survivor
-//!    trimming); increment all individual ages; promote aged-out individuals to
-//!    the next older layer (oldest-layer overflow is discarded); and every
-//!    `injection_interval` generations reinitialise layer 0 with fresh random
-//!    individuals.
-//! 3. Return all layers, the overall best individual, and generation count.
+//! The key innovation of ALPS is that it prevents premature convergence by continuously
+//! introducing fresh genetic material into layer 0 (either through periodic re-initialization
+//! or injection) while allowing fully converged solutions in the older layers to maintain
+//! exploitation pressure. The age of an individual is incremented each generation, so even
+//! highly fit individuals are eventually promoted upward, making room for new exploration
+//! in lower layers.
+//!
+//! **Cross-layer mating** is supported: each generation, the best individual from an older
+//! adjacent layer may mate with individuals in the current layer (with configurable
+//! probability), allowing beneficial traits to propagate upward.
+//!
+//! ## When to Use
+//!
+//! - **Problem type:** Single-objective — continuous, binary, or permutation
+//! - **Number of objectives:** 1
+//! - **Variable type:** Any (requires [`ValueMutable`](crate::operations::mutation::ValueMutable)
+//!   for in-place mutation)
+//! - **Key strength:** Excellent diversity maintenance; prevents premature convergence even
+//!   on highly multimodal landscapes; anytime algorithm (useful solutions at any generation)
+//! - **Key weakness:** Higher per-generation overhead than standard GA due to multiple layers;
+//!   tuning layer count, age gap, and injection interval requires experimentation
+//!
+//! ## Quick Reference
+//!
+//! ### Mandatory Parameters
+//!
+//! | Parameter | Type | Required | Default | Description |
+//! |-----------|------|----------|---------|-------------|
+//! | `n_layers` | `usize` | Yes (via builder) | `6` | Number of age layers (minimum 2) |
+//! | `layer_size` | `usize` | Yes (via builder) | `20` | Target individuals per layer |
+//! | `max_generations` | `usize` | Yes (via builder) | `1000` | Maximum number of generations |
+//! | `init_fn` | `Fn(usize) -> Vec<U>` | Yes (constructor) | — | Population initialization closure |
+//! | `fitness_fn` | `Fn(&[U::Gene]) -> f64` | Yes (constructor) | — | Fitness evaluation function |
+//!
+//! ### Optional Parameters
+//!
+//! | Parameter | Type | Required | Default | Description |
+//! |-----------|------|----------|---------|-------------|
+//! | `age_scheme` | `AlpsAgeScheme` | No | `Fibonacci` | Layer age threshold calculation |
+//! | `age_gap` | `usize` | No | `5` | Base age unit for threshold computation |
+//! | `injection_interval` | `usize` | No | `10` | Generations between layer-0 reseeding (0 = disable) |
+//! | `crossover` | `Crossover` | No | `Uniform` | Offspring crossover operator |
+//! | `mutation` | `Mutation` | No | `Gaussian` | Gene mutation operator |
+//! | `mutation_sigma` | `Option<f64>` | No | `0.1` | Standard deviation for Gaussian mutation |
+//! | `mutation_step` | `Option<f64>` | No | `None` | Step size for Creep mutation |
+//! | `fitness_target` | `Option<f64>` | No | `None` | Stop when best fitness reaches this |
+//! | `observer` | `Option<Arc<dyn GaObserver<U>>>` | No | `None` | Lifecycle observer |
+//!
+//! ### Age Schemes
+//!
+//! | Scheme | Formula | Properties |
+//! |--------|---------|------------|
+//! | [`Linear`](AlpsAgeScheme::Linear) | `(i+1) * age_gap` | Even spacing; good default |
+//! | [`Fibonacci`](AlpsAgeScheme::Fibonacci) | `fib(i+2) * age_gap` | Rapid turnover in lower layers, very stable upper layers |
+//! | [`Polynomial`](AlpsAgeScheme::Polynomial) | `(i+1)^2 * age_gap` | Exponentially expanding windows; slow convergence |
+//!
+//! ## Complete Example
+//!
+//! ```rust,ignore
+//! use genetic_algorithms::alps::{
+//!     AlpsAgeScheme, AlpsConfiguration, AlpsEngine,
+//! };
+//! use genetic_algorithms::chromosomes::Range as RangeChromosome;
+//! use genetic_algorithms::genotypes::Range as RangeGenotype;
+//! use genetic_algorithms::traits::ChromosomeT;
+//!
+//! // Rastrigin function (minimize toward 0.0 at origin)
+//! let fitness_fn = |dna: &[RangeGenotype<f64>]| -> f64 {
+//!     let a = 10.0;
+//!     let n = dna.len() as f64;
+//!     a * n + dna.iter().map(|g| {
+//!         g.value.powi(2) - a * (2.0 * std::f64::consts::PI * g.value).cos()
+//!     }).sum::<f64>()
+//! };
+//!
+//! let config = AlpsConfiguration::default()
+//!     .with_n_layers(5)
+//!     .with_layer_size(20)
+//!     .with_age_scheme(AlpsAgeScheme::Fibonacci)
+//!     .with_age_gap(5)
+//!     .with_injection_interval(10)
+//!     .with_max_generations(500)
+//!     .with_mutation_sigma(0.1);
+//!
+//! let init_fn = |n: usize| -> Vec<RangeChromosome<f64>> {
+//!     (0..n).map(|_| {
+//!         let mut c = RangeChromosome::new();
+//!         for i in 0..10 {
+//!             c.dna.push(RangeGenotype::new(i as i32, vec![(-5.12, 5.12)], 0.0));
+//!         }
+//!         c
+//!     }).collect()
+//! };
+//!
+//! let mut engine = AlpsEngine::new(config, init_fn, fitness_fn);
+//! let result = engine.run();
+//! println!("Best fitness: {:?}", result.best_fitness);
+//! ```
+//!
+//! ## Configuration Tips
+//!
+//! - **Fibonacci age scheme** is the recommended starting point — it gives new layers room to explore
+//!   while keeping older layers stable for exploitation
+//! - **5-8 layers** is the typical range; more layers = better diversity but higher overhead
+//! - **age_gap = 5** works well for most problems; increase for longer convergence times
+//! - Set **injection_interval = 0** to disable re-initialization if you prefer purely
+//!   age-driven exploration
+//! - Cross-layer mating probability is fixed at 20% — this balances exploration vs exploitation
+//!   without requiring additional tuning
+//!
+//! ## When to Choose This vs Standard GA
+//!
+//! | Factor | AlpsEngine | Ga |
+//! |--------|------------|-----|
+//! | Population structure | Multiple age layers | Single population |
+//! | Diversity mechanism | Age-based promotion + injection | Niching / extension (configured) |
+//! | Convergence protection | Strong (fresh injection prevents stagnation) | Moderate (extension strategy required) |
+//! | Per-generation cost | Higher (multiple layers) | Lower (single population) |
+//! | Best for | Multimodal landscapes, anytime algorithms | General single-objective optimization |
+//!
+//! ## References
+//!
+//! - Hornby, G. S. (2006). ALPS: The Age-Layered Population Structure for Reducing the Problem
+//!   of Premature Convergence. *Proceedings of the 8th Annual Conference on Genetic and
+//!   Evolutionary Computation (GECCO)*, 815–822.
 
 use std::sync::Arc;
 
