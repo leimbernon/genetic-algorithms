@@ -85,6 +85,14 @@ harness = false
 name = "cellular"
 harness = false
 
+[[example]]
+name = "sms_emoa_zdt1"
+required-features = ["benchmarks"]
+
+[[example]]
+name = "ibea_zdt1"
+required-features = ["benchmarks"]
+
 [[bench]]
 name = "metrics_observer"
 harness = false
