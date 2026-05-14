@@ -97,3 +97,6 @@ required-features = ["benchmarks"]
 name = "metrics_observer"
 harness = false
 required-features = ["observer-metrics"]
+
+[[example]]
+name = "memetic_rastrigin"
