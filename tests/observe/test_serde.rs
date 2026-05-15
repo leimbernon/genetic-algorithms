@@ -18,6 +18,7 @@ use genetic_algorithms::island::configuration::{IslandConfiguration, MigrationPo
 use genetic_algorithms::island::topology::MigrationTopology;
 use genetic_algorithms::niching::configuration::NichingConfiguration;
 use genetic_algorithms::nsga2::configuration::{Nsga2Configuration, ObjectiveDirection};
+use genetic_algorithms::aos::AosStrategy;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::population::Population;
 use genetic_algorithms::stats::GenerationStats;
@@ -186,6 +187,11 @@ fn serde_ga_configuration_with_values() {
             },
         ),
         rng_seed: Some(42),
+        crossover_portfolio: None,
+        mutation_portfolio: None,
+        aos_strategy: AosStrategy::pm_default(),
+        aos_reward_window: 50,
+        local_search_configuration: None,
     };
     let rt = round_trip(&config);
     assert_eq!(rt, config);
