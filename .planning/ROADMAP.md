@@ -236,7 +236,7 @@ Plans:
 | 43. Adaptive Operator Selection (AOS) | v2.4.0 | 3/3 | Complete | 2026-05-14 |
 | 44. Standard Benchmark Functions Suite | v2.4.0 | 3/3 | Complete    | 2026-05-14 |
 | 45. Memetic Algorithm Framework | v2.4.0 | 3 | Pending | — |
-| 46. Documentation Refactor | v2.4.0 | 6 | Planned | — |
+| 46. Documentation Refactor | v2.4.0 | 7/7 | Complete    | 2026-05-15 |
 
 ### Phase 34: WASM support — fix time-based panics for wasm32-unknown-unknown targets (issue #236)
 
@@ -451,19 +451,19 @@ Plans:
 **Goal:** Users (both human developers and AI models) can read comprehensive, production-quality documentation that precisely explains how and when to use every algorithm, operator, and framework extension in the library — from any entry point (docs.rs, README, docs/ directory)
 **Requirements:** Documentation-only phase (requirements derived from CONTEXT.md decisions D-01 through D-11)
 **Depends on:** Phase 45
-**Plans:** 6 plans
+**Plans:** 7/7 plans complete
 
 Plans:
 **Wave 1 — Foundation**
-- [ ] 46-01-PLAN.md — Crate SSOT + README expansion + docs/index.md (D-01, D-02, D-03, D-05, D-06, D-07)
+- [x] 46-01-PLAN.md — Crate SSOT + README expansion + docs/index.md (D-01, D-02, D-03, D-05, D-06, D-07)
 
 **Wave 2 — Engine Ficha Tecnica //! docs (parallel)**
 - [x] 46-02-PLAN.md — Single-objective + island engine //! docs to D-04 standard (D-04)
-- [ ] 46-03-PLAN.md — Multi-objective engine //! docs to D-04 standard (D-04)
+- [x] 46-03-PLAN.md — Multi-objective engine //! docs to D-04 standard (D-04)
 
 **Wave 3 — docs/ Guide Files (parallel)**
-- [ ] 46-04-PLAN.md — 17 new docs/ guide files: per-engine guides + framework concept guides (D-03, D-04)
-- [ ] 46-05-PLAN.md — Existing docs/ updates: examples.md rewrite, engines.md expand, operator guides update (D-03)
+- [x] 46-04-PLAN.md — 17 new docs/ guide files: per-engine guides + framework concept guides (D-03, D-04)
+- [x] 46-05-PLAN.md — Existing docs/ updates: examples.md rewrite, engines.md expand, operator guides update (D-03)
 
 **Wave 4 — Coverage + Verification**
-- [ ] 46-06-PLAN.md — Rustdoc /// on all public items, module //! docs, example inline comments, phase verification gate (D-08, D-09, D-10, D-11)
+- [x] 46-06-PLAN.md — Rustdoc /// on all public items, module //! docs, example inline comments, phase verification gate (D-08, D-09, D-10, D-11)
