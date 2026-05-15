@@ -169,6 +169,21 @@ The `metrics_observer` benchmark requires the `observer-metrics` feature. Always
 cargo bench --features observer-metrics --bench metrics_observer
 ```
 
+**Building for WebAssembly (`wasm32-unknown-unknown`)**
+
+The crate supports WASM out of the box. The repository ships a `.cargo/config.toml` that sets the required `getrandom` backend flag automatically, so a standard `wasm-pack build` works without any extra configuration.
+
+If you use `genetic_algorithms` as a dependency inside your own WASM crate (not inside this repo), add the following to your project's `.cargo/config.toml`:
+
+```toml
+[target.wasm32-unknown-unknown]
+rustflags = ["--cfg", "getrandom_backend=\"wasm_js\""]
+```
+
+This is needed because `rand` pulls in `getrandom 0.3`, which requires an explicit JS backend declaration for `wasm32-unknown-unknown`. Without this flag the build fails with a `compile_error!` inside `getrandom`.
+
+Rayon parallelism and `Instant`-based timing are automatically disabled on WASM (via `#[cfg]` gates); use `max_generations` or `fitness_target` as stopping criteria instead of `max_duration_secs`.
+
 ## Next Steps
 
 - **Configuration reference** — see `docs/configuration.md` for all builder methods, defaults, and stopping criteria.

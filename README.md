@@ -33,6 +33,7 @@ Key capabilities:
   - [GA Configuration](#ga-configuration)
   - [Adaptive GA](#adaptive-ga)
   - [Multithreading & Performance](#multithreading--performance)
+- [WebAssembly](#webassembly)
 - [Examples](#examples)
 - [Development](#development)
 - [License](#license)
@@ -303,6 +304,46 @@ When `adaptive_ga = false`:
 - Selection, crossover, mutation, and fitness evaluation are parallelized each generation.
 - `Cow<[Gene]>` prevents needless cloning of DNA vectors.
 - `select_nth_unstable_by()` used over full sort when finding top-k individuals.
+
+## WebAssembly
+
+`genetic_algorithms` compiles for `wasm32-unknown-unknown` out of the box. No feature flags are required.
+
+### Setup
+
+The repository ships a `.cargo/config.toml` that automatically applies the necessary `rustflags` when targeting WASM, so no manual configuration is needed beyond adding the dependency normally:
+
+```toml
+[dependencies]
+genetic_algorithms = "2.4.0"
+```
+
+Build with `wasm-pack` or directly with Cargo:
+
+```bash
+# Check WASM compilation
+cargo check --target wasm32-unknown-unknown
+
+# Build with wasm-pack (typical frontend workflow)
+wasm-pack build --target web
+```
+
+If you are pulling `genetic_algorithms` as a dependency inside a WASM crate (without inheriting this repo's `.cargo/config.toml`), add the following to your own `.cargo/config.toml`:
+
+```toml
+[target.wasm32-unknown-unknown]
+rustflags = ["--cfg", "getrandom_backend=\"wasm_js\""]
+```
+
+This is required because `getrandom 0.3` (a transitive dependency via `rand`) needs an explicit backend declaration for `wasm32-unknown-unknown` in addition to the `wasm_js` Cargo feature.
+
+### Known limitations on WASM
+
+| Feature | Behaviour |
+|---------|-----------|
+| Parallelism (`rayon`) | Disabled — all parallel iterators fall back to sequential. Population evaluation is single-threaded on WASM. |
+| Observer timing | `Instant`-based duration measurements are omitted (gated with `#[cfg(not(target_arch = "wasm32"))]`). Observer hooks still fire; only elapsed-time fields are absent. |
+| `max_duration_secs` stopping criterion | The wall-clock check is skipped on WASM. Use `max_generations` or `fitness_target` as stopping criteria instead. |
 
 ## Examples
 

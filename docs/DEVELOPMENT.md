@@ -41,6 +41,8 @@ No additional configuration files or environment variables are required for loca
 | `cargo clippy --all-targets --all-features` | Lint all targets and features |
 | `cargo doc --no-deps` | Generate crate documentation (zero rustdoc warnings required) |
 | `cargo bench` | Run all criterion benchmarks |
+| `cargo check --target wasm32-unknown-unknown` | Verify WASM compatibility (no extra flags needed — `.cargo/config.toml` handles `getrandom` backend) |
+| `cargo check --target wasm32-unknown-unknown --features serde` | Verify WASM + serde |
 
 ## Feature Flags
 
@@ -124,10 +126,13 @@ main
 
 - [ ] `cargo test` — all tests pass
 - [ ] `cargo build` — no warnings
+- [ ] `cargo check --target wasm32-unknown-unknown` — WASM compiles cleanly
 - [ ] New or changed code has tests in `tests/`
 - [ ] All public functions and types have doc-comments
 - [ ] No `panic!` in library code (use `Result<T, GaError>`)
 - [ ] No manual `thread::spawn` (use rayon)
+- [ ] New `Instant::now()` calls gated with `#[cfg(not(target_arch = "wasm32"))]`
+- [ ] New `par_iter()` calls duplicated with `iter()` fallback under `#[cfg(target_arch = "wasm32")]`
 
 ## CI Workflows
 
