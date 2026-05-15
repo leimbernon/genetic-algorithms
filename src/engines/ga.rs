@@ -5,11 +5,11 @@
 //! The [`Ga`] struct is the primary single-population genetic algorithm orchestrator.
 //! It implements the classic evolutionary cycle: initialization -> selection -> crossover
 //! + mutation (parallelized via rayon) -> fitness evaluation -> survivor selection ->
-//! elitism -> statistics collection. Each generation, parents are selected via a
-//! configurable [`Selection`](crate::operations::Selection) operator, offspring are
-//! produced through [`Crossover`] and
-//! [`Mutation`], and the population is updated via a
-//! [`Survivor`](crate::operations::Survivor) strategy.
+//!   elitism -> statistics collection. Each generation, parents are selected via a
+//!   configurable [`Selection`](crate::operations::Selection) operator, offspring are
+//!   produced through [`Crossover`] and
+//!   [`Mutation`], and the population is updated via a
+//!   [`Survivor`](crate::operations::Survivor) strategy.
 //!
 //! Optionally supports:
 //! - **Elitism** — preserve the N best individuals unchanged between generations
@@ -131,6 +131,7 @@
 //! - Goldberg, D. E. (1989). *Genetic Algorithms in Search, Optimization, and Machine Learning.*
 //! - Holland, J. H. (1975). *Adaptation in Natural and Artificial Systems.*
 
+use crate::aos::AosState;
 use crate::configuration::GaConfiguration;
 use crate::constraints::{ConstraintHandling, PenaltyStrategy};
 use crate::error::GaError;
@@ -140,17 +141,12 @@ use crate::observer::{ExtensionEvent, GaObserver};
 use crate::reporter::Reporter;
 use crate::stats::GenerationStats;
 use crate::traits::{FitnessFn, InitializationFn};
-use crate::aos::AosState;
 use crate::validators::validator_factory as ValidatorFactory;
 use crate::{
-    configuration::{
-        LimitConfiguration, LocalSearchConfiguration, LogLevel, ProblemSolving,
-    },
+    configuration::{LimitConfiguration, LocalSearchConfiguration, LogLevel, ProblemSolving},
+    operations::local_search::{LocalSearch, LocalSearchApplicationStrategy, LocalSearchMode},
     operations::{
         crossover, extension, mutation, selection, survivor, Crossover, Extension, Mutation,
-    },
-    operations::local_search::{
-        LocalSearch, LocalSearchApplicationStrategy, LocalSearchMode,
     },
     population::Population,
     traits::{
@@ -249,7 +245,7 @@ pub enum TerminationCause {
 /// - Manage configuration, alleles, population and termination state.
 /// - Provide builder-like configuration methods (`ConfigurationT`) to compose the run.
 /// - Coordinate the GA cycle: initialization, selection, crossover, mutation, survivor, evaluation.
-#[allow(deprecated)]
+#[allow(deprecated, clippy::type_complexity)]
 pub struct Ga<U>
 where
     U: ChromosomeT,
@@ -804,7 +800,8 @@ where
         }
         // Warn if both portfolio and single-operator are configured
         if self.configuration.crossover_portfolio.is_some()
-            && self.configuration.crossover_configuration.method != crate::operations::Crossover::Uniform
+            && self.configuration.crossover_configuration.method
+                != crate::operations::Crossover::Uniform
         {
             // The default method is Uniform, so only warn if the user explicitly changed it
             log::warn!(target: "ga_events", "Both crossover portfolio and with_crossover_method() are configured. with_crossover_method() will be ignored when portfolio is set");
@@ -1174,7 +1171,11 @@ where
             // Generate one random chromosome using the initialization function
             let genes = init_fn(
                 genes_per_chromosome,
-                if self.alleles.is_empty() { None } else { Some(&self.alleles) },
+                if self.alleles.is_empty() {
+                    None
+                } else {
+                    Some(&self.alleles)
+                },
                 Some(needs_unique_ids),
             );
             let mut new_chromosome = U::new();
@@ -1202,7 +1203,9 @@ where
             let is_fill_duplicate = fill_chromosomes.iter().any(|existing| {
                 let existing_dna = existing.dna();
                 let max_len = new_dna.len().max(existing_dna.len());
-                if max_len == 0 { return true; }
+                if max_len == 0 {
+                    return true;
+                }
                 (0..max_len).all(|i| {
                     let id_a = new_dna.get(i).map(|g| g.id()).unwrap_or(-1);
                     let id_b = existing_dna.get(i).map(|g| g.id()).unwrap_or(-1);
@@ -1233,7 +1236,7 @@ where
 
         // Step 3: Build population: seeds placed first, then fill
         let mut all_chromosomes: Vec<U> = Vec::with_capacity(population_size);
-        all_chromosomes.extend(seeds);         // Seeds first (trusted fitness)
+        all_chromosomes.extend(seeds); // Seeds first (trusted fitness)
         all_chromosomes.extend(fill_chromosomes); // Fill (evaluated)
 
         let new_population = Population::new(all_chromosomes);
@@ -1299,10 +1302,13 @@ where
             #[cfg(feature = "serde")]
             {
                 let path = self.checkpoint_path.take().unwrap();
-                let ckpt = crate::checkpoint::load_checkpoint::<U>(&path)
-                    .map_err(|e| GaError::CheckpointError(format!(
-                        "Failed to load checkpoint '{}': {}", path.display(), e
-                    )))?;
+                let ckpt = crate::checkpoint::load_checkpoint::<U>(&path).map_err(|e| {
+                    GaError::CheckpointError(format!(
+                        "Failed to load checkpoint '{}': {}",
+                        path.display(),
+                        e
+                    ))
+                })?;
 
                 // Hybrid config override (D-04): builder operators win, checkpoint state wins
                 // 1. Save builder's operator settings
@@ -1310,11 +1316,14 @@ where
                 let builder_crossover = self.configuration.crossover_configuration.method;
                 let builder_mutation = self.configuration.mutation_configuration.method;
                 let builder_survivor = self.configuration.survivor;
-                let builder_problem_solving = self.configuration.limit_configuration.problem_solving;
+                let builder_problem_solving =
+                    self.configuration.limit_configuration.problem_solving;
 
                 // 2. Override configuration from checkpoint (but keep builder's max_generations)
-                let builder_max_generations = self.configuration.limit_configuration.max_generations;
-                let builder_population_size = self.configuration.limit_configuration.population_size;
+                let builder_max_generations =
+                    self.configuration.limit_configuration.max_generations;
+                let builder_population_size =
+                    self.configuration.limit_configuration.population_size;
                 self.configuration = ckpt.configuration;
 
                 // 3. Restore builder's operator settings (D-04)
@@ -1330,7 +1339,7 @@ where
 
                 // 5. Restore checkpoint population and stats
                 self.population = ckpt.population;
-                self.stats = ckpt.stats;  // Preserve accumulated stats (D-06)
+                self.stats = ckpt.stats; // Preserve accumulated stats (D-06)
                 checkpoint_generation = Some(ckpt.generation);
             }
             #[cfg(not(feature = "serde"))]
@@ -1424,7 +1433,12 @@ where
         #[cfg(not(target_arch = "wasm32"))]
         let start_time = Instant::now();
         #[cfg(target_arch = "wasm32")]
-        if self.configuration.stopping_criteria.max_duration_secs.is_some() {
+        if self
+            .configuration
+            .stopping_criteria
+            .max_duration_secs
+            .is_some()
+        {
             log::warn!(target: "ga_events", "max_duration_secs is not supported on wasm32 — time limit will be ignored");
         }
         let mut best_fitness_so_far = self.population.best_chromosome.fitness();
@@ -1454,9 +1468,13 @@ where
             //1- Parent selection for reproduction
             let t_sel: Option<Instant> = if self.observer.is_some() {
                 #[cfg(not(target_arch = "wasm32"))]
-                { Some(Instant::now()) }
+                {
+                    Some(Instant::now())
+                }
                 #[cfg(target_arch = "wasm32")]
-                { None }
+                {
+                    None
+                }
             } else {
                 None
             };
@@ -1476,9 +1494,13 @@ where
             };
             let t_cx: Option<Instant> = if self.observer.is_some() {
                 #[cfg(not(target_arch = "wasm32"))]
-                { Some(Instant::now()) }
+                {
+                    Some(Instant::now())
+                }
                 #[cfg(target_arch = "wasm32")]
-                { None }
+                {
+                    None
+                }
             } else {
                 None
             };
@@ -1520,13 +1542,10 @@ where
             }
 
             // Apply constraint penalty to offspring if configured
-            if self.constraint_fns.is_some() {
+            if let Some(ref constraint_fns) = self.constraint_fns {
                 for c in offspring.iter_mut() {
                     let dna = c.dna();
-                    let total_viol: f64 = self
-                        .constraint_fns
-                        .as_ref()
-                        .unwrap()
+                    let total_viol: f64 = constraint_fns
                         .iter()
                         .map(|f| f(dna))
                         .sum();
@@ -1582,28 +1601,21 @@ where
                         }
                         LocalSearchApplicationStrategy::BestN { n } => {
                             let mut indices: Vec<usize> = (0..offspring.len()).collect();
-                            let ps =
-                                self.configuration.limit_configuration.problem_solving;
+                            let ps = self.configuration.limit_configuration.problem_solving;
                             let k = n.min(indices.len());
                             if k > 0 {
-                                indices.select_nth_unstable_by(
-                                    k.saturating_sub(1),
-                                    |&a, &b| {
-                                        let (fa, fb) =
-                                            (offspring[a].fitness(), offspring[b].fitness());
-                                        match ps {
-                                            ProblemSolving::Minimization
-                                            | ProblemSolving::FixedFitness => {
-                                                fa.partial_cmp(&fb)
-                                                    .unwrap_or(std::cmp::Ordering::Equal)
-                                            }
-                                            ProblemSolving::Maximization => {
-                                                fb.partial_cmp(&fa)
-                                                    .unwrap_or(std::cmp::Ordering::Equal)
-                                            }
+                                indices.select_nth_unstable_by(k.saturating_sub(1), |&a, &b| {
+                                    let (fa, fb) = (offspring[a].fitness(), offspring[b].fitness());
+                                    match ps {
+                                        ProblemSolving::Minimization
+                                        | ProblemSolving::FixedFitness => {
+                                            fa.partial_cmp(&fb).unwrap_or(std::cmp::Ordering::Equal)
                                         }
-                                    },
-                                );
+                                        ProblemSolving::Maximization => {
+                                            fb.partial_cmp(&fa).unwrap_or(std::cmp::Ordering::Equal)
+                                        }
+                                    }
+                                });
                             }
                             indices.truncate(k);
                             indices
@@ -1634,9 +1646,7 @@ where
                     let ff = Arc::clone(
                         self.fitness_fn
                             .as_ref()
-                            .expect(
-                                "Fitness function required when local search is configured",
-                            ),
+                            .expect("Fitness function required when local search is configured"),
                     );
                     let search_method = ls_config.method;
 
@@ -1666,8 +1676,7 @@ where
                         for (orig_pos, &idx) in candidates.iter().enumerate() {
                             if let Some(orig_dna) = original_dnas.get(orig_pos) {
                                 let improved_fitness = offspring[idx].fitness();
-                                offspring[idx]
-                                    .set_dna(std::borrow::Cow::Owned(orig_dna.clone()));
+                                offspring[idx].set_dna(std::borrow::Cow::Owned(orig_dna.clone()));
                                 offspring[idx].set_fitness(improved_fitness);
                             }
                         }
@@ -1699,9 +1708,13 @@ where
             //4- Survivor selection
             let t_surv: Option<Instant> = if self.observer.is_some() {
                 #[cfg(not(target_arch = "wasm32"))]
-                { Some(Instant::now()) }
+                {
+                    Some(Instant::now())
+                }
                 #[cfg(target_arch = "wasm32")]
-                { None }
+                {
+                    None
+                }
             } else {
                 None
             };
@@ -2216,7 +2229,12 @@ where
             ProblemSolving::Maximization
         );
 
-        for (c, &v) in self.population.chromosomes.iter_mut().zip(violations.iter()) {
+        for (c, &v) in self
+            .population
+            .chromosomes
+            .iter_mut()
+            .zip(violations.iter())
+        {
             if v > 0.0 {
                 // Infeasible — encode violation so that:
                 // - All feasible beat all infeasible
@@ -2248,18 +2266,29 @@ where
         match self.penalty_strategy {
             PenaltyStrategy::None => {}
             PenaltyStrategy::Static { coefficient } => {
-                for (c, &v) in self.population.chromosomes.iter_mut().zip(violations.iter()) {
+                for (c, &v) in self
+                    .population
+                    .chromosomes
+                    .iter_mut()
+                    .zip(violations.iter())
+                {
                     if v > 0.0 {
                         c.set_fitness(c.fitness() + coefficient * v);
                     }
                 }
             }
             PenaltyStrategy::Dynamic { c, alpha, beta } => {
-                for (chr, &v) in self.population.chromosomes.iter_mut().zip(violations.iter()) {
+                for (chr, &v) in self
+                    .population
+                    .chromosomes
+                    .iter_mut()
+                    .zip(violations.iter())
+                {
                     if v > 0.0 {
                         let raw = chr.fitness();
-                        let penalized =
-                            crate::constraints::apply_dynamic_penalty(raw, v, generation, c, alpha, beta);
+                        let penalized = crate::constraints::apply_dynamic_penalty(
+                            raw, v, generation, c, alpha, beta,
+                        );
                         chr.set_fitness(penalized);
                     }
                 }
@@ -2280,10 +2309,12 @@ where
                         .zip(self.population.chromosomes.iter())
                         .find(|(_, c)| {
                             c.fitness()
-                                == self.population.chromosomes.iter().map(|x| x.fitness()).fold(
-                                    f64::NEG_INFINITY,
-                                    |a, b| a.max(b),
-                                )
+                                == self
+                                    .population
+                                    .chromosomes
+                                    .iter()
+                                    .map(|x| x.fitness())
+                                    .fold(f64::NEG_INFINITY, |a, b| a.max(b))
                         })
                         .map(|(v, _)| *v)
                         .unwrap_or(0.0);
@@ -2303,7 +2334,12 @@ where
                     }
                 }
 
-                for (c, &v) in self.population.chromosomes.iter_mut().zip(violations.iter()) {
+                for (c, &v) in self
+                    .population
+                    .chromosomes
+                    .iter_mut()
+                    .zip(violations.iter())
+                {
                     if v > 0.0 {
                         c.set_fitness(c.fitness() + coeff * v);
                     }
@@ -2404,18 +2440,20 @@ where
 
     // Create AOS reward accumulators (Phase 43)
     // These are shared across rayon threads via Arc<Mutex<Vec<(usize, f64)>>>
+    #[allow(clippy::type_complexity)]
     let crossover_reward_acc: Option<Arc<Mutex<Vec<(usize, f64)>>>> =
         if aos_crossover_state.is_some() {
             Some(Arc::new(Mutex::new(Vec::new())))
         } else {
             None
         };
-    let mutation_reward_acc: Option<Arc<Mutex<Vec<(usize, f64)>>>> =
-        if aos_mutation_state.is_some() {
-            Some(Arc::new(Mutex::new(Vec::new())))
-        } else {
-            None
-        };
+    #[allow(clippy::type_complexity)]
+    let mutation_reward_acc: Option<Arc<Mutex<Vec<(usize, f64)>>>> = if aos_mutation_state.is_some()
+    {
+        Some(Arc::new(Mutex::new(Vec::new())))
+    } else {
+        None
+    };
 
     // Shared per-pair closure: produces two children from one (key, value) parent pair.
     // cfg-gated only for the iterator kind (par_iter on native, iter on wasm32).
@@ -2440,19 +2478,21 @@ where
 
         // Select operators via AOS if portfolios are configured (Phase 43)
         // AOS returns (operator_index, operator_enum) for reward tracking
-        let selected_crossover: Option<(usize, Crossover)> =
-            if let (Some(portfolio), Some(aos_state)) = (crossover_portfolio, aos_crossover_state)
-            {
-                let mut state = aos_state.lock().unwrap();
-                let op_idx = state.select_operator(&mut rng, generation);
-                Some((op_idx, portfolio[op_idx]))
-            } else {
-                None
-            };
+        let selected_crossover: Option<(usize, Crossover)> = if let (
+            Some(portfolio),
+            Some(aos_state),
+        ) =
+            (crossover_portfolio, aos_crossover_state)
+        {
+            let mut state = aos_state.lock().unwrap();
+            let op_idx = state.select_operator(&mut rng, generation);
+            Some((op_idx, portfolio[op_idx]))
+        } else {
+            None
+        };
 
         let selected_mutation: Option<(usize, Mutation)> =
-            if let (Some(portfolio), Some(aos_state)) = (mutation_portfolio, aos_mutation_state)
-            {
+            if let (Some(portfolio), Some(aos_state)) = (mutation_portfolio, aos_mutation_state) {
                 let mut state = aos_state.lock().unwrap();
                 let op_idx = state.select_operator(&mut rng, generation);
                 Some((op_idx, portfolio[op_idx]))
@@ -2532,7 +2572,10 @@ where
 
         if mutation_probability <= effective_mutation_prob {
             if mutation_method == crate::operations::Mutation::Differential {
-                let f = configuration.mutation_configuration.differential_f.unwrap_or(0.5);
+                let f = configuration
+                    .mutation_configuration
+                    .differential_f
+                    .unwrap_or(0.5);
                 crate::operations::mutation::differential::differential_mutation(
                     &mut child_1,
                     chromosomes,
@@ -2556,14 +2599,11 @@ where
             } else if mutation_method == crate::operations::Mutation::Polynomial {
                 // Use dedicated `polynomial_eta` field if set; fall back to `step` for
                 // backward compatibility with callers that used `with_mutation_step` for eta.
-                let eta = configuration.mutation_configuration.polynomial_eta
+                let eta = configuration
+                    .mutation_configuration
+                    .polynomial_eta
                     .or(configuration.mutation_configuration.step);
-                mutation::factory_with_params(
-                    mutation_method,
-                    &mut child_1,
-                    eta,
-                    None,
-                )?;
+                mutation::factory_with_params(mutation_method, &mut child_1, eta, None)?;
             } else {
                 mutation::factory_with_params(
                     mutation_method,
@@ -2577,7 +2617,10 @@ where
         mutation_probability = rng.random_range(0.0..1.0);
         if mutation_probability <= effective_mutation_prob {
             if mutation_method == crate::operations::Mutation::Differential {
-                let f = configuration.mutation_configuration.differential_f.unwrap_or(0.5);
+                let f = configuration
+                    .mutation_configuration
+                    .differential_f
+                    .unwrap_or(0.5);
                 crate::operations::mutation::differential::differential_mutation(
                     &mut child_2,
                     chromosomes,
@@ -2599,14 +2642,11 @@ where
                     configuration.mutation_configuration.levy_alpha,
                 )?;
             } else if mutation_method == crate::operations::Mutation::Polynomial {
-                let eta = configuration.mutation_configuration.polynomial_eta
+                let eta = configuration
+                    .mutation_configuration
+                    .polynomial_eta
                     .or(configuration.mutation_configuration.step);
-                mutation::factory_with_params(
-                    mutation_method,
-                    &mut child_2,
-                    eta,
-                    None,
-                )?;
+                mutation::factory_with_params(mutation_method, &mut child_2, eta, None)?;
             } else {
                 mutation::factory_with_params(
                     mutation_method,
@@ -2679,7 +2719,7 @@ where
     if let Some(acc) = crossover_reward_acc {
         let rewards = acc.lock().unwrap().drain(..).collect::<Vec<_>>();
         if !rewards.is_empty() {
-            if let Some(ref aos_state) = aos_crossover_state {
+            if let Some(aos_state) = aos_crossover_state {
                 let mut state = aos_state.lock().unwrap();
                 state.record_rewards(&rewards);
                 state.update();
@@ -2689,7 +2729,7 @@ where
     if let Some(acc) = mutation_reward_acc {
         let rewards = acc.lock().unwrap().drain(..).collect::<Vec<_>>();
         if !rewards.is_empty() {
-            if let Some(ref aos_state) = aos_mutation_state {
+            if let Some(aos_state) = aos_mutation_state {
                 let mut state = aos_state.lock().unwrap();
                 state.record_rewards(&rewards);
                 state.update();

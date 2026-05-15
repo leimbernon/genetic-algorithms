@@ -28,9 +28,10 @@ use crate::error::GaError;
 /// The penalty is computed per-generation based on constraint violations
 /// and then added to the raw fitness value. All variants work with
 /// minimization, maximization, and fixed-fitness problems.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub enum PenaltyStrategy {
     /// No penalty applied (default).
+    #[default]
     None,
     /// Fixed penalty coefficient: `fitness_penalized = fitness + R * sum(violations)`
     Static {
@@ -58,11 +59,6 @@ pub enum PenaltyStrategy {
     },
 }
 
-impl Default for PenaltyStrategy {
-    fn default() -> Self {
-        PenaltyStrategy::None
-    }
-}
 
 /// Constraint handling method for comparisons in selection, survivor, and elite operations.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -114,27 +110,31 @@ pub fn validate_penalty_strategy(strategy: &PenaltyStrategy) -> Result<(), GaErr
         PenaltyStrategy::None => Ok(()),
         PenaltyStrategy::Static { coefficient } => {
             if *coefficient < 0.0 {
-                return Err(GaError::InvalidConstraintConfiguration(
-                    format!("Static penalty coefficient must be non-negative, got {}", coefficient),
-                ));
+                return Err(GaError::InvalidConstraintConfiguration(format!(
+                    "Static penalty coefficient must be non-negative, got {}",
+                    coefficient
+                )));
             }
             Ok(())
         }
         PenaltyStrategy::Dynamic { c, alpha, beta } => {
             if *c < 0.0 {
-                return Err(GaError::InvalidConstraintConfiguration(
-                    format!("Dynamic penalty C must be non-negative, got {}", c),
-                ));
+                return Err(GaError::InvalidConstraintConfiguration(format!(
+                    "Dynamic penalty C must be non-negative, got {}",
+                    c
+                )));
             }
             if *alpha < 0.0 {
-                return Err(GaError::InvalidConstraintConfiguration(
-                    format!("Dynamic penalty alpha must be non-negative, got {}", alpha),
-                ));
+                return Err(GaError::InvalidConstraintConfiguration(format!(
+                    "Dynamic penalty alpha must be non-negative, got {}",
+                    alpha
+                )));
             }
             if *beta < 0.0 {
-                return Err(GaError::InvalidConstraintConfiguration(
-                    format!("Dynamic penalty beta must be non-negative, got {}", beta),
-                ));
+                return Err(GaError::InvalidConstraintConfiguration(format!(
+                    "Dynamic penalty beta must be non-negative, got {}",
+                    beta
+                )));
             }
             Ok(())
         }
@@ -143,12 +143,10 @@ pub fn validate_penalty_strategy(strategy: &PenaltyStrategy) -> Result<(), GaErr
             window_size,
         } => {
             if *initial_coefficient < 0.0 {
-                return Err(GaError::InvalidConstraintConfiguration(
-                    format!(
-                        "Adaptive penalty initial_coefficient must be non-negative, got {}",
-                        initial_coefficient
-                    ),
-                ));
+                return Err(GaError::InvalidConstraintConfiguration(format!(
+                    "Adaptive penalty initial_coefficient must be non-negative, got {}",
+                    initial_coefficient
+                )));
             }
             if *window_size == 0 {
                 return Err(GaError::InvalidConstraintConfiguration(

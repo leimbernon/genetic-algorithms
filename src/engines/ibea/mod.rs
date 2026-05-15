@@ -118,16 +118,16 @@ pub mod configuration;
 
 use crate::configuration::GaConfiguration;
 use crate::error::GaError;
+use crate::ibea::configuration::IbeaConfiguration;
 use crate::multi_objective::pareto::{ParetoFront, ParetoIndividual};
 use crate::multi_objective::ObjectiveFn;
 use crate::nsga2::configuration::ObjectiveDirection;
 use crate::observer::IbeaObserver;
 use crate::operations::{crossover, mutation};
-use crate::ibea::configuration::IbeaConfiguration;
 use crate::traits::{ChromosomeT, InitializationFn};
+use rand::Rng;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
-use rand::Rng;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -257,7 +257,10 @@ where
     fn i_eps_plus(a: &[f64], b: &[f64], directions: &[ObjectiveDirection]) -> f64 {
         let mut max_eps = f64::NEG_INFINITY;
         for (idx, (ai, bi)) in a.iter().zip(b.iter()).enumerate() {
-            let dir = directions.get(idx).copied().unwrap_or(ObjectiveDirection::Minimize);
+            let dir = directions
+                .get(idx)
+                .copied()
+                .unwrap_or(ObjectiveDirection::Minimize);
             let delta = match dir {
                 ObjectiveDirection::Minimize => ai - bi,
                 ObjectiveDirection::Maximize => bi - ai,
@@ -288,7 +291,9 @@ where
         let mut max_abs = 0.0f64;
         for i in 0..n {
             for j in 0..n {
-                if i == j { continue; }
+                if i == j {
+                    continue;
+                }
                 let val = Self::i_eps_plus(
                     &population[i].objectives,
                     &population[j].objectives,
@@ -306,13 +311,15 @@ where
 
         // F(x) = sum_{y != x} -exp(-I_eps+(y, x) / c)
         let mut fitness = vec![0.0f64; n];
-        for i in 0..n {
+        for (i, fi) in fitness.iter_mut().enumerate() {
             let mut sum = 0.0;
-            for j in 0..n {
-                if i == j { continue; }
-                sum += (-indicators[j][i] / c).exp();
+            for (j, row) in indicators.iter().enumerate() {
+                if i == j {
+                    continue;
+                }
+                sum += (-row[i] / c).exp();
             }
-            fitness[i] = -sum;
+            *fi = -sum;
         }
 
         fitness
@@ -374,8 +381,7 @@ where
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_par_iter()
             .map(|chrom| {
-                let objectives: Vec<f64> =
-                    objective_fns.iter().map(|f| f(chrom.dna())).collect();
+                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
@@ -383,8 +389,7 @@ where
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_iter()
             .map(|chrom| {
-                let objectives: Vec<f64> =
-                    objective_fns.iter().map(|f| f(chrom.dna())).collect();
+                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
@@ -450,8 +455,7 @@ where
         let evaluated: Vec<ParetoIndividual<U>> = offspring
             .into_par_iter()
             .map(|chrom| {
-                let objectives: Vec<f64> =
-                    objective_fns.iter().map(|f| f(chrom.dna())).collect();
+                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
@@ -459,8 +463,7 @@ where
         let evaluated: Vec<ParetoIndividual<U>> = offspring
             .into_iter()
             .map(|chrom| {
-                let objectives: Vec<f64> =
-                    objective_fns.iter().map(|f| f(chrom.dna())).collect();
+                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
@@ -493,9 +496,13 @@ where
             // Timing for observers
             let t_fitness: Option<Instant> = if self.observer.is_some() {
                 #[cfg(not(target_arch = "wasm32"))]
-                { Some(Instant::now()) }
+                {
+                    Some(Instant::now())
+                }
                 #[cfg(target_arch = "wasm32")]
-                { None }
+                {
+                    None
+                }
             } else {
                 None
             };
@@ -521,9 +528,7 @@ where
             let removed = Self::environmental_selection(&mut population, orig_size, &directions);
 
             // (d) Notify observer -- on_environmental_selection
-            self.notify(|obs| {
-                obs.on_environmental_selection(gen, population.len(), removed)
-            });
+            self.notify(|obs| obs.on_environmental_selection(gen, population.len(), removed));
 
             // (e) Create offspring via binary tournament + crossover + mutation
             if population.len() < 2 {
@@ -541,8 +546,10 @@ where
         }
 
         // Post-hoc non-dominated sort over final population -> ParetoFront
-        let obj_slices: Vec<&[f64]> =
-            population.iter().map(|ind| ind.objectives.as_slice()).collect();
+        let obj_slices: Vec<&[f64]> = population
+            .iter()
+            .map(|ind| ind.objectives.as_slice())
+            .collect();
         let fronts = crate::multi_objective::non_dominated_sort::non_dominated_sort_with_directions(
             &obj_slices,
             &directions,

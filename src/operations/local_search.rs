@@ -70,10 +70,11 @@ impl Default for HillClimbingConfig {
 ///
 /// Controls the application frequency of the local search operator within
 /// the memetic algorithm loop.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum LocalSearchApplicationStrategy {
     /// Apply local search to every offspring before survivor selection.
+    #[default]
     AllOffspring,
     /// Apply local search only to the `n` best individuals.
     BestN {
@@ -92,11 +93,6 @@ pub enum LocalSearchApplicationStrategy {
     },
 }
 
-impl Default for LocalSearchApplicationStrategy {
-    fn default() -> Self {
-        Self::AllOffspring
-    }
-}
 
 /// Strategy for how local search improvements affect the genome.
 ///
@@ -104,22 +100,18 @@ impl Default for LocalSearchApplicationStrategy {
 ///   information acquired during the individual's lifetime is inherited).
 /// - **Baldwinian**: only the fitness is updated; the original genotype is
 ///   retained (acquired improvements affect selection but are not inherited).
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum LocalSearchMode {
     /// Replace the chromosome's genes with the locally improved version.
     /// Genetic changes are inherited by offspring.
+    #[default]
     Lamarckian,
     /// Keep the original chromosome genes but update the fitness value.
     /// Learning does not affect the genetic code.
     Baldwinian,
 }
 
-impl Default for LocalSearchMode {
-    fn default() -> Self {
-        Self::Lamarckian
-    }
-}
 
 /// Create a [`LocalSearch`] operator instance (standard dispatch).
 ///
@@ -134,10 +126,7 @@ pub fn factory(op: LocalSearch) -> LocalSearch {
 ///
 /// Returns a [`HillClimbingConfig`] (which implements
 /// [`LocalSearchOperator`]) when the variant is `HillClimbing`.
-pub fn factory_with_config(
-    op: LocalSearch,
-    config: HillClimbingConfig,
-) -> HillClimbingConfig {
+pub fn factory_with_config(op: LocalSearch, config: HillClimbingConfig) -> HillClimbingConfig {
     match op {
         LocalSearch::HillClimbing => config,
     }
@@ -262,8 +251,7 @@ mod tests {
         use crate::genotypes::Binary as BinaryGene;
 
         let mut chromo = BinaryChromosome::new();
-        let result =
-            HillClimbingConfig::default().improve(&mut chromo, &|_: &[BinaryGene]| 0.0);
+        let result = HillClimbingConfig::default().improve(&mut chromo, &|_: &[BinaryGene]| 0.0);
         assert!(result.is_err());
         match result {
             Err(GaError::LocalSearchError(msg)) => {
@@ -284,7 +272,10 @@ mod tests {
     #[test]
     fn test_local_search_application_strategy_default() {
         let strategy = LocalSearchApplicationStrategy::default();
-        assert!(matches!(strategy, LocalSearchApplicationStrategy::AllOffspring));
+        assert!(matches!(
+            strategy,
+            LocalSearchApplicationStrategy::AllOffspring
+        ));
     }
 
     #[test]

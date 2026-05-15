@@ -23,8 +23,8 @@
 //!    c. Evaluate offspring objectives.
 //!    d. Update ideal point `z*` (per-objective minimum).
 //!    e. Walk `neighbourhood[i]` — if the offspring's scalarised value is better
-//!       than the current solution for neighbour j, replace it (up to
-//!       `max_neighbor_replacements` replacements).
+//!    than the current solution for neighbour j, replace it (up to
+//!    `max_neighbor_replacements` replacements).
 //! 3. Post-hoc non-dominated sort on the final population → ParetoFront.
 //!
 //! MOEA/D does NOT use Pareto ranking for selection — it is a decomposition-based
@@ -132,7 +132,9 @@ pub mod configuration;
 use crate::configuration::GaConfiguration;
 use crate::error::GaError;
 use crate::moead::configuration::{MoeaDConfiguration, ScalarizationFn};
-use crate::multi_objective::non_dominated_sort::{assign_ranks, non_dominated_sort_with_directions};
+use crate::multi_objective::non_dominated_sort::{
+    assign_ranks, non_dominated_sort_with_directions,
+};
 use crate::multi_objective::pareto::{ParetoFront, ParetoIndividual};
 use crate::multi_objective::ObjectiveFn;
 use crate::observer::MoeaDObserver;
@@ -409,7 +411,11 @@ where
 
         // T capped at the population size to avoid out-of-bounds neighbour indices when
         // user supplies T > population_size (e.g., default T=20 with pop_size=15 in tests).
-        let t_neigh = self.moead_config.neighborhood_size.min(weight_vectors.len()).max(1);
+        let t_neigh = self
+            .moead_config
+            .neighborhood_size
+            .min(weight_vectors.len())
+            .max(1);
 
         // Step 2: precompute neighbourhoods.
         let neighbourhoods = precompute_neighbourhoods(&weight_vectors, t_neigh);
@@ -509,7 +515,10 @@ where
 
             // Per-generation observer hooks: derive front_count from current population's ranks.
             // Compute fronts (used both for observer front_count and for stamping ranks).
-            let obj_slices: Vec<&[f64]> = population.iter().map(|ind| ind.objectives.as_slice()).collect();
+            let obj_slices: Vec<&[f64]> = population
+                .iter()
+                .map(|ind| ind.objectives.as_slice())
+                .collect();
             let fronts = non_dominated_sort_with_directions(&obj_slices, &directions);
             let mut ranks = vec![0usize; population.len()];
             assign_ranks(&mut ranks, &fronts);
@@ -520,15 +529,10 @@ where
 
             if let Some(start) = t_sort {
                 self.notify(|obs| {
-                    obs.on_non_dominated_sort_complete(
-                        gen,
-                        start.elapsed().as_secs_f64() * 1000.0,
-                    )
+                    obs.on_non_dominated_sort_complete(gen, start.elapsed().as_secs_f64() * 1000.0)
                 });
             }
-            self.notify(|obs| {
-                obs.on_pareto_front_assigned(gen, front_count, population.len())
-            });
+            self.notify(|obs| obs.on_pareto_front_assigned(gen, front_count, population.len()));
 
             // Suppress pop_size dead-store warning when pop_size differs from n_subproblems.
             let _ = pop_size;
@@ -570,8 +574,7 @@ where
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_par_iter()
             .map(|chrom| {
-                let objectives: Vec<f64> =
-                    objective_fns.iter().map(|f| f(chrom.dna())).collect();
+                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
@@ -579,8 +582,7 @@ where
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_iter()
             .map(|chrom| {
-                let objectives: Vec<f64> =
-                    objective_fns.iter().map(|f| f(chrom.dna())).collect();
+                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
@@ -613,9 +615,7 @@ where
         };
 
         // Pick a single offspring from the children vec (use first; defensive empty handling).
-        let mut child = children
-            .pop()
-            .unwrap_or_else(|| parent_a.clone());
+        let mut child = children.pop().unwrap_or_else(|| parent_a.clone());
         // Drop the rest deterministically (no use for the second child in MOEA/D).
         drop(children);
 
@@ -644,12 +644,7 @@ where
                 )?;
             } else if mutation_config.method == crate::operations::Mutation::Polynomial {
                 let eta = mutation_config.polynomial_eta.or(mutation_config.step);
-                mutation::factory_with_params(
-                    mutation_config.method,
-                    &mut child,
-                    eta,
-                    None,
-                )?;
+                mutation::factory_with_params(mutation_config.method, &mut child, eta, None)?;
             } else {
                 mutation::factory_with_params(
                     mutation_config.method,

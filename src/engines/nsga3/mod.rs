@@ -24,12 +24,12 @@
 //! 5. **Environmental selection:**
 //!    a. Take all fronts that fit entirely into the next population.
 //!    b. **Normalise** St (selected ∪ splitting front) onto the unit
-//!       hyperplane (translate by ideal, scale by intercepts via ASF).
+//!    hyperplane (translate by ideal, scale by intercepts via ASF).
 //!    c. **Associate** each individual to its nearest reference point
-//!       (perpendicular distance in normalised space).
+//!    (perpendicular distance in normalised space).
 //!    d. **Niche preservation** — repeatedly pick from the
-//!       under-populated niche with the smallest occupancy count,
-//!       preferring the closest candidate (n = 0) or random (n > 0).
+//!    under-populated niche with the smallest occupancy count,
+//!    preferring the closest candidate (n = 0) or random (n > 0).
 //!
 //! ## When to Use
 //!
@@ -133,7 +133,9 @@ pub mod das_dennis;
 
 use crate::configuration::GaConfiguration;
 use crate::error::GaError;
-use crate::multi_objective::non_dominated_sort::{assign_ranks, non_dominated_sort_with_directions};
+use crate::multi_objective::non_dominated_sort::{
+    assign_ranks, non_dominated_sort_with_directions,
+};
 use crate::multi_objective::pareto::{ParetoFront, ParetoIndividual};
 use crate::multi_objective::ObjectiveFn;
 use crate::nsga2::configuration::ObjectiveDirection;
@@ -432,10 +434,7 @@ where
             }
             if let Some(start) = t_sort {
                 self.notify(|obs| {
-                    obs.on_non_dominated_sort_complete(
-                        gen,
-                        start.elapsed().as_secs_f64() * 1000.0,
-                    )
+                    obs.on_non_dominated_sort_complete(gen, start.elapsed().as_secs_f64() * 1000.0)
                 });
             }
 
@@ -473,9 +472,7 @@ where
                 .max()
                 .map(|m| m + 1)
                 .unwrap_or(0);
-            self.notify(|obs| {
-                obs.on_pareto_front_assigned(gen, front_count, population.len())
-            });
+            self.notify(|obs| obs.on_pareto_front_assigned(gen, front_count, population.len()));
         }
 
         let front_individuals: Vec<ParetoIndividual<U>> =
@@ -514,8 +511,7 @@ where
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_par_iter()
             .map(|chrom| {
-                let objectives: Vec<f64> =
-                    objective_fns.iter().map(|f| f(chrom.dna())).collect();
+                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
@@ -523,8 +519,7 @@ where
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_iter()
             .map(|chrom| {
-                let objectives: Vec<f64> =
-                    objective_fns.iter().map(|f| f(chrom.dna())).collect();
+                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
@@ -591,12 +586,7 @@ where
                         )?;
                     } else if mutation_config.method == crate::operations::Mutation::Polynomial {
                         let eta = mutation_config.polynomial_eta.or(mutation_config.step);
-                        mutation::factory_with_params(
-                            mutation_config.method,
-                            child,
-                            eta,
-                            None,
-                        )?;
+                        mutation::factory_with_params(mutation_config.method, child, eta, None)?;
                     } else {
                         mutation::factory_with_params(
                             mutation_config.method,
@@ -621,8 +611,7 @@ where
         let offspring: Vec<ParetoIndividual<U>> = raw_offspring
             .into_par_iter()
             .map(|chrom| {
-                let objectives: Vec<f64> =
-                    objective_fns.iter().map(|f| f(chrom.dna())).collect();
+                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
@@ -630,8 +619,7 @@ where
         let offspring: Vec<ParetoIndividual<U>> = raw_offspring
             .into_iter()
             .map(|chrom| {
-                let objectives: Vec<f64> =
-                    objective_fns.iter().map(|f| f(chrom.dna())).collect();
+                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
@@ -640,11 +628,7 @@ where
     }
 
     /// Binary tournament: lower rank wins; ties broken randomly (NSGA-III does not use crowding distance).
-    fn binary_tournament(
-        &self,
-        population: &[ParetoIndividual<U>],
-        rng: &mut impl Rng,
-    ) -> usize {
+    fn binary_tournament(&self, population: &[ParetoIndividual<U>], rng: &mut impl Rng) -> usize {
         let n = population.len();
         let i = rng.random_range(0..n);
         let j = rng.random_range(0..n);

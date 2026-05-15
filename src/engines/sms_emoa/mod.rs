@@ -121,9 +121,9 @@ use crate::observer::SmsEmoaObserver;
 use crate::operations::{crossover, mutation};
 use crate::sms_emoa::configuration::SmsEmoaConfiguration;
 use crate::traits::{ChromosomeT, InitializationFn};
+use rand::Rng;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
-use rand::Rng;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -310,8 +310,7 @@ where
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_par_iter()
             .map(|chrom| {
-                let objectives: Vec<f64> =
-                    objective_fns.iter().map(|f| f(chrom.dna())).collect();
+                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
@@ -319,15 +318,13 @@ where
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_iter()
             .map(|chrom| {
-                let objectives: Vec<f64> =
-                    objective_fns.iter().map(|f| f(chrom.dna())).collect();
+                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
 
         Ok(population)
     }
-
 }
 
 impl<U> SmsEmoaGa<U>
@@ -368,7 +365,10 @@ where
         }
 
         // Return first child (steady-state: one offspring per generation)
-        Ok(children.into_iter().next().unwrap_or_else(|| parent_a.clone()))
+        Ok(children
+            .into_iter()
+            .next()
+            .unwrap_or_else(|| parent_a.clone()))
     }
 
     /// Runs the SMS-EMOA algorithm and returns the Pareto front.
@@ -397,23 +397,24 @@ where
 
         // Auto-compute reference point if not provided
         // Use max of each objective across the initial population + 1.0 margin
-        let reference_point: Vec<f64> = if let Some(ref rp) = self.sms_config.hypervolume_reference_point {
-            rp.clone()
-        } else {
-            let mut ref_pt = vec![f64::NEG_INFINITY; self.sms_config.num_objectives];
-            for ind in &population {
-                for (j, &val) in ind.objectives.iter().enumerate() {
-                    if val > ref_pt[j] {
-                        ref_pt[j] = val;
+        let reference_point: Vec<f64> =
+            if let Some(ref rp) = self.sms_config.hypervolume_reference_point {
+                rp.clone()
+            } else {
+                let mut ref_pt = vec![f64::NEG_INFINITY; self.sms_config.num_objectives];
+                for ind in &population {
+                    for (j, &val) in ind.objectives.iter().enumerate() {
+                        if val > ref_pt[j] {
+                            ref_pt[j] = val;
+                        }
                     }
                 }
-            }
-            // Add margin of 1.0 per objective to ensure strict domination
-            for j in 0..self.sms_config.num_objectives {
-                ref_pt[j] += 1.0;
-            }
-            ref_pt
-        };
+                // Add margin of 1.0 per objective to ensure strict domination
+                for val in ref_pt.iter_mut().take(self.sms_config.num_objectives) {
+                    *val += 1.0;
+                }
+                ref_pt
+            };
 
         // Generation loop
         for gen in 0..max_gens {
@@ -432,12 +433,15 @@ where
             population.push(offspring);
 
             // (d) Non-dominated sort
-            let obj_slices: Vec<&[f64]> =
-                population.iter().map(|ind| ind.objectives.as_slice()).collect();
-            let fronts = crate::multi_objective::non_dominated_sort::non_dominated_sort_with_directions(
-                &obj_slices,
-                &directions,
-            );
+            let obj_slices: Vec<&[f64]> = population
+                .iter()
+                .map(|ind| ind.objectives.as_slice())
+                .collect();
+            let fronts =
+                crate::multi_objective::non_dominated_sort::non_dominated_sort_with_directions(
+                    &obj_slices,
+                    &directions,
+                );
             let mut ranks = vec![0usize; population.len()];
             crate::multi_objective::non_dominated_sort::assign_ranks(&mut ranks, &fronts);
             for (i, &r) in ranks.iter().enumerate() {
@@ -453,16 +457,22 @@ where
             // Timing for observer
             let t_hvc: Option<Instant> = if self.observer.is_some() {
                 #[cfg(not(target_arch = "wasm32"))]
-                { Some(Instant::now()) }
+                {
+                    Some(Instant::now())
+                }
                 #[cfg(target_arch = "wasm32")]
-                { None }
+                {
+                    None
+                }
             } else {
                 None
             };
 
             // Compute HV contributions for worst front members
-            let worst_front_individuals: Vec<&ParetoIndividual<U>> =
-                worst_front_indices.iter().map(|&i| &population[i]).collect();
+            let worst_front_individuals: Vec<&ParetoIndividual<U>> = worst_front_indices
+                .iter()
+                .map(|&i| &population[i])
+                .collect();
             let hv_contributions = Self::compute_hypervolume_contributions(
                 &worst_front_individuals
                     .into_iter()
@@ -493,14 +503,14 @@ where
             population.remove(remove_pop_idx);
 
             // (g) Notify observer -- on_steady_state_removal
-            self.notify(|obs| {
-                obs.on_steady_state_removal(gen, population.len())
-            });
+            self.notify(|obs| obs.on_steady_state_removal(gen, population.len()));
         }
 
         // Post-hoc non-dominated sort over final population -> ParetoFront
-        let obj_slices: Vec<&[f64]> =
-            population.iter().map(|ind| ind.objectives.as_slice()).collect();
+        let obj_slices: Vec<&[f64]> = population
+            .iter()
+            .map(|ind| ind.objectives.as_slice())
+            .collect();
         let fronts = crate::multi_objective::non_dominated_sort::non_dominated_sort_with_directions(
             &obj_slices,
             &directions,
