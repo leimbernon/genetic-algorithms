@@ -240,7 +240,6 @@
 //! - [docs/ directory](https://github.com/leimbernon/rust_genetic_algorithms/tree/main/docs) — Per-engine algorithm guides and framework extension docs
 //! - [docs.rs/genetic_algorithms](https://docs.rs/genetic_algorithms/latest/genetic_algorithms) — Full API reference with module-level documentation
 //! - [crates.io](https://crates.io/crates/genetic_algorithms) — Package registry and version history
-#![warn(missing_docs)]
 
 extern crate core;
 
