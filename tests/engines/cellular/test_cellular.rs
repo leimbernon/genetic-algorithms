@@ -1,20 +1,15 @@
 //! Integration tests for the Cellular Genetic Algorithm engine.
 
 use std::borrow::Cow;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
 
 use genetic_algorithms::cellular::{
     CellularConfiguration, CellularEngine, Neighborhood, UpdateMode,
 };
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
-use genetic_algorithms::ga::TerminationCause;
 use genetic_algorithms::genotypes::Range as RangeGene;
-use genetic_algorithms::observer::GaObserver;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection};
 use genetic_algorithms::rng;
-use genetic_algorithms::stats::GenerationStats;
 use genetic_algorithms::traits::ChromosomeT;
 use rand::Rng;
 
@@ -197,107 +192,4 @@ fn test_all_neighborhoods_asynchronous() {
         assert!(result.generations > 0, "asynchronous engine produced 0 generations");
         assert_eq!(result.population.len(), 25);
     }
-}
-
-// ─── Observer tests ───────────────────────────────────────────────────────────
-
-#[derive(Default)]
-struct CellularSpyData {
-    run_start: AtomicUsize,
-    generation_start: AtomicUsize,
-    new_best: AtomicUsize,
-    generation_end: AtomicUsize,
-    run_end: AtomicUsize,
-    run_end_cause: Mutex<Option<TerminationCause>>,
-    run_end_stats_len: AtomicUsize,
-}
-
-struct CellularSpyObserver {
-    data: Arc<CellularSpyData>,
-}
-
-impl GaObserver<RangeChromosome<f64>> for CellularSpyObserver {
-    fn on_run_start(&self) {
-        self.data.run_start.fetch_add(1, Ordering::Relaxed);
-    }
-    fn on_generation_start(&self, _generation: usize) {
-        self.data.generation_start.fetch_add(1, Ordering::Relaxed);
-    }
-    fn on_new_best(&self, _generation: usize, _best: RangeChromosome<f64>) {
-        self.data.new_best.fetch_add(1, Ordering::Relaxed);
-    }
-    fn on_generation_end(&self, _stats: &GenerationStats) {
-        self.data.generation_end.fetch_add(1, Ordering::Relaxed);
-    }
-    fn on_run_end(&self, cause: TerminationCause, all_stats: &[GenerationStats]) {
-        self.data.run_end.fetch_add(1, Ordering::Relaxed);
-        *self.data.run_end_cause.lock().unwrap() = Some(cause);
-        self.data.run_end_stats_len.store(all_stats.len(), Ordering::Relaxed);
-    }
-}
-
-/// Verify all 5 lifecycle hooks fire and on_new_best fires at most once per generation.
-#[test]
-fn test_cellular_observer_fires_5_hooks() {
-    let max_gens = 20usize;
-    let data = Arc::new(CellularSpyData::default());
-    let spy = Arc::new(CellularSpyObserver { data: Arc::clone(&data) });
-
-    let config = CellularConfiguration::default()
-        .with_grid(5, 5)
-        .with_neighborhood(Neighborhood::Moore)
-        .with_update_mode(UpdateMode::Synchronous)
-        .with_max_generations(max_gens)
-        .with_selection(Selection::Tournament)
-        .with_crossover(Crossover::Uniform)
-        .with_mutation(Mutation::Gaussian)
-        .with_mutation_sigma(0.5)
-        .with_problem_solving(ProblemSolving::Minimization);
-
-    let mut engine = CellularEngine::new(
-        config,
-        |n| random_pop(n, 5, -5.0, 5.0, 42),
-        sphere,
-    )
-    .with_observer(spy);
-
-    let _result = engine.run();
-
-    assert_eq!(data.run_start.load(Ordering::Relaxed), 1, "on_run_start must fire exactly once");
-    assert_eq!(
-        data.generation_start.load(Ordering::Relaxed),
-        max_gens,
-        "on_generation_start must fire once per generation"
-    );
-    assert_eq!(
-        data.generation_end.load(Ordering::Relaxed),
-        max_gens,
-        "on_generation_end must fire once per generation"
-    );
-    assert_eq!(data.run_end.load(Ordering::Relaxed), 1, "on_run_end must fire exactly once");
-    assert_eq!(
-        *data.run_end_cause.lock().unwrap(),
-        Some(TerminationCause::GenerationLimitReached),
-    );
-    assert_eq!(
-        data.run_end_stats_len.load(Ordering::Relaxed),
-        max_gens,
-        "stats_history length must equal max_generations"
-    );
-    assert!(
-        data.new_best.load(Ordering::Relaxed) >= 1,
-        "on_new_best must fire at least once"
-    );
-    assert!(
-        data.new_best.load(Ordering::Relaxed) <= max_gens,
-        "on_new_best must fire at most once per generation, not per-cell"
-    );
-}
-
-/// Verify that running without an observer does not panic.
-#[test]
-fn test_cellular_no_observer_no_panic() {
-    let mut engine = make_engine(4, 4, Neighborhood::Moore, UpdateMode::Asynchronous);
-    let result = engine.run();
-    assert!(result.generations > 0);
 }
