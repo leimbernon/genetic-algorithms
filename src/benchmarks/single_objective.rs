@@ -230,7 +230,7 @@ mod tests {
     #[test]
     fn test_sphere_optimum() {
         let sphere = Sphere::default();
-        let result = sphere.evaluate(&vec![0.0; 30]);
+        let result = sphere.evaluate(&[0.0; 30]);
         assert!(
             (result[0] - 0.0).abs() < EPSILON,
             "Sphere optimum expected 0.0, got {}",
@@ -254,7 +254,7 @@ mod tests {
     #[test]
     fn test_rastrigin_optimum() {
         let rastrigin = Rastrigin::default();
-        let result = rastrigin.evaluate(&vec![0.0; 30]);
+        let result = rastrigin.evaluate(&[0.0; 30]);
         assert!(
             (result[0] - 0.0).abs() < EPSILON,
             "Rastrigin optimum expected 0.0, got {}",
@@ -279,7 +279,7 @@ mod tests {
     #[test]
     fn test_ackley_optimum() {
         let ackley = Ackley::default();
-        let result = ackley.evaluate(&vec![0.0; 30]);
+        let result = ackley.evaluate(&[0.0; 30]);
         assert!(
             (result[0] - 0.0).abs() < EPSILON,
             "Ackley optimum expected 0.0, got {}",

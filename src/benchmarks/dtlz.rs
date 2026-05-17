@@ -86,8 +86,8 @@ impl BenchmarkFn for DTLZ1 {
         let m = self.n_obj;
         for i in 0..m {
             let mut prod = 1.0;
-            for j in 0..(m - 1 - i) {
-                prod *= x[j];
+            for &xj in &x[..m - 1 - i] {
+                prod *= xj;
             }
             if i == 0 {
                 f[i] = 0.5 * prod * (1.0 + g);
@@ -163,8 +163,8 @@ impl DTLZ2 {
         for i in 0..m {
             let mut prod = 1.0;
             // Product of cos(x_pos[j] * pi/2) for j in 0..(M-1-i)
-            for j in 0..(m - 1 - i) {
-                prod *= x_pos[j].cos();
+            for &xj in &x_pos[..m - 1 - i] {
+                prod *= xj.cos();
             }
             if i == 0 {
                 f[i] = (1.0 + g) * prod;
@@ -371,11 +371,11 @@ impl BenchmarkFn for DTLZ5 {
         // theta[t] = pi/(4*(1+g)) * (1 + 2*g*x[t]) for t = 1..M-2
         let m = self.n_obj;
         let mut theta = Vec::with_capacity(m - 1);
-        for i in 0..(m - 1) {
+        for (i, &xi) in x[..m - 1].iter().enumerate() {
             let t = if i == 0 {
-                x[i] * std::f64::consts::FRAC_PI_2
+                xi * std::f64::consts::FRAC_PI_2
             } else {
-                std::f64::consts::PI / (4.0 * (1.0 + g)) * (1.0 + 2.0 * g * x[i])
+                std::f64::consts::PI / (4.0 * (1.0 + g)) * (1.0 + 2.0 * g * xi)
             };
             theta.push(t);
         }
@@ -434,11 +434,11 @@ impl BenchmarkFn for DTLZ6 {
         // Theta transformation (same as DTLZ5)
         let m = self.n_obj;
         let mut theta = Vec::with_capacity(m - 1);
-        for i in 0..(m - 1) {
+        for (i, &xi) in x[..m - 1].iter().enumerate() {
             let t = if i == 0 {
-                x[i] * std::f64::consts::FRAC_PI_2
+                xi * std::f64::consts::FRAC_PI_2
             } else {
-                std::f64::consts::PI / (4.0 * (1.0 + g)) * (1.0 + 2.0 * g * x[i])
+                std::f64::consts::PI / (4.0 * (1.0 + g)) * (1.0 + 2.0 * g * xi)
             };
             theta.push(t);
         }
@@ -502,14 +502,12 @@ impl BenchmarkFn for DTLZ7 {
         let mut f = vec![0.0; m];
 
         // f_i = x_i for i = 0..M-2
-        for i in 0..(m - 1) {
-            f[i] = x[i];
-        }
+        f[..m - 1].copy_from_slice(&x[..m - 1]);
 
         // h = M - sum(f_i/(1+g) * (1 + sin(3*pi*f_i/(1+g))))
         let mut h_sum = 0.0;
-        for i in 0..(m - 1) {
-            let term = f[i] / (1.0 + g);
+        for &fi in &f[..m - 1] {
+            let term = fi / (1.0 + g);
             h_sum += term * (1.0 + (3.0 * std::f64::consts::PI * term).sin());
         }
         let h = m as f64 - h_sum;
@@ -534,7 +532,7 @@ mod tests {
     fn test_dtlz1_form() {
         // At x = [0]*7 with M=3: g is non-negative, output length = 3
         let dtlz1 = DTLZ1::new(7, 3);
-        let result = dtlz1.evaluate(&vec![0.0; 7]);
+        let result = dtlz1.evaluate(&[0.0; 7]);
         assert_eq!(result.len(), 3);
         // g should be positive (125.0) since 0 != 0.5
         assert!(result[2] > 0.0, "DTLZ1 f3 should be > 0");
@@ -548,7 +546,7 @@ mod tests {
         // f2 = 0.5 * 0.5 * (1-0.5) = 0.125
         // f3 = 0.5 * (1-0.5) = 0.25
         let dtlz1 = DTLZ1::new(7, 3);
-        let result = dtlz1.evaluate(&vec![0.5; 7]);
+        let result = dtlz1.evaluate(&[0.5; 7]);
         assert!((result[0] - 0.125).abs() < EPSILON, "DTLZ1 f1 expected 0.125, got {}", result[0]);
         assert!((result[1] - 0.125).abs() < EPSILON, "DTLZ1 f2 expected 0.125, got {}", result[1]);
         assert!((result[2] - 0.25).abs() < EPSILON, "DTLZ1 f3 expected 0.25, got {}", result[2]);
@@ -564,7 +562,7 @@ mod tests {
         // f3 = sin(pi/4) = sqrt(2)/2 ≈ 0.7071
         // Sum of squares: 0.25 + 0.25 + 0.5 = 1.0
         let dtlz2 = DTLZ2::new(12, 3);
-        let result = dtlz2.evaluate(&vec![0.5; 12]);
+        let result = dtlz2.evaluate(&[0.5; 12]);
         let sum_sq: f64 = result.iter().map(|&fi| fi * fi).sum();
         assert!((sum_sq - 1.0).abs() < 1e-10,
             "DTLZ2 sum of squares expected 1.0, got {}", sum_sq);
@@ -577,7 +575,7 @@ mod tests {
         // At x = [0.5]*12, M=3: distance vars at 0.5 -> DTLZ1 g = 0
         // Same result as DTLZ2 uniform point
         let dtlz3 = DTLZ3::new(12, 3);
-        let result = dtlz3.evaluate(&vec![0.5; 12]);
+        let result = dtlz3.evaluate(&[0.5; 12]);
         let sum_sq: f64 = result.iter().map(|&fi| fi * fi).sum();
         assert!((sum_sq - 1.0).abs() < 1e-10,
             "DTLZ3 sum of squares expected 1.0, got {}", sum_sq);
@@ -588,7 +586,7 @@ mod tests {
     #[test]
     fn test_dtlz4_default_alpha() {
         let dtlz4 = DTLZ4::new(12, 3);
-        let result = dtlz4.evaluate(&vec![0.5; 12]);
+        let result = dtlz4.evaluate(&[0.5; 12]);
         assert_eq!(result.len(), 3);
         // With alpha=100, x[0]^100 = (0.5)^100 ≈ 7.89e-31
         // cos(x[0]^100 * pi/2) ≈ cos(0) = 1
@@ -603,8 +601,8 @@ mod tests {
         // With alpha=1, DTLZ4 should equal DTLZ2
         let dtlz4 = DTLZ4::with_alpha(12, 3, 1.0);
         let dtlz2 = DTLZ2::new(12, 3);
-        let result4 = dtlz4.evaluate(&vec![0.3; 12]);
-        let result2 = dtlz2.evaluate(&vec![0.3; 12]);
+        let result4 = dtlz4.evaluate(&[0.3; 12]);
+        let result2 = dtlz2.evaluate(&[0.3; 12]);
         for i in 0..3 {
             assert!((result4[i] - result2[i]).abs() < EPSILON,
                 "DTLZ4(alpha=1) and DTLZ2 differ at f{}: {} vs {}", i, result4[i], result2[i]);
@@ -621,7 +619,7 @@ mod tests {
         // f2 = (1+0) * cos(pi/4) * sin(pi/16) = 0.7071 * 0.1951 ≈ 0.1380
         // f3 = (1+0) * sin(pi/4) = 0.7071
         let dtlz5 = DTLZ5::new(12, 3);
-        let result = dtlz5.evaluate(&vec![0.5; 12]);
+        let result = dtlz5.evaluate(&[0.5; 12]);
         assert_eq!(result.len(), 3);
         // Just verify the expected output length and structure
         assert!(result[0] > 0.0, "DTLZ5 f1 should be positive");
@@ -635,7 +633,7 @@ mod tests {
         // At x = [0.5]*12, M=3: all distance vars at 0.5 -> x_i^3 = 0.125
         // g = sqrt(10 * 0.125) = sqrt(1.25) ≈ 1.118
         let dtlz6 = DTLZ6::new(12, 3);
-        let result = dtlz6.evaluate(&vec![0.5; 12]);
+        let result = dtlz6.evaluate(&[0.5; 12]);
         assert_eq!(result.len(), 3);
         // With non-zero g, theta values change
         assert!(result.iter().all(|&v| v >= 0.0), "DTLZ6 all values should be non-negative");
@@ -646,7 +644,7 @@ mod tests {
     #[test]
     fn test_dtlz7_return_length() {
         let dtlz7 = DTLZ7::new(22, 3);
-        let result = dtlz7.evaluate(&vec![0.5; 22]);
+        let result = dtlz7.evaluate(&[0.5; 22]);
         assert_eq!(result.len(), 3);
     }
 
@@ -654,9 +652,9 @@ mod tests {
     fn test_dtlz7_first_two_linear() {
         // f[0] = x[0], f[1] = x[1]
         let dtlz7 = DTLZ7::new(22, 3);
-        let x = vec![0.2, 0.7, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
-                     0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
-                     0.5, 0.5];
+        let x = [0.2_f64, 0.7, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+                 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+                 0.5, 0.5];
         let result = dtlz7.evaluate(&x);
         assert!((result[0] - 0.2).abs() < EPSILON, "DTLZ7 f1 expected 0.2, got {}", result[0]);
         assert!((result[1] - 0.7).abs() < EPSILON, "DTLZ7 f2 expected 0.7, got {}", result[1]);
