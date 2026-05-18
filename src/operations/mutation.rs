@@ -20,7 +20,11 @@ use log::warn;
 use std::any::Any;
 
 pub mod bit_flip;
+pub mod cauchy;
 pub mod creep;
+pub mod levy_flight;
+pub mod uniform;
+pub mod differential;
 pub mod gaussian;
 pub mod insertion;
 pub mod inversion;
@@ -46,6 +50,74 @@ fn try_polynomial<U: ChromosomeT + 'static>(
         ($t:ty) => {
             if let Some(ind) = (individual as &mut dyn Any).downcast_mut::<RangeChromosome<$t>>() {
                 return Some(polynomial::polynomial_mutation(ind, eta_m));
+            }
+        };
+    }
+    try_type!(f64);
+    try_type!(f32);
+    try_type!(i32);
+    try_type!(i64);
+    None
+}
+
+/// Attempt Cauchy mutation by downcasting a generic individual to `Range<T>`.
+///
+/// Tries `f64`, `f32`, `i32`, `i64` in order. Returns `Some(Ok(()))` if the type
+/// matched and mutation succeeded, `None` if no supported type matched.
+fn try_cauchy<U: ChromosomeT + 'static>(
+    individual: &mut U,
+    scale: f64,
+) -> Option<Result<(), GaError>> {
+    macro_rules! try_type {
+        ($t:ty) => {
+            if let Some(ind) = (individual as &mut dyn Any).downcast_mut::<RangeChromosome<$t>>() {
+                cauchy::cauchy_mutation(ind, scale);
+                return Some(Ok(()));
+            }
+        };
+    }
+    try_type!(f64);
+    try_type!(f32);
+    try_type!(i32);
+    try_type!(i64);
+    None
+}
+
+/// Attempt Lévy Flight mutation by downcasting a generic individual to `Range<T>`.
+///
+/// Tries `f64`, `f32`, `i32`, `i64` in order. Returns `Some(Ok(()))` if the type
+/// matched and mutation succeeded, `None` if no supported type matched.
+fn try_levy<U: ChromosomeT + 'static>(
+    individual: &mut U,
+    alpha: f64,
+) -> Option<Result<(), GaError>> {
+    macro_rules! try_type {
+        ($t:ty) => {
+            if let Some(ind) = (individual as &mut dyn Any).downcast_mut::<RangeChromosome<$t>>() {
+                levy_flight::levy_flight_mutation(ind, alpha);
+                return Some(Ok(()));
+            }
+        };
+    }
+    try_type!(f64);
+    try_type!(f32);
+    try_type!(i32);
+    try_type!(i64);
+    None
+}
+
+/// Attempt Uniform mutation by downcasting a generic individual to `Range<T>`.
+///
+/// Tries `f64`, `f32`, `i32`, `i64` in order. Returns `Some(Ok(()))` if the type
+/// matched and mutation succeeded, `None` if no supported type matched.
+fn try_uniform<U: ChromosomeT + 'static>(
+    individual: &mut U,
+) -> Option<Result<(), GaError>> {
+    macro_rules! try_type {
+        ($t:ty) => {
+            if let Some(ind) = (individual as &mut dyn Any).downcast_mut::<RangeChromosome<$t>>() {
+                uniform::uniform_mutation(ind);
+                return Some(Ok(()));
             }
         };
     }
@@ -163,6 +235,39 @@ impl MutationOperator for Mutation {
                 return insertion::insertion_mutation(individual);
             }
             Mutation::ListValue => individual.value_mutate(),
+            Mutation::Differential => {
+                return Err(GaError::MutationError(
+                    "Mutation::Differential requires population context. \
+                     It is applied automatically by the GA engine when configured — \
+                     do not call factory_with_params() directly.".to_string(),
+                ));
+            }
+            Mutation::Cauchy => {
+                let scale = step.unwrap_or(1.0);
+                return try_cauchy(individual, scale).unwrap_or_else(|| {
+                    Err(GaError::MutationError(
+                        "Cauchy mutation requires Range<T> chromosomes where T is f64, f32, i32, or i64."
+                            .to_string(),
+                    ))
+                });
+            }
+            Mutation::LevyFlight => {
+                let alpha = sigma.unwrap_or(1.5);
+                return try_levy(individual, alpha).unwrap_or_else(|| {
+                    Err(GaError::MutationError(
+                        "Lévy Flight mutation requires Range<T> chromosomes where T is f64, f32, i32, or i64."
+                            .to_string(),
+                    ))
+                });
+            }
+            Mutation::Uniform => {
+                return try_uniform(individual).unwrap_or_else(|| {
+                    Err(GaError::MutationError(
+                        "Uniform mutation requires Range<T> chromosomes where T is f64, f32, i32, or i64."
+                            .to_string(),
+                    ))
+                });
+            }
         }
         Ok(())
     }
@@ -192,8 +297,10 @@ where
 ///
 /// * `mutation` - The mutation variant to apply.
 /// * `individual` - Mutable reference to the chromosome to mutate.
-/// * `step` - Optional step size for Creep mutation.
-/// * `sigma` - Optional sigma for Gaussian mutation.
+/// * `step` - Step size for Creep mutation; **also used as the `scale` (γ) parameter
+///   for `Mutation::Cauchy`** (default 1.0 when `None`).
+/// * `sigma` - Sigma for Gaussian mutation; **also used as the stability index `α`
+///   for `Mutation::LevyFlight`** (default 1.5 when `None`).
 pub fn factory_with_params<U>(
     mutation: Mutation,
     individual: &mut U,
@@ -268,6 +375,23 @@ where
             "Mutation::ListValue requires a ListChromosome type. \
                  Use Swap, Inversion, or Scramble instead."
                 .to_string(),
+        )),
+        Mutation::Differential => Err(GaError::MutationError(
+            "Mutation::Differential requires Range<T> chromosomes and population context. \
+             Use Swap, Inversion, or Scramble instead.".to_string(),
+        )),
+        Mutation::Cauchy => Err(GaError::MutationError(
+            "Mutation::Cauchy requires Range<T> chromosomes where T is f64, f32, i32, or i64. \
+             Use Swap, Inversion, or Scramble for non-Range chromosomes."
+                .to_string(),
+        )),
+        Mutation::LevyFlight => Err(GaError::MutationError(
+            "Mutation::LevyFlight requires Range<T> chromosomes where T is f64, f32, i32, or i64. \
+             Use Swap, Inversion, or Scramble for non-Range chromosomes.".to_string(),
+        )),
+        Mutation::Uniform => Err(GaError::MutationError(
+            "Mutation::Uniform requires Range<T> chromosomes where T is f64, f32, i32, or i64. \
+             Use Swap, Inversion, or Scramble for non-Range chromosomes.".to_string(),
         )),
     }
 }

@@ -6,6 +6,7 @@
 //! single supertrait.
 
 use crate::configuration::{LogLevel, ProblemSolving, StoppingCriteria};
+use crate::configuration::LocalSearchConfiguration;
 use crate::operations::{Crossover, Extension, Mutation, Selection, Survivor};
 
 /// Configuration for parent selection.
@@ -14,6 +15,11 @@ pub trait SelectionConfig {
     fn with_number_of_couples(self, number_of_couples: usize) -> Self;
     /// Sets the selection strategy (e.g., tournament, roulette wheel).
     fn with_selection_method(self, selection_method: Selection) -> Self;
+    /// Sets the niche radius for [`Selection::Clearing`] (fitness-space distance).
+    ///
+    /// Individuals within `niche_radius` of a niche winner are cleared from
+    /// the mating pool each generation. Default is `0.1`.
+    fn with_niche_radius(self, niche_radius: f64) -> Self;
 }
 
 /// Configuration for crossover operators.
@@ -50,6 +56,19 @@ pub trait MutationConfig {
     fn with_mutation_target_cardinality(self, target: f64) -> Self;
     /// Sets the probability step size for dynamic mutation adjustment.
     fn with_mutation_probability_step(self, step: f64) -> Self;
+    /// Sets the F scale factor for Differential mutation (DE-style).
+    /// Typical range: 0.4–1.0. Default is 0.5 when not set.
+    fn with_differential_f(self, f: f64) -> Self;
+    /// Sets the distribution index (η_m) for Polynomial mutation.
+    /// Higher values produce smaller perturbations. Typical range: 20–100. Default is 20.0.
+    /// Only used when the mutation method is `Mutation::Polynomial`.
+    fn with_polynomial_eta(self, eta: f64) -> Self;
+    /// Sets the scale parameter (γ) for Cauchy mutation. Default is 1.0.
+    /// Only used when the mutation method is `Mutation::Cauchy`.
+    fn with_cauchy_scale(self, scale: f64) -> Self;
+    /// Sets the stability index (α) for Lévy Flight mutation. Valid range: (0.0, 2.0). Default is 1.5.
+    /// Only used when the mutation method is `Mutation::LevyFlight`.
+    fn with_levy_alpha(self, alpha: f64) -> Self;
 }
 
 /// Configuration for stopping / termination criteria.
@@ -94,6 +113,16 @@ pub trait ExtensionConfig {
     fn with_extension_elite_count(self, count: usize) -> Self;
 }
 
+/// Configuration for local search / memetic algorithm refinement.
+pub trait LocalSearchConfig {
+    /// Configures the local search operator and application strategy.
+    ///
+    /// When configured, the local search operator refines selected offspring
+    /// after crossover+mutation+fitness and after repair/constraints, before
+    /// population merge and survivor selection.
+    fn with_local_search_configuration(self, config: LocalSearchConfiguration) -> Self;
+}
+
 /// Full GA configuration supertrait.
 ///
 /// Combines all focused sub-traits (`SelectionConfig`, `CrossoverConfig`,
@@ -107,6 +136,7 @@ pub trait ConfigurationT:
     + NichingConfig
     + ElitismConfig
     + ExtensionConfig
+    + LocalSearchConfig
 {
     /// Creates a new instance with default configuration values.
     fn new() -> Self;
@@ -145,4 +175,19 @@ pub trait ConfigurationT:
     ///
     /// Two runs with the same seed (and thread count) produce identical results.
     fn with_rng_seed(self, seed: u64) -> Self;
+
+    // --- Adaptive Operator Selection (AOS) configuration ---
+
+    /// Sets a crossover operator portfolio for AOS.
+    /// When configured, AOS selects among these operators dynamically
+    /// instead of using the single crossover configured via with_crossover_method().
+    fn with_crossover_portfolio(self, portfolio: Vec<Crossover>) -> Self;
+    /// Sets a mutation operator portfolio for AOS.
+    fn with_mutation_portfolio(self, portfolio: Vec<Mutation>) -> Self;
+    /// Sets the AOS strategy for portfolio selection.
+    /// Default: AosStrategy::ProbabilityMatching with literature-standard parameters.
+    fn with_aos_strategy(self, strategy: crate::aos::AosStrategy) -> Self;
+    /// Sets the sliding window size for AOS reward history (default: 50).
+    /// The exploration phase lasts window_size / 2 generations.
+    fn with_reward_window(self, window: usize) -> Self;
 }

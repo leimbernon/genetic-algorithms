@@ -1,10 +1,22 @@
-//! Error types for the genetic algorithm library.
+//! Error — GaError enum and Result type alias for the crate.
 //!
 //! All fallible operations in this crate return [`GaError`], a single enum
 //! that covers configuration mistakes, operator failures, initialization
 //! problems, and I/O issues (checkpoints). It implements [`std::error::Error`]
 //! and [`std::fmt::Display`] for seamless integration with the `?` operator
 //! and error-reporting crates.
+//!
+//! # Key items
+//!
+//! | Item | Description |
+//! |------|-------------|
+//! | [`GaError`] | Unified error enum covering all crate failure modes |
+//! | `GaResult<T>` | Alias for `Result<T, GaError>` |
+//!
+//! # When to use
+//! All engine methods and operator calls return `GaResult<T>`. Match on
+//! [`GaError`] variants to handle specific failure modes in application
+//! code.
 
 use std::fmt;
 
@@ -33,10 +45,26 @@ pub enum GaError {
     InvalidNichingConfiguration(String),
     /// An NSGA-II configuration parameter is invalid.
     InvalidNsga2Configuration(String),
+    /// An NSGA-III configuration parameter is invalid.
+    InvalidNsga3Configuration(String),
+    /// A MOEA/D configuration parameter is invalid.
+    InvalidMoeaDConfiguration(String),
+    /// A SPEA2 configuration parameter is invalid.
+    InvalidSpea2Configuration(String),
+    /// An SMS-EMOA configuration parameter is invalid.
+    InvalidSmsEmoaConfiguration(String),
+    /// An IBEA configuration parameter is invalid.
+    InvalidIbeaConfiguration(String),
+    /// A constraint processing configuration parameter is invalid.
+    InvalidConstraintConfiguration(String),
+    /// An indicator configuration parameter is invalid.
+    InvalidIndicatorConfiguration(String),
     /// A migration operation between islands failed.
     MigrationError(String),
     /// A checkpoint save or load operation failed.
     CheckpointError(String),
+    /// A local search operation failed.
+    LocalSearchError(String),
 }
 
 impl fmt::Display for GaError {
@@ -57,8 +85,30 @@ impl fmt::Display for GaError {
             GaError::InvalidNsga2Configuration(msg) => {
                 write!(f, "Invalid NSGA-II configuration: {}", msg)
             }
+            GaError::InvalidNsga3Configuration(msg) => {
+                write!(f, "Invalid NSGA-III configuration: {}", msg)
+            }
+            GaError::InvalidMoeaDConfiguration(msg) => {
+                write!(f, "Invalid MOEA/D configuration: {}", msg)
+            }
+            GaError::InvalidSpea2Configuration(msg) => {
+                write!(f, "Invalid SPEA2 configuration: {}", msg)
+            }
+            GaError::InvalidSmsEmoaConfiguration(msg) => {
+                write!(f, "Invalid SMS-EMOA configuration: {}", msg)
+            }
+            GaError::InvalidIbeaConfiguration(msg) => {
+                write!(f, "Invalid IBEA configuration: {}", msg)
+            }
+            GaError::InvalidConstraintConfiguration(msg) => {
+                write!(f, "Invalid constraint configuration: {}", msg)
+            }
+            GaError::InvalidIndicatorConfiguration(msg) => {
+                write!(f, "Invalid indicator configuration: {}", msg)
+            }
             GaError::MigrationError(msg) => write!(f, "Migration error: {}", msg),
             GaError::CheckpointError(msg) => write!(f, "Checkpoint error: {}", msg),
+            GaError::LocalSearchError(msg) => write!(f, "Local search error: {}", msg),
         }
     }
 }

@@ -122,7 +122,7 @@ async function analyzeArchitecture(
 ): Promise<ArchitecturePlan> {
   const systemPrompt = loadPrompt("architect");
   const agentInstructions = readFileSafe(
-    join(REPO_ROOT, "AGENT_INSTRUCTIONS.md"),
+    join(REPO_ROOT, "AGENTS.md"),
   );
 
   // Get the project file tree

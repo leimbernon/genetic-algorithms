@@ -11,6 +11,7 @@ use crate::error::GaError;
 use crate::traits::{ChromosomeT, SelectionOperator};
 
 pub use self::boltzmann::boltzmann_selection;
+pub use self::clearing::clearing_selection;
 pub use self::fitness_proportionate::roulette_wheel_selection;
 pub use self::fitness_proportionate::stochastic_universal_sampling;
 pub use self::random::random;
@@ -21,6 +22,7 @@ pub use self::truncation::truncation_selection;
 use super::Selection;
 
 pub mod boltzmann;
+pub mod clearing;
 pub mod fitness_proportionate;
 pub mod random;
 pub mod rank;
@@ -47,6 +49,18 @@ impl SelectionOperator for Selection {
             Selection::Rank => rank_selection(chromosomes, number_of_couples),
             Selection::Boltzmann => boltzmann_selection(chromosomes, number_of_couples, 1.0),
             Selection::Truncation => truncation_selection(chromosomes, number_of_couples),
+            // WARNING: The `SelectionOperator` trait does not carry operator-specific
+            // configuration, so `niche_radius` defaults to 0.1 on this path.
+            // Island-model and NSGA-II callers that use `Selection::Clearing` with
+            // a custom `niche_radius` must go through `selection::factory` instead.
+            // The single-population GA always uses the factory path and is unaffected.
+            Selection::Clearing => {
+                log::warn!(target: "selection_events",
+                    "Selection::Clearing called through SelectionOperator trait: \
+                     niche_radius defaults to 0.1 (configured value ignored). \
+                     Use selection::factory for the full configuration.");
+                clearing_selection(chromosomes, 0.1, number_of_couples)
+            }
         }
     }
 }
@@ -87,6 +101,11 @@ where
             chromosomes,
             configuration.number_of_couples,
             configuration.boltzmann_temperature,
+        ),
+        Selection::Clearing => clearing_selection(
+            chromosomes,
+            configuration.niche_radius,
+            configuration.number_of_couples,
         ),
         _ => configuration.method.select(
             chromosomes,

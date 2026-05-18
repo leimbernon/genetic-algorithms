@@ -2218,3 +2218,42 @@ fn test_ga_stats_diversity_populated() {
         "At least one generation should have non-zero diversity"
     );
 }
+
+// ============================================================================
+// Phase 45 — Memetic Algorithm: LocalSearchConfiguration serde roundtrip
+// ============================================================================
+
+#[cfg(feature = "serde")]
+#[test]
+fn test_local_search_configuration_serde_roundtrip() -> Result<(), Box<dyn std::error::Error>> {
+    use genetic_algorithms::configuration::LocalSearchConfiguration;
+    use genetic_algorithms::operations::local_search::{
+        HillClimbingConfig, LocalSearch, LocalSearchApplicationStrategy, LocalSearchMode,
+    };
+
+    let config = LocalSearchConfiguration {
+        method: LocalSearch::HillClimbing,
+        application_strategy: LocalSearchApplicationStrategy::BestN { n: 5 },
+        mode: LocalSearchMode::Baldwinian,
+        hill_climbing: HillClimbingConfig {
+            step_size: 0.05,
+            max_iterations: 10,
+        },
+    };
+
+    let serialized = serde_json::to_string(&config)?;
+    let deserialized: LocalSearchConfiguration = serde_json::from_str(&serialized)?;
+
+    assert_eq!(config.method, deserialized.method);
+    assert_eq!(config.application_strategy, deserialized.application_strategy);
+    assert_eq!(config.mode, deserialized.mode);
+    assert_eq!(config.hill_climbing.step_size, deserialized.hill_climbing.step_size);
+    assert_eq!(config.hill_climbing.max_iterations, deserialized.hill_climbing.max_iterations);
+
+    // Verify serialized string contains key fields
+    assert!(serialized.contains("HillClimbing"));
+    assert!(serialized.contains("BestN"));
+    assert!(serialized.contains("Baldwinian"));
+
+    Ok(())
+}

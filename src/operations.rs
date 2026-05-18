@@ -1,15 +1,40 @@
-//! Genetic operators: selection, crossover, mutation, and survivor selection.
+//! Operations — operator enums, factory dispatchers, and runtime selection.
 //!
-//! Each sub-module contains the operator implementations and a `factory`
-//! function that dispatches to the correct variant at runtime based on the
-//! configuration enums defined here ([`Selection`], [`Crossover`],
-//! [`Mutation`], [`Survivor`]).
+//! Provides runtime-selectable genetic operators across five categories:
+//! Selection, Crossover, Mutation, Survivor, and Extension. Each operator
+//! follows the enum + factory function pattern for runtime dispatch, defined
+//! by the enums in this module and implemented in the sub-modules.
+//!
+//! All operators are dispatched via the configuration system: you select an
+//! operator variant in the builder (e.g., `with_selection_method(Selection::Tournament)`)
+//! and the factory function constructs the appropriate implementation.
+//!
+//! # Key items
+//!
+//! | Item | Description |
+//! |------|-------------|
+//! | [`Selection`] | Selection operator enum (Tournament, RouletteWheel, SUS, Rank, Boltzmann, Truncation, Clearing, Random) |
+//! | [`Crossover`] | Crossover operator enum (Cycle, MultiPoint, Uniform, SinglePoint, Order, PMX, SBX, BlendAlpha, Arithmetic, Edge, Clone, Rejuvenate) |
+//! | [`Mutation`] | Mutation operator enum (Swap, Inversion, Scramble, Value, BitFlip, Creep, Gaussian, Polynomial, NonUniform, Insertion, Cauchy, LevyFlight, Uniform, ListValue) |
+//! | [`Survivor`] | Survivor operator enum (Fitness, Age, MuPlusLambda, MuCommaLambda, DeterministicCrowding) |
+//! | [`Extension`] | Extension strategy enum (Noop, MassExtinction, MassGenesis, MassDegeneration, MassDeduplication) |
+//!
+//! # When to use
+//! Configure operators via the builder methods on your engine of choice. Custom
+//! operators can be implemented by implementing the corresponding operator trait
+//! `SelectionOperator`, `CrossoverOperator`, etc.) in the [`traits`](crate::traits) module.
 
 pub mod crossover;
 pub mod extension;
+pub mod local_search;
 pub mod mutation;
 pub mod selection;
 pub mod survivor;
+
+pub use local_search::{
+    factory, factory_with_config, HillClimbingConfig, LocalSearch,
+    LocalSearchApplicationStrategy, LocalSearchMode,
+};
 
 /// Parent-selection strategies.
 ///
@@ -36,6 +61,12 @@ pub enum Selection {
     /// Truncation selection: only the top portion of the population is eligible
     /// for reproduction, providing very high selective pressure.
     Truncation,
+    /// Clearing selection: identifies niche winners (the best individual within
+    /// `niche_radius` in fitness space) and removes all other individuals in each
+    /// niche from the selection pool. Eligible individuals are then paired randomly.
+    /// Promotes population diversity by preventing niche domination.
+    /// Configure `niche_radius` via the selection configuration.
+    Clearing,
 }
 
 /// Crossover (recombination) strategies.
@@ -73,6 +104,10 @@ pub enum Crossover {
     /// Useful for combating population aging: top performers are preserved but treated as new
     /// individuals, preventing age-based survivor selection from eliminating them.
     Rejuvenate,
+    /// Edge Recombination Crossover for permutation chromosomes (TSP, scheduling).
+    /// Builds a union adjacency list from both parents and constructs offspring that
+    /// preserve adjacency relationships found in either parent. Requires unique gene IDs.
+    EdgeRecombination,
 }
 
 /// Mutation strategies.
@@ -110,6 +145,30 @@ pub enum Mutation {
     /// List-value mutation — replaces a single gene's value with a different allele
     /// from that gene's allele set. Requires a `ListChromosome<T>`.
     ListValue,
+    /// DE-style differential mutation for `Range<T>` chromosomes.
+    /// Computes mutant vector as `x_r1 + F * (x_r2 - x_r3)` from three distinct
+    /// random population members (all distinct from the target), clamped to gene
+    /// ranges. Configure F via `MutationConfiguration::differential_f` (default 0.5).
+    /// Requires `population_size >= 4`. Applied automatically by the standard GA
+    /// engine — do not call `factory_with_params` for this variant.
+    Differential,
+    /// Cauchy (Lorentzian) perturbation for `Range<T>` chromosomes.
+    /// Uses the inverse-CDF method: `noise = scale * tan(π * (u - 0.5))`, where `u ~ Uniform(0, 1)`.
+    /// Configure scale via [`crate::configuration::MutationConfiguration::cauchy_scale`]
+    /// or the [`crate::traits::MutationConfig::with_cauchy_scale`] builder. Default scale: `1.0`.
+    /// Returns `GaError::MutationError` for non-`Range<T>` chromosomes (Binary, List).
+    Cauchy,
+    /// Lévy Flight mutation for `Range<T>` chromosomes (Mantegna's algorithm).
+    /// Generates heavy-tailed steps via `step = σ_u * u / |v|^(1/α)`.
+    /// Configure the stability index (α) via [`crate::configuration::MutationConfiguration::levy_alpha`]
+    /// or [`crate::traits::MutationConfig::with_levy_alpha`]. Valid range: (0.0, 2.0). Default α: `1.5`.
+    /// Returns `GaError::MutationError` for non-`Range<T>` chromosomes.
+    LevyFlight,
+    /// Uniform reset mutation for `Range<T>` chromosomes.
+    /// Resets a single randomly chosen gene to a uniform sample within its declared range.
+    /// Equivalent to gene re-initialization. No configuration parameters required.
+    /// Returns `GaError::MutationError` for non-`Range<T>` chromosomes.
+    Uniform,
 }
 
 /// Survivor-selection strategies.
@@ -127,6 +186,11 @@ pub enum Survivor {
     MuPlusLambda,
     /// (mu,lambda) strategy: only offspring (age == 0) are eligible for survival.
     MuCommaLambda,
+    /// Deterministic Crowding: each offspring (identified by `age() == 0`) is
+    /// paired with its most similar parent (lowest Hamming distance on gene IDs),
+    /// and the fitter of the two survives. Unpaired offspring survive unconditionally.
+    /// Promotes population diversity by replacing similar individuals.
+    DeterministicCrowding,
 }
 
 /// Extension strategies for population diversity control.

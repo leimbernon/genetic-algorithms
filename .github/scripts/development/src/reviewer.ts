@@ -66,7 +66,7 @@ export async function reviewCode(
 
   // Load reference files
   const agentInstructions = readFileSafe(
-    resolve(REPO_ROOT, "AGENT_INSTRUCTIONS.md"),
+    resolve(REPO_ROOT, "AGENTS.md"),
   );
 
   const userPrompt = `## Code Review Request

@@ -4,7 +4,7 @@
 
 ## Overview
 
-Selection operators determine which individuals from a population are chosen as parents for crossover in a genetic algorithm. The choice of selection method can significantly affect the convergence speed and diversity of solutions. This module provides several widely-used selection strategies: tournament selection, fitness-proportionate (roulette wheel and stochastic universal sampling), rank-based selection, and random selection.
+Selection operators determine which individuals from a population are chosen as parents for crossover in a genetic algorithm. The choice of selection method can significantly affect the convergence speed and diversity of solutions. This module provides several widely-used selection strategies: tournament selection, fitness-proportionate (roulette wheel and stochastic universal sampling), rank-based selection, Boltzmann selection, truncation selection, and clearing selection.
 
 Each selection operator has its own configuration options and trade-offs. For example, tournament selection allows you to control selection pressure via the tournament size, while fitness-proportionate methods rely on the fitness values assigned to each chromosome. Selection is a critical step in the genetic algorithm cycle, as it balances exploration and exploitation of the search space.
 
@@ -12,171 +12,158 @@ These operators are designed to work with any chromosome type that implements th
 
 Selection operators are typically configured as part of the genetic algorithm setup and invoked automatically during each generation. Advanced users may also call them directly for custom workflows.
 
-## Key Concepts
+## Available Operators
 
-Selection operators work on slices of chromosomes and return pairs of parent indices. Chromosomes must implement the `ChromosomeT` trait, which provides access to fitness values.
+The following `Selection` enum variants are available, dispatched via the `factory` function:
 
-| Operator                        | Description                                                      | Key Parameters           |
-|----------------------------------|------------------------------------------------------------------|--------------------------|
-| `tournament`                    | Selects parents via tournaments of random individuals            | `tournament_size: usize` |
-| `roulette_wheel_selection`       | Probability proportional to fitness                              | —                        |
-| `stochastic_universal_sampling`  | Evenly spaced sampling proportional to fitness                   | —                        |
-| `rank_selection`                 | Probability proportional to rank in sorted population            | —                        |
-| `random`                        | Selects parents uniformly at random                              | —                        |
-| `factory`                       | Dispatches selection based on configuration                      | method, parameters       |
+| Variant | Description | Key Parameters |
+|---------|-------------|----------------|
+| `Random` | Uniform random selection — every individual has equal probability | — |
+| `RouletteWheel` | Fitness-proportionate selection | — |
+| `StochasticUniversalSampling` | Evenly spaced sampling proportional to fitness | — |
+| `Tournament` | Pairwise tournament — two or more individuals compete and the fitter wins | `tournament_size: usize` |
+| `Rank` | Probability proportional to rank in sorted population | — |
+| `Boltzmann` | Temperature-controlled selection pressure | Temperature parameter |
+| `Truncation` | Only the top portion of the population is eligible | Truncation threshold |
+| `Clearing` | Niche-based diversity preservation | `niche_radius: f64` |
 
 ### Chromosome Trait Requirements
 
-| Trait         | Required Methods                | Description                                |
-|---------------|-------------------------------|--------------------------------------------|
-| `ChromosomeT` | `fn fitness(&self) -> f64`     | Provides fitness value for selection        |
+| Trait | Required Methods | Description |
+|-------|-----------------|-------------|
+| `ChromosomeT` | `fn fitness(&self) -> f64` | Provides fitness value for selection |
 
 ### Error Handling
 
-| Error Type               | Description                                         |
-|--------------------------|-----------------------------------------------------|
-| `GaError::SelectionError`| Returned if population is too small for selection   |
+| Error Type | Description |
+|------------|-------------|
+| `GaError::SelectionError` | Returned if population is too small for selection |
 
 ## Usage
 
 ### Basic Example
 
 ```rust
-use ga_lib::chromosomes::BinaryChromosome;
-use ga_lib::operators::selection::tournament;
+use genetic_algorithms::chromosomes::Binary;
+use genetic_algorithms::operations::Selection;
+use genetic_algorithms::traits::ChromosomeT;
 
-// Assume BinaryChromosome implements ChromosomeT and has fitness values set
-let population: Vec<BinaryChromosome> = /* ... */;
-let tournament_size = 3;
-let parent_pairs = tournament(&population, tournament_size);
-// parent_pairs: Vec<(usize, usize)> of selected parent indices
+// Selection is configured via the Selection enum, dispatched at runtime
+let selection_method = Selection::Tournament;
+// The GA builder applies selection automatically:
+//     .with_selection_method(selection_method)
 ```
 
-### Advanced Example
+### Configuration via Builder
 
 ```rust
-use ga_lib::chromosomes::RangeChromosome;
-use ga_lib::operators::selection::{factory, SelectionMethod};
-use ga_lib::error::GaError;
+use genetic_algorithms::ga::Ga;
+use genetic_algorithms::chromosomes::Range;
+use genetic_algorithms::genotypes::Range as RangeGenotype;
+use genetic_algorithms::initializers::range_random_initialization;
+use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+use genetic_algorithms::configuration::ProblemSolving;
+use genetic_algorithms::traits::{
+    ChromosomeT, ConfigurationT, SelectionConfig, CrossoverConfig,
+    MutationConfig, StoppingConfig,
+};
 
-// Prepare a population with fitness values
-let population: Vec<RangeChromosome> = /* ... */;
-
-// Configure selection method and parameters
-let selection_method = SelectionMethod::Tournament { size: 4 };
-
-// Use the factory to select parents, handling possible errors
-match factory(&population, selection_method) {
-    Ok(parent_pairs) => {
-        // Proceed with crossover using parent_pairs
-    }
-    Err(GaError::SelectionError) => {
-        eprintln!("Population too small for selection");
-    }
-    _ => unreachable!(),
-}
+let mut ga: Ga<Range<f64>> = Ga::new()
+    .with_selection_method(Selection::Tournament)
+    .with_tournament_size(4)
+    .with_population_size(100)
+    .with_genes_per_chromosome(10)
+    .with_initialization_fn(range_random_initialization)
+    .with_fitness_fn(|dna| dna.iter().map(|g| g.value).sum())
+    .with_crossover_method(Crossover::Uniform)
+    .with_mutation_method(Mutation::Gaussian)
+    .with_survivor_method(Survivor::Fitness)
+    .with_problem_solving(ProblemSolving::Minimization)
+    .with_max_generations(500)
+    .build()
+    .expect("valid config");
 ```
 
-## API Reference
+## Operator Details
 
-### `tournament`
+### Tournament
 
-Selects parent pairs using tournament selection.
+Selects parent pairs via tournament competition. The fitter individual in each tournament wins, and tournament winners are then randomly paired.
 
-**Signature:**
+Configure via `Selection::Tournament` and the `with_tournament_size(size)` builder method. Larger tournament sizes increase selection pressure (faster convergence, lower diversity).
+
+**Signature (via factory):**
 ```rust
-pub fn tournament<U: ChromosomeT>(chromosomes: &[U], tournament_size: usize) -> Vec<(usize, usize)>
+Selection::Tournament  // dispatches to tournament(chromosomes, tournament_size, threads)
 ```
 
-**Parameters:**
-
-| Name             | Type           | Description                                      |
-|------------------|----------------|--------------------------------------------------|
-| `chromosomes`    | `&[U]`         | Slice of chromosomes implementing `ChromosomeT`  |
-| `tournament_size`| `usize`        | Number of individuals per tournament             |
-
-**Returns:**  
-`Vec<(usize, usize)>` — Indices of selected parent pairs.
+**Configuration:**
+| Method | Description |
+|--------|-------------|
+| `with_tournament_size(usize)` | Number of individuals per tournament (default: 3) |
 
 ---
 
-### `roulette_wheel_selection`
+### Roulette Wheel
 
-Selects parent pairs with probability proportional to fitness.
+Fitness-proportionate selection. Each individual's selection probability is proportional to its fitness. Handles negative fitness values through shift-normalization.
 
-**Signature:**
-```rust
-pub fn roulette_wheel_selection<U: ChromosomeT>(chromosomes: &[U]) -> Vec<(usize, usize)>
-```
-
-**Parameters:**
-
-| Name          | Type           | Description                                      |
-|---------------|----------------|--------------------------------------------------|
-| `chromosomes` | `&[U]`         | Slice of chromosomes implementing `ChromosomeT`  |
-
-**Returns:**  
-`Vec<(usize, usize)>` — Indices of selected parent pairs.
+Configure via `Selection::RouletteWheel`. No additional parameters.
 
 ---
 
-### `stochastic_universal_sampling`
+### Stochastic Universal Sampling
 
-Selects parent pairs using evenly spaced sampling proportional to fitness.
+Like roulette wheel but uses evenly spaced pointers for lower variance. All parents are selected in a single pass with equally spaced selection points.
 
-**Signature:**
-```rust
-pub fn stochastic_universal_sampling<U: ChromosomeT>(chromosomes: &[U]) -> Vec<(usize, usize)>
-```
-
-**Parameters:**
-
-| Name          | Type           | Description                                      |
-|---------------|----------------|--------------------------------------------------|
-| `chromosomes` | `&[U]`         | Slice of chromosomes implementing `ChromosomeT`  |
-
-**Returns:**  
-`Vec<(usize, usize)>` — Indices of selected parent pairs.
+Configure via `Selection::StochasticUniversalSampling`. No additional parameters.
 
 ---
 
-### `rank_selection`
+### Rank
 
-Selects parent pairs with probability proportional to rank in the population.
+Probability is proportional to rank rather than absolute fitness. Reduces the dominance of very fit individuals and maintains selection pressure when the population converges.
 
-**Signature:**
-```rust
-pub fn rank_selection<U: ChromosomeT>(chromosomes: &[U]) -> Vec<(usize, usize)>
-```
-
-**Parameters:**
-
-| Name          | Type           | Description                                      |
-|---------------|----------------|--------------------------------------------------|
-| `chromosomes` | `&[U]`         | Slice of chromosomes implementing `ChromosomeT`  |
-
-**Returns:**  
-`Vec<(usize, usize)>` — Indices of selected parent pairs.
+Configure via `Selection::Rank`. No additional parameters.
 
 ---
 
-### `random`
+### Boltzmann
 
-Selects parent pairs uniformly at random.
+Temperature-controlled selection pressure. High temperature produces near-uniform selection (exploration); low temperature produces high selective pressure (exploitation). The temperature parameter controls the transition.
 
-**Signature:**
+Configure via `Selection::Boltzmann`. Requires a temperature parameter in the selection configuration.
+
+---
+
+### Truncation
+
+Only the top portion of the population (by fitness) is eligible for reproduction. The threshold determines what fraction of the population is kept.
+
+Configure via `Selection::Truncation`. Requires a truncation threshold parameter.
+
+---
+
+### Clearing
+
+Promotes population diversity by grouping individuals by niche radius. The best individual in each niche is preserved as the niche winner; all other individuals within that niche's radius are cleared (removed from the selection pool). Remaining eligible individuals are then paired randomly.
+
+This prevents a single high-fitness region from dominating the mating pool, encouraging exploration of multiple fitness peaks.
+
+**Configuration:**
+- `niche_radius: f64` — Individuals within this distance in fitness space are considered part of the same niche. Smaller radii preserve more niches.
+
+**Enum variant:** `Selection::Clearing`
+
+**Builder configuration:**
 ```rust
-pub fn random<U: ChromosomeT>(chromosomes: &[U]) -> Vec<(usize, usize)>
+.with_selection_method(Selection::Clearing)
+.with_niche_radius(0.1)
 ```
 
-**Parameters:**
+**When to use:** Multimodal problems, niching, maintaining population diversity across multiple fitness peaks.
 
-| Name          | Type           | Description                                      |
-|---------------|----------------|--------------------------------------------------|
-| `chromosomes` | `&[U]`         | Slice of chromosomes implementing `ChromosomeT`  |
-
-**Returns:**  
-`Vec<(usize, usize)>` — Indices of selected parent pairs.
+**Added in:** v2.4.0
 
 ---
 
@@ -188,18 +175,18 @@ Dispatches parent selection according to the configured method.
 ```rust
 pub fn factory<U: ChromosomeT>(
     chromosomes: &[U],
-    method: SelectionMethod
+    method: &SelectionConfiguration,
 ) -> Result<Vec<(usize, usize)>, GaError>
 ```
 
 **Parameters:**
 
-| Name          | Type                | Description                                      |
-|---------------|---------------------|--------------------------------------------------|
-| `chromosomes` | `&[U]`              | Slice of chromosomes implementing `ChromosomeT`  |
-| `method`      | `SelectionMethod`   | Enum specifying the selection strategy and options|
+| Name | Type | Description |
+|------|------|-------------|
+| `chromosomes` | `&[U]` | Slice of chromosomes implementing `ChromosomeT` |
+| `method` | `&SelectionConfiguration` | Configuration specifying the selection strategy and options |
 
-**Returns:**  
+**Returns:**
 `Result<Vec<(usize, usize)>, GaError>` — Ok with parent pairs, or Err if selection fails.
 
 **Errors:**
@@ -208,17 +195,20 @@ pub fn factory<U: ChromosomeT>(
 
 ---
 
-### `SelectionMethod` (enum)
+### `Selection` (enum)
 
 Specifies the selection strategy and configuration.
 
-| Variant                      | Parameters           | Description                                  |
-|------------------------------|---------------------|----------------------------------------------|
-| `Tournament { size }`        | `size: usize`       | Tournament selection with given size         |
-| `RouletteWheel`              | —                   | Fitness-proportionate selection              |
-| `StochasticUniversal`        | —                   | Stochastic universal sampling                |
-| `Rank`                       | —                   | Rank-based selection                         |
-| `Random`                     | —                   | Uniform random selection                     |
+| Variant | Parameters | Description |
+|---------|-----------|-------------|
+| `Random` | — | Uniform random selection |
+| `RouletteWheel` | — | Fitness-proportionate selection |
+| `StochasticUniversalSampling` | — | Stochastic universal sampling |
+| `Tournament` | — | Tournament selection (size via `SelectionConfiguration`) |
+| `Rank` | — | Rank-based selection |
+| `Boltzmann` | — | Boltzmann selection (temperature via `SelectionConfiguration`) |
+| `Truncation` | — | Truncation selection (threshold via `SelectionConfiguration`) |
+| `Clearing` | — | Clearing selection (niche_radius via `SelectionConfiguration`) |
 
 ## Related
 
@@ -226,8 +216,5 @@ Specifies the selection strategy and configuration.
 - [operators/mutation.md](./mutation.md)
 - [chromosomes.md](../chromosomes.md)
 - [traits.md](../traits.md)
-- [src/operations/selection.rs](../../src/operations/selection.rs)
-- [src/operations/selection/tournament.rs](../../src/operations/selection/tournament.rs)
-- [src/operations/selection/fitness_proportionate.rs](../../src/operations/selection/fitness_proportionate.rs)
-- [src/operations/selection/rank.rs](../../src/operations/selection/rank.rs)
-- [src/operations/selection/random.rs](../../src/operations/selection/random.rs)
+- [engines.md](../engines.md)
+- [src/operations/selection/](../../src/operations/selection/)

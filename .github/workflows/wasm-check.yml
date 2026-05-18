@@ -1,0 +1,32 @@
+name: wasm32 compile check
+
+on:
+  push:
+    branches: [main, "milestone/**", "feat/**", "fix/**"]
+  pull_request:
+    branches: [main, "milestone/**"]
+
+jobs:
+  wasm-check:
+    name: cargo check (wasm32-unknown-unknown)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install stable toolchain with wasm32 target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache cargo registry and target
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: wasm32-unknown-unknown
+
+      - name: cargo check (default features)
+        run: cargo check --target wasm32-unknown-unknown --lib
+
+      - name: cargo check (serde feature)
+        run: cargo check --target wasm32-unknown-unknown --lib --features serde

@@ -1,24 +1,46 @@
-//! GA configuration types.
+//! Configuration — builder-based GA configuration types.
 //!
 //! This module defines the configuration structs used to parameterize every
 //! aspect of the genetic algorithm: problem type, operator settings, stopping
-//! criteria, logging, checkpointing, and more.
+//! criteria, logging, checkpointing, and more. The central type is
+//! [`GaConfiguration`], which composes all sub-configs into a validated
+//! configuration object.
 //!
 //! Most users interact with these types through the builder methods on [`Ga`]
 //! (via the [`ConfigurationT`], [`SelectionConfig`], [`CrossoverConfig`], and
 //! [`MutationConfig`] traits) rather than constructing them directly.
 //!
+//! # Key items
+//!
+//! | Item | Description |
+//! |------|-------------|
+//! | [`GaConfiguration`] | Master configuration struct for the standard GA engine |
+//! | [`ProblemSolving`] | Enum: Minimization or Maximization |
+//! | [`CrossoverConfig`] | Validated crossover operator parameters |
+//! | [`SelectionConfig`] | Validated selection operator parameters |
+//! | [`MutationConfig`] | Validated mutation operator parameters |
+//! | `SurvivorConfig` | Validated survivor operator parameters |
+//!
+//! # When to use
+//! The configuration is created automatically when you call `.build()` on an
+//! engine builder. Direct construction is only needed when inspecting or
+//! serializing the configuration.
+//!
 //! [`Ga`]: crate::ga::Ga
+//! [`ConfigurationT`]: crate::traits::ConfigurationT
 
 use std::fmt;
 
 use crate::extension::configuration::ExtensionConfiguration;
 use crate::niching::configuration::NichingConfiguration;
+use crate::operations::local_search::{
+    HillClimbingConfig, LocalSearch, LocalSearchApplicationStrategy, LocalSearchMode,
+};
 use crate::{
     operations::{Crossover, Extension, Mutation, Selection, Survivor},
     traits::{
-        ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, MutationConfig,
-        NichingConfig, SelectionConfig, StoppingConfig,
+        ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, LocalSearchConfig,
+        MutationConfig, NichingConfig, SelectionConfig, StoppingConfig,
     },
 };
 
@@ -79,6 +101,11 @@ pub struct SelectionConfiguration {
     /// high values → uniform selection, low values → strong selective pressure.
     /// Only used when `method` is `Selection::Boltzmann`. Default is `1.0`.
     pub boltzmann_temperature: f64,
+    /// Niche radius for Clearing selection, measured in fitness space (`|f_a - f_b|`).
+    /// Within each niche (defined by the best individual in that radius), all other
+    /// individuals are cleared from the selection pool. Default is `0.1`.
+    /// Only used when `method` is `Selection::Clearing`.
+    pub niche_radius: f64,
 }
 impl Default for SelectionConfiguration {
     fn default() -> Self {
@@ -86,6 +113,7 @@ impl Default for SelectionConfiguration {
             number_of_couples: 0,
             method: Selection::Tournament,
             boltzmann_temperature: 1.0,
+            niche_radius: 0.1,
         }
     }
 }
@@ -147,6 +175,16 @@ pub struct MutationConfiguration {
     /// Decay parameter for NonUniform mutation. Controls how fast mutation
     /// magnitude decreases over generations. Typical range: 2–5. Default is 2.0.
     pub non_uniform_b: Option<f64>,
+    /// F scale factor for Differential mutation. Controls perturbation magnitude.
+    /// Typical range: 0.4–1.0. Default is 0.5 when `None`.
+    /// Only used when `method` is `Mutation::Differential`.
+    pub differential_f: Option<f64>,
+    /// Scale parameter (γ) for `Mutation::Cauchy`. Default is `1.0` when `None`.
+    /// Only consulted when `method == Mutation::Cauchy`.
+    pub cauchy_scale: Option<f64>,
+    /// Stability index (α) for `Mutation::LevyFlight`. Valid range: (0.0, 2.0). Default is `1.5` when `None`.
+    /// Only consulted when `method == Mutation::LevyFlight`.
+    pub levy_alpha: Option<f64>,
     /// Enable dynamic mutation probability adjustment based on population cardinality.
     /// When enabled, mutation probability is adjusted each generation: increased when
     /// diversity is low and decreased when diversity is high.
@@ -167,6 +205,9 @@ impl Default for MutationConfiguration {
             sigma: None,
             polynomial_eta: None,
             non_uniform_b: None,
+            differential_f: None,
+            cauchy_scale: None,
+            levy_alpha: None,
             dynamic_mutation: false,
             target_cardinality: None,
             probability_step: None,
@@ -233,6 +274,33 @@ pub struct StoppingCriteria {
     pub max_duration_secs: Option<f64>,
 }
 
+/// Configuration for local search refinement in memetic algorithms.
+///
+/// When `None` on GaConfiguration, no local search is performed (zero overhead).
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct LocalSearchConfiguration {
+    /// The local search operator variant (e.g., HillClimbing).
+    pub method: LocalSearch,
+    /// Which offspring receive local search refinement.
+    pub application_strategy: LocalSearchApplicationStrategy,
+    /// Lamarckian (update DNA+fitness) or Baldwinian (fitness only).
+    pub mode: LocalSearchMode,
+    /// HillClimbing-specific configuration parameters.
+    pub hill_climbing: HillClimbingConfig,
+}
+
+impl Default for LocalSearchConfiguration {
+    fn default() -> Self {
+        Self {
+            method: LocalSearch::HillClimbing,
+            application_strategy: LocalSearchApplicationStrategy::AllOffspring,
+            mode: LocalSearchMode::Lamarckian,
+            hill_climbing: HillClimbingConfig::default(),
+        }
+    }
+}
+
 /// Top-level configuration for a [`Ga`](crate::ga::Ga) run.
 ///
 /// Aggregates all sub-configurations (selection, crossover, mutation,
@@ -266,6 +334,21 @@ pub struct GaConfiguration {
     /// deterministically from this value. Two runs with the same seed
     /// (and the same thread count) will produce identical results.
     pub rng_seed: Option<u64>,
+    /// Optional crossover operator portfolio for AOS.
+    /// When `Some(Vec<Crossover>)`, AOS selects among these operators dynamically.
+    /// Default: None (uses single crossover method).
+    pub crossover_portfolio: Option<Vec<Crossover>>,
+    /// Optional mutation operator portfolio for AOS.
+    pub mutation_portfolio: Option<Vec<Mutation>>,
+    /// The AOS strategy for portfolio selection.
+    /// Default: AosStrategy::ProbabilityMatching.
+    pub aos_strategy: crate::aos::AosStrategy,
+    /// Sliding window size for AOS reward history.
+    /// Default: 50. Exploration phase = window / 2 generations.
+    pub aos_reward_window: usize,
+    /// Optional local search configuration for memetic algorithms.
+    /// When `None`, no local search is performed (zero overhead).
+    pub local_search_configuration: Option<LocalSearchConfiguration>,
 }
 impl Default for GaConfiguration {
     fn default() -> Self {
@@ -294,6 +377,11 @@ impl Default for GaConfiguration {
             niching_configuration: None,
             extension_configuration: None,
             rng_seed: None,
+            crossover_portfolio: None,
+            mutation_portfolio: None,
+            aos_strategy: crate::aos::AosStrategy::pm_default(),
+            aos_reward_window: 50,
+            local_search_configuration: None,
         }
     }
 }
@@ -305,6 +393,10 @@ impl SelectionConfig for GaConfiguration {
     }
     fn with_selection_method(mut self, selection_method: Selection) -> Self {
         self.selection_configuration.method = selection_method;
+        self
+    }
+    fn with_niche_radius(mut self, niche_radius: f64) -> Self {
+        self.selection_configuration.niche_radius = niche_radius;
         self
     }
 }
@@ -367,6 +459,29 @@ impl MutationConfig for GaConfiguration {
     }
     fn with_mutation_probability_step(mut self, step: f64) -> Self {
         self.mutation_configuration.probability_step = Some(step);
+        self
+    }
+    fn with_differential_f(mut self, f: f64) -> Self {
+        self.mutation_configuration.differential_f = Some(f);
+        self
+    }
+    fn with_polynomial_eta(mut self, eta: f64) -> Self {
+        self.mutation_configuration.polynomial_eta = Some(eta);
+        self
+    }
+    fn with_cauchy_scale(mut self, scale: f64) -> Self {
+        // A scale of 0 or negative makes the perturbation a no-op or invalid.
+        debug_assert!(scale > 0.0, "cauchy_scale must be positive; got {}", scale);
+        self.mutation_configuration.cauchy_scale = Some(scale);
+        self
+    }
+    fn with_levy_alpha(mut self, alpha: f64) -> Self {
+        debug_assert!(
+            alpha > 0.0 && alpha < 2.0,
+            "levy_alpha must be in (0.0, 2.0); got {}. Values outside this range are clamped.",
+            alpha
+        );
+        self.mutation_configuration.levy_alpha = Some(alpha);
         self
     }
 }
@@ -447,6 +562,13 @@ impl ExtensionConfig for GaConfiguration {
     }
 }
 
+impl LocalSearchConfig for GaConfiguration {
+    fn with_local_search_configuration(mut self, config: LocalSearchConfiguration) -> Self {
+        self.local_search_configuration = Some(config);
+        self
+    }
+}
+
 impl ConfigurationT for GaConfiguration {
     fn new() -> Self {
         Self::default()
@@ -506,6 +628,23 @@ impl ConfigurationT for GaConfiguration {
 
     fn with_rng_seed(mut self, seed: u64) -> Self {
         self.rng_seed = Some(seed);
+        self
+    }
+
+    fn with_crossover_portfolio(mut self, portfolio: Vec<Crossover>) -> Self {
+        self.crossover_portfolio = Some(portfolio);
+        self
+    }
+    fn with_mutation_portfolio(mut self, portfolio: Vec<Mutation>) -> Self {
+        self.mutation_portfolio = Some(portfolio);
+        self
+    }
+    fn with_aos_strategy(mut self, strategy: crate::aos::AosStrategy) -> Self {
+        self.aos_strategy = strategy;
+        self
+    }
+    fn with_reward_window(mut self, window: usize) -> Self {
+        self.aos_reward_window = window;
         self
     }
 }

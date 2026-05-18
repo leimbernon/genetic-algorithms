@@ -1,9 +1,21 @@
-//! Fitness-function helpers and wrappers.
+//! Fitness — fitness function helpers and wrappers.
 //!
-//! - [`count_true()`] — a simple fitness function that counts the number of `true`
-//!   genes in a binary chromosome (useful for OneMax-style problems).
-//! - [`FitnessFnWrapper`] — a wrapper that stores an `Arc<dyn Fn>` fitness
-//!   function alongside a chromosome, enabling deferred evaluation.
+//! Provides built-in fitness functions and the [`FitnessFnWrapper`] for
+//! deferred fitness evaluation. Supports both single-objective (f64) and
+//! multi-objective (`Vec<f64>`) fitness evaluation.
+//!
+//! # Key items
+//!
+//! | Item | Description |
+//! |------|-------------|
+//! | [`count_true()`] | Simple fitness function counting `true` genes (OneMax) |
+//! | [`FitnessFnWrapper`] | Deferred evaluation wrapper storing `Arc<dyn Fn>` |
+//! | [`FitnessCache`] | Cached fitness evaluation for repeated lookups |
+//!
+//! # When to use
+//! Use [`count_true()`] for binary OneMax-style problems. Use
+//! [`FitnessFnWrapper`] when you need to store a fitness function alongside
+//! a chromosome for deferred or batched evaluation.
 
 pub mod cache;
 pub mod count_true;

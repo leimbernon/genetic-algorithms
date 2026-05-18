@@ -1,4 +1,4 @@
-//! Population container for evolving chromosomes.
+//! Population — chromosome container for evolving generations.
 //!
 //! A [`Population`] holds the current generation of chromosomes, tracks the
 //! best-so-far individual, and computes aggregate fitness statistics used by
@@ -7,6 +7,19 @@
 //! The struct supports standard Rust collection traits (`IntoIterator`,
 //! `FromIterator`, `Index`, `IndexMut`), and implements `Clone`, `Debug`,
 //! and optional `serde` serialization behind the `serde` feature flag.
+//!
+//! # Key items
+//!
+//! | Item | Description |
+//! |------|-------------|
+//! | [`Population<U>`] | Main container, generic over chromosome type |
+//! | [`Population::best_chromosome`] | The best-so-far individual |
+//! | `Population::fitness_stats` | Aggregate fitness statistics |
+//!
+//! # When to use
+//! Used by all engines as the primary solution container. It is the return
+//! type of `ga.run()` and provides access to the evolved solutions and their
+//! fitness statistics.
 
 use crate::configuration::ProblemSolving;
 use crate::traits::ChromosomeT;

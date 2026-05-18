@@ -1,246 +1,514 @@
-# End-to-End Examples
+# Examples
 
-> Complete, runnable examples demonstrating genetic algorithms for common optimization problems.
+> Complete, runnable examples demonstrating every engine and feature.
 
 ## Overview
 
-This module provides comprehensive, real-world examples using the genetic algorithm (GA) library to solve classic combinatorial optimization problems. These examples are designed to guide new users through the process of modeling a problem, configuring the GA, and interpreting results. Each example demonstrates the full workflow: defining chromosomes and fitness functions, configuring operators, initializing populations, running the algorithm, and handling results and errors.
+The `examples/` directory contains **19 runnable examples** covering all 11 engines, problem
+types, and framework features. Each example demonstrates the full workflow: problem definition,
+chromosome configuration, operator selection, engine setup, execution, and result interpretation.
 
-The examples cover two canonical problems: the **Knapsack Problem** (using binary chromosomes) and the **N-Queens Problem** (using range chromosomes). Both showcase how to leverage the library's flexible configuration system, custom initialization and fitness functions, and logging options. Error handling and termination causes are explicitly demonstrated to help users build robust applications.
+Run any example with:
 
-These examples serve as a practical starting point for adapting the library to your own optimization tasks, illustrating how core abstractions fit together and how advanced features (custom operators, logging, callbacks) can be integrated.
-
-## Key Concepts
-
-The following concepts are central to the examples:
-
-| Concept                | Type/Module            | Description                                              |
-|------------------------|------------------------|----------------------------------------------------------|
-| Chromosome             | `BinaryChromosome`, `RangeChromosome` | Represents a candidate solution (bit vector or integer vector) |
-| Genotype               | `Genotype`             | Defines the chromosome type and allele range             |
-| Genetic Algorithm      | `Ga`                   | Main orchestrator for GA runs                            |
-| Fitness Function       | `FitnessFn`            | Evaluates solution quality                               |
-| Initialization Function| `InitializationFn`     | Customizes population initialization                     |
-| Configuration          | `GaConfiguration`      | Controls operators, limits, logging, and more            |
-| Population             | `Population`           | Collection of candidate solutions                        |
-| Termination Cause      | `TerminationCause`     | Indicates why a GA run stopped                           |
-| Logging                | `LogLevel`             | Controls verbosity of GA output                          |
-| Error Handling         | `GaError`              | Error type for GA operations                             |
-
-### Example Configuration Fields
-
-| Field                   | Type                  | Description                                              |
-|-------------------------|-----------------------|----------------------------------------------------------|
-| `population_size`       | `usize`               | Number of chromosomes in each generation                 |
-| `generation_limit`      | `usize`               | Maximum number of generations to run                     |
-| `fitness_target`        | `f64`                 | Stop when best fitness reaches this value                |
-| `log_level`             | `LogLevel`            | Controls logging verbosity                               |
-| `alleles`               | `Vec<Gene>`           | Possible gene values for initialization                  |
-| `initialization_fn`     | `InitializationFn`    | Custom population initialization logic                   |
-| `fitness_fn`            | `FitnessFn`           | Function to evaluate chromosome fitness                  |
-
-## Usage
-
-### Basic Example
-
-**Knapsack Problem (Binary Chromosome)**
-
-This example solves the classic knapsack problem: select items to maximize value without exceeding weight.
-
-```rust
-use ga::{
-    Ga, GaConfiguration, Population, BinaryChromosome, TerminationCause, LogLevel,
-};
-
-const ITEM_WEIGHTS: [u32; 5] = [2, 3, 4, 5, 9];
-const ITEM_VALUES: [u32; 5] = [3, 4, 8, 8, 10];
-const KNAPSACK_CAPACITY: u32 = 15;
-
-fn knapsack_fitness(chromosome: &BinaryChromosome) -> f64 {
-    let mut total_weight = 0;
-    let mut total_value = 0;
-    for (gene, (&weight, &value)) in chromosome.genes().iter().zip(ITEM_WEIGHTS.iter().zip(ITEM_VALUES.iter())) {
-        if *gene {
-            total_weight += weight;
-            total_value += value;
-        }
-    }
-    if total_weight > KNAPSACK_CAPACITY {
-        0.0
-    } else {
-        total_value as f64
-    }
-}
-
-fn main() -> Result<(), ga::GaError> {
-    let mut ga = Ga::<BinaryChromosome>::default();
-    ga.configuration.population_size = 50;
-    ga.configuration.generation_limit = 100;
-    ga.configuration.log_level = LogLevel::Info;
-    ga.with_fitness_fn(knapsack_fitness);
-
-    ga.initialization()?; // Randomly initialize population
-    let population = ga.run()?;
-
-    let best = population.best_chromosome().unwrap();
-    println!("Best solution: {:?}", best.genes());
-    println!("Best value: {}", knapsack_fitness(best));
-    println!("Termination cause: {:?}", ga.termination_cause);
-
-    Ok(())
-}
+```sh
+cargo run --example <name>
 ```
 
-### Advanced Example
+Some examples require feature flags (e.g., `--features observer-metrics`). See the table below
+for details.
 
-**N-Queens Problem (Range Chromosome, Custom Initialization, Logging, Error Handling)**
+## Examples Catalog
 
-This example finds a solution to the N-Queens problem using integer chromosomes, custom initialization, and advanced configuration.
+| Example | Engine/Feature | Problem Type | Key Concepts |
+|---------|---------------|-------------|--------------|
+| `rastrigin` | Ga | Continuous optimization | Range genes, Gaussian mutation, tournament selection |
+| `nsga2_zdt1` | Nsga2Ga | Bi-objective | Pareto ranking, crowding distance, multi-objective fitness |
+| `island_model` | IslandGa | Parallel GA | Migration, sub-populations, coarse-grained parallelism |
+| `job_scheduling` | Ga | Permutation/scheduling | Custom crossover (PMX), permutation representation |
+| `feature_selection` | Ga | Binary classification | Binary genes, adaptive mutation, feature subsets |
+| `niching` | Ga | Multimodal | Fitness sharing, niche radius, multimodal landscape |
+| `knapsack_binary` | Ga | Binary/combinatorial | Binary chromosome, weight/value constraints |
+| `nqueens_range` | Ga | Constraint satisfaction | Range genes, permutation encoding, penalty fitness |
+| `onemax_binary` | Ga | Binary baseline | Binary genes, simple fitness, convergence monitoring |
+| `onemax_extension` | Ga | Diversity control | Extension strategies, MassExtinction, diversity triggers |
+| `nsga3_dtlz2` | Nsga3Ga | Many-objective (3+) | Reference points, Das-Dennis, DTLZ2 benchmark |
+| `moead_dtlz2` | MoeaDGa | Decomposition | Tchebycheff scalarization, weight vectors, DTLZ2 |
+| `spea2_zdt1` | Spea2Ga | Archive-based MO | Strength Pareto, k-NN density, ZDT1 benchmark |
+| `sms_emoa_zdt1` | SmsEmoaGa | Indicator-based | Hypervolume contribution, steady-state, ZDT1 |
+| `ibea_zdt1` | IbeaGa | Indicator-based | I_eps+ indicator, exponential scaling, ZDT1 |
+| `aos_demo` | Ga + AOS | Adaptive operators | Operator portfolio, reward accumulation, strategy switching |
+| `constrained_g1` | Ga + Constraints | Constrained optimization | Deb's feasibility rules, penalty functions, G1 problem |
+| `hall_of_fame_demo` | Ga + HOF | Solution archive | Top-N tracking, deduplication, diversity filtering |
+| `memetic_rastrigin` | Ga + Memetic | Local search hybrid | HillClimbing, Lamarckian mode, local refinement |
 
-```rust
-use ga::{
-    Ga, GaConfiguration, Population, RangeChromosome, TerminationCause, LogLevel,
-};
+## Detailed Walkthroughs
 
-const N: usize = 8; // Number of queens
+The following sections walk through four representative examples in detail, showing the
+complete workflow from problem definition to result interpretation.
 
-// Fitness: count non-attacking pairs of queens
-fn nqueens_fitness(chromosome: &RangeChromosome) -> f64 {
-    let positions = chromosome.genes();
-    let mut non_attacking = 0;
-    for i in 0..N {
-        for j in (i + 1)..N {
-            if positions[i] != positions[j] // not same column
-                && (positions[i] as isize - positions[j] as isize).abs() != (i as isize - j as isize).abs() // not same diagonal
-            {
-                non_attacking += 1;
-            }
-        }
-    }
-    non_attacking as f64
-}
+### Walkthrough 1: `rastrigin` — Standard GA on Continuous Optimization
 
-// Custom initialization: random permutation (each queen in a unique column)
-fn permutation_init(alleles: &[u8], rng: &mut rand::rngs::ThreadRng) -> Vec<u8> {
-    let mut genes = alleles.to_vec();
-    genes.shuffle(rng);
-    genes
-}
+**Source:** [`examples/rastrigin.rs`](../examples/rastrigin.rs)
 
-fn main() -> Result<(), ga::GaError> {
-    let alleles: Vec<u8> = (0..N as u8).collect();
+This is the most common starting point for new users. It minimizes the Rastrigin function,
+a classic continuous optimization benchmark with many local minima and a global minimum of
+0.0 at the origin.
 
-    let mut ga = Ga::<RangeChromosome>::default();
-    ga.configuration.population_size = 100;
-    ga.configuration.generation_limit = 500;
-    ga.configuration.log_level = LogLevel::Debug;
-    ga.configuration.fitness_target = ((N * (N - 1)) / 2) as f64; // All pairs non-attacking
+#### Problem Definition
 
-    ga.with_alleles(alleles.clone());
-    ga.with_initialization_fn(permutation_init);
-    ga.with_fitness_fn(nqueens_fitness);
+The Rastrigin function is defined as:
 
-    ga.initialization()?; // Custom population initialization
-
-    let population = ga.run()?;
-    let best = population.best_chromosome().unwrap();
-
-    println!("Best solution: {:?}", best.genes());
-    println!("Best fitness: {}", nqueens_fitness(best));
-    println!("Termination cause: {:?}", ga.termination_cause);
-
-    // Interpret result
-    if ga.termination_cause == TerminationCause::FitnessTargetReached {
-        println!("Found valid N-Queens solution!");
-    } else {
-        println!("Did not find valid solution; best fitness: {}", nqueens_fitness(best));
-    }
-
-    Ok(())
-}
+```
+f(x) = A*n + sum(x_i^2 - A*cos(2*pi*x_i))   where A = 10
 ```
 
-## API Reference
+We optimize in 5 dimensions with each variable in `[-5.12, 5.12]`.
 
-### `Ga<U>`
+#### Configuration Walkthrough
 
-Generic genetic algorithm orchestrator.
+```rust
+use genetic_algorithms::chromosomes::Range as RangeChromosome;
+use genetic_algorithms::configuration::ProblemSolving;
+use genetic_algorithms::ga::Ga;
+use genetic_algorithms::genotypes::Range as RangeGenotype;
+use genetic_algorithms::initializers::range_random_initialization;
+use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+use genetic_algorithms::traits::{ChromosomeT, ConfigurationT, CrossoverConfig,
+    MutationConfig, SelectionConfig, StoppingConfig};
+use genetic_algorithms::{CompositeObserver, LogObserver};
+use std::sync::Arc;
 
-**Fields:**
+// 5-dimensional continuous optimization in [-5.12, 5.12]
+const DIMENSIONS: usize = 5;
+const POP_SIZE: usize = 100;
+const MAX_GENERATIONS: usize = 500;
 
-| Name                | Type                             | Description                                              |
-|---------------------|----------------------------------|----------------------------------------------------------|
-| `configuration`     | `GaConfiguration`                | GA configuration options                                 |
-| `alleles`           | `Vec<U::Gene>`                   | Alleles for initialization                              |
-| `population`        | `Population<U>`                  | Current population                                       |
-| `termination_cause` | `TerminationCause`               | Reason for termination                                   |
-| `initialization_fn` | `Option<Arc<InitializationFn>>`  | Custom initialization function                           |
-| `fitness_fn`        | `Option<Arc<FitnessFn>>`         | Fitness evaluation function                              |
+// Fitness: Rastrigin function (minimize toward 0.0)
+let fitness_fn = |dna: &[RangeGenotype<f64>]| -> f64 {
+    let a = 10.0;
+    let n = dna.len() as f64;
+    a * n + dna.iter()
+        .map(|g| g.value.powi(2) - a * (2.0 * std::f64::consts::PI * g.value).cos())
+        .sum::<f64>()
+};
 
-**Methods:**
+// Allele range for each dimension
+let alleles = vec![RangeGenotype::new(0, vec![(-5.12, 5.12)], 0.0_f64)];
+let alleles_clone = alleles.clone();
 
-| Name                      | Signature                                                           | Description                                              |
-|---------------------------|---------------------------------------------------------------------|----------------------------------------------------------|
-| `with_alleles`            | `fn with_alleles(&mut self, alleles: Vec<U::Gene>) -> &mut Self`    | Sets alleles for chromosome initialization               |
-| `with_population`         | `fn with_population(&mut self, population: Population<U>) -> &mut Self` | Sets initial population                              |
-| `with_fitness_fn`         | `fn with_fitness_fn<F>(&mut self, fitness_fn: F) -> &mut Self`      | Sets fitness function                                    |
-| `with_initialization_fn`  | `fn with_initialization_fn<F>(&mut self, initialization_fn: F) -> &mut Self` | Sets custom initialization function         |
-| `initialization`          | `fn initialization(&mut self) -> Result<&mut Self, GaError>`        | Initializes population                                   |
-| `run`                     | `fn run(&mut self) -> Result<&Population<U>, GaError>`              | Runs GA to completion                                    |
-| `run_with_callback`       | `fn run_with_callback<F>(&mut self, callback: Option<F>, generations_to_callback: usize) -> Result<&Population<U>, GaError>` | Runs GA with callback |
+let mut ga = Ga::new()
+    .with_genes_per_chromosome(DIMENSIONS)
+    .with_population_size(POP_SIZE)
+    .with_initialization_fn(move |genes_per_chromosome, _, _| {
+        range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+    })
+    .with_fitness_fn(fitness_fn)
+    .with_selection_method(Selection::Tournament)
+    .with_crossover_method(Crossover::Uniform)
+    .with_mutation_method(Mutation::Gaussian)
+    .with_survivor_method(Survivor::Fitness)
+    .with_problem_solving(ProblemSolving::Minimization)
+    .with_max_generations(MAX_GENERATIONS)
+    .with_observer(Arc::new(CompositeObserver::new().add(Arc::new(LogObserver))))
+    .build()
+    .expect("Failed to build GA configuration");
+```
 
-### `TerminationCause`
+#### Key Lines Explained
 
-Enumerates reasons for GA termination.
+- **Chromosome type:** `RangeChromosome<f64>` — a chromosome with `f64` genes, each bounded
+  within an interval.
+- **Initialization:** `range_random_initialization` randomly places each gene within its
+  allele bounds `[-5.12, 5.12]`.
+- **Tournament selection:** Standard pressure-based selection — each tournament pits 2 random
+  individuals against each other, and the fitter wins.
+- **Gaussian mutation:** Adds random Gaussian noise to each gene, appropriate for continuous
+  landscapes. Configure sigma via `with_mutation_sigma(...)`.
+- **Observer:** `CompositeObserver` fans out to `LogObserver` (console logging) and optionally
+  `MetricsObserver` (behind the `observer-metrics` feature flag).
 
-| Variant                  | Description                                              |
-|--------------------------|----------------------------------------------------------|
-| `GenerationLimitReached` | Maximum generations reached                              |
-| `FitnessTargetReached`   | Desired fitness achieved                                 |
-| `StagnationReached`      | No improvement for N generations                         |
-| `ConvergenceReached`     | Population converged                                     |
-| `TimeLimitReached`       | Time limit exceeded                                      |
-| `NotTerminated`          | Not yet terminated                                       |
+#### Running
 
-### `GaConfiguration`
+```sh
+cargo run --example rastrigin
+```
 
-Controls GA behavior.
+#### Expected Output
 
-| Field             | Type         | Description                          |
-|-------------------|--------------|--------------------------------------|
-| `population_size` | `usize`      | Number of chromosomes per generation |
-| `generation_limit`| `usize`      | Max generations                      |
-| `fitness_target`  | `f64`        | Target fitness to stop               |
-| `log_level`       | `LogLevel`   | Logging verbosity                    |
+The GA prints progress every 50 generations, showing best and average fitness:
 
-### `LogLevel`
+```
+== Rastrigin Continuous Optimization ==
+Chromosome: 5 dimensions, Population: 100, Max generations: 500
+Operators: Selection=Tournament, Crossover=Uniform, Mutation=Gaussian
+-------------------------------------------------------
+Generation   50: best =  14.9245, avg =  35.9282
+Generation  100: best =   5.9701, avg =  19.3028
+...
+Generation  500: best =   0.0001, avg =   2.3400
+-------------------------------------------------------
+Finished. Best fitness: 0.000099
+Near-optimal solution found!
+```
 
-Controls logging output.
+---
 
-| Variant   | Description                       |
-|-----------|-----------------------------------|
-| `Off`     | No logging                        |
-| `Error`   | Errors only                       |
-| `Info`    | Key events and progress           |
-| `Debug`   | Detailed per-generation logging   |
+### Walkthrough 2: `nsga2_zdt1` — Multi-Objective GA on ZDT1
 
-### `GaError`
+**Source:** [`examples/nsga2_zdt1.rs`](../examples/nsga2_zdt1.rs)
 
-Error type for GA operations.
+This example demonstrates bi-objective optimization using NSGA-II on the ZDT1 benchmark
+problem. ZDT1 has two conflicting minimization objectives defined over 30 continuous variables
+in `[0, 1]`. The Pareto-optimal front is a convex curve where minimizing f1 forces f2 upward.
 
-| Variant         | Description                          |
-|-----------------|--------------------------------------|
-| `InvalidConfig` | Configuration error                  |
-| `InitFailed`    | Initialization failed                |
-| `RunFailed`     | Error during GA run                  |
+#### Problem Definition
+
+```
+Variables: x = (x_1, ..., x_30) in [0, 1]
+f1(x) = x_1
+f2(x) = g(x) * (1 - sqrt(x_1 / g(x)))
+g(x)  = 1 + (9 / 29) * sum(x_2, ..., x_30)
+```
+
+#### Configuration Walkthrough
+
+```rust
+use genetic_algorithms::chromosomes::Range as RangeChromosome;
+use genetic_algorithms::configuration::GaConfiguration;
+use genetic_algorithms::genotypes::Range as RangeGenotype;
+use genetic_algorithms::initializers::range_random_initialization;
+use genetic_algorithms::nsga2::configuration::{Nsga2Configuration, ObjectiveDirection};
+use genetic_algorithms::nsga2::Nsga2Ga;
+use genetic_algorithms::{LogObserver, Nsga2Observer};
+use std::sync::Arc;
+
+const N_VARS: usize = 30;
+const POP_SIZE: usize = 100;
+const MAX_GENERATIONS: usize = 250;
+
+let nsga2_config = Nsga2Configuration::new()
+    .with_num_objectives(2)
+    .with_population_size(POP_SIZE)
+    .with_max_generations(MAX_GENERATIONS)
+    .with_objective_directions(vec![
+        ObjectiveDirection::Minimize,
+        ObjectiveDirection::Minimize,
+    ]);
+
+let mut ga_config = GaConfiguration::default();
+ga_config.limit_configuration.genes_per_chromosome = N_VARS;
+
+let alleles = vec![RangeGenotype::new(0, vec![(0.0_f64, 1.0_f64)], 0.0_f64)];
+let alleles_clone = alleles.clone();
+
+let obj_f1 = |dna: &[RangeGenotype<f64>]| -> f64 { dna[0].value };
+let obj_f2 = |dna: &[RangeGenotype<f64>]| -> f64 {
+    let n = dna.len();
+    let g = 1.0 + (9.0 / (n - 1) as f64)
+        * dna[1..].iter().map(|gene| gene.value).sum::<f64>();
+    g * (1.0 - (dna[0].value / g).sqrt())
+};
+
+let mut nsga2 = Nsga2Ga::<RangeChromosome<f64>>::new(nsga2_config, ga_config)
+    .with_alleles(alleles)
+    .with_initialization_fn(move |n, _, _| {
+        range_random_initialization(n, Some(&alleles_clone), Some(true))
+    })
+    .with_objective_fns(vec![Box::new(obj_f1), Box::new(obj_f2)])
+    .with_observer(
+        Arc::new(LogObserver)
+            as Arc<dyn Nsga2Observer<RangeChromosome<f64>> + Send + Sync>
+    )
+    .build()
+    .expect("Failed to build NSGA-II");
+```
+
+#### Key Lines Explained
+
+- **Nsga2Configuration:** Defines the multi-objective engine parameters — number of objectives,
+  population size, and per-objective minimization vs. maximization.
+- **GaConfiguration:** The base GA configuration sets chromosome-level parameters (gene count).
+  The NSGA-II engine reads its operators from this config.
+- **Objective functions:** Each objective is passed as a `Box<dyn Fn(&[Gene]) -> f64>`. The
+  engine does not use the scalar `ChromosomeT::fitness()` value — only these objective
+  values.
+- **Observer:** `LogObserver` implements `Nsga2Observer`, logging Pareto front and crowding
+  events.
+
+#### Running
+
+```sh
+cargo run --example nsga2_zdt1
+```
+
+#### Expected Output
+
+```
+== NSGA-II ZDT1 Multi-Objective Optimization ==
+Variables: 30, Population: 100, Generations: 250
+...
+Completed. Pareto front: 100 non-dominated solutions
+Pareto front (10 points sampled from 100 non-dominated solutions):
+  f1=0.0000, f2=0.3119
+  f1=0.1135, f2=0.6590
+  f1=0.2148, f2=0.5377
+  ...
+  f1=0.8932, f2=0.0456
+  f1=0.9984, f2=0.0063
+```
+
+---
+
+### Walkthrough 3: `constrained_g1` — Constraint Handling with Feasibility Rules
+
+**Source:** [`examples/constrained_g1.rs`](../examples/constrained_g1.rs)
+
+This example solves a constrained optimization problem (simplified G1 benchmark) using a GA
+with static penalty functions. It demonstrates the constraint handling framework.
+
+#### Problem Definition
+
+13 real-valued variables in `[0.0, 1.0]` with three inequality constraints:
+
+```
+g1: x[0..5] sum <= 4.0
+g2: x[5..10] sum <= 3.0
+g3: x[10..13] sum <= 2.0
+```
+
+Objective: minimize `sum(x)` subject to the three constraints.
+
+#### Configuration Walkthrough
+
+```rust
+use genetic_algorithms::chromosomes::Range as RangeChromosome;
+use genetic_algorithms::configuration::ProblemSolving;
+use genetic_algorithms::constraints::PenaltyStrategy;
+use genetic_algorithms::ga::Ga;
+use genetic_algorithms::genotypes::Range as RangeGene;
+use genetic_algorithms::initializers::range_random_initialization;
+use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+use genetic_algorithms::traits::{
+    ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig,
+    SelectionConfig, StoppingConfig,
+};
+
+const N_VARS: usize = 13;
+const POP_SIZE: usize = 200;
+const MAX_GEN: usize = 200;
+
+let alleles = vec![RangeGene::new(0, vec![(0.0_f64, 1.0_f64)], 0.0)];
+let alleles_clone = alleles.clone();
+
+// Define inequality constraints as closure functions
+let constraints = vec![
+    |dna: &[RangeGene<f64>]| {
+        let sum: f64 = dna[0..5].iter().map(|g| g.value).sum();
+        (sum - 4.0).max(0.0)
+    },
+    |dna: &[RangeGene<f64>]| {
+        let sum: f64 = dna[5..10].iter().map(|g| g.value).sum();
+        (sum - 3.0).max(0.0)
+    },
+    |dna: &[RangeGene<f64>]| {
+        let sum: f64 = dna[10..13].iter().map(|g| g.value).sum();
+        (sum - 2.0).max(0.0)
+    },
+];
+
+let fitness_fn = |dna: &[RangeGene<f64>]| -> f64 {
+    dna.iter().map(|g| g.value).sum()
+};
+
+let mut ga: Ga<RangeChromosome<f64>> = Ga::new()
+    .with_genes_per_chromosome(N_VARS)
+    .with_population_size(POP_SIZE)
+    .with_initialization_fn(move |genes_per_chromosome, _, _| {
+        range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+    })
+    .with_fitness_fn(fitness_fn)
+    .with_selection_method(Selection::Tournament)
+    .with_crossover_method(Crossover::BlendAlpha)
+    .with_mutation_method(Mutation::Gaussian)
+    .with_problem_solving(ProblemSolving::Minimization)
+    .with_survivor_method(Survivor::Fitness)
+    .with_max_generations(MAX_GEN)
+    .with_constraint_fns(constraints)
+    .with_penalty_strategy(PenaltyStrategy::Static { coefficient: 100.0 })
+    .build()
+    .expect("Failed to build GA");
+```
+
+#### Key Lines Explained
+
+- **constraint_fns:** A `Vec` of closures, each returning a violation magnitude (0.0 if
+  satisfied, positive otherwise). The GA sums all violations internally.
+- **PenaltyStrategy::Static:** Applies a fixed penalty coefficient to the sum of violations,
+  added to the raw fitness. Alternatives include `Dynamic` (increasing over generations),
+  `Adaptive`, and `Death` (infeasible individuals are discarded).
+- **Deb's feasibility rules:** When comparing two individuals, the GA prioritizes: (1)
+  feasible over infeasible, (2) lower violation if both are infeasible, (3) better fitness
+  if both are feasible.
+
+#### Running
+
+```sh
+cargo run --example constrained_g1
+```
+
+#### Expected Output
+
+```
+Constrained G1 benchmark with static penalty
+Variables: 13, Population: 200, Generations: 200
+
+Constraints:
+  g1: x[0..5] sum <= 4.0
+  g2: x[5..10] sum <= 3.0
+  g3: x[10..13] sum <= 2.0
+
+...
+Feasible solution found!
+Best fitness: 6.0213
+Constraint violations: g1=0.000, g2=0.000, g3=0.000
+```
+
+---
+
+### Walkthrough 4: `aos_demo` — Adaptive Operator Selection
+
+**Source:** [`examples/aos_demo.rs`](../examples/aos_demo.rs)
+
+This example demonstrates Adaptive Operator Selection (AOS) using a crossover portfolio
+with Probability Matching. The GA dynamically selects among 3 crossover operators based on
+their recent performance.
+
+#### Problem Definition
+
+Minimize the sum of 8 integer gene values (each in `[0, 100]`). This is a deliberately
+simple problem where different crossover operators may perform differently.
+
+#### Configuration Walkthrough
+
+```rust
+use genetic_algorithms::chromosomes::Range as RangeChromosome;
+use genetic_algorithms::configuration::ProblemSolving;
+use genetic_algorithms::ga::Ga;
+use genetic_algorithms::genotypes::Range as RangeGene;
+use genetic_algorithms::initializers::range_random_initialization;
+use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+use genetic_algorithms::traits::{
+    ChromosomeT, ConfigurationT, MutationConfig, SelectionConfig, StoppingConfig,
+};
+
+let n: i32 = 8;
+let alleles = vec![RangeGene::new(0, vec![(0_i32, 100_i32)], 0)];
+let alleles_clone = alleles.clone();
+
+let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
+    .with_genes_per_chromosome(n.try_into().unwrap())
+    .with_population_size(50)
+    .with_max_generations(100)
+    .with_initialization_fn(move |genes_per_chromosome, _, _| {
+        range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+    })
+    .with_fitness_fn(|dna: &[RangeGene<i32>]| {
+        dna.iter().map(|g| g.value() as f64).sum()
+    })
+    .with_selection_method(Selection::Tournament)
+    // AOS crossover portfolio with 3 operators
+    .with_crossover_portfolio(vec![
+        Crossover::Uniform,
+        Crossover::SinglePoint,
+        Crossover::BlendAlpha,
+    ])
+    .with_mutation_method(Mutation::Swap)
+    .with_mutation_probability_max(0.2)
+    .with_aos_strategy(genetic_algorithms::aos::AosStrategy::pm_default())
+    .with_reward_window(50)
+    .with_problem_solving(ProblemSolving::Minimization)
+    .with_survivor_method(Survivor::Fitness)
+    .with_alleles(alleles)
+    .build()
+    .expect("Failed to build GA with AOS configuration");
+```
+
+#### Key Lines Explained
+
+- **crossover_portfolio:** Instead of a single crossover operator, this provides a `Vec` of
+  3 candidates. The AOS system selects among them each generation.
+- **AosStrategy::pm_default():** Probability Matching with default parameters (credit-based
+  selection). The GA tracks recent fitness improvements from each operator and adjusts
+  selection probabilities accordingly.
+- **reward_window:** Number of generations used for the exploration-exploitation trade-off.
+  During the first half of the window, all operators are explored equally.
+- **Mutation::Swap:** Simple swap mutation on the integer gene values, appropriate for the
+  permutation-like representation of the gene order.
+
+#### Running
+
+```sh
+cargo run --example aos_demo
+```
+
+#### Expected Output
+
+```
+=== AOS Demo: Crossover Portfolio with Probability Matching ===
+
+Optimization complete!
+Best fitness: 246.0000
+Best chromosome (first 4 of 8 genes): [23, 17, 35, 42]
+
+=== AOS Demo Complete ===
+The GA dynamically selected among Uniform, SinglePoint, and BlendAlpha crossover
+operators based on recent fitness improvement (Probability Matching).
+```
+
+## Running an Example
+
+All examples are run via `cargo run --example <name>`. For example:
+
+```sh
+# Standard GA on continuous optimization
+cargo run --example rastrigin
+
+# Multi-objective optimization with NSGA-II
+cargo run --example nsga2_zdt1
+
+# Many-objective optimization with NSGA-III (requires 3+ objectives)
+cargo run --example nsga3_dtlz2
+
+# Constrained optimization
+cargo run --example constrained_g1
+
+# Adaptive operator selection
+cargo run --example aos_demo
+
+# Memetic algorithm (GA + local search)
+cargo run --example memetic_rastrigin
+```
+
+Some examples use optional feature flags:
+
+```sh
+# Observer-metrics integration
+cargo run --example rastrigin --features observer-metrics
+
+# Benchmark functions (behind feature flag)
+cargo run --example nsga3_dtlz2 --features benchmarks
+```
+
+Add `--release` for better performance on longer runs:
+
+```sh
+cargo run --example rastrigin --release
+```
 
 ## Related
 
-- [Configuration Options](configuration.md)
-- [Chromosome Types](chromosomes.md)
-- [Fitness Functions](fitness.md)
-- [Population Management](population.md)
-- [Traits](traits.md)
-- [Source: examples/knapsack_binary.rs](../examples/knapsack_binary.rs)
-- [Source: examples/nqueens_range.rs](../examples/nqueens_range.rs)
-- [Source: src/ga.rs](../src/ga.rs)
+- [Engines Overview](engines.md) — All 11 optimization engines and when to use each
+- [Getting Started](getting-started.md) — Quick-start guide
+- [Configuration Reference](configuration.md) — Full builder options and parameter tables
+- [README Examples Table](../README.md) — Example catalog in the project README
+- [Source: examples/](../examples/) — All 19 example source files

@@ -1,15 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.3.0
-milestone_name: Alternative Metaheuristics & Population Models
-status: complete
-stopped_at: ""
-last_updated: "2026-04-27T00:00:00.000Z"
+milestone: v2.4.0
+milestone_name: — Observer Integration, New Operators, Advanced Multi-Objective & Framework Extensions
+status: milestone_complete
+stopped_at: context exhaustion at 78% (2026-05-14)
+last_updated: "2026-05-14T18:43:57.339Z"
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 8
-  completed_plans: 8
+  total_phases: 17
+  completed_phases: 18
+  total_plans: 55
+  completed_plans: 55
+  percent: 106
 ---
 
 # Project State
@@ -19,15 +20,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-27)
 
 **Core value:** Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library
-**Current focus:** v2.3.0 ARCHIVED — ready for next milestone planning
+**Current focus:** Phase 46 — Documentation refactor (in progress)
 
 ## Current Position
 
-Phase: — (milestone complete)
-Plan: —
-Status: v2.3.0 archived; git tag v2.3.0 created; ready for `/gsd-new-milestone`
+Phase: 46
+Plan: Not started
+Status: Milestone complete
 
-Progress: [##########] 5/5 phases complete
+Progress: [██████████] 96%
 
 ## Accumulated Context
 
@@ -37,11 +38,24 @@ Progress: [##########] 5/5 phases complete
 - v2.3.0: `mod.rs` directory form required when restructured modules have nested submodules
 - v2.3.0: New engines land in `src/engines/` with their own subdirectory; `src/lib.rs` adds the re-export
 - v2.3.0: `DeGene` trait extension pattern for engines requiring type-specific arithmetic (f64)
+- v2.4.0: Observer wiring uses same `Option<Arc<dyn GaObserver<U>>>` pattern as `ga.rs` — zero overhead when None, no per-engine sub-traits
+- v2.4.0: Phases 31-33 are independent of each other after Phase 30; operator work does not require observer wiring to complete
+- v2.4.0: Observer import path is `use crate::observer::GaObserver` (not `crate::observe::observer::GaObserver`) — lib.rs re-exports via `#[path]` alias
+- v2.4.0: CellularEngine on_new_best snapshot must be taken at generation start (before inner evolution loop), not just before tracking block — inner loop updates best_fitness too
+- v2.4.0: Ga benchmark uses `with_population()` not `with_initialization_fn()` — avoids borrow error from `ga.run()` returning `&Population` tied to local `ga`
+- [Phase ?]: D-12 (on_new_best on Nsga3Ga) deferred per CONTEXT.md — run() fires only Nsga3Observer hooks
+- [Phase ?]: normalize_st uses ASF-based intercepts with degenerate-nadir fallback + epsilon clamp for DTLZ2 and sparse-population safety
+- v2.4.0 Phase 38: SMS-EMOA uses steady-state (mu+1) with hypervolume contribution removal; IBEA uses pairwise I_eps+ indicator with exponential scaling
+- v2.4.0 Phase 38: Both engines follow the established observer pattern (SmsEmoaObserver, IbeaObserver) — NOT added to AllObserver
+- v2.4.0 Phases 40-45: Framework Extensions integrated into v2.4.0 milestone — no separate v2.5.0; phases 40-45 continue the same version
 
-### Known Tech Debt for Next Milestone
+### Roadmap Evolution
 
-- Observer hooks (GaObserver) not wired into DeEngine, ScatterEngine, CellularEngine, AlpsEngine
-- DE-vs-GA head-to-head benchmark not added to benches/de.rs
+- Phase 34 added: WASM support — fix time-based panics for wasm32-unknown-unknown targets (issue #236)
+- Phases 35-39 added to v2.4.0: NSGA-III, MOEA/D, SPEA2, SMS-EMOA/IBEA, quality indicators (GitHub milestone 8, issues #203-#207)
+- Cargo.toml reverted to 2.4.0 — phases 35-39 remain within v2.4.0 milestone
+- Phases 40-45 added to v2.4.0: Framework Extensions — constraint handling, Hall of Fame, warm starting, AOS, benchmarks, memetic algorithm
+- Phase 46 added: Update the documentation to explain in more details the different algorithms. A refactor of the documentation can happen if needed
 
 ### Blockers/Concerns
 
@@ -49,6 +63,6 @@ Progress: [##########] 5/5 phases complete
 
 ## Session Continuity
 
-Last session: 2026-04-27
-Stopped at: v2.3.0 milestone archived
-Resume file: (none)
+Last session: 2026-05-14T18:43:57.329Z
+Stopped at: context exhaustion at 78% (2026-05-14)
+Resume file: None

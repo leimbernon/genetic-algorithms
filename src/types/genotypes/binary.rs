@@ -30,8 +30,15 @@ use std::fmt;
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+/// A binary gene type with an identifier and a boolean value.
+///
+/// Represents a single binary allele. Each gene has a unique `id` for
+/// positional tracking and a `value` that determines the allele state.
+/// Commonly used for feature selection, knapsack, and onemax problems.
 pub struct Binary {
+    /// Unique identifier for this gene, used for positional tracking and comparison.
     pub id: i32,
+    /// The boolean state of the gene (`true` = 1, `false` = 0).
     pub value: bool,
 }
 

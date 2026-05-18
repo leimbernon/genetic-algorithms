@@ -1,8 +1,19 @@
-//! Visualization utilities for genetic algorithm statistics.
+//! Visualization — plotting utilities for GA statistics (visualization feature).
 //!
 //! This module provides chart-generating functions that render [`GenerationStats`]
 //! data to PNG or SVG files. It is only available when the `visualization`
 //! feature flag is enabled.
+//!
+//! # Key items
+//!
+//! | Item | Description |
+//! |------|-------------|
+//! | [`plot_fitness`] | Generate fitness-over-generations chart |
+//! | [`plot_diversity`] | Generate diversity-over-generations chart |
+//!
+//! # When to use
+//! Enable the `visualization` feature and call these functions after a GA run
+//! to generate charts for post-hoc analysis and debugging.
 //!
 //! # Example
 //!

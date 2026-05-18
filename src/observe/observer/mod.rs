@@ -166,6 +166,146 @@ pub trait Nsga2Observer<U: ChromosomeT>: Send + Sync {
     fn on_crowding_distance_calculated(&self, _generation: usize, _duration_ms: f64) {}
 }
 
+/// Observer for [`Nsga3Ga<U>`](crate::nsga3::Nsga3Ga) engine-specific events.
+///
+/// All methods have default no-op implementations. The `Send + Sync`
+/// supertraits are required for safe sharing across rayon threads via `Arc`.
+///
+/// # Note: not in `AllObserver`
+///
+/// `AllObserver<U>` does NOT include `Nsga3Observer<U>` in Phase 35 — adding it
+/// would be a breaking change for existing `AllObserver` implementors. Use
+/// [`Nsga3Ga::with_observer`](crate::nsga3::Nsga3Ga::with_observer) to attach
+/// an `Nsga3Observer` independently.
+pub trait Nsga3Observer<U: ChromosomeT>: Send + Sync {
+    /// Called after Pareto fronts are assigned for the current generation.
+    fn on_pareto_front_assigned(
+        &self,
+        _generation: usize,
+        _front_count: usize,
+        _population_size: usize,
+    ) {
+    }
+    /// Called after non-dominated sorting completes for the current generation.
+    fn on_non_dominated_sort_complete(&self, _generation: usize, _duration_ms: f64) {}
+}
+
+/// Observer for [`MoeaDGa<U>`](crate::moead::MoeaDGa) engine-specific events.
+///
+/// All methods have default no-op implementations. The `Send + Sync`
+/// supertraits are required for safe sharing across rayon threads via `Arc`.
+///
+/// # Note: not in `AllObserver`
+///
+/// `AllObserver<U>` does NOT include `MoeaDObserver<U>` in Phase 36 — adding it
+/// would be a breaking change for existing `AllObserver` implementors. Use
+/// [`MoeaDGa::with_observer`](crate::moead::MoeaDGa::with_observer) to attach
+/// a `MoeaDObserver` independently.
+pub trait MoeaDObserver<U: ChromosomeT>: Send + Sync {
+    /// Called after Pareto fronts are assigned for the current generation.
+    fn on_pareto_front_assigned(
+        &self,
+        _generation: usize,
+        _front_count: usize,
+        _population_size: usize,
+    ) {
+    }
+    /// Called after non-dominated sorting completes for the current generation.
+    fn on_non_dominated_sort_complete(&self, _generation: usize, _duration_ms: f64) {}
+}
+
+/// Observer for [`Spea2Ga<U>`](crate::spea2::Spea2Ga) engine-specific events.
+///
+/// All methods have default no-op implementations. The `Send + Sync`
+/// supertraits are required for safe sharing across rayon threads via `Arc`.
+///
+/// # Note: not in `AllObserver`
+///
+/// `AllObserver<U>` does NOT include `Spea2Observer<U>` in Phase 37 — adding it
+/// would be a breaking change for existing `AllObserver` implementors (D-07). Use
+/// [`Spea2Ga::with_observer`](crate::spea2::Spea2Ga::with_observer) to attach
+/// a `Spea2Observer` independently.
+pub trait Spea2Observer<U: ChromosomeT>: Send + Sync {
+    /// Called after strength + density fitness is assigned to all individuals
+    /// in the combined population + archive set.
+    fn on_fitness_assigned(
+        &self,
+        _generation: usize,
+        _duration_ms: f64,
+        _pop_size: usize,
+        _archive_size: usize,
+    ) {
+    }
+    /// Called after environmental selection completes and the archive is updated
+    /// (including truncation if necessary).
+    fn on_archive_updated(
+        &self,
+        _generation: usize,
+        _archive_size: usize,
+        _non_dominated_count: usize,
+    ) {
+    }
+}
+
+/// Observer for [`SmsEmoaGa<U>`](crate::sms_emoa::SmsEmoaGa) engine-specific events.
+///
+/// All methods have default no-op implementations. The `Send + Sync`
+/// supertraits are required for safe sharing across rayon threads via `Arc`.
+///
+/// # Note: not in `AllObserver`
+///
+/// `AllObserver<U>` does NOT include `SmsEmoaObserver<U>` in Phase 38 — adding it
+/// would be a breaking change for existing `AllObserver` implementors. Use
+/// [`SmsEmoaGa::with_observer`](crate::sms_emoa::SmsEmoaGa::with_observer) to attach
+/// a `SmsEmoaObserver` independently.
+pub trait SmsEmoaObserver<U: ChromosomeT>: Send + Sync {
+    /// Called after hypervolume contribution calculation completes for the current generation.
+    fn on_hypervolume_contribution_assigned(
+        &self,
+        _generation: usize,
+        _duration_ms: f64,
+        _population_size: usize,
+    ) {
+    }
+    /// Called after steady-state (mu+1) removal in the current generation.
+    fn on_steady_state_removal(
+        &self,
+        _generation: usize,
+        _population_size: usize,
+    ) {
+    }
+}
+
+/// Observer for [`IbeaGa<U>`](crate::ibea::IbeaGa) engine-specific events.
+///
+/// All methods have default no-op implementations. The `Send + Sync`
+/// supertraits are required for safe sharing across rayon threads via `Arc`.
+///
+/// # Note: not in `AllObserver`
+///
+/// `AllObserver<U>` does NOT include `IbeaObserver<U>` in Phase 38 — adding it
+/// would be a breaking change for existing `AllObserver` implementors. Use
+/// [`IbeaGa::with_observer`](crate::ibea::IbeaGa::with_observer) to attach
+/// an `IbeaObserver` independently.
+pub trait IbeaObserver<U: ChromosomeT>: Send + Sync {
+    /// Called after indicator-based fitness assignment completes for the current generation.
+    fn on_indicator_fitness_assigned(
+        &self,
+        _generation: usize,
+        _duration_ms: f64,
+        _population_size: usize,
+    ) {
+    }
+    /// Called after environmental selection removes an individual.
+    fn on_environmental_selection(
+        &self,
+        _generation: usize,
+        _population_size: usize,
+        _removed_index: usize,
+    ) {
+    }
+}
+
 /// Combined observer bound for use with [`CompositeObserver`].
 ///
 /// Any type that implements [`GaObserver<U>`], [`IslandGaObserver<U>`],

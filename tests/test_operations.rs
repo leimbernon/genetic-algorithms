@@ -4,6 +4,7 @@ mod operations {
     mod test_crossover_blend_alpha;
     mod test_crossover_clone;
     mod test_crossover_order;
+    mod test_crossover_edge_recombination;
     mod test_crossover_pmx;
     mod test_crossover_rejuvenate;
     mod test_crossover_sbx;
@@ -11,18 +12,22 @@ mod operations {
     mod test_crossover_uniform;
     mod test_mutation;
     mod test_mutation_bit_flip;
+    mod test_mutation_cauchy_levy_uniform;
     mod test_mutation_creep_gaussian;
     mod test_mutation_dynamic;
     mod test_mutation_insertion;
     mod test_mutation_list_value;
     mod test_mutation_non_uniform;
+    mod test_mutation_differential;
     mod test_mutation_polynomial;
     mod test_mutation_range_value;
     mod test_selection;
     mod test_selection_boltzmann;
+    mod test_selection_clearing;
     mod test_selection_rank;
     mod test_selection_truncation;
     mod test_survivor;
+    mod test_survivor_deterministic_crowding;
     mod test_survivor_mu_comma_lambda;
     mod test_survivor_mu_plus_lambda;
 }

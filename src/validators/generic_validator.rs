@@ -1,3 +1,17 @@
+//! Generic configuration validator for all GA engine types.
+//!
+//! Provides the core validation logic that checks population sizes, operator
+//! compatibility, parameter bounds, and feature-flag consistency before the
+//! GA run begins. Called automatically during `.build()` on all engines.
+//!
+//! # Key items
+//!
+//! | Item | Description |
+//! |------|-------------|
+//! | [`validate`] | Main validation function checking all configuration fields |
+//!
+//! [`validate`]: crate::validators::generic_validator::validate
+
 use crate::configuration::{GaConfiguration, ProblemSolving};
 use crate::error::GaError;
 use crate::genotypes::Range;
@@ -7,6 +21,16 @@ use crate::traits::{ChromosomeT, GeneT};
 use std::any::TypeId;
 use std::collections::HashSet;
 
+/// Validate a GA configuration and/or population before running.
+///
+/// Checks population chromosome length consistency, configuration field
+/// validity, operator compatibility, and parameter bounds. Returns an
+/// error if any validation check fails.
+///
+/// # Arguments
+/// * `configuration` — Optional GA configuration to validate
+/// * `population` — Optional population to validate
+/// * `alleles` — Optional allele definitions for validation
 pub fn validate<U>(
     configuration: Option<&GaConfiguration>,
     population: Option<&Population<U>>,

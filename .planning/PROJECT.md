@@ -8,6 +8,20 @@ A modular, concurrent Genetic Algorithms library for Rust. Provides composable o
 
 Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library.
 
+## Current Milestone: v2.4.0 — Observer Integration, New Operators & Advanced Multi-Objective
+
+**Goal:** Wire GaObserver lifecycle hooks into all 4 new engines, expand the operator library with 7 new strategies, and extend multi-objective optimization with NSGA-III, MOEA/D, SPEA2, SMS-EMOA/IBEA, and shared quality indicators.
+
+**Target features:**
+- GaObserver hooks in DeEngine, ScatterEngine, CellularEngine, AlpsEngine
+- DE-vs-GA head-to-head convergence benchmark
+- Clearing selection operator (#196)
+- Deterministic Crowding survivor strategy (#197)
+- Edge Recombination crossover (#198)
+- DE crossover/mutation operators for standard GA (#199)
+- Cauchy mutation (#200), Lévy Flight mutation (#201), Uniform mutation (#202)
+- NSGA-III (#203), MOEA/D (#204), SPEA2 (#205), SMS-EMOA/IBEA (#206), quality indicators (#207)
+
 ## Last Milestone: v2.3.0 — Alternative Metaheuristics & Population Models (Shipped 2026-04-27)
 
 Restructured src/ non-breakingly and shipped 4 independent optimization engines: DE (5 strategies + JADE/L-SHADE), Scatter Search, Cellular GA (4 neighborhoods, sync/async), ALPS (3 age schemes, cross-layer mating). 58 files, 3,361 LOC added. Observer hooks not yet wired into the 4 new engines (deferred to next milestone).
@@ -69,10 +83,25 @@ Eliminated unnecessary heap allocations, reduced algorithmic complexity, and imp
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] GaObserver wired into DeEngine, ScatterEngine, CellularEngine, AlpsEngine — all 4 new engines lack observer lifecycle hooks (deferred from v2.3.0)
-- [ ] DE-vs-GA head-to-head convergence benchmark (deferred from v2.3.0)
-- [ ] New operator additions (selection, crossover, mutation) — issues #196–#202
-- [ ] Advanced Multi-Objective: NSGA-III, MOEA/D, SPEA2 — issues #203–#207
+- [ ] GaObserver wired into DeEngine, ScatterEngine, CellularEngine, AlpsEngine — v2.4.0
+- [ ] DE-vs-GA head-to-head convergence benchmark — v2.4.0
+- ✓ Clearing selection operator (#196) — v2.4.0 (Validated in Phase 31)
+- ✓ Deterministic Crowding survivor strategy (#197) — v2.4.0 (Validated in Phase 31)
+- [ ] Edge Recombination crossover (#198) — v2.4.0
+- [ ] DE crossover/mutation operators for standard GA (#199) — v2.4.0
+- [ ] Cauchy mutation (#200) — v2.4.0
+- [ ] Lévy Flight mutation (#201) — v2.4.0
+- [ ] Uniform mutation (#202) — v2.4.0
+- [ ] NSGA-III for many-objective optimization (#203) — v2.4.0
+- [ ] MOEA/D decomposition-based multi-objective (#204) — v2.4.0
+- [ ] SPEA2 strength Pareto evolutionary algorithm (#205) — v2.4.0
+- [ ] SMS-EMOA and IBEA indicator-based MOEAs (#206) — v2.4.0
+- [ ] Multi-objective quality indicators: Hypervolume, GD, IGD, Spread (#207) — v2.4.0
+
+### Future
+
+<!-- Validated direction, not yet scheduled. -->
+
 - [ ] Framework extensions: constraint handling, memetic algorithms, warm start, AOS — issues #212–#219
 
 ### Out of Scope
@@ -140,5 +169,22 @@ Eliminated unnecessary heap allocations, reduced algorithmic complexity, and imp
 - New engines (DE, Scatter, Cellular, ALPS) do NOT yet have `GaObserver` hooks — next milestone priority
 - GitHub milestones: #1–#9 shipped; next milestone candidates: Observer for new engines, New Operators (#196–#202), Advanced Multi-Objective (#203–#207)
 
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd-transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd-complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
+
 ---
-*Last updated: 2026-04-27 after v2.3.0 milestone — shipped directory restructure + 4 alternative metaheuristic engines.*
+*Last updated: 2026-05-07 — Phase 33 complete: Cauchy, Lévy Flight, and Uniform scalar mutation operators added for Range<T> chromosomes (MUT-01, MUT-02, MUT-03).*

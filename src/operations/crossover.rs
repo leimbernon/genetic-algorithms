@@ -10,6 +10,7 @@ pub use self::clone::clone_crossover;
 pub use self::cycle::cycle;
 pub use self::multipoint::multipoint;
 pub use self::order::order;
+pub use self::edge_recombination::erx;
 pub use self::pmx::pmx;
 pub use self::rejuvenate::rejuvenate;
 pub use self::single_point::single_point;
@@ -27,6 +28,7 @@ pub mod clone;
 pub mod cycle;
 pub mod multipoint;
 pub mod order;
+pub mod edge_recombination;
 pub mod pmx;
 pub mod rejuvenate;
 pub mod sbx;
@@ -187,6 +189,7 @@ impl CrossoverOperator for Crossover {
             }
             Crossover::Clone => clone_crossover(parent_1, parent_2),
             Crossover::Rejuvenate => rejuvenate(parent_1, parent_2),
+            Crossover::EdgeRecombination => erx(parent_1, parent_2),
         }
     }
 }
@@ -236,6 +239,7 @@ impl CrossoverOperator for CrossoverConfiguration {
             }
             Crossover::Clone => clone_crossover(parent_1, parent_2),
             Crossover::Rejuvenate => rejuvenate(parent_1, parent_2),
+            Crossover::EdgeRecombination => erx(parent_1, parent_2),
         }
     }
 }

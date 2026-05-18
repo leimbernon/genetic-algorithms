@@ -1,23 +1,120 @@
-//! Island Model for parallel multi-population genetic algorithm evolution.
+//! # Island Model (IslandGa)
 //!
-//! The island model runs multiple independent populations (islands) that
-//! evolve in parallel using `rayon`. Periodically, the best individuals
-//! from each island migrate to neighboring islands according to a
-//! configurable topology.
+//! ## Description
 //!
-//! # Example
+//! The Island Model is a coarse-grained parallel metaheuristic that runs **multiple
+//! independent GA populations (islands) in parallel** using `rayon`. Periodically,
+//! individuals migrate between islands according to a configurable topology. This
+//! approach maintains diversity through geographic isolation — each island converges
+//! toward different regions of the search space — while allowing beneficial traits
+//! to spread across the archipelago via migration.
 //!
-//! ```ignore
+//! Each island can use a **different GA configuration** (mutation rate, selection method,
+//! crossover operator, etc.), enabling heterogeneous evolution strategies. When the
+//! number of configurations is less than the number of islands, the last configuration
+//! is reused for the remaining islands.
+//!
+//! The migration cycle works as follows:
+//!
+//! 1. Each island evolves independently for `migration_interval` generations
+//! 2. Migrants are selected from each island according to the `migration_policy`
+//! 3. Migrants are sent to neighboring islands (determined by the topology)
+//! 4. Destination islands replace some individuals with the incoming migrants
+//! 5. Evolution continues for another `migration_interval` generations
+//!
+//! ## When to Use
+//!
+//! - **Problem type:** Single-objective — continuous, binary, permutation, or symbolic
+//! - **Number of objectives:** 1 (see [`crate::island::nsga2`] for multi-objective island model)
+//! - **Variable type:** Any (delegated to per-island GA configurations)
+//! - **Key strength:** Excellent diversity via geographic isolation; natural parallelization;
+//!   heterogeneous operator configurations across islands
+//! - **Key weakness:** Higher total population than single-population GA; migration overhead;
+//!   tuning migration interval and rate requires experimentation
+//!
+//! ## Quick Reference
+//!
+//! ### Mandatory Parameters
+//!
+//! | Parameter | Type | Required | Default | Description |
+//! |-----------|------|----------|---------|-------------|
+//! | `num_islands` | `usize` | Yes (via builder) | `4` | Number of sub-populations |
+//! | `migration_interval` | `usize` | Yes (via builder) | `10` | Generations between migration events |
+//! | `migration_count` | `usize` | Yes (via builder) | `1` | Individuals migrating per island per event |
+//! | `ga_config` | `GaConfiguration` | Yes (constructor) | — | Base GA config for each island |
+//!
+//! ### Optional Parameters
+//!
+//! | Parameter | Type | Required | Default | Description |
+//! |-----------|------|----------|---------|-------------|
+//! | `topology` | `MigrationTopology` | No | `Ring` | Inter-island connection pattern |
+//! | `migration_policy` | `MigrationPolicy` | No | `BestReplaceWorst` | Migrant selection and placement |
+//! | `observer` | `Option<Arc<dyn IslandGaObserver<U>>>` | No | `None` | Island-specific lifecycle observer |
+//!
+//! ### Migration Topologies
+//!
+//! | Topology | Description | Connectivity |
+//! |----------|-------------|-------------|
+//! | [`Ring`](topology::MigrationTopology::Ring) | Each island sends to the next (circular) | 1 neighbor |
+//! | [`FullyConnected`](topology::MigrationTopology::FullyConnected) | Each island sends to all others | N-1 neighbors |
+//! | [`Grid`](topology::MigrationTopology::Grid) | 2D lattice with 4-neighbor connectivity | Up to 4 neighbors |
+//! | [`Hypercube`](topology::MigrationTopology::Hypercube) | Binary-reflected neighbors (power-of-2 islands) | log2(N) neighbors |
+//! | [`Custom`](topology::MigrationTopology::Custom) | User-defined adjacency list | Variable |
+//!
+//! ## Complete Example
+//!
+//! ```rust,ignore
+//! use genetic_algorithms::configuration::GaConfiguration;
 //! use genetic_algorithms::island::configuration::IslandConfiguration;
 //! use genetic_algorithms::island::topology::MigrationTopology;
 //! use genetic_algorithms::island::IslandGa;
+//! use genetic_algorithms::traits::ConfigurationT;
 //!
 //! let island_config = IslandConfiguration::new()
 //!     .with_num_islands(4)
 //!     .with_migration_interval(10)
 //!     .with_migration_count(2)
 //!     .with_topology(MigrationTopology::Ring);
+//!
+//! let ga_config = GaConfiguration::default()
+//!     .with_population_size(100)
+//!     .with_max_generations(500)
+//!     .with_genes_per_chromosome(10);
+//!
+//! let mut island_ga = IslandGa::new(island_config, ga_config);
+//! // See examples/island_model.rs for a full runnable example
 //! ```
+//!
+//! ## Configuration Tips
+//!
+//! - **Ring topology** is the best starting point — it creates slow gene flow that preserves
+//!   island diversity while still allowing beneficial traits to spread
+//! - **Migration interval of 5-20** generations is typical; shorter intervals increase gene
+//!   flow (faster convergence), longer intervals preserve more diversity
+//! - **1-2 migrants per island per event** is sufficient in most cases; more migrants =
+//!   faster homogenization
+//! - Use **heterogeneous configurations** (different mutation rates or selection methods)
+//!   across islands to explore diverse search strategies simultaneously
+//! - Total population = `num_islands * ga_config.population_size` — be mindful of total
+//!   computational cost
+//!
+//! ## When to Choose This vs Cellular GA
+//!
+//! | Factor | IslandGa | CellularEngine |
+//! |--------|----------|---------------|
+//! | Granularity | Coarse-grained (islands) | Fine-grained (cells) |
+//! | Gene flow | Periodic migration events | Continuous local neighborhood |
+//! | Diversity mechanism | Geographic isolation | Spatial diffusion |
+//! | Heterogeneous operators | Yes (per-island config) | No (single global config) |
+//! | Parallel scaling | Excellent (island-level) | Good (cell-level) |
+//! | Migration topologies | 5 options | 4 neighborhood types |
+//!
+//! ## References
+//!
+//! - Cantu-Paz, E. (2000). *Efficient and Accurate Parallel Genetic Algorithms*. Springer.
+//! - Whitley, D., Rana, S., & Heckendorn, R. B. (1998). The Island Model Genetic Algorithm:
+//!   On Separability, Population Size and Convergence. *Journal of Computing and Information
+//!   Technology*.
 
 pub mod configuration;
 pub mod migration;
@@ -462,12 +559,36 @@ where
                 for child in offspring.iter_mut() {
                     let p: f64 = rng.random();
                     if p <= mut_prob {
-                        mutation::factory_with_params(
-                            mutation_config.method,
-                            child,
-                            mutation_config.step,
-                            mutation_config.sigma,
-                        )?;
+                        if mutation_config.method == crate::operations::Mutation::Cauchy {
+                            mutation::factory_with_params(
+                                mutation_config.method,
+                                child,
+                                mutation_config.cauchy_scale,
+                                None,
+                            )?;
+                        } else if mutation_config.method == crate::operations::Mutation::LevyFlight {
+                            mutation::factory_with_params(
+                                mutation_config.method,
+                                child,
+                                None,
+                                mutation_config.levy_alpha,
+                            )?;
+                        } else if mutation_config.method == crate::operations::Mutation::Polynomial {
+                            let eta = mutation_config.polynomial_eta.or(mutation_config.step);
+                            mutation::factory_with_params(
+                                mutation_config.method,
+                                child,
+                                eta,
+                                None,
+                            )?;
+                        } else {
+                            mutation::factory_with_params(
+                                mutation_config.method,
+                                child,
+                                mutation_config.step,
+                                mutation_config.sigma,
+                            )?;
+                        }
                     }
                 }
 

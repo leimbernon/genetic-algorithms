@@ -24,7 +24,10 @@
 //! using only one.
 
 use crate::ga::TerminationCause;
-use crate::observer::{ExtensionEvent, GaObserver, IslandGaObserver, Nsga2Observer};
+use crate::observer::{
+    ExtensionEvent, GaObserver, IbeaObserver, IslandGaObserver, MoeaDObserver, Nsga2Observer,
+    Nsga3Observer, SmsEmoaObserver, Spea2Observer,
+};
 use crate::stats::GenerationStats;
 use crate::traits::ChromosomeT;
 use std::time::Duration;
@@ -202,5 +205,106 @@ impl<U: ChromosomeT> Nsga2Observer<U> for LogObserver {
     }
     fn on_crowding_distance_calculated(&self, generation: usize, duration_ms: f64) {
         log::debug!(target: "nsga2_events", "Crowding distance calculated at generation {} ({:.2}ms)", generation, duration_ms);
+    }
+}
+
+impl<U: ChromosomeT> Nsga3Observer<U> for LogObserver {
+    fn on_pareto_front_assigned(
+        &self,
+        generation: usize,
+        front_count: usize,
+        population_size: usize,
+    ) {
+        log::debug!(target: "nsga3_events", "Generation {} complete, population size = {}, fronts = {}", generation, population_size, front_count);
+    }
+    fn on_non_dominated_sort_complete(&self, generation: usize, duration_ms: f64) {
+        log::debug!(target: "nsga3_events", "Non-dominated sort complete at generation {} ({:.2}ms)", generation, duration_ms);
+    }
+}
+
+impl<U: ChromosomeT> MoeaDObserver<U> for LogObserver {
+    fn on_pareto_front_assigned(
+        &self,
+        generation: usize,
+        front_count: usize,
+        population_size: usize,
+    ) {
+        log::debug!(target: "moead_events",
+            "Generation {} complete, population size = {}, fronts = {}",
+            generation, population_size, front_count);
+    }
+    fn on_non_dominated_sort_complete(&self, generation: usize, duration_ms: f64) {
+        log::debug!(target: "moead_events",
+            "Non-dominated sort complete at generation {} ({:.2}ms)",
+            generation, duration_ms);
+    }
+}
+
+impl<U: ChromosomeT> Spea2Observer<U> for LogObserver {
+    fn on_fitness_assigned(
+        &self,
+        generation: usize,
+        duration_ms: f64,
+        pop_size: usize,
+        archive_size: usize,
+    ) {
+        log::debug!(target: "spea2_events",
+            "Strength+density fitness assigned at generation {} ({:.2}ms) — pop={}, archive={}",
+            generation, duration_ms, pop_size, archive_size);
+    }
+    fn on_archive_updated(
+        &self,
+        generation: usize,
+        archive_size: usize,
+        non_dominated_count: usize,
+    ) {
+        log::debug!(target: "spea2_events",
+            "Archive updated at generation {} — size={}, non-dominated={}",
+            generation, archive_size, non_dominated_count);
+    }
+}
+
+impl<U: ChromosomeT> SmsEmoaObserver<U> for LogObserver {
+    fn on_hypervolume_contribution_assigned(
+        &self,
+        generation: usize,
+        duration_ms: f64,
+        population_size: usize,
+    ) {
+        log::debug!(target: "sms_emoa_events",
+            "Hypervolume contribution assigned at generation {} ({:.2}ms) — pop={}",
+            generation, duration_ms, population_size);
+    }
+    fn on_steady_state_removal(
+        &self,
+        generation: usize,
+        population_size: usize,
+    ) {
+        log::debug!(target: "sms_emoa_events",
+            "Steady-state removal at generation {} — pop={}",
+            generation, population_size);
+    }
+}
+
+impl<U: ChromosomeT> IbeaObserver<U> for LogObserver {
+    fn on_indicator_fitness_assigned(
+        &self,
+        generation: usize,
+        duration_ms: f64,
+        population_size: usize,
+    ) {
+        log::debug!(target: "ibea_events",
+            "Indicator fitness assigned at generation {} ({:.2}ms) — pop={}",
+            generation, duration_ms, population_size);
+    }
+    fn on_environmental_selection(
+        &self,
+        generation: usize,
+        population_size: usize,
+        _removed_index: usize,
+    ) {
+        log::debug!(target: "ibea_events",
+            "Environmental selection at generation {} — pop={}",
+            generation, population_size);
     }
 }

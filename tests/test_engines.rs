@@ -2,6 +2,7 @@ mod structures;
 mod engines {
     mod test_ga;
     mod test_examples;
+    mod local_search;
     mod alps {
         mod test_alps;
     }
@@ -26,6 +27,37 @@ mod engines {
         mod test_non_dominated_sort;
         mod test_nsga2;
         mod test_nsga2_configuration;
+        mod test_nsga2_constraints;
         mod test_pareto;
+    }
+    mod nsga3 {
+        mod test_das_dennis;
+        mod test_nsga3;
+        mod test_nsga3_configuration;
+    }
+    mod moead {
+        mod test_moead;
+        mod test_moead_configuration;
+    }
+    mod spea2 {
+        mod test_spea2;
+        mod test_spea2_configuration;
+    }
+    mod sms_emoa {
+        mod test_sms_emoa;
+        mod test_sms_emoa_configuration;
+    }
+    mod ibea {
+        mod test_ibea;
+        mod test_ibea_configuration;
+    }
+    mod hall_of_fame {
+        mod test_hall_of_fame;
+    }
+    mod warm_starting {
+        mod test_warm_starting;
+    }
+    mod aos {
+        mod test_aos;
     }
 }

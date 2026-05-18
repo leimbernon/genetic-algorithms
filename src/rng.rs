@@ -1,4 +1,4 @@
-//! Seedable random number generation for reproducible GA runs.
+//! RNG — seedable random number generation for reproducible GA runs.
 //!
 //! This module provides a thread-local RNG seeding mechanism. When a seed is set
 //! via [`set_seed`], subsequent calls to [`make_rng`] produce deterministic

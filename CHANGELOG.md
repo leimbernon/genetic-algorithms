@@ -5,7 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.3.0] - Unreleased
+## [2.4.0] - 2026-05-18
+
+### Added
+- **Standard benchmark functions** (`benchmarks` feature): comprehensive suite for evaluating optimization algorithms. Single-objective: `Ackley`, `Rastrigin`, `Sphere`. Bi-objective ZDT suite: `ZDT1`–`ZDT6`. Many-objective DTLZ suite: `DTLZ1`–`DTLZ7`. All functions implement the `BenchmarkFn` trait with unified `evaluate(&[f64]) -> Vec<f64>` interface, metadata bounds, and known optimum values. Gated behind the `benchmarks` feature flag — no impact on default builds.
+- **Memetic algorithm framework** (`LocalSearch` operator): hill-climbing local search refinement that improves individual solutions after mutation. Configurable via `LocalSearchConfiguration` with `HillClimbingConfig` (step_size, max_iterations). Supports `Lamarckian` (genotype updated) and `Baldwinian` (fitness only) modes. Application strategies: `AllOffspring`, `BestN`, `Probabilistic`, `EveryNGenerations`. Integrated into the `Ga` generation loop via `.with_local_search()` builder method. New `LocalSearchOperator` trait for custom implementations.
+- New example: `memetic_rastrigin.rs` demonstrating local search on the Rastrigin benchmark.
+- **Comprehensive documentation refactor**: all 11 engines documented to "ficha técnica" standard with Description, When to Use, parameter tables, compilable examples, and cross-references. All 19 example files have inline doc comments (`/*!` / `//!` blocks). Crate-level `src/lib.rs` expanded to 242 `//!` lines covering all engines, feature flags, and decision guidance. 17 new `docs/` guide files (per-engine guides + concept guides). `docs/examples.md` and `docs/engines.md` rewritten with current API. Zero `cargo doc --no-deps` warnings.
+
+---
+
+## [2.3.0] - 2026-04-27
 
 ### Added
 - **`GaObserver<U>` trait** (`observer` module): telemetry-agnostic observability hook with 12 lifecycle callbacks covering generation start/end, operator results (selection, crossover, mutation, survivor), extension events, new-best events, and run start/finish. All methods have default no-op implementations for forward compatibility.
@@ -465,7 +475,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[2.3.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/2.2.0...HEAD
+[2.4.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/2.3.0...HEAD
+[2.3.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/2.2.1...2.3.0
+[2.2.1]: https://github.com/leimbernon/rust_genetic_algorithms/compare/2.2.0...2.2.1
 [2.2.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/2.1.0...2.2.0
 [2.1.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/2.0.0...2.1.0
 [2.0.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/1.6.0...2.0.0

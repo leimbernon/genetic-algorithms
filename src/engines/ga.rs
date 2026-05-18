@@ -1,32 +1,141 @@
-//! Main genetic algorithm orchestrator.
+//! # Standard Genetic Algorithm (Ga)
 //!
-//! This module contains the [`Ga`] struct, the central entry point for
-//! configuring and running a single-objective genetic algorithm. It coordinates
-//! the full evolutionary cycle: initialization, selection, crossover, mutation,
-//! survivor selection, and fitness evaluation.
+//! ## Description
 //!
-//! # Quick start
+//! The [`Ga`] struct is the primary single-population genetic algorithm orchestrator.
+//! It implements the classic evolutionary cycle: initialization -> selection -> crossover
+//! + mutation (parallelized via rayon) -> fitness evaluation -> survivor selection ->
+//!   elitism -> statistics collection. Each generation, parents are selected via a
+//!   configurable [`Selection`](crate::operations::Selection) operator, offspring are
+//!   produced through [`Crossover`] and
+//!   [`Mutation`], and the population is updated via a
+//!   [`Survivor`](crate::operations::Survivor) strategy.
 //!
-//! ```ignore
-//! use genetic_algorithms::prelude::*;
+//! Optionally supports:
+//! - **Elitism** — preserve the N best individuals unchanged between generations
+//! - **Niching / Fitness sharing** — maintain population diversity
+//! - **Extension strategies** — re-introduce diversity when the population converges
+//! - **Adaptive GA** — dynamically tune crossover/mutation rates based on diversity
+//! - **Adaptive Operator Selection (AOS)** — choose from an operator portfolio dynamically
+//! - **Memetic local search** — refine the best individuals each generation
+//! - **Constraint handling** — penalty-based or repair-based constraint satisfaction
+//! - **Observers** — lifecycle hooks for logging, tracing, metrics, and custom monitoring
+//!
+//! ## When to Use
+//!
+//! - **Problem type:** Single-objective — continuous, combinatorial, binary, or permutation
+//! - **Number of objectives:** 1
+//! - **Variable type:** Any (binary via [`chromosomes::Binary`](crate::chromosomes::Binary),
+//!   real-valued via [`chromosomes::Range`](crate::chromosomes::Range), symbolic via
+//!   [`chromosomes::ListChromosome`](crate::chromosomes::ListChromosome))
+//! - **Key strength:** General-purpose; broadest operator library; best for learning
+//! - **Key weakness:** Single-population convergence can be premature on multimodal landscapes
+//!
+//! ## Quick Reference
+//!
+//! ### Mandatory Parameters
+//!
+//! | Parameter | Type | Required | Default | Description |
+//! |-----------|------|----------|---------|-------------|
+//! | `population_size` | `usize` | Yes (via builder) | — | Number of chromosomes in the population |
+//! | `max_generations` | `usize` | Yes (via builder) | — | Maximum number of generations |
+//! | `genes_per_chromosome` | `usize` | Yes (via builder) | — | Length of each chromosome's DNA |
+//! | `fitness_fn` | `FitnessFn<U>` | Yes (via builder) | — | Function evaluating a chromosome's fitness |
+//!
+//! ### Optional Parameters
+//!
+//! | Parameter | Type | Required | Default | Description |
+//! |-----------|------|----------|---------|-------------|
+//! | `selection` | `Selection` | No | `Tournament(3)` | Parent selection strategy |
+//! | `crossover` | `Crossover` | No | `Uniform` | Offspring crossover strategy |
+//! | `mutation` | `Mutation` | No | `Swap(0.05)` | Gene mutation strategy |
+//! | `survivor` | `Survivor` | No | `Truncation` | Population replacement strategy |
+//! | `elitism_count` | `usize` | No | `0` | Number of elite chromosomes preserved |
+//! | `initialization_fn` | `InitializationFn<U>` | No | random init | Custom population initialization |
+//! | `observer` | `Option<Arc<dyn GaObserver<U>>>` | No | `None` | Lifecycle observer |
+//! | `max_duration` | `Option<Duration>` | No | `None` | Wall-clock time limit |
+//! | `fitness_target` | `Option<f64>` | No | `None` | Stop when best fitness reaches this |
+//! | `constraint_handling` | `Option<ConstraintHandling>` | No | `None` | Constraint handling strategy |
+//! | `hall_of_fame_size` | `Option<usize>` | No | `None` | Archive size for best solutions |
+//! | `aos_strategy` | `AosStrategy` | No | `ProbabilityMatching` | Adaptive operator selection |
+//! | `local_search` | `Option<Arc<dyn LocalSearchOperator<U>>>` | No | `None` | Memetic local search operator |
+//! | `adaptive_ga` | `bool` | No | `false` | Dynamic crossover/mutation tuning |
+//! | `niching` | `Option<NichingConfiguration>` | No | `None` | Fitness sharing / diversity preservation |
+//! | `extension` | `Option<ExtensionConfiguration>` | No | `None` | Diversity re-introduction strategy |
+//! | `rng_seed` | `Option<u64>` | No | `None` | Reproducible RNG seed |
+//!
+//! ## Complete Example
+//!
+//! ```rust,ignore
+//! use genetic_algorithms::chromosomes::Range as RangeChromosome;
+//! use genetic_algorithms::ga::Ga;
+//! use genetic_algorithms::genotypes::Range as RangeGenotype;
+//! use genetic_algorithms::initializers::range_random_initialization;
+//! use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+//! use genetic_algorithms::traits::{ChromosomeT, ConfigurationT, StoppingConfig};
+//!
+//! // Rastrigin function: f(x) = A*n + sum(x_i^2 - A*cos(2*pi*x_i))
+//! fn rastrigin(dna: &[RangeGenotype<f64>]) -> f64 {
+//!     let a = 10.0;
+//!     let n = dna.len() as f64;
+//!     a * n + dna.iter().map(|g| {
+//!         g.value.powi(2) - a * (2.0 * std::f64::consts::PI * g.value).cos()
+//!     }).sum::<f64>()
+//! }
+//!
+//! let alleles = vec![RangeGenotype::new(0, vec![(-5.12, 5.12)], 0.0)];
 //!
 //! let mut ga = Ga::new()
-//!     .with_population_size(100)
+//!     .with_population_size(200)
 //!     .with_max_generations(500)
-//!     .with_genes_per_chromosome(8)
-//!     .with_fitness_fn(|dna: &[MyGene]| { /* return fitness */ 0.0 })
-//!     .with_initialization_fn(generic_random_initialization)
+//!     .with_genes_per_chromosome(10)
+//!     .with_fitness_fn(rastrigin)
+//!     .with_initialization_fn(move |n, _, _| {
+//!         range_random_initialization(n, Some(&alleles), Some(false))
+//!     })
+//!     .with_selection_method(Selection::Tournament)
+//!     .with_crossover_method(Crossover::BlendAlpha)
+//!     .with_mutation_method(Mutation::Gaussian)
+//!     .with_survivor_method(Survivor::Fitness)
 //!     .build()?;
 //!
 //! let population = ga.run()?;
-//! println!("Best: {:?}", population.best_chromosome);
+//! println!("Best fitness: {:?}", population.best_chromosome.fitness);
+//! # Ok::<_, Box<dyn std::error::Error>>(())
 //! ```
+//!
+//! ## Configuration Tips
+//!
+//! - **Tournament size 3-5** is a good starting point; larger tournament = more selection pressure
+//! - **Blend crossover (BLX-alpha)** works well for continuous problems; use **Uniform** for binary
+//! - **Gaussian mutation** with sigma=0.1 and probability=0.1 is a solid default for real-valued genes
+//! - Enable **elitism (1-2)** to prevent loss of the best solution found
+//! - Attach a [`LogObserver`](crate::observer::LogObserver) during development for per-generation stats
+//! - For multimodal problems, enable **niching** or use the **Island model** instead
+//!
+//! ## When to Choose This vs Differential Evolution
+//!
+//! | Factor | Ga | DeEngine |
+//! |--------|-----|----------|
+//! | Problem type | Any (binary, real, symbolic) | Continuous only |
+//! | Convergence speed | Moderate | Fast on unimodal |
+//! | Exploration | Good | Excellent |
+//! | Operator flexibility | Very high (10+ each) | Limited |
+//! | Ease of tuning | Moderate | Easy (F, CR) |
 //!
 //! See also: [`crate::island`] for multi-population island models, and
 //! [`crate::nsga2`] for multi-objective optimization.
+//!
+//! ## References
+//!
+//! - Goldberg, D. E. (1989). *Genetic Algorithms in Search, Optimization, and Machine Learning.*
+//! - Holland, J. H. (1975). *Adaptation in Natural and Artificial Systems.*
 
+use crate::aos::AosState;
 use crate::configuration::GaConfiguration;
+use crate::constraints::{ConstraintHandling, PenaltyStrategy};
 use crate::error::GaError;
+use crate::hall_of_fame::{HallOfFame, HallOfFameConfig};
 use crate::observer::{ExtensionEvent, GaObserver};
 #[allow(deprecated)]
 use crate::reporter::Reporter;
@@ -34,19 +143,25 @@ use crate::stats::GenerationStats;
 use crate::traits::{FitnessFn, InitializationFn};
 use crate::validators::validator_factory as ValidatorFactory;
 use crate::{
-    configuration::{LimitConfiguration, LogLevel, ProblemSolving},
-    operations::{crossover, extension, mutation, selection, survivor, Extension},
+    configuration::{LimitConfiguration, LocalSearchConfiguration, LogLevel, ProblemSolving},
+    operations::local_search::{LocalSearch, LocalSearchApplicationStrategy, LocalSearchMode},
+    operations::{
+        crossover, extension, mutation, selection, survivor, Crossover, Extension, Mutation,
+    },
     population::Population,
     traits::{
         ChromosomeT, ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, GeneT,
-        MutationConfig, NichingConfig, SelectionConfig, StoppingConfig,
+        LocalSearchConfig, LocalSearchOperator, MutationConfig, NichingConfig, SelectionConfig,
+        StoppingConfig,
     },
 };
 use rand::Rng;
+#[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
 use std::fmt::Debug;
 use std::ops::ControlFlow;
-use std::sync::Arc;
+use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 /// Marker trait that resolves to `serde::Serialize` when the `serde` feature is
@@ -61,10 +176,37 @@ pub trait MaybeSerialize: serde::Serialize {}
 #[cfg(feature = "serde")]
 impl<T: serde::Serialize> MaybeSerialize for T {}
 
+/// Marker trait for conditional serialization support.
+///
+/// When the `serde` feature is enabled, this resolves to `serde::Serialize`.
+/// When disabled, it is an auto-implemented blanket trait that does nothing.
+/// This pattern allows generics to require serialization unconditionally
+/// while only imposing the bound when the feature is active.
 #[cfg(not(feature = "serde"))]
 pub trait MaybeSerialize {}
 #[cfg(not(feature = "serde"))]
 impl<T> MaybeSerialize for T {}
+
+/// Marker trait for conditional deserialization support.
+///
+/// When the `serde` feature is enabled, this resolves to
+/// `for<'de> serde::Deserialize<'de>`. When disabled, it is an
+/// auto-implemented blanket trait. Mirrors the `MaybeSerialize` pattern
+/// for checkpoint loading.
+#[cfg(not(feature = "serde"))]
+pub trait MaybeDeserialize {}
+#[cfg(not(feature = "serde"))]
+impl<T> MaybeDeserialize for T {}
+
+/// Marker trait that resolves to `serde::Deserialize` when the `serde` feature is
+/// enabled, or to an auto-implemented blanket trait otherwise.
+///
+/// This mirrors the `MaybeSerialize` pattern for conditional deserialization
+/// support (needed for checkpoint loading in `run_with_callback`).
+#[cfg(feature = "serde")]
+pub trait MaybeDeserialize: for<'de> serde::Deserialize<'de> {}
+#[cfg(feature = "serde")]
+impl<T: for<'de> serde::Deserialize<'de>> MaybeDeserialize for T {}
 
 /// Indicates why a GA run terminated.
 ///
@@ -78,12 +220,19 @@ impl<T> MaybeSerialize for T {}
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum TerminationCause {
+    /// The maximum number of generations was reached.
     GenerationLimitReached,
+    /// The specified fitness target was reached or surpassed.
     FitnessTargetReached,
+    /// No fitness improvement for N consecutive generations.
     StagnationReached,
+    /// Fitness standard deviation dropped below the convergence threshold.
     ConvergenceReached,
+    /// Elapsed wall-clock time exceeded the configured limit.
     TimeLimitReached,
+    /// The user callback returned `ControlFlow::Break`.
     CallbackRequested,
+    /// Internal state before the run finalizes, or while a callback is running mid-run.
     NotTerminated,
 }
 
@@ -96,7 +245,7 @@ pub enum TerminationCause {
 /// - Manage configuration, alleles, population and termination state.
 /// - Provide builder-like configuration methods (`ConfigurationT`) to compose the run.
 /// - Coordinate the GA cycle: initialization, selection, crossover, mutation, survivor, evaluation.
-#[allow(deprecated)]
+#[allow(deprecated, clippy::type_complexity)]
 pub struct Ga<U>
 where
     U: ChromosomeT,
@@ -133,6 +282,57 @@ where
     /// Optional structured lifecycle observer. When `None` (the default),
     /// no hook calls or timing measurements are performed (zero overhead).
     observer: Option<Arc<dyn GaObserver<U> + Send + Sync>>,
+
+    /// Optional constraint violation functions.
+    /// Each function returns a violation >= 0 for a DNA slice (0 means satisfied).
+    constraint_fns: Option<Vec<Arc<dyn Fn(&[U::Gene]) -> f64 + Send + Sync>>>,
+
+    /// Strategy for applying penalty to infeasible solutions.
+    penalty_strategy: PenaltyStrategy,
+
+    /// Optional constraint handling method for comparisons.
+    constraint_handling: Option<ConstraintHandling>,
+
+    /// Optional repair operator. Applied after mutation, before fitness evaluation.
+    repair_operator: Option<Arc<dyn Fn(&mut U) -> Result<(), GaError> + Send + Sync>>,
+
+    /// Current penalty coefficient (used by adaptive penalty).
+    penalty_coefficient: f64,
+
+    /// Generation counter for adaptive penalty tracking.
+    /// Tracks how many generations the best individual has been feasible (positive)
+    /// or infeasible (negative) within the current window.
+    adaptive_penalty_counter: isize,
+
+    /// Optional Hall of Fame / solution archive. When `None` (default), no
+    /// archive is maintained and there is zero overhead.
+    hall_of_fame: Option<HallOfFame<U>>,
+
+    /// Optional user-provided seeds for warm-starting the population.
+    /// When `Some(Vec<U>)`, the population is initialized with these chromosomes
+    /// plus random fill to reach `population_size`. Seeds are NOT re-evaluated
+    /// (fitness is trusted per D-07). When `None` (default), standard random
+    /// initialization is used. Zero overhead when None.
+    seeds: Option<Vec<U>>,
+
+    /// Optional checkpoint file path for resuming a previous GA run.
+    /// When `Some(path)`, the checkpoint is loaded at build-time and restores
+    /// population, generation counter, and accumulated stats. The user's
+    /// builder config wins for operator settings (hybrid config per D-04).
+    /// When `None` (default), no checkpoint loading occurs. Zero overhead when None.
+    checkpoint_path: Option<PathBuf>,
+
+    /// Optional AOS crossover operator selection state (Phase 43).
+    /// Runtime state wrapped in Mutex for safe shared access across rayon threads.
+    /// When `Some(Mutex<AosState>)`, each offspring couple uses AOS to select the crossover operator.
+    /// Default: None (standard single-operator dispatch).
+    aos_crossover: Option<Mutex<AosState>>,
+
+    /// Optional AOS mutation operator selection state (Phase 43).
+    /// Runtime state wrapped in Mutex for safe shared access across rayon threads.
+    /// When `Some(Mutex<AosState>)`, each offspring couple uses AOS to select the mutation operator.
+    /// Default: None (standard single-operator dispatch).
+    aos_mutation: Option<Mutex<AosState>>,
 }
 
 #[allow(deprecated)]
@@ -155,6 +355,17 @@ where
             fitness_cache_size: None,
             reporter: None,
             observer: None,
+            constraint_fns: None,
+            penalty_strategy: PenaltyStrategy::None,
+            constraint_handling: None,
+            repair_operator: None,
+            penalty_coefficient: 0.0,
+            adaptive_penalty_counter: 0,
+            hall_of_fame: None,
+            seeds: None,
+            checkpoint_path: None,
+            aos_crossover: None,
+            aos_mutation: None,
         }
     }
 }
@@ -169,6 +380,10 @@ where
     }
     fn with_selection_method(mut self, selection_method: crate::operations::Selection) -> Self {
         self.configuration.selection_configuration.method = selection_method;
+        self
+    }
+    fn with_niche_radius(mut self, niche_radius: f64) -> Self {
+        self.configuration.selection_configuration.niche_radius = niche_radius;
         self
     }
 }
@@ -237,6 +452,22 @@ where
     }
     fn with_mutation_probability_step(mut self, step: f64) -> Self {
         self.configuration.mutation_configuration.probability_step = Some(step);
+        self
+    }
+    fn with_differential_f(mut self, f: f64) -> Self {
+        self.configuration.mutation_configuration.differential_f = Some(f);
+        self
+    }
+    fn with_polynomial_eta(mut self, eta: f64) -> Self {
+        self.configuration.mutation_configuration.polynomial_eta = Some(eta);
+        self
+    }
+    fn with_cauchy_scale(mut self, scale: f64) -> Self {
+        self.configuration.mutation_configuration.cauchy_scale = Some(scale);
+        self
+    }
+    fn with_levy_alpha(mut self, alpha: f64) -> Self {
+        self.configuration.mutation_configuration.levy_alpha = Some(alpha);
         self
     }
 }
@@ -337,6 +568,16 @@ where
     }
 }
 
+impl<U> LocalSearchConfig for Ga<U>
+where
+    U: ChromosomeT,
+{
+    fn with_local_search_configuration(mut self, config: LocalSearchConfiguration) -> Self {
+        self.configuration.local_search_configuration = Some(config);
+        self
+    }
+}
+
 impl<U> ConfigurationT for Ga<U>
 where
     U: ChromosomeT,
@@ -416,6 +657,23 @@ where
         self.configuration.rng_seed = Some(seed);
         self
     }
+
+    fn with_crossover_portfolio(mut self, portfolio: Vec<crate::operations::Crossover>) -> Self {
+        self.configuration.crossover_portfolio = Some(portfolio);
+        self
+    }
+    fn with_mutation_portfolio(mut self, portfolio: Vec<crate::operations::Mutation>) -> Self {
+        self.configuration.mutation_portfolio = Some(portfolio);
+        self
+    }
+    fn with_aos_strategy(mut self, strategy: crate::aos::AosStrategy) -> Self {
+        self.configuration.aos_strategy = strategy;
+        self
+    }
+    fn with_reward_window(mut self, window: usize) -> Self {
+        self.configuration.aos_reward_window = window;
+        self
+    }
 }
 
 impl<U> Ga<U>
@@ -427,7 +685,8 @@ where
         + Clone
         + Debug
         + mutation::ValueMutable
-        + MaybeSerialize,
+        + MaybeSerialize
+        + MaybeDeserialize,
     U::Gene: 'static + Debug,
 {
     /// Validates configuration and adjusts defaults, returning a ready-to-run instance.
@@ -481,6 +740,76 @@ where
                     fitness_fn, cache_size,
                 ));
             }
+        }
+
+        // Validate constraint configuration
+        crate::constraints::validate_penalty_strategy(&self.penalty_strategy)?;
+
+        // Validate mutual exclusivity of seeds and checkpoint (per discretion)
+        if self.seeds.is_some() && self.checkpoint_path.is_some() {
+            return Err(GaError::ConfigurationError(
+                "Cannot use both with_seeds() and with_checkpoint() — they are mutually exclusive"
+                    .to_string(),
+            ));
+        }
+
+        // Validate seeds count does not exceed population_size (per discretion)
+        if let Some(ref seeds) = self.seeds {
+            let pop_size = self.configuration.limit_configuration.population_size;
+            if seeds.len() > pop_size {
+                return Err(GaError::ConfigurationError(format!(
+                    "Number of seeds ({}) exceeds population_size ({}): with_seeds count must not exceed population_size",
+                    seeds.len(),
+                    pop_size,
+                )));
+            }
+        }
+
+        // Validate checkpoint file exists (per discretion: build-time validation)
+        // Note: full checkpoint loading (population restore, etc.) happens at run time
+        // to avoid requiring serde/Deserialize bounds at build().
+        if let Some(ref checkpoint_path) = self.checkpoint_path {
+            if !checkpoint_path.exists() {
+                return Err(GaError::CheckpointError(format!(
+                    "Checkpoint file not found: {}",
+                    checkpoint_path.display(),
+                )));
+            }
+        }
+
+        // AOS portfolio validation (Phase 43)
+        if let Some(ref xover_pf) = self.configuration.crossover_portfolio {
+            if xover_pf.is_empty() {
+                return Err(GaError::ConfigurationError(
+                    "AOS crossover portfolio is empty: provide at least 2 operators".to_string(),
+                ));
+            }
+            if xover_pf.len() == 1 {
+                log::warn!(target: "ga_events", "AOS crossover portfolio has only 1 operator; portfolio mode is effectively the same as single-operator mode");
+            }
+        }
+        if let Some(ref mut_pf) = self.configuration.mutation_portfolio {
+            if mut_pf.is_empty() {
+                return Err(GaError::ConfigurationError(
+                    "AOS mutation portfolio is empty: provide at least 2 operators".to_string(),
+                ));
+            }
+            if mut_pf.len() == 1 {
+                log::warn!(target: "ga_events", "AOS mutation portfolio has only 1 operator; portfolio mode is effectively the same as single-operator mode");
+            }
+        }
+        // Warn if both portfolio and single-operator are configured
+        if self.configuration.crossover_portfolio.is_some()
+            && self.configuration.crossover_configuration.method
+                != crate::operations::Crossover::Uniform
+        {
+            // The default method is Uniform, so only warn if the user explicitly changed it
+            log::warn!(target: "ga_events", "Both crossover portfolio and with_crossover_method() are configured. with_crossover_method() will be ignored when portfolio is set");
+        }
+        if self.configuration.mutation_portfolio.is_some()
+            && self.configuration.mutation_configuration.method != crate::operations::Mutation::Swap
+        {
+            log::warn!(target: "ga_events", "Both mutation portfolio and with_mutation_method() are configured. with_mutation_method() will be ignored when portfolio is set");
         }
 
         Ok(self)
@@ -566,6 +895,65 @@ where
         self
     }
 
+    // ---------------------------------------------------------------------------
+    // Constraint handling builder methods
+    // ---------------------------------------------------------------------------
+
+    /// Sets one or more constraint violation functions.
+    ///
+    /// Each function receives a chromosome's DNA slice and returns a violation
+    /// value >= 0, where 0 means the constraint is fully satisfied. Multiple
+    /// constraint functions can be provided; the total violation is the sum
+    /// of all individual violation values.
+    ///
+    /// Combined with `with_penalty_strategy()` to define how violations
+    /// affect fitness, or with `with_constraint_handling()` for Deb's
+    /// feasibility rules.
+    pub fn with_constraint_fns<F>(mut self, fns: Vec<F>) -> Self
+    where
+        F: Fn(&[U::Gene]) -> f64 + Send + Sync + 'static,
+    {
+        self.constraint_fns = Some(fns.into_iter().map(|f| Arc::new(f) as Arc<_>).collect());
+        self
+    }
+
+    /// Sets the penalty strategy for constraint handling.
+    ///
+    /// Use with `with_constraint_fns()`. The strategy determines how
+    /// constraint violations are added to raw fitness.
+    ///
+    /// Default: `PenaltyStrategy::None` (no penalty applied).
+    pub fn with_penalty_strategy(mut self, strategy: PenaltyStrategy) -> Self {
+        self.penalty_strategy = strategy;
+        self
+    }
+
+    /// Sets the constraint handling method for comparisons.
+    ///
+    /// Use with `with_constraint_fns()`. When set, the comparison behavior
+    /// in selection, survivor, and elite operations is modified according
+    /// to the chosen method (e.g., Deb's feasibility rules).
+    pub fn with_constraint_handling(mut self, handling: ConstraintHandling) -> Self {
+        self.constraint_handling = Some(handling);
+        self
+    }
+
+    /// Sets the repair operator for fixing infeasible chromosomes.
+    ///
+    /// The repair operator is applied after mutation and before fitness
+    /// evaluation, allowing chromosomes to be modified in-place to satisfy
+    /// problem-specific constraints (e.g., knapsack capacity, TSP validity).
+    ///
+    /// The operator receives a mutable reference to the chromosome and must
+    /// return `Ok(())` after modifying it to satisfy constraints.
+    pub fn with_repair_operator<F>(mut self, operator: F) -> Self
+    where
+        F: Fn(&mut U) -> Result<(), GaError> + Send + Sync + 'static,
+    {
+        self.repair_operator = Some(Arc::new(operator));
+        self
+    }
+
     /// Sets the initialization function used to create chromosome DNA.
     ///
     /// The closure receives `(genes_per_chromosome, alleles, needs_unique_ids)`
@@ -579,6 +967,91 @@ where
         self
     }
 
+    /// Configures a Hall of Fame / solution archive.
+    ///
+    /// When configured, the GA will maintain a bounded archive of the top-N
+    /// unique solutions encountered across all generations. Accessible after
+    /// `run()` completes via `.hall_of_fame()`.
+    ///
+    /// Uses `HallOfFameConfig` for capacity and diversity filtering settings.
+    pub fn with_hall_of_fame(mut self, config: HallOfFameConfig) -> Self {
+        self.hall_of_fame = Some(HallOfFame::new(config));
+        self
+    }
+
+    /// Seeds the population with known solutions before the GA run.
+    ///
+    /// The provided chromosomes are placed at the front of the population
+    /// (in order), and the remaining slots are filled via the configured
+    /// `initialization_fn`. Random fill deduplicates against seed DNA
+    /// (genotypic uniqueness check via gene.id() comparison).
+    ///
+    /// Seed fitness is trusted (per D-07) — seeds skip re-evaluation.
+    /// Seeds are also eligible for Hall of Fame admission during initialization.
+    ///
+    /// # Errors at build time
+    /// - If the number of seeds exceeds `population_size`, `build()` returns
+    ///   `GaError::ConfigurationError`.
+    /// - If both `with_seeds()` and `with_checkpoint()` are called, `build()`
+    ///   returns `GaError::ConfigurationError` (mutual exclusivity per discretion).
+    pub fn with_seeds(mut self, seeds: Vec<U>) -> Self {
+        self.seeds = Some(seeds);
+        self
+    }
+
+    /// Resumes a GA run from a previously saved checkpoint file.
+    ///
+    /// The checkpoint is loaded at build time, restoring the population,
+    /// generation counter, and accumulated statistics from the checkpoint
+    /// file. The user's builder-configured operator settings (selection,
+    /// crossover, mutation, survivor) override any in the checkpoint
+    /// (hybrid config per D-04).
+    ///
+    /// The user must still provide `fitness_fn` and `initialization_fn`
+    /// in the builder chain (these are not serializable).
+    ///
+    /// # Generation counting (D-05)
+    /// Uses absolute mode: the generation loop starts from
+    /// `checkpoint.generation` and runs for `max_generations` additional
+    /// generations. Upper bound = `checkpoint.generation + max_generations`.
+    ///
+    /// # Errors at build time
+    /// - If the checkpoint file does not exist or cannot be deserialized,
+    ///   `build()` returns `GaError::CheckpointError`.
+    /// - If both `with_seeds()` and `with_checkpoint()` are called, `build()`
+    ///   returns `GaError::ConfigurationError` (mutual exclusivity per discretion).
+    pub fn with_checkpoint(mut self, path: impl Into<std::path::PathBuf>) -> Self {
+        self.checkpoint_path = Some(path.into());
+        self
+    }
+
+    /// Configures a local search operator for memetic algorithm refinement.
+    ///
+    /// When configured, the local search operator is applied to offspring
+    /// after crossover+mutation+fitness and after repair/constraints,
+    /// before population merge and survivor selection.
+    ///
+    /// The provided operator variant is stored in the configuration and
+    /// applied each generation according to the application strategy.
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// let ga = Ga::<RangeChromosome<f64>>::new()
+    ///     .with_local_search(LocalSearch::HillClimbing)
+    ///     .with_local_search_configuration(LocalSearchConfiguration {
+    ///         application_strategy: LocalSearchApplicationStrategy::BestN { n: 5 },
+    ///         ..Default::default()
+    ///     });
+    /// ```
+    pub fn with_local_search(mut self, method: LocalSearch) -> Self {
+        self.configuration
+            .local_search_configuration
+            .get_or_insert_with(LocalSearchConfiguration::default)
+            .method = method;
+        self
+    }
+
     /// Randomly initializes the population using the provided initialization function.
     ///
     /// Behavior:
@@ -589,16 +1062,39 @@ where
     where
         U: ChromosomeT + Send + Sync + 'static + Clone,
     {
-        // Before starting initialization, we should verify that initializer is set
+        // Before starting initialization, verify that initializer is set
         if self.initialization_fn.is_none() {
             return Err(GaError::InitializationError(
                 "No initialization function set".to_string(),
             ));
         }
 
-        //Before starting the run, we will check the conditions
+        // Validate configuration
         ValidatorFactory::validate::<U>(Some(&self.configuration), None, Some(&self.alleles))?;
 
+        // Delegate to seed-aware or standard init
+        if self.seeds.is_some() {
+            self.initialize_with_seeds()?;
+        } else {
+            self.initialize_random()?;
+        }
+
+        // Apply repair operator to initial population if configured
+        if let Some(ref repair_op) = self.repair_operator {
+            for c in self.population.chromosomes.iter_mut() {
+                repair_op(c)?;
+                c.calculate_fitness();
+            }
+        }
+
+        Ok(self)
+    }
+
+    /// Creates a random initial population (no seeds).
+    fn initialize_random(&mut self) -> Result<(), GaError>
+    where
+        U: ChromosomeT + Send + Sync + 'static + Clone,
+    {
         let population_size = self.configuration.limit_configuration.population_size;
         let genes_per_chromosome = self.configuration.limit_configuration.genes_per_chromosome;
         let needs_unique_ids = self.configuration.limit_configuration.needs_unique_ids;
@@ -626,7 +1122,138 @@ where
                 new_population.size() / 2;
         }
         self.population = new_population;
-        Ok(self)
+
+        Ok(())
+    }
+
+    /// Initializes the population with pre-evaluated seeds placed at the front.
+    ///
+    /// Seeds are moved into the population in order, then remaining slots are
+    /// filled with randomly generated chromosomes. Fill chromosomes are
+    /// genotypically deduplicated against all existing seeds (and prior fills),
+    /// using the same DNA comparison pattern as HallOfFame.
+    ///
+    /// When a HallOfFame is configured, seeds and fill chromosomes are both
+    /// evaluated for archive entry during initialization (generation 0).
+    ///
+    /// WASM compatible: seed placement and dedup are pure data operations.
+    fn initialize_with_seeds(&mut self) -> Result<(), GaError>
+    where
+        U: ChromosomeT + Send + Sync + 'static + Clone,
+    {
+        if self.initialization_fn.is_none() {
+            return Err(GaError::InitializationError(
+                "No initialization function set".to_string(),
+            ));
+        }
+
+        let seeds = self.seeds.take().unwrap();
+        let population_size = self.configuration.limit_configuration.population_size;
+        let fill_count = population_size - seeds.len();
+        let genes_per_chromosome = self.configuration.limit_configuration.genes_per_chromosome;
+        let needs_unique_ids = self.configuration.limit_configuration.needs_unique_ids;
+        let init_fn = self.initialization_fn.as_ref().unwrap();
+        let fitness_fn = self.fitness_fn.as_ref().unwrap();
+
+        // Step 1: Collect seed DNA for dedup comparison
+        let seed_dnas: Vec<&[U::Gene]> = seeds.iter().map(|s| s.dna()).collect();
+
+        // Step 2: Generate random fill with genotypic dedup against seeds
+        let mut fill_chromosomes: Vec<U> = Vec::with_capacity(fill_count);
+        // Use sequential generation for dedup (parallel would make retry logic complex)
+        // Use a max retry bound to prevent infinite loop in degenerate cases
+        let max_attempts = fill_count * 10;
+        let mut attempts = 0;
+
+        while fill_chromosomes.len() < fill_count && attempts < max_attempts {
+            attempts += 1;
+
+            // Generate one random chromosome using the initialization function
+            let genes = init_fn(
+                genes_per_chromosome,
+                if self.alleles.is_empty() {
+                    None
+                } else {
+                    Some(&self.alleles)
+                },
+                Some(needs_unique_ids),
+            );
+            let mut new_chromosome = U::new();
+            new_chromosome.set_dna(std::borrow::Cow::Owned(genes));
+
+            // Check genotypic uniqueness against seed DNAs
+            let new_dna = new_chromosome.dna();
+            let is_duplicate = seed_dnas.iter().any(|seed_dna| {
+                let max_len = new_dna.len().max(seed_dna.len());
+                if max_len == 0 {
+                    return true;
+                }
+                (0..max_len).all(|i| {
+                    let id_a = new_dna.get(i).map(|g| g.id()).unwrap_or(-1);
+                    let id_b = seed_dna.get(i).map(|g| g.id()).unwrap_or(-1);
+                    id_a == id_b
+                })
+            });
+
+            if is_duplicate {
+                continue; // Discard and retry
+            }
+
+            // Also dedup against already-generated fill chromosomes
+            let is_fill_duplicate = fill_chromosomes.iter().any(|existing| {
+                let existing_dna = existing.dna();
+                let max_len = new_dna.len().max(existing_dna.len());
+                if max_len == 0 {
+                    return true;
+                }
+                (0..max_len).all(|i| {
+                    let id_a = new_dna.get(i).map(|g| g.id()).unwrap_or(-1);
+                    let id_b = existing_dna.get(i).map(|g| g.id()).unwrap_or(-1);
+                    id_a == id_b
+                })
+            });
+
+            if is_fill_duplicate {
+                continue; // Discard and retry
+            }
+
+            // Set fitness function and evaluate
+            let ff_clone = Arc::clone(fitness_fn);
+            new_chromosome.set_fitness_fn(move |genes| ff_clone(genes));
+            new_chromosome.calculate_fitness();
+            new_chromosome.set_age(0);
+
+            fill_chromosomes.push(new_chromosome);
+        }
+
+        if fill_chromosomes.len() < fill_count {
+            return Err(GaError::InitializationError(format!(
+                "Failed to generate {} unique random chromosomes (max attempts {} reached). \
+                 Try reducing the number of seeds or increasing population_size.",
+                fill_count, max_attempts,
+            )));
+        }
+
+        // Step 3: Build population: seeds placed first, then fill
+        let mut all_chromosomes: Vec<U> = Vec::with_capacity(population_size);
+        all_chromosomes.extend(seeds); // Seeds first (trusted fitness)
+        all_chromosomes.extend(fill_chromosomes); // Fill (evaluated)
+
+        let new_population = Population::new(all_chromosomes);
+        if self.configuration.selection_configuration.number_of_couples == 0 {
+            self.configuration.selection_configuration.number_of_couples =
+                new_population.size() / 2;
+        }
+        self.population = new_population;
+
+        // Step 4: Admit seeds to Hall of Fame if configured (per D-08)
+        if let Some(ref mut hof) = self.hall_of_fame {
+            for c in self.population.chromosomes.iter() {
+                hof.try_insert(c, 0); // Generation 0: initialization
+            }
+        }
+
+        Ok(())
     }
 
     /// Runs the GA without callbacks and returns a reference to the final population.
@@ -659,7 +1286,7 @@ where
         generations_to_callback: usize,
     ) -> Result<&Population<U>, GaError>
     where
-        U: ChromosomeT + Send + Sync + 'static + Clone,
+        U: ChromosomeT + Send + Sync + 'static + Clone + MaybeDeserialize,
         F: Fn(&usize, &Population<U>, &GenerationStats, &TerminationCause) -> ControlFlow<()>,
     {
         //Before starting the run, we will check the conditions
@@ -668,8 +1295,61 @@ where
         // Apply RNG seed if configured (must be done before any random operations)
         crate::rng::set_seed(self.configuration.rng_seed);
 
-        //If we want to initialize the population randomly
-        if self.population.size() == 0 && self.initialization_fn.is_some() {
+        // Checkpoint resumption: load checkpoint if configured
+        #[allow(unused_mut)]
+        let mut checkpoint_generation: Option<usize> = None;
+        if self.checkpoint_path.is_some() {
+            #[cfg(feature = "serde")]
+            {
+                let path = self.checkpoint_path.take().unwrap();
+                let ckpt = crate::checkpoint::load_checkpoint::<U>(&path).map_err(|e| {
+                    GaError::CheckpointError(format!(
+                        "Failed to load checkpoint '{}': {}",
+                        path.display(),
+                        e
+                    ))
+                })?;
+
+                // Hybrid config override (D-04): builder operators win, checkpoint state wins
+                // 1. Save builder's operator settings
+                let builder_selection = self.configuration.selection_configuration.method;
+                let builder_crossover = self.configuration.crossover_configuration.method;
+                let builder_mutation = self.configuration.mutation_configuration.method;
+                let builder_survivor = self.configuration.survivor;
+                let builder_problem_solving =
+                    self.configuration.limit_configuration.problem_solving;
+
+                // 2. Override configuration from checkpoint (but keep builder's max_generations)
+                let builder_max_generations =
+                    self.configuration.limit_configuration.max_generations;
+                let builder_population_size =
+                    self.configuration.limit_configuration.population_size;
+                self.configuration = ckpt.configuration;
+
+                // 3. Restore builder's operator settings (D-04)
+                self.configuration.selection_configuration.method = builder_selection;
+                self.configuration.crossover_configuration.method = builder_crossover;
+                self.configuration.mutation_configuration.method = builder_mutation;
+                self.configuration.survivor = builder_survivor;
+                self.configuration.limit_configuration.problem_solving = builder_problem_solving;
+
+                // 4. Restore builder's max_generations (user controls this, D-05)
+                self.configuration.limit_configuration.max_generations = builder_max_generations;
+                self.configuration.limit_configuration.population_size = builder_population_size;
+
+                // 5. Restore checkpoint population and stats
+                self.population = ckpt.population;
+                self.stats = ckpt.stats; // Preserve accumulated stats (D-06)
+                checkpoint_generation = Some(ckpt.generation);
+            }
+            #[cfg(not(feature = "serde"))]
+            {
+                return Err(GaError::CheckpointError(
+                    "Checkpoint loading requires the 'serde' feature. Enable it in Cargo.toml: genetic_algorithms = { features = [\"serde\"] }".to_string(),
+                ));
+            }
+        } else if self.population.size() == 0 && self.initialization_fn.is_some() {
+            // Standard initialization (no checkpoint, no population)
             self.initialization()?;
         } else if self.population.size() == 0 && self.initialization_fn.is_none() {
             return Err(GaError::InitializationError(
@@ -695,6 +1375,22 @@ where
             self.population.recalculate_aga();
         }
 
+        // Initialize AOS state if portfolios are configured (Phase 43)
+        if let Some(ref xover_pf) = self.configuration.crossover_portfolio {
+            self.aos_crossover = Some(Mutex::new(AosState::new(
+                xover_pf.len(),
+                self.configuration.aos_strategy.clone(),
+                self.configuration.aos_reward_window,
+            )));
+        }
+        if let Some(ref mut_pf) = self.configuration.mutation_portfolio {
+            self.aos_mutation = Some(Mutex::new(AosState::new(
+                mut_pf.len(),
+                self.configuration.aos_strategy.clone(),
+                self.configuration.aos_reward_window,
+            )));
+        }
+
         // Initialize dynamic mutation probability
         if self.configuration.mutation_configuration.dynamic_mutation {
             self.dynamic_mutation_probability = self
@@ -714,11 +1410,18 @@ where
             self.configuration.limit_configuration.problem_solving,
         );
 
+        // Apply constraint processing to initial population if configured
+        if self.constraint_fns.is_some() {
+            self.process_constraints_population(0)?;
+        }
+
         // Starting counting the generations for the callback
         let mut generation_callback_count = 0usize;
 
-        // Reset per-generation stats
-        self.stats.clear();
+        // Reset per-generation stats (only when not resuming from checkpoint, D-06)
+        if checkpoint_generation.is_none() {
+            self.stats.clear();
+        }
 
         // Determine if this is a maximization problem
         let is_maximization = matches!(
@@ -727,7 +1430,17 @@ where
         );
 
         // Compound stopping criteria tracking
+        #[cfg(not(target_arch = "wasm32"))]
         let start_time = Instant::now();
+        #[cfg(target_arch = "wasm32")]
+        if self
+            .configuration
+            .stopping_criteria
+            .max_duration_secs
+            .is_some()
+        {
+            log::warn!(target: "ga_events", "max_duration_secs is not supported on wasm32 — time limit will be ignored");
+        }
         let mut best_fitness_so_far = self.population.best_chromosome.fitness();
         let mut stagnation_count: usize = 0;
 
@@ -737,13 +1450,31 @@ where
         self.notify(|obs| obs.on_run_start());
 
         //We start the cycles
-        for i in 0..self.configuration.limit_configuration.max_generations {
+        // Absolute generation counting (D-05):
+        // When resuming from checkpoint, the effective total generations is
+        // checkpoint.generation + max_generations. The loop variable `i` is the
+        // absolute generation number used in observer hooks, statistics, and HOF.
+        let start_gen = checkpoint_generation.unwrap_or(0);
+        let total_gens = if checkpoint_generation.is_some() {
+            start_gen + self.configuration.limit_configuration.max_generations
+        } else {
+            self.configuration.limit_configuration.max_generations
+        };
+
+        for i in start_gen..total_gens {
             age += 1;
             self.notify(|obs| obs.on_generation_start(i));
 
             //1- Parent selection for reproduction
-            let t_sel = if self.observer.is_some() {
-                Some(Instant::now())
+            let t_sel: Option<Instant> = if self.observer.is_some() {
+                #[cfg(not(target_arch = "wasm32"))]
+                {
+                    Some(Instant::now())
+                }
+                #[cfg(target_arch = "wasm32")]
+                {
+                    None
+                }
             } else {
                 None
             };
@@ -761,8 +1492,15 @@ where
             } else {
                 None
             };
-            let t_cx = if self.observer.is_some() {
-                Some(Instant::now())
+            let t_cx: Option<Instant> = if self.observer.is_some() {
+                #[cfg(not(target_arch = "wasm32"))]
+                {
+                    Some(Instant::now())
+                }
+                #[cfg(target_arch = "wasm32")]
+                {
+                    None
+                }
             } else {
                 None
             };
@@ -775,6 +1513,14 @@ where
                 self.population.f_avg,
                 dynamic_prob,
                 self.fitness_fn.clone(),
+                // AOS parameters (Phase 43)
+                self.configuration.crossover_portfolio.as_ref(),
+                self.configuration.mutation_portfolio.as_ref(),
+                self.aos_crossover.as_ref(),
+                self.aos_mutation.as_ref(),
+                i,
+                best_fitness_so_far,
+                is_maximization,
             )?;
             if let Some(t) = t_cx {
                 let elapsed = t.elapsed();
@@ -786,8 +1532,167 @@ where
                 // NOTE: elapsed covers combined crossover+mutation+fitness time (EXT-01)
                 self.notify(|obs| obs.on_fitness_evaluation_complete(i, elapsed, pop_size));
             }
+
+            // Apply repair operator to offspring if configured
+            if let Some(ref repair_op) = self.repair_operator {
+                for c in offspring.iter_mut() {
+                    repair_op(c)?;
+                    c.calculate_fitness();
+                }
+            }
+
+            // Apply constraint penalty to offspring if configured
+            if let Some(ref constraint_fns) = self.constraint_fns {
+                for c in offspring.iter_mut() {
+                    let dna = c.dna();
+                    let total_viol: f64 = constraint_fns
+                        .iter()
+                        .map(|f| f(dna))
+                        .sum();
+                    if total_viol > 0.0 {
+                        match self.penalty_strategy {
+                            PenaltyStrategy::None => {}
+                            PenaltyStrategy::Static { coefficient } => {
+                                c.set_fitness(c.fitness() + coefficient * total_viol);
+                            }
+                            PenaltyStrategy::Dynamic { c: dc, alpha, beta } => {
+                                let penalized = crate::constraints::apply_dynamic_penalty(
+                                    c.fitness(),
+                                    total_viol,
+                                    age,
+                                    dc,
+                                    alpha,
+                                    beta,
+                                );
+                                c.set_fitness(penalized);
+                            }
+                            PenaltyStrategy::Adaptive { .. } => {
+                                // Adaptive penalty uses the current coefficient
+                                let coeff = if self.penalty_coefficient == 0.0 {
+                                    0.0 // Will be initialized at generation boundary
+                                } else {
+                                    self.penalty_coefficient
+                                };
+                                c.set_fitness(c.fitness() + coeff * total_viol);
+                            }
+                        }
+                    }
+                }
+            }
+
+            //3a- Apply local search refinement to selected offspring before merge (Phase 45)
+            if let Some(ref ls_config) = self.configuration.local_search_configuration {
+                let strategy = ls_config.application_strategy;
+                let mode = ls_config.mode;
+
+                // Step 1: Should we apply local search this generation?
+                let should_apply = match strategy {
+                    LocalSearchApplicationStrategy::EveryNGenerations { interval } => {
+                        interval == 0 || (i + 1) % interval == 0
+                    }
+                    _ => true,
+                };
+
+                if should_apply && !offspring.is_empty() {
+                    // Step 2: Select candidates from offspring
+                    let candidates: Vec<usize> = match strategy {
+                        LocalSearchApplicationStrategy::AllOffspring => {
+                            (0..offspring.len()).collect()
+                        }
+                        LocalSearchApplicationStrategy::BestN { n } => {
+                            let mut indices: Vec<usize> = (0..offspring.len()).collect();
+                            let ps = self.configuration.limit_configuration.problem_solving;
+                            let k = n.min(indices.len());
+                            if k > 0 {
+                                indices.select_nth_unstable_by(k.saturating_sub(1), |&a, &b| {
+                                    let (fa, fb) = (offspring[a].fitness(), offspring[b].fitness());
+                                    match ps {
+                                        ProblemSolving::Minimization
+                                        | ProblemSolving::FixedFitness => {
+                                            fa.partial_cmp(&fb).unwrap_or(std::cmp::Ordering::Equal)
+                                        }
+                                        ProblemSolving::Maximization => {
+                                            fb.partial_cmp(&fa).unwrap_or(std::cmp::Ordering::Equal)
+                                        }
+                                    }
+                                });
+                            }
+                            indices.truncate(k);
+                            indices
+                        }
+                        LocalSearchApplicationStrategy::Probabilistic { probability } => {
+                            let mut rng = rand::thread_rng();
+                            (0..offspring.len())
+                                .filter(|_| rng.random::<f64>() < probability)
+                                .collect()
+                        }
+                        LocalSearchApplicationStrategy::EveryNGenerations { .. } => {
+                            (0..offspring.len()).collect()
+                        }
+                    };
+
+                    let is_baldwinian = matches!(mode, LocalSearchMode::Baldwinian);
+
+                    // Save original DNA for Baldwinian restore if needed
+                    let original_dnas: Vec<Vec<U::Gene>> = if is_baldwinian {
+                        candidates
+                            .iter()
+                            .map(|&idx| offspring[idx].dna().to_vec())
+                            .collect()
+                    } else {
+                        Vec::new()
+                    };
+
+                    let ff = Arc::clone(
+                        self.fitness_fn
+                            .as_ref()
+                            .expect("Fitness function required when local search is configured"),
+                    );
+                    let search_method = ls_config.method;
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    {
+                        // Extract candidates, process in parallel, reinsert
+                        let mut selected: Vec<U> = candidates
+                            .iter()
+                            .map(|&idx| offspring[idx].clone())
+                            .collect();
+                        selected.par_iter_mut().for_each(|individual| {
+                            let _ = search_method.improve(individual, ff.as_ref());
+                        });
+                        for (&idx, improved) in candidates.iter().zip(selected) {
+                            offspring[idx] = improved;
+                        }
+                    }
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        candidates.iter().for_each(|&idx| {
+                            let _ = search_method.improve(&mut offspring[idx], ff.as_ref());
+                        });
+                    }
+
+                    // Baldwinian restore: restore original DNA, keep improved fitness
+                    if is_baldwinian {
+                        for (orig_pos, &idx) in candidates.iter().enumerate() {
+                            if let Some(orig_dna) = original_dnas.get(orig_pos) {
+                                let improved_fitness = offspring[idx].fitness();
+                                offspring[idx].set_dna(std::borrow::Cow::Owned(orig_dna.clone()));
+                                offspring[idx].set_fitness(improved_fitness);
+                            }
+                        }
+                    }
+                }
+            }
+
             //3- Insert the children in the population
             self.population.add_chromosomes(&mut offspring);
+
+            //3b- Hall of Fame update: evaluate all population chromosomes for archive entry
+            if let Some(ref mut hof) = self.hall_of_fame {
+                for c in self.population.chromosomes.iter() {
+                    hof.try_insert(c, i as u64);
+                }
+            }
 
             //3.5- Elitism: preserve the top N individuals
             let elite = if self.configuration.elitism_count > 0 {
@@ -801,8 +1706,15 @@ where
             };
 
             //4- Survivor selection
-            let t_surv = if self.observer.is_some() {
-                Some(Instant::now())
+            let t_surv: Option<Instant> = if self.observer.is_some() {
+                #[cfg(not(target_arch = "wasm32"))]
+                {
+                    Some(Instant::now())
+                }
+                #[cfg(target_arch = "wasm32")]
+                {
+                    None
+                }
             } else {
                 None
             };
@@ -1006,8 +1918,28 @@ where
                             };
                             let ff = self.fitness_fn.as_ref().map(Arc::clone);
 
+                            #[cfg(not(target_arch = "wasm32"))]
                             let new_chromosomes: Vec<U> = (0..deficit)
                                 .into_par_iter()
+                                .map(|_| {
+                                    let genes = init_fn(
+                                        genes_per_chromosome,
+                                        alleles_ref,
+                                        Some(alleles_can_be_repeated),
+                                    );
+                                    let mut new_chromosome = U::new();
+                                    new_chromosome.set_dna(std::borrow::Cow::Owned(genes));
+                                    if let Some(ref ff) = ff {
+                                        let ff_clone = Arc::clone(ff);
+                                        new_chromosome.set_fitness_fn(move |genes| ff_clone(genes));
+                                    }
+                                    new_chromosome.calculate_fitness();
+                                    new_chromosome.set_age(0);
+                                    new_chromosome
+                                })
+                                .collect();
+                            #[cfg(target_arch = "wasm32")]
+                            let new_chromosomes: Vec<U> = (0..deficit)
                                 .map(|_| {
                                     let genes = init_fn(
                                         genes_per_chromosome,
@@ -1167,7 +2099,8 @@ where
                 }
             }
 
-            // Time limit check
+            // Time limit check (not available on wasm32 — see warning emitted at run start)
+            #[cfg(not(target_arch = "wasm32"))]
             if let Some(max_secs) = self.configuration.stopping_criteria.max_duration_secs {
                 if start_time.elapsed().as_secs_f64() >= max_secs {
                     self.termination_cause = TerminationCause::TimeLimitReached;
@@ -1218,6 +2151,201 @@ where
     /// at the start of each new run. Each entry corresponds to one generation.
     pub fn stats(&self) -> &[GenerationStats] {
         &self.stats
+    }
+
+    /// Returns the Hall of Fame / solution archive, if configured.
+    ///
+    /// Returns `None` if no Hall of Fame was configured.
+    /// Returns `Some(&HallOfFame<U>)` if configured, populated with the top-N
+    /// unique solutions encountered across all generations during the run.
+    pub fn hall_of_fame(&self) -> Option<&HallOfFame<U>> {
+        self.hall_of_fame.as_ref()
+    }
+
+    // ---------------------------------------------------------------------------
+    // Constraint handling helpers
+    // ---------------------------------------------------------------------------
+
+    /// Applies constraint violation penalty to the entire population.
+    ///
+    /// Called after initial fitness calculation and after offspring are added to
+    /// the population each generation. Modifies fitness values in-place according
+    /// to the configured penalty strategy or feasibility rules.
+    fn process_constraints_population(&mut self, generation: usize) -> Result<(), GaError> {
+        let constraint_fns = match self.constraint_fns {
+            Some(ref fns) => fns,
+            None => return Ok(()),
+        };
+
+        // Compute constraint violations for all chromosomes
+        let violations: Vec<f64> = self
+            .population
+            .chromosomes
+            .iter()
+            .map(|c| {
+                let dna = c.dna();
+                constraint_fns.iter().map(|f| f(dna)).sum()
+            })
+            .collect();
+
+        // Apply feasibility rules or penalty strategy
+        match self.constraint_handling {
+            Some(ConstraintHandling::FeasibilityRules) => {
+                self.apply_feasibility_rules(&violations);
+            }
+            None => {
+                self.apply_penalty_to_chromosomes(&violations, generation);
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Applies feasibility rules to modify fitness values so that feasible
+    /// individuals always compare better than infeasible ones, and infeasible
+    /// individuals are ordered by total violation.
+    fn apply_feasibility_rules(&mut self, violations: &[f64]) {
+        let (feasible_count, worst_feasible) = {
+            let mut wf = f64::NEG_INFINITY;
+            let mut bf = f64::INFINITY;
+            let mut count = 0usize;
+            for (c, &v) in self.population.chromosomes.iter().zip(violations.iter()) {
+                if v <= 0.0 {
+                    count += 1;
+                    let f = c.fitness();
+                    if f > wf {
+                        wf = f;
+                    }
+                    if f < bf {
+                        bf = f;
+                    }
+                }
+            }
+            (count, wf)
+        };
+
+        let is_maximization = matches!(
+            self.configuration.limit_configuration.problem_solving,
+            ProblemSolving::Maximization
+        );
+
+        for (c, &v) in self
+            .population
+            .chromosomes
+            .iter_mut()
+            .zip(violations.iter())
+        {
+            if v > 0.0 {
+                // Infeasible — encode violation so that:
+                // - All feasible beat all infeasible
+                // - Within infeasible, lower violation is better
+                if feasible_count > 0 {
+                    if is_maximization {
+                        // For maximization: feasible values are higher, so infeasible
+                        // get fitness = worst_feasible - violation (lower = worse)
+                        c.set_fitness(worst_feasible - v);
+                    } else {
+                        // For minimization: feasible values are lower, so infeasible
+                        // get fitness = worst_feasible + violation (higher = worse)
+                        c.set_fitness(worst_feasible + v);
+                    }
+                } else {
+                    // No feasible solutions — sort by violation only
+                    if is_maximization {
+                        c.set_fitness(-v);
+                    } else {
+                        c.set_fitness(v);
+                    }
+                }
+            }
+        }
+    }
+
+    /// Applies the configured penalty strategy to all chromosomes.
+    fn apply_penalty_to_chromosomes(&mut self, violations: &[f64], generation: usize) {
+        match self.penalty_strategy {
+            PenaltyStrategy::None => {}
+            PenaltyStrategy::Static { coefficient } => {
+                for (c, &v) in self
+                    .population
+                    .chromosomes
+                    .iter_mut()
+                    .zip(violations.iter())
+                {
+                    if v > 0.0 {
+                        c.set_fitness(c.fitness() + coefficient * v);
+                    }
+                }
+            }
+            PenaltyStrategy::Dynamic { c, alpha, beta } => {
+                for (chr, &v) in self
+                    .population
+                    .chromosomes
+                    .iter_mut()
+                    .zip(violations.iter())
+                {
+                    if v > 0.0 {
+                        let raw = chr.fitness();
+                        let penalized = crate::constraints::apply_dynamic_penalty(
+                            raw, v, generation, c, alpha, beta,
+                        );
+                        chr.set_fitness(penalized);
+                    }
+                }
+            }
+            PenaltyStrategy::Adaptive {
+                initial_coefficient,
+                window_size,
+            } => {
+                let coeff = if self.penalty_coefficient == 0.0 {
+                    initial_coefficient
+                } else {
+                    self.penalty_coefficient
+                };
+                // Track feasibility of best individual for adaptive adjustment
+                if generation > 0 && generation % window_size == 0 {
+                    let best_violation = violations
+                        .iter()
+                        .zip(self.population.chromosomes.iter())
+                        .find(|(_, c)| {
+                            c.fitness()
+                                == self
+                                    .population
+                                    .chromosomes
+                                    .iter()
+                                    .map(|x| x.fitness())
+                                    .fold(f64::NEG_INFINITY, |a, b| a.max(b))
+                        })
+                        .map(|(v, _)| *v)
+                        .unwrap_or(0.0);
+                    self.adaptive_penalty_counter = if best_violation <= 0.0 {
+                        self.adaptive_penalty_counter + 1
+                    } else {
+                        self.adaptive_penalty_counter - 1
+                    };
+                    if self.adaptive_penalty_counter > 0 {
+                        // Best has been feasible — increase penalty pressure
+                        let new_coeff = self.penalty_coefficient * 1.1;
+                        self.penalty_coefficient = new_coeff;
+                    } else if self.adaptive_penalty_counter < 0 {
+                        // Best has been infeasible — decrease penalty pressure
+                        let new_coeff = (self.penalty_coefficient / 1.1).max(0.001);
+                        self.penalty_coefficient = new_coeff;
+                    }
+                }
+
+                for (c, &v) in self
+                    .population
+                    .chromosomes
+                    .iter_mut()
+                    .zip(violations.iter())
+                {
+                    if v > 0.0 {
+                        c.set_fitness(c.fitness() + coeff * v);
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -1270,6 +2398,14 @@ fn parent_crossover<U>(
     f_avg: f64,
     dynamic_mutation_prob: Option<f64>,
     fitness_fn: Option<Arc<FitnessFn<U::Gene>>>,
+    // ---- AOS parameters (Phase 43) ----
+    crossover_portfolio: Option<&Vec<Crossover>>,
+    mutation_portfolio: Option<&Vec<Mutation>>,
+    aos_crossover_state: Option<&Mutex<AosState>>,
+    aos_mutation_state: Option<&Mutex<AosState>>,
+    generation: usize,
+    best_fitness: f64,
+    is_maximization: bool,
 ) -> Result<Vec<U>, GaError>
 where
     U: ChromosomeT + Send + Sync + 'static + Clone + mutation::ValueMutable,
@@ -1302,130 +2438,303 @@ where
         Some(1.0)
     };
 
-    // Use rayon to process parent pairs in parallel
-    let results: Vec<Result<Vec<U>, GaError>> = parents
-        .par_iter()
-        .map(|(key, value)| {
-            let mut rng = crate::rng::make_rng();
+    // Create AOS reward accumulators (Phase 43)
+    // These are shared across rayon threads via Arc<Mutex<Vec<(usize, f64)>>>
+    #[allow(clippy::type_complexity)]
+    let crossover_reward_acc: Option<Arc<Mutex<Vec<(usize, f64)>>>> =
+        if aos_crossover_state.is_some() {
+            Some(Arc::new(Mutex::new(Vec::new())))
+        } else {
+            None
+        };
+    #[allow(clippy::type_complexity)]
+    let mutation_reward_acc: Option<Arc<Mutex<Vec<(usize, f64)>>>> = if aos_mutation_state.is_some()
+    {
+        Some(Arc::new(Mutex::new(Vec::new())))
+    } else {
+        None
+    };
 
-            // Getting the parent 1 and 2 for crossover
-            let parent_1 = chromosomes.get(*key).ok_or_else(|| {
-                GaError::SelectionError(format!(
-                    "Selection returned out-of-bounds index {} (population size {})",
-                    key,
-                    chromosomes.len()
-                ))
-            })?;
-            let parent_2 = chromosomes.get(*value).ok_or_else(|| {
-                GaError::SelectionError(format!(
-                    "Selection returned out-of-bounds index {} (population size {})",
-                    value,
-                    chromosomes.len()
-                ))
-            })?;
+    // Shared per-pair closure: produces two children from one (key, value) parent pair.
+    // cfg-gated only for the iterator kind (par_iter on native, iter on wasm32).
+    let process_pair = |(key, value): &(usize, usize)| -> Result<Vec<U>, GaError> {
+        let mut rng = crate::rng::make_rng();
 
-            // Making the crossover of the parents when the random number is below or equal to the given probability
-            let crossover_probability = rng.random_range(0.0..1.0);
-            let effective_crossover_prob = if let Some(p) = crossover_probability_config {
-                p
+        // Getting the parent 1 and 2 for crossover
+        let parent_1 = chromosomes.get(*key).ok_or_else(|| {
+            GaError::SelectionError(format!(
+                "Selection returned out-of-bounds index {} (population size {})",
+                key,
+                chromosomes.len()
+            ))
+        })?;
+        let parent_2 = chromosomes.get(*value).ok_or_else(|| {
+            GaError::SelectionError(format!(
+                "Selection returned out-of-bounds index {} (population size {})",
+                value,
+                chromosomes.len()
+            ))
+        })?;
+
+        // Select operators via AOS if portfolios are configured (Phase 43)
+        // AOS returns (operator_index, operator_enum) for reward tracking
+        let selected_crossover: Option<(usize, Crossover)> = if let (
+            Some(portfolio),
+            Some(aos_state),
+        ) =
+            (crossover_portfolio, aos_crossover_state)
+        {
+            let mut state = aos_state.lock().unwrap();
+            let op_idx = state.select_operator(&mut rng, generation);
+            Some((op_idx, portfolio[op_idx]))
+        } else {
+            None
+        };
+
+        let selected_mutation: Option<(usize, Mutation)> =
+            if let (Some(portfolio), Some(aos_state)) = (mutation_portfolio, aos_mutation_state) {
+                let mut state = aos_state.lock().unwrap();
+                let op_idx = state.select_operator(&mut rng, generation);
+                Some((op_idx, portfolio[op_idx]))
             } else {
-                crossover::aga_probability(
-                    parent_1,
-                    parent_2,
-                    f_max,
-                    f_avg,
-                    configuration
-                        .crossover_configuration
-                        .probability_max
-                        .unwrap_or(1.0),
-                    configuration
-                        .crossover_configuration
-                        .probability_min
-                        .unwrap_or(0.0),
-                )
+                None
             };
 
-            // Making the mutation of each child when the random number is below or equal the given probability
-            let mut mutation_probability = rng.random_range(0.0..1.0);
-            let effective_mutation_prob = if let Some(p) = mutation_probability_config {
-                p
+        // Making the crossover of the parents when the random number is below or equal to the given probability
+        let crossover_probability = rng.random_range(0.0..1.0);
+        let effective_crossover_prob = if let Some(p) = crossover_probability_config {
+            p
+        } else {
+            crossover::aga_probability(
+                parent_1,
+                parent_2,
+                f_max,
+                f_avg,
+                configuration
+                    .crossover_configuration
+                    .probability_max
+                    .unwrap_or(1.0),
+                configuration
+                    .crossover_configuration
+                    .probability_min
+                    .unwrap_or(0.0),
+            )
+        };
+
+        // Making the mutation of each child when the random number is below or equal the given probability
+        let mut mutation_probability = rng.random_range(0.0..1.0);
+        let effective_mutation_prob = if let Some(p) = mutation_probability_config {
+            p
+        } else {
+            mutation::aga_probability(
+                parent_1,
+                parent_2,
+                f_avg,
+                configuration
+                    .mutation_configuration
+                    .probability_max
+                    .unwrap_or(1.0),
+                configuration
+                    .mutation_configuration
+                    .probability_min
+                    .unwrap_or(0.0),
+            )
+        };
+
+        let mut child_1: U;
+        let mut child_2: U;
+
+        if crossover_probability <= effective_crossover_prob {
+            let mut children = if let Some((_op_idx, cx_op)) = selected_crossover {
+                // Use AOS-selected operator (Phase 43)
+                let mut cx_config = configuration.crossover_configuration;
+                cx_config.method = cx_op;
+                crossover::factory(parent_1, parent_2, cx_config)?
             } else {
-                mutation::aga_probability(
-                    parent_1,
-                    parent_2,
-                    f_avg,
-                    configuration
-                        .mutation_configuration
-                        .probability_max
-                        .unwrap_or(1.0),
-                    configuration
-                        .mutation_configuration
-                        .probability_min
-                        .unwrap_or(0.0),
-                )
+                // Standard single-operator dispatch
+                crossover::factory(parent_1, parent_2, configuration.crossover_configuration)?
             };
+            child_2 = children.pop().ok_or_else(|| {
+                GaError::CrossoverError("Crossover returned fewer than 2 children".to_string())
+            })?;
+            child_1 = children.pop().ok_or_else(|| {
+                GaError::CrossoverError("Crossover returned fewer than 2 children".to_string())
+            })?;
+        } else {
+            child_1 = parent_1.clone();
+            child_2 = parent_2.clone();
+        }
 
-            let mut child_1: U;
-            let mut child_2: U;
+        // Determine mutation method: AOS-selected or configured single operator
+        let mutation_method = selected_mutation
+            .map(|(_, op)| op)
+            .unwrap_or(configuration.mutation_configuration.method);
 
-            if crossover_probability <= effective_crossover_prob {
-                let mut children =
-                    crossover::factory(parent_1, parent_2, configuration.crossover_configuration)?;
-                child_2 = children.pop().ok_or_else(|| {
-                    GaError::CrossoverError("Crossover returned fewer than 2 children".to_string())
-                })?;
-                child_1 = children.pop().ok_or_else(|| {
-                    GaError::CrossoverError("Crossover returned fewer than 2 children".to_string())
-                })?;
-            } else {
-                child_1 = parent_1.clone();
-                child_2 = parent_2.clone();
-            }
-
-            if mutation_probability < effective_mutation_prob {
+        if mutation_probability <= effective_mutation_prob {
+            if mutation_method == crate::operations::Mutation::Differential {
+                let f = configuration
+                    .mutation_configuration
+                    .differential_f
+                    .unwrap_or(0.5);
+                crate::operations::mutation::differential::differential_mutation(
+                    &mut child_1,
+                    chromosomes,
+                    *key,
+                    f,
+                )?;
+            } else if mutation_method == crate::operations::Mutation::Cauchy {
                 mutation::factory_with_params(
-                    configuration.mutation_configuration.method,
+                    mutation_method,
+                    &mut child_1,
+                    configuration.mutation_configuration.cauchy_scale,
+                    None,
+                )?;
+            } else if mutation_method == crate::operations::Mutation::LevyFlight {
+                mutation::factory_with_params(
+                    mutation_method,
+                    &mut child_1,
+                    None,
+                    configuration.mutation_configuration.levy_alpha,
+                )?;
+            } else if mutation_method == crate::operations::Mutation::Polynomial {
+                // Use dedicated `polynomial_eta` field if set; fall back to `step` for
+                // backward compatibility with callers that used `with_mutation_step` for eta.
+                let eta = configuration
+                    .mutation_configuration
+                    .polynomial_eta
+                    .or(configuration.mutation_configuration.step);
+                mutation::factory_with_params(mutation_method, &mut child_1, eta, None)?;
+            } else {
+                mutation::factory_with_params(
+                    mutation_method,
                     &mut child_1,
                     configuration.mutation_configuration.step,
                     configuration.mutation_configuration.sigma,
                 )?;
             }
+        }
 
-            mutation_probability = rng.random_range(0.0..1.0);
-            if mutation_probability <= effective_mutation_prob {
+        mutation_probability = rng.random_range(0.0..1.0);
+        if mutation_probability <= effective_mutation_prob {
+            if mutation_method == crate::operations::Mutation::Differential {
+                let f = configuration
+                    .mutation_configuration
+                    .differential_f
+                    .unwrap_or(0.5);
+                crate::operations::mutation::differential::differential_mutation(
+                    &mut child_2,
+                    chromosomes,
+                    *value,
+                    f,
+                )?;
+            } else if mutation_method == crate::operations::Mutation::Cauchy {
                 mutation::factory_with_params(
-                    configuration.mutation_configuration.method,
+                    mutation_method,
+                    &mut child_2,
+                    configuration.mutation_configuration.cauchy_scale,
+                    None,
+                )?;
+            } else if mutation_method == crate::operations::Mutation::LevyFlight {
+                mutation::factory_with_params(
+                    mutation_method,
+                    &mut child_2,
+                    None,
+                    configuration.mutation_configuration.levy_alpha,
+                )?;
+            } else if mutation_method == crate::operations::Mutation::Polynomial {
+                let eta = configuration
+                    .mutation_configuration
+                    .polynomial_eta
+                    .or(configuration.mutation_configuration.step);
+                mutation::factory_with_params(mutation_method, &mut child_2, eta, None)?;
+            } else {
+                mutation::factory_with_params(
+                    mutation_method,
                     &mut child_2,
                     configuration.mutation_configuration.step,
                     configuration.mutation_configuration.sigma,
                 )?;
             }
+        }
 
-            // Inject fitness function into children built via U::new() (which start with the
-            // default no-op fitness fn). Children from parent.clone() (the else branch above)
-            // already carry the correct fitness fn from their parent.
-            if let Some(ref ff) = fitness_fn {
-                let ff1 = Arc::clone(ff);
-                child_1.set_fitness_fn(move |genes| ff1(genes));
-                let ff2 = Arc::clone(ff);
-                child_2.set_fitness_fn(move |genes| ff2(genes));
+        // Inject fitness function into children built via U::new() (which start with the
+        // default no-op fitness fn). Children from parent.clone() (the else branch above)
+        // already carry the correct fitness fn from their parent.
+        if let Some(ref ff) = fitness_fn {
+            let ff1 = Arc::clone(ff);
+            child_1.set_fitness_fn(move |genes| ff1(genes));
+            let ff2 = Arc::clone(ff);
+            child_2.set_fitness_fn(move |genes| ff2(genes));
+        }
+
+        // Calculate the fitness of both children and set their age
+        child_1.calculate_fitness();
+        child_2.calculate_fitness();
+
+        child_1.set_age(age);
+        child_2.set_age(age);
+
+        // Accumulate AOS rewards (Phase 43)
+        // Crossover reward: compare parent vs child fitness
+        if let Some(ref acc) = crossover_reward_acc {
+            if let Some((c_op_idx, _)) = selected_crossover {
+                let (p, c) = if is_maximization {
+                    (child_1.fitness(), parent_1.fitness())
+                } else {
+                    (parent_1.fitness(), child_1.fitness())
+                };
+                let reward = crate::aos::compute_normalized_reward(p, c, best_fitness);
+                acc.lock().unwrap().push((c_op_idx, reward));
             }
+        }
+        // Mutation reward: compare parent vs child fitness
+        if let Some(ref acc) = mutation_reward_acc {
+            if let Some((m_op_idx, _)) = selected_mutation {
+                let (p, c) = if is_maximization {
+                    (child_1.fitness(), parent_1.fitness())
+                } else {
+                    (parent_1.fitness(), child_1.fitness())
+                };
+                let reward = crate::aos::compute_normalized_reward(p, c, best_fitness);
+                acc.lock().unwrap().push((m_op_idx, reward));
+            }
+        }
 
-            // Calculate the fitness of both children and set their age
-            child_1.calculate_fitness();
-            child_2.calculate_fitness();
+        Ok(vec![child_1, child_2])
+    };
 
-            child_1.set_age(age);
-            child_2.set_age(age);
-
-            Ok(vec![child_1, child_2])
-        })
-        .collect();
+    // Use rayon to process parent pairs in parallel (sequential fallback on wasm32)
+    #[cfg(not(target_arch = "wasm32"))]
+    let results: Vec<Result<Vec<U>, GaError>> = parents.par_iter().map(process_pair).collect();
+    #[cfg(target_arch = "wasm32")]
+    let results: Vec<Result<Vec<U>, GaError>> = parents.iter().map(process_pair).collect();
 
     // Check for any errors and flatten the results
     let mut offspring = Vec::new();
     for result in results {
         offspring.extend(result?);
+    }
+
+    // Apply AOS reward updates after collecting all rewards (Phase 43)
+    if let Some(acc) = crossover_reward_acc {
+        let rewards = acc.lock().unwrap().drain(..).collect::<Vec<_>>();
+        if !rewards.is_empty() {
+            if let Some(aos_state) = aos_crossover_state {
+                let mut state = aos_state.lock().unwrap();
+                state.record_rewards(&rewards);
+                state.update();
+            }
+        }
+    }
+    if let Some(acc) = mutation_reward_acc {
+        let rewards = acc.lock().unwrap().drain(..).collect::<Vec<_>>();
+        if !rewards.is_empty() {
+            if let Some(aos_state) = aos_mutation_state {
+                let mut state = aos_state.lock().unwrap();
+                state.record_rewards(&rewards);
+                state.update();
+            }
+        }
     }
 
     Ok(offspring)
