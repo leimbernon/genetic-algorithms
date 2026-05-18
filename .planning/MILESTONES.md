@@ -1,5 +1,24 @@
 # Milestones
 
+## v2.4.0 — Observer Integration, New Operators, Advanced Multi-Objective & Framework Extensions (Shipped: 2026-05-18)
+
+Wired GaObserver into all 4 alt-metaheuristic engines, expanded the operator library, added 5 multi-objective engines, multi-objective quality indicators, full framework extensions suite, standard benchmark functions, WASM support, and a documentation refactor.
+
+**Phases:** 30–46 (17 phases, 55 plans) | **Timeline:** 2026-04-27 → 2026-05-18 | **Files:** ~370 changed
+
+**Key accomplishments:**
+
+- GaObserver lifecycle hooks wired into DeEngine, ScatterEngine, CellularEngine, AlpsEngine
+- 7 new operators: Clearing selection, Deterministic Crowding survivor, Edge Recombination crossover, DE crossover/mutation for standard GA, Cauchy/Lévy Flight/Uniform mutation
+- NSGA-III (reference-point based), MOEA/D (decomposition), SPEA2 (strength Pareto), SMS-EMOA (steady-state HV), IBEA (indicator-based) multi-objective engines
+- Multi-objective quality indicators: Hypervolume (WFG), Generational Distance, IGD, Spread
+- Framework Extensions: constraint handling (penalty/repair/decoder), Hall of Fame, warm start / population seeding, Adaptive Operator Selection (AOS), memetic algorithm framework
+- Standard benchmark suites: ZDT1–6, DTLZ1–7, classic single-objective (Sphere, Rastrigin, Ackley, etc.)
+- WASM (wasm32-unknown-unknown) support — all time/thread APIs gated with `#[cfg(not(target_arch = "wasm32"))]`
+- Full rustdoc documentation refactor across all public items
+
+---
+
 ## v2.3.0 — Alternative Metaheuristics & Population Models (Shipped: 2026-04-27)
 
 Restructured `src/` non-breakingly and shipped four independent optimization engines, each with unit tests and criterion benchmarks.

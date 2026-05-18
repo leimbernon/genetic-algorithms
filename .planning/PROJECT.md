@@ -2,27 +2,35 @@
 
 ## What This Is
 
-A modular, concurrent Genetic Algorithms library for Rust. Provides composable operators (selection, crossover, mutation, survivor), multi-threaded execution via `rayon`, Island Model GA, NSGA-II multi-objective optimization, adaptive GA mode, elitism/stopping criteria, population diversity tracking, a `Reporter<U>` lifecycle trait, optional visualization (PNG/SVG charts), a `List<T>` genotype, and a full `GaObserver<U>` trait system. Also provides four alternative metaheuristic engines: Differential Evolution (5 strategies + JADE/L-SHADE), Scatter Search, Cellular GA (2D toroidal grid, 4 neighborhoods), and ALPS (age-layered populations). Published on crates.io as `genetic_algorithms` with ten runnable examples.
+A modular, concurrent Genetic Algorithms library for Rust. Provides composable operators (selection, crossover, mutation, survivor), multi-threaded execution via `rayon`, Island Model GA, NSGA-II multi-objective optimization, NSGA-III, MOEA/D, SPEA2, SMS-EMOA, IBEA, adaptive GA mode, elitism/stopping criteria, population diversity tracking, a full `GaObserver<U>` trait system, constraint handling, Hall of Fame, warm start, Adaptive Operator Selection (AOS), memetic algorithm framework, and standard benchmark suites (ZDT, DTLZ). Also provides four alternative metaheuristic engines: Differential Evolution (5 strategies + JADE/L-SHADE), Scatter Search, Cellular GA (2D toroidal grid, 4 neighborhoods), and ALPS (age-layered populations). Published on crates.io as `genetic_algorithms` with ten runnable examples.
 
 ## Core Value
 
 Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library.
 
-## Current Milestone: v2.4.0 — Observer Integration, New Operators & Advanced Multi-Objective
+## Current Milestone: v3.0.0 — Advanced Representations, Alternative Strategies & Architecture Simplification
 
-**Goal:** Wire GaObserver lifecycle hooks into all 4 new engines, expand the operator library with 7 new strategies, and extend multi-objective optimization with NSGA-III, MOEA/D, SPEA2, SMS-EMOA/IBEA, and shared quality indicators.
+**Goal:** Use the major semver break to simplify library architecture and usability, introduce new genotypes and alternative strategies, and add advanced chromosome representations.
 
 **Target features:**
-- GaObserver hooks in DeEngine, ScatterEngine, CellularEngine, AlpsEngine
-- DE-vs-GA head-to-head convergence benchmark
-- Clearing selection operator (#196)
-- Deterministic Crowding survivor strategy (#197)
-- Edge Recombination crossover (#198)
-- DE crossover/mutation operators for standard GA (#199)
-- Cauchy mutation (#200), Lévy Flight mutation (#201), Uniform mutation (#202)
-- NSGA-III (#203), MOEA/D (#204), SPEA2 (#205), SMS-EMOA/IBEA (#206), quality indicators (#207)
+- Architecture audit and API simplification — reduce boilerplate, clean up types that grew organically across v2.x
+- Unified `Strategy` trait abstracting over GA, HillClimb, and Permutate (#177)
+- HillClimb strategy: Stochastic and SteepestAscent variants (#172)
+- Permutate strategy: exhaustive enumeration for small search spaces (#173)
+- `Unique<T>` genotype for permutation problems (TSP, scheduling) (#174)
+- `MultiRange<T>` genotype: per-gene independent ranges and mutation (#175)
+- `MultiUnique<T>` genotype: multiple independent permutation groups (#176)
+- Lexicase Selection: multi-case fitness evaluation (#220)
+- Multi-parent crossover operators: UNDX, SPX, PCX (#221)
+- Self-adaptive mutation: strategy parameters co-evolving within the chromosome (#222)
+- Tree Chromosome for Genetic Programming (#223)
+- Variable-length chromosomes (#224)
 
-## Last Milestone: v2.3.0 — Alternative Metaheuristics & Population Models (Shipped 2026-04-27)
+## Last Milestone: v2.4.0 — Observer Integration, New Operators, Advanced Multi-Objective & Framework Extensions (Shipped 2026-05-18)
+
+**Shipped:** GaObserver hooks wired into all 4 alt-metaheuristic engines; 7 new operators (Clearing selection, Deterministic Crowding, Edge Recombination, DE crossover/mutation, Cauchy/Lévy Flight/Uniform mutation); NSGA-III, MOEA/D, SPEA2, SMS-EMOA, IBEA multi-objective engines; multi-objective quality indicators (Hypervolume, GD, IGD, Spread); constraint handling, Hall of Fame, warm start, AOS, memetic algorithm framework; standard benchmark suites (ZDT, DTLZ, single-objective); full documentation refactor; WASM (wasm32-unknown-unknown) support.
+
+## Previous Milestone: v2.3.0 — Alternative Metaheuristics & Population Models (Shipped 2026-04-27)
 
 Restructured src/ non-breakingly and shipped 4 independent optimization engines: DE (5 strategies + JADE/L-SHADE), Scatter Search, Cellular GA (4 neighborhoods, sync/async), ALPS (3 age schemes, cross-layer mating). 58 files, 3,361 LOC added. Observer hooks not yet wired into the 4 new engines (deferred to next milestone).
 
@@ -78,31 +86,39 @@ Eliminated unnecessary heap allocations, reduced algorithmic complexity, and imp
 - ✓ Scatter Search engine: diversification, reference set, combination, optional local search; 7 tests, benchmark — v2.3.0
 - ✓ Cellular GA engine: 2D toroidal grid, 4 neighborhood types (VonNeumann/Moore/CompactR2/Linear), sync/async update; 10 tests, benchmark — v2.3.0
 - ✓ ALPS engine: age-layered population, 3 age schemes (Linear/Fibonacci/Polynomial), cross-layer mating, periodic injection; 11 tests, benchmark — v2.3.0
+- ✓ GaObserver hooks wired into DeEngine, ScatterEngine, CellularEngine, AlpsEngine — v2.4.0
+- ✓ Clearing selection operator (#196); Deterministic Crowding survivor (#197) — v2.4.0
+- ✓ Edge Recombination crossover (#198); DE crossover/mutation for standard GA (#199) — v2.4.0
+- ✓ Cauchy mutation (#200), Lévy Flight mutation (#201), Uniform mutation (#202) — v2.4.0
+- ✓ NSGA-III (#203), MOEA/D (#204), SPEA2 (#205), SMS-EMOA/IBEA (#206), quality indicators (#207) — v2.4.0
+- ✓ Constraint handling, Hall of Fame, warm start, AOS, memetic algorithm framework (#212–#219) — v2.4.0
+- ✓ ZDT, DTLZ, single-objective benchmark suites — v2.4.0
+- ✓ WASM (wasm32-unknown-unknown) support — v2.4.0
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] GaObserver wired into DeEngine, ScatterEngine, CellularEngine, AlpsEngine — v2.4.0
-- [ ] DE-vs-GA head-to-head convergence benchmark — v2.4.0
-- ✓ Clearing selection operator (#196) — v2.4.0 (Validated in Phase 31)
-- ✓ Deterministic Crowding survivor strategy (#197) — v2.4.0 (Validated in Phase 31)
-- [ ] Edge Recombination crossover (#198) — v2.4.0
-- [ ] DE crossover/mutation operators for standard GA (#199) — v2.4.0
-- [ ] Cauchy mutation (#200) — v2.4.0
-- [ ] Lévy Flight mutation (#201) — v2.4.0
-- [ ] Uniform mutation (#202) — v2.4.0
-- [ ] NSGA-III for many-objective optimization (#203) — v2.4.0
-- [ ] MOEA/D decomposition-based multi-objective (#204) — v2.4.0
-- [ ] SPEA2 strength Pareto evolutionary algorithm (#205) — v2.4.0
-- [ ] SMS-EMOA and IBEA indicator-based MOEAs (#206) — v2.4.0
-- [ ] Multi-objective quality indicators: Hypervolume, GD, IGD, Spread (#207) — v2.4.0
+- [ ] Architecture audit: full review of public API, traits, builders, enums, and module structure — v3.0.0
+- [ ] API simplification: reduce boilerplate for common-case usage, clean up types that grew organically across v2.x — v3.0.0
+- [ ] Remove deprecated `Reporter<U>` trait (soft-deprecated since v2.2.0) — v3.0.0
+- [ ] Unified `Strategy` trait abstracting GA, HillClimb, and Permutate under one interface (#177) — v3.0.0
+- [ ] HillClimb strategy: Stochastic and SteepestAscent variants (#172) — v3.0.0
+- [ ] Permutate strategy: exhaustive enumeration for small search spaces (#173) — v3.0.0
+- [ ] `Unique<T>` genotype for permutation problems (TSP, scheduling) (#174) — v3.0.0
+- [ ] `MultiRange<T>` genotype: per-gene independent ranges and mutation behavior (#175) — v3.0.0
+- [ ] `MultiUnique<T>` genotype: multiple independent permutation groups (#176) — v3.0.0
+- [ ] Lexicase Selection: multi-case fitness evaluation, breaking `ChromosomeT` scalar fitness (#220) — v3.0.0
+- [ ] Multi-parent crossover operators: UNDX, SPX, PCX (#221) — v3.0.0
+- [ ] Self-adaptive mutation: strategy parameters co-evolving within the chromosome (#222) — v3.0.0
+- [ ] Tree Chromosome for Genetic Programming: breaks `dna() -> &[Gene]` linear assumption (#223) — v3.0.0
+- [ ] Variable-length chromosomes: most architecturally disruptive change (#224) — v3.0.0
 
 ### Future
 
 <!-- Validated direction, not yet scheduled. -->
 
-- [ ] Framework extensions: constraint handling, memetic algorithms, warm start, AOS — issues #212–#219
+(none currently — v3.0.0 closes all known planned feature gaps)
 
 ### Out of Scope
 
@@ -111,25 +127,26 @@ Eliminated unnecessary heap allocations, reduced algorithmic complexity, and imp
 - GUI/interactive visualization — library generates static PNG/SVG charts; interactive dashboards are users' concern
 - Specific telemetry backends (Prometheus, Jaeger) — facade pattern lets users pick
 - Per-gene hooks in observer — too granular, unacceptable overhead in hot loops
-- Public API changes in v2.2.1 — this is a pure internal optimization patch
+- DE-vs-GA head-to-head benchmark — deferred from v2.4.0; not a user-facing feature
 
 ## Context
 
-- Library is published on crates.io; backward compatibility matters
-- v2.2.0 shipped: ~15,000 LOC Rust, 10 runnable examples, full observer system, `observer-tracing` and `observer-metrics` feature flags
-- `Reporter<U>` (v2.1.0) coexists with `GaObserver<U>` (v2.2.0) — soft-deprecated but not removed
-- All observer traits use default no-op methods for forward compatibility
-- Feature flags keep optional dependencies (`tracing`, `metrics`) out of default builds
-- GitHub milestone #6 tracks all 6 performance issues (#187–#192)
+- Library is published on crates.io; v3.0.0 is a major bump — breaking changes are intentional and expected
+- v2.4.0 shipped: ~20,000+ LOC Rust, 10 runnable examples, full observer system, 5 multi-objective engines, 4 alt-metaheuristic engines, framework extensions, benchmark suites, WASM support
+- `Reporter<U>` (v2.1.0) is soft-deprecated since v2.2.0 — will be removed in v3.0.0
+- `GaObserver<U>` is the canonical lifecycle hook system; all new engines use it
+- Feature flags: `serde`, `observer-tracing`, `observer-metrics`, `visualization`, `benchmarks`
+- GitHub milestones #4 (Alternative strategies) and #11 (Advanced Representations) define v3.0.0 scope
+- Architecture simplification is a first-class goal — v3.0.0 is the only opportunity for breaking ergonomic fixes
 
 ## Constraints
 
-- **Backward compatibility**: No breaking changes without major version bump
+- **Breaking changes allowed**: v3.0.0 is a major version — intentional API breaks are in scope
 - **Zero overhead**: `Option::None` branch when no observer — no allocations, no measurements
 - **Feature flags**: `observer-tracing` and `observer-metrics` off by default
 - **Rust edition**: 2021, MSRV 1.81.0
-- **Thread safety**: All observers must be `Send + Sync` (used across rayon threads)
-- **No API changes**: v2.2.1 is a patch release — all optimizations must be purely internal
+- **Thread safety**: All observers and chromosomes must be `Send + Sync` (used across rayon threads)
+- **WASM compatibility**: All new features must compile for `wasm32-unknown-unknown`; gate `Instant::now()` and `par_iter()` with `#[cfg]`
 
 ## Key Decisions
 
@@ -187,4 +204,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-07 — Phase 33 complete: Cauchy, Lévy Flight, and Uniform scalar mutation operators added for Range<T> chromosomes (MUT-01, MUT-02, MUT-03).*
+*Last updated: 2026-05-18 — Milestone v3.0.0 started: Architecture simplification, advanced representations, alternative strategies.*
