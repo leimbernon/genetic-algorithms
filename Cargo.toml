@@ -13,7 +13,14 @@ documentation = "https://docs.rs/genetic_algorithms/latest/genetic_algorithms"
 keywords = ["genetics", "algorithm", "ai", "artificial", "intelligence"]
 categories = ["emulators","development-tools", "science", "simulation"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+exclude = [
+    ".planning/**",
+    ".github/**",
+    ".claire/**",
+    ".devcontainer/**",
+    "*.log",
+    "DEVELOPMENT.md",
+]
 
 [features]
 default = []
