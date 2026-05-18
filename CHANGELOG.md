@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.4.0] - Unreleased
+## [2.4.0] - 2026-05-18
 
 ### Added
 - **Standard benchmark functions** (`benchmarks` feature): comprehensive suite for evaluating optimization algorithms. Single-objective: `Ackley`, `Rastrigin`, `Sphere`. Bi-objective ZDT suite: `ZDT1`–`ZDT6`. Many-objective DTLZ suite: `DTLZ1`–`DTLZ7`. All functions implement the `BenchmarkFn` trait with unified `evaluate(&[f64]) -> Vec<f64>` interface, metadata bounds, and known optimum values. Gated behind the `benchmarks` feature flag — no impact on default builds.
