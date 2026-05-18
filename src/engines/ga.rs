@@ -1660,7 +1660,7 @@ where
                         selected.par_iter_mut().for_each(|individual| {
                             let _ = search_method.improve(individual, ff.as_ref());
                         });
-                        for (&idx, improved) in candidates.iter().zip(selected.into_iter()) {
+                        for (&idx, improved) in candidates.iter().zip(selected) {
                             offspring[idx] = improved;
                         }
                     }

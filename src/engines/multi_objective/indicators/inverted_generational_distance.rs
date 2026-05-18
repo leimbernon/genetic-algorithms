@@ -111,10 +111,10 @@ mod tests {
 
     #[test]
     fn test_igd_rejects_empty() {
-        let result = inverted_generational_distance(&vec![], &vec![vec![1.0, 2.0]], 2.0);
+        let result = inverted_generational_distance(&[], &[vec![1.0, 2.0]], 2.0);
         assert!(matches!(result, Err(GaError::InvalidIndicatorConfiguration(_))));
 
-        let result = inverted_generational_distance(&vec![vec![1.0, 2.0]], &vec![], 2.0);
+        let result = inverted_generational_distance(&[vec![1.0, 2.0]], &[], 2.0);
         assert!(matches!(result, Err(GaError::InvalidIndicatorConfiguration(_))));
     }
 

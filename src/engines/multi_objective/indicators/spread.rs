@@ -145,10 +145,10 @@ mod tests {
 
     #[test]
     fn test_spread_rejects_empty() {
-        let result = spread(&vec![], &vec![vec![0.0, 0.0]]);
+        let result = spread(&[], &[vec![0.0, 0.0]]);
         assert!(matches!(result, Err(GaError::InvalidIndicatorConfiguration(_))));
 
-        let result = spread(&vec![vec![0.0, 0.0], vec![1.0, 0.0]], &vec![]);
+        let result = spread(&[vec![0.0, 0.0], vec![1.0, 0.0]], &[]);
         assert!(matches!(result, Err(GaError::InvalidIndicatorConfiguration(_))));
     }
 

@@ -100,10 +100,10 @@ mod tests {
 
     #[test]
     fn test_gd_rejects_empty() {
-        let result = generational_distance(&vec![], &vec![vec![1.0, 2.0]], 2.0);
+        let result = generational_distance(&[], &[vec![1.0, 2.0]], 2.0);
         assert!(matches!(result, Err(GaError::InvalidIndicatorConfiguration(_))));
 
-        let result = generational_distance(&vec![vec![1.0, 2.0]], &vec![], 2.0);
+        let result = generational_distance(&[vec![1.0, 2.0]], &[], 2.0);
         assert!(matches!(result, Err(GaError::InvalidIndicatorConfiguration(_))));
     }
 
