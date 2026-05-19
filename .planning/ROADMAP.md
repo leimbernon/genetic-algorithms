@@ -449,7 +449,23 @@ Plans:
   4. User can configure chromosome length as `ChromosomeLength::Fixed(n)` or `ChromosomeLength::Variable { min, max }` via the builder — existing code using the old `genes_per_chromosome` field does not compile, making the change auditable
   5. User can configure all stopping criteria via flat builder methods (`.with_stagnation_limit(50)`) without constructing a `StoppingCriteria` struct; `LocalSearch` is configured via an enum, not `Arc<dyn ...>`
   6. All 10 existing runnable examples (`cargo run --example <name>`) compile and pass their short-generation CI smoke tests on the milestone branch after every PR
-**Plans**: TBD
+**Plans:** 8 plans (3 staged PRs per D-13)
+
+Plans:
+**PR 1 — ChromosomeT split (ARCH-01, ARCH-02)**
+- [ ] 47-01-PLAN.md — Wave 0 tests + split ChromosomeT into minimal core + LinearChromosome supertrait
+- [ ] 47-02-PLAN.md — Implementor updates (Binary, Range, List) + mechanical bound change across operator layer + ValueMutable supertrait upgrade
+- [ ] 47-03-PLAN.md — Engine orchestrators (Ga, DE, Scatter, Cellular, ALPS, NSGA-II/III, MOEA/D, SPEA2, SMS-EMOA, IBEA, Island) bound upgrade + PR 1 gate
+
+**PR 2 — Config cleanup (ARCH-04, ARCH-05, ARCH-06)**
+- [ ] 47-04-PLAN.md — ChromosomeLength enum + LimitConfiguration field removals + initializer signature cleanup
+- [ ] 47-05-PLAN.md — StoppingCriteria flattening into GaConfiguration + sub-struct accessor pattern + ga.rs path updates (WASM gate preserved)
+- [ ] 47-06-PLAN.md — Multi-obj engine + example + test caller migration + PR 2 gate
+
+**PR 3 — Reporter removal + CI (ARCH-03, ARCH-07)**
+- [ ] 47-07-PLAN.md — Reporter trait + impls + fire points removal + MIGRATION.md publication + README link + Cargo.toml include
+- [ ] 47-08-PLAN.md — examples-smoke.yml CI workflow + final Phase 47 verification gate
+
 **UI hint**: no
 
 ### Phase 48: New Genotype Types
