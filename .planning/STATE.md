@@ -1,11 +1,13 @@
 ---
 gsd_state_version: 1.0
 milestone: v3.0.0
-milestone_name: Advanced Representations, Alternative Strategies & Architecture Simplification
-status: planning
-last_updated: "2026-05-18T00:00:00.000Z"
+milestone_name: — Advanced Representations, Alternative Strategies & Architecture Simplification
+status: completed
+stopped_at: context exhaustion at 80% (2026-05-19)
+last_updated: "2026-05-19T11:07:02.657Z"
+last_activity: 2026-05-19 — Roadmap created (Phases 47-53)
 progress:
-  total_phases: 0
+  total_phases: 24
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -19,14 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-18)
 
 **Core value:** Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library
-**Current focus:** Defining requirements and roadmap for v3.0.0
+**Current focus:** v3.0.0 — roadmap defined, ready to plan Phase 47
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 47 (Architecture Audit & ChromosomeT Split) — not started
 Plan: —
-Status: Defining requirements
-Last activity: 2026-05-18 — Milestone v3.0.0 started
+Status: Roadmap complete, ready for `/gsd:plan-phase 47`
+Last activity: 2026-05-19 — Roadmap created (Phases 47-53)
+
+Progress bar: [░░░░░░░] 0/7 phases complete
 
 ## Accumulated Context
 
@@ -41,17 +45,24 @@ Last activity: 2026-05-18 — Milestone v3.0.0 started
 - v2.4.0: normalize_st uses ASF-based intercepts with degenerate-nadir fallback + epsilon clamp for DTLZ2 and sparse-population safety
 - v2.4.0: SMS-EMOA uses steady-state (mu+1) with hypervolume contribution removal; IBEA uses pairwise I_eps+ indicator with exponential scaling
 - v3.0.0: Architecture audit goes first — its decisions shape how new types (Strategy trait, advanced genotypes, variable-length chromosomes) are designed
+- v3.0.0: `ChromosomeT` splits into `ChromosomeT` (minimal core) and `LinearChromosome: ChromosomeT` (flat-slice contract) — `TreeChromosome: ChromosomeT` is a parallel branch, never a subtrait of `LinearChromosome`
+- v3.0.0: `MultiCaseFitness: ChromosomeT` locked in Phase 50 before Phase 53 — reused by `GpChromosome` for GP program synthesis
+- v3.0.0: No new external crates required except conditional `serde_stacker` (gated behind existing `serde` feature flag) — verify wasm32 compatibility before committing
+- v3.0.0: `GpGa<U: TreeChromosome>` is a separate engine from `Ga<U: LinearChromosome>` — GP loop differences (ramped init, bloat control, depth limits) do not belong in the standard GA hot path
+- v3.0.0: `Box<N>` recursive enum for tree nodes (rejected arena crates) — subtree clone is O(subtree), not O(arena); arena index-remapping across arenas is too complex
 
 ### Roadmap Evolution
 
-(none yet — roadmap not created)
+- 2026-05-19: Roadmap created — Phases 47-53 defined for v3.0.0
 
 ### Blockers/Concerns
 
-(none)
+- Phase 47 is the highest-risk change (~30 files touched mechanically) — it must merge and pass CI before any feature branch touching `ChromosomeT` opens a PR
+- `serde_stacker` wasm32 compatibility is unverified — must be checked in Phase 53 before committing to it; if it fails, an iterative serde approach is needed
+- Fitness function removal from chromosomes (Phase 47 decision) may break users calling `chromosome.calculate_fitness()` directly — scope must be validated and a migration path documented in MIGRATION.md
 
 ## Session Continuity
 
-Last session: 2026-05-18
-Stopped at: milestone initialized, requirements and roadmap pending
+Last session: 2026-05-19T11:07:02.653Z
+Stopped at: context exhaustion at 80% (2026-05-19)
 Resume file: None
