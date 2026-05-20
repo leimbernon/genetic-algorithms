@@ -242,7 +242,7 @@ where
     /// Sets the initialization function.
     pub fn with_initialization_fn<F>(mut self, f: F) -> Self
     where
-        F: Fn(usize, Option<&[U::Gene]>, Option<bool>) -> Vec<U::Gene> + Send + Sync + 'static,
+        F: Fn(usize, Option<&[U::Gene]>) -> Vec<U::Gene> + Send + Sync + 'static,
     {
         self.initialization_fn = Some(Arc::new(f));
         self
@@ -372,14 +372,19 @@ where
         for island_idx in 0..num_islands {
             let cfg = self.config_for_island(island_idx);
             let pop_size = cfg.limit_configuration.population_size;
-            let genes_per_chrom = cfg.limit_configuration.genes_per_chromosome;
-            let alleles_can_repeat = cfg.limit_configuration.alleles_can_be_repeated;
+            let genes_per_chrom = match cfg.limit_configuration.chromosome_length {
+                crate::chromosomes::ChromosomeLength::Fixed(n) => n,
+                crate::chromosomes::ChromosomeLength::Variable { .. } => {
+                    return Err(GaError::InvalidIslandConfiguration(
+                        "ChromosomeLength::Variable is not yet supported (Phase 52). Use ChromosomeLength::Fixed.".into(),
+                    ));
+                }
+            };
 
             let chromosomes = crate::traits::initialize_chromosomes::<U>(
                 pop_size,
                 genes_per_chrom,
                 alleles,
-                Some(alleles_can_repeat),
                 init_fn,
                 Some(fitness_fn),
                 0,

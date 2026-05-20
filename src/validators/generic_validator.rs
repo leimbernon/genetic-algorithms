@@ -72,19 +72,6 @@ where
             aga_crossover_probabilities(configuration)?;
         }
 
-        //2.4 Condition checkers for the repetition of the alleles
-        if configuration.limit_configuration.alleles_can_be_repeated {
-            if let Some(alleles) = alleles {
-                // If the alleles are not range genotypes, we check that the chromosome length is not bigger than the alleles
-                if TypeId::of::<U::Gene>() != TypeId::of::<Range<U::Gene>>() {
-                    chromosome_length_not_bigger_than_alleles::<U>(
-                        alleles,
-                        configuration.limit_configuration.genes_per_chromosome,
-                    )?;
-                }
-            }
-        }
-
         //2.6 Condition checker for the couples
         number_of_couples_is_set(configuration)?;
     }

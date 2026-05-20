@@ -969,7 +969,7 @@ where
     pub fn with_initialization_fn<F>(mut self, initialization_fn: F) -> Self
     where
         U: LinearChromosome + Send + Sync + 'static + Clone,
-        F: Fn(usize, Option<&[U::Gene]>, Option<bool>) -> Vec<U::Gene> + Send + Sync + 'static,
+        F: Fn(usize, Option<&[U::Gene]>) -> Vec<U::Gene> + Send + Sync + 'static,
     {
         self.initialization_fn = Some(Arc::new(initialization_fn));
         self
@@ -1104,20 +1104,25 @@ where
         U: LinearChromosome + Send + Sync + 'static + Clone,
     {
         let population_size = self.configuration.limit_configuration.population_size;
-        let genes_per_chromosome = self.configuration.limit_configuration.genes_per_chromosome;
-        let needs_unique_ids = self.configuration.limit_configuration.needs_unique_ids;
+        let length = match self.configuration.limit_configuration.chromosome_length {
+            crate::chromosomes::ChromosomeLength::Fixed(n) => n,
+            crate::chromosomes::ChromosomeLength::Variable { .. } => {
+                return Err(GaError::ConfigurationError(
+                    "ChromosomeLength::Variable is not yet supported (Phase 52). Use ChromosomeLength::Fixed.".into(),
+                ));
+            }
+        };
         let init_fn = self.initialization_fn.as_ref().unwrap();
         let fitness_fn = self.fitness_fn.as_ref().unwrap();
 
         let chromosomes = crate::traits::initialize_chromosomes_par::<U>(
             population_size,
-            genes_per_chromosome,
+            length,
             if self.alleles.is_empty() {
                 None
             } else {
                 Some(&self.alleles)
             },
-            Some(needs_unique_ids),
             init_fn,
             Some(fitness_fn),
             0,
@@ -1158,8 +1163,14 @@ where
         let seeds = self.seeds.take().unwrap();
         let population_size = self.configuration.limit_configuration.population_size;
         let fill_count = population_size - seeds.len();
-        let genes_per_chromosome = self.configuration.limit_configuration.genes_per_chromosome;
-        let needs_unique_ids = self.configuration.limit_configuration.needs_unique_ids;
+        let length = match self.configuration.limit_configuration.chromosome_length {
+            crate::chromosomes::ChromosomeLength::Fixed(n) => n,
+            crate::chromosomes::ChromosomeLength::Variable { .. } => {
+                return Err(GaError::ConfigurationError(
+                    "ChromosomeLength::Variable is not yet supported (Phase 52). Use ChromosomeLength::Fixed.".into(),
+                ));
+            }
+        };
         let init_fn = self.initialization_fn.as_ref().unwrap();
         let fitness_fn = self.fitness_fn.as_ref().unwrap();
 
@@ -1178,13 +1189,12 @@ where
 
             // Generate one random chromosome using the initialization function
             let genes = init_fn(
-                genes_per_chromosome,
+                length,
                 if self.alleles.is_empty() {
                     None
                 } else {
                     Some(&self.alleles)
                 },
-                Some(needs_unique_ids),
             );
             let mut new_chromosome = U::new();
             new_chromosome.set_dna(std::borrow::Cow::Owned(genes));
@@ -1908,12 +1918,14 @@ where
                         if let Some(ref init_fn) = self.initialization_fn {
                             let deficit =
                                 initial_population_size - self.population.chromosomes.len();
-                            let genes_per_chromosome =
-                                self.configuration.limit_configuration.genes_per_chromosome;
-                            let alleles_can_be_repeated = self
-                                .configuration
-                                .limit_configuration
-                                .alleles_can_be_repeated;
+                            let length = match self.configuration.limit_configuration.chromosome_length {
+                                crate::chromosomes::ChromosomeLength::Fixed(n) => n,
+                                crate::chromosomes::ChromosomeLength::Variable { .. } => {
+                                    return Err(GaError::ConfigurationError(
+                                        "ChromosomeLength::Variable is not yet supported (Phase 52). Use ChromosomeLength::Fixed.".into(),
+                                    ));
+                                }
+                            };
                             let alleles_ref: Option<&[U::Gene]> = if self.alleles.is_empty() {
                                 None
                             } else {
@@ -1926,9 +1938,8 @@ where
                                 .into_par_iter()
                                 .map(|_| {
                                     let genes = init_fn(
-                                        genes_per_chromosome,
+                                        length,
                                         alleles_ref,
-                                        Some(alleles_can_be_repeated),
                                     );
                                     let mut new_chromosome = U::new();
                                     new_chromosome.set_dna(std::borrow::Cow::Owned(genes));
@@ -1945,9 +1956,8 @@ where
                             let new_chromosomes: Vec<U> = (0..deficit)
                                 .map(|_| {
                                     let genes = init_fn(
-                                        genes_per_chromosome,
+                                        length,
                                         alleles_ref,
-                                        Some(alleles_can_be_repeated),
                                     );
                                     let mut new_chromosome = U::new();
                                     new_chromosome.set_dna(std::borrow::Cow::Owned(genes));
