@@ -328,3 +328,4 @@ pub use constraints::ConstraintHandling;
 pub use constraints::PenaltyStrategy;
 pub use hall_of_fame::{DistanceMetric, HallOfFame, HallOfFameConfig};
 pub use aos::{AosState, AosStrategy};
+pub use traits::LinearChromosome;
