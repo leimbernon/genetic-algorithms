@@ -620,18 +620,8 @@ where
 
         self
     }
-    fn with_genes_per_chromosome(mut self, genes_per_chromosome: usize) -> Self {
-        self.configuration.limit_configuration.genes_per_chromosome = genes_per_chromosome;
-        self
-    }
-    fn with_needs_unique_ids(mut self, needs_unique_ids: bool) -> Self {
-        self.configuration.limit_configuration.needs_unique_ids = needs_unique_ids;
-        self
-    }
-    fn with_alleles_can_be_repeated(mut self, alleles_can_be_repeated: bool) -> Self {
-        self.configuration
-            .limit_configuration
-            .alleles_can_be_repeated = alleles_can_be_repeated;
+    fn with_chromosome_length(mut self, length: crate::chromosomes::ChromosomeLength) -> Self {
+        self.configuration.limit_configuration.chromosome_length = length;
         self
     }
 

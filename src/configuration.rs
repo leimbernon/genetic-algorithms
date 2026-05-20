@@ -31,6 +31,7 @@
 
 use std::fmt;
 
+use crate::chromosomes::ChromosomeLength;
 use crate::extension::configuration::ExtensionConfiguration;
 use crate::niching::configuration::NichingConfiguration;
 use crate::operations::local_search::{
@@ -218,7 +219,8 @@ impl Default for MutationConfiguration {
 /// Core limits and problem parameters for the GA.
 ///
 /// Defines population size, chromosome length, optimization direction,
-/// generation cap, and whether alleles can repeat or require unique IDs.
+/// and generation cap. The `chromosome_length` field describes whether
+/// chromosomes have a fixed or variable number of genes.
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LimitConfiguration {
@@ -226,9 +228,7 @@ pub struct LimitConfiguration {
     pub max_generations: usize,
     pub fitness_target: Option<f64>,
     pub population_size: usize,
-    pub genes_per_chromosome: usize,
-    pub needs_unique_ids: bool,
-    pub alleles_can_be_repeated: bool,
+    pub(crate) chromosome_length: ChromosomeLength,
 }
 impl Default for LimitConfiguration {
     fn default() -> Self {
@@ -237,9 +237,7 @@ impl Default for LimitConfiguration {
             max_generations: 100,
             fitness_target: None,
             population_size: 0,
-            genes_per_chromosome: 0,
-            needs_unique_ids: false,
-            alleles_can_be_repeated: false,
+            chromosome_length: ChromosomeLength::default(),
         }
     }
 }
@@ -599,16 +597,8 @@ impl ConfigurationT for GaConfiguration {
         self.limit_configuration.population_size = population_size;
         self
     }
-    fn with_genes_per_chromosome(mut self, genes_per_chromosome: usize) -> Self {
-        self.limit_configuration.genes_per_chromosome = genes_per_chromosome;
-        self
-    }
-    fn with_needs_unique_ids(mut self, needs_unique_ids: bool) -> Self {
-        self.limit_configuration.needs_unique_ids = needs_unique_ids;
-        self
-    }
-    fn with_alleles_can_be_repeated(mut self, alleles_can_be_repeated: bool) -> Self {
-        self.limit_configuration.alleles_can_be_repeated = alleles_can_be_repeated;
+    fn with_chromosome_length(mut self, length: ChromosomeLength) -> Self {
+        self.limit_configuration.chromosome_length = length;
         self
     }
 

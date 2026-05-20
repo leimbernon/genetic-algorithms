@@ -20,7 +20,6 @@ use std::fmt::Debug;
 ///
 /// * `genes_per_chromosome` — Number of genes to produce.
 /// * `alleles` — Template genes carrying the allele sets to sample from.
-/// * `_needs_unique_ids` — Unused; accepted for API consistency.
 ///
 /// # Returns
 ///
@@ -37,13 +36,12 @@ use std::fmt::Debug;
 /// use genetic_algorithms::initializers::list_random_initialization;
 ///
 /// let templates = vec![List::new(0, vec!['a', 'b', 'c', 'd'], 'a').unwrap()];
-/// let genes = list_random_initialization(5, Some(&templates), None);
+/// let genes = list_random_initialization(5, Some(&templates));
 /// assert_eq!(genes.len(), 5);
 /// ```
 pub fn list_random_initialization<T>(
     genes_per_chromosome: usize,
     alleles: Option<&[List<T>]>,
-    _needs_unique_ids: Option<bool>,
 ) -> Vec<List<T>>
 where
     T: Clone + Sync + Send + Default + Debug,
@@ -77,7 +75,6 @@ where
 ///
 /// * `genes_per_chromosome` — Number of genes to produce (must be ≤ `alleles.len()`).
 /// * `alleles` — Template genes; the first template's allele set is used.
-/// * `_needs_unique_ids` — Unused; accepted for API consistency.
 ///
 /// # Returns
 ///
@@ -95,13 +92,12 @@ where
 /// use genetic_algorithms::initializers::list_random_initialization_without_repetitions;
 ///
 /// let templates = vec![List::new(0, vec!['a', 'b', 'c', 'd'], 'a').unwrap()];
-/// let genes = list_random_initialization_without_repetitions(3, Some(&templates), None);
+/// let genes = list_random_initialization_without_repetitions(3, Some(&templates));
 /// assert_eq!(genes.len(), 3);
 /// ```
 pub fn list_random_initialization_without_repetitions<T>(
     genes_per_chromosome: usize,
     alleles: Option<&[List<T>]>,
-    _needs_unique_ids: Option<bool>,
 ) -> Vec<List<T>>
 where
     T: Clone + Sync + Send + Default + Debug,

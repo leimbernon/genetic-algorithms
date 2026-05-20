@@ -14,10 +14,9 @@ use std::sync::Arc;
 /// The function receives:
 /// - `genes_per_chromosome`: number of genes each chromosome should contain.
 /// - `alleles`: optional slice of allele templates.
-/// - `needs_unique_ids`: optional flag indicating whether gene IDs must be unique.
 ///
 /// Returns a `Vec<G>` representing the DNA for one chromosome.
-pub type InitializationFn<G> = dyn Fn(usize, Option<&[G]>, Option<bool>) -> Vec<G> + Send + Sync;
+pub type InitializationFn<G> = dyn Fn(usize, Option<&[G]>) -> Vec<G> + Send + Sync;
 
 /// Type alias for the fitness function signature.
 ///
@@ -32,7 +31,6 @@ pub type FitnessFn<G> = dyn Fn(&[G]) -> f64 + Send + Sync;
 fn build_one_chromosome<U>(
     genes_per_chromosome: usize,
     alleles: Option<&[U::Gene]>,
-    alleles_flag: Option<bool>,
     init_fn: &InitializationFn<U::Gene>,
     fitness_fn: Option<&Arc<FitnessFn<U::Gene>>>,
     age: usize,
@@ -41,7 +39,7 @@ where
     U: LinearChromosome,
     U::Gene: GeneT,
 {
-    let dna = init_fn(genes_per_chromosome, alleles, alleles_flag);
+    let dna = init_fn(genes_per_chromosome, alleles);
     let mut chromosome = U::new();
     chromosome.set_dna(Cow::Owned(dna));
 
@@ -70,7 +68,6 @@ where
 /// * `count` - Number of chromosomes to create.
 /// * `genes_per_chromosome` - Passed to `init_fn`.
 /// * `alleles` - Passed to `init_fn`.
-/// * `alleles_flag` - Passed as the third argument to `init_fn` (e.g. `needs_unique_ids` or `alleles_can_be_repeated`).
 /// * `init_fn` - The initialization function that generates DNA.
 /// * `fitness_fn` - Optional fitness function. When `Some`, each chromosome gets a clone and its fitness is calculated.
 /// * `age` - The age to assign to each chromosome.
@@ -82,7 +79,6 @@ pub fn initialize_chromosomes<U>(
     count: usize,
     genes_per_chromosome: usize,
     alleles: Option<&[U::Gene]>,
-    alleles_flag: Option<bool>,
     init_fn: &Arc<InitializationFn<U::Gene>>,
     fitness_fn: Option<&Arc<FitnessFn<U::Gene>>>,
     age: usize,
@@ -96,7 +92,6 @@ where
             build_one_chromosome(
                 genes_per_chromosome,
                 alleles,
-                alleles_flag,
                 init_fn.as_ref(),
                 fitness_fn,
                 age,
@@ -113,7 +108,6 @@ pub fn initialize_chromosomes_par<U>(
     count: usize,
     genes_per_chromosome: usize,
     alleles: Option<&[U::Gene]>,
-    alleles_flag: Option<bool>,
     init_fn: &Arc<InitializationFn<U::Gene>>,
     fitness_fn: Option<&Arc<FitnessFn<U::Gene>>>,
     age: usize,
@@ -128,7 +122,6 @@ where
             build_one_chromosome(
                 genes_per_chromosome,
                 alleles,
-                alleles_flag,
                 init_fn.as_ref(),
                 fitness_fn,
                 age,
