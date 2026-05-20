@@ -139,7 +139,7 @@ use crate::multi_objective::pareto::{ParetoFront, ParetoIndividual};
 use crate::multi_objective::ObjectiveFn;
 use crate::observer::MoeaDObserver;
 use crate::operations::{crossover, mutation};
-use crate::traits::{ChromosomeT, InitializationFn};
+use crate::traits::{LinearChromosome, InitializationFn};
 use rand::Rng;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
@@ -153,7 +153,7 @@ use std::time::Instant;
 /// * `U` - Chromosome type implementing `ChromosomeT`.
 pub struct MoeaDGa<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// MOEA/D specific configuration.
     pub moead_config: MoeaDConfiguration,
@@ -172,7 +172,7 @@ where
 #[allow(dead_code)]
 impl<U> MoeaDGa<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// Creates a new `MoeaDGa` with the given configurations.
     pub fn new(moead_config: MoeaDConfiguration, ga_config: GaConfiguration) -> Self {
@@ -373,7 +373,7 @@ where
 
 impl<U> MoeaDGa<U>
 where
-    U: ChromosomeT + mutation::ValueMutable,
+    U: LinearChromosome + mutation::ValueMutable,
 {
     /// Runs the MOEA/D algorithm and returns the post-hoc Pareto front.
     ///

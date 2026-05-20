@@ -6,7 +6,7 @@ use genetic_algorithms::initializers::{
     binary_random_initialization, generic_random_initialization,
     generic_random_initialization_without_repetitions, range_random_initialization,
 };
-use genetic_algorithms::traits::ChromosomeT;
+use genetic_algorithms::traits::{ChromosomeT, LinearChromosome};
 
 #[test]
 fn test_initializers_generic_random_initialization() {

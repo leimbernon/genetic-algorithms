@@ -57,7 +57,7 @@ use genetic_algorithms::island::configuration::IslandConfiguration;
 use genetic_algorithms::island::topology::MigrationTopology;
 use genetic_algorithms::island::IslandGa;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
-use genetic_algorithms::traits::ChromosomeT;
+use genetic_algorithms::traits::{ChromosomeT, LinearChromosome};
 #[cfg(feature = "observer-metrics")]
 use genetic_algorithms::MetricsObserver;
 use genetic_algorithms::{CompositeObserver, IslandGaObserver, LogObserver};

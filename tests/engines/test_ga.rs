@@ -10,8 +10,8 @@ use genetic_algorithms::{
     operations::{Crossover, Mutation, Selection, Survivor},
     population::Population,
     traits::{
-        ChromosomeT, ConfigurationT, CrossoverConfig, ElitismConfig, MutationConfig, NichingConfig,
-        SelectionConfig, StoppingConfig,
+        ChromosomeT, ConfigurationT, CrossoverConfig, ElitismConfig, LinearChromosome,
+        MutationConfig, NichingConfig, SelectionConfig, StoppingConfig,
     },
 };
 

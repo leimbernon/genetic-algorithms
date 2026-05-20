@@ -142,7 +142,7 @@ use crate::nsga2::configuration::ObjectiveDirection;
 use crate::nsga3::configuration::Nsga3Configuration;
 use crate::observer::Nsga3Observer;
 use crate::operations::mutation;
-use crate::traits::{ChromosomeT, InitializationFn};
+use crate::traits::{LinearChromosome, InitializationFn};
 use rand::Rng;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
@@ -156,7 +156,7 @@ use std::time::Instant;
 /// * `U` - Chromosome type implementing `ChromosomeT`.
 pub struct Nsga3Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// NSGA-III specific configuration.
     pub nsga3_config: Nsga3Configuration,
@@ -174,7 +174,7 @@ where
 
 impl<U> Nsga3Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// Creates a new `Nsga3Ga` with the given configurations.
     pub fn new(nsga3_config: Nsga3Configuration, ga_config: GaConfiguration) -> Self {
@@ -378,7 +378,7 @@ where
 
 impl<U> Nsga3Ga<U>
 where
-    U: ChromosomeT + mutation::ValueMutable,
+    U: LinearChromosome + mutation::ValueMutable,
 {
     /// Runs the NSGA-III algorithm and returns the first Pareto front.
     ///
@@ -654,7 +654,7 @@ where
 ///      - associate each individual to its nearest reference point (perpendicular distance),
 ///      - count niche occupancy among already-selected individuals,
 ///      - repeatedly pick from the under-populated niches.
-fn nsga3_environmental_selection<U: ChromosomeT>(
+fn nsga3_environmental_selection<U: LinearChromosome>(
     combined: Vec<ParetoIndividual<U>>,
     fronts: Vec<Vec<usize>>,
     pop_size: usize,
@@ -778,7 +778,7 @@ fn nsga3_environmental_selection<U: ChromosomeT>(
 ///
 /// For Maximize objectives, signs are flipped before normalization so all dimensions
 /// behave as minimization (smaller is better in the normalized frame).
-fn normalize_st<U: ChromosomeT>(
+fn normalize_st<U: LinearChromosome>(
     combined: &[ParetoIndividual<U>],
     st_indices: &[usize],
     directions: &[ObjectiveDirection],

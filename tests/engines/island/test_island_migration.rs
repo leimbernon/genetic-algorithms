@@ -4,7 +4,7 @@ use genetic_algorithms::island::migration::{migrate, migrate_pareto};
 use genetic_algorithms::island::topology::MigrationTopology;
 use genetic_algorithms::nsga2::pareto::ParetoIndividual;
 use genetic_algorithms::population::Population;
-use genetic_algorithms::traits::{ChromosomeT, GeneT};
+use genetic_algorithms::traits::{ChromosomeT, GeneT, LinearChromosome};
 use std::borrow::Cow;
 
 /// Simple test gene satisfying `GeneT`.
@@ -34,26 +34,6 @@ struct MigrationTestChromosome {
 impl ChromosomeT for MigrationTestChromosome {
     type Gene = TestGene;
 
-    fn dna(&self) -> &[Self::Gene] {
-        &self.dna
-    }
-
-    fn dna_mut(&mut self) -> &mut [Self::Gene] {
-        &mut self.dna
-    }
-
-    fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
-        self.dna = dna.into_owned();
-        self
-    }
-
-    fn set_fitness_fn<F>(&mut self, _fitness_fn: F) -> &mut Self
-    where
-        F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static,
-    {
-        self
-    }
-
     fn calculate_fitness(&mut self) {}
 
     fn fitness(&self) -> f64 {
@@ -72,6 +52,28 @@ impl ChromosomeT for MigrationTestChromosome {
 
     fn age(&self) -> usize {
         self.age
+    }
+}
+
+impl LinearChromosome for MigrationTestChromosome {
+    fn dna(&self) -> &[Self::Gene] {
+        &self.dna
+    }
+
+    fn dna_mut(&mut self) -> &mut [Self::Gene] {
+        &mut self.dna
+    }
+
+    fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
+        self.dna = dna.into_owned();
+        self
+    }
+
+    fn set_fitness_fn<F>(&mut self, _fitness_fn: F) -> &mut Self
+    where
+        F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static,
+    {
+        self
     }
 }
 
