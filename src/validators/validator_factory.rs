@@ -15,7 +15,7 @@
 use crate::configuration::GaConfiguration;
 use crate::error::GaError;
 use crate::population::Population;
-use crate::traits::ChromosomeT;
+use crate::traits::LinearChromosome;
 use crate::validators::generic_validator as GenericValidator;
 use std::fmt::Debug;
 
@@ -34,7 +34,7 @@ pub fn validate<U>(
     alleles: Option<&[U::Gene]>,
 ) -> Result<(), GaError>
 where
-    U: ChromosomeT + Send + Sync + 'static + Clone,
+    U: LinearChromosome + Send + Sync + 'static + Clone,
     U::Gene: 'static + Debug,
 {
     // All chromosome types (including Binary and Range) use the generic validator.

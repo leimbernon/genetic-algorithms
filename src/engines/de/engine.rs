@@ -10,10 +10,10 @@ use super::gene::DeGene;
 use super::mutation::{mutate, JadeState, LShadeState};
 use rand::Rng;
 use crate::rng::make_rng;
-use crate::traits::{ChromosomeT, FitnessFn};
+use crate::traits::{LinearChromosome, FitnessFn};
 
 /// Result returned by [`DeEngine::run`].
-pub struct DeResult<U: ChromosomeT> {
+pub struct DeResult<U: LinearChromosome> {
     /// Final population (all individuals evaluated).
     pub population: Vec<U>,
     /// The best individual found during the run.
@@ -47,7 +47,7 @@ pub struct DeResult<U: ChromosomeT> {
 /// );
 /// let result = engine.run();
 /// ```
-pub struct DeEngine<U: ChromosomeT>
+pub struct DeEngine<U: LinearChromosome>
 where
     U::Gene: DeGene,
 {
@@ -56,7 +56,7 @@ where
     fitness_fn: Arc<FitnessFn<U::Gene>>,
 }
 
-impl<U: ChromosomeT + Clone> DeEngine<U>
+impl<U: LinearChromosome + Clone> DeEngine<U>
 where
     U::Gene: DeGene,
 {

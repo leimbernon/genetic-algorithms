@@ -1,7 +1,7 @@
 //! Cycle crossover implementation.
 
 use crate::error::GaError;
-use crate::traits::{ChromosomeT, GeneT};
+use crate::traits::{LinearChromosome, GeneT};
 use log::{debug, trace};
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -16,7 +16,7 @@ use std::collections::HashMap;
 /// # Errors
 ///
 /// Returns `Err(GaError::CrossoverError)` if parents have different DNA lengths.
-pub fn cycle<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
+pub fn cycle<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
     let dna_len = parent_1.dna().len();
 
     // Check if parents have the same length DNA

@@ -9,7 +9,7 @@
 //! gene values to and from `f64`.
 
 use crate::chromosomes::Range as RangeChromosome;
-use crate::traits::ChromosomeT;
+use crate::traits::LinearChromosome;
 use rand::Rng;
 use std::fmt::Debug;
 

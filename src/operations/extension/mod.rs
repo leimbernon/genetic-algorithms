@@ -12,12 +12,12 @@ pub mod mass_genesis;
 use crate::configuration::ProblemSolving;
 use crate::error::GaError;
 use crate::extension::configuration::ExtensionConfiguration;
-use crate::traits::{ChromosomeT, ExtensionOperator};
+use crate::traits::{LinearChromosome, ExtensionOperator};
 
 use super::Extension;
 
 impl ExtensionOperator for Extension {
-    fn apply_extension<U: ChromosomeT>(
+    fn apply_extension<U: LinearChromosome>(
         &self,
         chromosomes: &mut Vec<U>,
         population_size: usize,
@@ -59,7 +59,7 @@ impl ExtensionOperator for Extension {
 /// # Returns
 ///
 /// `Ok(())` after applying the extension, or `Err(GaError)` on failure.
-pub fn factory<U: ChromosomeT>(
+pub fn factory<U: LinearChromosome>(
     method: Extension,
     chromosomes: &mut Vec<U>,
     population_size: usize,

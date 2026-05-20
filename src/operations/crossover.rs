@@ -19,7 +19,7 @@ pub(crate) use super::Crossover;
 use crate::chromosomes::Range as RangeChromosome;
 use crate::configuration::CrossoverConfiguration;
 use crate::error::GaError;
-use crate::traits::{ChromosomeT, CrossoverOperator};
+use crate::traits::{LinearChromosome, CrossoverOperator};
 use std::any::Any;
 
 pub mod arithmetic;
@@ -39,7 +39,7 @@ pub mod uniform_crossover;
 ///
 /// Tries `f64`, `f32`, `i32`, `i64` in order. Returns `Some(Ok(...))` or
 /// `Some(Err(...))` if the type matched, `None` if no supported type matched.
-fn try_sbx<U: ChromosomeT>(
+fn try_sbx<U: LinearChromosome>(
     parent_1: &U,
     parent_2: &U,
     eta: f64,
@@ -77,7 +77,7 @@ fn try_sbx<U: ChromosomeT>(
 ///
 /// Tries `f64`, `f32`, `i32`, `i64` in order. Returns `Some(Ok(...))` or
 /// `Some(Err(...))` if the type matched, `None` if no supported type matched.
-fn try_blend_alpha<U: ChromosomeT>(
+fn try_blend_alpha<U: LinearChromosome>(
     parent_1: &U,
     parent_2: &U,
     alpha: f64,
@@ -120,7 +120,7 @@ const DEFAULT_ARITHMETIC_ALPHA: f64 = 0.5;
 ///
 /// Tries `f64`, `f32`, `i32`, `i64` in order. Returns `Some(Ok(...))` or
 /// `Some(Err(...))` if the type matched, `None` if no supported type matched.
-fn try_arithmetic<U: ChromosomeT>(
+fn try_arithmetic<U: LinearChromosome>(
     parent_1: &U,
     parent_2: &U,
     alpha: f64,
@@ -153,7 +153,7 @@ fn try_arithmetic<U: ChromosomeT>(
 }
 
 impl CrossoverOperator for Crossover {
-    fn crossover<U: ChromosomeT>(&self, parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
+    fn crossover<U: LinearChromosome>(&self, parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
         match self {
             Crossover::Cycle => cycle(parent_1, parent_2),
             Crossover::MultiPoint => Err(GaError::CrossoverError(
@@ -195,7 +195,7 @@ impl CrossoverOperator for Crossover {
 }
 
 impl CrossoverOperator for CrossoverConfiguration {
-    fn crossover<U: ChromosomeT>(&self, parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
+    fn crossover<U: LinearChromosome>(&self, parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
         match self.method {
             Crossover::Cycle => cycle(parent_1, parent_2),
             Crossover::MultiPoint => {
@@ -245,7 +245,7 @@ impl CrossoverOperator for CrossoverConfiguration {
 }
 
 /// Dispatches crossover according to the configured method and parameters.
-pub fn factory<U: ChromosomeT>(
+pub fn factory<U: LinearChromosome>(
     parent_1: &U,
     parent_2: &U,
     configuration: CrossoverConfiguration,
@@ -257,7 +257,7 @@ pub fn factory<U: ChromosomeT>(
 ///
 /// Returns a probability between `probability_min` and `probability_max`
 /// based on how the fitter parent compares to the population average.
-pub fn aga_probability<U: ChromosomeT>(
+pub fn aga_probability<U: LinearChromosome>(
     parent_1: &U,
     parent_2: &U,
     f_max: f64,

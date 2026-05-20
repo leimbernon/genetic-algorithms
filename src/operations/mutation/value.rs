@@ -6,7 +6,7 @@
 //! types (`i32`, `i64`, `f32`, `f64`).
 
 use crate::chromosomes::Range as RangeChromosome;
-use crate::traits::ChromosomeT;
+use crate::traits::LinearChromosome;
 use rand::distr::uniform::SampleUniform;
 use rand::Rng;
 use std::fmt::Debug;
