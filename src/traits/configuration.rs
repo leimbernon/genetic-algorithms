@@ -5,6 +5,7 @@
 //! stopping, niching, elitism), and [`ConfigurationT`] combines them all into a
 //! single supertrait.
 
+use crate::chromosomes::ChromosomeLength;
 use crate::configuration::{LogLevel, ProblemSolving, StoppingCriteria};
 use crate::configuration::LocalSearchConfiguration;
 use crate::operations::{Crossover, Extension, Mutation, Selection, Survivor};
@@ -155,12 +156,13 @@ pub trait ConfigurationT:
     fn with_problem_solving(self, problem_solving: ProblemSolving) -> Self;
     /// Sets the population size (number of individuals per generation).
     fn with_population_size(self, population_size: usize) -> Self;
-    /// Sets the number of genes in each chromosome.
-    fn with_genes_per_chromosome(self, genes_per_chromosome: usize) -> Self;
-    /// If `true`, each chromosome is assigned a unique ID during initialization.
-    fn with_needs_unique_ids(self, needs_unique_ids: bool) -> Self;
-    /// If `true`, the same allele value may appear more than once in a chromosome.
-    fn with_alleles_can_be_repeated(self, alleles_can_be_repeated: bool) -> Self;
+    /// Sets the chromosome length policy.
+    ///
+    /// Use [`ChromosomeLength::Fixed(n)`](ChromosomeLength::Fixed) for a fixed-size
+    /// chromosome with `n` genes, or
+    /// [`ChromosomeLength::Variable { min, max }`](ChromosomeLength::Variable) for
+    /// variable-length chromosomes (introduced in Phase 52).
+    fn with_chromosome_length(self, length: ChromosomeLength) -> Self;
 
     // --- Save progress configuration ---
 
