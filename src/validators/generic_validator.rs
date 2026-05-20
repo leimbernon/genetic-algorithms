@@ -14,11 +14,9 @@
 
 use crate::configuration::{GaConfiguration, ProblemSolving};
 use crate::error::GaError;
-use crate::genotypes::Range;
 use crate::operations;
 use crate::population::Population;
 use crate::traits::{GeneT, LinearChromosome};
-use std::any::TypeId;
 use std::collections::HashSet;
 
 /// Validate a GA configuration and/or population before running.
