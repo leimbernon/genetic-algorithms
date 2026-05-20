@@ -97,21 +97,24 @@ fn main() {
 
     // --- Heterogeneous GA configs: 4 islands with different mutation probabilities ---
     // Low mutation islands exploit; high mutation islands explore broadly.
+    use genetic_algorithms::ChromosomeLength;
+    use genetic_algorithms::traits::{
+        ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+    };
     let mutation_probs = [0.01_f64, 0.05, 0.10, 0.20];
     let ga_configs: Vec<GaConfiguration> = mutation_probs
         .iter()
         .map(|&prob| {
-            let mut cfg = GaConfiguration::default();
-            cfg.limit_configuration.population_size = POP_SIZE_PER_ISLAND;
-            cfg.limit_configuration.genes_per_chromosome = DIMENSIONS;
-            cfg.limit_configuration.problem_solving = ProblemSolving::Minimization;
-            cfg.limit_configuration.max_generations = MAX_GENERATIONS;
-            cfg.mutation_configuration.probability_max = Some(prob);
-            cfg.mutation_configuration.method = Mutation::Gaussian;
-            cfg.crossover_configuration.method = Crossover::Uniform;
-            cfg.selection_configuration.method = Selection::Tournament;
-            cfg.survivor = Survivor::Fitness;
-            cfg
+            GaConfiguration::default()
+                .with_population_size(POP_SIZE_PER_ISLAND)
+                .with_chromosome_length(ChromosomeLength::Fixed(DIMENSIONS))
+                .with_problem_solving(ProblemSolving::Minimization)
+                .with_max_generations(MAX_GENERATIONS)
+                .with_mutation_probability_max(prob)
+                .with_mutation_method(Mutation::Gaussian)
+                .with_crossover_method(Crossover::Uniform)
+                .with_selection_method(Selection::Tournament)
+                .with_survivor_method(Survivor::Fitness)
         })
         .collect();
 
@@ -145,8 +148,8 @@ fn main() {
     let mut island_ga =
         IslandGa::<RangeChromosome<f64>>::with_heterogeneous_configs(island_config, ga_configs)
             .with_alleles(alleles)
-            .with_initialization_fn(move |n, _, _| {
-                range_random_initialization(n, Some(&alleles_clone), Some(true))
+            .with_initialization_fn(move |n, _| {
+                range_random_initialization(n, Some(&alleles_clone))
             })
             .with_fitness_fn(fitness_fn)
             // Observer: CompositeObserver fans out to LogObserver (and MetricsObserver if feature enabled)

@@ -205,7 +205,7 @@ fn test_list_crossover_uniform() {
 #[test]
 fn test_list_initialization_roundtrip() {
     let templates = vec![List::new(0, vec!['a', 'b', 'c', 'd'], 'a').unwrap()];
-    let dna = list_random_initialization(4, Some(&templates), None);
+    let dna = list_random_initialization(4, Some(&templates));
 
     assert_eq!(
         dna.len(),
@@ -259,7 +259,7 @@ fn test_list_full_ga_run() {
     let mut chromosomes: Vec<ListChromosome<char>> = Vec::new();
     for _ in 0..10 {
         let mut c = ListChromosome::<char>::new();
-        let dna = list_random_initialization(4, Some(&templates), None);
+        let dna = list_random_initialization(4, Some(&templates));
         c.set_dna(Cow::Owned(dna));
         chromosomes.push(c);
     }

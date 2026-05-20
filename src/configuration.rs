@@ -228,7 +228,7 @@ pub struct LimitConfiguration {
     pub max_generations: usize,
     pub fitness_target: Option<f64>,
     pub population_size: usize,
-    pub(crate) chromosome_length: ChromosomeLength,
+    pub chromosome_length: ChromosomeLength,
 }
 impl Default for LimitConfiguration {
     fn default() -> Self {

@@ -22,7 +22,7 @@ fn test_initializers_generic_random_initialization() {
     ];
     let alleles = binding.as_slice();
 
-    let genes = generic_random_initialization::<Chromosome>(4, Some(alleles), Some(false));
+    let genes = generic_random_initialization::<Chromosome>(4, Some(alleles));
     assert_eq!(genes.len(), 4);
 }
 
@@ -42,7 +42,6 @@ fn test_initializers_generic_random_initialization_without_repetitions() {
     let genes = generic_random_initialization_without_repetitions::<Chromosome>(
         6,
         Some(alleles),
-        Some(false),
     );
 
     //Checks that any allele is repeated
@@ -58,7 +57,7 @@ fn test_initializers_generic_random_initialization_without_repetitions() {
 
 #[test]
 fn test_binary_random_initialization() {
-    let genes = binary_random_initialization(100, None, None);
+    let genes = binary_random_initialization(100, None);
     let mut chromosome = Binary::new();
 
     use std::borrow::Cow;
@@ -69,7 +68,7 @@ fn test_binary_random_initialization() {
 #[test]
 fn test_range_random_initialization() {
     let alleles = vec![RangeGenotype::new(0, vec![(0.0, 1.0)], 0.0)];
-    let genes = range_random_initialization(10, Some(&alleles), Some(false));
+    let genes = range_random_initialization(10, Some(&alleles));
     assert_eq!(genes.len(), 10);
     for gene in genes {
         assert!(gene.value >= 0.0 && gene.value <= 1.0);
@@ -92,7 +91,7 @@ fn make_list_templates() -> Vec<List<char>> {
 #[test]
 fn list_initializer_returns_correct_length() {
     let templates = make_list_templates();
-    let genes = list_random_initialization(5, Some(&templates), None);
+    let genes = list_random_initialization(5, Some(&templates));
     assert_eq!(genes.len(), 5);
 }
 
@@ -100,7 +99,7 @@ fn list_initializer_returns_correct_length() {
 #[test]
 fn list_initializer_ids_in_valid_range() {
     let templates = make_list_templates();
-    let genes = list_random_initialization(20, Some(&templates), None);
+    let genes = list_random_initialization(20, Some(&templates));
     for gene in &genes {
         assert!(
             (gene.id as usize) < gene.alleles.len(),
@@ -116,7 +115,7 @@ fn list_initializer_ids_in_valid_range() {
 #[test]
 fn list_initializer_value_consistency() {
     let templates = make_list_templates();
-    let genes = list_random_initialization(20, Some(&templates), None);
+    let genes = list_random_initialization(20, Some(&templates));
     for gene in &genes {
         assert_eq!(
             gene.value, gene.alleles[gene.id as usize],
@@ -129,7 +128,7 @@ fn list_initializer_value_consistency() {
 #[test]
 fn list_initializer_alleles_preserved() {
     let templates = make_list_templates();
-    let genes = list_random_initialization(10, Some(&templates), None);
+    let genes = list_random_initialization(10, Some(&templates));
     for gene in &genes {
         assert_eq!(gene.alleles, vec!['a', 'b', 'c', 'd']);
     }
@@ -139,14 +138,14 @@ fn list_initializer_alleles_preserved() {
 #[test]
 #[should_panic(expected = "Alleles must be provided for list_random_initialization")]
 fn list_initializer_panics_on_none_alleles() {
-    list_random_initialization::<char>(5, None, None);
+    list_random_initialization::<char>(5, None);
 }
 
 // Test: without_repetitions returns correct length
 #[test]
 fn list_initializer_without_repetitions_correct_length() {
     let templates = make_list_templates();
-    let genes = list_random_initialization_without_repetitions(3, Some(&templates), None);
+    let genes = list_random_initialization_without_repetitions(3, Some(&templates));
     assert_eq!(genes.len(), 3);
 }
 
@@ -156,7 +155,7 @@ fn list_initializer_without_repetitions_no_duplicate_ids() {
     let templates = make_list_templates();
     for seed in 0..20u64 {
         genetic_algorithms::rng::set_seed(Some(seed));
-        let genes = list_random_initialization_without_repetitions(4, Some(&templates), None);
+        let genes = list_random_initialization_without_repetitions(4, Some(&templates));
         let ids: HashSet<i32> = genes.iter().map(|g| g.id).collect();
         assert_eq!(
             ids.len(),
@@ -175,14 +174,14 @@ fn list_initializer_without_repetitions_no_duplicate_ids() {
 )]
 fn list_initializer_without_repetitions_panics_on_overflow() {
     let templates = make_list_templates(); // alleles.len() == 4
-    list_random_initialization_without_repetitions(10, Some(&templates), None);
+    list_random_initialization_without_repetitions(10, Some(&templates));
 }
 
 // Test: without_repetitions value consistency
 #[test]
 fn list_initializer_without_repetitions_value_consistency() {
     let templates = make_list_templates();
-    let genes = list_random_initialization_without_repetitions(4, Some(&templates), None);
+    let genes = list_random_initialization_without_repetitions(4, Some(&templates));
     for gene in &genes {
         assert_eq!(
             gene.value, gene.alleles[gene.id as usize],

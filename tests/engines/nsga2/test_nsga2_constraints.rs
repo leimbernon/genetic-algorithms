@@ -23,15 +23,15 @@ fn test_nsga2_with_constraints() {
         .with_max_generations(30);
 
     let ga_config = GaConfiguration::default()
-        .with_genes_per_chromosome(3usize)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(3))
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
         .with_mutation_method(Mutation::Swap);
 
     let mut nsga2 = Nsga2Ga::<RangeChromosome<i32>>::new(nsga2_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |genes_per_chromosome, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
         })
         .with_objective_fns(vec![
             Box::new(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum()),

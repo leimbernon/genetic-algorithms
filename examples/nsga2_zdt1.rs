@@ -69,10 +69,12 @@ fn main() {
         ]);
 
     // --- Base GA configuration ---
-    // For Nsga2Ga, set limit fields directly (the builder trait is for single-population Ga).
-    let mut ga_config = GaConfiguration::default();
-    ga_config.limit_configuration.genes_per_chromosome = N_VARS;
-    ga_config.limit_configuration.alleles_can_be_repeated = true;
+    // Use builder to set chromosome length (the builder trait is for single-population Ga,
+    // but GaConfiguration::default() + with_chromosome_length works for multi-obj engines too).
+    use genetic_algorithms::ChromosomeLength;
+    use genetic_algorithms::traits::ConfigurationT;
+    let ga_config = GaConfiguration::default()
+        .with_chromosome_length(ChromosomeLength::Fixed(N_VARS));
 
     // --- Allele definition: each of the 30 variables lives in [0.0, 1.0] ---
     let alleles = vec![RangeGenotype::new(0, vec![(0.0_f64, 1.0_f64)], 0.0_f64)];
@@ -94,8 +96,8 @@ fn main() {
     // LogObserver implements Nsga2Observer — logs pareto-front and crowding events
     let mut nsga2 = Nsga2Ga::<RangeChromosome<f64>>::new(nsga2_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |n, _, _| {
-            range_random_initialization(n, Some(&alleles_clone), Some(true))
+        .with_initialization_fn(move |n, _| {
+            range_random_initialization(n, Some(&alleles_clone))
         })
         .with_objective_fns(vec![Box::new(obj_f1), Box::new(obj_f2)])
         .with_observer(

@@ -403,10 +403,10 @@ fn test_hof_ga_builder_and_run() {
     };
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_genes_per_chromosome(n.try_into().unwrap())
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
         .with_population_size(30)
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |genes_per_chromosome, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
         })
         .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
         .with_selection_method(Selection::Tournament)
@@ -448,10 +448,10 @@ fn test_hof_ga_without_hof_returns_none() {
     let alleles_clone = alleles.clone();
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_genes_per_chromosome(n.try_into().unwrap())
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
         .with_population_size(15)
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |genes_per_chromosome, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
         })
         .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
         .with_selection_method(Selection::Random)
@@ -492,10 +492,10 @@ fn test_hof_ga_genotypic_distance() {
     };
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_genes_per_chromosome(n.try_into().unwrap())
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
         .with_population_size(30)
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |genes_per_chromosome, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
         })
         .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
         .with_selection_method(Selection::Tournament)

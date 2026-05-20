@@ -72,7 +72,7 @@ fn test_island_observer_hooks_fire() {
 
     let ga_config = GaConfiguration::new()
         .with_population_size(10)
-        .with_genes_per_chromosome(8)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(8))
         .with_max_generations(5)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)

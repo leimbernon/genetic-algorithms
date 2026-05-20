@@ -28,11 +28,11 @@ fn main() {
     let alleles_clone = alleles.clone();
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_genes_per_chromosome(n.try_into().unwrap())
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
         .with_population_size(50)
         .with_max_generations(100)
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |genes_per_chromosome, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
         })
         .with_fitness_fn(|dna: &[RangeGene<i32>]| {
             // Simple minimization: sum of gene values (target = 0)

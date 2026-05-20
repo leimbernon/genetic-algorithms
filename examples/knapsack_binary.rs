@@ -102,7 +102,7 @@ fn report(
 fn main() {
     // For maximization problem
     let mut ga = Ga::new()
-        .with_genes_per_chromosome(10)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(10))
         .with_population_size(100)
         .with_initialization_fn(binary_random_initialization)
         .with_fitness_fn(fitness_fn)
@@ -124,7 +124,7 @@ fn main() {
 
     // For fixed fitness problem
     let mut ga_fixed = Ga::new()
-        .with_genes_per_chromosome(10)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(10))
         .with_population_size(10)
         .with_initialization_fn(binary_random_initialization)
         .with_fitness_fn(fitness_fn)

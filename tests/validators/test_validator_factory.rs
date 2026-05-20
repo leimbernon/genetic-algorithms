@@ -22,9 +22,8 @@ fn make_binary_chromosome(ids: &[i32]) -> BinaryChromosome {
 }
 
 fn default_config() -> GaConfiguration {
-    let mut cfg = GaConfiguration::default();
-    cfg.selection_configuration.number_of_couples = 1;
-    cfg
+    use genetic_algorithms::traits::{ConfigurationT, SelectionConfig};
+    GaConfiguration::default().with_number_of_couples(1)
 }
 
 #[test]

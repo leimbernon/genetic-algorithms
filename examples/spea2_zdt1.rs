@@ -70,9 +70,10 @@ fn main() {
         ]);
 
     // --- Base GA configuration ---
-    let mut ga_config = GaConfiguration::default();
-    ga_config.limit_configuration.genes_per_chromosome = N_VARS;
-    ga_config.limit_configuration.alleles_can_be_repeated = true;
+    use genetic_algorithms::ChromosomeLength;
+    use genetic_algorithms::traits::ConfigurationT;
+    let ga_config = GaConfiguration::default()
+        .with_chromosome_length(ChromosomeLength::Fixed(N_VARS));
 
     // --- Allele definition: each of the 30 variables lives in [0.0, 1.0] ---
     let alleles = vec![RangeGenotype::new(0, vec![(0.0_f64, 1.0_f64)], 0.0_f64)];
@@ -94,8 +95,8 @@ fn main() {
     // LogObserver implements Spea2Observer — logs fitness and archive events
     let mut spea2 = Spea2Ga::<RangeChromosome<f64>>::new(spea2_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |n, _, _| {
-            range_random_initialization(n, Some(&alleles_clone), Some(true))
+        .with_initialization_fn(move |n, _| {
+            range_random_initialization(n, Some(&alleles_clone))
         })
         .with_objective_fns(vec![Box::new(obj_f1), Box::new(obj_f2)])
         .with_observer(

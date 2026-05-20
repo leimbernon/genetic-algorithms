@@ -53,7 +53,7 @@ impl Reporter<BinaryChromosome> for SpyReporter {
 fn build_test_ga(max_gens: usize, spy: SpyReporter) -> Ga<BinaryChromosome> {
     Ga::new()
         .with_population_size(20)
-        .with_genes_per_chromosome(8)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(8))
         .with_initialization_fn(binary_random_initialization)
         .with_fitness_fn(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64)
         .with_selection_method(Selection::Tournament)
@@ -114,7 +114,7 @@ fn test_reporter_on_new_best_less_than_total_gens() {
     // Use more generations and larger population so convergence is likely
     let mut ga = Ga::new()
         .with_population_size(50)
-        .with_genes_per_chromosome(8)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(8))
         .with_initialization_fn(binary_random_initialization)
         .with_fitness_fn(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64)
         .with_selection_method(Selection::Tournament)
@@ -181,7 +181,7 @@ fn test_reporter_on_finish_stats_length() {
 fn test_no_reporter_default() {
     let mut ga: Ga<BinaryChromosome> = Ga::new()
         .with_population_size(20)
-        .with_genes_per_chromosome(8)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(8))
         .with_initialization_fn(binary_random_initialization)
         .with_fitness_fn(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64)
         .with_selection_method(Selection::Tournament)

@@ -65,7 +65,7 @@ fn build_ga(
     max_generations: usize,
 ) -> Ga<BinaryChromosome> {
     Ga::new()
-        .with_genes_per_chromosome(8)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(8))
         .with_population_size(20)
         .with_initialization_fn(binary_random_initialization)
         .with_fitness_fn(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64)
@@ -128,7 +128,7 @@ fn test_composite_observer_island_hooks() {
 
     let ga_config = GaConfiguration::new()
         .with_population_size(10)
-        .with_genes_per_chromosome(8)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(8))
         .with_max_generations(5)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)

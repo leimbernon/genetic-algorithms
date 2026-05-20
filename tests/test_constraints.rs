@@ -54,10 +54,10 @@ fn test_constraint_handling_ga_with_static_penalty() {
     };
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_genes_per_chromosome(n.try_into().unwrap())
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
         .with_population_size(50)
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |genes_per_chromosome, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
         })
         .with_fitness_fn(|dna: &[RangeGene<i32>]| {
             let sum: i32 = dna.iter().map(|g| g.value()).sum();
@@ -99,10 +99,10 @@ fn test_repair_operator() {
     };
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_genes_per_chromosome(n.try_into().unwrap())
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
         .with_population_size(30)
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |genes_per_chromosome, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
         })
         .with_fitness_fn(|dna: &[RangeGene<i32>]| {
             let sum: i32 = dna.iter().map(|g| g.value()).sum();
@@ -134,10 +134,10 @@ fn test_constraint_handling_adaptive_penalty() {
     };
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_genes_per_chromosome(n.try_into().unwrap())
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
         .with_population_size(50)
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |genes_per_chromosome, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
         })
         .with_fitness_fn(|dna: &[RangeGene<i32>]| {
             let sum: i32 = dna.iter().map(|g| g.value()).sum();
@@ -180,10 +180,10 @@ fn test_constraint_handling_feasibility_rules() {
     };
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_genes_per_chromosome(n.try_into().unwrap())
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
         .with_population_size(50)
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |genes_per_chromosome, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
         })
         .with_fitness_fn(|dna: &[RangeGene<i32>]| {
             let sum: i32 = dna.iter().map(|g| g.value()).sum();

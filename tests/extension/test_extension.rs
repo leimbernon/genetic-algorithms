@@ -446,7 +446,7 @@ fn ga_extension_triggers_on_diversity() {
 
     let mut ga: Ga<BinaryChromosome> = Ga::new()
         .with_population_size(20)
-        .with_genes_per_chromosome(8)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(8))
         .with_initialization_fn(binary_random_initialization)
         .with_fitness_fn(uniform_fitness)
         .with_selection_method(Selection::Random)
@@ -491,7 +491,7 @@ fn ga_builder_with_extension_config() {
 
     let mut ga: Ga<BinaryChromosome> = Ga::new()
         .with_population_size(20)
-        .with_genes_per_chromosome(10)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(10))
         .with_initialization_fn(binary_random_initialization)
         .with_fitness_fn(fitness_fn)
         .with_selection_method(Selection::Tournament)
@@ -510,7 +510,7 @@ fn ga_builder_with_extension_config() {
     assert!(result.is_ok());
 
     // Verify extension config was set
-    let ext = ga.configuration.extension_configuration.as_ref().unwrap();
+    let ext = ga.configuration().extension().unwrap();
     assert_eq!(ext.method, Extension::MassDeduplication);
     assert!((ext.diversity_threshold - 0.5).abs() < f64::EPSILON);
     assert_eq!(ext.elite_count, 2);

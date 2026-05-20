@@ -24,10 +24,10 @@ fn base_ga() -> Ga<RangeChromosome<i32>> {
     let alleles_clone = alleles.clone();
 
     Ga::new()
-        .with_genes_per_chromosome(n.try_into().unwrap())
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
         .with_population_size(30)
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |genes_per_chromosome, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
         })
         .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
         .with_selection_method(Selection::Tournament)
@@ -134,10 +134,10 @@ fn test_wsm_seeds_population_size_matches() {
     let seeds = create_seeds(2, 100);
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_genes_per_chromosome(n.try_into().unwrap())
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
         .with_population_size(2)
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |genes_per_chromosome, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
         })
         .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
         .with_selection_method(Selection::Tournament)
@@ -187,11 +187,11 @@ fn test_wsm_seeds_admitted_to_hall_of_fame() {
     };
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_genes_per_chromosome(n.try_into().unwrap())
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
         .with_population_size(2)
         .with_number_of_couples(1)
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |genes_per_chromosome, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
         })
         .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
         .with_selection_method(Selection::Tournament)
@@ -233,10 +233,10 @@ fn test_wsm_seeds_without_hall_of_fame() {
     let seeds = create_seeds(3, 5);
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_genes_per_chromosome(n.try_into().unwrap())
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
         .with_population_size(3)
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |genes_per_chromosome, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
         })
         .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
         .with_selection_method(Selection::Tournament)
@@ -279,10 +279,10 @@ fn test_wsm_checkpoint_save_and_resume() {
 
     // --- Initial run ---
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_genes_per_chromosome(n.try_into().unwrap())
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
         .with_population_size(20)
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |genes_per_chromosome, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
         })
         .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
         .with_selection_method(Selection::Tournament)
@@ -320,9 +320,9 @@ fn test_wsm_checkpoint_save_and_resume() {
     let alleles2_clone = alleles2.clone();
 
     let mut resumed: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_genes_per_chromosome(n.try_into().unwrap())
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
         .with_population_size(20)
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
+        .with_initialization_fn(move |genes_per_chromosome, _| {
             range_random_initialization(genes_per_chromosome, Some(&alleles2_clone), Some(false))
         })
         .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
@@ -374,10 +374,10 @@ fn test_wsm_checkpoint_hybrid_config_override() {
 
     // --- Initial run (with specific operators) ---
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_genes_per_chromosome(n.try_into().unwrap())
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
         .with_population_size(20)
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |genes_per_chromosome, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
         })
         .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
         .with_selection_method(Selection::Tournament)
@@ -405,9 +405,9 @@ fn test_wsm_checkpoint_hybrid_config_override() {
     let alleles2_clone = alleles2.clone();
 
     let mut resumed: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_genes_per_chromosome(n.try_into().unwrap())
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
         .with_population_size(20)
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
+        .with_initialization_fn(move |genes_per_chromosome, _| {
             range_random_initialization(genes_per_chromosome, Some(&alleles2_clone), Some(false))
         })
         .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
@@ -472,10 +472,10 @@ fn test_wsm_checkpoint_example_end_to_end() {
 
     // Run 5 generations, save checkpoint
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_genes_per_chromosome(n.try_into().unwrap())
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
         .with_population_size(25)
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |genes_per_chromosome, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
         })
         .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
         .with_selection_method(Selection::Tournament)
@@ -504,9 +504,9 @@ fn test_wsm_checkpoint_example_end_to_end() {
     let alleles2_clone = alleles2.clone();
 
     let mut resumed: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_genes_per_chromosome(n.try_into().unwrap())
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
         .with_population_size(25)
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
+        .with_initialization_fn(move |genes_per_chromosome, _| {
             range_random_initialization(genes_per_chromosome, Some(&alleles2_clone), Some(false))
         })
         .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())

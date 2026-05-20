@@ -4,6 +4,7 @@
 //! test (run() produces a non-empty Pareto front on a 3-objective problem)
 //! is added in Plan 35-03 once the run() loop is implemented.
 
+use genetic_algorithms::traits::ConfigurationT;
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::GaConfiguration;
 use genetic_algorithms::error::GaError;
@@ -32,7 +33,7 @@ fn test_nsga3_validate_zero_objectives() {
         .with_reference_points_auto(4);
     let ga_config = GaConfiguration::default();
     let nsga3 = Nsga3Ga::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![]);
+        .with_initialization_fn(|_, _| vec![]);
     let result = nsga3.validate();
     assert!(matches!(result, Err(GaError::InvalidNsga3Configuration(_))));
 }
@@ -45,7 +46,7 @@ fn test_nsga3_validate_population_too_small() {
         .with_reference_points_auto(4);
     let ga_config = GaConfiguration::default();
     let nsga3 = Nsga3Ga::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
+        .with_initialization_fn(|_, _| vec![])
         .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0), Box::new(|_| 0.0)]);
     let result = nsga3.validate();
     assert!(matches!(result, Err(GaError::InvalidNsga3Configuration(_))));
@@ -58,7 +59,7 @@ fn test_nsga3_validate_mismatched_objective_fns() {
         .with_reference_points_auto(4);
     let ga_config = GaConfiguration::default();
     let nsga3 = Nsga3Ga::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
+        .with_initialization_fn(|_, _| vec![])
         .with_objective_fns(vec![Box::new(|_| 0.0)]); // only 1, expected 3
     let result = nsga3.validate();
     assert!(matches!(result, Err(GaError::InvalidNsga3Configuration(_))));
@@ -70,7 +71,7 @@ fn test_nsga3_validate_missing_reference_points() {
     let config = Nsga3Configuration::new().with_num_objectives(3);
     let ga_config = GaConfiguration::default();
     let nsga3 = Nsga3Ga::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
+        .with_initialization_fn(|_, _| vec![])
         .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0), Box::new(|_| 0.0)]);
     let result = nsga3.validate();
     assert!(matches!(result, Err(GaError::InvalidNsga3Configuration(msg)) if msg.contains("reference points")));
@@ -84,7 +85,7 @@ fn test_nsga3_validate_custom_reference_point_wrong_dimension() {
         .with_reference_points(vec![vec![0.5, 0.5]]); // 2-dim, not 3
     let ga_config = GaConfiguration::default();
     let nsga3 = Nsga3Ga::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
+        .with_initialization_fn(|_, _| vec![])
         .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0), Box::new(|_| 0.0)]);
     let result = nsga3.validate();
     assert!(matches!(result, Err(GaError::InvalidNsga3Configuration(msg)) if msg.contains("dimension")));
@@ -97,7 +98,7 @@ fn test_nsga3_validate_passes_with_complete_config() {
         .with_reference_points_auto(4);
     let ga_config = GaConfiguration::default();
     let nsga3 = Nsga3Ga::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
+        .with_initialization_fn(|_, _| vec![])
         .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0), Box::new(|_| 0.0)]);
     assert!(nsga3.validate().is_ok());
 }
@@ -111,7 +112,7 @@ fn test_nsga3_validate_mismatched_objective_directions() {
         .with_reference_points_auto(4);
     let ga_config = GaConfiguration::default();
     let nsga3 = Nsga3Ga::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
+        .with_initialization_fn(|_, _| vec![])
         .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0), Box::new(|_| 0.0)]);
     assert!(matches!(
         nsga3.validate(),
@@ -164,18 +165,17 @@ fn build_test_nsga3(
         .with_max_generations(max_generations)
         .with_reference_points_auto(4); // 15 reference points for M=3, p=4
 
-    let mut ga_config = GaConfiguration::default();
-    ga_config.limit_configuration.genes_per_chromosome = 4;
-    ga_config.limit_configuration.alleles_can_be_repeated = true;
-    ga_config.rng_seed = Some(42);
+    let ga_config = GaConfiguration::default()
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(4))
+        .with_rng_seed(42);
 
     let alleles = vec![RangeGenotype::<f64>::new(0, vec![(0.0, 1.0)], 0.0)];
     let alleles_clone = alleles.clone();
 
     Nsga3Ga::<RangeChromosome<f64>>::new(nsga3_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |n, _, _| {
-            range_random_initialization(n, Some(&alleles_clone), Some(true))
+        .with_initialization_fn(move |n, _| {
+            range_random_initialization(n, Some(&alleles_clone))
         })
         .with_objective_fns(dtlz2_objectives())
         .build()
@@ -213,18 +213,17 @@ fn test_nsga3_run_with_custom_reference_points() {
         .with_max_generations(8)
         .with_reference_points(custom);
 
-    let mut ga_config = GaConfiguration::default();
-    ga_config.limit_configuration.genes_per_chromosome = 4;
-    ga_config.limit_configuration.alleles_can_be_repeated = true;
-    ga_config.rng_seed = Some(7);
+    let ga_config = GaConfiguration::default()
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(4))
+        .with_rng_seed(7);
 
     let alleles = vec![RangeGenotype::<f64>::new(0, vec![(0.0, 1.0)], 0.0)];
     let alleles_clone = alleles.clone();
 
     let mut nsga3 = Nsga3Ga::<RangeChromosome<f64>>::new(nsga3_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |n, _, _| {
-            range_random_initialization(n, Some(&alleles_clone), Some(true))
+        .with_initialization_fn(move |n, _| {
+            range_random_initialization(n, Some(&alleles_clone))
         })
         .with_objective_fns(dtlz2_objectives())
         .build()
@@ -269,18 +268,17 @@ fn test_nsga3_run_invokes_observer_hooks() {
         .with_max_generations(5)
         .with_reference_points_auto(2);
 
-    let mut ga_config = GaConfiguration::default();
-    ga_config.limit_configuration.genes_per_chromosome = 4;
-    ga_config.limit_configuration.alleles_can_be_repeated = true;
-    ga_config.rng_seed = Some(123);
+    let ga_config = GaConfiguration::default()
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(4))
+        .with_rng_seed(123);
 
     let alleles = vec![RangeGenotype::<f64>::new(0, vec![(0.0, 1.0)], 0.0)];
     let alleles_clone = alleles.clone();
 
     let mut nsga3 = Nsga3Ga::<RangeChromosome<f64>>::new(nsga3_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |n, _, _| {
-            range_random_initialization(n, Some(&alleles_clone), Some(true))
+        .with_initialization_fn(move |n, _| {
+            range_random_initialization(n, Some(&alleles_clone))
         })
         .with_objective_fns(dtlz2_objectives())
         .with_observer(observer as Arc<dyn genetic_algorithms::Nsga3Observer<RangeChromosome<f64>> + Send + Sync>)

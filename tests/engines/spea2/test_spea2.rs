@@ -9,6 +9,7 @@ use genetic_algorithms::configuration::GaConfiguration;
 use genetic_algorithms::error::GaError;
 use genetic_algorithms::spea2::configuration::{Spea2Configuration, ObjectiveDirection};
 use genetic_algorithms::spea2::Spea2Ga;
+use genetic_algorithms::traits::ConfigurationT;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use genetic_algorithms::LogObserver;
 use std::sync::Arc;
@@ -27,7 +28,7 @@ fn test_spea2_validate_zero_objectives() {
     let config = Spea2Configuration::new().with_num_objectives(0);
     let ga_config = GaConfiguration::default();
     let spea2 = Spea2Ga::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![]);
+        .with_initialization_fn(|_, _| vec![]);
     let result = spea2.validate();
     assert!(matches!(result, Err(GaError::InvalidSpea2Configuration(_))));
 }
@@ -39,7 +40,7 @@ fn test_spea2_validate_population_too_small() {
         .with_population_size(1);
     let ga_config = GaConfiguration::default();
     let spea2 = Spea2Ga::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
+        .with_initialization_fn(|_, _| vec![])
         .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0)]);
     let result = spea2.validate();
     assert!(matches!(result, Err(GaError::InvalidSpea2Configuration(_))));
@@ -54,7 +55,7 @@ fn test_spea2_validate_archive_size_exceeds_population() {
         .with_archive_size(50);
     let ga_config = GaConfiguration::default();
     let spea2 = Spea2Ga::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
+        .with_initialization_fn(|_, _| vec![])
         .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0)]);
     let result = spea2.validate();
     assert!(matches!(result, Err(GaError::InvalidSpea2Configuration(ref msg)) if msg.contains("archive_size")));
@@ -69,7 +70,7 @@ fn test_spea2_validate_archive_size_zero() {
         .with_archive_size(0);
     let ga_config = GaConfiguration::default();
     let spea2 = Spea2Ga::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
+        .with_initialization_fn(|_, _| vec![])
         .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0)]);
     let result = spea2.validate();
     assert!(matches!(result, Err(GaError::InvalidSpea2Configuration(ref msg)) if msg.contains("archive_size")));
@@ -80,7 +81,7 @@ fn test_spea2_validate_mismatched_objective_fns() {
     let config = Spea2Configuration::new().with_num_objectives(3);
     let ga_config = GaConfiguration::default();
     let spea2 = Spea2Ga::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
+        .with_initialization_fn(|_, _| vec![])
         .with_objective_fns(vec![Box::new(|_| 0.0)]);
     let result = spea2.validate();
     assert!(matches!(result, Err(GaError::InvalidSpea2Configuration(_))));
@@ -93,7 +94,7 @@ fn test_spea2_validate_mismatched_objective_directions() {
         .with_objective_directions(vec![ObjectiveDirection::Minimize]);
     let ga_config = GaConfiguration::default();
     let spea2 = Spea2Ga::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
+        .with_initialization_fn(|_, _| vec![])
         .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0), Box::new(|_| 0.0)]);
     assert!(matches!(
         spea2.validate(),
@@ -109,7 +110,7 @@ fn test_spea2_validate_passes_with_complete_config() {
         .with_archive_size(15);
     let ga_config = GaConfiguration::default();
     let spea2 = Spea2Ga::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
+        .with_initialization_fn(|_, _| vec![])
         .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0)]);
     assert!(spea2.validate().is_ok());
 }
@@ -147,18 +148,17 @@ fn build_test_spea2(
         .with_archive_size(archive_size)
         .with_max_generations(max_generations);
 
-    let mut ga_config = GaConfiguration::default();
-    ga_config.limit_configuration.genes_per_chromosome = 30;  // ZDT1: 30 variables
-    ga_config.limit_configuration.alleles_can_be_repeated = true;
-    ga_config.rng_seed = Some(42);
+    let ga_config = GaConfiguration::default()
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(30)) // ZDT1: 30 variables
+        .with_rng_seed(42);
 
     let alleles = vec![genetic_algorithms::genotypes::Range::<f64>::new(0, vec![(0.0, 1.0)], 0.0)];
     let alleles_clone = alleles.clone();
 
     Spea2Ga::<RangeChromosome<f64>>::new(spea2_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |n, _, _| {
-            genetic_algorithms::initializers::range_random_initialization(n, Some(&alleles_clone), Some(true))
+        .with_initialization_fn(move |n, _| {
+            genetic_algorithms::initializers::range_random_initialization(n, Some(&alleles_clone))
         })
         .with_objective_fns(zdt1_objectives())
         .build()
@@ -242,18 +242,17 @@ fn test_spea2_run_invokes_observer_hooks() {
         .with_archive_size(10)
         .with_max_generations(5);
 
-    let mut ga_config = GaConfiguration::default();
-    ga_config.limit_configuration.genes_per_chromosome = 30;
-    ga_config.limit_configuration.alleles_can_be_repeated = true;
-    ga_config.rng_seed = Some(123);
+    let ga_config = GaConfiguration::default()
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(30))
+        .with_rng_seed(123);
 
     let alleles = vec![genetic_algorithms::genotypes::Range::<f64>::new(0, vec![(0.0, 1.0)], 0.0)];
     let alleles_clone = alleles.clone();
 
     let mut spea2 = Spea2Ga::<RangeChromosome<f64>>::new(spea2_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |n, _, _| {
-            genetic_algorithms::initializers::range_random_initialization(n, Some(&alleles_clone), Some(true))
+        .with_initialization_fn(move |n, _| {
+            genetic_algorithms::initializers::range_random_initialization(n, Some(&alleles_clone))
         })
         .with_objective_fns(zdt1_objectives())
         .with_observer(
