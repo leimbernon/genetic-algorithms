@@ -177,9 +177,9 @@ fn ga_with_fitness_cache_builds_successfully() {
 
     let ga = Ga::<Binary>::new()
         .with_population_size(20)
-        .with_genes_per_chromosome(4)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(4))
         .with_fitness_fn(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64)
-        .with_initialization_fn(|n, _, _| binary_random_initialization(n, None, None))
+        .with_initialization_fn(|n, _| binary_random_initialization(n, None))
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
         .with_mutation_method(Mutation::BitFlip)
@@ -205,9 +205,9 @@ fn ga_with_fitness_cache_runs_correctly() {
 
     let mut ga = Ga::<Binary>::new()
         .with_population_size(20)
-        .with_genes_per_chromosome(4)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(4))
         .with_fitness_fn(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64)
-        .with_initialization_fn(|n, _, _| binary_random_initialization(n, None, None))
+        .with_initialization_fn(|n, _| binary_random_initialization(n, None))
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
         .with_mutation_method(Mutation::BitFlip)
@@ -241,11 +241,11 @@ fn ga_with_fitness_cache_range_chromosome() {
 
     let mut ga = Ga::<RangeChromosome<f64>>::new()
         .with_population_size(20)
-        .with_genes_per_chromosome(3)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(3))
         .with_alleles(alleles)
         .with_fitness_fn(|dna: &[RangeGene<f64>]| dna.iter().map(|g| g.value).sum::<f64>())
-        .with_initialization_fn(move |n, _, _| {
-            range_random_initialization(n, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |n, _| {
+            range_random_initialization(n, Some(&alleles_clone))
         })
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)

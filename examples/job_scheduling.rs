@@ -111,11 +111,18 @@ fn main() {
     // --- Build the GA configuration ---
     let mut ga = Ga::new()
         // Each chromosome encodes a permutation of N_JOBS job indices
-        .with_genes_per_chromosome(N_JOBS)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(N_JOBS))
         .with_population_size(POP_SIZE)
-        // Permutation initialization: Some(false) disables allele repetition
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        // Phase 47 compile-fix: manual permutation initializer;
+        // Phase 48 will migrate to UniqueChromosome<i32> for cleaner permutation support.
+        .with_initialization_fn(move |n, _| {
+            use rand::seq::SliceRandom;
+            let mut rng = rand::rng();
+            let mut ids: Vec<i32> = (0..n as i32).collect();
+            ids.shuffle(&mut rng);
+            ids.iter().enumerate()
+                .map(|(i, &job)| RangeGenotype::new(i as i32, vec![(0, n as i32 - 1)], job))
+                .collect()
         })
         .with_fitness_fn(fitness_fn)
         // Selection: Tournament -- competitive pressure, works well for combinatorial problems

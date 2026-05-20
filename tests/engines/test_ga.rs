@@ -1,6 +1,6 @@
 
 use crate::structures::{Chromosome, Gene};
-use genetic_algorithms::configuration::StoppingCriteria;
+use genetic_algorithms::ChromosomeLength;
 use genetic_algorithms::ga::Ga;
 use genetic_algorithms::ga::TerminationCause;
 use genetic_algorithms::stats::GenerationStats;
@@ -460,17 +460,13 @@ fn test_parent_crossover_repeating_alleles() {
     let alleles = binding.as_slice();
     static GENES_PER_CHROMOSOME: usize = 6;
     static POPULATION_SIZE: usize = 100;
-    static NEEDS_UNIQUE_IDS: bool = false;
-    static ALLELES_CAN_BE_REPEATED: bool = true;
     static NUMBER_OF_THREADS: usize = 8;
 
     let mut ga: Ga<Chromosome> = Ga::new()
         .with_threads(NUMBER_OF_THREADS)
         .with_fitness_fn(fitness_fn)
         .with_population_size(POPULATION_SIZE)
-        .with_genes_per_chromosome(GENES_PER_CHROMOSOME)
-        .with_needs_unique_ids(NEEDS_UNIQUE_IDS)
-        .with_alleles_can_be_repeated(ALLELES_CAN_BE_REPEATED)
+        .with_chromosome_length(ChromosomeLength::Fixed(GENES_PER_CHROMOSOME))
         .with_alleles(alleles.to_vec())
         .with_initialization_fn(
             genetic_algorithms::initializers::generic_random_initialization::<Chromosome>,
@@ -499,17 +495,13 @@ fn test_parent_crossover_without_repeating_alleles() {
     let alleles = binding.as_slice();
     static GENES_PER_CHROMOSOME: usize = 6;
     static POPULATION_SIZE: usize = 100;
-    static NEEDS_UNIQUE_IDS: bool = false;
-    static ALLELES_CAN_BE_REPEATED: bool = false;
     static NUMBER_OF_THREADS: usize = 8;
 
     let mut ga: Ga<Chromosome> = Ga::new()
         .with_threads(NUMBER_OF_THREADS)
         .with_fitness_fn(fitness_fn)
         .with_population_size(POPULATION_SIZE)
-        .with_genes_per_chromosome(GENES_PER_CHROMOSOME)
-        .with_needs_unique_ids(NEEDS_UNIQUE_IDS)
-        .with_alleles_can_be_repeated(ALLELES_CAN_BE_REPEATED)
+        .with_chromosome_length(ChromosomeLength::Fixed(GENES_PER_CHROMOSOME))
         .with_alleles(alleles.to_vec())
         .with_initialization_fn(
             genetic_algorithms::initializers::generic_random_initialization_without_repetitions::<
@@ -769,11 +761,7 @@ fn test_stagnation_stopping_criterion() {
         .with_survivor_method(Survivor::Fitness)
         .with_population(population)
         .with_max_generations(1000)
-        .with_stopping_criteria(StoppingCriteria {
-            stagnation_generations: Some(5),
-            convergence_threshold: None,
-            max_duration_secs: None,
-        });
+        .with_stagnation_limit(5);
     ga.run().unwrap();
 
     assert_eq!(
@@ -809,11 +797,7 @@ fn test_convergence_stopping_criterion() {
         .with_survivor_method(Survivor::Fitness)
         .with_population(population)
         .with_max_generations(1000)
-        .with_stopping_criteria(StoppingCriteria {
-            stagnation_generations: None,
-            convergence_threshold: Some(0.01),
-            max_duration_secs: None,
-        });
+        .with_convergence_threshold(0.01);
     ga.run().unwrap();
 
     assert_eq!(
@@ -851,11 +835,7 @@ fn test_time_limit_stopping_criterion() {
         .with_survivor_method(Survivor::Fitness)
         .with_population(population)
         .with_max_generations(1_000_000) // Very high to ensure time limit triggers first
-        .with_stopping_criteria(StoppingCriteria {
-            stagnation_generations: None,
-            convergence_threshold: None,
-            max_duration_secs: Some(0.1), // 100 ms — reliable on slow CI
-        });
+        .with_max_duration_secs(0.1); // 100 ms — reliable on slow CI
     ga.run().unwrap();
 
     assert_eq!(
@@ -1128,9 +1108,7 @@ fn test_validator_accepts_builtin_chromosome_type() {
     let mut ga: Ga<Chromosome> = Ga::new()
         .with_fitness_fn(fitness_fn)
         .with_population_size(10)
-        .with_genes_per_chromosome(4)
-        .with_needs_unique_ids(false)
-        .with_alleles_can_be_repeated(true)
+        .with_chromosome_length(ChromosomeLength::Fixed(4))
         .with_alleles(alleles)
         .with_initialization_fn(
             genetic_algorithms::initializers::generic_random_initialization::<Chromosome>,
@@ -1183,7 +1161,7 @@ fn test_island_nsga2_run_returns_pareto_front() {
 
     let mut ga = IslandNsga2Ga::<Chromosome>::new(island_config, nsga2_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |genes_per_chrom, _alleles, _repeat| {
+        .with_initialization_fn(move |genes_per_chrom, _alleles| {
             // Simple random initialization: assign random IDs from alleles
             use rand::Rng;
             let mut rng = rand::rng();
@@ -1275,7 +1253,7 @@ fn test_island_nsga2_migration_improves_diversity() {
 
     let mut ga = IslandNsga2Ga::<Chromosome>::new(island_config, nsga2_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |genes_per_chrom, _alleles, _repeat| {
+        .with_initialization_fn(move |genes_per_chrom, _alleles| {
             use rand::Rng;
             let mut rng = rand::rng();
             (0..genes_per_chrom)
@@ -1334,7 +1312,7 @@ fn test_nsga2_run_returns_pareto_front() {
 
     let mut nsga2 = Nsga2Ga::<Chromosome>::new(nsga2_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |genes_per_chrom, _alleles, _repeat| {
+        .with_initialization_fn(move |genes_per_chrom, _alleles| {
             use rand::Rng;
             let mut rng = rand::rng();
             (0..genes_per_chrom)
@@ -1404,7 +1382,7 @@ fn test_nsga2_three_objectives() {
 
     let mut nsga2 = Nsga2Ga::<Chromosome>::new(nsga2_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |genes_per_chrom, _alleles, _repeat| {
+        .with_initialization_fn(move |genes_per_chrom, _alleles| {
             use rand::Rng;
             let mut rng = rand::rng();
             (0..genes_per_chrom)
@@ -1460,7 +1438,7 @@ fn test_island_ga_run_returns_best_chromosome() {
 
     let ga_config = GaConfiguration::new()
         .with_population_size(20)
-        .with_genes_per_chromosome(4)
+        .with_chromosome_length(ChromosomeLength::Fixed(4))
         .with_max_generations(15)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
@@ -1470,7 +1448,7 @@ fn test_island_ga_run_returns_best_chromosome() {
 
     let mut ga = IslandGa::<Chromosome>::new(island_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |genes_per_chrom, _alleles, _repeat| {
+        .with_initialization_fn(move |genes_per_chrom, _alleles| {
             use rand::Rng;
             let mut rng = rand::rng();
             (0..genes_per_chrom)
@@ -1519,7 +1497,7 @@ fn test_island_ga_minimization() {
 
     let ga_config = GaConfiguration::new()
         .with_population_size(15)
-        .with_genes_per_chromosome(3)
+        .with_chromosome_length(ChromosomeLength::Fixed(3))
         .with_max_generations(10)
         .with_selection_method(Selection::Random)
         .with_crossover_method(Crossover::Uniform)
@@ -1529,7 +1507,7 @@ fn test_island_ga_minimization() {
 
     let mut ga = IslandGa::<Chromosome>::new(island_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |genes_per_chrom, _alleles, _repeat| {
+        .with_initialization_fn(move |genes_per_chrom, _alleles| {
             use rand::Rng;
             let mut rng = rand::rng();
             (0..genes_per_chrom)
@@ -1570,7 +1548,7 @@ fn test_ga_run_with_range_chromosome_f64() {
 
     let mut ga: Ga<RangeChromosome<f64>> = Ga::new()
         .with_population_size(20)
-        .with_genes_per_chromosome(3)
+        .with_chromosome_length(ChromosomeLength::Fixed(3))
         .with_max_generations(20)
         .with_problem_solving(ProblemSolving::Minimization)
         .with_selection_method(Selection::Tournament)
@@ -1616,7 +1594,7 @@ fn test_ga_run_with_range_chromosome_i32() {
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
         .with_population_size(15)
-        .with_genes_per_chromosome(4)
+        .with_chromosome_length(ChromosomeLength::Fixed(4))
         .with_max_generations(10)
         .with_problem_solving(ProblemSolving::Maximization)
         .with_selection_method(Selection::Random)
@@ -1962,10 +1940,10 @@ fn test_rng_seed_produces_reproducible_results() {
         let alleles_clone = alleles.clone();
 
         let mut ga: Ga<RangeChromosome<f64>> = Ga::new()
-            .with_genes_per_chromosome(4)
+            .with_chromosome_length(ChromosomeLength::Fixed(4))
             .with_population_size(20)
-            .with_initialization_fn(move |genes_per_chromosome, _, _| {
-                range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+            .with_initialization_fn(move |genes_per_chromosome, _| {
+                range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
             })
             .with_fitness_fn(|dna: &[RangeGene<f64>]| dna.iter().map(|g| g.value).sum::<f64>())
             .with_selection_method(Selection::Tournament)
@@ -2022,9 +2000,8 @@ fn test_ga_with_dynamic_mutation() {
 
     let mut ga: Ga<Chromosome> = Ga::new()
         .with_population_size(20)
-        .with_genes_per_chromosome(10)
-        .with_alleles_can_be_repeated(true)
-        .with_initialization_fn(|genes, alleles, _unique| {
+        .with_chromosome_length(ChromosomeLength::Fixed(10))
+        .with_initialization_fn(|genes, alleles| {
             let mut rng = genetic_algorithms::rng::make_rng();
             let alleles: &[Gene] = alleles.unwrap();
             (0..genes)
@@ -2056,10 +2033,10 @@ fn test_ga_with_dynamic_mutation() {
     );
 
     // Verify configuration was stored correctly
-    assert!(ga.configuration.mutation_configuration.dynamic_mutation);
+    assert!(ga.configuration().mutation().dynamic_mutation);
     assert!(
-        (ga.configuration
-            .mutation_configuration
+        (ga.configuration()
+            .mutation()
             .target_cardinality
             .unwrap()
             - 0.5)
@@ -2067,8 +2044,8 @@ fn test_ga_with_dynamic_mutation() {
             < f64::EPSILON
     );
     assert!(
-        (ga.configuration
-            .mutation_configuration
+        (ga.configuration()
+            .mutation()
             .probability_step
             .unwrap()
             - 0.02)
