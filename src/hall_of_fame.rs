@@ -22,7 +22,7 @@
 //! or prevent loss of elite solutions during the GA run. Attach it to the
 //! engine builder via `with_hall_of_fame()`.
 
-use crate::traits::{ChromosomeT, GeneT};
+use crate::traits::{GeneT, LinearChromosome};
 use std::cmp::Ordering;
 
 /// Distance metric for diversity filtering in the Hall of Fame.
@@ -87,7 +87,7 @@ impl Default for HallOfFameConfig {
 /// fitness it was added.
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Entry<U: ChromosomeT> {
+pub struct Entry<U: LinearChromosome> {
     /// The archived chromosome (clone of the original).
     pub chromosome: U,
     /// Generation number when this solution was added.
@@ -107,7 +107,7 @@ pub struct Entry<U: ChromosomeT> {
 /// * `U` -- The chromosome type, must implement [`ChromosomeT`].
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct HallOfFame<U: ChromosomeT> {
+pub struct HallOfFame<U: LinearChromosome> {
     /// Entries sorted by fitness descending (best first).
     entries: Vec<Entry<U>>,
     /// Maximum number of entries.
@@ -116,7 +116,7 @@ pub struct HallOfFame<U: ChromosomeT> {
     distance_metric: DistanceMetric,
 }
 
-impl<U: ChromosomeT> HallOfFame<U> {
+impl<U: LinearChromosome> HallOfFame<U> {
     /// Creates a new Hall of Fame with the given configuration.
     pub fn new(config: HallOfFameConfig) -> Self {
         HallOfFame {

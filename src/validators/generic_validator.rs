@@ -17,7 +17,7 @@ use crate::error::GaError;
 use crate::genotypes::Range;
 use crate::operations;
 use crate::population::Population;
-use crate::traits::{ChromosomeT, GeneT};
+use crate::traits::{GeneT, LinearChromosome};
 use std::any::TypeId;
 use std::collections::HashSet;
 
@@ -37,7 +37,7 @@ pub fn validate<U>(
     alleles: Option<&[U::Gene]>,
 ) -> Result<(), GaError>
 where
-    U: ChromosomeT + Send + Sync + 'static + Clone,
+    U: LinearChromosome + Send + Sync + 'static + Clone,
     U::Gene: 'static,
 {
     //1 We call the condition for checking the length of every chromosome
@@ -97,7 +97,7 @@ where
 /// Uses a `HashSet` for O(N) per chromosome instead of O(N²) nested loop.
 pub fn unique_gene_ids<U>(population: &Population<U>) -> Result<(), GaError>
 where
-    U: ChromosomeT + Send + Sync + 'static + Clone,
+    U: LinearChromosome + Send + Sync + 'static + Clone,
 {
     for (chromosome_number, chromosome) in population.chromosomes.iter().enumerate() {
         let mut seen = HashSet::with_capacity(chromosome.dna().len());
@@ -132,7 +132,7 @@ pub fn fitness_target_is_some(
 /// Compares each chromosome to the first one in O(N) instead of O(N²).
 pub fn same_dna_length<U>(population: &Population<U>) -> Result<(), GaError>
 where
-    U: ChromosomeT + Send + Sync + 'static + Clone,
+    U: LinearChromosome + Send + Sync + 'static + Clone,
 {
     let Some(first) = population.chromosomes.first() else {
         return Ok(());
@@ -156,7 +156,7 @@ pub fn chromosome_length_not_bigger_than_alleles<U>(
     genes_per_chromosome: usize,
 ) -> Result<(), GaError>
 where
-    U: ChromosomeT + Send + Sync + 'static + Clone,
+    U: LinearChromosome + Send + Sync + 'static + Clone,
 {
     if genes_per_chromosome > alleles.len() {
         return Err(GaError::ConfigurationError(

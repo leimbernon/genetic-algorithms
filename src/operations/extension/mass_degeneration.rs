@@ -5,12 +5,12 @@
 
 use crate::configuration::ProblemSolving;
 use crate::operations::mutation::swap::swap;
-use crate::traits::ChromosomeT;
+use crate::traits::LinearChromosome;
 use log::info;
 
 /// Applies mass degeneration: protects elite chromosomes and applies
 /// `mutation_rounds` of swap mutation to all others, resetting their fitness.
-pub fn mass_degeneration<U: ChromosomeT>(
+pub fn mass_degeneration<U: LinearChromosome>(
     chromosomes: &mut [U],
     problem_solving: ProblemSolving,
     mutation_rounds: usize,

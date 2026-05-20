@@ -129,7 +129,7 @@ use crate::observer::IslandGaObserver;
 use crate::operations::mutation;
 use crate::population::Population;
 use crate::stats::GenerationStats;
-use crate::traits::{ChromosomeT, FitnessFn, InitializationFn};
+use crate::traits::{LinearChromosome, FitnessFn, InitializationFn};
 use std::sync::Arc;
 
 /// Island Model Genetic Algorithm orchestrator.
@@ -145,7 +145,7 @@ use std::sync::Arc;
 /// * `U` - Chromosome type implementing `ChromosomeT`.
 pub struct IslandGa<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// Island model configuration.
     pub island_config: IslandConfiguration,
@@ -166,7 +166,7 @@ where
 
 impl<U> IslandGa<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// Creates a new `IslandGa` with a single shared GA configuration for all islands.
     ///
@@ -420,7 +420,7 @@ where
 
 impl<U> IslandGa<U>
 where
-    U: ChromosomeT + mutation::ValueMutable,
+    U: LinearChromosome + mutation::ValueMutable,
 {
     /// Runs the island model GA and returns the best chromosome found across all islands.
     ///

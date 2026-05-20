@@ -1,7 +1,7 @@
 //! Uniform crossover implementation.
 
 use crate::error::GaError;
-use crate::traits::ChromosomeT;
+use crate::traits::LinearChromosome;
 use log::{debug, trace};
 use rand::Rng;
 use std::borrow::Cow;
@@ -14,7 +14,7 @@ use std::borrow::Cow;
 /// # Errors
 ///
 /// Returns `Err(GaError::CrossoverError)` if parents have different DNA lengths.
-pub fn uniform<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
+pub fn uniform<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
     //Before doing the operation, we check that the dna in the parent 1 has the same length of the dna in the parent 2
     if parent_1.dna().len() != parent_2.dna().len() {
         return Err(GaError::CrossoverError(format!(

@@ -12,11 +12,11 @@ use crate::configuration::ProblemSolving;
 use crate::de::gene::DeGene;
 use super::configuration::ScatterConfiguration;
 use crate::rng::make_rng;
-use crate::traits::{ChromosomeT, FitnessFn};
+use crate::traits::{LinearChromosome, FitnessFn};
 use rand::Rng;
 
 /// Result returned by [`ScatterEngine::run`].
-pub struct ScatterResult<U: ChromosomeT> {
+pub struct ScatterResult<U: LinearChromosome> {
     /// Final reference set.
     pub reference_set: Vec<U>,
     /// The best individual found during the run.
@@ -45,7 +45,7 @@ pub struct ScatterResult<U: ChromosomeT> {
 ///    d. Merge candidates with reference set; keep best `b` by quality and
 ///    diversity.
 /// 4. Stop when `max_iterations` is reached or `fitness_target` is met.
-pub struct ScatterEngine<U: ChromosomeT>
+pub struct ScatterEngine<U: LinearChromosome>
 where
     U::Gene: DeGene,
 {
@@ -54,7 +54,7 @@ where
     fitness_fn: Arc<FitnessFn<U::Gene>>,
 }
 
-impl<U: ChromosomeT + Clone> ScatterEngine<U>
+impl<U: LinearChromosome + Clone> ScatterEngine<U>
 where
     U::Gene: DeGene,
 {

@@ -5,7 +5,7 @@
 //! index (gene.id), avoiding any `PartialEq` requirement on T.
 
 use crate::chromosomes::ListChromosome;
-use crate::traits::ChromosomeT;
+use crate::traits::LinearChromosome;
 use std::borrow::Cow;
 use std::fmt::Debug;
 

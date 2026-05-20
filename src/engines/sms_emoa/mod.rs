@@ -120,7 +120,7 @@ use crate::multi_objective::ObjectiveFn;
 use crate::observer::SmsEmoaObserver;
 use crate::operations::{crossover, mutation};
 use crate::sms_emoa::configuration::SmsEmoaConfiguration;
-use crate::traits::{ChromosomeT, InitializationFn};
+use crate::traits::{LinearChromosome, InitializationFn};
 use rand::Rng;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
@@ -134,7 +134,7 @@ use std::time::Instant;
 /// * `U` - Chromosome type implementing `ChromosomeT`.
 pub struct SmsEmoaGa<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// SMS-EMOA-specific configuration.
     pub sms_config: SmsEmoaConfiguration,
@@ -153,7 +153,7 @@ where
 #[allow(dead_code)]
 impl<U> SmsEmoaGa<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// Creates a new `SmsEmoaGa` with the given configurations.
     pub fn new(sms_config: SmsEmoaConfiguration, ga_config: GaConfiguration) -> Self {
@@ -329,7 +329,7 @@ where
 
 impl<U> SmsEmoaGa<U>
 where
-    U: ChromosomeT + mutation::ValueMutable,
+    U: LinearChromosome + mutation::ValueMutable,
 {
     /// Creates one offspring via binary tournament selection, crossover, and mutation.
     fn create_one_offspring(&self, population: &[ParetoIndividual<U>]) -> Result<U, GaError> {

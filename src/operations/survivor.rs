@@ -12,7 +12,7 @@ pub use self::mu_comma_lambda::mu_comma_lambda;
 pub use self::mu_plus_lambda::mu_plus_lambda;
 pub(crate) use crate::configuration::LimitConfiguration;
 use crate::error::GaError;
-use crate::traits::{ChromosomeT, SurvivorOperator};
+use crate::traits::{LinearChromosome, SurvivorOperator};
 
 use super::Survivor;
 pub mod age;
@@ -22,7 +22,7 @@ pub mod mu_comma_lambda;
 pub mod mu_plus_lambda;
 
 impl SurvivorOperator for Survivor {
-    fn select_survivors<U: ChromosomeT>(
+    fn select_survivors<U: LinearChromosome>(
         &self,
         chromosomes: &mut Vec<U>,
         population_size: usize,
@@ -48,7 +48,7 @@ impl SurvivorOperator for Survivor {
 /// # Returns
 ///
 /// `Ok(())` after trimming the population, or `Err(GaError)` on failure.
-pub fn factory<U: ChromosomeT>(
+pub fn factory<U: LinearChromosome>(
     survivor: Survivor,
     chromosomes: &mut Vec<U>,
     population_size: usize,

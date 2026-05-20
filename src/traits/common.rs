@@ -4,7 +4,7 @@
 //! aliases as well as the `initialize_chromosomes` helper that all three
 //! orchestrators (`Ga`, `IslandGa`, `Nsga2Ga`) use during population setup.
 
-use crate::traits::{ChromosomeT, GeneT};
+use crate::traits::{GeneT, LinearChromosome};
 use rayon::prelude::*;
 use std::borrow::Cow;
 use std::sync::Arc;
@@ -38,7 +38,7 @@ fn build_one_chromosome<U>(
     age: usize,
 ) -> U
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
     U::Gene: GeneT,
 {
     let dna = init_fn(genes_per_chromosome, alleles, alleles_flag);
@@ -88,7 +88,7 @@ pub fn initialize_chromosomes<U>(
     age: usize,
 ) -> Vec<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
     U::Gene: GeneT,
 {
     (0..count)
@@ -119,7 +119,7 @@ pub fn initialize_chromosomes_par<U>(
     age: usize,
 ) -> Vec<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
     U::Gene: GeneT,
 {
     (0..count)

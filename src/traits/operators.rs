@@ -2,7 +2,7 @@ use crate::configuration::{LimitConfiguration, ProblemSolving};
 use crate::error::GaError;
 use crate::extension::configuration::ExtensionConfiguration;
 use crate::operations::mutation::ValueMutable;
-use crate::traits::ChromosomeT;
+use crate::traits::{ChromosomeT, LinearChromosome};
 
 /// Trait for parent selection operators.
 ///
@@ -63,7 +63,7 @@ pub trait SelectionOperator {
 /// struct MyCrossover;
 ///
 /// impl CrossoverOperator for MyCrossover {
-///     fn crossover<U: ChromosomeT>(&self, parent_1: &U, parent_2: &U)
+///     fn crossover<U: LinearChromosome>(&self, parent_1: &U, parent_2: &U)
 ///         -> Result<Vec<U>, GaError>
 ///     {
 ///         // Custom crossover logic here
@@ -80,7 +80,7 @@ pub trait CrossoverOperator {
     /// **Note:** Additional parameters (e.g., `number_of_points` for
     /// multi-point crossover) are expected to be stored in the operator
     /// struct or captured from configuration.
-    fn crossover<U: ChromosomeT>(&self, parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError>;
+    fn crossover<U: LinearChromosome>(&self, parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError>;
 }
 
 /// Trait for mutation operators.
@@ -104,7 +104,7 @@ pub trait CrossoverOperator {
 ///         sigma: Option<f64>,
 ///     ) -> Result<(), GaError>
 ///     where
-///         U: ChromosomeT + ValueMutable + 'static,
+///         U: LinearChromosome + ValueMutable + 'static,
 ///     {
 ///         // Custom mutation logic here
 ///         Ok(())
@@ -128,7 +128,7 @@ pub trait MutationOperator {
         sigma: Option<f64>,
     ) -> Result<(), GaError>
     where
-        U: ChromosomeT + ValueMutable + 'static;
+        U: LinearChromosome + ValueMutable + 'static;
 }
 
 /// Trait for survivor selection operators.
@@ -145,7 +145,7 @@ pub trait MutationOperator {
 /// struct MySurvivor;
 ///
 /// impl SurvivorOperator for MySurvivor {
-///     fn select_survivors<U: ChromosomeT>(
+///     fn select_survivors<U: LinearChromosome>(
 ///         &self,
 ///         chromosomes: &mut Vec<U>,
 ///         population_size: usize,
@@ -160,7 +160,7 @@ pub trait SurvivorOperator {
     /// Select survivors from the combined parent + offspring population.
     ///
     /// Trims `chromosomes` in-place to at most `population_size` individuals.
-    fn select_survivors<U: ChromosomeT>(
+    fn select_survivors<U: LinearChromosome>(
         &self,
         chromosomes: &mut Vec<U>,
         population_size: usize,
@@ -182,7 +182,7 @@ pub trait SurvivorOperator {
 /// struct MyExtension;
 ///
 /// impl ExtensionOperator for MyExtension {
-///     fn apply_extension<U: ChromosomeT>(
+///     fn apply_extension<U: LinearChromosome>(
 ///         &self,
 ///         chromosomes: &mut Vec<U>,
 ///         population_size: usize,
@@ -200,7 +200,7 @@ pub trait ExtensionOperator {
     /// This is called when population diversity drops below the configured
     /// threshold. Implementations may reduce the population (requiring regrowth)
     /// or modify chromosomes in-place.
-    fn apply_extension<U: ChromosomeT>(
+    fn apply_extension<U: LinearChromosome>(
         &self,
         chromosomes: &mut Vec<U>,
         population_size: usize,
@@ -226,7 +226,7 @@ pub trait ExtensionOperator {
 /// struct MyLocalSearch;
 ///
 /// impl LocalSearchOperator for MyLocalSearch {
-///     fn improve<U: ChromosomeT + Send + Sync + 'static + Clone>(
+///     fn improve<U: LinearChromosome + Send + Sync + 'static + Clone>(
 ///         &self,
 ///         individual: &mut U,
 ///         fitness_fn: &dyn Fn(&[U::Gene]) -> f64,
@@ -251,5 +251,5 @@ pub trait LocalSearchOperator {
         fitness_fn: &dyn Fn(&[U::Gene]) -> f64,
     ) -> Result<usize, GaError>
     where
-        U: ChromosomeT + Send + Sync + 'static + Clone;
+        U: LinearChromosome + Send + Sync + 'static + Clone;
 }
