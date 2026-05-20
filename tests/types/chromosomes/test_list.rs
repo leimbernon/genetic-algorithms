@@ -12,8 +12,8 @@ use genetic_algorithms::operations::mutation::swap;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::population::Population;
 use genetic_algorithms::traits::{
-    ChromosomeT, ConfigurationT, CrossoverConfig, GeneT, MutationConfig, SelectionConfig,
-    StoppingConfig,
+    ChromosomeT, ConfigurationT, CrossoverConfig, GeneT, LinearChromosome, MutationConfig,
+    SelectionConfig, StoppingConfig,
 };
 use std::borrow::Cow;
 

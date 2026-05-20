@@ -442,7 +442,7 @@ use genetic_algorithms::checkpoint::{load_checkpoint, save_checkpoint, Checkpoin
 use genetic_algorithms::ga::Ga;
 use genetic_algorithms::initializers::binary_initializer::binary_random_initialization;
 use genetic_algorithms::traits::{
-    ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+    ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig, SelectionConfig, StoppingConfig,
 };
 use std::path::Path;
 

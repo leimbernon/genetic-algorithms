@@ -6,7 +6,7 @@
 
 use crate::structures::{Chromosome, Gene};
 use genetic_algorithms::hall_of_fame::*;
-use genetic_algorithms::traits::{ChromosomeT, GeneT};
+use genetic_algorithms::traits::{ChromosomeT, GeneT, LinearChromosome};
 
 /// Helper: construct a test chromosome with the given gene IDs and fitness.
 fn make_chromosome(id_values: &[i32], fitness: f64) -> Chromosome {

@@ -25,13 +25,13 @@ use crate::configuration::{CrossoverConfiguration, ProblemSolving};
 use crate::operations::mutation::ValueMutable;
 use crate::operations::{crossover, mutation};
 use crate::rng::make_rng;
-use crate::traits::{ChromosomeT, FitnessFn};
+use crate::traits::{LinearChromosome, FitnessFn};
 use rand::Rng;
 
 use super::configuration::AlpsConfiguration;
 
 /// Result returned by [`AlpsEngine::run`].
-pub struct AlpsResult<U: ChromosomeT> {
+pub struct AlpsResult<U: LinearChromosome> {
     /// Final layer populations (index 0 = youngest).
     pub layers: Vec<Vec<U>>,
     /// The best individual found across all layers during the run.
@@ -73,13 +73,13 @@ pub struct AlpsResult<U: ChromosomeT> {
 /// );
 /// let result = engine.run();
 /// ```
-pub struct AlpsEngine<U: ChromosomeT> {
+pub struct AlpsEngine<U: LinearChromosome> {
     config: AlpsConfiguration,
     init_fn: Arc<dyn Fn(usize) -> Vec<U> + Send + Sync>,
     fitness_fn: Arc<FitnessFn<U::Gene>>,
 }
 
-impl<U: ChromosomeT> AlpsEngine<U> {
+impl<U: LinearChromosome> AlpsEngine<U> {
     /// Construct a new engine.
     ///
     /// * `config` — layer count, age scheme, operators, and stopping criteria.
@@ -101,7 +101,7 @@ impl<U: ChromosomeT> AlpsEngine<U> {
 
 impl<U> AlpsEngine<U>
 where
-    U: ChromosomeT + Clone + ValueMutable + 'static,
+    U: LinearChromosome + Clone + ValueMutable + 'static,
 {
     /// Run the ALPS algorithm and return the result.
     pub fn run(&mut self) -> AlpsResult<U> {

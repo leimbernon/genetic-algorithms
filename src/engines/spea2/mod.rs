@@ -120,7 +120,7 @@ use crate::nsga2::configuration::ObjectiveDirection;
 use crate::observer::Spea2Observer;
 use crate::operations::{crossover, mutation};
 use crate::spea2::configuration::Spea2Configuration;
-use crate::traits::{ChromosomeT, InitializationFn};
+use crate::traits::{LinearChromosome, InitializationFn};
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
 use rand::Rng;
@@ -134,7 +134,7 @@ use std::time::Instant;
 /// * `U` - Chromosome type implementing `ChromosomeT`.
 pub struct Spea2Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// SPEA2-specific configuration.
     pub spea2_config: Spea2Configuration,
@@ -153,7 +153,7 @@ where
 #[allow(dead_code)]
 impl<U> Spea2Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// Creates a new `Spea2Ga` with the given configurations.
     pub fn new(spea2_config: Spea2Configuration, ga_config: GaConfiguration) -> Self {
@@ -461,7 +461,7 @@ where
 
 impl<U> Spea2Ga<U>
 where
-    U: ChromosomeT + mutation::ValueMutable,
+    U: LinearChromosome + mutation::ValueMutable,
 {
     /// Runs the SPEA2 algorithm and returns the Pareto front from the final archive.
     ///

@@ -104,7 +104,7 @@ pub struct Entry<U: LinearChromosome> {
 ///
 /// # Type parameters
 ///
-/// * `U` -- The chromosome type, must implement [`ChromosomeT`].
+/// * `U` -- The chromosome type, must implement [`LinearChromosome`].
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct HallOfFame<U: LinearChromosome> {

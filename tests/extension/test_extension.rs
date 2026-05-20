@@ -3,7 +3,7 @@ use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::extension::configuration::ExtensionConfiguration;
 use genetic_algorithms::operations::extension;
 use genetic_algorithms::operations::Extension;
-use genetic_algorithms::traits::{ChromosomeT, GeneT};
+use genetic_algorithms::traits::{ChromosomeT, GeneT, LinearChromosome};
 
 fn make_chromosome(ids: &[i32], fitness: f64) -> Chromosome {
     let dna: Vec<Gene> = ids.iter().map(|&id| Gene { id }).collect();

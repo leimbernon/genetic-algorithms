@@ -1,6 +1,6 @@
 use genetic_algorithms::chromosomes::Range;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
-use genetic_algorithms::traits::ChromosomeT;
+use genetic_algorithms::traits::{ChromosomeT, LinearChromosome};
 
 #[test]
 fn test_new_range() {
