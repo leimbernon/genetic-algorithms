@@ -6,7 +6,7 @@
 //! problems.
 
 use crate::error::GaError;
-use crate::traits::ChromosomeT;
+use crate::traits::LinearChromosome;
 use log::debug;
 use rand::Rng;
 use std::borrow::Cow;
@@ -37,7 +37,7 @@ use std::borrow::Cow;
 /// # Returns
 ///
 /// `Ok(())` on success.
-pub fn insertion_mutation<U: ChromosomeT>(individual: &mut U) -> Result<(), GaError> {
+pub fn insertion_mutation<U: LinearChromosome>(individual: &mut U) -> Result<(), GaError> {
     let len = individual.dna().len();
     if len < 2 {
         debug!(target="mutation_events", method="insertion"; "DNA length < 2, skipping insertion mutation");

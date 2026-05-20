@@ -150,9 +150,9 @@ use crate::{
     },
     population::Population,
     traits::{
-        ChromosomeT, ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, GeneT,
-        LocalSearchConfig, LocalSearchOperator, MutationConfig, NichingConfig, SelectionConfig,
-        StoppingConfig,
+        ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, GeneT,
+        LinearChromosome, LocalSearchConfig, LocalSearchOperator, MutationConfig, NichingConfig,
+        SelectionConfig, StoppingConfig,
     },
 };
 use rand::Rng;
@@ -248,7 +248,7 @@ pub enum TerminationCause {
 #[allow(deprecated, clippy::type_complexity)]
 pub struct Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// Tunable GA configuration (limits, operators, logging, etc.).
     pub configuration: GaConfiguration,
@@ -338,7 +338,7 @@ where
 #[allow(deprecated)]
 impl<U> Default for Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     fn default() -> Self {
         Ga {
@@ -372,7 +372,7 @@ where
 
 impl<U> SelectionConfig for Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     fn with_number_of_couples(mut self, number_of_couples: usize) -> Self {
         self.configuration.selection_configuration.number_of_couples = number_of_couples;
@@ -390,7 +390,7 @@ where
 
 impl<U> CrossoverConfig for Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     fn with_crossover_number_of_points(mut self, number_of_points: usize) -> Self {
         self.configuration.crossover_configuration.number_of_points = Some(number_of_points);
@@ -420,7 +420,7 @@ where
 
 impl<U> MutationConfig for Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     fn with_mutation_probability_max(mut self, probability_max: f64) -> Self {
         self.configuration.mutation_configuration.probability_max = Some(probability_max);
@@ -474,7 +474,7 @@ where
 
 impl<U> StoppingConfig for Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     fn with_max_generations(mut self, max_generations: usize) -> Self {
         self.configuration.limit_configuration.max_generations = max_generations;
@@ -492,7 +492,7 @@ where
 
 impl<U> NichingConfig for Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     fn with_niching_enabled(mut self, enabled: bool) -> Self {
         self.configuration
@@ -519,7 +519,7 @@ where
 
 impl<U> ElitismConfig for Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     fn with_elitism(mut self, elitism_count: usize) -> Self {
         self.configuration.elitism_count = elitism_count;
@@ -529,7 +529,7 @@ where
 
 impl<U> ExtensionConfig for Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     fn with_extension_method(mut self, method: crate::operations::Extension) -> Self {
         self.configuration
@@ -570,7 +570,7 @@ where
 
 impl<U> LocalSearchConfig for Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     fn with_local_search_configuration(mut self, config: LocalSearchConfiguration) -> Self {
         self.configuration.local_search_configuration = Some(config);
@@ -580,7 +580,7 @@ where
 
 impl<U> ConfigurationT for Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     fn new() -> Self {
         Self::default()
@@ -678,7 +678,7 @@ where
 
 impl<U> Ga<U>
 where
-    U: ChromosomeT
+    U: LinearChromosome
         + Send
         + Sync
         + 'static
@@ -960,7 +960,7 @@ where
     /// and must return a `Vec` of genes for one chromosome.
     pub fn with_initialization_fn<F>(mut self, initialization_fn: F) -> Self
     where
-        U: ChromosomeT + Send + Sync + 'static + Clone,
+        U: LinearChromosome + Send + Sync + 'static + Clone,
         F: Fn(usize, Option<&[U::Gene]>, Option<bool>) -> Vec<U::Gene> + Send + Sync + 'static,
     {
         self.initialization_fn = Some(Arc::new(initialization_fn));
@@ -1060,7 +1060,7 @@ where
     /// - Sets the internal `population` with the collected chromosomes.
     pub fn initialization(&mut self) -> Result<&mut Self, GaError>
     where
-        U: ChromosomeT + Send + Sync + 'static + Clone,
+        U: LinearChromosome + Send + Sync + 'static + Clone,
     {
         // Before starting initialization, verify that initializer is set
         if self.initialization_fn.is_none() {
@@ -1093,7 +1093,7 @@ where
     /// Creates a random initial population (no seeds).
     fn initialize_random(&mut self) -> Result<(), GaError>
     where
-        U: ChromosomeT + Send + Sync + 'static + Clone,
+        U: LinearChromosome + Send + Sync + 'static + Clone,
     {
         let population_size = self.configuration.limit_configuration.population_size;
         let genes_per_chromosome = self.configuration.limit_configuration.genes_per_chromosome;
@@ -1139,7 +1139,7 @@ where
     /// WASM compatible: seed placement and dedup are pure data operations.
     fn initialize_with_seeds(&mut self) -> Result<(), GaError>
     where
-        U: ChromosomeT + Send + Sync + 'static + Clone,
+        U: LinearChromosome + Send + Sync + 'static + Clone,
     {
         if self.initialization_fn.is_none() {
             return Err(GaError::InitializationError(
@@ -1286,7 +1286,7 @@ where
         generations_to_callback: usize,
     ) -> Result<&Population<U>, GaError>
     where
-        U: ChromosomeT + Send + Sync + 'static + Clone + MaybeDeserialize,
+        U: LinearChromosome + Send + Sync + 'static + Clone + MaybeDeserialize,
         F: Fn(&usize, &Population<U>, &GenerationStats, &TerminationCause) -> ControlFlow<()>,
     {
         //Before starting the run, we will check the conditions
@@ -2355,7 +2355,7 @@ where
 /// - For FixedFitness: stops when any chromosome has fitness exactly `fitness_target`.
 fn limit_reached<U>(limit: LimitConfiguration, chromosomes: &[U]) -> bool
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     let mut result = false;
 
@@ -2408,7 +2408,7 @@ fn parent_crossover<U>(
     is_maximization: bool,
 ) -> Result<Vec<U>, GaError>
 where
-    U: ChromosomeT + Send + Sync + 'static + Clone + mutation::ValueMutable,
+    U: LinearChromosome + Send + Sync + 'static + Clone + mutation::ValueMutable,
 {
     /*
         Gets the static crossover probability config and the static mutation probability config
@@ -2743,7 +2743,7 @@ where
 /// Extracts the top `count` individuals from the population by fitness.
 ///
 /// Only clones the selected elite individuals instead of the whole population.
-fn extract_elite<U: ChromosomeT>(
+fn extract_elite<U: LinearChromosome>(
     chromosomes: &[U],
     count: usize,
     problem_solving: ProblemSolving,
@@ -2773,7 +2773,7 @@ fn extract_elite<U: ChromosomeT>(
 }
 
 /// Reinserts elite individuals into the population, replacing the worst if already at capacity.
-fn reinsert_elite<U: ChromosomeT>(
+fn reinsert_elite<U: LinearChromosome>(
     chromosomes: &mut [U],
     elite: Vec<U>,
     problem_solving: ProblemSolving,

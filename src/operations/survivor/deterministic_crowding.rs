@@ -12,7 +12,7 @@
 //! 3. Keep the fitter of the (offspring, most-similar-parent) pair; discard the other.
 //! 4. Offspring that have no available parent to pair with survive unconditionally.
 
-use crate::traits::{ChromosomeT, GeneT};
+use crate::traits::{LinearChromosome, GeneT};
 use log::{debug, trace};
 
 /// Hamming distance between two DNA slices on gene IDs.
@@ -20,7 +20,7 @@ use log::{debug, trace};
 /// Counts positions where `gene_a.id() != gene_b.id()`, comparing up to
 /// `min(len_a, len_b)` positions. Extra positions beyond the shorter slice
 /// are ignored (D-08).
-fn hamming_distance<U: ChromosomeT>(a: &U, b: &U) -> usize {
+fn hamming_distance<U: LinearChromosome>(a: &U, b: &U) -> usize {
     a.dna()
         .iter()
         .zip(b.dna().iter())
@@ -41,7 +41,7 @@ fn hamming_distance<U: ChromosomeT>(a: &U, b: &U) -> usize {
 /// # Arguments
 ///
 /// * `chromosomes` - Combined parents + offspring (modified in place).
-pub fn deterministic_crowding<U: ChromosomeT>(chromosomes: &mut Vec<U>) {
+pub fn deterministic_crowding<U: LinearChromosome>(chromosomes: &mut Vec<U>) {
     debug!(target="survivor_events", method="deterministic_crowding"; "Starting deterministic crowding survivor");
 
     // Partition indices into offspring (age==0) and parents (age>0).

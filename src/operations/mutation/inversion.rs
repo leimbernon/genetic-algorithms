@@ -5,7 +5,7 @@
 //! encodings (e.g., TSP) because it preserves the set of alleles while
 //! changing their relative order.
 
-pub(crate) use crate::traits::ChromosomeT;
+pub(crate) use crate::traits::LinearChromosome;
 use log::{debug, trace};
 use rand::Rng;
 
@@ -15,7 +15,7 @@ use rand::Rng;
 /// Two indices are chosen at random; the genes in the inclusive range
 /// `[lower, upper]` are then reversed in place. If the DNA has fewer than
 /// 2 genes the function is a no-op.
-pub fn inversion<U: ChromosomeT>(individual: &mut U) {
+pub fn inversion<U: LinearChromosome>(individual: &mut U) {
     // Starting the inversion mutation and obtaining two random indices
     debug!(target="mutation_events", method="inversion"; "Starting the inversion mutation");
     if individual.dna().len() < 2 {

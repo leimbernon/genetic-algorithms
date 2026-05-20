@@ -4,7 +4,7 @@
 //! genes. This is one of the simplest mutation operators and works with any
 //! chromosome type.
 
-use crate::traits::ChromosomeT;
+use crate::traits::LinearChromosome;
 use log::{debug, trace};
 pub(crate) use rand::Rng;
 
@@ -14,7 +14,7 @@ pub(crate) use rand::Rng;
 /// This operator preserves all alleles (no values are created or destroyed),
 /// making it suitable for both value-encoded and permutation-encoded
 /// chromosomes. If the DNA has fewer than 2 genes the function is a no-op.
-pub fn swap<U: ChromosomeT>(chromosome: &mut U) {
+pub fn swap<U: LinearChromosome>(chromosome: &mut U) {
     //Getting two random genes from the dna of the chromosome
     debug!(target="mutation_events", method="swap"; "Starting the swap mutation");
     if chromosome.dna().len() < 2 {

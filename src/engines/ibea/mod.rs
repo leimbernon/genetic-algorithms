@@ -124,7 +124,7 @@ use crate::multi_objective::ObjectiveFn;
 use crate::nsga2::configuration::ObjectiveDirection;
 use crate::observer::IbeaObserver;
 use crate::operations::{crossover, mutation};
-use crate::traits::{ChromosomeT, InitializationFn};
+use crate::traits::{LinearChromosome, InitializationFn};
 use rand::Rng;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
@@ -138,7 +138,7 @@ use std::time::Instant;
 /// * `U` - Chromosome type implementing `ChromosomeT`.
 pub struct IbeaGa<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// IBEA-specific configuration.
     pub ibea_config: IbeaConfiguration,
@@ -157,7 +157,7 @@ where
 #[allow(dead_code)]
 impl<U> IbeaGa<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// Creates a new `IbeaGa` with the given configurations.
     pub fn new(ibea_config: IbeaConfiguration, ga_config: GaConfiguration) -> Self {
@@ -400,7 +400,7 @@ where
 
 impl<U> IbeaGa<U>
 where
-    U: ChromosomeT + mutation::ValueMutable,
+    U: LinearChromosome + mutation::ValueMutable,
 {
     /// Produces offspring chromosomes via binary tournament selection from population,
     /// followed by crossover + mutation on each selected pair.

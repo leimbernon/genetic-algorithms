@@ -1,7 +1,7 @@
 //! Multi-point crossover implementation.
 
 use crate::error::GaError;
-use crate::traits::ChromosomeT;
+use crate::traits::LinearChromosome;
 use log::{debug, trace};
 use rand::Rng;
 
@@ -11,7 +11,7 @@ use rand::Rng;
 ///
 /// Returns `Err(GaError::CrossoverError)` if parents have different DNA lengths
 /// or if `crossover_number_of_points` exceeds DNA length.
-pub fn multipoint<U: ChromosomeT>(
+pub fn multipoint<U: LinearChromosome>(
     parent_1: &U,
     parent_2: &U,
     crossover_number_of_points: usize,

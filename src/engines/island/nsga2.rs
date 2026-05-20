@@ -53,7 +53,7 @@ use crate::nsga2::non_dominated_sort::{assign_ranks, non_dominated_sort};
 use crate::nsga2::pareto::{ParetoFront, ParetoIndividual};
 use crate::nsga2::ObjectiveFn;
 use crate::operations::mutation;
-use crate::traits::{ChromosomeT, InitializationFn};
+use crate::traits::{LinearChromosome, InitializationFn};
 use log::{debug, info};
 use rand::Rng;
 use rayon::prelude::*;
@@ -69,7 +69,7 @@ use std::sync::Arc;
 /// * `U` - Chromosome type implementing `ChromosomeT`.
 pub struct IslandNsga2Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// Island model configuration (num_islands, migration interval, count, topology).
     pub island_config: IslandConfiguration,
@@ -89,7 +89,7 @@ where
 
 impl<U> IslandNsga2Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// Creates a new `IslandNsga2Ga` with the given configurations.
     pub fn new(
@@ -285,7 +285,7 @@ where
 
 impl<U> IslandNsga2Ga<U>
 where
-    U: ChromosomeT + mutation::ValueMutable,
+    U: LinearChromosome + mutation::ValueMutable,
 {
     /// Runs the Island-NSGA-II algorithm and returns the global Pareto front.
     ///
@@ -483,7 +483,7 @@ where
 /// (lower rank, or higher crowding distance if tied).
 pub fn binary_tournament<U>(population: &[ParetoIndividual<U>], rng: &mut impl Rng) -> usize
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     let n = population.len();
     let i = rng.random_range(0..n);

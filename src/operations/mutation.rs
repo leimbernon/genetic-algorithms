@@ -15,7 +15,7 @@ pub use self::swap::swap;
 use super::Mutation;
 use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
-use crate::traits::{ChromosomeT, MutationOperator};
+use crate::traits::{ChromosomeT, LinearChromosome, MutationOperator};
 use log::warn;
 use std::any::Any;
 
@@ -42,7 +42,7 @@ const DEFAULT_POLYNOMIAL_ETA: f64 = 20.0;
 ///
 /// Tries `f64`, `f32`, `i32`, `i64` in order. Returns `Some(Ok(()))` or
 /// `Some(Err(...))` if the type matched, `None` if no supported type matched.
-fn try_polynomial<U: ChromosomeT + 'static>(
+fn try_polynomial<U: LinearChromosome + 'static>(
     individual: &mut U,
     eta_m: f64,
 ) -> Option<Result<(), GaError>> {
@@ -64,7 +64,7 @@ fn try_polynomial<U: ChromosomeT + 'static>(
 ///
 /// Tries `f64`, `f32`, `i32`, `i64` in order. Returns `Some(Ok(()))` if the type
 /// matched and mutation succeeded, `None` if no supported type matched.
-fn try_cauchy<U: ChromosomeT + 'static>(
+fn try_cauchy<U: LinearChromosome + 'static>(
     individual: &mut U,
     scale: f64,
 ) -> Option<Result<(), GaError>> {
@@ -87,7 +87,7 @@ fn try_cauchy<U: ChromosomeT + 'static>(
 ///
 /// Tries `f64`, `f32`, `i32`, `i64` in order. Returns `Some(Ok(()))` if the type
 /// matched and mutation succeeded, `None` if no supported type matched.
-fn try_levy<U: ChromosomeT + 'static>(
+fn try_levy<U: LinearChromosome + 'static>(
     individual: &mut U,
     alpha: f64,
 ) -> Option<Result<(), GaError>> {
@@ -110,7 +110,7 @@ fn try_levy<U: ChromosomeT + 'static>(
 ///
 /// Tries `f64`, `f32`, `i32`, `i64` in order. Returns `Some(Ok(()))` if the type
 /// matched and mutation succeeded, `None` if no supported type matched.
-fn try_uniform<U: ChromosomeT + 'static>(
+fn try_uniform<U: LinearChromosome + 'static>(
     individual: &mut U,
 ) -> Option<Result<(), GaError>> {
     macro_rules! try_type {
@@ -137,7 +137,7 @@ fn try_uniform<U: ChromosomeT + 'static>(
 /// Override the methods relevant to your chromosome type:
 /// - **Binary chromosomes**: override `bit_flip_mutate`
 /// - **Range chromosomes**: override `value_mutate`, `creep_mutate`, `gaussian_mutate`
-pub trait ValueMutable: ChromosomeT {
+pub trait ValueMutable: LinearChromosome {
     /// Performs value mutation on this chromosome in-place.
     ///
     /// The default implementation logs a warning and falls back to swap mutation.
@@ -199,7 +199,7 @@ impl MutationOperator for Mutation {
         sigma: Option<f64>,
     ) -> Result<(), GaError>
     where
-        U: ChromosomeT + ValueMutable + 'static,
+        U: LinearChromosome + ValueMutable + 'static,
     {
         match self {
             Mutation::Swap => swap(individual),
@@ -286,7 +286,7 @@ impl MutationOperator for Mutation {
 /// `Mutation::Value` is requested on a type that does not implement `ValueMutable`.
 pub fn factory<U>(mutation: Mutation, individual: &mut U) -> Result<(), GaError>
 where
-    U: ChromosomeT + ValueMutable + 'static,
+    U: LinearChromosome + ValueMutable + 'static,
 {
     factory_with_params(mutation, individual, None, None)
 }
@@ -308,7 +308,7 @@ pub fn factory_with_params<U>(
     sigma: Option<f64>,
 ) -> Result<(), GaError>
 where
-    U: ChromosomeT + ValueMutable + 'static,
+    U: LinearChromosome + ValueMutable + 'static,
 {
     mutation.mutate(individual, step, sigma)
 }
@@ -323,7 +323,7 @@ where
 /// `Ok(())` on success, or `Err(GaError::MutationError)` if `Mutation::Value` is requested.
 pub fn factory_non_value<U>(mutation: Mutation, individual: &mut U) -> Result<(), GaError>
 where
-    U: ChromosomeT + 'static,
+    U: LinearChromosome + 'static,
 {
     match mutation {
         Mutation::Swap => {

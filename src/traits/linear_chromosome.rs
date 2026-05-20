@@ -1,4 +1,4 @@
-use crate::traits::ChromosomeT;
+use crate::traits::{ChromosomeT, GeneT};
 use std::borrow::Cow;
 
 /// Flat-slice chromosome contract.

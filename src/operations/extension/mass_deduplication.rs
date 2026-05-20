@@ -5,7 +5,7 @@
 //! population back to its target size.
 
 use crate::configuration::ProblemSolving;
-use crate::traits::{ChromosomeT, GeneT};
+use crate::traits::{LinearChromosome, GeneT};
 use log::info;
 use std::collections::HashMap;
 use std::hash::{DefaultHasher, Hash, Hasher};
@@ -14,7 +14,7 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 ///
 /// For each group of duplicates, the one with the best fitness is kept.
 /// The population may be smaller after this operation; the GA loop handles regrowth.
-pub fn mass_deduplication<U: ChromosomeT>(
+pub fn mass_deduplication<U: LinearChromosome>(
     chromosomes: &mut Vec<U>,
     problem_solving: ProblemSolving,
 ) {

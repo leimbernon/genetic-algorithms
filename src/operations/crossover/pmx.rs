@@ -1,7 +1,7 @@
 //! Partially Mapped Crossover (PMX) implementation.
 
 use crate::error::GaError;
-use crate::traits::{ChromosomeT, GeneT};
+use crate::traits::{LinearChromosome, GeneT};
 use log::debug;
 use rand::Rng;
 use std::borrow::Cow;
@@ -20,7 +20,7 @@ use std::collections::HashMap;
 /// 4. Fill remaining positions directly from the other parent.
 ///
 /// Both parents must have the same DNA length (≥ 2) and contain unique gene IDs.
-pub fn pmx<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
+pub fn pmx<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
     let len = parent_1.dna().len();
 
     if len != parent_2.dna().len() {
