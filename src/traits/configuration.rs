@@ -6,7 +6,7 @@
 //! single supertrait.
 
 use crate::chromosomes::ChromosomeLength;
-use crate::configuration::{LogLevel, ProblemSolving, StoppingCriteria};
+use crate::configuration::{LogLevel, ProblemSolving};
 use crate::configuration::LocalSearchConfiguration;
 use crate::operations::{Crossover, Extension, Mutation, Selection, Survivor};
 
@@ -78,9 +78,16 @@ pub trait StoppingConfig {
     fn with_max_generations(self, max_generations: usize) -> Self;
     /// Sets the target fitness value (used with [`ProblemSolving::FixedFitness`]).
     fn with_fitness_target(self, fitness_target: f64) -> Self;
-    /// Sets compound stopping criteria. These are checked in addition to
-    /// max_generations and fitness_target.
-    fn with_stopping_criteria(self, criteria: StoppingCriteria) -> Self;
+    /// Stop after N consecutive generations without fitness improvement.
+    fn with_stagnation_limit(self, n: usize) -> Self;
+    /// Stop when the fitness standard deviation drops below `threshold`.
+    fn with_convergence_threshold(self, threshold: f64) -> Self;
+    /// Stop after `secs` elapsed wall-clock seconds.
+    ///
+    /// The field and builder are available on all targets. Only the call site in ga.rs is
+    /// `#[cfg(not(target_arch = "wasm32"))]`-gated — on wasm32 the field is silently ignored
+    /// (a warning is emitted at run start instead).
+    fn with_max_duration_secs(self, secs: f64) -> Self;
 }
 
 /// Configuration for fitness sharing / niching.
