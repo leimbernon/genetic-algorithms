@@ -336,6 +336,16 @@ where
 }
 
 #[allow(deprecated)]
+impl<U> Ga<U>
+where
+    U: LinearChromosome,
+{
+    /// Returns a read-only reference to the current configuration.
+    pub fn configuration(&self) -> &GaConfiguration {
+        &self.configuration
+    }
+}
+
 impl<U> Default for Ga<U>
 where
     U: LinearChromosome,
@@ -484,8 +494,16 @@ where
         self.configuration.limit_configuration.fitness_target = Some(fitness_target);
         self
     }
-    fn with_stopping_criteria(mut self, criteria: crate::configuration::StoppingCriteria) -> Self {
-        self.configuration.stopping_criteria = criteria;
+    fn with_stagnation_limit(mut self, n: usize) -> Self {
+        self.configuration.stagnation_generations = Some(n);
+        self
+    }
+    fn with_convergence_threshold(mut self, threshold: f64) -> Self {
+        self.configuration.convergence_threshold = Some(threshold);
+        self
+    }
+    fn with_max_duration_secs(mut self, secs: f64) -> Self {
+        self.configuration.max_duration_secs = Some(secs);
         self
     }
 }
@@ -1423,12 +1441,7 @@ where
         #[cfg(not(target_arch = "wasm32"))]
         let start_time = Instant::now();
         #[cfg(target_arch = "wasm32")]
-        if self
-            .configuration
-            .stopping_criteria
-            .max_duration_secs
-            .is_some()
-        {
+        if self.configuration.max_duration_secs.is_some() {
             log::warn!(target: "ga_events", "max_duration_secs is not supported on wasm32 — time limit will be ignored");
         }
         let mut best_fitness_so_far = self.population.best_chromosome.fitness();
@@ -2057,7 +2070,7 @@ where
             }
 
             if let Some(max_stagnation) =
-                self.configuration.stopping_criteria.stagnation_generations
+                self.configuration.stagnation_generations
             {
                 if stagnation_count >= max_stagnation {
                     self.termination_cause = TerminationCause::StagnationReached;
@@ -2074,7 +2087,7 @@ where
             }
 
             // Convergence check (fitness std dev below threshold)
-            if let Some(threshold) = self.configuration.stopping_criteria.convergence_threshold {
+            if let Some(threshold) = self.configuration.convergence_threshold {
                 if self.stats.last().unwrap().fitness_std_dev < threshold {
                     self.termination_cause = TerminationCause::ConvergenceReached;
                     if let Some(func) = &callback {
@@ -2091,7 +2104,7 @@ where
 
             // Time limit check (not available on wasm32 — see warning emitted at run start)
             #[cfg(not(target_arch = "wasm32"))]
-            if let Some(max_secs) = self.configuration.stopping_criteria.max_duration_secs {
+            if let Some(max_secs) = self.configuration.max_duration_secs {
                 if start_time.elapsed().as_secs_f64() >= max_secs {
                     self.termination_cause = TerminationCause::TimeLimitReached;
                     if let Some(func) = &callback {
