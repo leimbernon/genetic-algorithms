@@ -24,13 +24,13 @@ use crate::operations::mutation::ValueMutable;
 use crate::operations::{crossover, mutation};
 use crate::traits::SelectionOperator;
 use crate::rng::make_rng;
-use crate::traits::{ChromosomeT, FitnessFn};
+use crate::traits::{LinearChromosome, FitnessFn};
 use rand::Rng;
 
 use super::configuration::{CellularConfiguration, Neighborhood, UpdateMode};
 
 /// Result returned by [`CellularEngine::run`].
-pub struct CellularResult<U: ChromosomeT> {
+pub struct CellularResult<U: LinearChromosome> {
     /// Final grid population (row-major, length = `rows × cols`).
     pub population: Vec<U>,
     /// The best individual found during the run.
@@ -71,7 +71,7 @@ pub struct CellularResult<U: ChromosomeT> {
 /// );
 /// let result = engine.run();
 /// ```
-pub struct CellularEngine<U: ChromosomeT> {
+pub struct CellularEngine<U: LinearChromosome> {
     config: CellularConfiguration,
     init_fn: Arc<dyn Fn(usize) -> Vec<U> + Send + Sync>,
     fitness_fn: Arc<FitnessFn<U::Gene>>,
@@ -79,7 +79,7 @@ pub struct CellularEngine<U: ChromosomeT> {
 
 impl<U> CellularEngine<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// Construct a new engine.
     ///
@@ -102,7 +102,7 @@ where
 
 impl<U> CellularEngine<U>
 where
-    U: ChromosomeT + Clone + ValueMutable + 'static,
+    U: LinearChromosome + Clone + ValueMutable + 'static,
 {
     /// Run the Cellular GA and return the result.
     pub fn run(&mut self) -> CellularResult<U> {
