@@ -1005,7 +1005,7 @@ fn test_crossover_enum_blend_alpha_returns_error() {
 fn test_crossover_enum_sbx_works_with_range_f64() {
     use genetic_algorithms::chromosomes::Range as RangeChromosome;
     use genetic_algorithms::genotypes::Range as RangeGenotype;
-    use genetic_algorithms::traits::{ChromosomeT, CrossoverOperator};
+    use genetic_algorithms::traits::{ChromosomeT, CrossoverOperator, LinearChromosome};
     use std::borrow::Cow;
 
     let mut p1 = RangeChromosome::<f64>::new();
@@ -1034,7 +1034,7 @@ fn test_crossover_enum_sbx_works_with_range_f64() {
 fn test_crossover_enum_blend_alpha_works_with_range_f64() {
     use genetic_algorithms::chromosomes::Range as RangeChromosome;
     use genetic_algorithms::genotypes::Range as RangeGenotype;
-    use genetic_algorithms::traits::{ChromosomeT, CrossoverOperator};
+    use genetic_algorithms::traits::{ChromosomeT, CrossoverOperator, LinearChromosome};
     use std::borrow::Cow;
 
     let mut p1 = RangeChromosome::<f64>::new();
@@ -1063,7 +1063,7 @@ fn test_crossover_enum_blend_alpha_works_with_range_f64() {
 fn test_crossover_config_sbx_uses_eta() {
     use genetic_algorithms::chromosomes::Range as RangeChromosome;
     use genetic_algorithms::genotypes::Range as RangeGenotype;
-    use genetic_algorithms::traits::{ChromosomeT, CrossoverOperator};
+    use genetic_algorithms::traits::{ChromosomeT, CrossoverOperator, LinearChromosome};
     use std::borrow::Cow;
 
     let mut p1 = RangeChromosome::<f64>::new();
@@ -1092,7 +1092,7 @@ fn test_crossover_config_sbx_uses_eta() {
 fn test_crossover_config_blend_alpha_uses_alpha() {
     use genetic_algorithms::chromosomes::Range as RangeChromosome;
     use genetic_algorithms::genotypes::Range as RangeGenotype;
-    use genetic_algorithms::traits::{ChromosomeT, CrossoverOperator};
+    use genetic_algorithms::traits::{ChromosomeT, CrossoverOperator, LinearChromosome};
     use std::borrow::Cow;
 
     let mut p1 = RangeChromosome::<f64>::new();

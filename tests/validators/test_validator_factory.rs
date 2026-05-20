@@ -3,7 +3,7 @@ use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::GaConfiguration;
 use genetic_algorithms::genotypes::Binary as BinaryGene;
 use genetic_algorithms::population::Population;
-use genetic_algorithms::traits::{ChromosomeT, GeneT};
+use genetic_algorithms::traits::{ChromosomeT, GeneT, LinearChromosome};
 use genetic_algorithms::validators::validator_factory;
 use std::borrow::Cow;
 

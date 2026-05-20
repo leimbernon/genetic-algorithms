@@ -6,7 +6,7 @@ use genetic_algorithms::configuration::{GaConfiguration, ProblemSolving};
 use genetic_algorithms::genotypes;
 use genetic_algorithms::population::Population;
 use genetic_algorithms::stats::GenerationStats;
-use genetic_algorithms::traits::ChromosomeT;
+use genetic_algorithms::traits::{ChromosomeT, LinearChromosome};
 use std::borrow::Cow;
 use std::path::Path;
 

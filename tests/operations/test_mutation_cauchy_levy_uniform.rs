@@ -4,7 +4,7 @@ use genetic_algorithms::ga::Ga;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::operations::mutation;
 use genetic_algorithms::operations::Mutation;
-use genetic_algorithms::traits::{ChromosomeT, MutationConfig};
+use genetic_algorithms::traits::{ChromosomeT, LinearChromosome, MutationConfig};
 use std::borrow::Cow;
 
 fn build_f64_chromosome(n: usize) -> RangeChromosome<f64> {

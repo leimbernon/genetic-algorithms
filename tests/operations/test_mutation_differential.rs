@@ -3,7 +3,7 @@ use genetic_algorithms::error::GaError;
 use genetic_algorithms::genotypes::Binary as BinaryGenotype;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::operations::mutation::differential::differential_mutation;
-use genetic_algorithms::traits::ChromosomeT;
+use genetic_algorithms::traits::{ChromosomeT, LinearChromosome};
 use std::borrow::Cow;
 
 /// Build a population of `size` RangeChromosome<f64> with distinct initial values

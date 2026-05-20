@@ -29,8 +29,8 @@ use genetic_algorithms::operations::{Crossover, Extension, Mutation, Selection, 
 use genetic_algorithms::population::Population;
 use genetic_algorithms::stats::GenerationStats;
 use genetic_algorithms::traits::{
-    ChromosomeT, ConfigurationT, CrossoverConfig, ExtensionConfig, MutationConfig, SelectionConfig,
-    StoppingConfig,
+    ChromosomeT, ConfigurationT, CrossoverConfig, ExtensionConfig, LinearChromosome, MutationConfig,
+    SelectionConfig, StoppingConfig,
 };
 use genetic_algorithms::LogObserver;
 use std::sync::Arc;

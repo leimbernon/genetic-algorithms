@@ -3,7 +3,7 @@ use genetic_algorithms::configuration::CrossoverConfiguration;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::operations::crossover;
 use genetic_algorithms::operations::Crossover;
-use genetic_algorithms::traits::ChromosomeT;
+use genetic_algorithms::traits::{ChromosomeT, LinearChromosome};
 
 fn build_range_chromosome_from(vals: &[i32], n: i32) -> RangeChromosome<i32> {
     let mut c = RangeChromosome::<i32>::new();

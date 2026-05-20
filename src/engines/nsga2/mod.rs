@@ -123,7 +123,7 @@ use crate::multi_objective::non_dominated_sort::{
 use crate::multi_objective::pareto::{ParetoFront, ParetoIndividual};
 use crate::observer::Nsga2Observer;
 use crate::operations::mutation;
-use crate::traits::{ChromosomeT, InitializationFn};
+use crate::traits::{LinearChromosome, InitializationFn};
 use rand::Rng;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
@@ -140,7 +140,7 @@ pub use crate::multi_objective::ObjectiveFn;
 /// * `U` - Chromosome type implementing `ChromosomeT`.
 pub struct Nsga2Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// NSGA-II specific configuration.
     pub nsga2_config: Nsga2Configuration,
@@ -161,7 +161,7 @@ where
 
 impl<U> Nsga2Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// Creates a new `Nsga2Ga` with the given configurations.
     pub fn new(nsga2_config: Nsga2Configuration, ga_config: GaConfiguration) -> Self {
@@ -285,7 +285,7 @@ where
 
 impl<U> Nsga2Ga<U>
 where
-    U: ChromosomeT + mutation::ValueMutable,
+    U: LinearChromosome + mutation::ValueMutable,
 {
     /// Runs the NSGA-II algorithm and returns the first Pareto front.
     ///

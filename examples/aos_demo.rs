@@ -16,7 +16,7 @@ use genetic_algorithms::genotypes::Range as RangeGene;
 use genetic_algorithms::initializers::range_random_initialization;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::traits::{
-    ChromosomeT, ConfigurationT, MutationConfig, SelectionConfig, StoppingConfig,
+    ChromosomeT, ConfigurationT, LinearChromosome, MutationConfig, SelectionConfig, StoppingConfig,
 };
 
 fn main() {

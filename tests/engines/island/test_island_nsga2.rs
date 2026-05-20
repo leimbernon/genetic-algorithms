@@ -4,7 +4,7 @@ use genetic_algorithms::island::configuration::IslandConfiguration;
 use genetic_algorithms::island::nsga2::{binary_tournament, IslandNsga2Ga};
 use genetic_algorithms::nsga2::configuration::Nsga2Configuration;
 use genetic_algorithms::nsga2::pareto::ParetoIndividual;
-use genetic_algorithms::traits::ChromosomeT;
+use genetic_algorithms::traits::{ChromosomeT, LinearChromosome};
 use std::borrow::Cow;
 
 #[test]
@@ -121,6 +121,22 @@ fn test_binary_tournament_prefers_lower_rank() {
 
     impl ChromosomeT for SimpleChrom {
         type Gene = genetic_algorithms::genotypes::Binary;
+        fn calculate_fitness(&mut self) {}
+        fn fitness(&self) -> f64 {
+            0.0
+        }
+        fn set_fitness(&mut self, _: f64) -> &mut Self {
+            self
+        }
+        fn set_age(&mut self, _: usize) -> &mut Self {
+            self
+        }
+        fn age(&self) -> usize {
+            0
+        }
+    }
+
+    impl LinearChromosome for SimpleChrom {
         fn dna(&self) -> &[Self::Gene] {
             &self.dna
         }
@@ -136,19 +152,6 @@ fn test_binary_tournament_prefers_lower_rank() {
             F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static,
         {
             self
-        }
-        fn calculate_fitness(&mut self) {}
-        fn fitness(&self) -> f64 {
-            0.0
-        }
-        fn set_fitness(&mut self, _: f64) -> &mut Self {
-            self
-        }
-        fn set_age(&mut self, _: usize) -> &mut Self {
-            self
-        }
-        fn age(&self) -> usize {
-            0
         }
     }
 
