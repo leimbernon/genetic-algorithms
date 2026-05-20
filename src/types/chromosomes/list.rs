@@ -7,7 +7,7 @@
 
 use crate::fitness::FitnessFnWrapper;
 use crate::genotypes::List as ListGenotype;
-use crate::traits::ChromosomeT;
+use crate::traits::{ChromosomeT, LinearChromosome};
 use std::borrow::Cow;
 use std::fmt;
 use std::fmt::Debug;
@@ -116,6 +116,30 @@ impl<T: Sync + Send + Clone + Default + Debug> ListChromosome<T> {
 impl<T: Sync + Send + Clone + Default + Debug + 'static> ChromosomeT for ListChromosome<T> {
     type Gene = ListGenotype<T>;
 
+    fn calculate_fitness(&mut self) {
+        self.fitness = self.fitness_fn.call(&self.dna);
+    }
+
+    fn fitness(&self) -> f64 {
+        self.fitness
+    }
+
+    fn set_fitness(&mut self, fitness: f64) -> &mut Self {
+        self.fitness = fitness;
+        self
+    }
+
+    fn set_age(&mut self, age: usize) -> &mut Self {
+        self.age = age;
+        self
+    }
+
+    fn age(&self) -> usize {
+        self.age
+    }
+}
+
+impl<T: Sync + Send + Clone + Default + Debug + 'static> LinearChromosome for ListChromosome<T> {
     fn dna(&self) -> &[Self::Gene] {
         &self.dna
     }
@@ -142,28 +166,6 @@ impl<T: Sync + Send + Clone + Default + Debug + 'static> ChromosomeT for ListChr
     {
         self.fitness_fn = FitnessFnWrapper::new(fitness_fn);
         self
-    }
-
-    fn calculate_fitness(&mut self) {
-        self.fitness = self.fitness_fn.call(&self.dna);
-    }
-
-    fn fitness(&self) -> f64 {
-        self.fitness
-    }
-
-    fn set_fitness(&mut self, fitness: f64) -> &mut Self {
-        self.fitness = fitness;
-        self
-    }
-
-    fn set_age(&mut self, age: usize) -> &mut Self {
-        self.age = age;
-        self
-    }
-
-    fn age(&self) -> usize {
-        self.age
     }
 }
 
