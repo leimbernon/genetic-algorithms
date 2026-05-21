@@ -10,7 +10,7 @@
 - [ ] **ARCH-04**: User cannot accidentally bypass builder validation — `GaConfiguration` fields are `pub(crate)` with read-only accessors; `needs_unique_ids` and `alleles_can_be_repeated` removed from `LimitConfiguration` (initialization concerns, not engine config)
 - [ ] **ARCH-05**: User configures chromosome length via `ChromosomeLength::Fixed(n)` or `ChromosomeLength::Variable { min, max }` — replaces bare `genes_per_chromosome: usize`; existing `Fixed(n)` behavior is identical to current behavior
 - [ ] **ARCH-06**: User can configure stopping behavior via flat builder methods (`.with_stagnation_limit(50)`, `.with_convergence_threshold(0.001)`) — `StoppingCriteria` struct flattened; `LocalSearchOperator` changed from `Arc<dyn ...>` to `Option<LocalSearch>` enum (consistent with all other operators)
-- [ ] **ARCH-07**: User can run all 10 existing examples without modification after the architecture audit — CI compiles and runs each example with a short generation count on every PR to the milestone branch
+- [x] **ARCH-07**: User can run all 10 existing examples without modification after the architecture audit — CI compiles and runs each example with a short generation count on every PR to the milestone branch
 
 ### GEN — New Genotype Types
 
@@ -67,7 +67,7 @@
 | ARCH-04 | Phase 47 | Pending |
 | ARCH-05 | Phase 47 | Pending |
 | ARCH-06 | Phase 47 | Pending |
-| ARCH-07 | Phase 47 | Pending |
+| ARCH-07 | Phase 47 | Complete |
 | GEN-01 | Phase 48 | Pending |
 | GEN-02 | Phase 48 | Pending |
 | GEN-03 | Phase 48 | Pending |
