@@ -2,7 +2,7 @@ use genetic_algorithms::chromosomes::Binary;
 use genetic_algorithms::configuration::GaConfiguration;
 use genetic_algorithms::island::configuration::IslandConfiguration;
 use genetic_algorithms::island::IslandGa;
-use genetic_algorithms::traits::{ConfigurationT, SelectionConfig};
+use genetic_algorithms::traits::ConfigurationT;
 
 #[test]
 fn test_island_ga_validate_no_init_fn() {

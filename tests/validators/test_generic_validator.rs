@@ -28,7 +28,7 @@ fn make_population(chromosomes: Vec<BinaryChromosome>) -> Population<BinaryChrom
 }
 
 fn default_config() -> GaConfiguration {
-    use genetic_algorithms::traits::{ConfigurationT, SelectionConfig};
+    use genetic_algorithms::traits::SelectionConfig;
     GaConfiguration::default().with_number_of_couples(1)
 }
 
@@ -67,7 +67,7 @@ fn unique_gene_ids_ok_single_gene() {
 
 #[test]
 fn fitness_target_is_some_ok_when_set() {
-    use genetic_algorithms::traits::{ConfigurationT, StoppingConfig};
+    use genetic_algorithms::traits::StoppingConfig;
     let cfg = default_config().with_fitness_target(10.0);
     assert!(generic_validator::fitness_target_is_some(&cfg, "FixedFitness".to_string()).is_ok());
 }
@@ -158,7 +158,7 @@ fn chromosome_length_err_when_bigger() {
 
 #[test]
 fn aga_crossover_probabilities_ok() {
-    use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig};
+    use genetic_algorithms::traits::CrossoverConfig;
     let cfg = default_config()
         .with_crossover_probability_max(0.9)
         .with_crossover_probability_min(0.1);
@@ -167,21 +167,21 @@ fn aga_crossover_probabilities_ok() {
 
 #[test]
 fn aga_crossover_probabilities_err_missing_max() {
-    use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig};
+    use genetic_algorithms::traits::CrossoverConfig;
     let cfg = default_config().with_crossover_probability_min(0.1);
     assert!(generic_validator::aga_crossover_probabilities(&cfg).is_err());
 }
 
 #[test]
 fn aga_crossover_probabilities_err_missing_min() {
-    use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig};
+    use genetic_algorithms::traits::CrossoverConfig;
     let cfg = default_config().with_crossover_probability_max(0.9);
     assert!(generic_validator::aga_crossover_probabilities(&cfg).is_err());
 }
 
 #[test]
 fn aga_crossover_probabilities_err_max_le_min() {
-    use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig};
+    use genetic_algorithms::traits::CrossoverConfig;
     let cfg = default_config()
         .with_crossover_probability_max(0.5)
         .with_crossover_probability_min(0.5);
@@ -190,7 +190,7 @@ fn aga_crossover_probabilities_err_max_le_min() {
 
 #[test]
 fn aga_crossover_probabilities_err_max_less_than_min() {
-    use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig};
+    use genetic_algorithms::traits::CrossoverConfig;
     let cfg = default_config()
         .with_crossover_probability_max(0.1)
         .with_crossover_probability_min(0.9);
@@ -207,7 +207,7 @@ fn number_of_couples_is_set_ok() {
 
 #[test]
 fn number_of_couples_is_set_err_when_zero() {
-    use genetic_algorithms::traits::{ConfigurationT, SelectionConfig};
+    use genetic_algorithms::traits::SelectionConfig;
     let cfg = GaConfiguration::default().with_number_of_couples(0);
     let err = generic_validator::number_of_couples_is_set(&cfg).unwrap_err();
     let msg = err.to_string();
@@ -243,7 +243,7 @@ fn validate_err_different_dna_lengths() {
 
 #[test]
 fn validate_err_fixed_fitness_without_target() {
-    use genetic_algorithms::traits::{ConfigurationT, StoppingConfig};
+    use genetic_algorithms::traits::ConfigurationT;
     let cfg = default_config().with_problem_solving(ProblemSolving::FixedFitness);
     assert!(generic_validator::validate::<BinaryChromosome>(Some(&cfg), None, None).is_err());
 }
@@ -259,7 +259,7 @@ fn validate_ok_fixed_fitness_with_target() {
 
 #[test]
 fn validate_err_cycle_crossover_duplicate_ids() {
-    use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig};
+    use genetic_algorithms::traits::CrossoverConfig;
     let cfg = default_config().with_crossover_method(operations::Crossover::Cycle);
     let pop = make_population(vec![make_binary_chromosome(&[1, 2, 1])]);
     assert!(generic_validator::validate(Some(&cfg), Some(&pop), None).is_err());

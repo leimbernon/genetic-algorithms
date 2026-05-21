@@ -2,7 +2,7 @@
 use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
 use genetic_algorithms::genotypes::Binary as BinaryGenotype;
 use genetic_algorithms::operations::mutation::bit_flip::bit_flip;
-use genetic_algorithms::traits::{ChromosomeT, LinearChromosome};
+use genetic_algorithms::traits::LinearChromosome;
 use std::borrow::Cow;
 
 #[test]

@@ -82,7 +82,7 @@ fn list_value_mutation_single_allele_is_noop() {
 #[test]
 fn list_value_mutation_empty_chromosome_is_noop() {
     let mut c = ListChromosome::<char>::new();
-    use genetic_algorithms::traits::{ChromosomeT, LinearChromosome};
+    use genetic_algorithms::traits::LinearChromosome;
     list_value_mutation(&mut c);
     assert!(c.dna().is_empty());
 }

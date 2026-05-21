@@ -9,7 +9,7 @@ use genetic_algorithms::de::{
 };
 use genetic_algorithms::genotypes::Range as RangeGene;
 use genetic_algorithms::rng;
-use genetic_algorithms::traits::{ChromosomeT, LinearChromosome};
+use genetic_algorithms::traits::LinearChromosome;
 use rand::Rng;
 
 // ─── Test helpers ─────────────────────────────────────────────────────────────
