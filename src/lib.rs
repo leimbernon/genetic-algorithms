@@ -262,8 +262,6 @@ pub mod initializers;
 pub mod observer;
 pub mod operations;
 pub mod population;
-#[path = "observe/reporter/mod.rs"]
-pub mod reporter;
 pub mod rng;
 pub mod hall_of_fame;
 pub mod aos;
