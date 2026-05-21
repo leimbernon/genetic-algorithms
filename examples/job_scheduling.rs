@@ -48,12 +48,11 @@ use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::{Ga, TerminationCause};
 use genetic_algorithms::genotypes::Range as RangeGenotype;
-use genetic_algorithms::initializers::range_random_initialization;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::population::Population;
 use genetic_algorithms::stats::GenerationStats;
 use genetic_algorithms::traits::{
-    ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig, SelectionConfig,
+    ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig, SelectionConfig,
     StoppingConfig,
 };
 use genetic_algorithms::LogObserver;
@@ -106,7 +105,7 @@ fn main() {
     // --- Alleles: each gene is a job index in [0, N_JOBS-1] ---
     // RangeGenotype::new(id, ranges, default_value)
     let alleles = vec![RangeGenotype::new(0, vec![(0, N_JOBS as i32 - 1)], 0)];
-    let alleles_clone = alleles.clone();
+    let _alleles_clone = alleles.clone();
 
     // --- Build the GA configuration ---
     let mut ga = Ga::new()

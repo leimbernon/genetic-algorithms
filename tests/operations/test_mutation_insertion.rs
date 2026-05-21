@@ -1,7 +1,7 @@
 use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
 use genetic_algorithms::genotypes::Binary as BinaryGenotype;
 use genetic_algorithms::operations::mutation::insertion::insertion_mutation;
-use genetic_algorithms::traits::{ChromosomeT, GeneT, LinearChromosome};
+use genetic_algorithms::traits::{GeneT, LinearChromosome};
 use std::borrow::Cow;
 use std::collections::HashSet;
 

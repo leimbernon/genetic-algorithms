@@ -135,7 +135,7 @@ fn test_sms_emoa_run_small_population() {
         .with_num_objectives(2)
         .with_population_size(4)
         .with_max_generations(3);
-    let ga_config = genetic_algorithms::configuration::GaConfiguration::default()
+    let _ga_config = genetic_algorithms::configuration::GaConfiguration::default()
         .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(2));
 
     let alleles = vec![genetic_algorithms::genotypes::Range::new(0, vec![(0.0_f64, 1.0_f64)], 0.0_f64)];

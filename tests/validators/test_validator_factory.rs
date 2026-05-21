@@ -22,7 +22,7 @@ fn make_binary_chromosome(ids: &[i32]) -> BinaryChromosome {
 }
 
 fn default_config() -> GaConfiguration {
-    use genetic_algorithms::traits::{ConfigurationT, SelectionConfig};
+    use genetic_algorithms::traits::SelectionConfig;
     GaConfiguration::default().with_number_of_couples(1)
 }
 

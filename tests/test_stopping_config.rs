@@ -1,6 +1,6 @@
 use genetic_algorithms::ga::Ga;
 use genetic_algorithms::traits::{
-    ChromosomeT, ConfigurationT, LinearChromosome, SelectionConfig, StoppingConfig,
+    ConfigurationT, SelectionConfig, StoppingConfig,
 };
 
 mod structures;
@@ -8,7 +8,7 @@ mod structures;
 /// Tests that `.with_stagnation_limit(n)` sets `stagnation_generations` to `Some(n)`.
 #[test]
 fn test_stopping_config_with_stagnation_limit() {
-    use structures::{Chromosome, Gene};
+    use structures::Chromosome;
     let ga = Ga::<Chromosome>::new()
         .with_population_size(10)
         .with_number_of_couples(4)
@@ -25,7 +25,7 @@ fn test_stopping_config_with_stagnation_limit() {
 /// Tests that `.with_convergence_threshold(t)` sets `convergence_threshold` to `Some(t)`.
 #[test]
 fn test_stopping_config_with_convergence_threshold() {
-    use structures::{Chromosome, Gene};
+    use structures::Chromosome;
     let ga = Ga::<Chromosome>::new()
         .with_population_size(10)
         .with_number_of_couples(4)
@@ -44,7 +44,7 @@ fn test_stopping_config_with_convergence_threshold() {
 /// The field exists on all targets; only the usage site in ga.rs is wasm-gated.
 #[test]
 fn test_stopping_config_with_max_duration_secs() {
-    use structures::{Chromosome, Gene};
+    use structures::Chromosome;
     let ga = Ga::<Chromosome>::new()
         .with_population_size(10)
         .with_number_of_couples(4)
@@ -61,7 +61,7 @@ fn test_stopping_config_with_max_duration_secs() {
 /// Tests that a freshly defaulted GaConfiguration has all three stopping fields as `None`.
 #[test]
 fn test_stopping_config_default_is_none() {
-    use structures::{Chromosome, Gene};
+    use structures::Chromosome;
     let ga = Ga::<Chromosome>::new()
         .with_population_size(10)
         .with_number_of_couples(4)
