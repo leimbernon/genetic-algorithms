@@ -1,6 +1,8 @@
 <!-- generated-by: gsd-doc-writer -->
 # genetic_algorithms (v2.4.0)
 
+> **v3.0.0 users:** see [MIGRATION.md](./MIGRATION.md) for the full list of breaking changes and migration recipes.
+
 [![Rust Unit Tests](https://github.com/leimbernon/rust_genetic_algorithms/actions/workflows/rust-unit-tests.yml/badge.svg)](https://github.com/leimbernon/rust_genetic_algorithms/actions/workflows/rust-unit-tests.yml)
 
 Modular and concurrent Genetic Algorithms (GA) library for Rust. Provides a single-population GA, multi-objective NSGA-II, island model, Differential Evolution, Scatter Search, Cellular GA, and ALPS — all generic over chromosome and gene types via traits.
