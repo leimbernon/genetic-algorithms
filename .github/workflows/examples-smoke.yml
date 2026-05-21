@@ -1,0 +1,42 @@
+name: Examples Smoke Test
+
+on:
+  push:
+    branches: [main, "milestone/**", "feat/**", "fix/**"]
+  pull_request:
+    branches: [main, "milestone/**"]
+
+jobs:
+  examples-smoke:
+    name: smoke (${{ matrix.example }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        example:
+          - knapsack_binary
+          - onemax_binary
+          - onemax_extension
+          - rastrigin
+          - nsga2_zdt1
+          - island_model
+          - job_scheduling
+          - niching
+          - hall_of_fame_demo
+          - aos_demo
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry and target
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: "examples-smoke-${{ matrix.example }}"
+
+      - name: Run example (smoke)
+        run: cargo run --example ${{ matrix.example }} --release
