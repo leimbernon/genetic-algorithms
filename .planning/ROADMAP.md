@@ -449,7 +449,7 @@ Plans:
   4. User can configure chromosome length as `ChromosomeLength::Fixed(n)` or `ChromosomeLength::Variable { min, max }` via the builder — existing code using the old `genes_per_chromosome` field does not compile, making the change auditable
   5. User can configure all stopping criteria via flat builder methods (`.with_stagnation_limit(50)`) without constructing a `StoppingCriteria` struct; `LocalSearch` is configured via an enum, not `Arc<dyn ...>`
   6. All 10 existing runnable examples (`cargo run --example <name>`) compile and pass their short-generation CI smoke tests on the milestone branch after every PR
-**Plans:** 3/8 plans executed
+**Plans:** 5/8 plans executed
 
 Plans:
 **PR 1 — ChromosomeT split (ARCH-01, ARCH-02)**
@@ -459,8 +459,8 @@ Plans:
 
 **PR 2 — Config cleanup (ARCH-04, ARCH-05, ARCH-06)**
 - [ ] 47-04-PLAN.md — ChromosomeLength enum + LimitConfiguration field removals + initializer signature cleanup
-- [ ] 47-05-PLAN.md — StoppingCriteria flattening into GaConfiguration + sub-struct accessor pattern + ga.rs path updates (WASM gate preserved)
-- [ ] 47-06-PLAN.md — Multi-obj engine + example + test caller migration + PR 2 gate
+- [x] 47-05-PLAN.md — StoppingCriteria flattening into GaConfiguration + sub-struct accessor pattern + ga.rs path updates (WASM gate preserved)
+- [x] 47-06-PLAN.md — Multi-obj engine + example + test caller migration + PR 2 gate
 
 **PR 3 — Reporter removal + CI (ARCH-03, ARCH-07)**
 - [ ] 47-07-PLAN.md — Reporter trait + impls + fire points removal + MIGRATION.md publication + README link + Cargo.toml include
@@ -587,7 +587,7 @@ Plans:
 | 44. Standard Benchmark Functions Suite | v2.4.0 | 3/3 | Complete    | 2026-05-14 |
 | 45. Memetic Algorithm Framework | v2.4.0 | 3 | Pending | — |
 | 46. Documentation Refactor | v2.4.0 | 7/7 | Complete    | 2026-05-15 |
-| 47. Architecture Audit & ChromosomeT Split | v3.0.0 | 3/8 | In Progress|  |
+| 47. Architecture Audit & ChromosomeT Split | v3.0.0 | 5/8 | In Progress|  |
 | 48. New Genotype Types | v3.0.0 | 0 | Not started | — |
 | 49. Unified Strategy Trait + Alternative Strategy Engines | v3.0.0 | 0 | Not started | — |
 | 50. Lexicase Selection | v3.0.0 | 0 | Not started | — |

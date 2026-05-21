@@ -6,7 +6,7 @@
 
 - [ ] **ARCH-01**: User can implement `ChromosomeT` for custom types using only the minimal core contract (fitness, age, calculate_fitness) — flat-slice methods (`dna()`, `set_dna()`, `set_fitness_fn()`) move to `LinearChromosome` supertrait, so tree and variable-length types are no longer forced to fake compliance
 - [ ] **ARCH-02**: User can implement `LinearChromosome` to gain full compatibility with all existing operators — a mechanical bound change from `U: ChromosomeT` to `U: LinearChromosome` across ~30 operator files; all existing chromosome types (`Binary`, `Range<T>`, `ListChromosome<T>`) implement `LinearChromosome`
-- [ ] **ARCH-03**: User can build without `Reporter<U>` — the trait removed entirely in v3.0.0; users who relied on it migrate to `GaObserver<U>` (available since v2.2.0); a `MIGRATION.md` is published
+- [x] **ARCH-03**: User can build without `Reporter<U>` — the trait removed entirely in v3.0.0; users who relied on it migrate to `GaObserver<U>` (available since v2.2.0); a `MIGRATION.md` is published
 - [ ] **ARCH-04**: User cannot accidentally bypass builder validation — `GaConfiguration` fields are `pub(crate)` with read-only accessors; `needs_unique_ids` and `alleles_can_be_repeated` removed from `LimitConfiguration` (initialization concerns, not engine config)
 - [ ] **ARCH-05**: User configures chromosome length via `ChromosomeLength::Fixed(n)` or `ChromosomeLength::Variable { min, max }` — replaces bare `genes_per_chromosome: usize`; existing `Fixed(n)` behavior is identical to current behavior
 - [ ] **ARCH-06**: User can configure stopping behavior via flat builder methods (`.with_stagnation_limit(50)`, `.with_convergence_threshold(0.001)`) — `StoppingCriteria` struct flattened; `LocalSearchOperator` changed from `Arc<dyn ...>` to `Option<LocalSearch>` enum (consistent with all other operators)
@@ -63,7 +63,7 @@
 |--------|-------|--------|
 | ARCH-01 | Phase 47 | Pending |
 | ARCH-02 | Phase 47 | Pending |
-| ARCH-03 | Phase 47 | Pending |
+| ARCH-03 | Phase 47 | Complete |
 | ARCH-04 | Phase 47 | Pending |
 | ARCH-05 | Phase 47 | Pending |
 | ARCH-06 | Phase 47 | Pending |
