@@ -28,11 +28,11 @@ use std::collections::HashSet;
 /// # Arguments
 /// * `configuration` — Optional GA configuration to validate
 /// * `population` — Optional population to validate
-/// * `alleles` — Optional allele definitions for validation
+/// * `_alleles` — Reserved for future allele-based validation (currently unused)
 pub fn validate<U>(
     configuration: Option<&GaConfiguration>,
     population: Option<&Population<U>>,
-    alleles: Option<&[U::Gene]>,
+    _alleles: Option<&[U::Gene]>,
 ) -> Result<(), GaError>
 where
     U: LinearChromosome + Send + Sync + 'static + Clone,
