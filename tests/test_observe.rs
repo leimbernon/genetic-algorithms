@@ -9,9 +9,6 @@ mod observe {
         mod test_sub_trait_observers;
         mod test_observer_reexports;
     }
-    mod reporter {
-        mod test_reporter;
-    }
     mod visualization {
         mod test_visualization;
     }

@@ -137,8 +137,6 @@ use crate::constraints::{ConstraintHandling, PenaltyStrategy};
 use crate::error::GaError;
 use crate::hall_of_fame::{HallOfFame, HallOfFameConfig};
 use crate::observer::{ExtensionEvent, GaObserver};
-#[allow(deprecated)]
-use crate::reporter::Reporter;
 use crate::stats::GenerationStats;
 use crate::traits::{FitnessFn, InitializationFn};
 use crate::validators::validator_factory as ValidatorFactory;
@@ -275,10 +273,6 @@ where
     /// cached to avoid re-evaluating chromosomes with identical DNA.
     fitness_cache_size: Option<usize>,
 
-    /// Optional lifecycle reporter. When `None` (the default), no hook
-    /// calls are made and there is zero overhead.
-    reporter: Option<Box<dyn Reporter<U> + Send>>,
-
     /// Optional structured lifecycle observer. When `None` (the default),
     /// no hook calls or timing measurements are performed (zero overhead).
     observer: Option<Arc<dyn GaObserver<U> + Send + Sync>>,
@@ -335,7 +329,6 @@ where
     aos_mutation: Option<Mutex<AosState>>,
 }
 
-#[allow(deprecated)]
 impl<U> Ga<U>
 where
     U: LinearChromosome,
@@ -363,7 +356,6 @@ where
             stats: Vec::new(),
             dynamic_mutation_probability: 1.0,
             fitness_cache_size: None,
-            reporter: None,
             observer: None,
             constraint_fns: None,
             penalty_strategy: PenaltyStrategy::None,
@@ -850,19 +842,6 @@ where
         F: Fn(&[U::Gene]) -> f64 + Send + Sync + 'static,
     {
         self.fitness_fn = Some(Arc::new(fitness_fn));
-        self
-    }
-
-    /// Attaches a lifecycle reporter that receives hooks during execution.
-    ///
-    /// See [`Reporter`] for the hook contract.
-    #[allow(deprecated)]
-    #[deprecated(
-        since = "2.2.0",
-        note = "use with_observer() instead. Reporter will be removed in v3.0.0."
-    )]
-    pub fn with_reporter(mut self, reporter: Box<dyn Reporter<U> + Send>) -> Self {
-        self.reporter = Some(reporter);
         self
     }
 
@@ -1457,9 +1436,6 @@ where
         let mut best_fitness_so_far = self.population.best_chromosome.fitness();
         let mut stagnation_count: usize = 0;
 
-        if let Some(ref mut r) = self.reporter {
-            r.on_start();
-        }
         self.notify(|obs| obs.on_run_start());
 
         //We start the cycles
@@ -1984,11 +1960,6 @@ where
                 }
             }
 
-            // Reporter (legacy) — fires after extension, matching pre-v2.2.0 order
-            if let Some(ref mut r) = self.reporter {
-                r.on_generation_complete(&gen_stats);
-            }
-
             // Move gen_stats into the history vec (no clone)
             self.stats.push(gen_stats);
 
@@ -2070,9 +2041,6 @@ where
             if improved {
                 best_fitness_so_far = current_best;
                 stagnation_count = 0;
-                if let Some(ref mut r) = self.reporter {
-                    r.on_new_best(i, self.population.best_chromosome.clone());
-                }
                 self.notify(|obs| obs.on_new_best(i, self.population.best_chromosome.clone()));
             } else {
                 stagnation_count += 1;
@@ -2135,9 +2103,6 @@ where
             self.termination_cause = TerminationCause::GenerationLimitReached;
         }
 
-        if let Some(ref mut r) = self.reporter {
-            r.on_finish(self.termination_cause, &self.stats);
-        }
         self.notify(|obs| obs.on_run_end(self.termination_cause, &self.stats));
 
         // If we want to perform a callback and the generation limit was just reached
