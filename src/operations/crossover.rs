@@ -26,6 +26,8 @@ pub mod arithmetic;
 pub mod blend_alpha;
 pub mod clone;
 pub mod cycle;
+pub mod multi_group_ox;
+pub mod multi_group_pmx;
 pub mod multipoint;
 pub mod order;
 pub mod edge_recombination;
@@ -34,6 +36,9 @@ pub mod rejuvenate;
 pub mod sbx;
 pub mod single_point;
 pub mod uniform_crossover;
+
+use multi_group_ox::multi_group_ox;
+use multi_group_pmx::multi_group_pmx;
 
 /// Attempt SBX crossover by downcasting generic parents to `Range<T>`.
 ///
@@ -190,13 +195,8 @@ impl CrossoverOperator for Crossover {
             Crossover::Clone => clone_crossover(parent_1, parent_2),
             Crossover::Rejuvenate => rejuvenate(parent_1, parent_2),
             Crossover::EdgeRecombination => erx(parent_1, parent_2),
-            Crossover::MultiGroupPmx | Crossover::MultiGroupOx => {
-                Err(GaError::CrossoverError(
-                    "MultiGroupPmx and MultiGroupOx dispatch is not yet implemented. \
-                     Use MultiUniqueChromosome with these operators (48-04)."
-                        .to_string(),
-                ))
-            }
+            Crossover::MultiGroupPmx => multi_group_pmx(parent_1, parent_2),
+            Crossover::MultiGroupOx => multi_group_ox(parent_1, parent_2),
         }
     }
 }
@@ -247,13 +247,8 @@ impl CrossoverOperator for CrossoverConfiguration {
             Crossover::Clone => clone_crossover(parent_1, parent_2),
             Crossover::Rejuvenate => rejuvenate(parent_1, parent_2),
             Crossover::EdgeRecombination => erx(parent_1, parent_2),
-            Crossover::MultiGroupPmx | Crossover::MultiGroupOx => {
-                Err(GaError::CrossoverError(
-                    "MultiGroupPmx and MultiGroupOx dispatch is not yet implemented. \
-                     Use MultiUniqueChromosome with these operators (48-04)."
-                        .to_string(),
-                ))
-            }
+            Crossover::MultiGroupPmx => multi_group_pmx(parent_1, parent_2),
+            Crossover::MultiGroupOx => multi_group_ox(parent_1, parent_2),
         }
     }
 }

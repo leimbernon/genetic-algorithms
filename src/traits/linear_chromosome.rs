@@ -93,4 +93,19 @@ pub trait LinearChromosome: ChromosomeT {
         self.set_dna(Cow::Borrowed(&[]));
         self
     }
+
+    /// Returns `(start, end)` index pairs for each permutation group in the DNA.
+    ///
+    /// Default implementation returns an empty `Vec`, meaning the chromosome has
+    /// no group structure. Override this method in group-aware chromosome types
+    /// (e.g., `MultiUniqueChromosome<T>`) to return the actual group boundaries.
+    ///
+    /// Used by `Crossover::MultiGroupPmx` and `Crossover::MultiGroupOx` to apply
+    /// PMX/OX independently within each group slice. When this returns empty,
+    /// those crossovers return `GaError::ConfigurationError` — `OperatorCompat`
+    /// prevents this from happening at runtime by rejecting misconfiguration at
+    /// `Ga::build()` time.
+    fn group_ranges(&self) -> Vec<(usize, usize)> {
+        vec![]
+    }
 }
