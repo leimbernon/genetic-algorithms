@@ -61,6 +61,13 @@ impl SelectionOperator for Selection {
                      Use selection::factory for the full configuration.");
                 clearing_selection(chromosomes, 0.1, number_of_couples)
             }
+            Selection::Lexicase | Selection::EpsilonLexicase => {
+                panic!(
+                    "Selection::Lexicase/EpsilonLexicase cannot be called through SelectionOperator \
+                     trait: use selection::factory_lexicase for Lexicase/EpsilonLexicase operators. \
+                     Island-model and NSGA-II paths do not support MultiCaseFitness."
+                );
+            }
         }
     }
 }
@@ -107,6 +114,13 @@ where
             configuration.niche_radius,
             configuration.number_of_couples,
         ),
+        Selection::Lexicase | Selection::EpsilonLexicase => {
+            return Err(GaError::ConfigurationError(
+                "Use selection::factory_lexicase for Lexicase/EpsilonLexicase; \
+                 standard factory() does not support MultiCaseFitness bound."
+                    .into(),
+            ));
+        }
         _ => configuration.method.select(
             chromosomes,
             configuration.number_of_couples,

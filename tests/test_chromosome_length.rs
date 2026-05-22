@@ -14,7 +14,8 @@ fn test_chromosome_length_variants() {
     let fixed_copy = fixed;
     assert_eq!(fixed_copy, fixed);
 
-    // Clone semantics
+    // Clone semantics — ChromosomeLength implements Copy; .clone() is equivalent to a copy
+    #[allow(clippy::clone_on_copy)]
     let variable_clone = variable.clone();
     assert_eq!(variable_clone, variable);
 
