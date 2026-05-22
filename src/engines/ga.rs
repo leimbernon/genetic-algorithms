@@ -150,7 +150,7 @@ use crate::{
     traits::{
         ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, GeneT,
         LinearChromosome, LocalSearchConfig, LocalSearchOperator, MutationConfig, NichingConfig,
-        SelectionConfig, StoppingConfig,
+        OperatorCompat, SelectionConfig, StoppingConfig,
     },
 };
 use rand::Rng;
@@ -686,7 +686,8 @@ where
         + Debug
         + mutation::ValueMutable
         + MaybeSerialize
-        + MaybeDeserialize,
+        + MaybeDeserialize
+        + OperatorCompat,
     U::Gene: 'static + Debug,
 {
     /// Validates configuration and adjusts defaults, returning a ready-to-run instance.
@@ -732,6 +733,9 @@ where
                 Some(&self.alleles)
             },
         )?;
+
+        // Check operator compatibility for this chromosome type (OperatorCompat trait)
+        crate::validators::generic_validator::operator_compat_check::<U>(&self.configuration)?;
 
         // Wrap fitness function with LRU cache if configured
         if let Some(cache_size) = self.fitness_cache_size {
