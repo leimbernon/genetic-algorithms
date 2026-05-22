@@ -60,4 +60,11 @@ mod engines {
     mod aos {
         mod test_aos;
     }
+    mod test_strategy_trait;
+    mod hill_climb {
+        mod test_hill_climb;
+    }
+    mod permutate {
+        mod test_permutate;
+    }
 }
