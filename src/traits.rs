@@ -28,6 +28,7 @@
 //! | [`CrossoverOperator`] | Trait for custom crossover implementations |
 //! | [`MutationOperator`] | Trait for custom mutation implementations |
 //! | [`SurvivorOperator`] | Trait for custom survivor selection implementations |
+//! | [`Strategy`] | Common interface for runtime algorithm swapping via `Box<dyn Strategy<U>>` |
 //!
 //! # When to use
 //! Implement these traits when creating custom chromosome types, gene types,
@@ -42,6 +43,8 @@ pub mod group_aware;
 pub mod linear_chromosome;
 pub mod operator_compat;
 pub mod operators;
+pub mod strategy;
+pub use strategy::Strategy;
 
 pub use chromosome::ChromosomeT;
 pub use common::{initialize_chromosomes, initialize_chromosomes_par, FitnessFn, InitializationFn};

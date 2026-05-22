@@ -150,7 +150,7 @@ use crate::{
     traits::{
         ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, GeneT,
         LinearChromosome, LocalSearchConfig, LocalSearchOperator, MutationConfig, NichingConfig,
-        OperatorCompat, SelectionConfig, StoppingConfig,
+        OperatorCompat, SelectionConfig, StoppingConfig, Strategy,
     },
 };
 use rand::Rng;
@@ -2783,5 +2783,32 @@ fn reinsert_elite<U: LinearChromosome>(
     // Overwrite the k worst slots with the elite individuals.
     for (i, elite_individual) in elite.into_iter().take(k).enumerate() {
         chromosomes[i] = elite_individual;
+    }
+}
+
+impl<U> Strategy<U> for Ga<U>
+where
+    U: LinearChromosome
+        + Send
+        + Sync
+        + 'static
+        + Clone
+        + Debug
+        + mutation::ValueMutable
+        + MaybeSerialize
+        + MaybeDeserialize
+        + OperatorCompat,
+    U::Gene: 'static + Debug,
+{
+    fn run(&mut self) -> Result<(), GaError> {
+        Ga::run(self).map(|_| ())
+    }
+
+    fn best(&self) -> Option<&U> {
+        if self.population.best_chromosome_is_set {
+            Some(&self.population.best_chromosome)
+        } else {
+            None
+        }
     }
 }

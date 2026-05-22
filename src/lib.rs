@@ -328,6 +328,7 @@ pub use hall_of_fame::{DistanceMetric, HallOfFame, HallOfFameConfig};
 pub use aos::{AosState, AosStrategy};
 pub use traits::LinearChromosome;
 pub use traits::OperatorCompat;
+pub use traits::Strategy;
 pub use chromosomes::ChromosomeLength;
 pub use chromosomes::UniqueChromosome;
 pub use genotypes::UniqueGenotype;
