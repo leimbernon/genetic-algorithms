@@ -332,5 +332,6 @@ pub use chromosomes::ChromosomeLength;
 pub use chromosomes::UniqueChromosome;
 pub use genotypes::UniqueGenotype;
 pub use initializers::unique_random_initialization;
+pub use chromosomes::MultiRangeChromosome;
 pub use genotypes::MultiRangeGenotype;
 pub use initializers::multi_range_random_initialization;

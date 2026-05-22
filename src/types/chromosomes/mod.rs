@@ -6,16 +6,19 @@
 //! - [`Range`] — a chromosome whose DNA is a vector of [`genotypes::Range`](crate::genotypes::Range) genes.
 //! - [`ListChromosome`] — a chromosome whose DNA is a vector of [`genotypes::List`](crate::genotypes::List) genes.
 //! - [`UniqueChromosome`] — a chromosome whose DNA is a permutation of a shared alphabet.
+//! - [`MultiRangeChromosome`] — a chromosome with per-gene independent `(lo, hi)` bounds and mutation rates.
 //! - [`ChromosomeLength`] — enum describing fixed or variable chromosome length.
 
 pub mod binary;
 pub mod length;
 pub mod list;
+pub mod multi_range;
 mod range;
 pub mod unique;
 
 pub use binary::Binary;
 pub use length::ChromosomeLength;
 pub use list::ListChromosome;
+pub use multi_range::MultiRangeChromosome;
 pub use range::Range;
 pub use unique::UniqueChromosome;

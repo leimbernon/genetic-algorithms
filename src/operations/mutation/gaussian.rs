@@ -106,3 +106,53 @@ impl GaussianConvertible for i64 {
         val as f64
     }
 }
+
+/// Per-gene Gaussian mutation for `MultiRangeChromosome<T>`.
+///
+/// Unlike [`gaussian_mutation`] (which reads `gene.ranges` on `RangeChromosome<T>`),
+/// this function reads `gene.lo`, `gene.hi`, and `gene.mutation_rate` directly from
+/// each `MultiRangeGenotype<T>` gene — enabling independent noise scales per gene
+/// (decision D-10).
+///
+/// # Behaviour
+///
+/// 1. Selects one gene at random.
+/// 2. Computes Box-Muller noise scaled by `gene.mutation_rate` (NOT the `_sigma` arg).
+/// 3. Clamps the result to `[gene.lo, gene.hi]`.
+/// 4. Writes the new value back via `set_gene`.
+///
+/// The `_sigma` parameter is accepted for API consistency but is intentionally
+/// ignored — per-gene `mutation_rate` is the authoritative scale.
+pub fn multi_range_gaussian_mutation<T>(
+    individual: &mut crate::chromosomes::MultiRangeChromosome<T>,
+    _sigma: f64,
+)
+where
+    T: Sync + Send + Copy + Default + std::fmt::Debug + PartialOrd + 'static + GaussianConvertible,
+{
+    use crate::traits::LinearChromosome;
+    use rand::Rng;
+
+    let len = individual.dna().len();
+    if len == 0 {
+        return;
+    }
+
+    let mut rng = crate::rng::make_rng();
+    let idx = rng.random_range(0..len);
+
+    let mut gene = individual.dna()[idx].clone();
+
+    let current: f64 = T::to_f64(gene.value);
+    let lo_f64: f64 = T::to_f64(gene.lo);
+    let hi_f64: f64 = T::to_f64(gene.hi);
+
+    // Box-Muller transform — scale by gene.mutation_rate (D-10), not global sigma
+    let u1: f64 = rng.random_range(f64::EPSILON..1.0);
+    let u2: f64 = rng.random_range(0.0..std::f64::consts::TAU);
+    let noise: f64 = (-2.0 * u1.ln()).sqrt() * u2.cos() * gene.mutation_rate;
+    let new_val_f64 = (current + noise).clamp(lo_f64, hi_f64);
+
+    gene.value = T::from_f64(new_val_f64);
+    individual.set_gene(idx, gene);
+}
