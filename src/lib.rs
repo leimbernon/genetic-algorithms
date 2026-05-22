@@ -280,6 +280,8 @@ pub mod alps;
 pub mod cellular;
 #[path = "engines/de/mod.rs"]
 pub mod de;
+#[path = "engines/hill_climb/mod.rs"]
+pub mod hill_climb;
 #[path = "engines/scatter/mod.rs"]
 pub mod scatter;
 #[path = "engines/island/mod.rs"]
@@ -329,6 +331,7 @@ pub use aos::{AosState, AosStrategy};
 pub use traits::LinearChromosome;
 pub use traits::OperatorCompat;
 pub use traits::Strategy;
+pub use hill_climb::{HillClimbEngine, HillClimbConfiguration, HillClimbMode};
 pub use chromosomes::ChromosomeLength;
 pub use chromosomes::UniqueChromosome;
 pub use genotypes::UniqueGenotype;
