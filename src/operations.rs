@@ -67,12 +67,14 @@ pub enum Selection {
     /// Promotes population diversity by preventing niche domination.
     /// Configure `niche_radius` via the selection configuration.
     Clearing,
-    /// Lexicase selection. Requires chromosomes implementing [`MultiCaseFitness`].
+    /// Lexicase selection. Requires chromosomes implementing
+    /// [`MultiCaseFitness`](crate::traits::MultiCaseFitness).
     /// Scalar fitness is synced to the mean of case scores after each selection event.
     Lexicase,
-    /// Epsilon-lexicase selection. Like [`Selection::Lexicase`] but with relaxed
+    /// Epsilon-lexicase selection. Like `Selection::Lexicase` but with relaxed
     /// per-case candidate retention. Configure tolerance via
-    /// [`SelectionConfiguration::epsilon`]; `0.0` = dynamic MAD per case.
+    /// [`SelectionConfiguration::epsilon`](crate::configuration::SelectionConfiguration::epsilon);
+    /// `0.0` = dynamic MAD per case.
     EpsilonLexicase,
 }
 
