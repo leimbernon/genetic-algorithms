@@ -255,6 +255,15 @@ impl<T: Sync + Send + Clone + Default + Debug + 'static> LinearChromosome
         self.fitness_fn = FitnessFnWrapper::new(fitness_fn);
         self
     }
+
+    /// Returns `(start, end)` index pairs for each permutation group in the DNA.
+    ///
+    /// Overrides the `LinearChromosome` default (empty vec). Derived from the
+    /// `groups` field alphabet lengths — same semantics as the inherent `group_ranges()`.
+    fn group_ranges(&self) -> Vec<(usize, usize)> {
+        // Delegate to the inherent method — same logic, no duplication.
+        MultiUniqueChromosome::group_ranges(self)
+    }
 }
 
 impl<T: Sync + Send + Clone + Default + Debug> fmt::Display for MultiUniqueChromosome<T> {
@@ -270,3 +279,4 @@ impl<T: Sync + Send + Clone + Default + Debug + 'static> ValueMutable
     for MultiUniqueChromosome<T>
 {
 }
+
