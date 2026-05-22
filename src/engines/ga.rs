@@ -149,8 +149,8 @@ use crate::{
     population::Population,
     traits::{
         ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, GeneT,
-        LinearChromosome, LocalSearchConfig, LocalSearchOperator, MutationConfig, NichingConfig,
-        OperatorCompat, SelectionConfig, StoppingConfig, Strategy,
+        LinearChromosome, LocalSearchConfig, LocalSearchOperator, MultiCaseFitness, MutationConfig,
+        NichingConfig, OperatorCompat, SelectionConfig, StoppingConfig, Strategy,
     },
 };
 use rand::Rng;
@@ -2814,5 +2814,50 @@ where
         } else {
             None
         }
+    }
+}
+
+impl<U> Ga<U>
+where
+    U: LinearChromosome
+        + MultiCaseFitness
+        + Send
+        + Sync
+        + 'static
+        + Clone
+        + Debug
+        + mutation::ValueMutable
+        + MaybeSerialize
+        + MaybeDeserialize
+        + OperatorCompat,
+    U::Gene: 'static + Debug,
+{
+    /// Selects parents using lexicase or epsilon-lexicase selection.
+    ///
+    /// Call this instead of the standard `run()` selection step when `U:` [`MultiCaseFitness`]
+    /// and `Selection::Lexicase` or `Selection::EpsilonLexicase` is configured.
+    /// Also syncs each chromosome's scalar fitness to the mean of its case scores (D-04).
+    ///
+    /// # Errors
+    ///
+    /// Returns `GaError::SelectionError` if the population is too small,
+    /// case fitness is unset, or any NaN case scores are found.
+    /// Returns `GaError::ConfigurationError` if the configured selection method is
+    /// not `Lexicase` or `EpsilonLexicase`.
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// // Selection::Lexicase / EpsilonLexicase reach run() only when U does not implement
+    /// // MultiCaseFitness; factory() returns GaError::ConfigurationError for those variants per D-06.
+    /// // Users with MultiCaseFitness chromosomes call select_parents_lexicase() directly.
+    /// let pairs = ga.select_parents_lexicase()?;
+    /// ```
+    pub fn select_parents_lexicase(&mut self) -> Result<Vec<(usize, usize)>, GaError> {
+        crate::operations::selection::factory_lexicase(
+            &mut self.population.chromosomes,
+            self.configuration.selection_configuration,
+            self.configuration.number_of_threads,
+        )
     }
 }

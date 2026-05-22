@@ -2,7 +2,7 @@
 
 use crate::traits::ChromosomeT;
 
-/// Opt-in trait enabling [`Selection::Lexicase`] and [`Selection::EpsilonLexicase`].
+/// Opt-in trait enabling `Selection::Lexicase` and `Selection::EpsilonLexicase`.
 ///
 /// Implement alongside [`ChromosomeT`]. Call `set_case_fitness` inside your
 /// `calculate_fitness()` implementation.
