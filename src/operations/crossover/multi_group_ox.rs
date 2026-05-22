@@ -21,7 +21,7 @@ use std::borrow::Cow;
 
 /// Multi-group Order Crossover (OX).
 ///
-/// Applies [`ox_build_child`] independently to each group slice defined by
+/// Applies `ox_build_child` independently to each group slice defined by
 /// `parent_1.group_ranges()`. For each group, two random crossover positions
 /// within the group's length are selected. Returns two children whose DNA is
 /// the concatenation of group-local OX results — no gene migrates across group
