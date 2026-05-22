@@ -117,7 +117,7 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 
 - [ ] **Phase 47: Architecture Audit & ChromosomeT Split** — Reduce `ChromosomeT` to a minimal core; introduce `LinearChromosome` supertrait; remove `Reporter<U>`; apply 6 API simplifications; validate all 10 examples compile and run in CI
 - [ ] **Phase 48: New Genotype Types** — `UniqueChromosome<T>` for permutation problems, `MultiRangeChromosome<T>` for per-gene bounds, `MultiUniqueChromosome<T>` for multiple independent permutation groups; migrate `job_scheduling` example
-- [ ] **Phase 49: Unified Strategy Trait + Alternative Strategy Engines** — `Strategy<U>` trait; `HillClimbEngine` (Stochastic + SteepestAscent); `PermutateEngine` with safety gate; observer hooks throughout
+- [x] **Phase 49: Unified Strategy Trait + Alternative Strategy Engines** — `Strategy<U>` trait; `HillClimbEngine` (Stochastic + SteepestAscent); `PermutateEngine` with safety gate; observer hooks throughout
 - [ ] **Phase 50: Lexicase Selection** — `MultiCaseFitness: ChromosomeT` trait; `LexicaseSelection`; epsilon-lexicase variant; behavioral diversity CI test
 - [ ] **Phase 51: Multi-Parent Crossover + Self-Adaptive Mutation** — UNDX, SPX, PCX operators with `RealValued` marker trait; `SelfAdaptive: ChromosomeT` trait; `Mutation::SelfAdaptiveGaussian` with log-normal sigma update
 - [ ] **Phase 52: Variable-Length Chromosomes** — `ChromosomeLength::Variable { min, max }`; `Mutation::Insertion` / `Mutation::Deletion`; `Crossover::VariableLength(AlignmentStrategy)`; parsimony pressure survivor config
@@ -502,7 +502,7 @@ Plans:
   2. User can run stochastic hill climbing by providing a `neighbor_fn` and an iteration limit; the engine accepts any neighbor with higher fitness and stops when no improvement is found within the limit; `GaObserver` hooks fire per iteration
   3. User can run steepest-ascent hill climbing with the same `neighbor_fn`; all returned neighbors are evaluated and only the single best is accepted per step; `GaObserver` hooks fire per iteration
   4. User can run `PermutateEngine` over a small search space; if the total permutation count exceeds the configurable safety gate, the engine emits a warning and returns the best candidate found so far rather than panicking; `GaObserver` hooks fire per candidate evaluated
-**Plans**: TBD
+**Plans**: 49-01, 49-02, 49-03, 49-04 — COMPLETE ✓
 **UI hint**: no
 
 ### Phase 50: Lexicase Selection
