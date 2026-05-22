@@ -21,6 +21,8 @@ pub trait SelectionConfig {
     /// Individuals within `niche_radius` of a niche winner are cleared from
     /// the mating pool each generation. Default is `0.1`.
     fn with_niche_radius(self, niche_radius: f64) -> Self;
+    /// Sets the epsilon tolerance for [`Selection::EpsilonLexicase`].
+    fn with_epsilon_lexicase(self, epsilon: f64) -> Self;
 }
 
 /// Configuration for crossover operators.

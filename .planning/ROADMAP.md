@@ -514,7 +514,15 @@ Plans:
   2. User can configure `Selection::Lexicase` and observe that test cases are shuffled randomly per selection event; the scalar `fitness()` is set to the mean case score for survivor and stopping-criteria compatibility
   3. User can configure `Selection::EpsilonLexicase { epsilon }` for continuous-valued case scores; individuals within epsilon of the best on each case are retained through that case's filter
   4. A CI behavioral diversity test confirms that a population evolved under `LexicaseSelection` produces measurably more specialists (individuals excelling on distinct case subsets) than `TournamentSelection` under matched effort
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+**Wave 1**
+- [ ] 50-01-PLAN.md — MultiCaseFitness trait + Selection enum variants + SelectionConfiguration.epsilon + Wave 0 test stubs (TRAITS-01)
+
+**Wave 2** *(blocked on Wave 1)*
+- [ ] 50-02-PLAN.md — lexicase + epsilon-lexicase operators + factory_lexicase + ga.rs dispatch + behavioral diversity test + phase verification gate (SEL-02, SEL-03)
+
 **UI hint**: no
 
 ### Phase 51: Multi-Parent Crossover + Self-Adaptive Mutation
@@ -603,7 +611,7 @@ Plans:
 | 47. Architecture Audit & ChromosomeT Split | v3.0.0 | 6/8 | In Progress|  |
 | 48. New Genotype Types | v3.0.0 | 4 | In Progress | — |
 | 49. Unified Strategy Trait + Alternative Strategy Engines | v3.0.0 | 0 | Not started | — |
-| 50. Lexicase Selection | v3.0.0 | 0 | Not started | — |
+| 50. Lexicase Selection | v3.0.0 | 2 | In Progress | — |
 | 51. Multi-Parent Crossover + Self-Adaptive Mutation | v3.0.0 | 0 | Not started | — |
 | 52. Variable-Length Chromosomes | v3.0.0 | 0 | Not started | — |
 | 53. Tree Chromosome + GpGa Engine | v3.0.0 | 0 | Not started | — |

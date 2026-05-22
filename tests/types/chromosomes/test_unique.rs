@@ -127,6 +127,7 @@ fn set_dna_cow_borrowed_replaces_dna() {
 
 /// alphabet field uses Arc<[T]> — cloning is O(1) atomic refcount.
 #[test]
+#[allow(clippy::field_reassign_with_default)]
 fn alphabet_is_arc_shared() {
     let mut c = UniqueChromosome::<i32>::default();
     c.alphabet = Arc::from(vec![1i32, 2, 3, 4, 5]);
