@@ -108,6 +108,16 @@ pub enum Crossover {
     /// Builds a union adjacency list from both parents and constructs offspring that
     /// preserve adjacency relationships found in either parent. Requires unique gene IDs.
     EdgeRecombination,
+    /// Multi-group PMX crossover for `MultiUniqueChromosome<T>`.
+    /// Applies Partially Mapped Crossover (PMX) independently within each permutation
+    /// group defined by `MultiUniqueChromosome::group_ranges()`. Each group is treated
+    /// as a separate permutation; genes are never exchanged across group boundaries.
+    MultiGroupPmx,
+    /// Multi-group OX crossover for `MultiUniqueChromosome<T>`.
+    /// Applies Order Crossover (OX) independently within each permutation group defined
+    /// by `MultiUniqueChromosome::group_ranges()`. Each group is treated as a separate
+    /// permutation; relative order is preserved within groups, not across them.
+    MultiGroupOx,
 }
 
 /// Mutation strategies.

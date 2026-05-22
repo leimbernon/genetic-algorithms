@@ -39,6 +39,7 @@ pub mod common;
 pub mod configuration;
 pub mod gene;
 pub mod linear_chromosome;
+pub mod operator_compat;
 pub mod operators;
 
 pub use chromosome::ChromosomeT;
@@ -49,6 +50,7 @@ pub use configuration::{
     MutationConfig, NichingConfig, SelectionConfig, StoppingConfig,
 };
 pub use gene::GeneT;
+pub use operator_compat::OperatorCompat;
 pub use operators::{
     CrossoverOperator, ExtensionOperator, LocalSearchOperator, MutationOperator,
     SelectionOperator, SurvivorOperator,

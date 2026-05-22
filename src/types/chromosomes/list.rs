@@ -7,7 +7,7 @@
 
 use crate::fitness::FitnessFnWrapper;
 use crate::genotypes::List as ListGenotype;
-use crate::traits::{ChromosomeT, LinearChromosome};
+use crate::traits::{ChromosomeT, LinearChromosome, OperatorCompat};
 use std::borrow::Cow;
 use std::fmt;
 use std::fmt::Debug;
@@ -48,6 +48,11 @@ pub struct ListChromosome<T: Sync + Send + Clone + Default + Debug> {
     #[cfg_attr(feature = "serde", serde(skip, default))]
     pub fitness_fn: FitnessFnWrapper<ListGenotype<T>>,
 }
+
+/// `ListChromosome<T>` imposes no operator restrictions — all crossovers and
+/// mutations are accepted. The default `None`-returning methods are inherited
+/// from the trait.
+impl<T: Sync + Send + Clone + Default + Debug> OperatorCompat for ListChromosome<T> {}
 
 impl<T: Sync + Send + Clone + Default + Debug> Default for ListChromosome<T> {
     fn default() -> Self {
