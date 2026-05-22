@@ -1,5 +1,8 @@
+use genetic_algorithms::chromosomes::MultiRangeChromosome;
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
+use genetic_algorithms::genotypes::MultiRangeGenotype;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
+use genetic_algorithms::initializers::multi_range_random_initialization;
 use genetic_algorithms::operations::mutation;
 use genetic_algorithms::operations::Mutation;
 use genetic_algorithms::traits::LinearChromosome;
@@ -464,4 +467,104 @@ fn gaussian_mutation_small_sigma_small_perturbation() {
             (after_val - before_val).abs()
         );
     }
+}
+
+// ==================== MultiRangeChromosome Gaussian mutation tests ====================
+
+/// Build a MultiRangeChromosome with heterogeneous bounds.
+fn build_multi_range_chromosome() -> MultiRangeChromosome<f64> {
+    let bounds = vec![(0.0_f64, 1.0), (10.0, 100.0)];
+    let rates = vec![0.05_f64, 5.0_f64];
+    let dna = multi_range_random_initialization(&bounds, &rates);
+    let mut c = MultiRangeChromosome::<f64>::default();
+    c.set_dna(Cow::Owned(dna));
+    c
+}
+
+/// Every observed value stays within each gene's (lo, hi) across 1000 mutation iterations.
+#[test]
+fn multi_range_gaussian_values_stay_within_per_gene_bounds_1000_iterations() {
+    let mut c = build_multi_range_chromosome();
+    for iter in 0..1000 {
+        mutation::factory_with_params(Mutation::Gaussian, &mut c, None, Some(10.0)).unwrap();
+        for gene in c.dna() {
+            assert!(
+                gene.value >= gene.lo && gene.value <= gene.hi,
+                "Iteration {}: gene {} value {} out of per-gene range [{}, {}]",
+                iter, gene.id, gene.value, gene.lo, gene.hi
+            );
+        }
+    }
+}
+
+/// Gene with mutation_rate=0.05 produces smaller average |delta| than gene with mutation_rate=5.0.
+#[test]
+fn multi_range_gaussian_per_gene_rate_controls_noise_scale() {
+    use genetic_algorithms::rng;
+
+    // Gene 0: bounds [0, 1000], mutation_rate=0.0001 (tiny noise)
+    // Gene 1: bounds [0, 1000], mutation_rate=20.0 (large noise)
+    let bounds = vec![(0.0_f64, 1000.0), (0.0_f64, 1000.0)];
+    let rates = vec![0.0001_f64, 20.0_f64];
+    let dna = multi_range_random_initialization(&bounds, &rates);
+    let mut c = MultiRangeChromosome::<f64>::default();
+    c.set_dna(Cow::Owned(dna));
+
+    let mut total_delta_0 = 0.0_f64;
+    let mut total_delta_1 = 0.0_f64;
+    let mut count_0 = 0usize;
+    let mut count_1 = 0usize;
+
+    rng::set_seed(Some(123));
+    for _ in 0..2000 {
+        let before: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
+        mutation::factory_with_params(Mutation::Gaussian, &mut c, None, Some(1.0)).unwrap();
+        let after: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
+
+        let d0 = (after[0] - before[0]).abs();
+        let d1 = (after[1] - before[1]).abs();
+        if d0 > 0.0 { total_delta_0 += d0; count_0 += 1; }
+        if d1 > 0.0 { total_delta_1 += d1; count_1 += 1; }
+    }
+    rng::set_seed(None);
+
+    // Verify that gene with mutation_rate=20.0 has much larger avg delta
+    if count_0 > 0 && count_1 > 0 {
+        let avg_0 = total_delta_0 / count_0 as f64;
+        let avg_1 = total_delta_1 / count_1 as f64;
+        assert!(
+            avg_1 > avg_0 * 10.0,
+            "Gene with mutation_rate=20.0 avg delta ({:.6}) should be >> rate=0.0001 ({:.6})",
+            avg_1, avg_0
+        );
+    }
+}
+
+/// Direct call to multi_range_gaussian_mutation reads gene.mutation_rate and clamps.
+#[test]
+fn multi_range_gaussian_mutation_direct_call_clamps_to_bounds() {
+    use genetic_algorithms::operations::mutation::gaussian::multi_range_gaussian_mutation;
+
+    let mut c = MultiRangeChromosome::<f64>::default();
+    // Single gene with very high mutation_rate to force clamping
+    let dna = vec![MultiRangeGenotype::new(0, 0.0_f64, 1.0, 0.5, 1e10)];
+    c.set_dna(Cow::Owned(dna));
+
+    for _ in 0..100 {
+        multi_range_gaussian_mutation(&mut c, 0.0); // sigma=0 is intentionally ignored
+        let gene = &c.dna()[0];
+        assert!(
+            gene.value >= 0.0 && gene.value <= 1.0,
+            "After mutation, value {} must be within [0.0, 1.0]",
+            gene.value
+        );
+    }
+}
+
+/// Empty MultiRangeChromosome through factory does not panic.
+#[test]
+fn multi_range_gaussian_mutation_empty_dna_does_nothing() {
+    let mut c = MultiRangeChromosome::<f64>::default();
+    mutation::factory_with_params(Mutation::Gaussian, &mut c, None, Some(5.0)).unwrap();
+    assert_eq!(c.dna().len(), 0);
 }
