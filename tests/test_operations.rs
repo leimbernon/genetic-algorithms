@@ -10,6 +10,8 @@ mod operations {
     mod test_crossover_sbx;
     mod test_crossover_single_point;
     mod test_crossover_uniform;
+    mod test_crossover_multi_group_pmx;
+    mod test_crossover_multi_group_ox;
     mod test_mutation;
     mod test_mutation_bit_flip;
     mod test_mutation_cauchy_levy_uniform;
