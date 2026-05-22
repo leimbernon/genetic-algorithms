@@ -189,3 +189,42 @@ fn list_initializer_without_repetitions_value_consistency() {
         );
     }
 }
+
+// ── unique_random_initialization tests ────────────────────────────────────────
+
+use genetic_algorithms::initializers::unique_random_initialization;
+
+/// Empty alphabet returns empty Vec.
+#[test]
+fn unique_initializer_empty_alphabet() {
+    let alphabet: Vec<i32> = vec![];
+    let dna = unique_random_initialization(&alphabet);
+    assert!(dna.is_empty(), "empty alphabet should return empty vec");
+}
+
+/// Non-empty alphabet returns dna of the same length.
+#[test]
+fn unique_initializer_correct_length() {
+    let alphabet = vec![10, 20, 30, 40, 50];
+    let dna = unique_random_initialization(&alphabet);
+    assert_eq!(dna.len(), alphabet.len(), "result length must equal alphabet length");
+}
+
+/// Permutation property: every alphabet element appears exactly once.
+#[test]
+fn unique_initializer_permutation_property() {
+    let alphabet = vec![10, 20, 30, 40, 50];
+    let dna = unique_random_initialization(&alphabet);
+
+    // Collect values from dna and sort both for comparison
+    let mut result_values: Vec<i32> = dna.iter().map(|g| g.value).collect();
+    result_values.sort();
+
+    let mut expected: Vec<i32> = alphabet.clone();
+    expected.sort();
+
+    assert_eq!(
+        result_values, expected,
+        "multiset of values in result must equal multiset of alphabet (permutation property)"
+    );
+}
