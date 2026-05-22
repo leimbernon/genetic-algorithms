@@ -228,3 +228,75 @@ fn unique_initializer_permutation_property() {
         "multiset of values in result must equal multiset of alphabet (permutation property)"
     );
 }
+
+// ── multi_range_random_initialization tests ───────────────────────────────────
+
+use genetic_algorithms::initializers::multi_range_random_initialization;
+
+/// Length of result equals bounds.len().
+#[test]
+fn multi_range_initialization_correct_length() {
+    let bounds = vec![(0.0_f64, 1.0); 7];
+    let rates = vec![0.1_f64; 7];
+    let genes = multi_range_random_initialization(&bounds, &rates);
+    assert_eq!(genes.len(), 7, "result length must equal bounds.len()");
+}
+
+/// Per-gene bounds enforcement: every gene value is within its own (lo, hi) range.
+#[test]
+fn multi_range_initialization_per_gene_bounds_enforcement() {
+    let bounds = vec![(0.0_f64, 1.0), (10.0, 20.0), (-5.0, -1.0)];
+    let rates = vec![0.1, 0.2, 0.3];
+    // Run many times to get statistical coverage
+    for _ in 0..100 {
+        let genes = multi_range_random_initialization(&bounds, &rates);
+        assert_eq!(genes.len(), 3);
+        for (i, gene) in genes.iter().enumerate() {
+            assert!(
+                gene.value >= gene.lo && gene.value < gene.hi,
+                "Gene {} value {} out of range [{}, {})",
+                i, gene.value, gene.lo, gene.hi
+            );
+            // Also verify the lo/hi fields themselves were set correctly
+            assert_eq!(gene.lo, bounds[i].0, "Gene {} lo mismatch", i);
+            assert_eq!(gene.hi, bounds[i].1, "Gene {} hi mismatch", i);
+        }
+    }
+}
+
+/// Mutation rate assignment: every gene's mutation_rate matches mutation_rates[i].
+#[test]
+fn multi_range_initialization_mutation_rate_assignment() {
+    let bounds = vec![(0.0_f64, 1.0), (0.0, 1.0), (0.0, 1.0)];
+    let rates = vec![0.05_f64, 0.15, 0.30];
+    let genes = multi_range_random_initialization(&bounds, &rates);
+    for (i, gene) in genes.iter().enumerate() {
+        assert_eq!(
+            gene.mutation_rate, rates[i],
+            "Gene {} mutation_rate should be {}, got {}",
+            i, rates[i], gene.mutation_rate
+        );
+    }
+}
+
+/// Short mutation_rates slice: trailing genes get default rate of 0.1.
+#[test]
+fn multi_range_initialization_short_rates_defaults_to_0_1() {
+    let bounds = vec![(0.0_f64, 1.0), (0.0, 1.0), (0.0, 1.0)];
+    let rates = vec![0.5_f64]; // only one rate; other two should default to 0.1
+    let genes = multi_range_random_initialization(&bounds, &rates);
+    assert_eq!(genes[0].mutation_rate, 0.5);
+    assert_eq!(genes[1].mutation_rate, 0.1);
+    assert_eq!(genes[2].mutation_rate, 0.1);
+}
+
+/// Gene ids are sequential starting from 0.
+#[test]
+fn multi_range_initialization_gene_ids_sequential() {
+    let bounds = vec![(0.0_f64, 10.0), (10.0, 20.0), (20.0, 30.0)];
+    let rates = vec![0.1; 3];
+    let genes = multi_range_random_initialization(&bounds, &rates);
+    for (i, gene) in genes.iter().enumerate() {
+        assert_eq!(gene.id, i as i32, "Gene {} should have id {}", i, i);
+    }
+}
