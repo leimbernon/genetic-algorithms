@@ -17,7 +17,7 @@ use std::borrow::Cow;
 
 /// Multi-group Partially Mapped Crossover (PMX).
 ///
-/// Applies [`pmx_build_child`] independently to each group slice defined by
+/// Applies `pmx_build_child` independently to each group slice defined by
 /// `parent_1.group_ranges()`. Returns two children whose DNA is the concatenation
 /// of group-local PMX results — no gene migrates across group boundaries.
 ///
