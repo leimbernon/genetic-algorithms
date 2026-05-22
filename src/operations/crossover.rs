@@ -190,6 +190,13 @@ impl CrossoverOperator for Crossover {
             Crossover::Clone => clone_crossover(parent_1, parent_2),
             Crossover::Rejuvenate => rejuvenate(parent_1, parent_2),
             Crossover::EdgeRecombination => erx(parent_1, parent_2),
+            Crossover::MultiGroupPmx | Crossover::MultiGroupOx => {
+                Err(GaError::CrossoverError(
+                    "MultiGroupPmx and MultiGroupOx dispatch is not yet implemented. \
+                     Use MultiUniqueChromosome with these operators (48-04)."
+                        .to_string(),
+                ))
+            }
         }
     }
 }
@@ -240,6 +247,13 @@ impl CrossoverOperator for CrossoverConfiguration {
             Crossover::Clone => clone_crossover(parent_1, parent_2),
             Crossover::Rejuvenate => rejuvenate(parent_1, parent_2),
             Crossover::EdgeRecombination => erx(parent_1, parent_2),
+            Crossover::MultiGroupPmx | Crossover::MultiGroupOx => {
+                Err(GaError::CrossoverError(
+                    "MultiGroupPmx and MultiGroupOx dispatch is not yet implemented. \
+                     Use MultiUniqueChromosome with these operators (48-04)."
+                        .to_string(),
+                ))
+            }
         }
     }
 }

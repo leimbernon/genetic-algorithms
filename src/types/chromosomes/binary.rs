@@ -8,7 +8,7 @@ use crate::error::GaError;
 use crate::fitness::FitnessFnWrapper;
 use crate::genotypes::Binary as BinaryGenotype;
 use crate::operations::mutation::ValueMutable;
-use crate::traits::{ChromosomeT, LinearChromosome};
+use crate::traits::{ChromosomeT, LinearChromosome, OperatorCompat};
 use std::borrow::Cow;
 use std::fmt;
 
@@ -84,6 +84,11 @@ impl LinearChromosome for Binary {
         self
     }
 }
+
+/// `BinaryChromosome` imposes no operator restrictions — all crossovers and
+/// mutations are accepted. The default `None`-returning methods are inherited
+/// from the trait.
+impl OperatorCompat for Binary {}
 
 impl Default for Binary {
     fn default() -> Self {

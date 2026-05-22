@@ -55,7 +55,7 @@ pub fn order<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, 
     Ok(vec![child_1, child_2])
 }
 
-fn ox_build_child<G: crate::traits::GeneT>(
+pub(crate) fn ox_build_child<G: crate::traits::GeneT>(
     donor: &[G],
     filler: &[G],
     p1: usize,

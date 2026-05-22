@@ -7,7 +7,7 @@
 
 use crate::fitness::FitnessFnWrapper;
 use crate::genotypes::Range as RangeGenotype;
-use crate::traits::{ChromosomeT, LinearChromosome};
+use crate::traits::{ChromosomeT, LinearChromosome, OperatorCompat};
 use std::borrow::Cow;
 use std::fmt;
 use std::fmt::Debug;
@@ -47,6 +47,11 @@ pub struct Range<T: Sync + Send + Copy + Default + Debug> {
     #[cfg_attr(feature = "serde", serde(skip, default))]
     pub fitness_fn: FitnessFnWrapper<RangeGenotype<T>>,
 }
+
+/// `RangeChromosome<T>` imposes no operator restrictions — all crossovers and
+/// mutations are accepted. The default `None`-returning methods are inherited
+/// from the trait.
+impl<T: Sync + Send + Copy + Default + Debug> OperatorCompat for Range<T> {}
 
 impl<T: Sync + Send + Copy + Default + Debug> Default for Range<T> {
     fn default() -> Self {

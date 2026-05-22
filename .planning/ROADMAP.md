@@ -477,8 +477,21 @@ Plans:
   2. User can run the `job_scheduling` example using `UniqueChromosome<i32>` in place of the old `RangeChromosome<i32>` unique-id hack — example produces valid job sequences
   3. User can create a `MultiRangeChromosome<T>` where each gene has its own `(lo_i, hi_i)` bounds; Gaussian mutation clamps each gene to its own per-gene range independently
   4. User can create a `MultiUniqueChromosome<T>` with multiple independent permutation groups; PMX/OX crossover applies within each group boundary and never corrupts group membership across the boundary
-**Plans**: TBD
+**Plans:** 4 plans
 **UI hint**: no
+
+Plans:
+**Wave 1**
+- [ ] 48-01-PLAN.md — OperatorCompat trait foundation + Crossover enum MultiGroup variants + build_child visibility + per-type empty impls + Wave 0 tests (GEN-01, GEN-04 foundation)
+
+**Wave 2** *(blocked on Wave 1)*
+- [ ] 48-02-PLAN.md — UniqueGenotype + UniqueChromosome + unique_random_initialization + job_scheduling example migration (GEN-01, GEN-02)
+
+**Wave 3** *(blocked on Wave 2)*
+- [ ] 48-03-PLAN.md — MultiRangeGenotype + MultiRangeChromosome + multi_range_random_initialization + per-gene Gaussian mutation (GEN-03)
+
+**Wave 4** *(blocked on Wave 3)*
+- [ ] 48-04-PLAN.md — MultiUniqueChromosome + group_ranges + multi_group_pmx + multi_group_ox dispatch + Phase 48 verification gate (GEN-04)
 
 ### Phase 49: Unified Strategy Trait + Alternative Strategy Engines
 **Goal**: Users can swap between GA, hill-climbing, and exhaustive permutation search at runtime through a single `Strategy<U>` trait, and can use `Box<dyn Strategy<U>>` to select algorithms without rewriting application code
@@ -588,7 +601,7 @@ Plans:
 | 45. Memetic Algorithm Framework | v2.4.0 | 3 | Pending | — |
 | 46. Documentation Refactor | v2.4.0 | 7/7 | Complete    | 2026-05-15 |
 | 47. Architecture Audit & ChromosomeT Split | v3.0.0 | 6/8 | In Progress|  |
-| 48. New Genotype Types | v3.0.0 | 0 | Not started | — |
+| 48. New Genotype Types | v3.0.0 | 4 | In Progress | — |
 | 49. Unified Strategy Trait + Alternative Strategy Engines | v3.0.0 | 0 | Not started | — |
 | 50. Lexicase Selection | v3.0.0 | 0 | Not started | — |
 | 51. Multi-Parent Crossover + Self-Adaptive Mutation | v3.0.0 | 0 | Not started | — |
