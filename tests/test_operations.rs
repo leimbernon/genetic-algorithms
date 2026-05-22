@@ -26,6 +26,8 @@ mod operations {
     mod test_selection;
     mod test_selection_boltzmann;
     mod test_selection_clearing;
+    mod test_selection_lexicase;
+    mod test_selection_lexicase_diversity;
     mod test_selection_rank;
     mod test_selection_truncation;
     mod test_survivor;

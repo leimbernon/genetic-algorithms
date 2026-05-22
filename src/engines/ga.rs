@@ -388,6 +388,10 @@ where
         self.configuration.selection_configuration.niche_radius = niche_radius;
         self
     }
+    fn with_epsilon_lexicase(mut self, epsilon: f64) -> Self {
+        self.configuration.selection_configuration.epsilon = epsilon;
+        self
+    }
 }
 
 impl<U> CrossoverConfig for Ga<U>

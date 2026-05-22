@@ -107,6 +107,10 @@ pub struct SelectionConfiguration {
     /// individuals are cleared from the selection pool. Default is `0.1`.
     /// Only used when `method` is `Selection::Clearing`.
     pub niche_radius: f64,
+    /// Epsilon tolerance for [`Selection::EpsilonLexicase`].
+    /// Default `0.0` = use dynamic per-case MAD as tolerance.
+    /// Any value `> 0.0` is treated as a fixed epsilon threshold.
+    pub epsilon: f64,
 }
 impl Default for SelectionConfiguration {
     fn default() -> Self {
@@ -115,6 +119,7 @@ impl Default for SelectionConfiguration {
             method: Selection::Tournament,
             boltzmann_temperature: 1.0,
             niche_radius: 0.1,
+            epsilon: 0.0,
         }
     }
 }
@@ -451,6 +456,10 @@ impl SelectionConfig for GaConfiguration {
     }
     fn with_niche_radius(mut self, niche_radius: f64) -> Self {
         self.selection_configuration.niche_radius = niche_radius;
+        self
+    }
+    fn with_epsilon_lexicase(mut self, epsilon: f64) -> Self {
+        self.selection_configuration.epsilon = epsilon;
         self
     }
 }
