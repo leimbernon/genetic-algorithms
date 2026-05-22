@@ -13,6 +13,7 @@ pub mod binary;
 pub mod length;
 pub mod list;
 pub mod multi_range;
+pub mod multi_unique;
 mod range;
 pub mod unique;
 
@@ -20,5 +21,6 @@ pub use binary::Binary;
 pub use length::ChromosomeLength;
 pub use list::ListChromosome;
 pub use multi_range::MultiRangeChromosome;
+pub use multi_unique::MultiUniqueChromosome;
 pub use range::Range;
 pub use unique::UniqueChromosome;
