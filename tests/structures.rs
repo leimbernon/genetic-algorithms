@@ -1,6 +1,6 @@
 use genetic_algorithms::fitness::FitnessFnWrapper;
 use genetic_algorithms::operations::mutation::ValueMutable;
-use genetic_algorithms::traits::{ChromosomeT, GeneT, LinearChromosome};
+use genetic_algorithms::traits::{ChromosomeT, GeneT, LinearChromosome, OperatorCompat};
 use std::borrow::Cow;
 
 //Structures definition
@@ -87,3 +87,5 @@ impl LinearChromosome for Chromosome {
 }
 
 impl ValueMutable for Chromosome {}
+
+impl OperatorCompat for Chromosome {}
