@@ -329,3 +329,5 @@ pub use aos::{AosState, AosStrategy};
 pub use traits::LinearChromosome;
 pub use traits::OperatorCompat;
 pub use chromosomes::ChromosomeLength;
+pub use genotypes::UniqueGenotype;
+pub use initializers::unique_random_initialization;

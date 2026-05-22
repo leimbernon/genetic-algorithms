@@ -15,8 +15,10 @@ pub mod binary_initializer;
 pub mod generic_initializer;
 pub mod list_initializer;
 pub mod range_initializer;
+pub mod unique_initializer;
 
 pub use binary_initializer::*;
 pub use generic_initializer::*;
 pub use list_initializer::*;
 pub use range_initializer::*;
+pub use unique_initializer::*;
