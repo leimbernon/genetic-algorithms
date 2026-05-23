@@ -357,9 +357,10 @@ where
 /// Applies the `SelfAdaptiveGaussian` mutation operator with explicit ES parameters.
 ///
 /// This is the `ga.rs` integration entry point for `Mutation::SelfAdaptiveGaussian`.
-/// It forwards to [`try_self_adaptive`] using the caller-supplied `tau`, `tau_prime`,
-/// and `sigma_min` values, which may come from [`crate::configuration::MutationConfiguration`]
-/// when the user has configured them explicitly.
+/// It forwards to the internal downcast dispatcher using the caller-supplied `tau`,
+/// `tau_prime`, and `sigma_min` values, which may come from
+/// [`crate::configuration::MutationConfiguration`] when the user has configured them
+/// explicitly.
 ///
 /// Returns `Err(GaError::MutationError)` if the chromosome does not downcast to a
 /// supported `SelfAdaptive` type (i.e., `RangeChromosome<f64|f32|i32|i64>`).

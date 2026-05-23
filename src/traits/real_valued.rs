@@ -1,7 +1,7 @@
 //! RealValued marker trait for compile-time enforcement on multi-parent crossover.
 //!
 //! Implementors of this trait gain access to `factory_multi_parent` dispatch for
-//! [`Crossover::Undx`], [`Crossover::Spx`], and [`Crossover::Pcx`].
+//! `Crossover::Undx`, `Crossover::Spx`, and `Crossover::Pcx`.
 //!
 //! Binary and permutation chromosomes must **not** implement `RealValued` — doing so
 //! would bypass the compile-time guard that restricts multi-parent crossover to

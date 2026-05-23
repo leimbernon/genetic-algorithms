@@ -13,7 +13,7 @@ use genetic_algorithms::ga::Ga;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::initializers::range_random_initialization;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
-use genetic_algorithms::traits::{ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig, SelectionConfig, StoppingConfig};
+use genetic_algorithms::traits::{ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig};
 use genetic_algorithms::ChromosomeLength;
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
@@ -170,7 +170,7 @@ fn end_to_end_self_adaptive_gaussian_sigmas_evolve() {
 #[cfg(feature = "serde")]
 #[test]
 fn serde_roundtrip_strategy_params_preserved() {
-    use genetic_algorithms::traits::SelfAdaptive;
+    use genetic_algorithms::traits::{LinearChromosome, SelfAdaptive};
     use std::borrow::Cow;
 
     let mut chromosome = RangeChromosome::<f64>::new();
