@@ -268,6 +268,14 @@ impl MutationOperator for Mutation {
                     ))
                 });
             }
+            Mutation::SelfAdaptiveGaussian => {
+                return Err(GaError::MutationError(
+                    "Mutation::SelfAdaptiveGaussian requires a chromosome implementing SelfAdaptive. \
+                     Call self_adaptive_gaussian::self_adaptive_gaussian_mutation() directly \
+                     (implemented in Plan 03)."
+                        .to_string(),
+                ));
+            }
         }
         Ok(())
     }
@@ -392,6 +400,10 @@ where
         Mutation::Uniform => Err(GaError::MutationError(
             "Mutation::Uniform requires Range<T> chromosomes where T is f64, f32, i32, or i64. \
              Use Swap, Inversion, or Scramble for non-Range chromosomes.".to_string(),
+        )),
+        Mutation::SelfAdaptiveGaussian => Err(GaError::MutationError(
+            "Mutation::SelfAdaptiveGaussian requires a chromosome implementing SelfAdaptive. \
+             Use Swap, Inversion, or Scramble for non-SelfAdaptive chromosomes.".to_string(),
         )),
     }
 }

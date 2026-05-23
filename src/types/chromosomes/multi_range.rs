@@ -21,7 +21,7 @@ use crate::fitness::FitnessFnWrapper;
 use crate::genotypes::MultiRangeGenotype;
 use crate::operations::mutation::ValueMutable;
 use crate::operations::mutation::gaussian::{multi_range_gaussian_mutation, GaussianConvertible};
-use crate::traits::{ChromosomeT, LinearChromosome, OperatorCompat};
+use crate::traits::{ChromosomeT, LinearChromosome, OperatorCompat, RealValued};
 use std::borrow::Cow;
 use std::fmt;
 use std::fmt::Debug;
@@ -154,6 +154,13 @@ impl<T: Sync + Send + Copy + Default + Debug + fmt::Display> fmt::Display
         write!(f, "[{}] fitness={:.6}", self.phenotype(), self.fitness)
     }
 }
+
+/// `RealValued` marker impl for `MultiRangeChromosome<T>`.
+///
+/// Enables `factory_multi_parent` dispatch for `Crossover::Undx`, `Crossover::Spx`,
+/// and `Crossover::Pcx` on this type (Phase 51, Plan 02).
+/// `SelfAdaptive` is intentionally omitted — that is scoped to Phase 48.
+impl<T: Sync + Send + Copy + Default + Debug + 'static> RealValued for MultiRangeChromosome<T> {}
 
 /// Per-gene Gaussian mutation for `MultiRangeChromosome<T>`.
 ///

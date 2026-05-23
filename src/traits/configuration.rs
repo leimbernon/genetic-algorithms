@@ -72,6 +72,14 @@ pub trait MutationConfig {
     /// Sets the stability index (α) for Lévy Flight mutation. Valid range: (0.0, 2.0). Default is 1.5.
     /// Only used when the mutation method is `Mutation::LevyFlight`.
     fn with_levy_alpha(self, alpha: f64) -> Self;
+    /// Sets the per-dimension learning rate (τ) for `Mutation::SelfAdaptiveGaussian`.
+    /// Default (when not set): `1.0 / sqrt(2.0 * n)` where `n = strategy_params().len()`.
+    fn with_self_adaptive_tau(self, value: f64) -> Self;
+    /// Sets the global learning rate (τ') for `Mutation::SelfAdaptiveGaussian`.
+    /// Default (when not set): `1.0 / sqrt(2.0 * sqrt(n))` where `n = strategy_params().len()`.
+    fn with_self_adaptive_tau_prime(self, value: f64) -> Self;
+    /// Sets the sigma lower bound for `Mutation::SelfAdaptiveGaussian`. Default is `1e-5` when not set.
+    fn with_sigma_min(self, value: f64) -> Self;
 }
 
 /// Configuration for stopping / termination criteria.

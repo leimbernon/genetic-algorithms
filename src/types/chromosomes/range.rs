@@ -7,7 +7,7 @@
 
 use crate::fitness::FitnessFnWrapper;
 use crate::genotypes::Range as RangeGenotype;
-use crate::traits::{ChromosomeT, LinearChromosome, OperatorCompat};
+use crate::traits::{ChromosomeT, LinearChromosome, OperatorCompat, RealValued, SelfAdaptive};
 use std::borrow::Cow;
 use std::fmt;
 use std::fmt::Debug;
@@ -46,6 +46,12 @@ pub struct Range<T: Sync + Send + Copy + Default + Debug> {
     pub age: usize,
     #[cfg_attr(feature = "serde", serde(skip, default))]
     pub fitness_fn: FitnessFnWrapper<RangeGenotype<T>>,
+    /// Per-dimension strategy parameters (σ values) for self-adaptive mutation.
+    ///
+    /// Lazy-initialized to `vec![1.0; n]` on the first `set_dna` call that sets
+    /// a non-empty DNA. Included in serde serialization so evolved sigma vectors
+    /// survive checkpoint save/restore (D-14).
+    pub strategy_params: Vec<f64>,
 }
 
 /// `RangeChromosome<T>` imposes no operator restrictions — all crossovers and
@@ -60,6 +66,7 @@ impl<T: Sync + Send + Copy + Default + Debug> Default for Range<T> {
             fitness: f64::NAN,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            strategy_params: Vec::new(),
         }
     }
 }
@@ -85,6 +92,7 @@ impl<T: Sync + Send + Copy + Default + Debug> Range<T> {
             fitness: f64::NAN,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            strategy_params: Vec::new(),
         }
     }
 
@@ -153,11 +161,18 @@ impl<T: Sync + Send + Copy + Default + Debug + 'static> LinearChromosome for Ran
     ///
     /// - `Cow::Borrowed`: clones into internal storage.
     /// - `Cow::Owned`: moves the provided vector into internal storage (no extra clone).
+    ///
+    /// After assigning the DNA, lazily initializes `strategy_params` to `vec![1.0; n]`
+    /// if the field is currently empty and the new DNA is non-empty. This ensures that
+    /// a user-supplied sigma vector (set via `set_strategy_params`) is never overwritten.
     fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
         self.dna = match dna {
             Cow::Borrowed(slice) => slice.to_vec(),
             Cow::Owned(vec) => vec,
         };
+        if self.strategy_params.is_empty() && !self.dna.is_empty() {
+            self.strategy_params = vec![1.0; self.dna.len()];
+        }
         self
     }
 
@@ -167,6 +182,18 @@ impl<T: Sync + Send + Copy + Default + Debug + 'static> LinearChromosome for Ran
     {
         self.fitness_fn = FitnessFnWrapper::new(fitness_fn);
         self
+    }
+}
+
+impl<T: Sync + Send + Copy + Default + Debug + 'static> RealValued for Range<T> {}
+
+impl<T: Sync + Send + Copy + Default + Debug + 'static> SelfAdaptive for Range<T> {
+    fn strategy_params(&self) -> &[f64] {
+        &self.strategy_params
+    }
+
+    fn set_strategy_params(&mut self, params: Vec<f64>) {
+        self.strategy_params = params;
     }
 }
 
