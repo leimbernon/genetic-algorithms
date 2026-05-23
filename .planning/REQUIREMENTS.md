@@ -28,8 +28,8 @@
 
 ### SEL — Advanced Selection
 
-- [ ] **SEL-02**: User can configure `LexicaseSelection` on any chromosome type that implements `MultiCaseFitness: ChromosomeT` — selection shuffles test cases randomly per event and filters to elites case by case; scalar `fitness()` is set to the mean case score for survivor/stopping compatibility
-- [ ] **SEL-03**: User can configure epsilon-lexicase selection (ε-lexicase) for continuous-valued case scores — filter keeps all individuals within epsilon of the best on each case; `epsilon` is user-configurable with a sensible default
+- [x] **SEL-02**: User can configure `LexicaseSelection` on any chromosome type that implements `MultiCaseFitness: ChromosomeT` — selection shuffles test cases randomly per event and filters to elites case by case; scalar `fitness()` is set to the mean case score for survivor/stopping compatibility
+- [x] **SEL-03**: User can configure epsilon-lexicase selection (ε-lexicase) for continuous-valued case scores — filter keeps all individuals within epsilon of the best on each case; `epsilon` is user-configurable with a sensible default
 
 ### CRS — Advanced Crossover Operators
 
@@ -54,7 +54,7 @@
 
 ### TRAITS — New Opt-In Trait Contracts
 
-- [ ] **TRAITS-01**: User can make any chromosome type support multi-case fitness evaluation by implementing `MultiCaseFitness: ChromosomeT` with `case_fitness() -> &[f64]` and `set_case_fitness(Vec<f64>)` — enables `LexicaseSelection`; compatible with `TreeChromosome` for GP program synthesis
+- [x] **TRAITS-01**: User can make any chromosome type support multi-case fitness evaluation by implementing `MultiCaseFitness: ChromosomeT` with `case_fitness() -> &[f64]` and `set_case_fitness(Vec<f64>)` — enables `LexicaseSelection`; compatible with `TreeChromosome` for GP program synthesis
 - [ ] **TRAITS-02**: User can make any real-valued chromosome type support self-adaptive mutation by implementing `SelfAdaptive: ChromosomeT` with `strategy_params() -> &[f64]` and `adapt_strategy_params(tau, tau_prime)` — enables `Mutation::SelfAdaptiveGaussian`
 
 ## Traceability
@@ -76,9 +76,9 @@
 | STR-02 | Phase 49 | Pending |
 | STR-03 | Phase 49 | Pending |
 | STR-04 | Phase 49 | Pending |
-| SEL-02 | Phase 50 | Pending |
-| SEL-03 | Phase 50 | Pending |
-| TRAITS-01 | Phase 50 | Pending |
+| SEL-02 | Phase 50 | Complete |
+| SEL-03 | Phase 50 | Complete |
+| TRAITS-01 | Phase 50 | Complete |
 | CRS-02 | Phase 51 | Pending |
 | CRS-03 | Phase 51 | Pending |
 | CRS-04 | Phase 51 | Pending |
