@@ -4,9 +4,8 @@
 //! 1. Update all strategy parameters (σ) via the log-normal rule.
 //! 2. Perturb a randomly selected gene using the updated σ for that dimension.
 //!
-//! This operator is restricted to [`RangeChromosome<T>`](crate::chromosomes::Range)
-//! which implements [`SelfAdaptive`](crate::traits::SelfAdaptive) and carries
-//! per-dimension σ values alongside its genes.
+//! This operator is restricted to [`crate::chromosomes::Range`] which implements
+//! [`SelfAdaptive`] and carries per-dimension σ values alongside its genes.
 
 use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
