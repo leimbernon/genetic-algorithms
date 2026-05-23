@@ -32,6 +32,7 @@ pub mod list_value;
 pub mod non_uniform;
 pub mod polynomial;
 pub mod scramble;
+pub mod self_adaptive_gaussian;
 pub mod swap;
 pub mod value;
 
