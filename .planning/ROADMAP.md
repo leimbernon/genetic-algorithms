@@ -119,7 +119,7 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 - [ ] **Phase 48: New Genotype Types** — `UniqueChromosome<T>` for permutation problems, `MultiRangeChromosome<T>` for per-gene bounds, `MultiUniqueChromosome<T>` for multiple independent permutation groups; migrate `job_scheduling` example
 - [x] **Phase 49: Unified Strategy Trait + Alternative Strategy Engines** — `Strategy<U>` trait; `HillClimbEngine` (Stochastic + SteepestAscent); `PermutateEngine` with safety gate; observer hooks throughout
 - [x] **Phase 50: Lexicase Selection** — `MultiCaseFitness: ChromosomeT` trait; `LexicaseSelection`; epsilon-lexicase variant; behavioral diversity CI test (completed 2026-05-23)
-- [ ] **Phase 51: Multi-Parent Crossover + Self-Adaptive Mutation** — UNDX, SPX, PCX operators with `RealValued` marker trait; `SelfAdaptive: ChromosomeT` trait; `Mutation::SelfAdaptiveGaussian` with log-normal sigma update
+- [x] **Phase 51: Multi-Parent Crossover + Self-Adaptive Mutation** — UNDX, SPX, PCX operators with `RealValued` marker trait; `SelfAdaptive: ChromosomeT` trait; `Mutation::SelfAdaptiveGaussian` with log-normal sigma update (completed 2026-05-23)
 - [ ] **Phase 52: Variable-Length Chromosomes** — `ChromosomeLength::Variable { min, max }`; `Mutation::Insertion` / `Mutation::Deletion`; `Crossover::VariableLength(AlignmentStrategy)`; parsimony pressure survivor config
 - [ ] **Phase 53: Tree Chromosome + GpGa Engine** — `TreeChromosome: ChromosomeT` supertrait; `GpGa<U>` engine; ramped half-and-half init; subtree crossover + mutation; bloat control; serde with `serde_stacker`; `Display` as expression string
 
@@ -534,7 +534,7 @@ Plans:
   2. User can configure `Mutation::SelfAdaptiveGaussian` on any chromosome implementing `SelfAdaptive: ChromosomeT`; per-chromosome sigma vectors update via the log-normal rule each generation; sigma values never fall below `sigma_min`
   3. After crossover of two `SelfAdaptive` chromosomes initialized with sigma=0.1 and sigma=0.9, the offspring sigma distribution spans the intermediate range — confirming that intermediate recombination is applied to strategy parameters, not copied from one parent
   4. `cargo check --target wasm32-unknown-unknown` passes for all new operators and traits without any conditional compilation errors
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 **UI hint**: no
 
 Plans:
@@ -546,7 +546,7 @@ Plans:
 - [x] 51-03-PLAN.md — SelfAdaptiveGaussian operator + mutation.rs Mutation::SelfAdaptiveGaussian dispatch (MUT-05, TRAITS-02)
 
 **Wave 3** *(blocked on Waves 1-2)*
-- [ ] 51-04-PLAN.md — ga.rs multi-parent dispatch branch + 1-vs-2 offspring handling + integration tests + phase verification gate + human checkpoint (CRS-02, CRS-03, CRS-04, MUT-05)
+- [x] 51-04-PLAN.md — ga.rs multi-parent dispatch branch + 1-vs-2 offspring handling + integration tests + phase verification gate + human checkpoint (CRS-02, CRS-03, CRS-04, MUT-05)
 
 ### Phase 52: Variable-Length Chromosomes
 **Goal**: Users can evolve populations where chromosome length varies between individuals, with explicit length-aware crossover, insertion/deletion mutation, and optional parsimony pressure to prevent unbounded growth
@@ -623,6 +623,6 @@ Plans:
 | 48. New Genotype Types | v3.0.0 | 4 | In Progress | — |
 | 49. Unified Strategy Trait + Alternative Strategy Engines | v3.0.0 | 0 | Not started | — |
 | 50. Lexicase Selection | v3.0.0 | 2/2 | Complete    | 2026-05-23 |
-| 51. Multi-Parent Crossover + Self-Adaptive Mutation | v3.0.0 | 3/4 | In Progress|  |
+| 51. Multi-Parent Crossover + Self-Adaptive Mutation | v3.0.0 | 4/4 | Complete   | 2026-05-23 |
 | 52. Variable-Length Chromosomes | v3.0.0 | 0 | Not started | — |
 | 53. Tree Chromosome + GpGa Engine | v3.0.0 | 0 | Not started | — |
