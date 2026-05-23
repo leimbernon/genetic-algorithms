@@ -534,8 +534,19 @@ Plans:
   2. User can configure `Mutation::SelfAdaptiveGaussian` on any chromosome implementing `SelfAdaptive: ChromosomeT`; per-chromosome sigma vectors update via the log-normal rule each generation; sigma values never fall below `sigma_min`
   3. After crossover of two `SelfAdaptive` chromosomes initialized with sigma=0.1 and sigma=0.9, the offspring sigma distribution spans the intermediate range — confirming that intermediate recombination is applied to strategy parameters, not copied from one parent
   4. `cargo check --target wasm32-unknown-unknown` passes for all new operators and traits without any conditional compilation errors
-**Plans**: TBD
+**Plans:** 4 plans
 **UI hint**: no
+
+Plans:
+**Wave 1**
+- [ ] 51-01-PLAN.md — Wave 0 test stubs + RealValued/SelfAdaptive traits + enum variants + MutationConfiguration fields + RangeChromosome RealValued/SelfAdaptive impls + MultiRangeChromosome RealValued stub (TRAITS-02, CRS-02, CRS-03, CRS-04, MUT-05)
+
+**Wave 2** *(parallel — disjoint files; both depend on Wave 1)*
+- [ ] 51-02-PLAN.md — UNDX, SPX, PCX operator implementations + factory_multi_parent dispatcher (CRS-02, CRS-03, CRS-04)
+- [ ] 51-03-PLAN.md — SelfAdaptiveGaussian operator + mutation.rs Mutation::SelfAdaptiveGaussian dispatch (MUT-05, TRAITS-02)
+
+**Wave 3** *(blocked on Waves 1-2)*
+- [ ] 51-04-PLAN.md — ga.rs multi-parent dispatch branch + 1-vs-2 offspring handling + integration tests + phase verification gate + human checkpoint (CRS-02, CRS-03, CRS-04, MUT-05)
 
 ### Phase 52: Variable-Length Chromosomes
 **Goal**: Users can evolve populations where chromosome length varies between individuals, with explicit length-aware crossover, insertion/deletion mutation, and optional parsimony pressure to prevent unbounded growth
@@ -611,7 +622,7 @@ Plans:
 | 47. Architecture Audit & ChromosomeT Split | v3.0.0 | 6/8 | In Progress|  |
 | 48. New Genotype Types | v3.0.0 | 4 | In Progress | — |
 | 49. Unified Strategy Trait + Alternative Strategy Engines | v3.0.0 | 0 | Not started | — |
-| 50. Lexicase Selection | v3.0.0 | 2/2 | Complete   | 2026-05-23 |
-| 51. Multi-Parent Crossover + Self-Adaptive Mutation | v3.0.0 | 0 | Not started | — |
+| 50. Lexicase Selection | v3.0.0 | 2/2 | Complete    | 2026-05-23 |
+| 51. Multi-Parent Crossover + Self-Adaptive Mutation | v3.0.0 | 0/4 | In Progress | — |
 | 52. Variable-Length Chromosomes | v3.0.0 | 0 | Not started | — |
 | 53. Tree Chromosome + GpGa Engine | v3.0.0 | 0 | Not started | — |
