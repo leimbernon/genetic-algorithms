@@ -22,17 +22,18 @@ use std::any::Any;
 pub mod bit_flip;
 pub mod cauchy;
 pub mod creep;
-pub mod levy_flight;
-pub mod uniform;
 pub mod differential;
 pub mod gaussian;
 pub mod insertion;
 pub mod inversion;
+pub mod levy_flight;
 pub mod list_value;
 pub mod non_uniform;
 pub mod polynomial;
 pub mod scramble;
+pub mod self_adaptive_gaussian;
 pub mod swap;
+pub mod uniform;
 pub mod value;
 
 /// Default distribution index for Polynomial mutation when none is configured.
@@ -118,6 +119,33 @@ fn try_uniform<U: LinearChromosome + 'static>(
             if let Some(ind) = (individual as &mut dyn Any).downcast_mut::<RangeChromosome<$t>>() {
                 uniform::uniform_mutation(ind);
                 return Some(Ok(()));
+            }
+        };
+    }
+    try_type!(f64);
+    try_type!(f32);
+    try_type!(i32);
+    try_type!(i64);
+    None
+}
+
+/// Attempt self-adaptive Gaussian mutation by downcasting a generic individual to `Range<T>`.
+///
+/// Tries `f64`, `f32`, `i32`, `i64` in order. Returns `Some(Ok(()))` or
+/// `Some(Err(...))` if the type matched, `None` if no supported type matched
+/// (indicating the chromosome does not implement [`SelfAdaptive`](crate::traits::SelfAdaptive)).
+fn try_self_adaptive<U: LinearChromosome + 'static>(
+    individual: &mut U,
+    tau: f64,
+    tau_prime: f64,
+    sigma_min: f64,
+) -> Option<Result<(), GaError>> {
+    macro_rules! try_type {
+        ($t:ty) => {
+            if let Some(ind) = (individual as &mut dyn Any).downcast_mut::<RangeChromosome<$t>>() {
+                return Some(self_adaptive_gaussian::self_adaptive_gaussian_mutation(
+                    ind, tau, tau_prime, sigma_min,
+                ));
             }
         };
     }
@@ -269,12 +297,17 @@ impl MutationOperator for Mutation {
                 });
             }
             Mutation::SelfAdaptiveGaussian => {
-                return Err(GaError::MutationError(
-                    "Mutation::SelfAdaptiveGaussian requires a chromosome implementing SelfAdaptive. \
-                     Call self_adaptive_gaussian::self_adaptive_gaussian_mutation() directly \
-                     (implemented in Plan 03)."
-                        .to_string(),
-                ));
+                let n_hint = individual.dna().len().max(1);
+                let tau = 1.0 / (2.0 * n_hint as f64).sqrt();
+                let tau_prime = 1.0 / (2.0 * (n_hint as f64).sqrt()).sqrt();
+                let sigma_min_val = 1e-5_f64;
+                return try_self_adaptive(individual, tau, tau_prime, sigma_min_val)
+                    .unwrap_or_else(|| {
+                        Err(GaError::MutationError(
+                            "SelfAdaptiveGaussian requires a chromosome implementing SelfAdaptive (RangeChromosome<T>)."
+                                .to_string(),
+                        ))
+                    });
             }
         }
         Ok(())
