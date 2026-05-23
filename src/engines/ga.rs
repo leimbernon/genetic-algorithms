@@ -476,6 +476,18 @@ where
         self.configuration.mutation_configuration.levy_alpha = Some(alpha);
         self
     }
+    fn with_self_adaptive_tau(mut self, value: f64) -> Self {
+        self.configuration.mutation_configuration.self_adaptive_tau = Some(value);
+        self
+    }
+    fn with_self_adaptive_tau_prime(mut self, value: f64) -> Self {
+        self.configuration.mutation_configuration.self_adaptive_tau_prime = Some(value);
+        self
+    }
+    fn with_sigma_min(mut self, value: f64) -> Self {
+        self.configuration.mutation_configuration.sigma_min = Some(value);
+        self
+    }
 }
 
 impl<U> StoppingConfig for Ga<U>

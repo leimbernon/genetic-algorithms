@@ -191,6 +191,18 @@ pub struct MutationConfiguration {
     /// Stability index (α) for `Mutation::LevyFlight`. Valid range: (0.0, 2.0). Default is `1.5` when `None`.
     /// Only consulted when `method == Mutation::LevyFlight`.
     pub levy_alpha: Option<f64>,
+    /// Per-dimension learning rate τ for `Mutation::SelfAdaptiveGaussian`.
+    /// Default (when `None`): `1.0 / sqrt(2.0 * n)` where `n = strategy_params().len()`.
+    /// Only consulted when `method == Mutation::SelfAdaptiveGaussian`.
+    pub self_adaptive_tau: Option<f64>,
+    /// Global learning rate τ' for `Mutation::SelfAdaptiveGaussian`.
+    /// Default (when `None`): `1.0 / sqrt(2.0 * sqrt(n))` where `n = strategy_params().len()`.
+    /// Only consulted when `method == Mutation::SelfAdaptiveGaussian`.
+    pub self_adaptive_tau_prime: Option<f64>,
+    /// Sigma lower bound for `Mutation::SelfAdaptiveGaussian`.
+    /// After the log-normal update, every σ is clamped to this value. Default is `1e-5` when `None`.
+    /// Only consulted when `method == Mutation::SelfAdaptiveGaussian`.
+    pub sigma_min: Option<f64>,
     /// Enable dynamic mutation probability adjustment based on population cardinality.
     /// When enabled, mutation probability is adjusted each generation: increased when
     /// diversity is low and decreased when diversity is high.
@@ -214,6 +226,9 @@ impl Default for MutationConfiguration {
             differential_f: None,
             cauchy_scale: None,
             levy_alpha: None,
+            self_adaptive_tau: None,
+            self_adaptive_tau_prime: None,
+            sigma_min: None,
             dynamic_mutation: false,
             target_cardinality: None,
             probability_step: None,
@@ -545,6 +560,18 @@ impl MutationConfig for GaConfiguration {
             alpha
         );
         self.mutation_configuration.levy_alpha = Some(alpha);
+        self
+    }
+    fn with_self_adaptive_tau(mut self, value: f64) -> Self {
+        self.mutation_configuration.self_adaptive_tau = Some(value);
+        self
+    }
+    fn with_self_adaptive_tau_prime(mut self, value: f64) -> Self {
+        self.mutation_configuration.self_adaptive_tau_prime = Some(value);
+        self
+    }
+    fn with_sigma_min(mut self, value: f64) -> Self {
+        self.mutation_configuration.sigma_min = Some(value);
         self
     }
 }
