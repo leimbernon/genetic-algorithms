@@ -38,11 +38,13 @@ use crate::traits::LinearChromosome;
 /// # use std::borrow::Cow;
 ///
 /// // Custom real-valued chromosome implementing RealValued
+/// # #[derive(Clone, Default)]
 /// # struct MyGene;
 /// # impl GeneT for MyGene {
 /// #     fn id(&self) -> i32 { 0 }
 /// #     fn set_id(&mut self, _: i32) -> &mut Self { self }
 /// # }
+/// # #[derive(Clone, Default)]
 /// # struct MyChromosome;
 /// # impl ChromosomeT for MyChromosome {
 /// #     type Gene = MyGene;

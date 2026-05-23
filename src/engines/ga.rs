@@ -2574,11 +2574,12 @@ where
             };
 
             // factory_multi_parent_dispatch returns 1 child; factory returns 2.
-            // For the 1-child path, fall back to cloning parent_1 for child_2 (D-04 / Pitfall 1).
-            child_2 = children.pop().unwrap_or_else(|| parent_1.clone());
+            // For the 1-child path, child_1 gets the actual offspring; child_2 falls back to
+            // parent_1.clone() (D-04 / Pitfall 1). For the 2-child path, both pops succeed.
             child_1 = children.pop().ok_or_else(|| {
                 GaError::CrossoverError("Crossover returned no children".to_string())
             })?;
+            child_2 = children.pop().unwrap_or_else(|| parent_1.clone());
         } else {
             child_1 = parent_1.clone();
             child_2 = parent_2.clone();
