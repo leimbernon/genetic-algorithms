@@ -200,21 +200,13 @@ impl CrossoverOperator for Crossover {
             Crossover::EdgeRecombination => erx(parent_1, parent_2),
             Crossover::MultiGroupPmx => multi_group_pmx(parent_1, parent_2),
             Crossover::MultiGroupOx => multi_group_ox(parent_1, parent_2),
-            Crossover::Undx { .. } => Err(GaError::CrossoverError(
-                "Crossover::Undx requires 3+ parents and a RealValued chromosome. \
-                 Use factory_multi_parent() (implemented in Plan 02)."
-                    .to_string(),
-            )),
-            Crossover::Spx { .. } => Err(GaError::CrossoverError(
-                "Crossover::Spx requires 3+ parents and a RealValued chromosome. \
-                 Use factory_multi_parent() (implemented in Plan 02)."
-                    .to_string(),
-            )),
-            Crossover::Pcx { .. } => Err(GaError::CrossoverError(
-                "Crossover::Pcx requires 3+ parents and a RealValued chromosome. \
-                 Use factory_multi_parent() (implemented in Plan 02)."
-                    .to_string(),
-            )),
+            Crossover::Undx { .. } | Crossover::Spx { .. } | Crossover::Pcx { .. } => {
+                Err(GaError::CrossoverError(
+                    "Multi-parent crossover variant invoked through 2-parent factory; \
+                     use factory_multi_parent"
+                        .to_string(),
+                ))
+            }
         }
     }
 }
@@ -267,21 +259,13 @@ impl CrossoverOperator for CrossoverConfiguration {
             Crossover::EdgeRecombination => erx(parent_1, parent_2),
             Crossover::MultiGroupPmx => multi_group_pmx(parent_1, parent_2),
             Crossover::MultiGroupOx => multi_group_ox(parent_1, parent_2),
-            Crossover::Undx { .. } => Err(GaError::CrossoverError(
-                "Crossover::Undx requires 3+ parents and a RealValued chromosome. \
-                 Use factory_multi_parent() (implemented in Plan 02)."
-                    .to_string(),
-            )),
-            Crossover::Spx { .. } => Err(GaError::CrossoverError(
-                "Crossover::Spx requires 3+ parents and a RealValued chromosome. \
-                 Use factory_multi_parent() (implemented in Plan 02)."
-                    .to_string(),
-            )),
-            Crossover::Pcx { .. } => Err(GaError::CrossoverError(
-                "Crossover::Pcx requires 3+ parents and a RealValued chromosome. \
-                 Use factory_multi_parent() (implemented in Plan 02)."
-                    .to_string(),
-            )),
+            Crossover::Undx { .. } | Crossover::Spx { .. } | Crossover::Pcx { .. } => {
+                Err(GaError::CrossoverError(
+                    "Multi-parent crossover variant invoked through 2-parent factory; \
+                     use factory_multi_parent"
+                        .to_string(),
+                ))
+            }
         }
     }
 }
