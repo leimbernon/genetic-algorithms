@@ -466,6 +466,56 @@ pub fn factory_multi_parent<U: LinearChromosome + RealValued>(
     }
 }
 
+/// Dispatches multi-parent crossover without requiring the `RealValued` bound.
+///
+/// This is the `ga.rs` integration entry point. It uses the same downcast dispatchers
+/// as [`factory_multi_parent`] but accepts any `U: LinearChromosome + 'static`. If the
+/// chromosome does not downcast to a supported real-valued type, a `CrossoverError` is
+/// returned at runtime.
+///
+/// `parents` must contain at least 3 references and `configuration.method` must be
+/// `Crossover::Undx`, `Crossover::Spx`, or `Crossover::Pcx`.
+pub fn factory_multi_parent_dispatch<U: LinearChromosome + 'static>(
+    parents: &[&U],
+    configuration: CrossoverConfiguration,
+) -> Result<Vec<U>, GaError> {
+    if parents.len() < 3 {
+        return Err(GaError::CrossoverError(
+            "Multi-parent crossover requires at least 3 parents".to_string(),
+        ));
+    }
+    match configuration.method {
+        Crossover::Undx { .. } => {
+            try_undx(parents, configuration).ok_or_else(|| {
+                GaError::CrossoverError(
+                    "UNDX requires Range<T> chromosomes where T is f64, f32, i32, or i64."
+                        .to_string(),
+                )
+            })?
+        }
+        Crossover::Spx { .. } => {
+            try_spx(parents, configuration).ok_or_else(|| {
+                GaError::CrossoverError(
+                    "SPX requires Range<T> chromosomes where T is f64, f32, i32, or i64."
+                        .to_string(),
+                )
+            })?
+        }
+        Crossover::Pcx { .. } => {
+            try_pcx(parents, configuration).ok_or_else(|| {
+                GaError::CrossoverError(
+                    "PCX requires Range<T> chromosomes where T is f64, f32, i32, or i64."
+                        .to_string(),
+                )
+            })?
+        }
+        _ => Err(GaError::CrossoverError(
+            "factory_multi_parent_dispatch called with non-multi-parent crossover method"
+                .to_string(),
+        )),
+    }
+}
+
 /// Dispatches crossover according to the configured method and parameters.
 pub fn factory<U: LinearChromosome>(
     parent_1: &U,

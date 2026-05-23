@@ -354,6 +354,41 @@ where
     mutation.mutate(individual, step, sigma)
 }
 
+/// Applies the `SelfAdaptiveGaussian` mutation operator with explicit ES parameters.
+///
+/// This is the `ga.rs` integration entry point for `Mutation::SelfAdaptiveGaussian`.
+/// It forwards to [`try_self_adaptive`] using the caller-supplied `tau`, `tau_prime`,
+/// and `sigma_min` values, which may come from [`crate::configuration::MutationConfiguration`]
+/// when the user has configured them explicitly.
+///
+/// Returns `Err(GaError::MutationError)` if the chromosome does not downcast to a
+/// supported `SelfAdaptive` type (i.e., `RangeChromosome<f64|f32|i32|i64>`).
+pub fn factory_self_adaptive<U: LinearChromosome + 'static>(
+    individual: &mut U,
+    tau: Option<f64>,
+    tau_prime: Option<f64>,
+    sigma_min: Option<f64>,
+) -> Result<(), GaError> {
+    let n_hint = individual.dna().len().max(1);
+    let effective_tau = tau.unwrap_or_else(|| 1.0 / (2.0 * n_hint as f64).sqrt());
+    let effective_tau_prime =
+        tau_prime.unwrap_or_else(|| 1.0 / (2.0 * (n_hint as f64).sqrt()).sqrt());
+    let effective_sigma_min = sigma_min.unwrap_or(1e-5_f64);
+    try_self_adaptive(
+        individual,
+        effective_tau,
+        effective_tau_prime,
+        effective_sigma_min,
+    )
+    .unwrap_or_else(|| {
+        Err(GaError::MutationError(
+            "SelfAdaptiveGaussian requires a chromosome implementing SelfAdaptive \
+             (RangeChromosome<f64|f32|i32|i64>)."
+                .to_string(),
+        ))
+    })
+}
+
 /// Applies a non-value mutation operator to the given individual.
 ///
 /// This is a convenience function for chromosome types that don't implement `ValueMutable`.

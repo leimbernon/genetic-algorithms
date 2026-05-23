@@ -2543,20 +2543,41 @@ where
         let mut child_2: U;
 
         if crossover_probability <= effective_crossover_prob {
-            let mut children = if let Some((_op_idx, cx_op)) = selected_crossover {
-                // Use AOS-selected operator (Phase 43)
-                let mut cx_config = configuration.crossover_configuration;
-                cx_config.method = cx_op;
-                crossover::factory(parent_1, parent_2, cx_config)?
-            } else {
-                // Standard single-operator dispatch
-                crossover::factory(parent_1, parent_2, configuration.crossover_configuration)?
+            // Determine the effective crossover method (AOS-selected or user-configured)
+            let effective_method = selected_crossover
+                .map(|(_, op)| op)
+                .unwrap_or(configuration.crossover_configuration.method);
+
+            let mut children = match effective_method {
+                // Multi-parent crossover path (Phase 51): UNDX, SPX, PCX
+                Crossover::Undx { num_parents }
+                | Crossover::Spx { num_parents }
+                | Crossover::Pcx { num_parents } => {
+                    // Collect primary pair + (num_parents - 2) random extras from population
+                    let mut parent_refs: Vec<&U> = vec![parent_1, parent_2];
+                    let extras = num_parents.saturating_sub(2);
+                    for _ in 0..extras {
+                        let idx = rng.random_range(0..chromosomes.len());
+                        parent_refs.push(&chromosomes[idx]);
+                    }
+                    let mut cx_config = configuration.crossover_configuration;
+                    cx_config.method = effective_method;
+                    // Returns 1 offspring per D-04 (single-offspring contract)
+                    crossover::factory_multi_parent_dispatch(&parent_refs, cx_config)?
+                }
+                // Standard 2-parent crossover path — all other variants
+                _ => {
+                    let mut cx_config = configuration.crossover_configuration;
+                    cx_config.method = effective_method;
+                    crossover::factory(parent_1, parent_2, cx_config)?
+                }
             };
-            child_2 = children.pop().ok_or_else(|| {
-                GaError::CrossoverError("Crossover returned fewer than 2 children".to_string())
-            })?;
+
+            // factory_multi_parent_dispatch returns 1 child; factory returns 2.
+            // For the 1-child path, fall back to cloning parent_1 for child_2 (D-04 / Pitfall 1).
+            child_2 = children.pop().unwrap_or_else(|| parent_1.clone());
             child_1 = children.pop().ok_or_else(|| {
-                GaError::CrossoverError("Crossover returned fewer than 2 children".to_string())
+                GaError::CrossoverError("Crossover returned no children".to_string())
             })?;
         } else {
             child_1 = parent_1.clone();
@@ -2602,6 +2623,14 @@ where
                     .polynomial_eta
                     .or(configuration.mutation_configuration.step);
                 mutation::factory_with_params(mutation_method, &mut child_1, eta, None)?;
+            } else if mutation_method == Mutation::SelfAdaptiveGaussian {
+                // Phase 51: pass user-configured tau/tau_prime/sigma_min (or None for ES defaults)
+                mutation::factory_self_adaptive(
+                    &mut child_1,
+                    configuration.mutation_configuration.self_adaptive_tau,
+                    configuration.mutation_configuration.self_adaptive_tau_prime,
+                    configuration.mutation_configuration.sigma_min,
+                )?;
             } else {
                 mutation::factory_with_params(
                     mutation_method,
@@ -2645,6 +2674,14 @@ where
                     .polynomial_eta
                     .or(configuration.mutation_configuration.step);
                 mutation::factory_with_params(mutation_method, &mut child_2, eta, None)?;
+            } else if mutation_method == Mutation::SelfAdaptiveGaussian {
+                // Phase 51: pass user-configured tau/tau_prime/sigma_min (or None for ES defaults)
+                mutation::factory_self_adaptive(
+                    &mut child_2,
+                    configuration.mutation_configuration.self_adaptive_tau,
+                    configuration.mutation_configuration.self_adaptive_tau_prime,
+                    configuration.mutation_configuration.sigma_min,
+                )?;
             } else {
                 mutation::factory_with_params(
                     mutation_method,
