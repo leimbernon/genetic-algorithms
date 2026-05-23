@@ -36,35 +36,41 @@ fn self_adaptive_sigma_min_enforced() {
 
 #[test]
 fn self_adaptive_sigma_spread_evolves() {
-    // pop_a: start with low sigmas, pop_b: start with high sigmas
-    // After 200 mutations each, the union of sigmas should cover intermediate range (0.2, 0.8)
-    let mut pop_a = build_f64_chromosome(4);
-    pop_a.set_strategy_params(vec![0.1; 4]);
-
-    let mut pop_b = build_f64_chromosome(4);
-    pop_b.set_strategy_params(vec![0.9; 4]);
+    // All sigmas start equal. After many mutations the independent per-dimension local
+    // noise (tau term) causes dimensions to diverge: some collapse toward sigma_min,
+    // others grow large. The log-normal random walk has a constant median but growing
+    // variance, so spread (max/min ratio >> 1) is virtually guaranteed after 200 steps
+    // with tau = 0.5 (the ES default for n=8 is 1/sqrt(2n) ≈ 0.25, so 0.5 is aggressive).
+    let mut c = build_f64_chromosome(8);
+    c.set_strategy_params(vec![0.5; 8]);
 
     let tau = 0.5;
     let tau_prime = 0.5;
     let sigma_min = 1e-5;
 
     for _ in 0..200 {
-        self_adaptive_gaussian_mutation(&mut pop_a, tau, tau_prime, sigma_min);
-        self_adaptive_gaussian_mutation(&mut pop_b, tau, tau_prime, sigma_min);
+        self_adaptive_gaussian_mutation(&mut c, tau, tau_prime, sigma_min);
     }
 
-    // Collect all sigmas from both populations
-    let mut all_sigmas: Vec<f64> = Vec::new();
-    all_sigmas.extend_from_slice(pop_a.strategy_params());
-    all_sigmas.extend_from_slice(pop_b.strategy_params());
+    let sigmas = c.strategy_params();
+    let final_max = sigmas.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+    let final_min = sigmas.iter().cloned().fold(f64::INFINITY, f64::min);
 
-    // The union should cover values in (0.2, 0.8) — i.e., there exists at least
-    // one sigma in each population that covers the intermediate range
-    let has_intermediate = all_sigmas.iter().any(|&s| s > 0.2 && s < 0.8);
+    // With 8 independent dimensions and 200 steps of log-normal evolution, the
+    // spread between the highest and lowest sigma is virtually certain to exceed 10x.
     assert!(
-        has_intermediate,
-        "Expected sigma spread to cover (0.2, 0.8) after 200 iterations. Sigmas: {:?}",
-        all_sigmas
+        final_max > final_min * 10.0,
+        "Sigma spread should have occurred across dimensions. Max={}, Min={}, All={:?}",
+        final_max,
+        final_min,
+        sigmas
+    );
+    // sigma_min must always be enforced
+    assert!(
+        final_min >= sigma_min,
+        "No sigma should drop below sigma_min={}. Got {}",
+        sigma_min,
+        final_min
     );
 }
 
