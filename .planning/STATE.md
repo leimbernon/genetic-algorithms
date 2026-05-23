@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v3.0.0
 milestone_name: — Advanced Representations, Alternative Strategies & Architecture Simplification
-status: completed
-stopped_at: Phase 50 context gathered
-last_updated: "2026-05-23T00:03:51.039Z"
+status: ready_to_plan
+stopped_at: Phase 50 complete (2/2) — ready to discuss Phase 51
+last_updated: 2026-05-23T08:30:20.535Z
 last_activity: 2026-05-23 -- Phase 50 marked complete
 progress:
   total_phases: 24
   completed_phases: 4
   total_plans: 18
-  completed_plans: 58
+  completed_plans: 63
   percent: 17
 ---
 
@@ -18,17 +18,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-05-18)
+See: .planning/PROJECT.md (updated 2026-05-23)
 
 **Core value:** Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library
-**Current focus:** Phase 50 — lexicase-selection
+**Current focus:** Phase 51 — multi parent crossover self adaptive mutation
 
 ## Current Position
 
-Phase: 50 — COMPLETE
-Plan: 2 of 2
-Status: Phase 50 complete
-Last activity: 2026-05-23 -- Phase 50 marked complete
+Phase: 51
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-05-23
 
 Progress bar: [░░░░░░░] 0/7 phases complete
 
@@ -50,6 +50,9 @@ Progress bar: [░░░░░░░] 0/7 phases complete
 - v3.0.0: No new external crates required except conditional `serde_stacker` (gated behind existing `serde` feature flag) — verify wasm32 compatibility before committing
 - v3.0.0: `GpGa<U: TreeChromosome>` is a separate engine from `Ga<U: LinearChromosome>` — GP loop differences (ramped init, bloat control, depth limits) do not belong in the standard GA hot path
 - v3.0.0: `Box<N>` recursive enum for tree nodes (rejected arena crates) — subtree clone is O(subtree), not O(arena); arena index-remapping across arenas is too complex
+- v3.0.0 Phase 50: `factory_lexicase<U: ChromosomeT + MultiCaseFitness>()` is the dispatch path for lexicase — standard `factory()` returns ConfigurationError for Lexicase/EpsilonLexicase variants
+- v3.0.0 Phase 50: `epsilon = 0.0` in SelectionConfiguration is the sentinel for dynamic MAD mode; any positive value is fixed epsilon — SelectionConfiguration remains Copy
+- v3.0.0 Phase 50: `Ga<U: MultiCaseFitness>` adds `select_parents_lexicase()` in a separate impl block — Rust cannot overload `run()`; users call this explicitly for the lexicase path
 
 ### Roadmap Evolution
 
@@ -63,6 +66,6 @@ Progress bar: [░░░░░░░] 0/7 phases complete
 
 ## Session Continuity
 
-Last session: 2026-05-23T00:00:52.081Z
-Stopped at: Phase 50 context gathered
+Last session: 2026-05-23
+Stopped at: Phase 50 complete — UAT passed (8/8), ready to plan Phase 51
 Resume file: None
