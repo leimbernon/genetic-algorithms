@@ -120,7 +120,7 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 - [ ] **Phase 49: Unified Strategy Trait + Alternative Strategy Engines** — `Strategy<U>` trait; `HillClimbEngine` (Stochastic + SteepestAscent); `PermutateEngine` with safety gate; observer hooks throughout
 - [ ] **Phase 50: Lexicase Selection** — `MultiCaseFitness: ChromosomeT` trait; `LexicaseSelection`; epsilon-lexicase variant; behavioral diversity CI test
 - [ ] **Phase 51: Multi-Parent Crossover + Self-Adaptive Mutation** — UNDX, SPX, PCX operators with `RealValued` marker trait; `SelfAdaptive: ChromosomeT` trait; `Mutation::SelfAdaptiveGaussian` with log-normal sigma update
-- [ ] **Phase 52: Variable-Length Chromosomes** — `ChromosomeLength::Variable { min, max }`; `Mutation::Insertion` / `Mutation::Deletion`; `Crossover::VariableLength(AlignmentStrategy)`; parsimony pressure survivor config
+- [x] **Phase 52: Variable-Length Chromosomes** — `ChromosomeLength::Variable { min, max }`; `Mutation::Insertion` / `Mutation::Deletion`; `Crossover::VariableLength(AlignmentStrategy)`; parsimony pressure survivor config (completed 2026-05-24)
 - [ ] **Phase 53: Tree Chromosome + GpGa Engine** — `TreeChromosome: ChromosomeT` supertrait; `GpGa<U>` engine; ramped half-and-half init; subtree crossover + mutation; bloat control; serde with `serde_stacker`; `Display` as expression string
 
 ## Phase Details
@@ -525,13 +525,13 @@ Plans:
   2. User can configure `Crossover::VariableLength(AlignmentStrategy)` to handle parents of different lengths; all 9 existing fixed-length crossover operators return `GaError::IncompatibleChromosomeLength` when applied to unequal-length parents instead of silently truncating
   3. The `ExtensionOperator` samples length from the current population distribution during regrowth rather than using a fixed length — new individuals have lengths drawn from the observed population range
   4. User can configure `length_penalty: f64` in the survivor configuration; longer chromosomes receive a proportional fitness penalty, preventing unbounded length growth across generations
-**Plans**: 4 plans (2 complete)
+**Plans**: 4 plans (4 complete — PHASE COMPLETE 2026-05-24)
 
 Plans:
 - [x] 52-01-PLAN.md — Wave 0: Test stubs (Nyquist compliance)
 - [x] 52-02-PLAN.md — Wave 1: ChromosomeLength enum + MUT-06 length operators
-- [ ] 52-03-PLAN.md — Wave 2: Crossover::VariableLength + AlignmentStrategy + fixed-operator guard
-- [ ] 52-04-PLAN.md — Wave 3: Variable init, extension regrowth, parsimony pressure
+- [x] 52-03-PLAN.md — Wave 2: Crossover::VariableLength + AlignmentStrategy + fixed-operator guard
+- [x] 52-04-PLAN.md — Wave 3: Variable init, extension regrowth, parsimony pressure (all 13 tests enabled)
 
 **UI hint**: no
 
