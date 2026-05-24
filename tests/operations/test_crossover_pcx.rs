@@ -23,7 +23,7 @@ fn pcx_produces_one_offspring_within_bounds() {
     let parents = build_parents(3);
     let parent_refs: Vec<&RangeChromosome<f64>> = parents.iter().collect();
     for _ in 0..100 {
-        let result = pcx(&parent_refs, 3);
+        let result = pcx(&parent_refs, 3, None, None);
         assert!(result.is_ok(), "pcx returned Err: {:?}", result.err());
         let children = result.unwrap();
         assert_eq!(children.len(), 1, "pcx should produce exactly 1 offspring");
@@ -70,7 +70,7 @@ fn pcx_offspring_biased_toward_primary_parent() {
 
     let n_samples = 200;
     for _ in 0..n_samples {
-        let result = pcx(&parent_refs, 3);
+        let result = pcx(&parent_refs, 3, None, None);
         assert!(result.is_ok());
         let children = result.unwrap();
         let child = &children[0];

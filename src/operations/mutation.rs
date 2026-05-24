@@ -139,12 +139,13 @@ fn try_self_adaptive<U: LinearChromosome + 'static>(
     tau: f64,
     tau_prime: f64,
     sigma_min: f64,
+    sigma_max: Option<f64>,
 ) -> Option<Result<(), GaError>> {
     macro_rules! try_type {
         ($t:ty) => {
             if let Some(ind) = (individual as &mut dyn Any).downcast_mut::<RangeChromosome<$t>>() {
                 return Some(self_adaptive_gaussian::self_adaptive_gaussian_mutation(
-                    ind, tau, tau_prime, sigma_min,
+                    ind, tau, tau_prime, sigma_min, sigma_max,
                 ));
             }
         };
@@ -301,7 +302,7 @@ impl MutationOperator for Mutation {
                 let tau = 1.0 / (2.0 * n_hint as f64).sqrt();
                 let tau_prime = 1.0 / (2.0 * (n_hint as f64).sqrt()).sqrt();
                 let sigma_min_val = 1e-5_f64;
-                return try_self_adaptive(individual, tau, tau_prime, sigma_min_val)
+                return try_self_adaptive(individual, tau, tau_prime, sigma_min_val, None)
                     .unwrap_or_else(|| {
                         Err(GaError::MutationError(
                             "SelfAdaptiveGaussian requires a chromosome implementing SelfAdaptive (RangeChromosome<T>)."
@@ -358,7 +359,7 @@ where
 ///
 /// This is the `ga.rs` integration entry point for `Mutation::SelfAdaptiveGaussian`.
 /// It forwards to the internal downcast dispatcher using the caller-supplied `tau`,
-/// `tau_prime`, and `sigma_min` values, which may come from
+/// `tau_prime`, `sigma_min`, and `sigma_max` values, which may come from
 /// [`crate::configuration::MutationConfiguration`] when the user has configured them
 /// explicitly.
 ///
@@ -369,6 +370,7 @@ pub fn factory_self_adaptive<U: LinearChromosome + 'static>(
     tau: Option<f64>,
     tau_prime: Option<f64>,
     sigma_min: Option<f64>,
+    sigma_max: Option<f64>,
 ) -> Result<(), GaError> {
     let n_hint = individual.dna().len().max(1);
     let effective_tau = tau.unwrap_or_else(|| 1.0 / (2.0 * n_hint as f64).sqrt());
@@ -380,6 +382,7 @@ pub fn factory_self_adaptive<U: LinearChromosome + 'static>(
         effective_tau,
         effective_tau_prime,
         effective_sigma_min,
+        sigma_max,
     )
     .unwrap_or_else(|| {
         Err(GaError::MutationError(

@@ -422,6 +422,22 @@ where
         self.configuration.crossover_configuration.blend_alpha = Some(alpha);
         self
     }
+    fn with_undx_sigma_xi(mut self, value: f64) -> Self {
+        self.configuration.crossover_configuration.undx_sigma_xi = Some(value);
+        self
+    }
+    fn with_undx_sigma_eta(mut self, value: f64) -> Self {
+        self.configuration.crossover_configuration.undx_sigma_eta = Some(value);
+        self
+    }
+    fn with_pcx_sigma_eta(mut self, value: f64) -> Self {
+        self.configuration.crossover_configuration.pcx_sigma_eta = Some(value);
+        self
+    }
+    fn with_pcx_sigma_zeta(mut self, value: f64) -> Self {
+        self.configuration.crossover_configuration.pcx_sigma_zeta = Some(value);
+        self
+    }
 }
 
 impl<U> MutationConfig for Ga<U>
@@ -486,6 +502,10 @@ where
     }
     fn with_sigma_min(mut self, value: f64) -> Self {
         self.configuration.mutation_configuration.sigma_min = Some(value);
+        self
+    }
+    fn with_sigma_max(mut self, value: f64) -> Self {
+        self.configuration.mutation_configuration.sigma_max = Some(value);
         self
     }
 }
@@ -752,6 +772,21 @@ where
 
         // Check operator compatibility for this chromosome type (OperatorCompat trait)
         crate::validators::generic_validator::operator_compat_check::<U>(&self.configuration)?;
+
+        // Validate num_parents >= 3 for multi-parent crossover operators
+        match self.configuration.crossover_configuration.method {
+            crate::operations::Crossover::Undx { num_parents }
+            | crate::operations::Crossover::Spx { num_parents }
+            | crate::operations::Crossover::Pcx { num_parents }
+                if num_parents < 3 =>
+            {
+                return Err(GaError::ConfigurationError(format!(
+                    "Multi-parent crossover requires num_parents >= 3, got {}",
+                    num_parents
+                )));
+            }
+            _ => {}
+        }
 
         // Wrap fitness function with LRU cache if configured
         if let Some(cache_size) = self.fitness_cache_size {
@@ -2625,12 +2660,13 @@ where
                     .or(configuration.mutation_configuration.step);
                 mutation::factory_with_params(mutation_method, &mut child_1, eta, None)?;
             } else if mutation_method == Mutation::SelfAdaptiveGaussian {
-                // Phase 51: pass user-configured tau/tau_prime/sigma_min (or None for ES defaults)
+                // Phase 51: pass user-configured tau/tau_prime/sigma_min/sigma_max (or None for ES defaults)
                 mutation::factory_self_adaptive(
                     &mut child_1,
                     configuration.mutation_configuration.self_adaptive_tau,
                     configuration.mutation_configuration.self_adaptive_tau_prime,
                     configuration.mutation_configuration.sigma_min,
+                    configuration.mutation_configuration.sigma_max,
                 )?;
             } else {
                 mutation::factory_with_params(
@@ -2676,12 +2712,13 @@ where
                     .or(configuration.mutation_configuration.step);
                 mutation::factory_with_params(mutation_method, &mut child_2, eta, None)?;
             } else if mutation_method == Mutation::SelfAdaptiveGaussian {
-                // Phase 51: pass user-configured tau/tau_prime/sigma_min (or None for ES defaults)
+                // Phase 51: pass user-configured tau/tau_prime/sigma_min/sigma_max (or None for ES defaults)
                 mutation::factory_self_adaptive(
                     &mut child_2,
                     configuration.mutation_configuration.self_adaptive_tau,
                     configuration.mutation_configuration.self_adaptive_tau_prime,
                     configuration.mutation_configuration.sigma_min,
+                    configuration.mutation_configuration.sigma_max,
                 )?;
             } else {
                 mutation::factory_with_params(

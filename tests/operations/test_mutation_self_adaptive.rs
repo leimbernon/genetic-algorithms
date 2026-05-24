@@ -22,7 +22,7 @@ fn self_adaptive_sigma_min_enforced() {
     c.set_strategy_params(vec![1e-8; 4]);
     let sigma_min = 1e-5;
     for _ in 0..100 {
-        self_adaptive_gaussian_mutation(&mut c, 0.0, 0.0, sigma_min);
+        self_adaptive_gaussian_mutation(&mut c, 0.0, 0.0, sigma_min, None);
         for &sigma in c.strategy_params() {
             assert!(
                 sigma >= sigma_min,
@@ -49,7 +49,7 @@ fn self_adaptive_sigma_spread_evolves() {
     let sigma_min = 1e-5;
 
     for _ in 0..200 {
-        self_adaptive_gaussian_mutation(&mut c, tau, tau_prime, sigma_min);
+        self_adaptive_gaussian_mutation(&mut c, tau, tau_prime, sigma_min, None);
     }
 
     let sigmas = c.strategy_params();

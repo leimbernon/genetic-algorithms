@@ -23,7 +23,7 @@ fn undx_produces_one_offspring_within_bounds() {
     let parents = build_parents(3);
     let parent_refs: Vec<&RangeChromosome<f64>> = parents.iter().collect();
     for _ in 0..100 {
-        let result = undx(&parent_refs, 3);
+        let result = undx(&parent_refs, 3, None, None);
         assert!(result.is_ok(), "undx returned Err: {:?}", result.err());
         let children = result.unwrap();
         assert_eq!(children.len(), 1, "undx should produce exactly 1 offspring");
@@ -46,7 +46,7 @@ fn undx_produces_one_offspring_within_bounds() {
 fn undx_rejects_fewer_than_three_parents() {
     let parents = build_parents(2);
     let parent_refs: Vec<&RangeChromosome<f64>> = parents.iter().collect();
-    let result = undx(&parent_refs, 2);
+    let result = undx(&parent_refs, 2, None, None);
     assert!(
         result.is_err(),
         "undx with < 3 parents should return Err, got {:?}",

@@ -39,6 +39,16 @@ pub trait CrossoverConfig {
     fn with_sbx_eta(self, eta: f64) -> Self;
     /// Sets the alpha parameter for BLX-α crossover.
     fn with_blend_alpha(self, alpha: f64) -> Self;
+    /// Overrides the UNDX orthogonal noise scale (σ_xi).
+    /// Default: `0.35 / sqrt(n_parents - 1)`.
+    fn with_undx_sigma_xi(self, value: f64) -> Self;
+    /// Overrides the UNDX primary-direction noise scale (σ_eta).
+    /// Default: `0.35 / sqrt(n_parents)`.
+    fn with_undx_sigma_eta(self, value: f64) -> Self;
+    /// Overrides the PCX directional noise scale (σ_eta). Default: `0.1`.
+    fn with_pcx_sigma_eta(self, value: f64) -> Self;
+    /// Overrides the PCX orthogonal noise scale (σ_zeta). Default: `0.1`.
+    fn with_pcx_sigma_zeta(self, value: f64) -> Self;
 }
 
 /// Configuration for mutation operators.
@@ -80,6 +90,10 @@ pub trait MutationConfig {
     fn with_self_adaptive_tau_prime(self, value: f64) -> Self;
     /// Sets the sigma lower bound for `Mutation::SelfAdaptiveGaussian`. Default is `1e-5` when not set.
     fn with_sigma_min(self, value: f64) -> Self;
+    /// Sets the sigma upper bound for `Mutation::SelfAdaptiveGaussian`.
+    /// When set, prevents unbounded sigma explosion in the log-normal update rule.
+    /// Default (when not set): no upper bound.
+    fn with_sigma_max(self, value: f64) -> Self;
 }
 
 /// Configuration for stopping / termination criteria.

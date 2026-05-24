@@ -276,7 +276,7 @@ impl CrossoverOperator for CrossoverConfiguration {
 /// `Some(Err(...))` if the type matched, `None` if no supported type matched.
 fn try_undx<U: LinearChromosome>(
     parents: &[&U],
-    _configuration: CrossoverConfiguration,
+    configuration: CrossoverConfiguration,
 ) -> Option<Result<Vec<U>, GaError>> {
     macro_rules! try_type {
         ($t:ty) => {
@@ -292,7 +292,12 @@ fn try_undx<U: LinearChromosome>(
                     }
                 }
                 if all_ok && !typed.is_empty() {
-                    let result = undx::undx(&typed, typed.len());
+                    let result = undx::undx(
+                        &typed,
+                        typed.len(),
+                        configuration.undx_sigma_xi,
+                        configuration.undx_sigma_eta,
+                    );
                     return Some(result.map(|children| {
                         children
                             .into_iter()
@@ -366,7 +371,7 @@ fn try_spx<U: LinearChromosome>(
 /// `Some(Err(...))` if the type matched, `None` if no supported type matched.
 fn try_pcx<U: LinearChromosome>(
     parents: &[&U],
-    _configuration: CrossoverConfiguration,
+    configuration: CrossoverConfiguration,
 ) -> Option<Result<Vec<U>, GaError>> {
     macro_rules! try_type {
         ($t:ty) => {
@@ -382,7 +387,12 @@ fn try_pcx<U: LinearChromosome>(
                     }
                 }
                 if all_ok && !typed.is_empty() {
-                    let result = pcx::pcx(&typed, typed.len());
+                    let result = pcx::pcx(
+                        &typed,
+                        typed.len(),
+                        configuration.pcx_sigma_eta,
+                        configuration.pcx_sigma_zeta,
+                    );
                     return Some(result.map(|children| {
                         children
                             .into_iter()

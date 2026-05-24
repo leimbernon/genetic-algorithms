@@ -22,6 +22,8 @@ use std::fmt::Debug;
 /// **Step 1 — Sigma update:** All strategy parameters σ are updated using the
 /// log-normal rule `σ'_i = σ_i × exp(τ' × N_global(0,1) + τ × N_i_local(0,1))`.
 /// Every σ is clamped to `sigma_min` after the update to prevent sigma collapse.
+/// If `sigma_max` is `Some(v)`, every σ is also clamped to `v` from above to
+/// prevent unbounded explosion.
 /// This is delegated to [`SelfAdaptive::adapt_strategy_params`].
 ///
 /// **Step 2 — Gene mutation:** One gene is chosen at random. Its value is
@@ -34,6 +36,7 @@ use std::fmt::Debug;
 /// * `tau` — Per-dimension learning rate for the sigma update.
 /// * `tau_prime` — Global learning rate for the sigma update.
 /// * `sigma_min` — Lower bound for every σ after the update (prevents collapse).
+/// * `sigma_max` — Optional upper bound for every σ after the update (prevents explosion).
 ///
 /// # Returns
 ///
@@ -49,6 +52,7 @@ pub fn self_adaptive_gaussian_mutation<T>(
     tau: f64,
     tau_prime: f64,
     sigma_min: f64,
+    sigma_max: Option<f64>,
 ) -> Result<(), GaError>
 where
     T: Sync + Send + Clone + Default + Debug + PartialOrd + Copy + 'static + GaussianConvertible,
@@ -63,6 +67,15 @@ where
 
     // Step 1: update all sigmas via log-normal rule (delegated to trait default impl)
     individual.adapt_strategy_params(tau, tau_prime, sigma_min);
+
+    // Apply optional upper bound to prevent unbounded sigma explosion
+    if let Some(max) = sigma_max {
+        let mut capped = individual.strategy_params().to_vec();
+        for s in capped.iter_mut() {
+            *s = s.min(max);
+        }
+        individual.set_strategy_params(capped);
+    }
 
     // Step 2: mutate one randomly selected gene using its updated sigma
     let mut rng = crate::rng::make_rng();

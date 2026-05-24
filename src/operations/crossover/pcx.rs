@@ -23,6 +23,10 @@ use std::fmt::Debug;
 ///
 /// * `parents` - Slice of at least 3 parent chromosomes; `parents[0]` is the primary parent.
 /// * `_num_parents` - Accepted but unused; `parents.len()` is authoritative.
+/// * `sigma_eta_override` - Optional override for the directional noise scale.
+///   When `None`, the default value `0.1` is used.
+/// * `sigma_zeta_override` - Optional override for the orthogonal noise scale.
+///   When `None`, the default value `0.1` is used.
 ///
 /// # Returns
 ///
@@ -31,6 +35,8 @@ use std::fmt::Debug;
 pub fn pcx<T>(
     parents: &[&RangeChromosome<T>],
     _num_parents: usize,
+    sigma_eta_override: Option<f64>,
+    sigma_zeta_override: Option<f64>,
 ) -> Result<Vec<RangeChromosome<T>>, GaError>
 where
     T: Sync + Send + Clone + Default + Debug + PartialOrd + Copy + 'static + SbxConvertible,
@@ -60,8 +66,8 @@ where
         return Ok(vec![child]);
     }
 
-    let sigma_eta = 0.1_f64;
-    let sigma_zeta = 0.1_f64;
+    let sigma_eta = sigma_eta_override.unwrap_or(0.1_f64);
+    let sigma_zeta = sigma_zeta_override.unwrap_or(0.1_f64);
 
     // Compute per-gene spread across all parents
     let spread: Vec<f64> = (0..expected)
@@ -80,27 +86,29 @@ where
 
     let mut rng = crate::rng::make_rng();
     let dna0 = parents[0].dna();
-    let mut child_dna = Vec::with_capacity(expected);
+    let p0_vals: Vec<f64> = (0..expected)
+        .map(|i| T::to_f64(dna0[i].value))
+        .collect();
 
-    for i in 0..expected {
-        let p0 = T::to_f64(dna0[i].value);
-
-        // Directional perturbation: sum of per-parent scaled noise along each direction
-        let mut directional = 0.0_f64;
-        for p in parents.iter().skip(1) {
-            // Box-Muller for N(0, sigma_eta)
-            let u1: f64 = rng.random_range(f64::EPSILON..1.0);
-            let u2: f64 = rng.random_range(0.0..std::f64::consts::TAU);
-            let eta_noise: f64 = (-2.0 * u1.ln()).sqrt() * u2.cos() * sigma_eta;
-            directional += eta_noise * (T::to_f64(p.dna()[i].value) - p0);
+    // ONE Box-Muller draw per parent direction vector; accumulate across all gene dimensions
+    let mut directional = vec![0.0_f64; expected];
+    for p in parents.iter().skip(1) {
+        let u1: f64 = rng.random_range(f64::EPSILON..1.0);
+        let u2: f64 = rng.random_range(0.0..std::f64::consts::TAU);
+        let eta_j: f64 = (-2.0 * u1.ln()).sqrt() * u2.cos() * sigma_eta;
+        for i in 0..expected {
+            directional[i] += eta_j * (T::to_f64(p.dna()[i].value) - p0_vals[i]);
         }
+    }
 
-        // Orthogonal perturbation: noise scaled by spread
+    // Per-gene orthogonal perturbation: independent noise scaled by spread
+    let mut child_dna = Vec::with_capacity(expected);
+    for i in 0..expected {
         let u1_z: f64 = rng.random_range(f64::EPSILON..1.0);
         let u2_z: f64 = rng.random_range(0.0..std::f64::consts::TAU);
         let zeta: f64 = (-2.0 * u1_z.ln()).sqrt() * u2_z.cos() * sigma_zeta * spread[i];
 
-        let raw = p0 + directional + zeta;
+        let raw = p0_vals[i] + directional[i] + zeta;
 
         let clamped = if !dna0[i].ranges.is_empty() {
             let lo: f64 = T::to_f64(dna0[i].ranges[0].0);

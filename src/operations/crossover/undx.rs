@@ -22,6 +22,10 @@ use std::fmt::Debug;
 ///
 /// * `parents` - Slice of at least 3 parent chromosomes.
 /// * `_num_parents` - Accepted but unused; `parents.len()` is authoritative.
+/// * `sigma_xi_override` - Optional override for σ_xi. When `None`, the standard
+///   value `0.35 / sqrt(n_parents - 1)` is used.
+/// * `sigma_eta_override` - Optional override for σ_eta. When `None`, the standard
+///   value `0.35 / sqrt(n_parents)` is used.
 ///
 /// # Returns
 ///
@@ -30,6 +34,8 @@ use std::fmt::Debug;
 pub fn undx<T>(
     parents: &[&RangeChromosome<T>],
     _num_parents: usize,
+    sigma_xi_override: Option<f64>,
+    sigma_eta_override: Option<f64>,
 ) -> Result<Vec<RangeChromosome<T>>, GaError>
 where
     T: Sync + Send + Clone + Default + Debug + PartialOrd + Copy + 'static + SbxConvertible,
@@ -72,8 +78,8 @@ where
         *c /= n_par;
     }
 
-    let sigma_xi = 0.35 / (n_par - 1.0).max(1.0).sqrt();
-    let sigma_eta = 0.35 / n_par.sqrt();
+    let sigma_xi = sigma_xi_override.unwrap_or_else(|| 0.35 / (n_par - 1.0).max(1.0).sqrt());
+    let sigma_eta = sigma_eta_override.unwrap_or_else(|| 0.35 / n_par.sqrt());
 
     // Primary direction: parents[0] - centroid
     let mut dir: Vec<f64> = parents[0]
@@ -94,16 +100,29 @@ where
     let u2_eta: f64 = rng.random_range(0.0..std::f64::consts::TAU);
     let eta_noise: f64 = (-2.0 * u1_eta.ln()).sqrt() * u2_eta.cos() * sigma_eta;
 
+    // Draw raw isotropic xi noise vector (Box-Muller per gene)
+    let raw_xi: Vec<f64> = (0..expected)
+        .map(|_| {
+            let u1: f64 = rng.random_range(f64::EPSILON..1.0);
+            let u2: f64 = rng.random_range(0.0..std::f64::consts::TAU);
+            (-2.0 * u1.ln()).sqrt() * u2.cos()
+        })
+        .collect();
+
+    // Project out the primary-direction component so xi is orthogonal to dir.
+    // dir is already a unit vector; dot product gives the projection coefficient.
+    let dot: f64 = raw_xi.iter().zip(dir.iter()).map(|(n, d)| n * d).sum::<f64>();
+    let xi_perp: Vec<f64> = raw_xi
+        .iter()
+        .zip(dir.iter())
+        .map(|(n, d)| (n - dot * d) * sigma_xi)
+        .collect();
+
     let mut child_dna = Vec::with_capacity(expected);
     let dna0 = parents[0].dna();
 
     for i in 0..expected {
-        // Per-gene orthogonal xi (Box-Muller)
-        let u1_xi: f64 = rng.random_range(f64::EPSILON..1.0);
-        let u2_xi: f64 = rng.random_range(0.0..std::f64::consts::TAU);
-        let xi_noise: f64 = (-2.0 * u1_xi.ln()).sqrt() * u2_xi.cos() * sigma_xi;
-
-        let raw = centroid[i] + eta_noise * dir[i] + xi_noise;
+        let raw = centroid[i] + eta_noise * dir[i] + xi_perp[i];
 
         let clamped = if !dna0[i].ranges.is_empty() {
             let lo: f64 = T::to_f64(dna0[i].ranges[0].0);

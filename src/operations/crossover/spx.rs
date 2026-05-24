@@ -85,14 +85,13 @@ where
 
     let mut rng = crate::rng::make_rng();
 
-    // Sample r_k for k in 0..n_par-1, then push 1.0 so r.len() == n_par
-    let mut r: Vec<f64> = (0..n_par - 1)
+    // Sample r_k = U^(1/(n_par-1-k)) for k in 0..n_par-1
+    let r: Vec<f64> = (0..n_par - 1)
         .map(|k| {
             rng.random_range(0.0_f64..1.0)
                 .powf(1.0 / (n_par - 1 - k) as f64)
         })
         .collect();
-    r.push(1.0);
 
     // Iterative combination from the last expanded vertex inward
     let mut offspring_vals = expanded[n_par - 1].clone();
