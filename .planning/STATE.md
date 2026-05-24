@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0.0
 milestone_name: — Advanced Representations, Alternative Strategies & Architecture Simplification
 status: executing
-stopped_at: Phase 47 context gathered
-last_updated: "2026-05-24T14:01:52.229Z"
-last_activity: 2026-05-24 -- Phase 52 Plan 01 complete (Wave 0 test stubs)
+stopped_at: Phase 52 Plan 02 complete
+last_updated: "2026-05-24T15:14:00.000Z"
+last_activity: 2026-05-24
 progress:
   total_phases: 24
   completed_phases: 6
   total_plans: 42
-  completed_plans: 43
+  completed_plans: 44
   percent: 25
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-05-18)
 ## Current Position
 
 Phase: 52 (variable-length-chromosomes) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-05-24
 
@@ -51,6 +51,7 @@ Progress bar: [░░░░░░░] 0/7 phases complete
 - v3.0.0: `GpGa<U: TreeChromosome>` is a separate engine from `Ga<U: LinearChromosome>` — GP loop differences (ramped init, bloat control, depth limits) do not belong in the standard GA hot path
 - v3.0.0: `Box<N>` recursive enum for tree nodes (rejected arena crates) — subtree clone is O(subtree), not O(arena); arena index-remapping across arenas is too complex
 - v3.0.0: Phase 52 Wave 0 stubs lock API contract — PermutationInsert rename, Insertion/Deletion length operators, VariableLength crossover with AlignmentStrategy, ChromosomeLength::Variable, length_penalty parsimony pressure
+- v3.0.0: ChromosomeLength::Fixed(n)/Variable{min,max} lives in chromosomes module; Mutation::Insertion(length-grow)/Deletion(length-shrink) require ChromosomeLength::Variable in MutationConfiguration; new gene for Insertion sampled by cloning a random existing gene (generic, works with all ChromosomeT)
 
 ### Roadmap Evolution
 
@@ -64,6 +65,6 @@ Progress bar: [░░░░░░░] 0/7 phases complete
 
 ## Session Continuity
 
-Last session: 2026-05-24T14:01:52.221Z
-Stopped at: Phase 52 Plan 01 complete
-Resume file: .planning/phases/52-variable-length-chromosomes/52-01-SUMMARY.md
+Last session: 2026-05-24T15:14:00.000Z
+Stopped at: Phase 52 Plan 02 complete
+Resume file: .planning/phases/52-variable-length-chromosomes/52-02-SUMMARY.md

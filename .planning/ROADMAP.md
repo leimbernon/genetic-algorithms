@@ -525,7 +525,14 @@ Plans:
   2. User can configure `Crossover::VariableLength(AlignmentStrategy)` to handle parents of different lengths; all 9 existing fixed-length crossover operators return `GaError::IncompatibleChromosomeLength` when applied to unequal-length parents instead of silently truncating
   3. The `ExtensionOperator` samples length from the current population distribution during regrowth rather than using a fixed length — new individuals have lengths drawn from the observed population range
   4. User can configure `length_penalty: f64` in the survivor configuration; longer chromosomes receive a proportional fitness penalty, preventing unbounded length growth across generations
-**Plans**: TBD
+**Plans**: 4 plans (2 complete)
+
+Plans:
+- [x] 52-01-PLAN.md — Wave 0: Test stubs (Nyquist compliance)
+- [x] 52-02-PLAN.md — Wave 1: ChromosomeLength enum + MUT-06 length operators
+- [ ] 52-03-PLAN.md — Wave 2: Crossover::VariableLength + AlignmentStrategy + fixed-operator guard
+- [ ] 52-04-PLAN.md — Wave 3: Variable init, extension regrowth, parsimony pressure
+
 **UI hint**: no
 
 ### Phase 53: Tree Chromosome + GpGa Engine
