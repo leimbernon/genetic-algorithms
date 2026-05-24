@@ -1987,8 +1987,6 @@ where
                         if let Some(ref init_fn) = self.initialization_fn {
                             let deficit =
                                 initial_population_size - self.population.chromosomes.len();
-                            let genes_per_chromosome =
-                                self.configuration.limit_configuration.genes_per_chromosome;
                             let alleles_can_be_repeated = self
                                 .configuration
                                 .limit_configuration
@@ -2000,12 +1998,57 @@ where
                             };
                             let ff = self.fitness_fn.as_ref().map(Arc::clone);
 
+                            // For variable-length chromosomes, sample regrowth lengths from
+                            // [min_observed, max_observed] of the surviving population.
+                            // Decision: Phase 52 discussion log — adaptive range from survivors.
+                            let chromosome_length =
+                                self.configuration.mutation_configuration.chromosome_length;
+                            let (min_obs, max_obs): (usize, usize) =
+                                if let Some(crate::chromosomes::ChromosomeLength::Variable {
+                                    min,
+                                    max,
+                                }) = chromosome_length
+                                {
+                                    let observed_min = self
+                                        .population
+                                        .chromosomes
+                                        .iter()
+                                        .map(|c| c.dna().len())
+                                        .min()
+                                        .unwrap_or(min);
+                                    let observed_max = self
+                                        .population
+                                        .chromosomes
+                                        .iter()
+                                        .map(|c| c.dna().len())
+                                        .max()
+                                        .unwrap_or(max);
+                                    // Clamp to configured bounds
+                                    (
+                                        observed_min.max(min),
+                                        observed_max.min(max),
+                                    )
+                                } else {
+                                    // Fixed or unconfigured: use genes_per_chromosome as both bounds
+                                    let gpc = self
+                                        .configuration
+                                        .limit_configuration
+                                        .genes_per_chromosome;
+                                    (gpc, gpc)
+                                };
+
                             #[cfg(not(target_arch = "wasm32"))]
                             let new_chromosomes: Vec<U> = (0..deficit)
                                 .into_par_iter()
                                 .map(|_| {
+                                    let len = if min_obs == max_obs {
+                                        min_obs
+                                    } else {
+                                        let mut rng = crate::rng::make_rng();
+                                        rng.random_range(min_obs..=max_obs)
+                                    };
                                     let genes = init_fn(
-                                        genes_per_chromosome,
+                                        len,
                                         alleles_ref,
                                         Some(alleles_can_be_repeated),
                                     );
@@ -2023,8 +2066,14 @@ where
                             #[cfg(target_arch = "wasm32")]
                             let new_chromosomes: Vec<U> = (0..deficit)
                                 .map(|_| {
+                                    let len = if min_obs == max_obs {
+                                        min_obs
+                                    } else {
+                                        let mut rng = crate::rng::make_rng();
+                                        rng.random_range(min_obs..=max_obs)
+                                    };
                                     let genes = init_fn(
-                                        genes_per_chromosome,
+                                        len,
                                         alleles_ref,
                                         Some(alleles_can_be_repeated),
                                     );
