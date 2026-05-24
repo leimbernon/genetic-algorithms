@@ -557,8 +557,21 @@ Plans:
   2. User can configure `Crossover::VariableLength(AlignmentStrategy)` to handle parents of different lengths; all 9 existing fixed-length crossover operators return `GaError::IncompatibleChromosomeLength` when applied to unequal-length parents instead of silently truncating
   3. The `ExtensionOperator` samples length from the current population distribution during regrowth rather than using a fixed length — new individuals have lengths drawn from the observed population range
   4. User can configure `length_penalty: f64` in the survivor configuration; longer chromosomes receive a proportional fitness penalty, preventing unbounded length growth across generations
-**Plans**: TBD
+**Plans**: 4 plans
 **UI hint**: no
+
+Plans:
+**Wave 0**
+- [ ] 52-01-PLAN.md — Wave 0 test stubs for MUT-06, CHR-01, CHR-02
+
+**Wave 1** *(blocked on Wave 0)*
+- [ ] 52-02-PLAN.md — Mutation enum rename (PermutationInsert) + Insertion/Deletion operators + factory_variable_length (MUT-06)
+
+**Wave 2** *(blocked on Wave 1)*
+- [ ] 52-03-PLAN.md — AlignmentStrategy enum + Crossover::VariableLength + check_compatible_length guard on all fixed operators (CHR-01)
+
+**Wave 3** *(blocked on Wave 2)*
+- [ ] 52-04-PLAN.md — length_penalty field + survivor parsimony + ga.rs Variable init/regrowth unlock + validator (CHR-01, CHR-02)
 
 ### Phase 53: Tree Chromosome + GpGa Engine
 **Goal**: Users can evolve tree-structured programs using a dedicated `GpGa<U>` engine with ramped half-and-half initialization, subtree crossover and mutation, enforced bloat limits, and full checkpoint support
@@ -624,5 +637,5 @@ Plans:
 | 49. Unified Strategy Trait + Alternative Strategy Engines | v3.0.0 | 0 | Not started | — |
 | 50. Lexicase Selection | v3.0.0 | 2/2 | Complete    | 2026-05-23 |
 | 51. Multi-Parent Crossover + Self-Adaptive Mutation | v3.0.0 | 4/4 | Complete   | 2026-05-23 |
-| 52. Variable-Length Chromosomes | v3.0.0 | 0 | Not started | — |
+| 52. Variable-Length Chromosomes | v3.0.0 | 4 | Not started | — |
 | 53. Tree Chromosome + GpGa Engine | v3.0.0 | 0 | Not started | — |
