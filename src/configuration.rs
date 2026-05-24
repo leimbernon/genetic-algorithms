@@ -31,6 +31,7 @@
 
 use std::fmt;
 
+use crate::chromosomes::ChromosomeLength;
 use crate::extension::configuration::ExtensionConfiguration;
 use crate::niching::configuration::NichingConfiguration;
 use crate::operations::local_search::{
@@ -194,6 +195,12 @@ pub struct MutationConfiguration {
     pub target_cardinality: Option<f64>,
     /// Step size for dynamic mutation probability adjustment each generation.
     pub probability_step: Option<f64>,
+    /// Chromosome length policy for `Mutation::Insertion` and `Mutation::Deletion`.
+    ///
+    /// Set to `Some(ChromosomeLength::Variable { min, max })` to enable
+    /// length-changing mutations. `Mutation::Insertion` and `Mutation::Deletion`
+    /// return `GaError::MutationError` when this is `None` or `Fixed`.
+    pub chromosome_length: Option<ChromosomeLength>,
 }
 impl Default for MutationConfiguration {
     fn default() -> Self {
@@ -211,6 +218,7 @@ impl Default for MutationConfiguration {
             dynamic_mutation: false,
             target_cardinality: None,
             probability_step: None,
+            chromosome_length: None,
         }
     }
 }
@@ -482,6 +490,10 @@ impl MutationConfig for GaConfiguration {
             alpha
         );
         self.mutation_configuration.levy_alpha = Some(alpha);
+        self
+    }
+    fn with_chromosome_length(mut self, chromosome_length: ChromosomeLength) -> Self {
+        self.mutation_configuration.chromosome_length = Some(chromosome_length);
         self
     }
 }

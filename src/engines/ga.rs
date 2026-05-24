@@ -470,6 +470,13 @@ where
         self.configuration.mutation_configuration.levy_alpha = Some(alpha);
         self
     }
+    fn with_chromosome_length(
+        mut self,
+        chromosome_length: crate::chromosomes::ChromosomeLength,
+    ) -> Self {
+        self.configuration.mutation_configuration.chromosome_length = Some(chromosome_length);
+        self
+    }
 }
 
 impl<U> StoppingConfig for Ga<U>
@@ -2604,6 +2611,16 @@ where
                     .polynomial_eta
                     .or(configuration.mutation_configuration.step);
                 mutation::factory_with_params(mutation_method, &mut child_1, eta, None)?;
+            } else if mutation_method == crate::operations::Mutation::Insertion
+                || mutation_method == crate::operations::Mutation::Deletion
+            {
+                mutation::factory_with_chromosome_length(
+                    mutation_method,
+                    &mut child_1,
+                    configuration.mutation_configuration.chromosome_length,
+                    configuration.mutation_configuration.step,
+                    configuration.mutation_configuration.sigma,
+                )?;
             } else {
                 mutation::factory_with_params(
                     mutation_method,
@@ -2647,6 +2664,16 @@ where
                     .polynomial_eta
                     .or(configuration.mutation_configuration.step);
                 mutation::factory_with_params(mutation_method, &mut child_2, eta, None)?;
+            } else if mutation_method == crate::operations::Mutation::Insertion
+                || mutation_method == crate::operations::Mutation::Deletion
+            {
+                mutation::factory_with_chromosome_length(
+                    mutation_method,
+                    &mut child_2,
+                    configuration.mutation_configuration.chromosome_length,
+                    configuration.mutation_configuration.step,
+                    configuration.mutation_configuration.sigma,
+                )?;
             } else {
                 mutation::factory_with_params(
                     mutation_method,

@@ -2,17 +2,25 @@
 //!
 //! This module provides the [`factory`] dispatch function and individual
 //! mutation implementations (swap, inversion, scramble, value, bit-flip,
-//! creep, Gaussian, polynomial, non-uniform, insertion). The correct
-//! implementation is selected at runtime based on the [`Mutation`] variant
-//! in the configuration.
+//! creep, Gaussian, polynomial, non-uniform, permutation-insert, insertion,
+//! deletion). The correct implementation is selected at runtime based on
+//! the [`Mutation`] variant in the configuration.
 //!
 //! Chromosome types that need value-aware mutations should implement the
 //! [`ValueMutable`] trait.
+//!
+//! ## Length-changing operators
+//!
+//! [`Mutation::Insertion`] and [`Mutation::Deletion`] require a
+//! `chromosome_length: Some(ChromosomeLength::Variable { min, max })` in
+//! `MutationConfiguration`. They return `GaError::MutationError` when called
+//! without that configuration or when `ChromosomeLength::Fixed` is set.
 
 pub use self::inversion::inversion;
 pub use self::scramble::scramble;
 pub use self::swap::swap;
 use super::Mutation;
+use crate::chromosomes::ChromosomeLength;
 use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
 use crate::traits::{ChromosomeT, MutationOperator};
@@ -28,6 +36,7 @@ pub mod differential;
 pub mod gaussian;
 pub mod insertion;
 pub mod inversion;
+pub mod length_mutation;
 pub mod list_value;
 pub mod non_uniform;
 pub mod polynomial;
@@ -231,8 +240,27 @@ impl MutationOperator for Mutation {
                         .to_string(),
                 ));
             }
-            Mutation::Insertion => {
+            Mutation::PermutationInsert => {
                 return insertion::insertion_mutation(individual);
+            }
+            Mutation::Insertion => {
+                // Length-growing insertion requires ChromosomeLength to be passed in context.
+                // When called via factory_with_params (without config), return a descriptive error.
+                return Err(GaError::MutationError(
+                    "Mutation::Insertion requires ChromosomeLength::Variable configuration. \
+                     Use with_chromosome_length(ChromosomeLength::Variable { min, max }) on your engine, \
+                     or call length_mutation::length_insertion_mutation() directly with a ChromosomeLength."
+                        .to_string(),
+                ));
+            }
+            Mutation::Deletion => {
+                // Length-shrinking deletion requires ChromosomeLength to be passed in context.
+                return Err(GaError::MutationError(
+                    "Mutation::Deletion requires ChromosomeLength::Variable configuration. \
+                     Use with_chromosome_length(ChromosomeLength::Variable { min, max }) on your engine, \
+                     or call length_mutation::length_deletion_mutation() directly with a ChromosomeLength."
+                        .to_string(),
+                ));
             }
             Mutation::ListValue => individual.value_mutate(),
             Mutation::Differential => {
@@ -313,6 +341,51 @@ where
     mutation.mutate(individual, step, sigma)
 }
 
+/// Applies `Mutation::Insertion` or `Mutation::Deletion` with the given [`ChromosomeLength`].
+///
+/// This function is the correct entry point for length-changing operators.
+/// For `Mutation::Insertion`:
+/// - Clones a random existing gene and inserts it at a random position.
+/// - No-op if `chromosome_length` is `Fixed` (returns `Err`).
+/// - No-op if the chromosome is already at `max` length.
+///
+/// For `Mutation::Deletion`:
+/// - Removes a gene at a random position.
+/// - No-op if `chromosome_length` is `Fixed` (returns `Err`).
+/// - No-op if the chromosome is already at `min` length.
+///
+/// All other [`Mutation`] variants fall through to [`factory_with_params`].
+///
+/// # Arguments
+///
+/// * `mutation` - The mutation variant to apply.
+/// * `individual` - The chromosome to mutate.
+/// * `chromosome_length` - Length policy; required for `Insertion`/`Deletion`.
+/// * `step` - Optional step size (forwarded to `factory_with_params` for other variants).
+/// * `sigma` - Optional sigma (forwarded to `factory_with_params` for other variants).
+pub fn factory_with_chromosome_length<U>(
+    mutation: Mutation,
+    individual: &mut U,
+    chromosome_length: Option<ChromosomeLength>,
+    step: Option<f64>,
+    sigma: Option<f64>,
+) -> Result<(), GaError>
+where
+    U: ChromosomeT + ValueMutable + 'static,
+{
+    match mutation {
+        Mutation::Insertion => {
+            let cl = chromosome_length.unwrap_or(ChromosomeLength::Fixed(0));
+            length_mutation::length_insertion_mutation(individual, cl)
+        }
+        Mutation::Deletion => {
+            let cl = chromosome_length.unwrap_or(ChromosomeLength::Fixed(0));
+            length_mutation::length_deletion_mutation(individual, cl)
+        }
+        other => factory_with_params(other, individual, step, sigma),
+    }
+}
+
 /// Applies a non-value mutation operator to the given individual.
 ///
 /// This is a convenience function for chromosome types that don't implement `ValueMutable`.
@@ -368,9 +441,21 @@ where
                  Call non_uniform::non_uniform_mutation() directly."
                 .to_string(),
         )),
-        Mutation::Insertion => {
+        Mutation::PermutationInsert => {
             insertion::insertion_mutation(individual)
         }
+        Mutation::Insertion => Err(GaError::MutationError(
+            "Mutation::Insertion requires ChromosomeLength::Variable configuration. \
+             Use with_chromosome_length(ChromosomeLength::Variable { min, max }) on your engine, \
+             or call length_mutation::length_insertion_mutation() directly with a ChromosomeLength."
+                .to_string(),
+        )),
+        Mutation::Deletion => Err(GaError::MutationError(
+            "Mutation::Deletion requires ChromosomeLength::Variable configuration. \
+             Use with_chromosome_length(ChromosomeLength::Variable { min, max }) on your engine, \
+             or call length_mutation::length_deletion_mutation() directly with a ChromosomeLength."
+                .to_string(),
+        )),
         Mutation::ListValue => Err(GaError::MutationError(
             "Mutation::ListValue requires a ListChromosome type. \
                  Use Swap, Inversion, or Scramble instead."

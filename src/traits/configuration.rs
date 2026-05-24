@@ -5,6 +5,7 @@
 //! stopping, niching, elitism), and [`ConfigurationT`] combines them all into a
 //! single supertrait.
 
+use crate::chromosomes::ChromosomeLength;
 use crate::configuration::{LogLevel, ProblemSolving, StoppingCriteria};
 use crate::configuration::LocalSearchConfiguration;
 use crate::operations::{Crossover, Extension, Mutation, Selection, Survivor};
@@ -69,6 +70,14 @@ pub trait MutationConfig {
     /// Sets the stability index (α) for Lévy Flight mutation. Valid range: (0.0, 2.0). Default is 1.5.
     /// Only used when the mutation method is `Mutation::LevyFlight`.
     fn with_levy_alpha(self, alpha: f64) -> Self;
+    /// Sets the chromosome length policy for `Mutation::Insertion` and `Mutation::Deletion`.
+    ///
+    /// Required when using `Mutation::Insertion` or `Mutation::Deletion`. Set to
+    /// `ChromosomeLength::Variable { min, max }` to allow length-changing operators.
+    /// Set to `ChromosomeLength::Fixed(n)` if you want the operators to explicitly
+    /// return an error for fixed-length chromosomes (useful for testing or safety).
+    /// Default is `None`.
+    fn with_chromosome_length(self, chromosome_length: ChromosomeLength) -> Self;
 }
 
 /// Configuration for stopping / termination criteria.

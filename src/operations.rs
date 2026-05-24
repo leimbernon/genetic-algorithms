@@ -15,7 +15,7 @@
 //! |------|-------------|
 //! | [`Selection`] | Selection operator enum (Tournament, RouletteWheel, SUS, Rank, Boltzmann, Truncation, Clearing, Random) |
 //! | [`Crossover`] | Crossover operator enum (Cycle, MultiPoint, Uniform, SinglePoint, Order, PMX, SBX, BlendAlpha, Arithmetic, Edge, Clone, Rejuvenate) |
-//! | [`Mutation`] | Mutation operator enum (Swap, Inversion, Scramble, Value, BitFlip, Creep, Gaussian, Polynomial, NonUniform, Insertion, Cauchy, LevyFlight, Uniform, ListValue) |
+//! | [`Mutation`] | Mutation operator enum (Swap, Inversion, Scramble, Value, BitFlip, Creep, Gaussian, Polynomial, NonUniform, PermutationInsert, Insertion, Deletion, Cauchy, LevyFlight, Uniform, ListValue) |
 //! | [`Survivor`] | Survivor operator enum (Fitness, Age, MuPlusLambda, MuCommaLambda, DeterministicCrowding) |
 //! | [`Extension`] | Extension strategy enum (Noop, MassExtinction, MassGenesis, MassDegeneration, MassDeduplication) |
 //!
@@ -139,9 +139,25 @@ pub enum Mutation {
     /// Non-uniform mutation for `Range<T>` chromosomes.
     /// Mutation magnitude decreases over generations.
     NonUniform,
-    /// Insertion mutation for permutation-based chromosomes.
-    /// Removes a gene and reinserts it at a different position.
+    /// Permutation-insert mutation for permutation-based chromosomes.
+    /// Removes a gene and reinserts it at a different position, preserving all alleles
+    /// and chromosome length. This is the permutation-preserving insertion move (formerly
+    /// `Mutation::Insertion` in previous versions).
+    PermutationInsert,
+    /// Insertion mutation for variable-length chromosomes.
+    /// Inserts a new gene at a random position, growing the chromosome length by 1
+    /// (clamped to the configured maximum). Requires
+    /// [`ChromosomeLength::Variable`](crate::chromosomes::ChromosomeLength) in
+    /// `MutationConfiguration`. Returns `GaError::MutationError` for
+    /// `ChromosomeLength::Fixed`.
     Insertion,
+    /// Deletion mutation for variable-length chromosomes.
+    /// Removes a gene at a random position, shrinking the chromosome length by 1
+    /// (clamped to the configured minimum). Requires
+    /// [`ChromosomeLength::Variable`](crate::chromosomes::ChromosomeLength) in
+    /// `MutationConfiguration`. Returns `GaError::MutationError` for
+    /// `ChromosomeLength::Fixed`.
+    Deletion,
     /// List-value mutation — replaces a single gene's value with a different allele
     /// from that gene's allele set. Requires a `ListChromosome<T>`.
     ListValue,
