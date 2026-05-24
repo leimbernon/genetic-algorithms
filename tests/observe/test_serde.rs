@@ -19,7 +19,7 @@ use genetic_algorithms::island::topology::MigrationTopology;
 use genetic_algorithms::niching::configuration::NichingConfiguration;
 use genetic_algorithms::nsga2::configuration::{Nsga2Configuration, ObjectiveDirection};
 use genetic_algorithms::aos::AosStrategy;
-use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+use genetic_algorithms::operations::{AlignmentStrategy, Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::population::Population;
 use genetic_algorithms::stats::GenerationStats;
 
@@ -63,10 +63,18 @@ fn serde_crossover_enum() {
         Crossover::Clone,
         Crossover::Rejuvenate,
         Crossover::EdgeRecombination,
+        Crossover::VariableLength(AlignmentStrategy::Trim),
+        Crossover::VariableLength(AlignmentStrategy::Pad),
     ];
     for v in &variants {
         assert_eq!(&round_trip(v), v);
     }
+}
+
+#[test]
+fn serde_alignment_strategy_enum() {
+    assert_eq!(&round_trip(&AlignmentStrategy::Trim), &AlignmentStrategy::Trim);
+    assert_eq!(&round_trip(&AlignmentStrategy::Pad), &AlignmentStrategy::Pad);
 }
 
 #[test]
@@ -195,6 +203,7 @@ fn serde_ga_configuration_with_values() {
         aos_strategy: AosStrategy::pm_default(),
         aos_reward_window: 50,
         local_search_configuration: None,
+        length_penalty: None,
     };
     let rt = round_trip(&config);
     assert_eq!(rt, config);

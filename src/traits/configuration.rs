@@ -80,6 +80,19 @@ pub trait MutationConfig {
     fn with_chromosome_length(self, chromosome_length: ChromosomeLength) -> Self;
 }
 
+/// Configuration for survivor selection.
+pub trait SurvivorConfig {
+    /// Sets the parsimony pressure penalty coefficient for survivor selection.
+    ///
+    /// When non-zero, each chromosome's effective fitness during survivor selection
+    /// is adjusted by `±(length_penalty × dna_length)` according to the
+    /// `ProblemSolving` mode. The stored `fitness()` value is not mutated —
+    /// only the comparison value is adjusted.
+    ///
+    /// Use `None` (or don't call this method) to disable parsimony pressure.
+    fn with_length_penalty(self, penalty: f64) -> Self;
+}
+
 /// Configuration for stopping / termination criteria.
 pub trait StoppingConfig {
     /// Sets the maximum number of generations before the GA stops.
@@ -146,6 +159,7 @@ pub trait ConfigurationT:
     + ElitismConfig
     + ExtensionConfig
     + LocalSearchConfig
+    + SurvivorConfig
 {
     /// Creates a new instance with default configuration values.
     fn new() -> Self;

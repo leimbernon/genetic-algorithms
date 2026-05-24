@@ -42,7 +42,7 @@ pub use chromosome::ChromosomeT;
 pub use common::{initialize_chromosomes, initialize_chromosomes_par, FitnessFn, InitializationFn};
 pub use configuration::{
     ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, LocalSearchConfig,
-    MutationConfig, NichingConfig, SelectionConfig, StoppingConfig,
+    MutationConfig, NichingConfig, SelectionConfig, StoppingConfig, SurvivorConfig,
 };
 pub use gene::GeneT;
 pub use operators::{

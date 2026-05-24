@@ -10,6 +10,7 @@ pub use self::deterministic_crowding::deterministic_crowding;
 pub use self::fitness::fitness_based;
 pub use self::mu_comma_lambda::mu_comma_lambda;
 pub use self::mu_plus_lambda::mu_plus_lambda;
+pub use self::parsimony::apply_parsimony_pressure;
 pub(crate) use crate::configuration::LimitConfiguration;
 use crate::error::GaError;
 use crate::traits::{ChromosomeT, SurvivorOperator};
@@ -20,6 +21,7 @@ pub mod deterministic_crowding;
 pub mod fitness;
 pub mod mu_comma_lambda;
 pub mod mu_plus_lambda;
+pub mod parsimony;
 
 impl SurvivorOperator for Survivor {
     fn select_survivors<U: ChromosomeT>(

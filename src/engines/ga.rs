@@ -152,7 +152,7 @@ use crate::{
     traits::{
         ChromosomeT, ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, GeneT,
         LocalSearchConfig, LocalSearchOperator, MutationConfig, NichingConfig, SelectionConfig,
-        StoppingConfig,
+        StoppingConfig, SurvivorConfig,
     },
 };
 use rand::Rng;
@@ -530,6 +530,16 @@ where
 {
     fn with_elitism(mut self, elitism_count: usize) -> Self {
         self.configuration.elitism_count = elitism_count;
+        self
+    }
+}
+
+impl<U> SurvivorConfig for Ga<U>
+where
+    U: ChromosomeT,
+{
+    fn with_length_penalty(mut self, penalty: f64) -> Self {
+        self.configuration.length_penalty = Some(penalty);
         self
     }
 }
@@ -1107,20 +1117,75 @@ where
         let needs_unique_ids = self.configuration.limit_configuration.needs_unique_ids;
         let init_fn = self.initialization_fn.as_ref().unwrap();
         let fitness_fn = self.fitness_fn.as_ref().unwrap();
+        let chromosome_length = self.configuration.mutation_configuration.chromosome_length;
 
-        let chromosomes = crate::traits::initialize_chromosomes_par::<U>(
-            population_size,
-            genes_per_chromosome,
-            if self.alleles.is_empty() {
-                None
-            } else {
-                Some(&self.alleles)
-            },
-            Some(needs_unique_ids),
-            init_fn,
-            Some(fitness_fn),
-            0,
-        );
+        let chromosomes = match chromosome_length {
+            Some(crate::chromosomes::ChromosomeLength::Variable { min, max }) => {
+                // For variable-length chromosomes, each individual gets a random
+                // length sampled uniformly from [min, max].
+                // Decision: pass sampled length as genes_per_chromosome to init_fn
+                // (per Phase 52 discussion log — zero changes to init_fn signature).
+                let alleles_ref: Option<&[U::Gene]> = if self.alleles.is_empty() {
+                    None
+                } else {
+                    Some(self.alleles.as_slice())
+                };
+                let ff = std::sync::Arc::clone(fitness_fn);
+
+                #[cfg(not(target_arch = "wasm32"))]
+                let result: Vec<U> = (0..population_size)
+                    .into_par_iter()
+                    .map(|_| {
+                        let len = {
+                            let mut rng = crate::rng::make_rng();
+                            rng.random_range(min..=max)
+                        };
+                        let genes = init_fn(len, alleles_ref, Some(needs_unique_ids));
+                        let mut c = U::new();
+                        c.set_dna(std::borrow::Cow::Owned(genes));
+                        let ff_clone = std::sync::Arc::clone(&ff);
+                        c.set_fitness_fn(move |dna| ff_clone(dna));
+                        c.calculate_fitness();
+                        c.set_age(0);
+                        c
+                    })
+                    .collect();
+                #[cfg(target_arch = "wasm32")]
+                let result: Vec<U> = (0..population_size)
+                    .map(|_| {
+                        let len = {
+                            let mut rng = crate::rng::make_rng();
+                            rng.random_range(min..=max)
+                        };
+                        let genes = init_fn(len, alleles_ref, Some(needs_unique_ids));
+                        let mut c = U::new();
+                        c.set_dna(std::borrow::Cow::Owned(genes));
+                        let ff_clone = std::sync::Arc::clone(&ff);
+                        c.set_fitness_fn(move |dna| ff_clone(dna));
+                        c.calculate_fitness();
+                        c.set_age(0);
+                        c
+                    })
+                    .collect();
+                result
+            }
+            _ => {
+                // Fixed or unconfigured length: use the standard parallel initializer.
+                crate::traits::initialize_chromosomes_par::<U>(
+                    population_size,
+                    genes_per_chromosome,
+                    if self.alleles.is_empty() {
+                        None
+                    } else {
+                        Some(&self.alleles)
+                    },
+                    Some(needs_unique_ids),
+                    init_fn,
+                    Some(fitness_fn),
+                    0,
+                )
+            }
+        };
 
         // Set population directly (with_population is consuming, so we assign inline)
         let new_population = Population::new(chromosomes);
@@ -1725,12 +1790,22 @@ where
             } else {
                 None
             };
-            survivor::factory(
-                self.configuration.survivor,
-                &mut self.population.chromosomes,
-                initial_population_size,
-                self.configuration.limit_configuration,
-            )?;
+            if let Some(penalty) = self.configuration.length_penalty {
+                survivor::apply_parsimony_pressure(
+                    self.configuration.survivor,
+                    &mut self.population.chromosomes,
+                    initial_population_size,
+                    self.configuration.limit_configuration,
+                    penalty,
+                )?;
+            } else {
+                survivor::factory(
+                    self.configuration.survivor,
+                    &mut self.population.chromosomes,
+                    initial_population_size,
+                    self.configuration.limit_configuration,
+                )?;
+            }
             if let Some(t) = t_surv {
                 let pop_size = self.population.chromosomes.len();
                 self.notify(|obs| obs.on_survivor_selection_complete(i, t.elapsed(), pop_size));

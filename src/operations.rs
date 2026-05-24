@@ -69,6 +69,29 @@ pub enum Selection {
     Clearing,
 }
 
+/// Alignment strategy for variable-length crossover.
+///
+/// When the two parents have different DNA lengths, `AlignmentStrategy` determines
+/// how the lengths are reconciled before the single-point crossover is applied.
+///
+/// # Variants
+///
+/// - `Trim` — both parents are truncated to `min(len_a, len_b)` before recombination.
+///   Offspring length equals `min(len_a, len_b)`.
+/// - `Pad` — the shorter parent is padded with genes sampled from its own alleles
+///   until both parents reach `max(len_a, len_b)`. Offspring length equals
+///   `max(len_a, len_b)`.
+#[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum AlignmentStrategy {
+    /// Trim both parents to the shorter length before crossover.
+    /// Offspring have length `min(len_a, len_b)`.
+    Trim,
+    /// Pad the shorter parent (from its alleles) to the longer length before crossover.
+    /// Offspring have length `max(len_a, len_b)`.
+    Pad,
+}
+
 /// Crossover (recombination) strategies.
 ///
 /// Determines how two parent chromosomes are combined to produce offspring.
@@ -108,6 +131,17 @@ pub enum Crossover {
     /// Builds a union adjacency list from both parents and constructs offspring that
     /// preserve adjacency relationships found in either parent. Requires unique gene IDs.
     EdgeRecombination,
+    /// Variable-length crossover for chromosomes with different DNA lengths.
+    ///
+    /// Applies single-point crossover after aligning the two parents according to
+    /// the specified [`AlignmentStrategy`]:
+    /// - [`AlignmentStrategy::Trim`] — both parents are truncated to `min(len_a, len_b)`.
+    /// - [`AlignmentStrategy::Pad`] — the shorter parent is padded to `max(len_a, len_b)`.
+    ///
+    /// Fixed-length crossover operators (`SinglePoint`, `Uniform`, etc.) return
+    /// `GaError::CrossoverError` when parents have unequal lengths. Use this variant
+    /// when variable-length chromosomes are in the population.
+    VariableLength(AlignmentStrategy),
 }
 
 /// Mutation strategies.
