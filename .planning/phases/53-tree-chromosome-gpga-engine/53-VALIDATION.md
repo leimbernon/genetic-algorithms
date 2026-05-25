@@ -41,6 +41,9 @@ created: 2026-05-25
 | 53-01-01 | 01 | 0 | CHR-03 | — | N/A | unit | `cargo test --test gp test_gp_node_trait` | ❌ W0 | ⬜ pending |
 | 53-01-02 | 01 | 0 | CHR-03 | — | N/A | unit | `cargo test --test gp test_tree_chromosome_not_linear` | ❌ W0 | ⬜ pending |
 | 53-01-03 | 01 | 0 | CHR-03 | — | N/A | unit | `cargo test --test gp test_node_drop_iterative` | ❌ W0 | ⬜ pending |
+| 53-01-04 | 01 | 0 | CHR-07 | — | N/A | unit | `cargo test --test gp test_display_prefix_sexpr` | ❌ W0 | ⬜ pending |
+| 53-01-05 | 01 | 0 | CHR-04 | — | N/A | unit | `cargo test --test gp test_math_node_gp_node_impl` | ❌ W0 | ⬜ pending |
+| 53-01-06 | 01 | 0 | CHR-04 | — | N/A | unit | `cargo test --test gp test_bool_node_gp_node_impl` | ❌ W0 | ⬜ pending |
 | 53-02-01 | 02 | 1 | CHR-03 | — | N/A | unit | `cargo test --test gp test_subtree_crossover` | ❌ W0 | ⬜ pending |
 | 53-02-02 | 02 | 1 | CHR-03 | — | N/A | unit | `cargo test --test gp test_point_mutation` | ❌ W0 | ⬜ pending |
 | 53-02-03 | 02 | 1 | CHR-03 | — | N/A | unit | `cargo test --test gp test_hoist_mutation` | ❌ W0 | ⬜ pending |
@@ -50,7 +53,6 @@ created: 2026-05-25
 | 53-03-02 | 03 | 2 | CHR-04 | — | N/A | integration | `cargo test --test gp test_gpga_run_symbolic_regression` | ❌ W0 | ⬜ pending |
 | 53-03-03 | 03 | 2 | CHR-05 | — | N/A | unit | `cargo test --test gp test_generation_stats_avg_node_count` | ❌ W0 | ⬜ pending |
 | 53-04-01 | 04 | 3 | CHR-06 | — | N/A | unit | `cargo test --features serde --test gp test_serde_deep_tree` | ❌ W0 | ⬜ pending |
-| 53-04-02 | 04 | 3 | CHR-07 | — | N/A | unit | `cargo test --test gp test_display_prefix_sexpr` | ❌ W0 | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 

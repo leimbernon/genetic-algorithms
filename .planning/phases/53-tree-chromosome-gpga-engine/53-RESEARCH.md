@@ -83,6 +83,7 @@ The `serde_stacker` crate is authored by dtolnay and is legitimate. Its `stacker
 | Serde support | `src/engines/gp/chromosome.rs` | `Cargo.toml` | Gated behind existing `serde` feature flag; serde_stacker as conditional dep |
 | Display/S-expression | `src/engines/gp/chromosome.rs` | — | impl fmt::Display for GpChromosome<N> |
 | Public API exports | `src/lib.rs` | — | Add `pub mod gp;` with #[path = "engines/gp/mod.rs"] |
+| Built-in primitives | `src/engines/gp/primitives.rs` | — | MathNode and BoolNode implementing GpNode; user can use as-is or define their own |
 
 ---
 
@@ -177,13 +178,14 @@ User defines MyNode enum → implements GpNode
 ```
 src/engines/gp/
 ├── mod.rs              # pub re-exports: GpGa, GpConfiguration, GpNode, GpChromosome, etc.
-├── node.rs             # GpNode trait definition + Node<N> recursive enum
+├── node.rs             # GpNode trait definition + Node<N> recursive enum + grow_tree + check_limits
 ├── chromosome.rs       # GpChromosome<N> impl + TreeChromosome trait + Display
 ├── engine.rs           # GpGa<U: TreeChromosome> engine loop + GpResult
 ├── configuration.rs    # GpConfiguration struct + builder methods
 ├── crossover.rs        # GpCrossover enum + SubtreeCrossover impl
 ├── mutation.rs         # GpMutation enum + SubtreeMutation/PointMutation/HoistMutation
-└── init.rs             # ramped_half_and_half(), grow_tree(), full_tree()
+├── init.rs             # ramped_half_and_half(), full_tree() — imports grow_tree from node.rs
+└── primitives.rs       # MathNode + BoolNode built-in GpNode implementations
 
 src/
 ├── error.rs            # ADD: TreeDepthExceeded, TreeSizeExceeded
@@ -874,17 +876,17 @@ pub mod gp;
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **`GpGa` fitness function signature**
    - What we know: ChromosomeT expects `Fn(&[Gene]) -> f64` but tree evaluation needs `Fn(&Node<N>) -> f64`
    - What's unclear: Whether `GpGa::new(config, fitness_fn)` should accept the tree-based signature directly (bypassing `ChromosomeT::set_fitness_fn`) or adapt somehow
-   - Recommendation: `GpGa` owns the fitness function directly as `Arc<dyn Fn(&Node<N>) -> f64 + Send + Sync>` and calls `chromosome.set_fitness(fn(&chromosome.root))` in the evaluation loop. `GpChromosome::set_fitness_fn` is a no-op (never called by `GpGa`).
+   - RESOLVED: `GpGa` owns `fitness_fn: Arc<dyn Fn(&Node<N>) -> f64 + Send + Sync>` directly. `GpChromosome::set_fitness_fn` is a no-op stub that ignores the argument. `GpGa` calls `chromosome.set_fitness(fitness_fn(&chromosome.root))` in the evaluation loop — the chromosome never holds the function.
 
 2. **What happens to bloat-rejected offspring?**
    - What we know: CHR-05 says violations "return GaError::..."; D-06 confirms this
    - What's unclear: Does the engine propagate the error to the user (crashing the run) or does it silently discard the rejected offspring?
-   - Recommendation: Discard and log a warning via `log::warn!(target = "gp_events", ...)`. Re-run crossover with a different random point (with a max retry count of 3). If all retries fail, keep the better parent unchanged. This matches common GP implementations and avoids crashing production runs due to bloat.
+   - RESOLVED: Engine retries up to 3 times with a different random crossover point. If all 3 attempts exceed limits, the engine falls back to keeping the better parent unchanged (no offspring produced for that pair). The error is logged via `log::warn!(target = "gp_events", ...)` and never propagated to the user. Population size invariant is maintained by using the parent copy as the offspring.
 
 ---
 
@@ -923,6 +925,8 @@ pub mod gp;
 | CHR-04 | `GpGa` runs end-to-end with simple arithmetic primitive set | integration | `cargo test test_gp_engine::test_gpga_converges` | No — Wave 2 gap |
 | CHR-04 | Ramped half-and-half produces expected depth distribution | unit | `cargo test test_gp_init::test_ramped_half_and_half_distribution` | No — Wave 2 gap |
 | CHR-04 | ERC terminals produce random values via `sample_random_terminal` | unit | `cargo test test_gp_chromosome::test_erc_sampling` | No — Wave 0 gap |
+| CHR-04 | MathNode implements GpNode with 4 functions and ProtectedDiv | unit | `cargo test test_math_node_gp_node_impl` | No — Wave 0 gap |
+| CHR-04 | BoolNode implements GpNode with 5 functions and correct evaluate semantics | unit | `cargo test test_bool_node_gp_node_impl` | No — Wave 0 gap |
 | CHR-05 | SubtreeCrossover returns `TreeDepthExceeded` when limit violated | unit | `cargo test test_gp_crossover::test_depth_limit_enforcement` | No — Wave 1 gap |
 | CHR-05 | SubtreeCrossover returns `TreeSizeExceeded` when node count violated | unit | `cargo test test_gp_crossover::test_size_limit_enforcement` | No — Wave 1 gap |
 | CHR-05 | `avg_node_count` in GenerationStats is non-zero after GpGa run | integration | `cargo test test_gp_engine::test_avg_node_count_populated` | No — Wave 2 gap |
@@ -950,18 +954,18 @@ pub mod gp;
 **4 waves, each a mergeable PR:**
 
 ### Wave 0 — Types, Traits, Shells (API contract)
-Files: `src/engines/gp/` (mod.rs, node.rs, chromosome.rs with stubs, configuration.rs shell), `src/error.rs` (2 new variants), `src/stats.rs` (avg_node_count), `src/lib.rs` (pub mod gp), `tests/engines/gp/` (all test files with stubs)
-Deliverables: `GpNode` trait, `Node<N>` enum + iterative Drop, `GpChromosome<N>` with `TreeChromosome: ChromosomeT`, `GpGene` marker, `Display` impl, `GaError::TreeDepthExceeded/TreeSizeExceeded`, `GenerationStats::avg_node_count`, `GpConfiguration` shell
-Tests green: CHR-03 (trait structure), CHR-07 (Display)
+Files: `src/engines/gp/` (mod.rs, node.rs, chromosome.rs with stubs, configuration.rs shell, primitives.rs), `src/error.rs` (2 new variants), `src/stats.rs` (avg_node_count), `src/lib.rs` (pub mod gp), `tests/engines/gp/` (all test files with stubs)
+Deliverables: `GpNode` trait, `Node<N>` enum + iterative Drop, `GpChromosome<N>` with `TreeChromosome: ChromosomeT`, `GpGene` marker, `Display` impl, `GaError::TreeDepthExceeded/TreeSizeExceeded`, `GenerationStats::avg_node_count`, `GpConfiguration` shell, `MathNode` + `BoolNode` built-in primitives
+Tests green: CHR-03 (trait structure), CHR-04 (MathNode/BoolNode), CHR-07 (Display)
 
 ### Wave 1 — GP Operators
-Files: `src/engines/gp/crossover.rs`, `src/engines/gp/mutation.rs`
+Files: `src/engines/gp/crossover.rs`, `src/engines/gp/mutation.rs`, `src/engines/gp/node.rs` (grow_tree + check_limits added)
 Deliverables: `GpCrossover::SubtreeCrossover` with bloat enforcement, `GpMutation::{SubtreeMutation, PointMutation, HoistMutation}` with probability application
 Tests green: CHR-05 operator-level
 
 ### Wave 2 — GpGa Engine + Ramped Init
 Files: `src/engines/gp/engine.rs`, `src/engines/gp/init.rs`
-Deliverables: `GpGa<U>` struct + `run()` loop with observer hooks + stopping criteria, `ramped_half_and_half()` init, `GpResult<U>`, `avg_node_count` populated in stats
+Deliverables: `GpGa<U>` struct + `run()` loop with observer hooks + stopping criteria, `ramped_half_and_half()` init (imports grow_tree from node.rs), `GpResult<U>`, `avg_node_count` populated in stats
 Tests green: CHR-04 (end-to-end), CHR-05 (avg_node_count)
 
 ### Wave 3 — Serde Checkpoint + wasm32 Verification
