@@ -306,6 +306,9 @@ pub mod sms_emoa;
 #[path = "engines/ibea/mod.rs"]
 pub mod ibea;
 
+#[path = "engines/gp/mod.rs"]
+pub mod gp;
+
 pub use ga::TerminationCause;
 pub use observer::AllObserver;
 pub use observer::CompositeObserver;
