@@ -116,11 +116,13 @@ fn subtree_mutation<N: GpNode + Clone>(
     // Generate the replacement subtree.
     let new_subtree = grow_tree::<N>(mutation_max_depth, rng);
 
-    // Replace node at pre-order index `target`.
-    replace_node_in_place(&mut chromosome.root, target, Box::new(new_subtree));
-
-    // Bloat check on the whole chromosome after replacement.
-    check_limits(&chromosome.root, max_depth, max_node_count)?;
+    // Work on a clone; only commit the replacement if limits are satisfied.
+    // This prevents chromosome.root from being left in a bloated state when
+    // check_limits returns Err (CR-01).
+    let mut candidate = chromosome.root.clone();
+    replace_node_in_place(&mut candidate, target, Box::new(new_subtree));
+    check_limits(&candidate, max_depth, max_node_count)?;
+    chromosome.root = candidate;
 
     Ok(())
 }
