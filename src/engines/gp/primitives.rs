@@ -108,6 +108,17 @@ impl GpNode for MathNode {
     }
 }
 
+/// Default for `MathNode` is `Const(0.0)` — a zero constant.
+///
+/// This placeholder satisfies the `N: Default` bound on `GpGa<N>` and
+/// `GpChromosome<N>`. The engine always overwrites nodes before use; the
+/// default value is never meaningful at runtime.
+impl Default for MathNode {
+    fn default() -> Self {
+        MathNode::Const(0.0)
+    }
+}
+
 // ---------------------------------------------------------------------------
 // BoolNode
 // ---------------------------------------------------------------------------
@@ -125,9 +136,11 @@ impl GpNode for MathNode {
 /// **Note:** `BoolNode` has no terminal variants. When building mixed trees
 /// combine `BoolNode` functions with `MathNode::Const` or `MathNode::Var`
 /// terminals, or add your own terminal variants.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub enum BoolNode {
     /// Logical AND.
+    /// `BoolNode::default()` returns `And` (arity 2).
+    #[default]
     And,
     /// Logical OR.
     Or,
