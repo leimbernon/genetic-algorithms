@@ -9,7 +9,7 @@
 //!
 //! Both can be used as the type parameter `N` in `GpChromosome<N>`.
 
-use super::node::GpNode;
+use super::node::{GpNode, Node};
 use rand::Rng;
 use std::fmt;
 
@@ -40,7 +40,11 @@ pub enum MathNode {
     /// Ephemeral random constant (ERC).
     Const(f64),
     /// Variable placeholder. Index selects which input variable to use.
-    /// The actual value is injected by the fitness function, not by `evaluate`.
+    ///
+    /// **Variable injection:** Call [`Node::<MathNode>::eval_with_vars`] instead of
+    /// the standard recursive `evaluate` path. `eval_with_vars(&vars)` substitutes
+    /// `vars[i]` for every `Var(i)` node automatically. Calling the plain `evaluate`
+    /// on a `Var` node returns `0.0` (fallback — no args are passed to a terminal).
     Var(usize),
 }
 
@@ -78,9 +82,10 @@ impl GpNode for MathNode {
                 }
             }
             MathNode::Const(v) => *v,
-            // Var evaluation is context-dependent — the GpGa fitness_fn is responsible
-            // for injecting variable values. Default here is 0.0 as a no-input fallback.
-            MathNode::Var(_) => args.first().copied().unwrap_or(0.0),
+            // Var(i) is a terminal (arity 0) — args is always empty when called via
+            // the standard recursive evaluate path. Use Node::<MathNode>::eval_with_vars
+            // to evaluate trees that contain Var nodes with runtime variable values.
+            MathNode::Var(_) => 0.0,
         }
     }
 
@@ -219,5 +224,39 @@ impl GpNode for BoolNode {
             BoolNode::Gt,
             BoolNode::Lt,
         ]
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Variable-injection evaluation for MathNode trees (CR-02)
+// ---------------------------------------------------------------------------
+
+impl Node<MathNode> {
+    /// Evaluates an expression tree, injecting variable values from `vars`.
+    ///
+    /// `Var(i)` nodes return `vars[i]`, falling back to `0.0` when `i` is out of
+    /// bounds. All other nodes are evaluated using the standard recursive
+    /// [`GpNode::evaluate`] contract.
+    ///
+    /// Use this method (rather than a manual tree walk) whenever trees may contain
+    /// `Var` terminals.
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// // Tree represents "x0 + x1"
+    /// let result = tree.eval_with_vars(&[3.0, 5.0]);
+    /// assert!((result - 8.0).abs() < 1e-10);
+    /// ```
+    pub fn eval_with_vars(&self, vars: &[f64]) -> f64 {
+        match self {
+            Node::Terminal(MathNode::Var(i)) => vars.get(*i).copied().unwrap_or(0.0),
+            Node::Terminal(other) => other.evaluate(&[]),
+            Node::Function { value, children } => {
+                let child_vals: Vec<f64> =
+                    children.iter().map(|c| c.eval_with_vars(vars)).collect();
+                value.evaluate(&child_vals)
+            }
+        }
     }
 }
