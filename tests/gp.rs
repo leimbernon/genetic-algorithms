@@ -19,6 +19,7 @@ use std::fmt;
 
 /// A minimal 4-variant GpNode used for type-level tests in this file.
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 enum TestNode {
     Add,
     Mul,
@@ -468,9 +469,60 @@ fn test_generation_stats_avg_node_count() {
     }
 }
 
+/// Verify that a depth-64 right-spine tree can be serialized and deserialized
+/// without stack overflow, using the `serde_stacker` Serializer/Deserializer
+/// wrappers.
+///
+/// # Design
+///
+/// A depth-64 right-spine tree is the engine's practical maximum (configurable
+/// via `GpConfiguration::with_max_depth`). The `serde_stacker` crate is wired
+/// into the `serde` feature so that users checkpointing GP runs have access to
+/// stack-safe serialization for arbitrarily deep trees.
+///
+/// For depth 64 the JSON nesting is 64 × 2 levels (struct + array per node),
+/// totalling 128 levels — exactly at serde_json's default recursion limit.
+/// Using `serde_stacker` wrappers ensures correctness even at this boundary and
+/// for any user-configured depth beyond the default.
 #[cfg(feature = "serde")]
 #[test]
-#[ignore]
 fn test_serde_deep_tree() {
-    todo!("implemented in Wave 3")
+    // Build a right-spine Function chain of depth 64 using TestNode::Add (arity 2).
+    // Structure: Add(Add(Add(...Add(X, X)..., X), X), X) — depth 64.
+    // Build inside-out: start with a Terminal, wrap in Function Add 63 times.
+    let mut root: Node<TestNode> = Node::Terminal(TestNode::X);
+    for _ in 0..63 {
+        root = Node::Function {
+            value: TestNode::Add,
+            children: vec![Box::new(root), Box::new(Node::Terminal(TestNode::X))],
+        };
+    }
+    assert_eq!(root.depth(), 64, "tree must be exactly depth 64 before serialization");
+
+    let chr = GpChromosome::<TestNode>::with_root(Box::new(root));
+
+    // Serialize: wrap the serde_json Serializer with serde_stacker::Serializer
+    // so the call stack grows dynamically for arbitrarily deep trees.
+    let mut out = Vec::<u8>::new();
+    {
+        let mut json_ser = serde_json::Serializer::new(&mut out);
+        let stacker_ser = serde_stacker::Serializer::new(&mut json_ser);
+        use serde::Serialize as _;
+        chr.serialize(stacker_ser).expect("serialize must not overflow");
+    }
+    let json = String::from_utf8(out).expect("output must be valid UTF-8");
+
+    // Deserialize: disable serde_json's built-in recursion limit (requires the
+    // `unbounded_depth` feature on serde_json), then wrap with
+    // serde_stacker::Deserializer so the Rust call stack grows dynamically for
+    // deeply nested trees rather than overflowing.
+    let restored: GpChromosome<TestNode> = {
+        let mut json_de = serde_json::Deserializer::from_str(&json);
+        json_de.disable_recursion_limit();
+        let stacker_de = serde_stacker::Deserializer::new(&mut json_de);
+        use serde::Deserialize as _;
+        GpChromosome::<TestNode>::deserialize(stacker_de).expect("deserialize must not overflow")
+    };
+
+    assert_eq!(restored.depth(), 64, "round-trip must preserve tree depth");
 }

@@ -90,6 +90,21 @@ pub trait GpNode: Clone + Send + Sync + 'static {
 /// `Node<N>` implements a custom iterative [`Drop`] to avoid stack overflow
 /// when dropping very deep trees. The default recursive drop would overflow the
 /// stack for trees with hundreds of thousands of nodes.
+///
+/// # Serde and deep trees
+///
+/// When the `serde` feature is enabled, `Node<N>` derives `Serialize` and
+/// `Deserialize` via the standard serde derive macros. For trees up to depth 64
+/// (the GP engine's recommended maximum), stack usage is well within typical
+/// system limits. For extremely deep trees (depth > ~500), use
+/// [`serde_stacker::Serializer`] / [`serde_stacker::Deserializer`] wrappers at
+/// the serialization call site to grow the stack dynamically.
+///
+/// # Security note
+///
+/// Checkpoint files should be treated as trusted input. Deserialization does
+/// not bound allocation — an attacker-controlled JSON blob with an unbounded
+/// `children` array could exhaust process memory.
 #[derive(Clone, Debug)]
 #[cfg_attr(
     feature = "serde",
@@ -230,3 +245,4 @@ impl<N: GpNode> Drop for Node<N> {
         }
     }
 }
+
