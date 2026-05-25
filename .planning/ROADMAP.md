@@ -555,7 +555,7 @@ Plans:
 - [x] 53-02-PLAN.md — GP operators: SubtreeCrossover + SubtreeMutation/PointMutation/HoistMutation with bloat enforcement (CHR-05)
 
 **Wave 2** *(blocked on Wave 1)*
-- [ ] 53-03-PLAN.md — GpGa engine loop: ramped half-and-half init + full run() loop + observer hooks + avg_node_count (CHR-04, CHR-05)
+- [x] 53-03-PLAN.md — GpGa engine loop: ramped half-and-half init + full run() loop + observer hooks + avg_node_count (CHR-04, CHR-05)
 
 **Wave 3** *(blocked on Wave 2)*
 - [ ] 53-04-PLAN.md — Serde checkpoint: serde_stacker dep + stack-safe Node<N> serde + depth-64 CI test (CHR-06)
@@ -614,4 +614,4 @@ Plans:
 | 50. Lexicase Selection | v3.0.0 | 0 | Not started | — |
 | 51. Multi-Parent Crossover + Self-Adaptive Mutation | v3.0.0 | 0 | Not started | — |
 | 52. Variable-Length Chromosomes | v3.0.0 | 0 | Not started | — |
-| 53. Tree Chromosome + GpGa Engine | v3.0.0 | 2/4 | In Progress|  |
+| 53. Tree Chromosome + GpGa Engine | v3.0.0 | 3/4 | In Progress|  |
