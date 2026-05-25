@@ -273,7 +273,9 @@ impl GpConfiguration {
     /// - `init_max_depth > 0`
     /// - `init_max_depth <= max_depth`
     /// - `population_size > 0`
+    /// - `max_generations > 0`
     /// - `mutations` vec is not empty
+    /// - each mutation probability is finite and in `[0.0, 1.0]`
     pub fn build(&self) -> Result<(), GaError> {
         if self.max_depth == 0 {
             return Err(GaError::ConfigurationError(
@@ -314,10 +316,23 @@ impl GpConfiguration {
                 "population_size must be greater than 0".to_string(),
             ));
         }
+        if self.max_generations == 0 {
+            return Err(GaError::ConfigurationError(
+                "max_generations must be greater than 0".to_string(),
+            ));
+        }
         if self.mutations.is_empty() {
             return Err(GaError::ConfigurationError(
                 "mutations list must not be empty — provide at least one (GpMutation, probability) pair".to_string(),
             ));
+        }
+        for (i, (_, prob)) in self.mutations.iter().enumerate() {
+            if !prob.is_finite() || *prob < 0.0 || *prob > 1.0 {
+                return Err(GaError::ConfigurationError(format!(
+                    "mutations[{}]: probability {} is not in [0.0, 1.0]",
+                    i, prob
+                )));
+            }
         }
         Ok(())
     }
