@@ -22,8 +22,8 @@ use std::sync::Arc;
 use crate::configuration::{CrossoverConfiguration, ProblemSolving};
 use crate::operations::mutation::ValueMutable;
 use crate::operations::{crossover, mutation};
-use crate::traits::SelectionOperator;
 use crate::rng::make_rng;
+use crate::traits::SelectionOperator;
 use crate::traits::{ChromosomeT, FitnessFn};
 use rand::Rng;
 
@@ -173,7 +173,11 @@ where
                     let pairs = self.config.selection.select(&local, 1, 1);
                     let mate_local_idx = if let Some(&(a, b)) = pairs.first() {
                         // Prefer the non-self member of the pair; fall back to `b`.
-                        if a != 0 { a } else if b != 0 { b } else {
+                        if a != 0 {
+                            a
+                        } else if b != 0 {
+                            b
+                        } else {
                             rng.random_range(1..local.len())
                         }
                     } else {
@@ -184,10 +188,13 @@ where
                     // Crossover cell with selected mate
                     let parent_cell = &src_pop[cell_idx];
                     let parent_mate = &local[mate_local_idx];
-                    let mut offspring = match crossover::factory(parent_cell, parent_mate, crossover_cfg) {
-                        Ok(children) if !children.is_empty() => children.into_iter().next().unwrap(),
-                        _ => parent_cell.clone(),
-                    };
+                    let mut offspring =
+                        match crossover::factory(parent_cell, parent_mate, crossover_cfg) {
+                            Ok(children) if !children.is_empty() => {
+                                children.into_iter().next().unwrap()
+                            }
+                            _ => parent_cell.clone(),
+                        };
 
                     // Mutate offspring
                     let _ = mutation::factory_with_params(
@@ -233,7 +240,12 @@ where
             }
         }
 
-        CellularResult { population: pop, best, best_fitness, generations }
+        CellularResult {
+            population: pop,
+            best,
+            best_fitness,
+            generations,
+        }
     }
 
     // ── Grid helpers ──────────────────────────────────────────────────────────

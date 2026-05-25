@@ -66,7 +66,10 @@ fn test_mutation_permutation_insert_renames_correctly() {
             moved = true;
         }
     }
-    assert!(moved, "PermutationInsert should move a gene at least once in 200 attempts");
+    assert!(
+        moved,
+        "PermutationInsert should move a gene at least once in 200 attempts"
+    );
 }
 
 /// Apply Mutation::Insertion to a Range<f64> of length 3 with max=5;
@@ -80,7 +83,11 @@ fn test_mutation_insertion_adds_gene_clamped_to_max() {
     let cl = ChromosomeLength::Variable { min: 1, max: 5 };
     let result = length_insertion_mutation(&mut c, cl);
 
-    assert!(result.is_ok(), "Insertion should succeed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Insertion should succeed: {:?}",
+        result.err()
+    );
     assert_eq!(c.dna().len(), 4, "DNA length should grow from 3 to 4");
 }
 
@@ -95,7 +102,11 @@ fn test_mutation_deletion_removes_gene_clamped_to_min() {
     let cl = ChromosomeLength::Variable { min: 2, max: 10 };
     let result = length_deletion_mutation(&mut c, cl);
 
-    assert!(result.is_ok(), "Deletion should succeed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Deletion should succeed: {:?}",
+        result.err()
+    );
     assert_eq!(c.dna().len(), 4, "DNA length should shrink from 5 to 4");
 }
 
@@ -152,7 +163,10 @@ fn test_crossover_variable_length_trim_produces_min_len_offspring() {
     let op = Crossover::VariableLength(AlignmentStrategy::Trim);
     let result = op.crossover(&parent_1, &parent_2);
 
-    assert!(result.is_ok(), "VariableLength Trim crossover should succeed");
+    assert!(
+        result.is_ok(),
+        "VariableLength Trim crossover should succeed"
+    );
     let children = result.unwrap();
     assert_eq!(children.len(), 2, "Should produce 2 offspring");
     assert_eq!(
@@ -178,7 +192,10 @@ fn test_crossover_variable_length_pad_produces_max_len_offspring() {
     let op = Crossover::VariableLength(AlignmentStrategy::Pad);
     let result = op.crossover(&parent_1, &parent_2);
 
-    assert!(result.is_ok(), "VariableLength Pad crossover should succeed");
+    assert!(
+        result.is_ok(),
+        "VariableLength Pad crossover should succeed"
+    );
     let children = result.unwrap();
     assert_eq!(children.len(), 2, "Should produce 2 offspring");
     assert_eq!(
@@ -245,9 +262,17 @@ fn test_variable_length_initialization_samples_lengths_in_range() {
         .with_initialization_fn(range_random_initialization::<f64>);
 
     let result = ga.initialization();
-    assert!(result.is_ok(), "Initialization should succeed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Initialization should succeed: {:?}",
+        result.err()
+    );
 
-    assert_eq!(ga.population.chromosomes.len(), 20, "Population size should be 20");
+    assert_eq!(
+        ga.population.chromosomes.len(),
+        20,
+        "Population size should be 20"
+    );
 
     for (i, c) in ga.population.chromosomes.iter().enumerate() {
         let len = c.dna().len();
@@ -292,7 +317,11 @@ fn test_variable_length_extension_regrowth_samples_from_population() {
     // After initialization, manually constrain lengths to [3, 6] so we can
     // verify regrowth stays within [min_obs, max_obs] of those survivors.
     let init_result = ga.initialization();
-    assert!(init_result.is_ok(), "Initialization should succeed: {:?}", init_result.err());
+    assert!(
+        init_result.is_ok(),
+        "Initialization should succeed: {:?}",
+        init_result.err()
+    );
 
     // Set all chromosome lengths to values in [3, 6] to establish known observed range
     for i in 0..ga.population.chromosomes.len() {
@@ -306,7 +335,11 @@ fn test_variable_length_extension_regrowth_samples_from_population() {
 
     // Run one generation (extension fires, trims to 2, then regrows to 10)
     let run_result = ga.run();
-    assert!(run_result.is_ok(), "GA run should succeed: {:?}", run_result.err());
+    assert!(
+        run_result.is_ok(),
+        "GA run should succeed: {:?}",
+        run_result.err()
+    );
 
     // After the run, all chromosomes must have lengths within [2, 8]
     // (the configured Variable bounds — regrowth is clamped to them)
@@ -358,7 +391,11 @@ fn test_parsimony_pressure_penalizes_longer_chromosomes_maximization() {
         0.1,
     );
 
-    assert!(result.is_ok(), "Parsimony pressure should succeed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Parsimony pressure should succeed: {:?}",
+        result.err()
+    );
     assert_eq!(chromosomes.len(), 1, "Should have exactly 1 survivor");
     assert_eq!(
         chromosomes[0].dna().len(),
@@ -396,7 +433,11 @@ fn test_parsimony_no_fitness_mutation() {
         0.5,
     );
 
-    assert!(result.is_ok(), "Parsimony pressure should succeed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Parsimony pressure should succeed: {:?}",
+        result.err()
+    );
 
     // Both survivors should have their original raw fitness restored
     for c in &chromosomes {

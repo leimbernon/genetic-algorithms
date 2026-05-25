@@ -11,10 +11,10 @@
 //! full population context. Calling it via `MutationOperator::mutate` or
 //! `factory_with_params` returns `GaError::MutationError` as a safety net.
 
+use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
 use crate::operations::mutation::gaussian::GaussianConvertible;
 use crate::traits::ChromosomeT;
-use crate::chromosomes::Range as RangeChromosome;
 use log::debug;
 use rand::Rng;
 use std::any::Any;

@@ -93,7 +93,6 @@ pub enum LocalSearchApplicationStrategy {
     },
 }
 
-
 /// Strategy for how local search improvements affect the genome.
 ///
 /// - **Lamarckian**: improved genotypes replace the original genes (genetic
@@ -111,7 +110,6 @@ pub enum LocalSearchMode {
     /// Learning does not affect the genetic code.
     Baldwinian,
 }
-
 
 /// Create a [`LocalSearch`] operator instance (standard dispatch).
 ///

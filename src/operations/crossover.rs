@@ -8,9 +8,9 @@
 
 pub use self::clone::clone_crossover;
 pub use self::cycle::cycle;
+pub use self::edge_recombination::erx;
 pub use self::multipoint::multipoint;
 pub use self::order::order;
-pub use self::edge_recombination::erx;
 pub use self::pmx::pmx;
 pub use self::rejuvenate::rejuvenate;
 pub use self::single_point::single_point;
@@ -27,9 +27,9 @@ pub mod arithmetic;
 pub mod blend_alpha;
 pub mod clone;
 pub mod cycle;
+pub mod edge_recombination;
 pub mod multipoint;
 pub mod order;
-pub mod edge_recombination;
 pub mod pmx;
 pub mod rejuvenate;
 pub mod sbx;

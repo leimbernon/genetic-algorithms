@@ -59,8 +59,7 @@ pub fn clearing_selection<U: ChromosomeT>(
         // (ranked below it, not yet winners) within niche_radius.
         trace!(target="selection_events", method="clearing"; "Niche winner: index={} fitness={}", winner_idx, winner_fitness);
         for &(candidate_idx, candidate_fitness) in &sorted[(rank + 1)..] {
-            if !cleared[candidate_idx]
-                && (winner_fitness - candidate_fitness).abs() <= niche_radius
+            if !cleared[candidate_idx] && (winner_fitness - candidate_fitness).abs() <= niche_radius
             {
                 cleared[candidate_idx] = true;
                 trace!(target="selection_events", method="clearing"; "Cleared: index={} fitness={}", candidate_idx, candidate_fitness);

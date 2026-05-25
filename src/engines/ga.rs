@@ -1617,10 +1617,7 @@ where
             if let Some(ref constraint_fns) = self.constraint_fns {
                 for c in offspring.iter_mut() {
                     let dna = c.dna();
-                    let total_viol: f64 = constraint_fns
-                        .iter()
-                        .map(|f| f(dna))
-                        .sum();
+                    let total_viol: f64 = constraint_fns.iter().map(|f| f(dna)).sum();
                     if total_viol > 0.0 {
                         match self.penalty_strategy {
                             PenaltyStrategy::None => {}
@@ -2024,16 +2021,11 @@ where
                                         .max()
                                         .unwrap_or(max);
                                     // Clamp to configured bounds
-                                    (
-                                        observed_min.max(min),
-                                        observed_max.min(max),
-                                    )
+                                    (observed_min.max(min), observed_max.min(max))
                                 } else {
                                     // Fixed or unconfigured: use genes_per_chromosome as both bounds
-                                    let gpc = self
-                                        .configuration
-                                        .limit_configuration
-                                        .genes_per_chromosome;
+                                    let gpc =
+                                        self.configuration.limit_configuration.genes_per_chromosome;
                                     (gpc, gpc)
                                 };
 
@@ -2047,11 +2039,8 @@ where
                                         let mut rng = crate::rng::make_rng();
                                         rng.random_range(min_obs..=max_obs)
                                     };
-                                    let genes = init_fn(
-                                        len,
-                                        alleles_ref,
-                                        Some(alleles_can_be_repeated),
-                                    );
+                                    let genes =
+                                        init_fn(len, alleles_ref, Some(alleles_can_be_repeated));
                                     let mut new_chromosome = U::new();
                                     new_chromosome.set_dna(std::borrow::Cow::Owned(genes));
                                     if let Some(ref ff) = ff {
@@ -2072,11 +2061,8 @@ where
                                         let mut rng = crate::rng::make_rng();
                                         rng.random_range(min_obs..=max_obs)
                                     };
-                                    let genes = init_fn(
-                                        len,
-                                        alleles_ref,
-                                        Some(alleles_can_be_repeated),
-                                    );
+                                    let genes =
+                                        init_fn(len, alleles_ref, Some(alleles_can_be_repeated));
                                     let mut new_chromosome = U::new();
                                     new_chromosome.set_dna(std::borrow::Cow::Owned(genes));
                                     if let Some(ref ff) = ff {

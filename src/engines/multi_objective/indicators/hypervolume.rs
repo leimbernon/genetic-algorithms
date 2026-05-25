@@ -1,5 +1,5 @@
+use super::{validate_dimension, validate_dimension_consistency, validate_non_empty};
 use crate::error::GaError;
-use super::{validate_non_empty, validate_dimension_consistency, validate_dimension};
 
 /// Computes the 2D Hypervolume indicator (Lebesgue measure).
 ///
@@ -31,10 +31,7 @@ use super::{validate_non_empty, validate_dimension_consistency, validate_dimensi
 /// # Panics
 ///
 /// Does not panic on valid input.
-pub fn hypervolume(
-    points: &[Vec<f64>],
-    reference_point: &[f64],
-) -> Result<f64, GaError> {
+pub fn hypervolume(points: &[Vec<f64>], reference_point: &[f64]) -> Result<f64, GaError> {
     validate_non_empty("points", points)?;
     let dim = validate_dimension_consistency(points)?;
 
@@ -51,19 +48,15 @@ pub fn hypervolume(
         let f1 = point[0];
         let f2 = point[1];
         if f1 >= reference_point[0] || f2 >= reference_point[1] {
-            return Err(GaError::InvalidIndicatorConfiguration(
-                format!(
-                    "Point {} ({}, {}) must be strictly dominated by reference point ({}, {})",
-                    i, f1, f2, reference_point[0], reference_point[1]
-                ),
-            ));
+            return Err(GaError::InvalidIndicatorConfiguration(format!(
+                "Point {} ({}, {}) must be strictly dominated by reference point ({}, {})",
+                i, f1, f2, reference_point[0], reference_point[1]
+            )));
         }
         dominated_points.push((f1, f2));
     }
 
-    dominated_points.sort_by(|a, b| {
-        a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal)
-    });
+    dominated_points.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
 
     let mut hv = 0.0;
     let mut best_f2 = reference_point[1];
@@ -106,27 +99,39 @@ mod tests {
     fn test_rejects_3d() {
         let points = vec![vec![1.0, 2.0, 3.0]];
         let result = hypervolume(&points, &[4.0, 4.0, 4.0]);
-        assert!(matches!(result, Err(GaError::InvalidIndicatorConfiguration(_))));
+        assert!(matches!(
+            result,
+            Err(GaError::InvalidIndicatorConfiguration(_))
+        ));
     }
 
     #[test]
     fn test_rejects_empty() {
         let points: Vec<Vec<f64>> = vec![];
         let result = hypervolume(&points, &[1.0, 1.0]);
-        assert!(matches!(result, Err(GaError::InvalidIndicatorConfiguration(_))));
+        assert!(matches!(
+            result,
+            Err(GaError::InvalidIndicatorConfiguration(_))
+        ));
     }
 
     #[test]
     fn test_rejects_non_dominating_reference() {
         let points = vec![vec![0.5, 0.5]];
         let result = hypervolume(&points, &[0.5, 0.5]);
-        assert!(matches!(result, Err(GaError::InvalidIndicatorConfiguration(_))));
+        assert!(matches!(
+            result,
+            Err(GaError::InvalidIndicatorConfiguration(_))
+        ));
     }
 
     #[test]
     fn test_rejects_reference_dimension_mismatch() {
         let points = vec![vec![0.5, 0.5]];
         let result = hypervolume(&points, &[1.0, 1.0, 1.0]);
-        assert!(matches!(result, Err(GaError::InvalidIndicatorConfiguration(_))));
+        assert!(matches!(
+            result,
+            Err(GaError::InvalidIndicatorConfiguration(_))
+        ));
     }
 }

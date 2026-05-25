@@ -6,8 +6,8 @@
 //! single supertrait.
 
 use crate::chromosomes::ChromosomeLength;
-use crate::configuration::{LogLevel, ProblemSolving, StoppingCriteria};
 use crate::configuration::LocalSearchConfiguration;
+use crate::configuration::{LogLevel, ProblemSolving, StoppingCriteria};
 use crate::operations::{Crossover, Extension, Mutation, Selection, Survivor};
 
 /// Configuration for parent selection.

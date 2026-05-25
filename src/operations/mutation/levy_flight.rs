@@ -33,11 +33,7 @@ fn gamma_approx(x: f64) -> f64 {
     }
     let t = x - 1.0;
     // Polynomial coefficients from Abramowitz & Stegun 6.1.36 (Γ on [1, 2]).
-    1.0 + t
-        * (-0.5748646
-            + t * (0.9512363
-                + t * (-0.6998588
-                    + t * (0.4245549 - t * 0.1010678))))
+    1.0 + t * (-0.5748646 + t * (0.9512363 + t * (-0.6998588 + t * (0.4245549 - t * 0.1010678))))
 }
 
 /// Applies Lévy Flight perturbation to a single randomly selected gene of `individual`.
@@ -112,7 +108,11 @@ mod tests {
         let s = mantegna_sigma_u(1.5);
         assert!(s.is_finite() && s > 0.0, "σ_u(1.5) = {}", s);
         // Expected ~0.6966 (Yang 2010); allow loose tolerance.
-        assert!((s - 0.6966).abs() < 0.05, "σ_u(1.5) = {}, expected ~0.6966", s);
+        assert!(
+            (s - 0.6966).abs() < 0.05,
+            "σ_u(1.5) = {}, expected ~0.6966",
+            s
+        );
     }
 
     #[test]

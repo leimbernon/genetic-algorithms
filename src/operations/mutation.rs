@@ -30,18 +30,18 @@ use std::any::Any;
 pub mod bit_flip;
 pub mod cauchy;
 pub mod creep;
-pub mod levy_flight;
-pub mod uniform;
 pub mod differential;
 pub mod gaussian;
 pub mod insertion;
 pub mod inversion;
 pub mod length_mutation;
+pub mod levy_flight;
 pub mod list_value;
 pub mod non_uniform;
 pub mod polynomial;
 pub mod scramble;
 pub mod swap;
+pub mod uniform;
 pub mod value;
 
 /// Default distribution index for Polynomial mutation when none is configured.
@@ -119,9 +119,7 @@ fn try_levy<U: ChromosomeT + 'static>(
 ///
 /// Tries `f64`, `f32`, `i32`, `i64` in order. Returns `Some(Ok(()))` if the type
 /// matched and mutation succeeded, `None` if no supported type matched.
-fn try_uniform<U: ChromosomeT + 'static>(
-    individual: &mut U,
-) -> Option<Result<(), GaError>> {
+fn try_uniform<U: ChromosomeT + 'static>(individual: &mut U) -> Option<Result<(), GaError>> {
     macro_rules! try_type {
         ($t:ty) => {
             if let Some(ind) = (individual as &mut dyn Any).downcast_mut::<RangeChromosome<$t>>() {
@@ -267,7 +265,8 @@ impl MutationOperator for Mutation {
                 return Err(GaError::MutationError(
                     "Mutation::Differential requires population context. \
                      It is applied automatically by the GA engine when configured — \
-                     do not call factory_with_params() directly.".to_string(),
+                     do not call factory_with_params() directly."
+                        .to_string(),
                 ));
             }
             Mutation::Cauchy => {

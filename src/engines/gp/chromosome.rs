@@ -268,10 +268,7 @@ impl<N: GpNode + Default> TreeChromosome for GpChromosome<N> {
 // Display — Lisp prefix S-expression
 // ---------------------------------------------------------------------------
 
-fn write_node<N: GpNode + fmt::Display>(
-    node: &Node<N>,
-    f: &mut fmt::Formatter<'_>,
-) -> fmt::Result {
+fn write_node<N: GpNode + fmt::Display>(node: &Node<N>, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match node {
         Node::Terminal(v) => write!(f, "{}", v),
         Node::Function { value, children } => {
@@ -290,4 +287,3 @@ impl<N: GpNode + fmt::Display + Default> fmt::Display for GpChromosome<N> {
         write_node(&self.root, f)
     }
 }
-

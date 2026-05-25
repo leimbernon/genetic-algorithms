@@ -121,9 +121,9 @@ use crate::observer::Spea2Observer;
 use crate::operations::{crossover, mutation};
 use crate::spea2::configuration::Spea2Configuration;
 use crate::traits::{ChromosomeT, InitializationFn};
+use rand::Rng;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
-use rand::Rng;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -254,8 +254,7 @@ where
         if self.spea2_config.archive_size > self.spea2_config.population_size {
             return Err(GaError::InvalidSpea2Configuration(format!(
                 "archive_size ({}) must not exceed population_size ({})",
-                self.spea2_config.archive_size,
-                self.spea2_config.population_size
+                self.spea2_config.archive_size, self.spea2_config.population_size
             )));
         }
         Ok(())
@@ -263,7 +262,11 @@ where
 
     /// Euclidean distance between two objective vectors.
     fn euclidean_distance(a: &[f64], b: &[f64]) -> f64 {
-        a.iter().zip(b.iter()).map(|(x, y)| (x - y).powi(2)).sum::<f64>().sqrt()
+        a.iter()
+            .zip(b.iter())
+            .map(|(x, y)| (x - y).powi(2))
+            .sum::<f64>()
+            .sqrt()
     }
 
     /// Computes SPEA2 fitness (strength + density) for the combined population + archive set.
@@ -276,8 +279,7 @@ where
         archive: &[ParetoIndividual<U>],
         directions: &[ObjectiveDirection],
     ) -> Vec<f64> {
-        let union: Vec<&ParetoIndividual<U>> =
-            population.iter().chain(archive.iter()).collect();
+        let union: Vec<&ParetoIndividual<U>> = population.iter().chain(archive.iter()).collect();
         let n = union.len();
         // D-02: k = floor(sqrt(N_pop + N_archive))
         let k = (n as f64).sqrt().floor() as usize;
@@ -286,11 +288,13 @@ where
         let mut strength = vec![0.0f64; n];
         for i in 0..n {
             for j in 0..n {
-                if i != j && crate::multi_objective::pareto::dominates_with_directions(
-                    &union[i].objectives,
-                    &union[j].objectives,
-                    directions,
-                ) {
+                if i != j
+                    && crate::multi_objective::pareto::dominates_with_directions(
+                        &union[i].objectives,
+                        &union[j].objectives,
+                        directions,
+                    )
+                {
                     strength[i] += 1.0;
                 }
             }
@@ -300,11 +304,13 @@ where
         let mut raw_fitness = vec![0.0f64; n];
         for i in 0..n {
             for j in 0..n {
-                if i != j && crate::multi_objective::pareto::dominates_with_directions(
-                    &union[j].objectives,
-                    &union[i].objectives,
-                    directions,
-                ) {
+                if i != j
+                    && crate::multi_objective::pareto::dominates_with_directions(
+                        &union[j].objectives,
+                        &union[i].objectives,
+                        directions,
+                    )
+                {
                     raw_fitness[i] += strength[j];
                 }
             }
@@ -336,10 +342,7 @@ where
     /// Implements Zitzler, Laumanns & Thiele 2001 Algorithm 1, Step 3 (truncation).
     /// Repeatedly removes the individual with the smallest nearest-neighbour distance,
     /// recomputing distances after each removal.
-    fn truncate_archive(
-        archive: &mut Vec<ParetoIndividual<U>>,
-        target_size: usize,
-    ) {
+    fn truncate_archive(archive: &mut Vec<ParetoIndividual<U>>, target_size: usize) {
         while archive.len() > target_size {
             let n = archive.len();
             let mut remove_idx = 0usize;
@@ -350,7 +353,9 @@ where
             for i in 0..n {
                 let mut dists: Vec<f64> = (0..n)
                     .filter(|&j| j != i)
-                    .map(|j| Self::euclidean_distance(&archive[i].objectives, &archive[j].objectives))
+                    .map(|j| {
+                        Self::euclidean_distance(&archive[i].objectives, &archive[j].objectives)
+                    })
                     .collect();
                 dists.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
 
@@ -393,8 +398,7 @@ where
         fitness: &[f64],
         target_archive_size: usize,
     ) -> Vec<ParetoIndividual<U>> {
-        let union: Vec<&ParetoIndividual<U>> =
-            population.iter().chain(archive.iter()).collect();
+        let union: Vec<&ParetoIndividual<U>> = population.iter().chain(archive.iter()).collect();
 
         // Step 1: Collect all non-dominated individuals (R(i) < 1.0 means non-dominated)
         let mut new_archive: Vec<ParetoIndividual<U>> = union
@@ -527,12 +531,7 @@ where
             }
 
             // 4c: Environmental selection -- build new archive
-            archive = Self::environmental_selection(
-                &population,
-                &archive,
-                &fitness,
-                archive_size,
-            );
+            archive = Self::environmental_selection(&population, &archive, &fitness, archive_size);
 
             // Compute non-dominated count for observer
             let nd_count = {
@@ -540,11 +539,13 @@ where
                 for i in 0..archive.len() {
                     let mut dominated = false;
                     for j in 0..archive.len() {
-                        if j != i && crate::multi_objective::pareto::dominates_with_directions(
-                            &archive[j].objectives,
-                            &archive[i].objectives,
-                            &directions,
-                        ) {
+                        if j != i
+                            && crate::multi_objective::pareto::dominates_with_directions(
+                                &archive[j].objectives,
+                                &archive[i].objectives,
+                                &directions,
+                            )
+                        {
                             dominated = true;
                             break;
                         }
@@ -557,16 +558,17 @@ where
             };
 
             // 4d: Observer -- on_archive_updated
-            self.notify(|obs| {
-                obs.on_archive_updated(gen, archive.len(), nd_count)
-            });
+            self.notify(|obs| obs.on_archive_updated(gen, archive.len(), nd_count));
 
             // 4e: Binary tournament from archive -> produce new population
             population = self.create_offspring(&archive)?;
         }
 
         // Step 5: Post-hoc non-dominated sort on final archive -> ParetoFront
-        let obj_slices: Vec<&[f64]> = archive.iter().map(|ind| ind.objectives.as_slice()).collect();
+        let obj_slices: Vec<&[f64]> = archive
+            .iter()
+            .map(|ind| ind.objectives.as_slice())
+            .collect();
         let fronts = crate::multi_objective::non_dominated_sort::non_dominated_sort_with_directions(
             &obj_slices,
             &directions,
@@ -612,8 +614,7 @@ where
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_par_iter()
             .map(|chrom| {
-                let objectives: Vec<f64> =
-                    objective_fns.iter().map(|f| f(chrom.dna())).collect();
+                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
@@ -621,8 +622,7 @@ where
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_iter()
             .map(|chrom| {
-                let objectives: Vec<f64> =
-                    objective_fns.iter().map(|f| f(chrom.dna())).collect();
+                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
@@ -688,8 +688,7 @@ where
         let evaluated: Vec<ParetoIndividual<U>> = offspring
             .into_par_iter()
             .map(|chrom| {
-                let objectives: Vec<f64> =
-                    objective_fns.iter().map(|f| f(chrom.dna())).collect();
+                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
@@ -697,8 +696,7 @@ where
         let evaluated: Vec<ParetoIndividual<U>> = offspring
             .into_iter()
             .map(|chrom| {
-                let objectives: Vec<f64> =
-                    objective_fns.iter().map(|f| f(chrom.dna())).collect();
+                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();

@@ -403,7 +403,8 @@ where
                                 mutation_config.cauchy_scale,
                                 None,
                             )?;
-                        } else if mutation_config.method == crate::operations::Mutation::LevyFlight {
+                        } else if mutation_config.method == crate::operations::Mutation::LevyFlight
+                        {
                             mutation::factory_with_params(
                                 mutation_config.method,
                                 child,

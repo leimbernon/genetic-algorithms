@@ -91,7 +91,11 @@ pub fn variable_length_crossover<U: ChromosomeT>(
     let mut rng = crate::rng::make_rng();
 
     // Crossover point: 1..len (both halves non-empty)
-    let point = if len >= 2 { rng.random_range(1..len) } else { 0 };
+    let point = if len >= 2 {
+        rng.random_range(1..len)
+    } else {
+        0
+    };
 
     let mut child_dna_1 = Vec::with_capacity(len);
     let mut child_dna_2 = Vec::with_capacity(len);

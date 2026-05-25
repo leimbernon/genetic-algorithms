@@ -171,10 +171,8 @@ fn subtree_crossover<N: GpNode + Clone>(
     let mut child2_root = p2.root.clone();
 
     // Extract (clone) the subtrees that will be exchanged.
-    let sub1 = clone_subtree_at_index(&p1.root, i1)
-        .expect("i1 is within p1.root bounds");
-    let sub2 = clone_subtree_at_index(&p2.root, i2)
-        .expect("i2 is within p2.root bounds");
+    let sub1 = clone_subtree_at_index(&p1.root, i1).expect("i1 is within p1.root bounds");
+    let sub2 = clone_subtree_at_index(&p2.root, i2).expect("i2 is within p2.root bounds");
 
     // Swap: insert sub2 into child1 at position i1.
     {

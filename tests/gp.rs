@@ -6,11 +6,11 @@
 
 use genetic_algorithms::error::GaError;
 use genetic_algorithms::gp::{
-    BoolNode, GpChromosome, GpConfiguration, GpCrossover, GpGa, GpMutation, GpNode, MathNode,
-    Node, TreeChromosome, ramped_half_and_half,
+    ramped_half_and_half, BoolNode, GpChromosome, GpConfiguration, GpCrossover, GpGa, GpMutation,
+    GpNode, MathNode, Node, TreeChromosome,
 };
-use rand::SeedableRng;
 use rand::rngs::SmallRng;
+use rand::SeedableRng;
 use std::fmt;
 
 // ---------------------------------------------------------------------------
@@ -94,7 +94,8 @@ fn test_gp_node_trait() {
 
 #[test]
 fn test_tree_chromosome_not_linear() {
-    let chr: GpChromosome<TestNode> = GpChromosome::with_root(Box::new(Node::Terminal(TestNode::X)));
+    let chr: GpChromosome<TestNode> =
+        GpChromosome::with_root(Box::new(Node::Terminal(TestNode::X)));
     assert_eq!(chr.depth(), 1);
     assert_eq!(chr.node_count(), 1);
 }
@@ -127,7 +128,11 @@ fn test_display_prefix_sexpr() {
     });
     let chr = GpChromosome::with_root(root);
     let s = chr.to_string();
-    assert!(s.starts_with('('), "expected S-expr to start with '(', got: {}", s);
+    assert!(
+        s.starts_with('('),
+        "expected S-expr to start with '(', got: {}",
+        s
+    );
 }
 
 #[test]
@@ -173,7 +178,10 @@ fn test_math_node_gp_node_impl() {
 
     // sample_random_terminal produces a terminal
     let t = MathNode::sample_random_terminal(&mut rng);
-    assert!(t.is_terminal(), "sample_random_terminal must return a terminal");
+    assert!(
+        t.is_terminal(),
+        "sample_random_terminal must return a terminal"
+    );
 
     // ProtectedDiv returns 1.0 on zero denominator
     assert_eq!(MathNode::ProtectedDiv.evaluate(&[5.0, 0.0]), 1.0);
@@ -241,14 +249,34 @@ fn test_subtree_crossover() {
     let p2 = GpChromosome::with_root(build_tree(2));
 
     let result = GpCrossover::SubtreeCrossover.apply(&p1, &p2, 10, 100, &mut rng);
-    assert!(result.is_ok(), "Expected Ok from crossover, got: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Expected Ok from crossover, got: {:?}",
+        result
+    );
     let (c1, c2): (GpChromosome<TestNode>, GpChromosome<TestNode>) = result.unwrap();
 
     // Both children must respect the limits
-    assert!(c1.depth() <= 10, "child1 depth {} exceeds limit", c1.depth());
-    assert!(c2.depth() <= 10, "child2 depth {} exceeds limit", c2.depth());
-    assert!(c1.node_count() <= 100, "child1 node_count {} exceeds limit", c1.node_count());
-    assert!(c2.node_count() <= 100, "child2 node_count {} exceeds limit", c2.node_count());
+    assert!(
+        c1.depth() <= 10,
+        "child1 depth {} exceeds limit",
+        c1.depth()
+    );
+    assert!(
+        c2.depth() <= 10,
+        "child2 depth {} exceeds limit",
+        c2.depth()
+    );
+    assert!(
+        c1.node_count() <= 100,
+        "child1 node_count {} exceeds limit",
+        c1.node_count()
+    );
+    assert!(
+        c2.node_count() <= 100,
+        "child2 node_count {} exceeds limit",
+        c2.node_count()
+    );
 }
 
 #[test]
@@ -266,7 +294,10 @@ fn test_bloat_limit_crossover() {
             Err(GaError::TreeDepthExceeded(_))
         )
     });
-    assert!(found_depth_error, "Expected at least one TreeDepthExceeded across seeds 0-19");
+    assert!(
+        found_depth_error,
+        "Expected at least one TreeDepthExceeded across seeds 0-19"
+    );
 
     // Size limit: use a moderately-sized tree and a tiny node limit
     let found_size_error = (0u64..20).any(|seed| {
@@ -278,12 +309,17 @@ fn test_bloat_limit_crossover() {
             Err(GaError::TreeSizeExceeded(_))
         )
     });
-    assert!(found_size_error, "Expected at least one TreeSizeExceeded across seeds 0-19");
+    assert!(
+        found_size_error,
+        "Expected at least one TreeSizeExceeded across seeds 0-19"
+    );
 
     // A crossover with permissive limits should always succeed
     let p1 = GpChromosome::with_root(build_tree(2));
     let p2 = GpChromosome::with_root(build_tree(2));
-    assert!(GpCrossover::SubtreeCrossover.apply(&p1, &p2, 100, 1000, &mut rng).is_ok());
+    assert!(GpCrossover::SubtreeCrossover
+        .apply(&p1, &p2, 100, 1000, &mut rng)
+        .is_ok());
 }
 
 #[test]
@@ -299,7 +335,11 @@ fn test_point_mutation() {
     assert!(result.is_ok(), "PointMutation returned error: {:?}", result);
 
     // Tree shape must be preserved
-    assert_eq!(chr.node_count(), before_count, "PointMutation changed node_count");
+    assert_eq!(
+        chr.node_count(),
+        before_count,
+        "PointMutation changed node_count"
+    );
     assert_eq!(chr.depth(), before_depth, "PointMutation changed depth");
 }
 
@@ -325,7 +365,8 @@ fn test_hoist_mutation() {
     );
 
     // Edge case: terminal root — hoist is a no-op, returns Ok(())
-    let mut terminal_chr = GpChromosome::<TestNode>::with_root(Box::new(Node::Terminal(TestNode::X)));
+    let mut terminal_chr =
+        GpChromosome::<TestNode>::with_root(Box::new(Node::Terminal(TestNode::X)));
     let result2 = GpMutation::HoistMutation.apply(&mut terminal_chr, 100, 1000, &mut rng);
     assert!(result2.is_ok());
     assert_eq!(terminal_chr.node_count(), 1);
@@ -341,11 +382,17 @@ fn test_bloat_limit_mutation() {
         let mut r = SmallRng::seed_from_u64(seed);
         let mut chr = GpChromosome::with_root(build_tree(2));
         matches!(
-            GpMutation::SubtreeMutation { mutation_max_depth: 5 }.apply(&mut chr, 1, 1000, &mut r),
+            GpMutation::SubtreeMutation {
+                mutation_max_depth: 5
+            }
+            .apply(&mut chr, 1, 1000, &mut r),
             Err(GaError::TreeDepthExceeded(_))
         )
     });
-    assert!(found_error, "Expected SubtreeMutation to return TreeDepthExceeded for max_depth=1 across seeds 0-49");
+    assert!(
+        found_error,
+        "Expected SubtreeMutation to return TreeDepthExceeded for max_depth=1 across seeds 0-49"
+    );
     let _ = rng;
 }
 
@@ -395,11 +442,10 @@ fn test_gpga_run_symbolic_regression() {
         .with_max_depth(6)
         .with_max_node_count(50);
 
-    let mut engine =
-        GpGa::<TestNode>::with_ramped_half_and_half(config, |_tree| {
-            // Simple fitness: just return 1.0 (minimization target)
-            1.0
-        });
+    let mut engine = GpGa::<TestNode>::with_ramped_half_and_half(config, |_tree| {
+        // Simple fitness: just return 1.0 (minimization target)
+        1.0
+    });
 
     let result = engine.run();
     assert!(
@@ -424,9 +470,9 @@ fn test_gpga_run_symbolic_regression() {
 #[test]
 fn test_generation_stats_avg_node_count() {
     // Verify that GpGa populates avg_node_count in every GenerationStats.
-    use std::sync::{Arc, Mutex};
     use genetic_algorithms::observer::GaObserver;
     use genetic_algorithms::stats::GenerationStats;
+    use std::sync::{Arc, Mutex};
 
     // Collect stats via observer.
     let collected: Arc<Mutex<Vec<GenerationStats>>> = Arc::new(Mutex::new(Vec::new()));
@@ -442,7 +488,9 @@ fn test_generation_stats_avg_node_count() {
         }
     }
 
-    let observer = Arc::new(StatsCollector { stats: collected_clone });
+    let observer = Arc::new(StatsCollector {
+        stats: collected_clone,
+    });
 
     let config = GpConfiguration::new()
         .with_population_size(10)
@@ -452,8 +500,7 @@ fn test_generation_stats_avg_node_count() {
         .with_max_node_count(50);
 
     let mut engine =
-        GpGa::<TestNode>::with_ramped_half_and_half(config, |_tree| 1.0)
-            .with_observer(observer);
+        GpGa::<TestNode>::with_ramped_half_and_half(config, |_tree| 1.0).with_observer(observer);
 
     engine.run().expect("run should succeed");
 
@@ -497,7 +544,11 @@ fn test_serde_deep_tree() {
             children: vec![Box::new(root), Box::new(Node::Terminal(TestNode::X))],
         };
     }
-    assert_eq!(root.depth(), 64, "tree must be exactly depth 64 before serialization");
+    assert_eq!(
+        root.depth(),
+        64,
+        "tree must be exactly depth 64 before serialization"
+    );
 
     let chr = GpChromosome::<TestNode>::with_root(Box::new(root));
 
@@ -508,7 +559,8 @@ fn test_serde_deep_tree() {
         let mut json_ser = serde_json::Serializer::new(&mut out);
         let stacker_ser = serde_stacker::Serializer::new(&mut json_ser);
         use serde::Serialize as _;
-        chr.serialize(stacker_ser).expect("serialize must not overflow");
+        chr.serialize(stacker_ser)
+            .expect("serialize must not overflow");
     }
     let json = String::from_utf8(out).expect("output must be valid UTF-8");
 

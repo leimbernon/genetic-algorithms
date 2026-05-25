@@ -8,9 +8,9 @@
 use std::borrow::Cow;
 use std::sync::Arc;
 
+use super::configuration::ScatterConfiguration;
 use crate::configuration::ProblemSolving;
 use crate::de::gene::DeGene;
-use super::configuration::ScatterConfiguration;
 use crate::rng::make_rng;
 use crate::traits::{ChromosomeT, FitnessFn};
 use rand::Rng;
@@ -84,7 +84,10 @@ where
         }
 
         // ── 2. Reference-set construction ─────────────────────────────────────
-        assert!(!pool.is_empty(), "ScatterEngine: init_fn returned an empty population");
+        assert!(
+            !pool.is_empty(),
+            "ScatterEngine: init_fn returned an empty population"
+        );
 
         // Sort pool by fitness; take top b/2 as quality members
         self.sort_by_fitness(&mut pool);
@@ -99,7 +102,9 @@ where
         // Fill the rest with the most diverse solutions (Euclidean distance)
         let mut remaining: Vec<U> = remaining_slice.to_vec();
         for _ in 0..diverse_count {
-            if remaining.is_empty() { break; }
+            if remaining.is_empty() {
+                break;
+            }
             let idx = self.most_diverse_index(&ref_set, &remaining);
             ref_set.push(remaining.remove(idx));
         }
@@ -154,7 +159,12 @@ where
             }
         }
 
-        ScatterResult { reference_set: ref_set, best, best_fitness, iterations }
+        ScatterResult {
+            reference_set: ref_set,
+            best,
+            best_fitness,
+            iterations,
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -216,12 +226,16 @@ where
         match self.config.problem_solving {
             ProblemSolving::Minimization | ProblemSolving::FixedFitness => {
                 pop.sort_unstable_by(|a, b| {
-                    a.fitness().partial_cmp(&b.fitness()).unwrap_or(std::cmp::Ordering::Equal)
+                    a.fitness()
+                        .partial_cmp(&b.fitness())
+                        .unwrap_or(std::cmp::Ordering::Equal)
                 });
             }
             ProblemSolving::Maximization => {
                 pop.sort_unstable_by(|a, b| {
-                    b.fitness().partial_cmp(&a.fitness()).unwrap_or(std::cmp::Ordering::Equal)
+                    b.fitness()
+                        .partial_cmp(&a.fitness())
+                        .unwrap_or(std::cmp::Ordering::Equal)
                 });
             }
         }

@@ -5,11 +5,11 @@
 //! crossover and mutation operators, selection and survivor strategies, and
 //! optimization direction.
 
+use super::crossover::GpCrossover;
+use super::mutation::GpMutation;
 use crate::configuration::{LimitConfiguration, SelectionConfiguration};
 use crate::error::GaError;
 use crate::operations::{Selection, Survivor};
-use super::crossover::GpCrossover;
-use super::mutation::GpMutation;
 
 /// Configuration for the GP engine.
 ///

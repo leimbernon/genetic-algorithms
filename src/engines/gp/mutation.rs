@@ -84,9 +84,13 @@ impl GpMutation {
         rng: &mut impl Rng,
     ) -> Result<(), GaError> {
         match self {
-            GpMutation::SubtreeMutation { mutation_max_depth } => {
-                subtree_mutation(chromosome, max_depth, max_node_count, *mutation_max_depth, rng)
-            }
+            GpMutation::SubtreeMutation { mutation_max_depth } => subtree_mutation(
+                chromosome,
+                max_depth,
+                max_node_count,
+                *mutation_max_depth,
+                rng,
+            ),
             GpMutation::PointMutation { p_per_node } => {
                 point_mutation(chromosome, *p_per_node, rng);
                 Ok(())
@@ -191,8 +195,8 @@ fn hoist_mutation<N: GpNode + Clone>(chromosome: &mut GpChromosome<N>, rng: &mut
     let s1_preorder = function_indices[s1_idx_in_list];
 
     // Clone the subtree at S1 to work with it.
-    let s1_node = clone_subtree_at_index_local(&chromosome.root, s1_preorder)
-        .expect("s1_preorder is valid");
+    let s1_node =
+        clone_subtree_at_index_local(&chromosome.root, s1_preorder).expect("s1_preorder is valid");
 
     // Count nodes in S1 to pick a random descendant S2.
     let s1_size = s1_node.node_count();

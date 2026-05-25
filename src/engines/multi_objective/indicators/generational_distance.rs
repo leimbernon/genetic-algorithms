@@ -1,5 +1,5 @@
-use crate::error::GaError;
 use super::{nearest_distance, validate_dimension_consistency, validate_non_empty};
+use crate::error::GaError;
 
 /// Computes the Generational Distance (GD) indicator.
 ///
@@ -37,12 +37,10 @@ pub fn generational_distance(
     let true_dim = validate_dimension_consistency(true_front)?;
 
     if approx_dim != true_dim {
-        return Err(GaError::InvalidIndicatorConfiguration(
-            format!(
-                "Dimension mismatch: approx_front has {} dimensions, true_front has {}",
-                approx_dim, true_dim,
-            ),
-        ));
+        return Err(GaError::InvalidIndicatorConfiguration(format!(
+            "Dimension mismatch: approx_front has {} dimensions, true_front has {}",
+            approx_dim, true_dim,
+        )));
     }
 
     if power <= 0.0 {
@@ -95,16 +93,25 @@ mod tests {
         let approx = vec![vec![1.0, 2.0]];
         let true_front = vec![vec![1.0, 2.0, 3.0]];
         let result = generational_distance(&approx, &true_front, 2.0);
-        assert!(matches!(result, Err(GaError::InvalidIndicatorConfiguration(_))));
+        assert!(matches!(
+            result,
+            Err(GaError::InvalidIndicatorConfiguration(_))
+        ));
     }
 
     #[test]
     fn test_gd_rejects_empty() {
         let result = generational_distance(&[], &[vec![1.0, 2.0]], 2.0);
-        assert!(matches!(result, Err(GaError::InvalidIndicatorConfiguration(_))));
+        assert!(matches!(
+            result,
+            Err(GaError::InvalidIndicatorConfiguration(_))
+        ));
 
         let result = generational_distance(&[vec![1.0, 2.0]], &[], 2.0);
-        assert!(matches!(result, Err(GaError::InvalidIndicatorConfiguration(_))));
+        assert!(matches!(
+            result,
+            Err(GaError::InvalidIndicatorConfiguration(_))
+        ));
     }
 
     #[test]
@@ -112,9 +119,15 @@ mod tests {
         let approx = vec![vec![1.0, 2.0]];
         let true_front = vec![vec![1.0, 2.0]];
         let result = generational_distance(&approx, &true_front, 0.0);
-        assert!(matches!(result, Err(GaError::InvalidIndicatorConfiguration(_))));
+        assert!(matches!(
+            result,
+            Err(GaError::InvalidIndicatorConfiguration(_))
+        ));
 
         let result = generational_distance(&approx, &true_front, -1.0);
-        assert!(matches!(result, Err(GaError::InvalidIndicatorConfiguration(_))));
+        assert!(matches!(
+            result,
+            Err(GaError::InvalidIndicatorConfiguration(_))
+        ));
     }
 }

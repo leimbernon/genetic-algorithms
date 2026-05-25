@@ -259,4 +259,3 @@ impl<N: GpNode> Drop for Node<N> {
         }
     }
 }
-

@@ -119,7 +119,10 @@ where
         let mut best_fitness = layers[0]
             .iter()
             .map(|u| u.fitness())
-            .fold(f64::NAN, |acc, f| if self.is_better(f, acc) { f } else { acc });
+            .fold(
+                f64::NAN,
+                |acc, f| if self.is_better(f, acc) { f } else { acc },
+            );
         let mut best = layers[0]
             .iter()
             .max_by(|a, b| {
@@ -146,7 +149,8 @@ where
                 // Optionally bring in the best individual from the adjacent
                 // older layer as an extra parent (cross-layer mating).
                 let elder_best: Option<U> = if layer_idx + 1 < self.config.n_layers {
-                    self.find_best(&layers[layer_idx + 1]).map(|i| layers[layer_idx + 1][i].clone())
+                    self.find_best(&layers[layer_idx + 1])
+                        .map(|i| layers[layer_idx + 1][i].clone())
                 } else {
                     None
                 };
@@ -177,14 +181,13 @@ where
                         layers[layer_idx][b].clone()
                     };
 
-                    let mut offspring = match crossover::factory(
-                        &layers[layer_idx][a],
-                        &parent_2,
-                        crossover_cfg,
-                    ) {
-                        Ok(children) if !children.is_empty() => children.into_iter().next().unwrap(),
-                        _ => layers[layer_idx][a].clone(),
-                    };
+                    let mut offspring =
+                        match crossover::factory(&layers[layer_idx][a], &parent_2, crossover_cfg) {
+                            Ok(children) if !children.is_empty() => {
+                                children.into_iter().next().unwrap()
+                            }
+                            _ => layers[layer_idx][a].clone(),
+                        };
 
                     let _ = mutation::factory_with_params(
                         self.config.mutation,
@@ -272,7 +275,12 @@ where
             }
         }
 
-        AlpsResult { layers, best, best_fitness, generations }
+        AlpsResult {
+            layers,
+            best,
+            best_fitness,
+            generations,
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -313,12 +321,16 @@ where
         match self.config.problem_solving {
             ProblemSolving::Minimization => {
                 pop.sort_unstable_by(|a, b| {
-                    a.fitness().partial_cmp(&b.fitness()).unwrap_or(std::cmp::Ordering::Equal)
+                    a.fitness()
+                        .partial_cmp(&b.fitness())
+                        .unwrap_or(std::cmp::Ordering::Equal)
                 });
             }
             _ => {
                 pop.sort_unstable_by(|a, b| {
-                    b.fitness().partial_cmp(&a.fitness()).unwrap_or(std::cmp::Ordering::Equal)
+                    b.fitness()
+                        .partial_cmp(&a.fitness())
+                        .unwrap_or(std::cmp::Ordering::Equal)
                 });
             }
         }

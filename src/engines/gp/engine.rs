@@ -249,9 +249,13 @@ where
             let sel_cfg = self.config.effective_selection_config();
             let t_sel: Option<Instant> = if self.observer.is_some() {
                 #[cfg(not(target_arch = "wasm32"))]
-                { Some(Instant::now()) }
+                {
+                    Some(Instant::now())
+                }
                 #[cfg(target_arch = "wasm32")]
-                { None }
+                {
+                    None
+                }
             } else {
                 None
             };
@@ -263,9 +267,13 @@ where
             // Crossover + mutation → offspring
             let t_cx: Option<Instant> = if self.observer.is_some() {
                 #[cfg(not(target_arch = "wasm32"))]
-                { Some(Instant::now()) }
+                {
+                    Some(Instant::now())
+                }
                 #[cfg(target_arch = "wasm32")]
-                { None }
+                {
+                    None
+                }
             } else {
                 None
             };
@@ -313,8 +321,7 @@ where
                 // Apply each mutation with its configured probability.
                 for (mutation, prob) in &self.config.mutations {
                     if rng.random::<f64>() < *prob {
-                        if let Err(e) =
-                            mutation.apply(&mut c1, max_depth, max_node_count, &mut rng)
+                        if let Err(e) = mutation.apply(&mut c1, max_depth, max_node_count, &mut rng)
                         {
                             log::warn!(
                                 target: "gp_events",
@@ -325,8 +332,7 @@ where
                         }
                     }
                     if rng.random::<f64>() < *prob {
-                        if let Err(e) =
-                            mutation.apply(&mut c2, max_depth, max_node_count, &mut rng)
+                        if let Err(e) = mutation.apply(&mut c2, max_depth, max_node_count, &mut rng)
                         {
                             log::warn!(
                                 target: "gp_events",
@@ -353,9 +359,13 @@ where
             // Evaluate offspring fitness before merging into population.
             let t_fit: Option<Instant> = if self.observer.is_some() {
                 #[cfg(not(target_arch = "wasm32"))]
-                { Some(Instant::now()) }
+                {
+                    Some(Instant::now())
+                }
                 #[cfg(target_arch = "wasm32")]
-                { None }
+                {
+                    None
+                }
             } else {
                 None
             };
@@ -370,9 +380,13 @@ where
             let limit_cfg = self.config.limit_configuration();
             let t_surv: Option<Instant> = if self.observer.is_some() {
                 #[cfg(not(target_arch = "wasm32"))]
-                { Some(Instant::now()) }
+                {
+                    Some(Instant::now())
+                }
                 #[cfg(target_arch = "wasm32")]
-                { None }
+                {
+                    None
+                }
             } else {
                 None
             };

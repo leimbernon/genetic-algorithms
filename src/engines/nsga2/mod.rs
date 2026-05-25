@@ -115,12 +115,12 @@ pub mod pareto;
 
 use crate::configuration::GaConfiguration;
 use crate::error::GaError;
-use crate::nsga2::configuration::{Nsga2Configuration, ObjectiveDirection};
-use crate::nsga2::crowding_distance::assign_crowding_distance;
 use crate::multi_objective::non_dominated_sort::{
     assign_ranks, non_dominated_sort_constrained, non_dominated_sort_with_directions,
 };
 use crate::multi_objective::pareto::{ParetoFront, ParetoIndividual};
+use crate::nsga2::configuration::{Nsga2Configuration, ObjectiveDirection};
+use crate::nsga2::crowding_distance::assign_crowding_distance;
 use crate::observer::Nsga2Observer;
 use crate::operations::mutation;
 use crate::traits::{ChromosomeT, InitializationFn};
@@ -314,9 +314,13 @@ where
             // Non-dominated sorting (direction-aware, optionally constrained)
             let t_sort: Option<Instant> = if self.observer.is_some() {
                 #[cfg(not(target_arch = "wasm32"))]
-                { Some(Instant::now()) }
+                {
+                    Some(Instant::now())
+                }
                 #[cfg(target_arch = "wasm32")]
-                { None }
+                {
+                    None
+                }
             } else {
                 None
             };
@@ -337,9 +341,13 @@ where
             // Assign crowding distance per front
             let t_crowd: Option<Instant> = if self.observer.is_some() {
                 #[cfg(not(target_arch = "wasm32"))]
-                { Some(Instant::now()) }
+                {
+                    Some(Instant::now())
+                }
                 #[cfg(target_arch = "wasm32")]
-                { None }
+                {
+                    None
+                }
             } else {
                 None
             };
@@ -550,12 +558,7 @@ where
                         )?;
                     } else if mutation_config.method == crate::operations::Mutation::Polynomial {
                         let eta = mutation_config.polynomial_eta.or(mutation_config.step);
-                        mutation::factory_with_params(
-                            mutation_config.method,
-                            child,
-                            eta,
-                            None,
-                        )?;
+                        mutation::factory_with_params(mutation_config.method, child, eta, None)?;
                     } else {
                         mutation::factory_with_params(
                             mutation_config.method,

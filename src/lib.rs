@@ -243,6 +243,9 @@
 
 extern crate core;
 
+pub mod aos;
+#[cfg(feature = "benchmarks")]
+pub mod benchmarks;
 #[cfg(feature = "serde")]
 #[path = "observe/checkpoint.rs"]
 pub mod checkpoint;
@@ -257,6 +260,7 @@ pub mod fitness;
 pub mod ga;
 #[path = "types/genotypes/mod.rs"]
 pub mod genotypes;
+pub mod hall_of_fame;
 pub mod initializers;
 #[path = "observe/observer/mod.rs"]
 pub mod observer;
@@ -265,10 +269,6 @@ pub mod population;
 #[path = "observe/reporter/mod.rs"]
 pub mod reporter;
 pub mod rng;
-pub mod hall_of_fame;
-pub mod aos;
-#[cfg(feature = "benchmarks")]
-pub mod benchmarks;
 pub mod stats;
 pub mod traits;
 pub mod validators;
@@ -282,17 +282,17 @@ pub mod alps;
 pub mod cellular;
 #[path = "engines/de/mod.rs"]
 pub mod de;
-#[path = "engines/scatter/mod.rs"]
-pub mod scatter;
 #[path = "engines/island/mod.rs"]
 pub mod island;
-pub mod niching;
 #[path = "engines/multi_objective/mod.rs"]
 pub mod multi_objective;
+pub mod niching;
 #[path = "engines/nsga2/mod.rs"]
 pub mod nsga2;
 #[path = "engines/nsga3/mod.rs"]
 pub mod nsga3;
+#[path = "engines/scatter/mod.rs"]
+pub mod scatter;
 
 #[path = "engines/moead/mod.rs"]
 pub mod moead;
@@ -309,25 +309,25 @@ pub mod ibea;
 #[path = "engines/gp/mod.rs"]
 pub mod gp;
 
+pub use aos::{AosState, AosStrategy};
+pub use constraints::ConstraintHandling;
+pub use constraints::PenaltyStrategy;
 pub use ga::TerminationCause;
+pub use hall_of_fame::{DistanceMetric, HallOfFame, HallOfFameConfig};
 pub use observer::AllObserver;
 pub use observer::CompositeObserver;
 pub use observer::ExtensionEvent;
 pub use observer::GaObserver;
+pub use observer::IbeaObserver;
 pub use observer::IslandGaObserver;
 pub use observer::LogObserver;
-pub use observer::MoeaDObserver;
-pub use observer::IbeaObserver;
-pub use observer::SmsEmoaObserver;
-pub use observer::Spea2Observer;
 #[cfg(feature = "observer-metrics")]
 pub use observer::MetricsObserver;
+pub use observer::MoeaDObserver;
 pub use observer::NoopObserver;
 pub use observer::Nsga2Observer;
 pub use observer::Nsga3Observer;
+pub use observer::SmsEmoaObserver;
+pub use observer::Spea2Observer;
 #[cfg(feature = "observer-tracing")]
 pub use observer::TracingObserver;
-pub use constraints::ConstraintHandling;
-pub use constraints::PenaltyStrategy;
-pub use hall_of_fame::{DistanceMetric, HallOfFame, HallOfFameConfig};
-pub use aos::{AosState, AosStrategy};

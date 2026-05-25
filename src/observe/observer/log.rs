@@ -275,11 +275,7 @@ impl<U: ChromosomeT> SmsEmoaObserver<U> for LogObserver {
             "Hypervolume contribution assigned at generation {} ({:.2}ms) — pop={}",
             generation, duration_ms, population_size);
     }
-    fn on_steady_state_removal(
-        &self,
-        generation: usize,
-        population_size: usize,
-    ) {
+    fn on_steady_state_removal(&self, generation: usize, population_size: usize) {
         log::debug!(target: "sms_emoa_events",
             "Steady-state removal at generation {} — pop={}",
             generation, population_size);
