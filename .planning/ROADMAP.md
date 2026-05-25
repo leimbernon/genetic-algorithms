@@ -121,7 +121,7 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 - [ ] **Phase 50: Lexicase Selection** — `MultiCaseFitness: ChromosomeT` trait; `LexicaseSelection`; epsilon-lexicase variant; behavioral diversity CI test
 - [ ] **Phase 51: Multi-Parent Crossover + Self-Adaptive Mutation** — UNDX, SPX, PCX operators with `RealValued` marker trait; `SelfAdaptive: ChromosomeT` trait; `Mutation::SelfAdaptiveGaussian` with log-normal sigma update
 - [x] **Phase 52: Variable-Length Chromosomes** — `ChromosomeLength::Variable { min, max }`; `Mutation::Insertion` / `Mutation::Deletion`; `Crossover::VariableLength(AlignmentStrategy)`; parsimony pressure survivor config (completed 2026-05-24)
-- [ ] **Phase 53: Tree Chromosome + GpGa Engine** — `TreeChromosome: ChromosomeT` supertrait; `GpGa<U>` engine; ramped half-and-half init; subtree crossover + mutation; bloat control; serde with `serde_stacker`; `Display` as expression string
+- [x] **Phase 53: Tree Chromosome + GpGa Engine** — `TreeChromosome: ChromosomeT` supertrait; `GpGa<U>` engine; ramped half-and-half init; subtree crossover + mutation; bloat control; serde with `serde_stacker`; `Display` as expression string (completed 2026-05-25)
 
 ## Phase Details
 
@@ -558,7 +558,7 @@ Plans:
 - [x] 53-03-PLAN.md — GpGa engine loop: ramped half-and-half init + full run() loop + observer hooks + avg_node_count (CHR-04, CHR-05)
 
 **Wave 3** *(blocked on Wave 2)*
-- [ ] 53-04-PLAN.md — Serde checkpoint: serde_stacker dep + stack-safe Node<N> serde + depth-64 CI test (CHR-06)
+- [x] 53-04-PLAN.md — Serde checkpoint: serde_stacker dep + stack-safe Node<N> serde + depth-64 CI test (CHR-06)
 
 **UI hint**: no
 
@@ -614,4 +614,4 @@ Plans:
 | 50. Lexicase Selection | v3.0.0 | 0 | Not started | — |
 | 51. Multi-Parent Crossover + Self-Adaptive Mutation | v3.0.0 | 0 | Not started | — |
 | 52. Variable-Length Chromosomes | v3.0.0 | 0 | Not started | — |
-| 53. Tree Chromosome + GpGa Engine | v3.0.0 | 3/4 | In Progress|  |
+| 53. Tree Chromosome + GpGa Engine | v3.0.0 | 4/4 | Complete   | 2026-05-25 |
