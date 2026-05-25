@@ -104,13 +104,12 @@ fn clone_at_index_impl<N: GpNode + Clone>(
 }
 
 /// Stateful replacer that traverses a tree and swaps the node at `target`
-/// with `replacement`, storing the evicted subtree in `old`.
+/// with `replacement`.
 ///
 /// Using a struct avoids moving `replacement` in a loop (Rust borrow rules).
 struct Replacer<N: GpNode> {
     target: usize,
     replacement: Option<Box<Node<N>>>,
-    old: Option<Box<Node<N>>>,
 }
 
 impl<N: GpNode> Replacer<N> {
@@ -118,7 +117,6 @@ impl<N: GpNode> Replacer<N> {
         Replacer {
             target,
             replacement: Some(replacement),
-            old: None,
         }
     }
 
@@ -134,8 +132,8 @@ impl<N: GpNode> Replacer<N> {
 
         if my_index == self.target {
             let replacement = self.replacement.take().unwrap();
-            let old = std::mem::replace(node, replacement);
-            self.old = Some(old);
+            // Assign directly; the evicted subtree is dropped here (no need to retain it).
+            *node = replacement;
             return;
         }
 
