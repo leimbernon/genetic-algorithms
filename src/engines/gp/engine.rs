@@ -23,8 +23,6 @@
 //! on WASM. No other rayon usage is present in this module.
 
 use std::sync::Arc;
-
-#[cfg(not(target_arch = "wasm32"))]
 use std::time::Instant;
 
 use rand::Rng;
