@@ -549,7 +549,7 @@ Plans:
 
 Plans:
 **Wave 0** (API contract)
-- [ ] 53-01-PLAN.md — Core types: GpNode trait, Node<N>, GpChromosome, TreeChromosome, GaError variants, GenerationStats.avg_node_count, tests/gp.rs stubs (CHR-03, CHR-07)
+- [x] 53-01-PLAN.md — Core types: GpNode trait, Node<N>, GpChromosome, TreeChromosome, GaError variants, GenerationStats.avg_node_count, tests/gp.rs stubs (CHR-03, CHR-07)
 
 **Wave 1** *(blocked on Wave 0)*
 - [ ] 53-02-PLAN.md — GP operators: SubtreeCrossover + SubtreeMutation/PointMutation/HoistMutation with bloat enforcement (CHR-05)
@@ -614,4 +614,4 @@ Plans:
 | 50. Lexicase Selection | v3.0.0 | 0 | Not started | — |
 | 51. Multi-Parent Crossover + Self-Adaptive Mutation | v3.0.0 | 0 | Not started | — |
 | 52. Variable-Length Chromosomes | v3.0.0 | 0 | Not started | — |
-| 53. Tree Chromosome + GpGa Engine | v3.0.0 | 4 | Planned | — |
+| 53. Tree Chromosome + GpGa Engine | v3.0.0 | 1/4 | In Progress|  |

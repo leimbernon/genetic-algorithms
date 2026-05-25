@@ -46,11 +46,11 @@
 
 - [x] **CHR-01**: User can configure `ChromosomeLength::Variable { min, max }` to enable variable-length evolution — existing crossover operators return `GaError::IncompatibleChromosomeLength` for unequal-length parents; `Crossover::VariableLength(AlignmentStrategy)` handles variable-length parents explicitly; `ExtensionOperator` samples length distribution from current population (not fixed regrowth)
 - [x] **CHR-02**: User can optionally apply parsimony pressure to variable-length populations — configurable `length_penalty: f64` in survivor configuration penalizes longer chromosomes proportionally, preventing unbounded length growth
-- [ ] **CHR-03**: User can define a tree-structured chromosome by implementing `TreeChromosome: ChromosomeT` — separate from `LinearChromosome`; no flat-slice methods; tree operators (subtree crossover, subtree/point/hoist mutation) operate against this trait
-- [ ] **CHR-04**: User can run a GP optimization via `GpGa<U: TreeChromosome>` with ramped half-and-half initialization, configurable primitive set (arithmetic and boolean built-ins provided), and ephemeral random constants (ERC) as terminals
-- [ ] **CHR-05**: User can enforce tree size limits via required `max_depth: usize` and `max_node_count: usize` in `GpConfiguration` — both enforced post-crossover and post-mutation; violations return `GaError::TreeDepthExceeded` or `GaError::TreeSizeExceeded`; population average node count tracked in `GenerationStats`
-- [ ] **CHR-06**: User can checkpoint and restore GP runs via the `serde` feature — `TreeChromosome` serialization uses `serde_stacker` to prevent stack overflow on deep evolved trees (depth ≥ 64 validated in CI)
-- [ ] **CHR-07**: User can read the result of a GP run as a human-readable expression string — `GpChromosome` implements `Display` rendering the tree as infix/prefix expression
+- [x] **CHR-03**: User can define a tree-structured chromosome by implementing `TreeChromosome: ChromosomeT` — separate from `LinearChromosome`; no flat-slice methods; tree operators (subtree crossover, subtree/point/hoist mutation) operate against this trait
+- [x] **CHR-04**: User can run a GP optimization via `GpGa<U: TreeChromosome>` with ramped half-and-half initialization, configurable primitive set (arithmetic and boolean built-ins provided), and ephemeral random constants (ERC) as terminals
+- [x] **CHR-05**: User can enforce tree size limits via required `max_depth: usize` and `max_node_count: usize` in `GpConfiguration` — both enforced post-crossover and post-mutation; violations return `GaError::TreeDepthExceeded` or `GaError::TreeSizeExceeded`; population average node count tracked in `GenerationStats`
+- [x] **CHR-06**: User can checkpoint and restore GP runs via the `serde` feature — `TreeChromosome` serialization uses `serde_stacker` to prevent stack overflow on deep evolved trees (depth ≥ 64 validated in CI)
+- [x] **CHR-07**: User can read the result of a GP run as a human-readable expression string — `GpChromosome` implements `Display` rendering the tree as infix/prefix expression
 
 ### TRAITS — New Opt-In Trait Contracts
 
@@ -87,11 +87,11 @@
 | MUT-06 | Phase 52 | Complete |
 | CHR-01 | Phase 52 | Complete |
 | CHR-02 | Phase 52 | Complete |
-| CHR-03 | Phase 53 | Pending |
-| CHR-04 | Phase 53 | Pending |
-| CHR-05 | Phase 53 | Pending |
-| CHR-06 | Phase 53 | Pending |
-| CHR-07 | Phase 53 | Pending |
+| CHR-03 | Phase 53 | Complete |
+| CHR-04 | Phase 53 | Complete |
+| CHR-05 | Phase 53 | Complete |
+| CHR-06 | Phase 53 | Complete |
+| CHR-07 | Phase 53 | Complete |
 
 ## Future Requirements
 
