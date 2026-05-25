@@ -131,29 +131,43 @@ impl<N: GpNode> Node<N> {
     ///
     /// A single terminal has depth 1. A function node's depth is
     /// `1 + max(child depths)`.
+    ///
+    /// Uses an explicit stack (iterative) to avoid call-stack overflow on deep
+    /// trees, matching the iterative [`Drop`] implementation below.
     pub fn depth(&self) -> usize {
-        match self {
-            Node::Terminal(_) => 1,
-            Node::Function { children, .. } => {
-                1 + children
-                    .iter()
-                    .map(|c| c.depth())
-                    .max()
-                    .unwrap_or(0)
+        let mut stack: Vec<(&Node<N>, usize)> = vec![(self, 1)];
+        let mut max_depth = 0;
+        while let Some((node, d)) = stack.pop() {
+            if d > max_depth {
+                max_depth = d;
+            }
+            if let Node::Function { children, .. } = node {
+                for child in children {
+                    stack.push((child, d + 1));
+                }
             }
         }
+        max_depth
     }
 
     /// Returns the total number of nodes in this tree.
     ///
     /// A terminal counts as 1. A function node counts as `1 + sum(child counts)`.
+    ///
+    /// Uses an explicit stack (iterative) to avoid call-stack overflow on deep
+    /// trees, matching the iterative [`Drop`] implementation below.
     pub fn node_count(&self) -> usize {
-        match self {
-            Node::Terminal(_) => 1,
-            Node::Function { children, .. } => {
-                1 + children.iter().map(|c| c.node_count()).sum::<usize>()
+        let mut stack: Vec<&Node<N>> = vec![self];
+        let mut count = 0;
+        while let Some(node) = stack.pop() {
+            count += 1;
+            if let Node::Function { children, .. } = node {
+                for child in children {
+                    stack.push(child);
+                }
             }
         }
+        count
     }
 }
 
