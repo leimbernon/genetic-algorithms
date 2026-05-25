@@ -24,6 +24,9 @@
 
 use std::sync::Arc;
 
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::Instant;
+
 use rand::Rng;
 
 use crate::error::GaError;
@@ -246,9 +249,28 @@ where
 
             // Parent selection — reuse selection::factory from existing infra.
             let sel_cfg = self.config.effective_selection_config();
+            let t_sel: Option<Instant> = if self.observer.is_some() {
+                #[cfg(not(target_arch = "wasm32"))]
+                { Some(Instant::now()) }
+                #[cfg(target_arch = "wasm32")]
+                { None }
+            } else {
+                None
+            };
             let pairs = selection::factory(&pop, sel_cfg, 1)?;
+            if let Some(t) = t_sel {
+                self.notify(|obs| obs.on_selection_complete(gen, t.elapsed(), pairs.len()));
+            }
 
             // Crossover + mutation → offspring
+            let t_cx: Option<Instant> = if self.observer.is_some() {
+                #[cfg(not(target_arch = "wasm32"))]
+                { Some(Instant::now()) }
+                #[cfg(target_arch = "wasm32")]
+                { None }
+            } else {
+                None
+            };
             let mut offspring: Vec<GpChromosome<N>> = Vec::with_capacity(pairs.len() * 2);
 
             let max_depth = self.config.max_depth;
@@ -322,18 +344,50 @@ where
                 offspring.push(c2);
             }
 
+            if let Some(t) = t_cx {
+                let elapsed = t.elapsed();
+                let offspring_count = offspring.len();
+                let pop_size = pop.len();
+                self.notify(|obs| obs.on_crossover_complete(gen, elapsed, offspring_count));
+                self.notify(|obs| obs.on_mutation_complete(gen, elapsed, pop_size));
+            }
+
             // Evaluate offspring fitness before merging into population.
+            let t_fit: Option<Instant> = if self.observer.is_some() {
+                #[cfg(not(target_arch = "wasm32"))]
+                { Some(Instant::now()) }
+                #[cfg(target_arch = "wasm32")]
+                { None }
+            } else {
+                None
+            };
             self.evaluate_population(&mut offspring);
+            if let Some(t) = t_fit {
+                let pop_size = offspring.len();
+                self.notify(|obs| obs.on_fitness_evaluation_complete(gen, t.elapsed(), pop_size));
+            }
 
             // Merge parents + offspring, then trim to population_size.
             pop.extend(offspring);
             let limit_cfg = self.config.limit_configuration();
+            let t_surv: Option<Instant> = if self.observer.is_some() {
+                #[cfg(not(target_arch = "wasm32"))]
+                { Some(Instant::now()) }
+                #[cfg(target_arch = "wasm32")]
+                { None }
+            } else {
+                None
+            };
             survivor::factory(
                 self.config.survivor,
                 &mut pop,
                 self.config.population_size,
                 limit_cfg,
             )?;
+            if let Some(t) = t_surv {
+                let pop_size = pop.len();
+                self.notify(|obs| obs.on_survivor_selection_complete(gen, t.elapsed(), pop_size));
+            }
 
             // ── Best update ───────────────────────────────────────────────────
             let gen_best_idx = Self::find_best_index(&pop, self.config.is_maximization);
@@ -347,6 +401,8 @@ where
                 self.notify(|obs| obs.on_new_best(gen, best_clone));
             } else {
                 stagnation_count += 1;
+                let sc = stagnation_count;
+                self.notify(|obs| obs.on_stagnation(gen, sc));
             }
 
             // ── Stats ─────────────────────────────────────────────────────────
