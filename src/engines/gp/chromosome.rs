@@ -110,6 +110,17 @@ fn default_fitness_fn<N: GpNode>() -> TreeFitnessFn<N> {
     None
 }
 
+// Manual Debug because Arc<dyn Fn> does not implement Debug.
+impl<N: GpNode + std::fmt::Debug> std::fmt::Debug for GpChromosome<N> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("GpChromosome")
+            .field("root", &self.root)
+            .field("fitness", &self.fitness)
+            .field("age", &self.age)
+            .finish_non_exhaustive()
+    }
+}
+
 // Manual Clone because Arc<dyn Fn> is Clone via Arc::clone.
 impl<N: GpNode> Clone for GpChromosome<N> {
     fn clone(&self) -> Self {

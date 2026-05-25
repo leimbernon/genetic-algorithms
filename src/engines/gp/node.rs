@@ -7,6 +7,7 @@
 //! tree of `GpNode` values and supports depth computation, node counting, and
 //! an iterative `Drop` implementation to prevent stack overflows on deep trees.
 
+use crate::error::GaError;
 use rand::Rng;
 use std::mem;
 
@@ -89,7 +90,7 @@ pub trait GpNode: Clone + Send + Sync + 'static {
 /// `Node<N>` implements a custom iterative [`Drop`] to avoid stack overflow
 /// when dropping very deep trees. The default recursive drop would overflow the
 /// stack for trees with hundreds of thousands of nodes.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -139,6 +140,71 @@ impl<N: GpNode> Node<N> {
             }
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// Shared helpers (pub(crate)) used by crossover.rs and mutation.rs
+// ---------------------------------------------------------------------------
+
+/// Checks that `node` does not violate the configured depth or size limits.
+///
+/// Returns [`GaError::TreeDepthExceeded`] if `node.depth() > max_depth` or
+/// [`GaError::TreeSizeExceeded`] if `node.node_count() > max_node_count`.
+///
+/// Depth is checked first: a tree that is too deep is also too large, so the
+/// depth error gives a more precise diagnosis.
+pub(crate) fn check_limits<N: GpNode>(
+    node: &Node<N>,
+    max_depth: usize,
+    max_node_count: usize,
+) -> Result<(), GaError> {
+    let d = node.depth();
+    if d > max_depth {
+        return Err(GaError::TreeDepthExceeded(format!(
+            "depth {} exceeds max_depth {}",
+            d, max_depth
+        )));
+    }
+    let n = node.node_count();
+    if n > max_node_count {
+        return Err(GaError::TreeSizeExceeded(format!(
+            "{} nodes exceeds max_node_count {}",
+            n, max_node_count
+        )));
+    }
+    Ok(())
+}
+
+/// Grows a random tree up to `max_depth` using the "grow" method.
+///
+/// At each level there is a 50% probability of generating a terminal (leaf)
+/// unless `max_depth <= 1`, in which case a terminal is always returned.
+/// If `N::all_functions()` returns an empty list, a terminal is always returned
+/// regardless of depth.
+///
+/// # Arguments
+///
+/// * `max_depth` — maximum allowed depth for the generated subtree
+/// * `rng` — random number generator
+pub(crate) fn grow_tree<N: GpNode>(max_depth: usize, rng: &mut impl Rng) -> Node<N> {
+    if max_depth <= 1 {
+        return Node::Terminal(N::sample_random_terminal(rng));
+    }
+    let functions = N::all_functions();
+    if functions.is_empty() {
+        return Node::Terminal(N::sample_random_terminal(rng));
+    }
+    let p_terminal: f64 = 0.5;
+    if rng.random::<f64>() < p_terminal {
+        return Node::Terminal(N::sample_random_terminal(rng));
+    }
+    let idx = rng.random_range(0..functions.len());
+    let f = functions[idx].clone();
+    let arity = f.arity();
+    let children: Vec<Box<Node<N>>> = (0..arity)
+        .map(|_| Box::new(grow_tree::<N>(max_depth - 1, rng)))
+        .collect();
+    Node::Function { value: f, children }
 }
 
 /// Custom iterative `Drop` to prevent stack overflow on very deep trees.
