@@ -1,10 +1,15 @@
-//! GP engine configuration shell.
+//! GP engine configuration.
 //!
-//! [`GpConfiguration`] holds tree-specific parameters for the `GpGa` engine:
-//! population size, generation limit, tree depth limits, and node count limits.
-//! Crossover, mutation, and selection configuration will be added in Wave 2.
+//! [`GpConfiguration`] holds all parameters for the `GpGa` engine:
+//! population size, generation limit, tree depth limits, node count limits,
+//! crossover and mutation operators, selection and survivor strategies, and
+//! optimization direction.
 
+use crate::configuration::{LimitConfiguration, SelectionConfiguration};
 use crate::error::GaError;
+use crate::operations::{Selection, Survivor};
+use super::crossover::GpCrossover;
+use super::mutation::GpMutation;
 
 /// Configuration for the GP engine.
 ///
@@ -20,6 +25,13 @@ use crate::error::GaError;
 /// | `init_max_depth` | 4 |
 /// | `max_depth` | 8 |
 /// | `max_node_count` | 200 |
+/// | `crossover` | `GpCrossover::SubtreeCrossover` |
+/// | `mutations` | `[(SubtreeMutation { mutation_max_depth: 4 }, 0.1)]` |
+/// | `selection` | `SelectionConfiguration::default()` (Tournament) |
+/// | `survivor` | `Survivor::Fitness` (minimization) |
+/// | `is_maximization` | `false` (minimization) |
+/// | `max_stagnation` | `None` (disabled) |
+/// | `fitness_target` | `None` (disabled) |
 #[derive(Debug, Clone)]
 pub struct GpConfiguration {
     pub(crate) population_size: usize,
@@ -31,6 +43,24 @@ pub struct GpConfiguration {
     pub(crate) max_depth: usize,
     /// Hard node-count limit enforced after crossover and mutation.
     pub(crate) max_node_count: usize,
+    /// Crossover operator used by the engine.
+    pub(crate) crossover: GpCrossover,
+    /// Mutation operators with per-application probabilities.
+    ///
+    /// Each element is `(operator, probability)`. On each offspring the engine
+    /// rolls `rng.random::<f64>() < probability` for each operator in order.
+    pub(crate) mutations: Vec<(GpMutation, f64)>,
+    /// Parent selection configuration.
+    pub(crate) selection: SelectionConfiguration,
+    /// Survivor selection strategy.
+    pub(crate) survivor: Survivor,
+    /// When `true`, higher fitness is better (maximization).
+    /// When `false` (default), lower fitness is better (minimization).
+    pub(crate) is_maximization: bool,
+    /// Stop after this many generations without improvement. `None` disables.
+    pub(crate) max_stagnation: Option<usize>,
+    /// Stop when the best fitness reaches this target. `None` disables.
+    pub(crate) fitness_target: Option<f64>,
 }
 
 impl Default for GpConfiguration {
@@ -48,6 +78,23 @@ impl GpConfiguration {
             init_max_depth: 4,
             max_depth: 8,
             max_node_count: 200,
+            crossover: GpCrossover::SubtreeCrossover,
+            mutations: vec![(
+                GpMutation::SubtreeMutation {
+                    mutation_max_depth: 4,
+                },
+                0.1,
+            )],
+            selection: SelectionConfiguration {
+                number_of_couples: 0, // 0 → engine uses population_size / 2
+                method: Selection::Tournament,
+                boltzmann_temperature: 1.0,
+                niche_radius: 0.1,
+            },
+            survivor: Survivor::Fitness,
+            is_maximization: false,
+            max_stagnation: None,
+            fitness_target: None,
         }
     }
 
@@ -78,6 +125,11 @@ impl GpConfiguration {
     /// Returns the hard node count limit.
     pub fn max_node_count(&self) -> usize {
         self.max_node_count
+    }
+
+    /// Returns `true` if this is a maximization problem.
+    pub fn is_maximization(&self) -> bool {
+        self.is_maximization
     }
 
     // -----------------------------------------------------------------------
@@ -114,6 +166,94 @@ impl GpConfiguration {
         self
     }
 
+    /// Sets the crossover operator.
+    pub fn with_crossover(mut self, crossover: GpCrossover) -> Self {
+        self.crossover = crossover;
+        self
+    }
+
+    /// Sets the mutation operators with per-application probabilities.
+    ///
+    /// Each element is `(operator, probability)`. The engine applies each
+    /// mutation independently per offspring with the given probability.
+    pub fn with_mutations(mut self, mutations: Vec<(GpMutation, f64)>) -> Self {
+        self.mutations = mutations;
+        self
+    }
+
+    /// Sets the parent selection configuration.
+    pub fn with_selection_config(mut self, selection: SelectionConfiguration) -> Self {
+        self.selection = selection;
+        self
+    }
+
+    /// Sets the survivor selection strategy.
+    pub fn with_survivor_config(mut self, survivor: Survivor) -> Self {
+        self.survivor = survivor;
+        self
+    }
+
+    /// Sets the optimization direction.
+    ///
+    /// `true` → maximization (higher fitness is better).
+    /// `false` → minimization (lower fitness is better, the default).
+    pub fn with_is_maximization(mut self, is_maximization: bool) -> Self {
+        self.is_maximization = is_maximization;
+        self
+    }
+
+    /// Stops the run after `n` consecutive generations without improvement.
+    ///
+    /// Set to `None` to disable stagnation stopping (the default).
+    pub fn with_max_stagnation(mut self, max_stagnation: Option<usize>) -> Self {
+        self.max_stagnation = max_stagnation;
+        self
+    }
+
+    /// Stops the run when the best fitness reaches `target`.
+    ///
+    /// For minimization the run stops when `best_fitness <= target`.
+    /// For maximization the run stops when `best_fitness >= target`.
+    /// Set to `None` to disable (the default).
+    pub fn with_fitness_target(mut self, target: Option<f64>) -> Self {
+        self.fitness_target = target;
+        self
+    }
+
+    // -----------------------------------------------------------------------
+    // Internal helpers
+    // -----------------------------------------------------------------------
+
+    /// Returns the `LimitConfiguration` required by `survivor::factory`.
+    pub(crate) fn limit_configuration(&self) -> LimitConfiguration {
+        use crate::configuration::ProblemSolving;
+        LimitConfiguration {
+            problem_solving: if self.is_maximization {
+                ProblemSolving::Maximization
+            } else {
+                ProblemSolving::Minimization
+            },
+            max_generations: self.max_generations,
+            fitness_target: self.fitness_target,
+            population_size: self.population_size,
+            genes_per_chromosome: 1, // placeholder — GP has no linear genes
+            needs_unique_ids: false,
+            alleles_can_be_repeated: true,
+        }
+    }
+
+    /// Returns the `SelectionConfiguration` with `number_of_couples` filled in.
+    ///
+    /// If `self.selection.number_of_couples` is 0 the engine defaults to
+    /// `population_size / 2`.
+    pub(crate) fn effective_selection_config(&self) -> SelectionConfiguration {
+        let mut cfg = self.selection;
+        if cfg.number_of_couples == 0 {
+            cfg.number_of_couples = (self.population_size / 2).max(1);
+        }
+        cfg
+    }
+
     // -----------------------------------------------------------------------
     // Validation
     // -----------------------------------------------------------------------
@@ -133,6 +273,7 @@ impl GpConfiguration {
     /// - `init_max_depth > 0`
     /// - `init_max_depth <= max_depth`
     /// - `population_size > 0`
+    /// - `mutations` vec is not empty
     pub fn build(&self) -> Result<(), GaError> {
         if self.max_depth == 0 {
             return Err(GaError::ConfigurationError(
@@ -171,6 +312,11 @@ impl GpConfiguration {
         if self.population_size == 0 {
             return Err(GaError::ConfigurationError(
                 "population_size must be greater than 0".to_string(),
+            ));
+        }
+        if self.mutations.is_empty() {
+            return Err(GaError::ConfigurationError(
+                "mutations list must not be empty — provide at least one (GpMutation, probability) pair".to_string(),
             ));
         }
         Ok(())
