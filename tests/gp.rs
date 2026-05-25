@@ -6,7 +6,8 @@
 
 use genetic_algorithms::error::GaError;
 use genetic_algorithms::gp::{
-    BoolNode, GpChromosome, GpCrossover, GpMutation, GpNode, MathNode, Node, TreeChromosome,
+    BoolNode, GpChromosome, GpConfiguration, GpCrossover, GpGa, GpMutation, GpNode, MathNode,
+    Node, TreeChromosome, ramped_half_and_half,
 };
 use rand::SeedableRng;
 use rand::rngs::SmallRng;
@@ -347,22 +348,124 @@ fn test_bloat_limit_mutation() {
     let _ = rng;
 }
 
+// ---------------------------------------------------------------------------
+// Wave 2 engine tests
+// ---------------------------------------------------------------------------
+
 #[test]
-#[ignore]
 fn test_gpga_ramp_half_and_half() {
-    todo!("implemented in Wave 2")
+    let mut rng = SmallRng::seed_from_u64(77);
+    let pop_size = 20;
+    let init_max_depth = 4;
+
+    let pop: Vec<GpChromosome<TestNode>> =
+        ramped_half_and_half::<TestNode>(pop_size, init_max_depth, &mut rng);
+
+    // Population must have exactly pop_size individuals.
+    assert_eq!(pop.len(), pop_size, "population size should equal pop_size");
+
+    // Every chromosome must have depth >= 1 and depth <= init_max_depth + 1
+    // (grow can exceed by 1 via a 50% chance at the deepest level).
+    for (i, chr) in pop.iter().enumerate() {
+        let d = chr.depth();
+        assert!(d >= 1, "chromosome {} has depth {} < 1", i, d);
+        // full_tree(d) produces exactly depth d; grow_tree(d) can produce up
+        // to d. Neither method produces trees deeper than init_max_depth.
+        assert!(
+            d <= init_max_depth,
+            "chromosome {} has depth {} > init_max_depth {}",
+            i,
+            d,
+            init_max_depth
+        );
+        let n = chr.node_count();
+        assert!(n >= 1, "chromosome {} has 0 nodes", i);
+    }
 }
 
 #[test]
-#[ignore]
 fn test_gpga_run_symbolic_regression() {
-    todo!("implemented in Wave 3")
+    // A simple fitness: constant-zero tree has fitness 0.0, closer to target is better.
+    // Use minimization; the engine should return Ok with a valid best chromosome.
+    let config = GpConfiguration::new()
+        .with_population_size(20)
+        .with_max_generations(10)
+        .with_init_max_depth(3)
+        .with_max_depth(6)
+        .with_max_node_count(50);
+
+    let mut engine =
+        GpGa::<TestNode>::with_ramped_half_and_half(config, |_tree| {
+            // Simple fitness: just return 1.0 (minimization target)
+            1.0
+        });
+
+    let result = engine.run();
+    assert!(
+        result.is_ok(),
+        "GpGa::run() returned Err: {:?}",
+        result.err()
+    );
+
+    let result = result.unwrap();
+    assert!(
+        !result.best_fitness.is_nan(),
+        "best_fitness should not be NaN"
+    );
+    assert_eq!(result.generations, 10, "should complete all generations");
+    assert_eq!(
+        result.population.len(),
+        20,
+        "final population should have pop_size individuals"
+    );
 }
 
 #[test]
-#[ignore]
 fn test_generation_stats_avg_node_count() {
-    todo!("implemented in Wave 2")
+    // Verify that GpGa populates avg_node_count in every GenerationStats.
+    use std::sync::{Arc, Mutex};
+    use genetic_algorithms::observer::GaObserver;
+    use genetic_algorithms::stats::GenerationStats;
+
+    // Collect stats via observer.
+    let collected: Arc<Mutex<Vec<GenerationStats>>> = Arc::new(Mutex::new(Vec::new()));
+    let collected_clone = Arc::clone(&collected);
+
+    struct StatsCollector {
+        stats: Arc<Mutex<Vec<GenerationStats>>>,
+    }
+
+    impl GaObserver<GpChromosome<TestNode>> for StatsCollector {
+        fn on_generation_end(&self, stats: &GenerationStats) {
+            self.stats.lock().unwrap().push(stats.clone());
+        }
+    }
+
+    let observer = Arc::new(StatsCollector { stats: collected_clone });
+
+    let config = GpConfiguration::new()
+        .with_population_size(10)
+        .with_max_generations(3)
+        .with_init_max_depth(3)
+        .with_max_depth(6)
+        .with_max_node_count(50);
+
+    let mut engine =
+        GpGa::<TestNode>::with_ramped_half_and_half(config, |_tree| 1.0)
+            .with_observer(observer);
+
+    engine.run().expect("run should succeed");
+
+    let stats = collected.lock().unwrap();
+    assert_eq!(stats.len(), 3, "should have 3 generation stats entries");
+    for (i, s) in stats.iter().enumerate() {
+        assert!(
+            s.avg_node_count > 0.0,
+            "generation {} avg_node_count should be > 0.0, got {}",
+            i,
+            s.avg_node_count
+        );
+    }
 }
 
 #[cfg(feature = "serde")]
