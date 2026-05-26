@@ -37,6 +37,11 @@ Fn(genes_per_chromosome: usize, alleles: Option<&[Gene]>, can_repeat: Option<boo
 | `list_random_initialization_without_repetitions` | `chromosomes::ListChromosome<T>` | Random permutation of the allele set (no repetition). |
 | `generic_random_initialization` | Any `ChromosomeT` | Random selection from a provided alleles list. |
 | `generic_random_initialization_without_repetitions` | Any `ChromosomeT` | Random selection without repetition. |
+| `gp::ramped_half_and_half` | `gp::GpChromosome<N>` | Standard GP initializer: combines the `full` and `grow` tree-generation methods across depths `2..=init_max_depth` to maximize structural diversity. Used by `GpGa<N>` by default. |
+
+### GP initialization
+
+Tree chromosomes use a different signature — `Fn(pop_size, init_max_depth, &mut Rng) -> Vec<GpChromosome<N>>` — because there are no linear "genes per chromosome" to configure. The default `GpGa::with_ramped_half_and_half(config, fitness_fn)` constructor uses the built-in `gp::ramped_half_and_half` function automatically. To install a custom initializer, use `GpGa::new(config, fitness_fn, my_init_fn)`. See [Genetic Programming](gp.md) for details.
 
 ## Usage Examples
 

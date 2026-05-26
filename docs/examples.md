@@ -4,7 +4,7 @@
 
 ## Overview
 
-The `examples/` directory contains **19 runnable examples** covering all 11 engines, problem
+The `examples/` directory contains **19 runnable examples** covering 11 of the 12 engines (GP runnable patterns live in `tests/gp.rs`), problem
 types, and framework features. Each example demonstrates the full workflow: problem definition,
 chromosome configuration, operator selection, engine setup, execution, and result interpretation.
 
@@ -40,6 +40,17 @@ for details.
 | `constrained_g1` | Ga + Constraints | Constrained optimization | Deb's feasibility rules, penalty functions, G1 problem |
 | `hall_of_fame_demo` | Ga + HOF | Solution archive | Top-N tracking, deduplication, diversity filtering |
 | `memetic_rastrigin` | Ga + Memetic | Local search hybrid | HillClimbing, Lamarckian mode, local refinement |
+
+### Where to find runnable patterns for v3.0.0 features
+
+Variable-length chromosomes and Genetic Programming are not yet covered by dedicated examples in `examples/` — runnable patterns live in the integration test suites instead, and these are the canonical references until standalone examples are added:
+
+| Feature | Reference | Description |
+|---------|-----------|-------------|
+| Variable-length chromosomes (`ChromosomeLength::Variable`, `Mutation::Insertion`, `Mutation::Deletion`, `Crossover::VariableLength`, parsimony pressure) | [`tests/test_variable_length.rs`](../tests/test_variable_length.rs) | End-to-end patterns for length-changing mutation, alignment strategies, and `with_length_penalty` |
+| Genetic Programming (`GpGa<N>`, `GpChromosome<N>`, custom `GpNode` impls, subtree/point/hoist mutation, bloat control, serde checkpointing) | [`tests/gp.rs`](../tests/gp.rs) | Symbolic regression with `MathNode`, classification trees with `BoolNode`, custom primitive sets |
+
+The [Genetic Programming guide](gp.md) and the variable-length sections in [Chromosomes](chromosomes.md), [Mutation operators](operators/mutation.md), [Crossover operators](operators/crossover.md), and [Survivor operators](operators/survivor.md) walk through these APIs.
 
 ## Detailed Walkthroughs
 
@@ -507,7 +518,7 @@ cargo run --example rastrigin --release
 
 ## Related
 
-- [Engines Overview](engines.md) — All 11 optimization engines and when to use each
+- [Engines Overview](engines.md) — All 12 optimization engines and when to use each
 - [Getting Started](getting-started.md) — Quick-start guide
 - [Configuration Reference](configuration.md) — Full builder options and parameter tables
 - [README Examples Table](../README.md) — Example catalog in the project README

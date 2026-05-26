@@ -2,13 +2,14 @@
 
 ## Project Overview
 
-Rust library for genetic algorithms: single-objective (`Ga<U>`), multi-objective (NSGA-II), island model, and extensions. Generic over chromosome/gene types via traits. Published on crates.io as `genetic_algorithms`.
+Rust library for evolutionary computation: single-objective (`Ga<U>`), multi-objective (NSGA-II/III, MOEA/D, SPEA2, SMS-EMOA, IBEA), island model, Differential Evolution, Scatter Search, Cellular GA, ALPS, and Genetic Programming (`GpGa<N>`). Generic over chromosome/gene types via traits. Published on crates.io as `genetic_algorithms`.
 
 ## Architecture
 
 ### Core Abstractions
 
 - **`ChromosomeT`** (`src/traits/chromosome.rs`) — Core trait. DNA as `&[Self::Gene]`, scalar fitness (`f64`), age tracking. Uses `Cow<[Gene]>` for zero-copy DNA operations.
+- **`TreeChromosome`** (`src/engines/gp/chromosome.rs`) — Supertrait of `ChromosomeT` for tree chromosomes. Provides `tree()`, `tree_mut()`, `depth()`, `node_count()`. Implemented by `GpChromosome<N>`.
 - **`GeneT`** (`src/traits/gene.rs`) — Minimal gene trait: `id() -> i32`, `new()`, `default()`.
 - **Operator traits** (`src/traits/operators.rs`):
   - `SelectionOperator::select(&[U], couples, threads) -> Vec<(usize, usize)>`
@@ -47,19 +48,23 @@ Per-generation cycle:
 
 | Module | Purpose |
 |--------|---------|
-| `src/ga.rs` | Single-population GA orchestrator |
-| `src/island/` | Island model (multi-population + migration) |
-| `src/nsga2/` | NSGA-II multi-objective optimization |
+| `src/engines/ga.rs` | Single-population GA orchestrator |
+| `src/engines/island/` | Island model (multi-population + migration) |
+| `src/engines/nsga2/` | NSGA-II multi-objective optimization |
+| `src/engines/gp/` | Genetic Programming engine (`GpGa<N>`, `GpChromosome<N>`, `GpNode`, operators) |
 | `src/operations/` | All operators (selection, crossover, mutation, survivor, extension) |
-| `src/chromosomes/` | Built-in chromosome types (Binary, Range<T>) |
-| `src/genotypes/` | Built-in gene types (Binary, Range<T>) |
+| `src/operations/crossover/variable_length.rs` | Variable-length crossover with AlignmentStrategy |
+| `src/operations/mutation/length_mutation.rs` | `Insertion` / `Deletion` variable-length mutations |
+| `src/operations/survivor/parsimony.rs` | Parsimony pressure fitness adjustment |
+| `src/types/chromosomes/` | Built-in chromosome types (Binary, Range<T>, ChromosomeLength) |
+| `src/types/genotypes/` | Built-in gene types (Binary, Range<T>) |
 | `src/traits/` | Core trait definitions |
 | `src/configuration.rs` | All configuration structs |
 | `src/population.rs` | Population container |
 | `src/niching/` | Fitness sharing |
 | `src/extension/` | Extension configuration |
 | `src/stats.rs` | Per-generation statistics |
-| `src/checkpoint.rs` | Serialization (serde feature) |
+| `src/observe/checkpoint.rs` | Serialization (serde feature) |
 | `src/fitness/` | Fitness function wrapper |
 | `src/rng.rs` | RNG with optional seeding |
 | `src/validators/` | Configuration validation |

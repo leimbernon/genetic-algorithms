@@ -21,10 +21,10 @@ use std::fmt;
 ///
 /// | Variant | Arity | Description |
 /// |---------|-------|-------------|
-/// | `Add` | 2 | args[0] + args[1] |
-/// | `Sub` | 2 | args[0] - args[1] |
-/// | `Mul` | 2 | args[0] * args[1] |
-/// | `ProtectedDiv` | 2 | args[0] / args[1]; returns 1.0 when \|args[1]\| < 1e-10 |
+/// | `Add` | 2 | `args[0] + args[1]` |
+/// | `Sub` | 2 | `args[0] - args[1]` |
+/// | `Mul` | 2 | `args[0] * args[1]` |
+/// | `ProtectedDiv` | 2 | `args[0] / args[1]`; returns `1.0` when `args[1].abs() < 1e-10` |
 /// | `Const(f64)` | 0 | constant value (ERC) |
 /// | `Var(usize)` | 0 | variable placeholder; actual value injected by fitness fn |
 #[derive(Clone, Debug)]
@@ -127,11 +127,11 @@ impl Default for MathNode {
 ///
 /// | Variant | Arity | Evaluate |
 /// |---------|-------|----------|
-/// | `And` | 2 | 1.0 iff both args != 0.0 |
-/// | `Or` | 2 | 1.0 iff either arg != 0.0 |
-/// | `Not` | 1 | 1.0 iff arg[0] == 0.0 |
-/// | `Gt` | 2 | 1.0 iff args[0] > args[1] |
-/// | `Lt` | 2 | 1.0 iff args[0] < args[1] |
+/// | `And` | 2 | `1.0` iff both args != `0.0` |
+/// | `Or` | 2 | `1.0` iff either arg != `0.0` |
+/// | `Not` | 1 | `1.0` iff `arg[0] == 0.0` |
+/// | `Gt` | 2 | `1.0` iff `args[0] > args[1]` |
+/// | `Lt` | 2 | `1.0` iff `args[0] < args[1]` |
 ///
 /// **Note:** `BoolNode` has no terminal variants. When building mixed trees
 /// combine `BoolNode` functions with `MathNode::Const` or `MathNode::Var`

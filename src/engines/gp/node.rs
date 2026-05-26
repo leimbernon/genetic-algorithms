@@ -34,7 +34,13 @@ use std::mem;
 ///
 /// impl GpNode for MyNode {
 ///     fn arity(&self) -> usize { match self { MyNode::Add | MyNode::Mul => 2, MyNode::Const(_) => 0 } }
-///     fn evaluate(&self, args: &[f64]) -> f64 { match self { MyNode::Add => args[0] + args[1], MyNode::Mul => args[0] * args[1], MyNode::Const(v) => *v } }
+///     fn evaluate(&self, args: &[f64]) -> f64 {
+///         match self {
+///             MyNode::Add => args[0] + args[1],
+///             MyNode::Mul => args[0] * args[1],
+///             MyNode::Const(v) => *v,
+///         }
+///     }
 ///     fn sample_random_terminal(rng: &mut impl Rng) -> Self { MyNode::Const(rng.gen_range(-1.0..=1.0)) }
 ///     fn all_functions() -> Vec<Self> { vec![MyNode::Add, MyNode::Mul] }
 /// }
@@ -97,8 +103,8 @@ pub trait GpNode: Clone + Send + Sync + 'static {
 /// `Deserialize` via the standard serde derive macros. For trees up to depth 64
 /// (the GP engine's recommended maximum), stack usage is well within typical
 /// system limits. For extremely deep trees (depth > ~500), use
-/// [`serde_stacker::Serializer`] / [`serde_stacker::Deserializer`] wrappers at
-/// the serialization call site to grow the stack dynamically.
+/// `serde_stacker::Serializer` / `serde_stacker::Deserializer` wrappers at the
+/// serialization call site to grow the stack dynamically.
 ///
 /// # Security note
 ///

@@ -1,9 +1,9 @@
 <!-- generated-by: gsd-doc-writer -->
-# genetic_algorithms (v2.4.0)
+# genetic_algorithms (v3.0.0)
 
 [![Rust Unit Tests](https://github.com/leimbernon/rust_genetic_algorithms/actions/workflows/rust-unit-tests.yml/badge.svg)](https://github.com/leimbernon/rust_genetic_algorithms/actions/workflows/rust-unit-tests.yml)
 
-Modular and concurrent Genetic Algorithms (GA) library for Rust. Provides a single-population GA, multi-objective NSGA-II, island model, Differential Evolution, Scatter Search, Cellular GA, and ALPS — all generic over chromosome and gene types via traits.
+Modular and concurrent evolutionary computation library for Rust. Provides 12 optimization engines — standard GA, multi-objective (NSGA-II/III, MOEA/D, SPEA2, SMS-EMOA, IBEA), island model, Differential Evolution, Scatter Search, Cellular GA, ALPS, and Genetic Programming (GP) — all generic over chromosome and gene types via traits.
 
 Key capabilities:
 - Clear abstractions: traits for genes, chromosomes, and configuration.
@@ -12,6 +12,9 @@ Key capabilities:
 - Adaptive GA mode: dynamic crossover and mutation probabilities based on population performance.
 - Elitism: preserve top N individuals across generations.
 - Extension strategies for population diversity control (mass extinction, genesis, degeneration, deduplication).
+- Variable-length chromosomes: `ChromosomeLength::Variable { min, max }` with `Mutation::Insertion` / `Mutation::Deletion` and `Crossover::VariableLength`.
+- Parsimony pressure: length-penalized fitness during survivor selection via `with_length_penalty`.
+- Genetic Programming engine (`GpGa`) with subtree crossover, subtree/point/hoist mutation, ramped half-and-half initialization, and built-in `MathNode` / `BoolNode` primitive sets.
 - Lifecycle observer system (`GaObserver`) with built-in `LogObserver`, `CompositeObserver`, `MetricsObserver`, `TracingObserver`, `AllObserver`, and `NoopObserver`.
 - Optional `visualization` feature for PNG/SVG fitness and diversity charts.
 - `Cow<[Gene]>` for zero-copy DNA operations.
@@ -49,26 +52,26 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-genetic_algorithms = "2.4.0"
+genetic_algorithms = "3.0.0"
 ```
 
 Optional feature flags:
 
 ```toml
 # PNG/SVG fitness and diversity charts
-genetic_algorithms = { version = "2.4.0", features = ["visualization"] }
+genetic_algorithms = { version = "3.0.0", features = ["visualization"] }
 
-# Checkpoint serialization (serde/serde_json)
-genetic_algorithms = { version = "2.4.0", features = ["serde"] }
+# Checkpoint serialization (serde/serde_json) — includes stack-safe GP tree serialization
+genetic_algorithms = { version = "3.0.0", features = ["serde"] }
 
 # Standard benchmark functions (Sphere, Rastrigin, Rosenbrock, ZDT, DTLZ) and quality indicators
-genetic_algorithms = { version = "2.4.0", features = ["benchmarks"] }
+genetic_algorithms = { version = "3.0.0", features = ["benchmarks"] }
 
 # Observer integration with the `tracing` crate
-genetic_algorithms = { version = "2.4.0", features = ["observer-tracing"] }
+genetic_algorithms = { version = "3.0.0", features = ["observer-tracing"] }
 
 # Observer integration with the `metrics` crate
-genetic_algorithms = { version = "2.4.0", features = ["observer-metrics"] }
+genetic_algorithms = { version = "3.0.0", features = ["observer-metrics"] }
 ```
 
 ## Quick Start
@@ -129,8 +132,11 @@ println!("Best fitness: {:.4}", population.best_chromosome.fitness);
 - `genotypes::Binary` — boolean gene.
 - `genotypes::Range<T>` — values constrained to one or more `(min, max)` intervals.
 - `genotypes::List<T>` — values drawn from a finite symbolic alphabet.
+- `chromosomes::Binary` — chromosome built from `Binary` genes.
 - `chromosomes::Range<T>` — chromosome built from `Range<T>` genes.
 - `chromosomes::ListChromosome<T>` — chromosome built from `List<T>` genes.
+- `chromosomes::ChromosomeLength` — `Fixed(usize)` or `Variable { min, max }` — controls length-changing operators.
+- `gp::GpChromosome<N>` — tree chromosome for Genetic Programming (see [Genetic Programming](#genetic-programming-gpga)).
 
 Custom chromosomes can be added by implementing `ChromosomeT`.
 
@@ -145,10 +151,10 @@ Custom chromosomes can be added by implementing `ChromosomeT`.
 
 ### Operators
 
-- **Selection:** `Random`, `RouletteWheel`, `StochasticUniversalSampling`, `Tournament`, `Rank`, `Boltzmann`, `Truncation`
-- **Crossover:** `Cycle`, `MultiPoint`, `Uniform`, `SinglePoint`, `Order` (OX), `Pmx` (Partially Mapped), `Sbx` (Simulated Binary), `BlendAlpha` (BLX-α), `Arithmetic`, `Clone`, `Rejuvenate`
-- **Mutation:** `Swap`, `Inversion`, `Scramble`, `Value` (Range<T>), `BitFlip` (Binary), `Creep` (uniform perturbation), `Gaussian` (normal perturbation), `Polynomial` (NSGA-II style), `NonUniform` (decreasing magnitude), `Insertion` (permutation), `ListValue` (List<T>)
-- **Survivor:** `Fitness` (keep best), `Age` (prefer younger), `MuPlusLambda` (parents + offspring compete), `MuCommaLambda` (offspring only)
+- **Selection:** `Random`, `RouletteWheel`, `StochasticUniversalSampling`, `Tournament`, `Rank`, `Boltzmann`, `Truncation`, `Clearing`
+- **Crossover:** `Cycle`, `MultiPoint`, `Uniform`, `SinglePoint`, `Order` (OX), `Pmx` (Partially Mapped), `Sbx` (Simulated Binary), `BlendAlpha` (BLX-α), `Arithmetic`, `Clone`, `Rejuvenate`, `EdgeRecombination`, `VariableLength(AlignmentStrategy)` (for variable-length chromosomes)
+- **Mutation:** `Swap`, `Inversion`, `Scramble`, `Value` (Range<T>), `BitFlip` (Binary), `Creep` (uniform perturbation), `Gaussian` (normal perturbation), `Polynomial` (NSGA-II style), `NonUniform` (decreasing magnitude), `PermutationInsert` (permutation move), `Insertion` (grow variable-length chromosome), `Deletion` (shrink variable-length chromosome), `Cauchy`, `LevyFlight`, `Uniform`, `ListValue` (List<T>), `Differential`
+- **Survivor:** `Fitness` (keep best), `Age` (prefer younger), `MuPlusLambda` (parents + offspring compete), `MuCommaLambda` (offspring only), `DeterministicCrowding`; parsimony pressure via `with_length_penalty`
 - **Extension:** `Noop`, `MassExtinction`, `MassGenesis`, `MassDegeneration`, `MassDeduplication`
 
 ### Engines
@@ -161,11 +167,86 @@ Custom chromosomes can be added by implementing `ChromosomeT`.
 | `ScatterEngine<U>` | `scatter` | Single | Scatter Search with reference set diversification and combination methods |
 | `CellularEngine<U>` | `cellular` | Single | Cellular GA on a 2D toroidal grid with 4 neighborhood topologies |
 | `AlpsEngine<U>` | `alps` | Single | Age-Layered Population Structure with 3 age schemes and cross-layer mating |
+| `GpGa<N>` | `gp` | Single | Genetic Programming — tree chromosomes, subtree/point/hoist mutation, ramped half-and-half initialization |
 | `Nsga2Ga<U>` | `nsga2` | 2+ | NSGA-II — fast non-dominated sorting with crowding distance diversity |
 | `Nsga3Ga<U>` | `nsga3` | 3+ | NSGA-III — reference-point based selection for many-objective problems |
 | `MoeaDGa<U>` | `moead` | 2+ | MOEA/D — decomposition-based scalarization (Tchebycheff, PBI, weighted sum) |
 | `Spea2Ga<U>` | `spea2` | 2+ | SPEA2 — strength-Pareto archive with k-nearest density estimation |
 | `SmsEmoaGa<U>` / `IbeaGa<U>` | `sms_emoa`/`ibea` | 2+ | Hypervolume contribution / indicator-based MOEAs |
+
+### Variable-Length Chromosomes
+
+Set `ChromosomeLength::Variable { min, max }` on the mutation configuration to enable chromosomes whose length can change during evolution.
+
+```rust
+use genetic_algorithms::chromosomes::ChromosomeLength;
+use genetic_algorithms::operations::Mutation;
+use genetic_algorithms::traits::MutationConfig;
+
+// Enable length-changing mutations (grow or shrink by 1 gene per application).
+let mut ga = Ga::new()
+    .with_mutation_method(Mutation::Insertion)          // grow by 1
+    // or .with_mutation_method(Mutation::Deletion)     // shrink by 1
+    .with_chromosome_length(ChromosomeLength::Variable { min: 2, max: 20 })
+    // Optional: penalize longer chromosomes during survivor selection.
+    .with_length_penalty(0.01)
+    // ... rest of configuration
+    .build()
+    .expect("valid config");
+```
+
+For variable-length parents use `Crossover::VariableLength(AlignmentStrategy)`:
+
+```rust
+use genetic_algorithms::operations::{Crossover, AlignmentStrategy};
+
+// Trim both parents to min(len_a, len_b) before single-point crossover.
+.with_crossover_method(Crossover::VariableLength(AlignmentStrategy::Trim))
+
+// Pad the shorter parent (from its alleles) to max(len_a, len_b).
+.with_crossover_method(Crossover::VariableLength(AlignmentStrategy::Pad))
+```
+
+### Genetic Programming (GpGa)
+
+`GpGa<N>` evolves tree-structured chromosomes (`GpChromosome<N>`). Implement `GpNode` on your own enum to define the function and terminal set.
+
+```rust
+use genetic_algorithms::gp::{GpConfiguration, GpGa, GpMutation, MathNode};
+
+let config = GpConfiguration::new()
+    .with_population_size(100)
+    .with_max_generations(50)
+    .with_init_max_depth(4)
+    .with_max_depth(8)
+    .with_max_node_count(200)
+    .with_mutations(vec![
+        (GpMutation::SubtreeMutation { mutation_max_depth: 4 }, 0.1),
+        (GpMutation::PointMutation { p_per_node: 0.05 }, 0.1),
+    ]);
+
+// GpGa::with_ramped_half_and_half uses the built-in initializer automatically.
+let mut engine = GpGa::<MathNode>::with_ramped_half_and_half(config, |tree| {
+    // Evaluate the expression tree — return a fitness value.
+    // Use Node::<MathNode>::eval_with_vars(tree, &[x0, x1]) for variable injection.
+    0.0
+});
+let result = engine.run().unwrap();
+println!("Best fitness: {}", result.best_fitness);
+println!("Best program: {}", result.best); // Prints Lisp S-expression
+```
+
+Built-in primitive sets:
+- `MathNode` — `Add`, `Sub`, `Mul`, `ProtectedDiv`, `Const(f64)` (ERC), `Var(usize)` — for symbolic regression.
+- `BoolNode` — `And`, `Or`, `Not`, `Gt`, `Lt` — for classification tree learning.
+
+GP mutation operators:
+
+| Variant | Description |
+|---------|-------------|
+| `GpMutation::SubtreeMutation { mutation_max_depth }` | Replaces a random subtree with a freshly grown random tree |
+| `GpMutation::PointMutation { p_per_node }` | Replaces each node's primitive with a same-arity alternative |
+| `GpMutation::HoistMutation` | Replaces a subtree with one of its own descendants (always shrinks) |
 
 ### Observer (GaObserver)
 
@@ -315,7 +396,7 @@ The repository ships a `.cargo/config.toml` that automatically applies the neces
 
 ```toml
 [dependencies]
-genetic_algorithms = "2.4.0"
+genetic_algorithms = "3.0.0"
 ```
 
 Build with `wasm-pack` or directly with Cargo:
@@ -336,6 +417,8 @@ rustflags = ["--cfg", "getrandom_backend=\"wasm_js\""]
 ```
 
 This is required because `getrandom 0.3` (a transitive dependency via `rand`) needs an explicit backend declaration for `wasm32-unknown-unknown` in addition to the `wasm_js` Cargo feature.
+
+**Note on `GpGa`:** The GP engine is fully WASM-compatible. Fitness evaluation uses sequential iteration (`iter_mut`) instead of `par_iter_mut` on `wasm32-unknown-unknown`. Tree depth/size limits still apply.
 
 ### Known limitations on WASM
 

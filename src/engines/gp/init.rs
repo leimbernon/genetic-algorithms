@@ -2,12 +2,13 @@
 //!
 //! This module provides the two tree-generation methods used by the GP engine:
 //!
-//! - [`full_tree`] — generates a fully-populated tree where every branch reaches
-//!   exactly `max_depth`. Produces bushy, large trees.
-//! - [`grow_tree`] — generates a tree where branches can stop at any depth
-//!   (50 % chance of a terminal at each level). Produces variable-size trees.
-//! - [`ramped_half_and_half`] — standard GP initialization combining both methods
-//!   across a range of depths, maximizing initial population diversity.
+//! - `full_tree` (crate-private) — generates a fully-populated tree where every
+//!   branch reaches exactly `max_depth`. Produces bushy, large trees.
+//! - `grow_tree` (crate-private) — generates a tree where branches can stop at
+//!   any depth (50 % chance of a terminal at each level). Produces
+//!   variable-size trees.
+//! - [`ramped_half_and_half`] — standard GP initialization combining both
+//!   methods across a range of depths, maximizing initial population diversity.
 
 use super::chromosome::GpChromosome;
 use super::node::{grow_tree, GpNode, Node};
@@ -60,8 +61,8 @@ pub(crate) fn full_tree<N: GpNode>(max_depth: usize, rng: &mut impl Rng) -> Node
 ///
 /// # Panics
 ///
-/// Does not panic. Callers should use validated [`GpConfiguration`] which
-/// enforces `init_max_depth > 0` and `population_size > 0`.
+/// Does not panic. Callers should use validated [`GpConfiguration`](super::GpConfiguration)
+/// which enforces `init_max_depth > 0` and `population_size > 0`.
 pub fn ramped_half_and_half<N: GpNode + Default>(
     pop_size: usize,
     init_max_depth: usize,

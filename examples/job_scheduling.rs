@@ -27,7 +27,7 @@ Both operators are permutation-safe and will never introduce duplicate job indic
 
 ## Features demonstrated
 - Permutation chromosomes (`Range<i32>`) for combinatorial optimization
-- Order crossover (OX) and Insertion mutation
+- Order crossover (OX) and PermutationInsert mutation
 - Minimization mode (makespan)
 - LogObserver lifecycle hooks
 
@@ -138,7 +138,7 @@ fn main() {
         "Jobs: {}, Machines: {}, Population: {}, Max generations: {}",
         N_JOBS, N_MACHINES, POP_SIZE, MAX_GENERATIONS
     );
-    println!("Operators: Selection=Tournament, Crossover=Order, Mutation=Insertion");
+    println!("Operators: Selection=Tournament, Crossover=Order, Mutation=PermutationInsert");
     println!("-------------------------------------------------------");
 
     // --- Run the GA with a progress callback every 50 generations ---

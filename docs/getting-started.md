@@ -23,7 +23,7 @@ Add the crate to your project's `Cargo.toml`:
 
 ```toml
 [dependencies]
-genetic_algorithms = "2.4.0"
+genetic_algorithms = "3.0.0"
 ```
 
 Then fetch dependencies:
@@ -38,16 +38,16 @@ Enable only what you need — the default build has zero optional dependencies:
 
 ```toml
 # PNG/SVG fitness and diversity charts
-genetic_algorithms = { version = "2.4.0", features = ["visualization"] }
+genetic_algorithms = { version = "3.0.0", features = ["visualization"] }
 
 # Checkpoint serialization (serde / serde_json)
-genetic_algorithms = { version = "2.4.0", features = ["serde"] }
+genetic_algorithms = { version = "3.0.0", features = ["serde"] }
 
 # Observer integration with the `tracing` crate
-genetic_algorithms = { version = "2.4.0", features = ["observer-tracing"] }
+genetic_algorithms = { version = "3.0.0", features = ["observer-tracing"] }
 
 # Observer integration with the `metrics` crate
-genetic_algorithms = { version = "2.4.0", features = ["observer-metrics"] }
+genetic_algorithms = { version = "3.0.0", features = ["observer-metrics"] }
 ```
 
 ## First Run
@@ -59,7 +59,7 @@ Create a new binary project and add the dependency:
 ```bash
 cargo new my_ga_project
 cd my_ga_project
-# add genetic_algorithms = "2.4.0" to Cargo.toml [dependencies]
+# add genetic_algorithms = "3.0.0" to Cargo.toml [dependencies]
 ```
 
 Replace `src/main.rs` with:

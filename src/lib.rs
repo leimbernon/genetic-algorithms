@@ -1,7 +1,7 @@
 //! # genetic_algorithms
 //!
 //! A modular, performant Rust library for evolutionary computation and metaheuristic optimization.
-//! Provides 11 optimization engines, 45+ composable operators, a full lifecycle observer system,
+//! Provides 12 optimization engines, 50+ composable operators, a full lifecycle observer system,
 //! and framework extensions — all generic over chromosome and gene types via traits.
 //!
 //! Published on [crates.io](https://crates.io/crates/genetic_algorithms) as `genetic_algorithms`.
@@ -55,9 +55,9 @@
 //! println!("Best fitness: {:.4}", population.best_chromosome.fitness);
 //! ```
 //!
-//! ## Engines (11 total)
+//! ## Engines (12 total)
 //!
-//! This crate offers 11 optimization engines, each designed for specific problem types:
+//! This crate offers 12 optimization engines, each designed for specific problem types:
 //!
 //! | Engine | Module | Objectives | Problem Type | Key Strength |
 //! |--------|--------|------------|--------------|--------------|
@@ -67,6 +67,7 @@
 //! | [`CellularEngine<U>`](crate::cellular::CellularEngine) | `cellular` | Single | Continuous / Combinatorial | Spatial diversity via toroidal grid neighborhoods |
 //! | [`AlpsEngine<U>`](crate::alps::AlpsEngine) | `alps` | Single | Continuous / Combinatorial | Age-layered population structure for sustained diversity |
 //! | [`IslandGa<U>`](crate::island::IslandGa) | `island` | Single | Any | Parallel sub-populations with configurable migration topologies |
+//! | [`GpGa<N>`](crate::gp::GpGa) | `gp` | Single | Symbolic / Tree-structured | Genetic Programming with tree chromosomes, bloat control, and standard GP operators |
 //! | [`Nsga2Ga<U>`](crate::nsga2::Nsga2Ga) | `nsga2` | 2 | Continuous / Combinatorial | Fast Pareto ranking with crowding distance |
 //! | [`Nsga3Ga<U>`](crate::nsga3::Nsga3Ga) | `nsga3` | 3+ | Continuous | Reference-point based niching for many-objective problems |
 //! | [`MoeaDGa<U>`](crate::moead::MoeaDGa) | `moead` | 2+ | Continuous | Decomposition-based scalarization (Tchebycheff, PBI, weighted sum) |
@@ -93,6 +94,12 @@
 //! - [`IslandGa<U>`](crate::island::IslandGa) — Island model GA that evolves multiple sub-populations
 //!   in parallel with configurable migration topology (ring, fully connected, random), frequency,
 //!   and migrant selection. Works with any chromosome type and can wrap [`Nsga2Ga`](crate::nsga2::Nsga2Ga).
+//! - [`GpGa<N>`](crate::gp::GpGa) — Genetic Programming engine parameterized on a user-defined
+//!   [`GpNode`](crate::gp::GpNode) primitive set. Evolves [`GpChromosome<N>`](crate::gp::GpChromosome)
+//!   tree-structured individuals with subtree crossover, subtree/point/hoist mutation, and
+//!   ramped-half-and-half initialization. Includes bloat control via hard depth and node-count
+//!   limits. Built-in primitive sets: [`MathNode`](crate::gp::MathNode) (symbolic regression),
+//!   [`BoolNode`](crate::gp::BoolNode) (classification trees).
 //!
 //! ### Multi-Objective Engines
 //!
@@ -137,9 +144,15 @@
 //! (bounded real/integer values), [`List<T>`](crate::genotypes::List) (finite symbolic alphabets).
 //!
 //! Built-in chromosome types: [`chromosomes::Binary`],
-//! [`chromosomes::Range<T>`], [`chromosomes::ListChromosome<T>`].
+//! [`chromosomes::Range<T>`], [`chromosomes::ListChromosome<T>`],
+//! [`gp::GpChromosome<N>`](crate::gp::GpChromosome) (tree chromosome for Genetic Programming).
+//!
+//! Chromosome length policy: [`chromosomes::ChromosomeLength`] — `Fixed(usize)` or
+//! `Variable { min, max }` — controls whether `Mutation::Insertion` / `Mutation::Deletion`
+//! are allowed and enforces length bounds.
 //!
 //! Custom chromosomes can be created by implementing [`ChromosomeT`](crate::traits::ChromosomeT).
+//! For tree chromosomes, implement [`GpNode`](crate::gp::GpNode) instead.
 //!
 //! ### Configuration
 //!
@@ -158,9 +171,11 @@
 //! - **Selection** ([`Selection`](crate::operations::Selection)): Random, RouletteWheel, SUS, Tournament,
 //!   Rank, Boltzmann, Truncation, Clearing
 //! - **Crossover** ([`Crossover`](crate::operations::Crossover)): Cycle, MultiPoint, Uniform, SinglePoint,
-//!   Order (OX), PMX, SBX, BlendAlpha (BLX-alpha), Arithmetic, Edge Recombination, Clone, Rejuvenate
+//!   Order (OX), PMX, SBX, BlendAlpha (BLX-alpha), Arithmetic, Edge Recombination, Clone, Rejuvenate,
+//!   VariableLength([`AlignmentStrategy`](crate::operations::AlignmentStrategy))
 //! - **Mutation** ([`Mutation`](crate::operations::Mutation)): Swap, Inversion, Scramble, Value, BitFlip,
-//!   Creep, Gaussian, Polynomial, NonUniform, Insertion, Cauchy, LevyFlight, Uniform, ListValue
+//!   Creep, Gaussian, Polynomial, NonUniform, PermutationInsert, Insertion (variable-length grow),
+//!   Deletion (variable-length shrink), Cauchy, LevyFlight, Uniform, ListValue, Differential
 //! - **Survivor** ([`Survivor`](crate::operations::Survivor)): Fitness, Age, MuPlusLambda, MuCommaLambda,
 //!   DeterministicCrowding
 //! - **Extension** ([`Extension`](crate::operations::Extension)): Noop, MassExtinction, MassGenesis,
@@ -218,6 +233,7 @@
 //! | Single-objective, needs spatial diversity | [`CellularEngine<U>`](crate::cellular::CellularEngine) | Grid-based neighborhoods preserve niche exploration |
 //! | Single-objective, sustained exploration needed | [`AlpsEngine<U>`](crate::alps::AlpsEngine) | Age layers prevent premature convergence |
 //! | Parallel / distributed single-objective | [`IslandGa<U>`](crate::island::IslandGa) | Independent sub-populations with periodic migration |
+//! | Symbolic regression / program synthesis | [`GpGa<N>`](crate::gp::GpGa) | Tree chromosomes, standard GP operators, built-in bloat control |
 //! | Exactly 2 objectives | [`Nsga2Ga<U>`](crate::nsga2::Nsga2Ga) | Fast O(MN²) ranking, well-established baseline |
 //! | 3+ objectives (many-objective) | [`Nsga3Ga<U>`](crate::nsga3::Nsga3Ga) | Reference points scale beyond crowding distance |
 //! | 2+ objectives, continuous | [`MoeaDGa<U>`](crate::moead::MoeaDGa) | Decomposition is efficient and interpretable |
