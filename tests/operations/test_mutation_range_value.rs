@@ -2,7 +2,7 @@ use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::operations::mutation;
 use genetic_algorithms::operations::Mutation;
-use genetic_algorithms::traits::ChromosomeT;
+use genetic_algorithms::traits::LinearChromosome;
 
 /// Helper to build a Range chromosome with N genes in [0, n-1], initial value = 0.
 fn build_range_chromosome(n: i32) -> RangeChromosome<i32> {

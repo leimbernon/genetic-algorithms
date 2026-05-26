@@ -30,7 +30,8 @@ use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::population::Population;
 use genetic_algorithms::stats::GenerationStats;
 use genetic_algorithms::traits::{
-    ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+    ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig, SelectionConfig,
+    StoppingConfig,
 };
 use genetic_algorithms::LogObserver;
 use std::sync::Arc;
@@ -57,7 +58,7 @@ fn main() {
     // --- Build the GA configuration ---
     let mut ga = Ga::new()
         // Chromosome: Binary (bool) with NUM_FEATURES genes (one per feature)
-        .with_genes_per_chromosome(NUM_FEATURES)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(NUM_FEATURES))
         .with_population_size(POP_SIZE)
         // Random initialization for Binary chromosomes
         .with_initialization_fn(binary_random_initialization)

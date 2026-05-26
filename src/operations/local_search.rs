@@ -5,7 +5,7 @@
 //! application strategy and mode selection.
 
 use crate::error::GaError;
-use crate::traits::{ChromosomeT, LocalSearchOperator};
+use crate::traits::{LinearChromosome, LocalSearchOperator};
 use rand::Rng;
 use std::borrow::Cow;
 
@@ -30,7 +30,7 @@ impl LocalSearchOperator for LocalSearch {
         fitness_fn: &dyn Fn(&[U::Gene]) -> f64,
     ) -> Result<usize, GaError>
     where
-        U: ChromosomeT + Send + Sync + 'static + Clone,
+        U: LinearChromosome + Send + Sync + 'static + Clone,
     {
         match self {
             LocalSearch::HillClimbing => {
@@ -150,7 +150,7 @@ impl LocalSearchOperator for HillClimbingConfig {
         fitness_fn: &dyn Fn(&[U::Gene]) -> f64,
     ) -> Result<usize, GaError>
     where
-        U: ChromosomeT + Send + Sync + 'static + Clone,
+        U: LinearChromosome + Send + Sync + 'static + Clone,
     {
         // 1. Runtime type check — require RangeChromosome<f64>
         let any_ref: &dyn std::any::Any = individual;
@@ -212,6 +212,7 @@ mod tests {
     use super::*;
     use crate::chromosomes::Range as RangeChromosome;
     use crate::genotypes::Range as RangeGene;
+    use crate::traits::{ChromosomeT, LinearChromosome};
 
     /// Simple quadratic fitness: sum of squares.
     fn quadratic(dna: &[RangeGene<f64>]) -> f64 {

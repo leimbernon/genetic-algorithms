@@ -123,7 +123,7 @@ use crate::nsga2::configuration::{Nsga2Configuration, ObjectiveDirection};
 use crate::nsga2::crowding_distance::assign_crowding_distance;
 use crate::observer::Nsga2Observer;
 use crate::operations::mutation;
-use crate::traits::{ChromosomeT, InitializationFn};
+use crate::traits::{LinearChromosome, InitializationFn};
 use rand::Rng;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
@@ -140,7 +140,7 @@ pub use crate::multi_objective::ObjectiveFn;
 /// * `U` - Chromosome type implementing `ChromosomeT`.
 pub struct Nsga2Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// NSGA-II specific configuration.
     pub nsga2_config: Nsga2Configuration,
@@ -161,7 +161,7 @@ where
 
 impl<U> Nsga2Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// Creates a new `Nsga2Ga` with the given configurations.
     pub fn new(nsga2_config: Nsga2Configuration, ga_config: GaConfiguration) -> Self {
@@ -204,7 +204,7 @@ where
     /// Sets the initialization function.
     pub fn with_initialization_fn<F>(mut self, f: F) -> Self
     where
-        F: Fn(usize, Option<&[U::Gene]>, Option<bool>) -> Vec<U::Gene> + Send + Sync + 'static,
+        F: Fn(usize, Option<&[U::Gene]>) -> Vec<U::Gene> + Send + Sync + 'static,
     {
         self.initialization_fn = Some(Arc::new(f));
         self
@@ -285,7 +285,7 @@ where
 
 impl<U> Nsga2Ga<U>
 where
-    U: ChromosomeT + mutation::ValueMutable,
+    U: LinearChromosome + mutation::ValueMutable,
 {
     /// Runs the NSGA-II algorithm and returns the first Pareto front.
     ///
@@ -448,8 +448,14 @@ where
         })?;
 
         let pop_size = self.nsga2_config.population_size;
-        let genes_per_chrom = self.ga_config.limit_configuration.genes_per_chromosome;
-        let alleles_can_repeat = self.ga_config.limit_configuration.alleles_can_be_repeated;
+        let genes_per_chrom = match self.ga_config.limit_configuration.chromosome_length {
+            crate::chromosomes::ChromosomeLength::Fixed(n) => n,
+            crate::chromosomes::ChromosomeLength::Variable { .. } => {
+                return Err(GaError::InvalidNsga2Configuration(
+                    "ChromosomeLength::Variable is not yet supported (Phase 52). Use ChromosomeLength::Fixed.".into(),
+                ));
+            }
+        };
 
         let alleles = if self.alleles.is_empty() {
             None
@@ -462,7 +468,6 @@ where
             pop_size,
             genes_per_chrom,
             alleles,
-            Some(alleles_can_repeat),
             init_fn,
             None,
             0,

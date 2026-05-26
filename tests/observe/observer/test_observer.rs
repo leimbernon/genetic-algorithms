@@ -105,7 +105,7 @@ fn build_test_ga_with_observer(
 ) -> Ga<BinaryChromosome> {
     Ga::new()
         .with_population_size(20)
-        .with_genes_per_chromosome(8)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(8))
         .with_initialization_fn(binary_random_initialization)
         .with_fitness_fn(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64)
         .with_selection_method(Selection::Tournament)
@@ -173,7 +173,6 @@ fn test_observer_on_new_best_fires() {
     fn all_false_init(
         size: usize,
         _alleles: Option<&[BinaryGene]>,
-        _repeat: Option<bool>,
     ) -> Vec<BinaryGene> {
         (0..size)
             .map(|i| BinaryGene {
@@ -187,7 +186,7 @@ fn test_observer_on_new_best_fires() {
     let spy = Arc::new(SpyObserver::new(Arc::clone(&data)));
     let mut ga = Ga::new()
         .with_population_size(20)
-        .with_genes_per_chromosome(8)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(8))
         .with_initialization_fn(all_false_init)
         .with_fitness_fn(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64)
         .with_selection_method(Selection::Tournament)
@@ -225,7 +224,7 @@ fn test_observer_operator_hooks_fire_each_generation() {
 fn test_no_observer_default() {
     let mut ga: Ga<BinaryChromosome> = Ga::new()
         .with_population_size(20)
-        .with_genes_per_chromosome(8)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(8))
         .with_initialization_fn(binary_random_initialization)
         .with_fitness_fn(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64)
         .with_selection_method(Selection::Tournament)
@@ -272,7 +271,7 @@ fn test_observer_stagnation_fires() {
     // Run enough generations that stagnation is likely
     let mut ga = Ga::new()
         .with_population_size(50)
-        .with_genes_per_chromosome(8)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(8))
         .with_initialization_fn(binary_random_initialization)
         .with_fitness_fn(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64)
         .with_selection_method(Selection::Tournament)
@@ -459,7 +458,7 @@ fn test_extension_fires_before_generation_end() {
 
     let mut ga: Ga<BinaryChromosome> = Ga::new()
         .with_population_size(20)
-        .with_genes_per_chromosome(8)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(8))
         .with_initialization_fn(binary_random_initialization)
         .with_fitness_fn(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64)
         .with_selection_method(Selection::Tournament)

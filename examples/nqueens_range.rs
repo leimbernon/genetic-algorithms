@@ -50,10 +50,10 @@ fn main() {
     let alleles = vec![RangeGenotype::new(0, vec![(0, N as i32 - 1)], 0)];
     let alleles_clone = alleles.clone();
     let mut ga = Ga::new()
-        .with_genes_per_chromosome(N)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(N))
         .with_population_size(100)
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |genes_per_chromosome, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
         })
         .with_fitness_fn(fitness_fn)
         .with_selection_method(Selection::Tournament)

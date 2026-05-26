@@ -120,7 +120,7 @@ use crate::nsga2::configuration::ObjectiveDirection;
 use crate::observer::Spea2Observer;
 use crate::operations::{crossover, mutation};
 use crate::spea2::configuration::Spea2Configuration;
-use crate::traits::{ChromosomeT, InitializationFn};
+use crate::traits::{InitializationFn, LinearChromosome};
 use rand::Rng;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
@@ -134,7 +134,7 @@ use std::time::Instant;
 /// * `U` - Chromosome type implementing `ChromosomeT`.
 pub struct Spea2Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// SPEA2-specific configuration.
     pub spea2_config: Spea2Configuration,
@@ -153,7 +153,7 @@ where
 #[allow(dead_code)]
 impl<U> Spea2Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// Creates a new `Spea2Ga` with the given configurations.
     pub fn new(spea2_config: Spea2Configuration, ga_config: GaConfiguration) -> Self {
@@ -190,7 +190,7 @@ where
     /// Sets the initialization function.
     pub fn with_initialization_fn<F>(mut self, f: F) -> Self
     where
-        F: Fn(usize, Option<&[U::Gene]>, Option<bool>) -> Vec<U::Gene> + Send + Sync + 'static,
+        F: Fn(usize, Option<&[U::Gene]>) -> Vec<U::Gene> + Send + Sync + 'static,
     {
         self.initialization_fn = Some(Arc::new(f));
         self
@@ -465,7 +465,7 @@ where
 
 impl<U> Spea2Ga<U>
 where
-    U: ChromosomeT + mutation::ValueMutable,
+    U: LinearChromosome + mutation::ValueMutable,
 {
     /// Runs the SPEA2 algorithm and returns the Pareto front from the final archive.
     ///
@@ -590,8 +590,14 @@ where
         })?;
 
         let pop_size = self.spea2_config.population_size;
-        let genes_per_chrom = self.ga_config.limit_configuration.genes_per_chromosome;
-        let alleles_can_repeat = self.ga_config.limit_configuration.alleles_can_be_repeated;
+        let genes_per_chrom = match self.ga_config.limit_configuration.chromosome_length {
+            crate::chromosomes::ChromosomeLength::Fixed(n) => n,
+            crate::chromosomes::ChromosomeLength::Variable { .. } => {
+                return Err(GaError::InvalidSpea2Configuration(
+                    "ChromosomeLength::Variable is not yet supported (Phase 52). Use ChromosomeLength::Fixed.".into(),
+                ));
+            }
+        };
 
         let alleles = if self.alleles.is_empty() {
             None
@@ -603,7 +609,6 @@ where
             pop_size,
             genes_per_chrom,
             alleles,
-            Some(alleles_can_repeat),
             init_fn,
             None,
             0,

@@ -3,7 +3,7 @@ use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::GaConfiguration;
 use genetic_algorithms::genotypes::Binary as BinaryGene;
 use genetic_algorithms::population::Population;
-use genetic_algorithms::traits::{ChromosomeT, GeneT};
+use genetic_algorithms::traits::{ChromosomeT, GeneT, LinearChromosome};
 use genetic_algorithms::validators::validator_factory;
 use std::borrow::Cow;
 
@@ -22,9 +22,8 @@ fn make_binary_chromosome(ids: &[i32]) -> BinaryChromosome {
 }
 
 fn default_config() -> GaConfiguration {
-    let mut cfg = GaConfiguration::default();
-    cfg.selection_configuration.number_of_couples = 1;
-    cfg
+    use genetic_algorithms::traits::SelectionConfig;
+    GaConfiguration::default().with_number_of_couples(1)
 }
 
 #[test]

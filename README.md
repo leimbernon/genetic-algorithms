@@ -1,6 +1,8 @@
 <!-- generated-by: gsd-doc-writer -->
 # genetic_algorithms (v3.0.0)
 
+> **v3.0.0 users:** see [MIGRATION.md](./MIGRATION.md) for the full list of breaking changes and migration recipes.
+
 [![Rust Unit Tests](https://github.com/leimbernon/rust_genetic_algorithms/actions/workflows/rust-unit-tests.yml/badge.svg)](https://github.com/leimbernon/rust_genetic_algorithms/actions/workflows/rust-unit-tests.yml)
 
 Modular and concurrent evolutionary computation library for Rust. Provides 12 optimization engines — standard GA, multi-objective (NSGA-II/III, MOEA/D, SPEA2, SMS-EMOA, IBEA), island model, Differential Evolution, Scatter Search, Cellular GA, ALPS, and Genetic Programming (GP) — all generic over chromosome and gene types via traits.

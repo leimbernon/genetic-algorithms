@@ -16,7 +16,8 @@ use genetic_algorithms::genotypes::Range as RangeGene;
 use genetic_algorithms::initializers::range_random_initialization;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::traits::{
-    ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+    ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig, SelectionConfig,
+    StoppingConfig,
 };
 
 const N_VARS: usize = 13;
@@ -63,10 +64,10 @@ fn main() {
     let fitness_fn = |dna: &[RangeGene<f64>]| -> f64 { dna.iter().map(|g| g.value).sum() };
 
     let mut ga: Ga<RangeChromosome<f64>> = Ga::new()
-        .with_genes_per_chromosome(N_VARS)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(N_VARS))
         .with_population_size(POP_SIZE)
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |genes_per_chromosome, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
         })
         .with_fitness_fn(fitness_fn)
         .with_selection_method(Selection::Tournament)

@@ -14,7 +14,7 @@
 use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
 use crate::operations::mutation::gaussian::GaussianConvertible;
-use crate::traits::ChromosomeT;
+use crate::traits::LinearChromosome;
 use log::debug;
 use rand::Rng;
 use std::any::Any;
@@ -44,7 +44,7 @@ pub fn differential_mutation<U>(
     f: f64,
 ) -> Result<(), GaError>
 where
-    U: ChromosomeT + 'static,
+    U: LinearChromosome + 'static,
 {
     if chromosomes.len() < 4 {
         return Err(GaError::MutationError(

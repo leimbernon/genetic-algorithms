@@ -90,6 +90,7 @@ impl GpConfiguration {
                 method: Selection::Tournament,
                 boltzmann_temperature: 1.0,
                 niche_radius: 0.1,
+                epsilon: 0.0,
             },
             survivor: Survivor::Fitness,
             is_maximization: false,
@@ -226,6 +227,7 @@ impl GpConfiguration {
 
     /// Returns the `LimitConfiguration` required by `survivor::factory`.
     pub(crate) fn limit_configuration(&self) -> LimitConfiguration {
+        use crate::chromosomes::ChromosomeLength;
         use crate::configuration::ProblemSolving;
         LimitConfiguration {
             problem_solving: if self.is_maximization {
@@ -236,9 +238,10 @@ impl GpConfiguration {
             max_generations: self.max_generations,
             fitness_target: self.fitness_target,
             population_size: self.population_size,
-            genes_per_chromosome: 1, // placeholder — GP has no linear genes
-            needs_unique_ids: false,
-            alleles_can_be_repeated: true,
+            // GP has no linear DNA; this field is required by LimitConfiguration but
+            // unused by the GP engine (survivor::factory ignores length for tree
+            // chromosomes).
+            chromosome_length: ChromosomeLength::Fixed(1),
         }
     }
 

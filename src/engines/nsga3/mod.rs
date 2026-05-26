@@ -142,7 +142,7 @@ use crate::nsga2::configuration::ObjectiveDirection;
 use crate::nsga3::configuration::Nsga3Configuration;
 use crate::observer::Nsga3Observer;
 use crate::operations::mutation;
-use crate::traits::{ChromosomeT, InitializationFn};
+use crate::traits::{LinearChromosome, InitializationFn};
 use rand::Rng;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
@@ -156,7 +156,7 @@ use std::time::Instant;
 /// * `U` - Chromosome type implementing `ChromosomeT`.
 pub struct Nsga3Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// NSGA-III specific configuration.
     pub nsga3_config: Nsga3Configuration,
@@ -174,7 +174,7 @@ where
 
 impl<U> Nsga3Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// Creates a new `Nsga3Ga` with the given configurations.
     pub fn new(nsga3_config: Nsga3Configuration, ga_config: GaConfiguration) -> Self {
@@ -211,7 +211,7 @@ where
     /// Sets the initialization function.
     pub fn with_initialization_fn<F>(mut self, f: F) -> Self
     where
-        F: Fn(usize, Option<&[U::Gene]>, Option<bool>) -> Vec<U::Gene> + Send + Sync + 'static,
+        F: Fn(usize, Option<&[U::Gene]>) -> Vec<U::Gene> + Send + Sync + 'static,
     {
         self.initialization_fn = Some(Arc::new(f));
         self
@@ -378,7 +378,7 @@ where
 
 impl<U> Nsga3Ga<U>
 where
-    U: ChromosomeT + mutation::ValueMutable,
+    U: LinearChromosome + mutation::ValueMutable,
 {
     /// Runs the NSGA-III algorithm and returns the first Pareto front.
     ///
@@ -487,8 +487,14 @@ where
         })?;
 
         let pop_size = self.nsga3_config.population_size;
-        let genes_per_chrom = self.ga_config.limit_configuration.genes_per_chromosome;
-        let alleles_can_repeat = self.ga_config.limit_configuration.alleles_can_be_repeated;
+        let genes_per_chrom = match self.ga_config.limit_configuration.chromosome_length {
+            crate::chromosomes::ChromosomeLength::Fixed(n) => n,
+            crate::chromosomes::ChromosomeLength::Variable { .. } => {
+                return Err(GaError::InvalidNsga3Configuration(
+                    "ChromosomeLength::Variable is not yet supported (Phase 52). Use ChromosomeLength::Fixed.".into(),
+                ));
+            }
+        };
 
         let alleles = if self.alleles.is_empty() {
             None
@@ -500,7 +506,6 @@ where
             pop_size,
             genes_per_chrom,
             alleles,
-            Some(alleles_can_repeat),
             init_fn,
             None,
             0,
@@ -654,7 +659,7 @@ where
 ///      - associate each individual to its nearest reference point (perpendicular distance),
 ///      - count niche occupancy among already-selected individuals,
 ///      - repeatedly pick from the under-populated niches.
-fn nsga3_environmental_selection<U: ChromosomeT>(
+fn nsga3_environmental_selection<U: LinearChromosome>(
     combined: Vec<ParetoIndividual<U>>,
     fronts: Vec<Vec<usize>>,
     pop_size: usize,
@@ -778,7 +783,7 @@ fn nsga3_environmental_selection<U: ChromosomeT>(
 ///
 /// For Maximize objectives, signs are flipped before normalization so all dimensions
 /// behave as minimization (smaller is better in the normalized frame).
-fn normalize_st<U: ChromosomeT>(
+fn normalize_st<U: LinearChromosome>(
     combined: &[ParetoIndividual<U>],
     st_indices: &[usize],
     directions: &[ObjectiveDirection],

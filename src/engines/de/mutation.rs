@@ -2,7 +2,7 @@
 
 use super::configuration::DeMutationStrategy;
 use super::gene::DeGene;
-use crate::traits::ChromosomeT;
+use crate::traits::LinearChromosome;
 use rand::Rng;
 
 // ─── Utility distributions ───────────────────────────────────────────────────
@@ -59,7 +59,7 @@ pub fn mutate<U>(
     archive: Option<&[U]>,
 ) -> Vec<U::Gene>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
     U::Gene: DeGene,
 {
     let dim = pop[i].dna().len();
@@ -136,7 +136,7 @@ fn current_to_best<G: DeGene>(
     r2_pop: &[G],
     f: f64,
     dim: usize,
-    archive: Option<&[impl ChromosomeT<Gene = G>]>,
+    archive: Option<&[impl LinearChromosome<Gene = G>]>,
     rng: &mut impl Rng,
 ) -> Vec<G> {
     // r2 is drawn from population ∪ archive when archive is present (JADE)

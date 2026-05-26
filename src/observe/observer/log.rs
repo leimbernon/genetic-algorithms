@@ -41,8 +41,8 @@ use std::time::Duration;
 /// ga.with_observer(Arc::new(LogObserver));
 /// ```
 ///
-/// **Note:** Attaching `LogObserver` alongside [`SimpleReporter`](crate::reporter::SimpleReporter)
-/// produces redundant per-generation output.
+/// **Note:** Attaching `LogObserver` alongside another observer that prints per-generation output
+/// may produce redundant output.
 pub struct LogObserver;
 
 impl<U: ChromosomeT> GaObserver<U> for LogObserver {

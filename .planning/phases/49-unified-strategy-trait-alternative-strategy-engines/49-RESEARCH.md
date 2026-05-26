@@ -656,24 +656,21 @@ fn is_better(&self, candidate: f64, current: f64) -> bool {
 
 ---
 
-## Open Questions (RESOLVED)
+## Open Questions
 
 1. **Does `PermutateEngine` evaluate fitness internally or require pre-evaluated candidates?**
    - What we know: D-09 says "user materializes the candidate list"; the context is silent on fitness evaluation.
    - What's unclear: If candidates are built via chromosome constructors (default NaN fitness), the engine silently produces wrong output.
    - Recommendation: Add an optional `fitness_fn: Option<Arc<FitnessFn<U::Gene>>>` to `PermutateConfiguration` (consistent with `DeConfiguration`). If present, evaluate each candidate inside the loop; if absent, trust the caller's pre-evaluated fitness. Document this in `PermutateEngine`'s doc comment.
-   - **RESOLVED**: Candidates are pre-evaluated by the caller (D-09 confirmed). The engine calls `.fitness()` directly on each `U` and documents that callers must set fitness before passing candidates. No `fitness_fn` field needed — keeps the engine simple and consistent with D-09.
 
 2. **Should `TerminationCause` gain new variants for hill-climb/permutation termination reasons?**
    - What we know: Existing variants are `GenerationLimitReached`, `FitnessTargetReached`, `StagnationReached`, `ConvergenceReached`, `TimeLimitReached`, `CallbackRequested`, `NotTerminated`.
    - What's unclear: Whether a `NoImprovementLimitReached` variant adds user value or is premature.
    - Recommendation: Reuse `GenerationLimitReached` for both new engines in v3.0.0. Adding variants in a future phase is non-breaking.
-   - **RESOLVED**: Reuse `TerminationCause::GenerationLimitReached` for max-iteration stops in both engines. No new variants in v3.0.0 — adding them later is non-breaking.
 
 3. **Should `HillClimbEngine` require an initial solution at build time or via a separate method?**
    - What we know: D-07/D-08 define `HillClimbEngine<U>` with `mode`, `neighbor_fn`, but do not specify how the initial solution is provided.
    - Recommendation: Accept the initial solution as a required parameter of `HillClimbEngine::new()` — mirrors how `PermutateEngine::new()` takes `candidates: Vec<U>`.
-   - **RESOLVED**: Initial solution is a required parameter of `HillClimbEngine::new(initial: U, config: HillClimbConfiguration, neighbor_fn: Arc<dyn Fn(&U) -> Vec<U> + Send + Sync>)` — mirrors the `DeEngine::new()` pattern exactly.
 
 ---
 
@@ -685,23 +682,23 @@ fn is_better(&self, candidate: f64, current: f64) -> bool {
 |----------|-------|
 | Framework | Rust built-in test (`cargo test`) |
 | Config file | `Cargo.toml` (workspace-level) |
-| Quick run command | `cargo test test_hill_climb -- --nocapture` |
+| Quick run command | `cargo test --test test_hill_climb -- --nocapture` |
 | Full suite command | `cargo test && cargo test --features serde && cargo clippy` |
 
 ### Phase Requirements to Test Map
 
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
-| STR-01 | `Box<dyn Strategy<U>>` compiles and dispatches to `Ga`, `HillClimbEngine`, `PermutateEngine` | integration | `cargo test test_strategy_trait` | No — Wave 0 |
+| STR-01 | `Box<dyn Strategy<U>>` compiles and dispatches to `Ga`, `HillClimbEngine`, `PermutateEngine` | integration | `cargo test --test test_strategy_trait` | No — Wave 0 |
 | STR-01 | `Strategy<U>` is dyn-safe (compilation test) | compile | `cargo build` | No — Wave 0 |
-| STR-02 | `HillClimbEngine::Stochastic` finds improving solution on a simple landscape | integration | `cargo test test_hill_climb stochastic` | No — Wave 0 |
-| STR-02 | Stochastic stops after `no_improvement_limit` consecutive non-improving iterations | unit | `cargo test test_hill_climb stochastic_stops` | No — Wave 0 |
-| STR-02 | Observer hooks fire in correct order during stochastic run | integration | `cargo test test_hill_climb observer_hooks` | No — Wave 0 |
-| STR-03 | `SteepestAscent` converges on a simple unimodal landscape | integration | `cargo test test_hill_climb steepest_ascent` | No — Wave 0 |
-| STR-03 | `SteepestAscent` stops when best neighbor is not better than current | unit | `cargo test test_hill_climb steepest_stops` | No — Wave 0 |
-| STR-04 | `PermutateEngine` evaluates all candidates and returns the best | integration | `cargo test test_permutate basic` | No — Wave 0 |
-| STR-04 | Safety gate triggers `log::warn` and stops early when exceeded | unit | `cargo test test_permutate gate_overflow` | No — Wave 0 |
-| STR-04 | Observer hooks fire per candidate | integration | `cargo test test_permutate observer_hooks` | No — Wave 0 |
+| STR-02 | `HillClimbEngine::Stochastic` finds improving solution on a simple landscape | integration | `cargo test --test test_hill_climb stochastic` | No — Wave 0 |
+| STR-02 | Stochastic stops after `no_improvement_limit` consecutive non-improving iterations | unit | `cargo test --test test_hill_climb stochastic_stops` | No — Wave 0 |
+| STR-02 | Observer hooks fire in correct order during stochastic run | integration | `cargo test --test test_hill_climb observer_hooks` | No — Wave 0 |
+| STR-03 | `SteepestAscent` converges on a simple unimodal landscape | integration | `cargo test --test test_hill_climb steepest_ascent` | No — Wave 0 |
+| STR-03 | `SteepestAscent` stops when best neighbor is not better than current | unit | `cargo test --test test_hill_climb steepest_stops` | No — Wave 0 |
+| STR-04 | `PermutateEngine` evaluates all candidates and returns the best | integration | `cargo test --test test_permutate basic` | No — Wave 0 |
+| STR-04 | Safety gate triggers `log::warn` and stops early when exceeded | unit | `cargo test --test test_permutate gate_overflow` | No — Wave 0 |
+| STR-04 | Observer hooks fire per candidate | integration | `cargo test --test test_permutate observer_hooks` | No — Wave 0 |
 
 ### Sampling Rate
 

@@ -1,7 +1,7 @@
 //! Edge Recombination Crossover (ERX) implementation.
 
 use crate::error::GaError;
-use crate::traits::{ChromosomeT, GeneT};
+use crate::traits::{LinearChromosome, GeneT};
 use log::debug;
 use rand::Rng;
 use std::borrow::Cow;
@@ -23,7 +23,7 @@ use std::collections::{HashMap, HashSet};
 /// - [`GaError::CrossoverError`] if length < 2 (D-07).
 /// - [`GaError::CrossoverError`] if either parent has duplicate gene IDs, or if
 ///   both parents do not contain the same gene set (D-08).
-pub fn erx<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
+pub fn erx<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
     let len = parent_1.dna().len();
     if len != parent_2.dna().len() {
         return Err(GaError::CrossoverError(format!(

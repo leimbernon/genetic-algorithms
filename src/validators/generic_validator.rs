@@ -14,11 +14,9 @@
 
 use crate::configuration::{GaConfiguration, ProblemSolving};
 use crate::error::GaError;
-use crate::genotypes::Range;
 use crate::operations;
 use crate::population::Population;
-use crate::traits::{ChromosomeT, GeneT};
-use std::any::TypeId;
+use crate::traits::{GeneT, LinearChromosome, OperatorCompat};
 use std::collections::HashSet;
 
 /// Validate a GA configuration and/or population before running.
@@ -30,14 +28,14 @@ use std::collections::HashSet;
 /// # Arguments
 /// * `configuration` — Optional GA configuration to validate
 /// * `population` — Optional population to validate
-/// * `alleles` — Optional allele definitions for validation
+/// * `_alleles` — Reserved for future allele-based validation (currently unused)
 pub fn validate<U>(
     configuration: Option<&GaConfiguration>,
     population: Option<&Population<U>>,
-    alleles: Option<&[U::Gene]>,
+    _alleles: Option<&[U::Gene]>,
 ) -> Result<(), GaError>
 where
-    U: ChromosomeT + Send + Sync + 'static + Clone,
+    U: LinearChromosome + Send + Sync + 'static + Clone,
     U::Gene: 'static,
 {
     //1 We call the condition for checking the length of every chromosome
@@ -72,19 +70,6 @@ where
             aga_crossover_probabilities(configuration)?;
         }
 
-        //2.4 Condition checkers for the repetition of the alleles
-        if configuration.limit_configuration.alleles_can_be_repeated {
-            if let Some(alleles) = alleles {
-                // If the alleles are not range genotypes, we check that the chromosome length is not bigger than the alleles
-                if TypeId::of::<U::Gene>() != TypeId::of::<Range<U::Gene>>() {
-                    chromosome_length_not_bigger_than_alleles::<U>(
-                        alleles,
-                        configuration.limit_configuration.genes_per_chromosome,
-                    )?;
-                }
-            }
-        }
-
         //2.6 Condition checker for the couples
         number_of_couples_is_set(configuration)?;
     }
@@ -97,7 +82,7 @@ where
 /// Uses a `HashSet` for O(N) per chromosome instead of O(N²) nested loop.
 pub fn unique_gene_ids<U>(population: &Population<U>) -> Result<(), GaError>
 where
-    U: ChromosomeT + Send + Sync + 'static + Clone,
+    U: LinearChromosome + Send + Sync + 'static + Clone,
 {
     for (chromosome_number, chromosome) in population.chromosomes.iter().enumerate() {
         let mut seen = HashSet::with_capacity(chromosome.dna().len());
@@ -132,7 +117,7 @@ pub fn fitness_target_is_some(
 /// Compares each chromosome to the first one in O(N) instead of O(N²).
 pub fn same_dna_length<U>(population: &Population<U>) -> Result<(), GaError>
 where
-    U: ChromosomeT + Send + Sync + 'static + Clone,
+    U: LinearChromosome + Send + Sync + 'static + Clone,
 {
     let Some(first) = population.chromosomes.first() else {
         return Ok(());
@@ -156,7 +141,7 @@ pub fn chromosome_length_not_bigger_than_alleles<U>(
     genes_per_chromosome: usize,
 ) -> Result<(), GaError>
 where
-    U: ChromosomeT + Send + Sync + 'static + Clone,
+    U: LinearChromosome + Send + Sync + 'static + Clone,
 {
     if genes_per_chromosome > alleles.len() {
         return Err(GaError::ConfigurationError(
@@ -193,6 +178,37 @@ pub fn number_of_couples_is_set(configuration: &GaConfiguration) -> Result<(), G
         return Err(GaError::ConfigurationError(
             "The number of couples must be set.".to_string(),
         ));
+    }
+    Ok(())
+}
+
+/// Checks that the configured crossover and mutation operators are valid for the
+/// chromosome type `U` according to its `OperatorCompat` implementation.
+///
+/// Returns `Ok(())` if the chromosome type has no restrictions (`None`), or if the
+/// configured operator is in the valid set. Returns `Err(GaError::ConfigurationError)`
+/// if the configured operator is not in the valid set.
+///
+/// Called from `Ga::build()` after the existing validator chain, before any run.
+pub fn operator_compat_check<U>(configuration: &GaConfiguration) -> Result<(), GaError>
+where
+    U: LinearChromosome + OperatorCompat + Send + Sync + 'static + Clone,
+{
+    if let Some(valid) = U::valid_crossovers() {
+        if !valid.contains(&configuration.crossover_configuration.method) {
+            return Err(GaError::ConfigurationError(format!(
+                "Crossover::{:?} is not valid for this chromosome type. Valid crossovers: {:?}",
+                configuration.crossover_configuration.method, valid
+            )));
+        }
+    }
+    if let Some(valid) = U::valid_mutations() {
+        if !valid.contains(&configuration.mutation_configuration.method) {
+            return Err(GaError::ConfigurationError(format!(
+                "Mutation::{:?} is not valid for this chromosome type. Valid mutations: {:?}",
+                configuration.mutation_configuration.method, valid
+            )));
+        }
     }
     Ok(())
 }

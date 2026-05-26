@@ -67,6 +67,15 @@ pub enum Selection {
     /// Promotes population diversity by preventing niche domination.
     /// Configure `niche_radius` via the selection configuration.
     Clearing,
+    /// Lexicase selection. Requires chromosomes implementing
+    /// [`MultiCaseFitness`](crate::traits::MultiCaseFitness).
+    /// Scalar fitness is synced to the mean of case scores after each selection event.
+    Lexicase,
+    /// Epsilon-lexicase selection. Like `Selection::Lexicase` but with relaxed
+    /// per-case candidate retention. Configure tolerance via
+    /// [`SelectionConfiguration::epsilon`](crate::configuration::SelectionConfiguration::epsilon);
+    /// `0.0` = dynamic MAD per case.
+    EpsilonLexicase,
 }
 
 /// Alignment strategy for variable-length crossover.
@@ -142,6 +151,16 @@ pub enum Crossover {
     /// `GaError::CrossoverError` when parents have unequal lengths. Use this variant
     /// when variable-length chromosomes are in the population.
     VariableLength(AlignmentStrategy),
+    /// Multi-group PMX crossover for `MultiUniqueChromosome<T>`.
+    /// Applies Partially Mapped Crossover (PMX) independently within each permutation
+    /// group defined by `MultiUniqueChromosome::group_ranges()`. Each group is treated
+    /// as a separate permutation; genes are never exchanged across group boundaries.
+    MultiGroupPmx,
+    /// Multi-group OX crossover for `MultiUniqueChromosome<T>`.
+    /// Applies Order Crossover (OX) independently within each permutation group defined
+    /// by `MultiUniqueChromosome::group_ranges()`. Each group is treated as a separate
+    /// permutation; relative order is preserved within groups, not across them.
+    MultiGroupOx,
 }
 
 /// Mutation strategies.

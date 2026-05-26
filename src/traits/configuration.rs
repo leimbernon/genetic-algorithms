@@ -7,7 +7,7 @@
 
 use crate::chromosomes::ChromosomeLength;
 use crate::configuration::LocalSearchConfiguration;
-use crate::configuration::{LogLevel, ProblemSolving, StoppingCriteria};
+use crate::configuration::{LogLevel, ProblemSolving};
 use crate::operations::{Crossover, Extension, Mutation, Selection, Survivor};
 
 /// Configuration for parent selection.
@@ -21,6 +21,8 @@ pub trait SelectionConfig {
     /// Individuals within `niche_radius` of a niche winner are cleared from
     /// the mating pool each generation. Default is `0.1`.
     fn with_niche_radius(self, niche_radius: f64) -> Self;
+    /// Sets the epsilon tolerance for [`Selection::EpsilonLexicase`].
+    fn with_epsilon_lexicase(self, epsilon: f64) -> Self;
 }
 
 /// Configuration for crossover operators.
@@ -70,14 +72,6 @@ pub trait MutationConfig {
     /// Sets the stability index (α) for Lévy Flight mutation. Valid range: (0.0, 2.0). Default is 1.5.
     /// Only used when the mutation method is `Mutation::LevyFlight`.
     fn with_levy_alpha(self, alpha: f64) -> Self;
-    /// Sets the chromosome length policy for `Mutation::Insertion` and `Mutation::Deletion`.
-    ///
-    /// Required when using `Mutation::Insertion` or `Mutation::Deletion`. Set to
-    /// `ChromosomeLength::Variable { min, max }` to allow length-changing operators.
-    /// Set to `ChromosomeLength::Fixed(n)` if you want the operators to explicitly
-    /// return an error for fixed-length chromosomes (useful for testing or safety).
-    /// Default is `None`.
-    fn with_chromosome_length(self, chromosome_length: ChromosomeLength) -> Self;
 }
 
 /// Configuration for survivor selection.
@@ -99,9 +93,16 @@ pub trait StoppingConfig {
     fn with_max_generations(self, max_generations: usize) -> Self;
     /// Sets the target fitness value (used with [`ProblemSolving::FixedFitness`]).
     fn with_fitness_target(self, fitness_target: f64) -> Self;
-    /// Sets compound stopping criteria. These are checked in addition to
-    /// max_generations and fitness_target.
-    fn with_stopping_criteria(self, criteria: StoppingCriteria) -> Self;
+    /// Stop after N consecutive generations without fitness improvement.
+    fn with_stagnation_limit(self, n: usize) -> Self;
+    /// Stop when the fitness standard deviation drops below `threshold`.
+    fn with_convergence_threshold(self, threshold: f64) -> Self;
+    /// Stop after `secs` elapsed wall-clock seconds.
+    ///
+    /// The field and builder are available on all targets. Only the call site in ga.rs is
+    /// `#[cfg(not(target_arch = "wasm32"))]`-gated — on wasm32 the field is silently ignored
+    /// (a warning is emitted at run start instead).
+    fn with_max_duration_secs(self, secs: f64) -> Self;
 }
 
 /// Configuration for fitness sharing / niching.
@@ -178,12 +179,13 @@ pub trait ConfigurationT:
     fn with_problem_solving(self, problem_solving: ProblemSolving) -> Self;
     /// Sets the population size (number of individuals per generation).
     fn with_population_size(self, population_size: usize) -> Self;
-    /// Sets the number of genes in each chromosome.
-    fn with_genes_per_chromosome(self, genes_per_chromosome: usize) -> Self;
-    /// If `true`, each chromosome is assigned a unique ID during initialization.
-    fn with_needs_unique_ids(self, needs_unique_ids: bool) -> Self;
-    /// If `true`, the same allele value may appear more than once in a chromosome.
-    fn with_alleles_can_be_repeated(self, alleles_can_be_repeated: bool) -> Self;
+    /// Sets the chromosome length policy.
+    ///
+    /// Use [`ChromosomeLength::Fixed(n)`](ChromosomeLength::Fixed) for a fixed-size
+    /// chromosome with `n` genes, or
+    /// [`ChromosomeLength::Variable { min, max }`](ChromosomeLength::Variable) for
+    /// variable-length chromosomes (introduced in Phase 52).
+    fn with_chromosome_length(self, length: ChromosomeLength) -> Self;
 
     // --- Save progress configuration ---
 

@@ -5,7 +5,7 @@
 //! representations.
 
 use crate::genotypes::Binary as BinaryGenotype;
-use crate::traits::ChromosomeT;
+use crate::traits::LinearChromosome;
 use log::debug;
 use rand::Rng;
 
@@ -15,7 +15,7 @@ use rand::Rng;
 /// This is the natural mutation operator for binary-encoded chromosomes.
 pub fn bit_flip<U>(chromosome: &mut U)
 where
-    U: ChromosomeT<Gene = BinaryGenotype>,
+    U: LinearChromosome<Gene = BinaryGenotype>,
 {
     let len = chromosome.dna().len();
     if len == 0 {

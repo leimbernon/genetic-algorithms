@@ -7,7 +7,7 @@
 //! slice representation.
 
 use super::node::{GpNode, Node};
-use crate::traits::{ChromosomeT, GeneT};
+use crate::traits::{ChromosomeT, GeneT, LinearChromosome};
 use std::borrow::Cow;
 use std::fmt;
 use std::sync::Arc;
@@ -175,50 +175,6 @@ impl<N: GpNode> GpChromosome<N> {
 impl<N: GpNode + Default> ChromosomeT for GpChromosome<N> {
     type Gene = GpGene;
 
-    /// # Panics
-    ///
-    /// Always panics. `GpChromosome` has no flat DNA slice.
-    /// Use `GpChromosome` with `GpGa`, not `Ga`.
-    fn dna(&self) -> &[Self::Gene] {
-        panic!(
-            "GpChromosome::dna() is not supported — use GpChromosome with GpGa, not Ga. \
-             TreeChromosome has no flat DNA slice."
-        )
-    }
-
-    /// # Panics
-    ///
-    /// Always panics. `GpChromosome` has no flat DNA slice.
-    fn dna_mut(&mut self) -> &mut [Self::Gene] {
-        panic!(
-            "GpChromosome::dna_mut() is not supported — use GpChromosome with GpGa, not Ga. \
-             TreeChromosome has no flat DNA slice."
-        )
-    }
-
-    /// # Panics
-    ///
-    /// Always panics. `GpChromosome` has no flat DNA slice.
-    fn set_dna<'a>(&mut self, _dna: Cow<'a, [Self::Gene]>) -> &mut Self {
-        panic!(
-            "GpChromosome::set_dna() is not supported — use GpChromosome with GpGa, not Ga. \
-             TreeChromosome has no flat DNA slice."
-        )
-    }
-
-    /// No-op.
-    ///
-    /// `GpGa` owns the fitness function, not the chromosome. Use
-    /// [`GpChromosome::set_tree_fitness_fn`] to install a tree-based fitness
-    /// function directly, or let `GpGa` install it for the whole population.
-    fn set_fitness_fn<F>(&mut self, _fitness_fn: F) -> &mut Self
-    where
-        F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static,
-    {
-        // no-op: GpGa owns the fitness fn, not the chromosome
-        self
-    }
-
     fn calculate_fitness(&mut self) {
         if let Some(ref f) = self.fitness_fn {
             self.fitness = f(&self.root);
@@ -285,5 +241,57 @@ fn write_node<N: GpNode + fmt::Display>(node: &Node<N>, f: &mut fmt::Formatter<'
 impl<N: GpNode + fmt::Display + Default> fmt::Display for GpChromosome<N> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write_node(&self.root, f)
+    }
+}
+
+// ---------------------------------------------------------------------------
+// LinearChromosome impl — required by some operator factories that bound on it
+// (e.g., `survivor::factory`). All methods panic because `GpChromosome` has no
+// flat DNA representation; use `GpGa<N>` (which dispatches GP-specific operators)
+// instead of routing tree chromosomes through linear-chromosome code paths.
+// ---------------------------------------------------------------------------
+
+impl<N: GpNode + Default> LinearChromosome for GpChromosome<N> {
+    /// # Panics
+    ///
+    /// Always panics. `GpChromosome` has no flat DNA slice — use `GpGa<N>`.
+    fn dna(&self) -> &[Self::Gene] {
+        panic!(
+            "GpChromosome::dna() is not supported — use GpChromosome with GpGa, not Ga. \
+             TreeChromosome has no flat DNA slice."
+        )
+    }
+
+    /// # Panics
+    ///
+    /// Always panics. `GpChromosome` has no flat DNA slice — use `GpGa<N>`.
+    fn dna_mut(&mut self) -> &mut [Self::Gene] {
+        panic!(
+            "GpChromosome::dna_mut() is not supported — use GpChromosome with GpGa, not Ga. \
+             TreeChromosome has no flat DNA slice."
+        )
+    }
+
+    /// # Panics
+    ///
+    /// Always panics. `GpChromosome` has no flat DNA slice — use `GpGa<N>`.
+    fn set_dna<'a>(&mut self, _dna: Cow<'a, [Self::Gene]>) -> &mut Self {
+        panic!(
+            "GpChromosome::set_dna() is not supported — use GpChromosome with GpGa, not Ga. \
+             TreeChromosome has no flat DNA slice."
+        )
+    }
+
+    /// No-op.
+    ///
+    /// `GpGa` owns the fitness function, not the chromosome. Use
+    /// [`GpChromosome::set_tree_fitness_fn`] to install a tree-based fitness
+    /// function directly, or let `GpGa` install it for the whole population.
+    fn set_fitness_fn<F>(&mut self, _fitness_fn: F) -> &mut Self
+    where
+        F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static,
+    {
+        // no-op: GpGa owns the fitness fn, not the chromosome
+        self
     }
 }

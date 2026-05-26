@@ -4,7 +4,7 @@ use genetic_algorithms::ga::Ga;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::operations::mutation;
 use genetic_algorithms::operations::Mutation;
-use genetic_algorithms::traits::{ChromosomeT, MutationConfig};
+use genetic_algorithms::traits::{LinearChromosome, MutationConfig};
 use std::borrow::Cow;
 
 fn build_f64_chromosome(n: usize) -> RangeChromosome<f64> {
@@ -117,17 +117,17 @@ fn cauchy_mutation_errors_on_binary_chromosome() {
 #[test]
 fn cauchy_scale_builder_sets_field() {
     let ga = Ga::<RangeChromosome<f64>>::default().with_cauchy_scale(2.5);
-    assert_eq!(ga.configuration.mutation_configuration.cauchy_scale, Some(2.5));
+    assert_eq!(ga.configuration().mutation().cauchy_scale, Some(2.5));
     let cfg = GaConfiguration::default().with_cauchy_scale(3.5);
-    assert_eq!(cfg.mutation_configuration.cauchy_scale, Some(3.5));
+    assert_eq!(cfg.mutation().cauchy_scale, Some(3.5));
 }
 
 #[test]
 fn levy_alpha_builder_sets_field() {
     let ga = Ga::<RangeChromosome<f64>>::default().with_levy_alpha(1.7);
-    assert_eq!(ga.configuration.mutation_configuration.levy_alpha, Some(1.7));
+    assert_eq!(ga.configuration().mutation().levy_alpha, Some(1.7));
     let cfg = GaConfiguration::default().with_levy_alpha(1.2);
-    assert_eq!(cfg.mutation_configuration.levy_alpha, Some(1.2));
+    assert_eq!(cfg.mutation().levy_alpha, Some(1.2));
 }
 
 // ---- LevyFlight active tests ----

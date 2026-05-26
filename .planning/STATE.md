@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v3.0.0
 milestone_name: — Advanced Representations, Alternative Strategies & Architecture Simplification
 status: completed
-stopped_at: context exhaustion at 80% (2026-05-25)
-last_updated: "2026-05-25T13:48:51.584Z"
-last_activity: 2026-05-25 -- Phase 53 marked complete
+stopped_at: Phase 50 context gathered
+last_updated: "2026-05-23T00:03:51.039Z"
+last_activity: 2026-05-23 -- Phase 50 marked complete
 progress:
   total_phases: 24
-  completed_phases: 7
-  total_plans: 46
-  completed_plans: 50
-  percent: 29
+  completed_phases: 4
+  total_plans: 18
+  completed_plans: 58
+  percent: 17
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-18)
 
 **Core value:** Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library
-**Current focus:** Phase 53 — tree-chromosome-gpga-engine
+**Current focus:** Phase 50 — lexicase-selection
 
 ## Current Position
 
-Phase: 53 — COMPLETE
-Plan: 4 of 4
-Status: Phase 53 complete
-Last activity: 2026-05-25 -- Phase 53 marked complete
+Phase: 50 — COMPLETE
+Plan: 2 of 2
+Status: Phase 50 complete
+Last activity: 2026-05-23 -- Phase 50 marked complete
 
 Progress bar: [░░░░░░░] 0/7 phases complete
 
@@ -50,11 +50,6 @@ Progress bar: [░░░░░░░] 0/7 phases complete
 - v3.0.0: No new external crates required except conditional `serde_stacker` (gated behind existing `serde` feature flag) — verify wasm32 compatibility before committing
 - v3.0.0: `GpGa<U: TreeChromosome>` is a separate engine from `Ga<U: LinearChromosome>` — GP loop differences (ramped init, bloat control, depth limits) do not belong in the standard GA hot path
 - v3.0.0: `Box<N>` recursive enum for tree nodes (rejected arena crates) — subtree clone is O(subtree), not O(arena); arena index-remapping across arenas is too complex
-- v3.0.0: Phase 52 Wave 0 stubs lock API contract — PermutationInsert rename, Insertion/Deletion length operators, VariableLength crossover with AlignmentStrategy, ChromosomeLength::Variable, length_penalty parsimony pressure
-- v3.0.0: ChromosomeLength::Fixed(n)/Variable{min,max} lives in chromosomes module; Mutation::Insertion(length-grow)/Deletion(length-shrink) require ChromosomeLength::Variable in MutationConfiguration; new gene for Insertion sampled by cloning a random existing gene (generic, works with all ChromosomeT)
-- v3.0.0: AlignmentStrategy::Trim/Pad and Crossover::VariableLength use single-point crossover within aligned region; Pad fills shorter parent by cloning random genes from its own DNA (consistent with Mutation::Insertion allele sampling)
-- v3.0.0: Parsimony pressure uses temporary fitness adjustment (adjust → select → restore) so stored fitness() is never mutated; SurvivorConfig trait with with_length_penalty() builder wired into ConfigurationT supertrait
-- v3.0.0: Extension regrowth for variable-length chromosomes samples lengths from [min_observed, max_observed] of surviving population, clamped to configured Variable {min, max} bounds
 
 ### Roadmap Evolution
 
@@ -68,6 +63,6 @@ Progress bar: [░░░░░░░] 0/7 phases complete
 
 ## Session Continuity
 
-Last session: 2026-05-25T13:41:50.858Z
-Stopped at: context exhaustion at 80% (2026-05-25)
+Last session: 2026-05-23T00:00:52.081Z
+Stopped at: Phase 50 context gathered
 Resume file: None

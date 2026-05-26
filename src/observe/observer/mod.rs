@@ -1,12 +1,11 @@
 //! Structured lifecycle observer for the GA execution loop.
 //!
 //! This module provides the [`GaObserver`] trait, which exposes 12 hooks that
-//! fire at precise points in the GA run loop. Unlike the legacy [`Reporter`]
-//! trait, observers:
+//! fire at precise points in the GA run loop. Observers:
 //!
 //! - Are stored as `Arc<dyn GaObserver + Send + Sync>` (sharable across island threads)
 //! - Receive `&self` (not `&mut self`), enabling interior mutability patterns
-//! - Cover 12 lifecycle, operator-timing, and special-event hooks (vs 4 in Reporter)
+//! - Cover 12 lifecycle, operator-timing, and special-event hooks
 //! - Require `Send + Sync` for safe use in rayon parallel regions
 //!
 //! # Hooks
@@ -25,8 +24,6 @@
 //! | `on_extension_triggered` | When an extension strategy fires |
 //! | `on_generation_end` | End of each generation, after statistics collected |
 //! | `on_run_end` | Once after the GA loop exits |
-//!
-//! [`Reporter`]: crate::reporter::Reporter
 
 use crate::ga::TerminationCause;
 use crate::stats::GenerationStats;
@@ -54,14 +51,16 @@ pub struct ExtensionEvent {
 /// you need. The `Send + Sync` supertraits are required for safe sharing
 /// across rayon threads (island model) via `Arc`.
 ///
-/// # Differences from [`Reporter`](crate::reporter::Reporter)
+/// # GaObserver vs the removed Reporter trait
 ///
-/// | Aspect | Reporter | GaObserver |
-/// |--------|----------|------------|
+/// | Aspect | Reporter (removed v3.0) | GaObserver |
+/// |--------|------------------------|------------|
 /// | Storage | `Box<dyn Reporter + Send>` | `Arc<dyn GaObserver + Send + Sync>` |
 /// | Mutability | `&mut self` | `&self` |
 /// | Hooks | 4 lifecycle | 12 (lifecycle + operator + special) |
 /// | Thread safety | `Send` only | `Send + Sync` |
+///
+/// See [`MIGRATION.md`](https://docs.rs/genetic_algorithms) for migration recipes.
 pub trait GaObserver<U: ChromosomeT>: Send + Sync {
     /// Called once before the first generation.
     fn on_run_start(&self) {}

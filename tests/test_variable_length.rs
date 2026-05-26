@@ -15,7 +15,9 @@ use genetic_algorithms::operations::mutation::length_mutation::{
 };
 use genetic_algorithms::operations::survivor::apply_parsimony_pressure;
 use genetic_algorithms::operations::{AlignmentStrategy, Crossover, Mutation, Survivor};
-use genetic_algorithms::traits::{ChromosomeT, ConfigurationT, CrossoverOperator, MutationConfig};
+use genetic_algorithms::traits::{
+    ChromosomeT, ConfigurationT, CrossoverOperator, LinearChromosome, MutationConfig,
+};
 use std::borrow::Cow;
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -255,7 +257,6 @@ fn test_variable_length_initialization_samples_lengths_in_range() {
     let mut ga: Ga<RangeChromosome<f64>> = Ga::new()
         .with_fitness_fn(|dna: &[RangeGenotype<f64>]| dna.iter().map(|g| g.value).sum::<f64>())
         .with_population_size(20)
-        .with_genes_per_chromosome(5) // fallback length (unused for Variable)
         .with_alleles(alleles)
         .with_chromosome_length(ChromosomeLength::Variable { min: 2, max: 8 })
         .with_mutation_method(Mutation::Insertion)
@@ -304,7 +305,7 @@ fn test_variable_length_extension_regrowth_samples_from_population() {
     let mut ga: Ga<RangeChromosome<f64>> = Ga::new()
         .with_fitness_fn(|dna: &[RangeGenotype<f64>]| dna.iter().map(|g| g.value).sum::<f64>())
         .with_population_size(10)
-        .with_genes_per_chromosome(5)
+        .with_chromosome_length(ChromosomeLength::Fixed(5))
         .with_alleles(alleles)
         .with_chromosome_length(ChromosomeLength::Variable { min: 2, max: 8 })
         .with_mutation_method(Mutation::Insertion)

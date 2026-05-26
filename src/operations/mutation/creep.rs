@@ -7,7 +7,7 @@
 //! spaces.
 
 use crate::chromosomes::Range as RangeChromosome;
-use crate::traits::ChromosomeT;
+use crate::traits::LinearChromosome;
 use rand::distr::uniform::SampleUniform;
 use rand::Rng;
 use std::fmt::Debug;

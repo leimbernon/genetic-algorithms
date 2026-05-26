@@ -33,7 +33,7 @@ use genetic_algorithms::traits::{
 };
 #[cfg(feature = "observer-metrics")]
 use genetic_algorithms::MetricsObserver;
-use genetic_algorithms::{CompositeObserver, LogObserver};
+use genetic_algorithms::{ChromosomeLength, CompositeObserver, LogObserver};
 use std::sync::Arc;
 
 fn main() {
@@ -66,11 +66,11 @@ fn main() {
     // --- Build the GA configuration ---
     let mut ga = Ga::new()
         // Chromosome: DIMENSIONS genes, each a continuous value in [-5.12, 5.12]
-        .with_genes_per_chromosome(DIMENSIONS)
+        .with_chromosome_length(ChromosomeLength::Fixed(DIMENSIONS))
         .with_population_size(POP_SIZE)
         // Random initialization within allele bounds
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |genes_per_chromosome, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
         })
         .with_fitness_fn(fitness_fn)
         // Selection: Tournament (pressure-based, good for continuous landscapes)

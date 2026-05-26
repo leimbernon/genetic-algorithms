@@ -10,7 +10,7 @@
 
 use crate::error::GaError;
 use crate::operations::AlignmentStrategy;
-use crate::traits::ChromosomeT;
+use crate::traits::LinearChromosome;
 use log::debug;
 use rand::Rng;
 use std::borrow::Cow;
@@ -31,7 +31,7 @@ use std::borrow::Cow;
 /// # Errors
 ///
 /// Returns `Err(GaError::CrossoverError)` if both parents are empty.
-pub fn variable_length_crossover<U: ChromosomeT>(
+pub fn variable_length_crossover<U: LinearChromosome>(
     parent_1: &U,
     parent_2: &U,
     strategy: AlignmentStrategy,

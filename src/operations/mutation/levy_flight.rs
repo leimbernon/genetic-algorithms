@@ -5,7 +5,7 @@
 
 use crate::chromosomes::Range as RangeChromosome;
 use crate::operations::mutation::gaussian::GaussianConvertible;
-use crate::traits::ChromosomeT;
+use crate::traits::LinearChromosome;
 use log::debug;
 use rand::Rng;
 use std::fmt::Debug;

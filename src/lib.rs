@@ -282,8 +282,6 @@ pub mod initializers;
 pub mod observer;
 pub mod operations;
 pub mod population;
-#[path = "observe/reporter/mod.rs"]
-pub mod reporter;
 pub mod rng;
 pub mod stats;
 pub mod traits;
@@ -298,6 +296,10 @@ pub mod alps;
 pub mod cellular;
 #[path = "engines/de/mod.rs"]
 pub mod de;
+#[path = "engines/hill_climb/mod.rs"]
+pub mod hill_climb;
+#[path = "engines/permutate/mod.rs"]
+pub mod permutate;
 #[path = "engines/island/mod.rs"]
 pub mod island;
 #[path = "engines/multi_objective/mod.rs"]
@@ -347,3 +349,11 @@ pub use observer::SmsEmoaObserver;
 pub use observer::Spea2Observer;
 #[cfg(feature = "observer-tracing")]
 pub use observer::TracingObserver;
+pub use chromosomes::{
+    ChromosomeLength, MultiRangeChromosome, MultiUniqueChromosome, UniqueChromosome,
+};
+pub use genotypes::{MultiRangeGenotype, UniqueGenotype};
+pub use hill_climb::{HillClimbConfiguration, HillClimbEngine, HillClimbMode};
+pub use initializers::{multi_range_random_initialization, unique_random_initialization};
+pub use permutate::{PermutateConfiguration, PermutateEngine};
+pub use traits::{LinearChromosome, MultiCaseFitness, OperatorCompat, Strategy};

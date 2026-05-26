@@ -6,11 +6,11 @@
 
 - [ ] **ARCH-01**: User can implement `ChromosomeT` for custom types using only the minimal core contract (fitness, age, calculate_fitness) — flat-slice methods (`dna()`, `set_dna()`, `set_fitness_fn()`) move to `LinearChromosome` supertrait, so tree and variable-length types are no longer forced to fake compliance
 - [ ] **ARCH-02**: User can implement `LinearChromosome` to gain full compatibility with all existing operators — a mechanical bound change from `U: ChromosomeT` to `U: LinearChromosome` across ~30 operator files; all existing chromosome types (`Binary`, `Range<T>`, `ListChromosome<T>`) implement `LinearChromosome`
-- [ ] **ARCH-03**: User can build without `Reporter<U>` — the trait removed entirely in v3.0.0; users who relied on it migrate to `GaObserver<U>` (available since v2.2.0); a `MIGRATION.md` is published
+- [x] **ARCH-03**: User can build without `Reporter<U>` — the trait removed entirely in v3.0.0; users who relied on it migrate to `GaObserver<U>` (available since v2.2.0); a `MIGRATION.md` is published
 - [ ] **ARCH-04**: User cannot accidentally bypass builder validation — `GaConfiguration` fields are `pub(crate)` with read-only accessors; `needs_unique_ids` and `alleles_can_be_repeated` removed from `LimitConfiguration` (initialization concerns, not engine config)
 - [ ] **ARCH-05**: User configures chromosome length via `ChromosomeLength::Fixed(n)` or `ChromosomeLength::Variable { min, max }` — replaces bare `genes_per_chromosome: usize`; existing `Fixed(n)` behavior is identical to current behavior
 - [ ] **ARCH-06**: User can configure stopping behavior via flat builder methods (`.with_stagnation_limit(50)`, `.with_convergence_threshold(0.001)`) — `StoppingCriteria` struct flattened; `LocalSearchOperator` changed from `Arc<dyn ...>` to `Option<LocalSearch>` enum (consistent with all other operators)
-- [ ] **ARCH-07**: User can run all 10 existing examples without modification after the architecture audit — CI compiles and runs each example with a short generation count on every PR to the milestone branch
+- [x] **ARCH-07**: User can run all 10 existing examples without modification after the architecture audit — CI compiles and runs each example with a short generation count on every PR to the milestone branch
 
 ### GEN — New Genotype Types
 
@@ -28,8 +28,8 @@
 
 ### SEL — Advanced Selection
 
-- [ ] **SEL-02**: User can configure `LexicaseSelection` on any chromosome type that implements `MultiCaseFitness: ChromosomeT` — selection shuffles test cases randomly per event and filters to elites case by case; scalar `fitness()` is set to the mean case score for survivor/stopping compatibility
-- [ ] **SEL-03**: User can configure epsilon-lexicase selection (ε-lexicase) for continuous-valued case scores — filter keeps all individuals within epsilon of the best on each case; `epsilon` is user-configurable with a sensible default
+- [x] **SEL-02**: User can configure `LexicaseSelection` on any chromosome type that implements `MultiCaseFitness: ChromosomeT` — selection shuffles test cases randomly per event and filters to elites case by case; scalar `fitness()` is set to the mean case score for survivor/stopping compatibility
+- [x] **SEL-03**: User can configure epsilon-lexicase selection (ε-lexicase) for continuous-valued case scores — filter keeps all individuals within epsilon of the best on each case; `epsilon` is user-configurable with a sensible default
 
 ### CRS — Advanced Crossover Operators
 
@@ -54,7 +54,7 @@
 
 ### TRAITS — New Opt-In Trait Contracts
 
-- [ ] **TRAITS-01**: User can make any chromosome type support multi-case fitness evaluation by implementing `MultiCaseFitness: ChromosomeT` with `case_fitness() -> &[f64]` and `set_case_fitness(Vec<f64>)` — enables `LexicaseSelection`; compatible with `TreeChromosome` for GP program synthesis
+- [x] **TRAITS-01**: User can make any chromosome type support multi-case fitness evaluation by implementing `MultiCaseFitness: ChromosomeT` with `case_fitness() -> &[f64]` and `set_case_fitness(Vec<f64>)` — enables `LexicaseSelection`; compatible with `TreeChromosome` for GP program synthesis
 - [ ] **TRAITS-02**: User can make any real-valued chromosome type support self-adaptive mutation by implementing `SelfAdaptive: ChromosomeT` with `strategy_params() -> &[f64]` and `adapt_strategy_params(tau, tau_prime)` — enables `Mutation::SelfAdaptiveGaussian`
 
 ## Traceability
@@ -63,11 +63,11 @@
 |--------|-------|--------|
 | ARCH-01 | Phase 47 | Pending |
 | ARCH-02 | Phase 47 | Pending |
-| ARCH-03 | Phase 47 | Pending |
+| ARCH-03 | Phase 47 | Complete |
 | ARCH-04 | Phase 47 | Pending |
 | ARCH-05 | Phase 47 | Pending |
 | ARCH-06 | Phase 47 | Pending |
-| ARCH-07 | Phase 47 | Pending |
+| ARCH-07 | Phase 47 | Complete |
 | GEN-01 | Phase 48 | Pending |
 | GEN-02 | Phase 48 | Pending |
 | GEN-03 | Phase 48 | Pending |
@@ -76,9 +76,9 @@
 | STR-02 | Phase 49 | Pending |
 | STR-03 | Phase 49 | Pending |
 | STR-04 | Phase 49 | Pending |
-| SEL-02 | Phase 50 | Pending |
-| SEL-03 | Phase 50 | Pending |
-| TRAITS-01 | Phase 50 | Pending |
+| SEL-02 | Phase 50 | Complete |
+| SEL-03 | Phase 50 | Complete |
+| TRAITS-01 | Phase 50 | Complete |
 | CRS-02 | Phase 51 | Pending |
 | CRS-03 | Phase 51 | Pending |
 | CRS-04 | Phase 51 | Pending |

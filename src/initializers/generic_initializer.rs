@@ -11,21 +11,19 @@ use rand::Rng;
 ///
 /// Each gene position is filled by picking a random allele from the provided
 /// list. The same allele may appear more than once in the resulting DNA.
+/// Gene IDs are set to sequential integers starting from 0.
 ///
 /// # Panics
 ///
-/// Panics if `alleles` or `needs_unique_ids` is `None`.
+/// Panics if `alleles` is `None`.
 pub fn generic_random_initialization<U>(
     genes_per_chromosome: usize,
     alleles: Option<&[U::Gene]>,
-    needs_unique_ids: Option<bool>,
 ) -> Vec<U::Gene>
 where
     U: ChromosomeT + Send + Sync + 'static + Clone,
 {
     let alleles = alleles.expect("Alleles must be provided for generic_random_initialization");
-    let needs_unique_ids = needs_unique_ids
-        .expect("needs_unique_ids must be provided for generic_random_initialization");
 
     let mut rng = crate::rng::make_rng();
     let mut dna = Vec::new();
@@ -34,12 +32,7 @@ where
     for j in 0..genes_per_chromosome {
         let index = rng.random_range(0..alleles.len());
         let mut gene = alleles.get(index).cloned().unwrap();
-
-        //If we need unique ids
-        if needs_unique_ids {
-            gene.set_id(j as i32);
-        }
-
+        gene.set_id(j as i32);
         dna.push(gene);
     }
 
@@ -50,23 +43,20 @@ where
 ///
 /// Each selected allele is removed from the candidate pool, guaranteeing that
 /// no allele appears more than once. Requires `alleles.len() >= genes_per_chromosome`.
+/// Gene IDs are set to sequential integers starting from 0.
 ///
 /// # Panics
 ///
-/// Panics if `alleles` or `needs_unique_ids` is `None`.
+/// Panics if `alleles` is `None`.
 pub fn generic_random_initialization_without_repetitions<U>(
     genes_per_chromosome: usize,
     alleles: Option<&[U::Gene]>,
-    needs_unique_ids: Option<bool>,
 ) -> Vec<U::Gene>
 where
     U: ChromosomeT + Send + Sync + 'static + Clone,
 {
     let alleles = alleles
         .expect("Alleles must be provided for generic_random_initialization_without_repetitions");
-    let needs_unique_ids = needs_unique_ids.expect(
-        "needs_unique_ids must be provided for generic_random_initialization_without_repetitions",
-    );
 
     let mut rng = crate::rng::make_rng();
     let mut dna = Vec::new();
@@ -77,14 +67,8 @@ where
     for j in 0..genes_per_chromosome {
         let index = rng.random_range(0..tmp_alleles.len());
         let mut gene = tmp_alleles.get(index).cloned().unwrap();
-
-        //If we need unique ids
-        if needs_unique_ids {
-            gene.set_id(j as i32);
-        }
-
+        gene.set_id(j as i32);
         tmp_alleles.remove(index);
-
         dna.push(gene);
     }
 

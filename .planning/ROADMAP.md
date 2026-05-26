@@ -117,8 +117,8 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 
 - [ ] **Phase 47: Architecture Audit & ChromosomeT Split** — Reduce `ChromosomeT` to a minimal core; introduce `LinearChromosome` supertrait; remove `Reporter<U>`; apply 6 API simplifications; validate all 10 examples compile and run in CI
 - [ ] **Phase 48: New Genotype Types** — `UniqueChromosome<T>` for permutation problems, `MultiRangeChromosome<T>` for per-gene bounds, `MultiUniqueChromosome<T>` for multiple independent permutation groups; migrate `job_scheduling` example
-- [ ] **Phase 49: Unified Strategy Trait + Alternative Strategy Engines** — `Strategy<U>` trait; `HillClimbEngine` (Stochastic + SteepestAscent); `PermutateEngine` with safety gate; observer hooks throughout
-- [ ] **Phase 50: Lexicase Selection** — `MultiCaseFitness: ChromosomeT` trait; `LexicaseSelection`; epsilon-lexicase variant; behavioral diversity CI test
+- [x] **Phase 49: Unified Strategy Trait + Alternative Strategy Engines** — `Strategy<U>` trait; `HillClimbEngine` (Stochastic + SteepestAscent); `PermutateEngine` with safety gate; observer hooks throughout
+- [x] **Phase 50: Lexicase Selection** — `MultiCaseFitness: ChromosomeT` trait; `LexicaseSelection`; epsilon-lexicase variant; behavioral diversity CI test (completed 2026-05-23)
 - [ ] **Phase 51: Multi-Parent Crossover + Self-Adaptive Mutation** — UNDX, SPX, PCX operators with `RealValued` marker trait; `SelfAdaptive: ChromosomeT` trait; `Mutation::SelfAdaptiveGaussian` with log-normal sigma update
 - [x] **Phase 52: Variable-Length Chromosomes** — `ChromosomeLength::Variable { min, max }`; `Mutation::Insertion` / `Mutation::Deletion`; `Crossover::VariableLength(AlignmentStrategy)`; parsimony pressure survivor config (completed 2026-05-24)
 - [x] **Phase 53: Tree Chromosome + GpGa Engine** — `TreeChromosome: ChromosomeT` supertrait; `GpGa<U>` engine; ramped half-and-half init; subtree crossover + mutation; bloat control; serde with `serde_stacker`; `Display` as expression string (completed 2026-05-25)
@@ -449,22 +449,22 @@ Plans:
   4. User can configure chromosome length as `ChromosomeLength::Fixed(n)` or `ChromosomeLength::Variable { min, max }` via the builder — existing code using the old `genes_per_chromosome` field does not compile, making the change auditable
   5. User can configure all stopping criteria via flat builder methods (`.with_stagnation_limit(50)`) without constructing a `StoppingCriteria` struct; `LocalSearch` is configured via an enum, not `Arc<dyn ...>`
   6. All 10 existing runnable examples (`cargo run --example <name>`) compile and pass their short-generation CI smoke tests on the milestone branch after every PR
-**Plans:** 8 plans (3 staged PRs per D-13)
+**Plans:** 6/8 plans executed
 
 Plans:
 **PR 1 — ChromosomeT split (ARCH-01, ARCH-02)**
-- [ ] 47-01-PLAN.md — Wave 0 tests + split ChromosomeT into minimal core + LinearChromosome supertrait
-- [ ] 47-02-PLAN.md — Implementor updates (Binary, Range, List) + mechanical bound change across operator layer + ValueMutable supertrait upgrade
-- [ ] 47-03-PLAN.md — Engine orchestrators (Ga, DE, Scatter, Cellular, ALPS, NSGA-II/III, MOEA/D, SPEA2, SMS-EMOA, IBEA, Island) bound upgrade + PR 1 gate
+- [x] 47-01-PLAN.md — Wave 0 tests + split ChromosomeT into minimal core + LinearChromosome supertrait
+- [x] 47-02-PLAN.md — Implementor updates (Binary, Range, List) + mechanical bound change across operator layer + ValueMutable supertrait upgrade
+- [x] 47-03-PLAN.md — Engine orchestrators (Ga, DE, Scatter, Cellular, ALPS, NSGA-II/III, MOEA/D, SPEA2, SMS-EMOA, IBEA, Island) bound upgrade + PR 1 gate
 
 **PR 2 — Config cleanup (ARCH-04, ARCH-05, ARCH-06)**
 - [ ] 47-04-PLAN.md — ChromosomeLength enum + LimitConfiguration field removals + initializer signature cleanup
-- [ ] 47-05-PLAN.md — StoppingCriteria flattening into GaConfiguration + sub-struct accessor pattern + ga.rs path updates (WASM gate preserved)
-- [ ] 47-06-PLAN.md — Multi-obj engine + example + test caller migration + PR 2 gate
+- [x] 47-05-PLAN.md — StoppingCriteria flattening into GaConfiguration + sub-struct accessor pattern + ga.rs path updates (WASM gate preserved)
+- [x] 47-06-PLAN.md — Multi-obj engine + example + test caller migration + PR 2 gate
 
 **PR 3 — Reporter removal + CI (ARCH-03, ARCH-07)**
 - [ ] 47-07-PLAN.md — Reporter trait + impls + fire points removal + MIGRATION.md publication + README link + Cargo.toml include
-- [ ] 47-08-PLAN.md — examples-smoke.yml CI workflow + final Phase 47 verification gate
+- [x] 47-08-PLAN.md — examples-smoke.yml CI workflow + final Phase 47 verification gate
 
 **UI hint**: no
 
@@ -477,8 +477,21 @@ Plans:
   2. User can run the `job_scheduling` example using `UniqueChromosome<i32>` in place of the old `RangeChromosome<i32>` unique-id hack — example produces valid job sequences
   3. User can create a `MultiRangeChromosome<T>` where each gene has its own `(lo_i, hi_i)` bounds; Gaussian mutation clamps each gene to its own per-gene range independently
   4. User can create a `MultiUniqueChromosome<T>` with multiple independent permutation groups; PMX/OX crossover applies within each group boundary and never corrupts group membership across the boundary
-**Plans**: TBD
+**Plans:** 4 plans
 **UI hint**: no
+
+Plans:
+**Wave 1**
+- [ ] 48-01-PLAN.md — OperatorCompat trait foundation + Crossover enum MultiGroup variants + build_child visibility + per-type empty impls + Wave 0 tests (GEN-01, GEN-04 foundation)
+
+**Wave 2** *(blocked on Wave 1)*
+- [ ] 48-02-PLAN.md — UniqueGenotype + UniqueChromosome + unique_random_initialization + job_scheduling example migration (GEN-01, GEN-02)
+
+**Wave 3** *(blocked on Wave 2)*
+- [ ] 48-03-PLAN.md — MultiRangeGenotype + MultiRangeChromosome + multi_range_random_initialization + per-gene Gaussian mutation (GEN-03)
+
+**Wave 4** *(blocked on Wave 3)*
+- [ ] 48-04-PLAN.md — MultiUniqueChromosome + group_ranges + multi_group_pmx + multi_group_ox dispatch + Phase 48 verification gate (GEN-04)
 
 ### Phase 49: Unified Strategy Trait + Alternative Strategy Engines
 **Goal**: Users can swap between GA, hill-climbing, and exhaustive permutation search at runtime through a single `Strategy<U>` trait, and can use `Box<dyn Strategy<U>>` to select algorithms without rewriting application code
@@ -489,7 +502,7 @@ Plans:
   2. User can run stochastic hill climbing by providing a `neighbor_fn` and an iteration limit; the engine accepts any neighbor with higher fitness and stops when no improvement is found within the limit; `GaObserver` hooks fire per iteration
   3. User can run steepest-ascent hill climbing with the same `neighbor_fn`; all returned neighbors are evaluated and only the single best is accepted per step; `GaObserver` hooks fire per iteration
   4. User can run `PermutateEngine` over a small search space; if the total permutation count exceeds the configurable safety gate, the engine emits a warning and returns the best candidate found so far rather than panicking; `GaObserver` hooks fire per candidate evaluated
-**Plans**: TBD
+**Plans**: 49-01, 49-02, 49-03, 49-04 — COMPLETE ✓
 **UI hint**: no
 
 ### Phase 50: Lexicase Selection
@@ -501,7 +514,15 @@ Plans:
   2. User can configure `Selection::Lexicase` and observe that test cases are shuffled randomly per selection event; the scalar `fitness()` is set to the mean case score for survivor and stopping-criteria compatibility
   3. User can configure `Selection::EpsilonLexicase { epsilon }` for continuous-valued case scores; individuals within epsilon of the best on each case are retained through that case's filter
   4. A CI behavioral diversity test confirms that a population evolved under `LexicaseSelection` produces measurably more specialists (individuals excelling on distinct case subsets) than `TournamentSelection` under matched effort
-**Plans**: TBD
+**Plans:** 2/2 plans complete
+
+Plans:
+**Wave 1**
+- [x] 50-01-PLAN.md — MultiCaseFitness trait + Selection enum variants + SelectionConfiguration.epsilon + Wave 0 test stubs (TRAITS-01)
+
+**Wave 2** *(blocked on Wave 1)*
+- [x] 50-02-PLAN.md — lexicase + epsilon-lexicase operators + factory_lexicase + ga.rs dispatch + behavioral diversity test + phase verification gate (SEL-02, SEL-03)
+
 **UI hint**: no
 
 ### Phase 51: Multi-Parent Crossover + Self-Adaptive Mutation
@@ -608,10 +629,10 @@ Plans:
 | 44. Standard Benchmark Functions Suite | v2.4.0 | 3/3 | Complete    | 2026-05-14 |
 | 45. Memetic Algorithm Framework | v2.4.0 | 3 | Pending | — |
 | 46. Documentation Refactor | v2.4.0 | 7/7 | Complete    | 2026-05-15 |
-| 47. Architecture Audit & ChromosomeT Split | v3.0.0 | 0 | Not started | — |
-| 48. New Genotype Types | v3.0.0 | 0 | Not started | — |
+| 47. Architecture Audit & ChromosomeT Split | v3.0.0 | 6/8 | In Progress|  |
+| 48. New Genotype Types | v3.0.0 | 4 | In Progress | — |
 | 49. Unified Strategy Trait + Alternative Strategy Engines | v3.0.0 | 0 | Not started | — |
-| 50. Lexicase Selection | v3.0.0 | 0 | Not started | — |
+| 50. Lexicase Selection | v3.0.0 | 2/2 | Complete   | 2026-05-23 |
 | 51. Multi-Parent Crossover + Self-Adaptive Mutation | v3.0.0 | 0 | Not started | — |
 | 52. Variable-Length Chromosomes | v3.0.0 | 0 | Not started | — |
 | 53. Tree Chromosome + GpGa Engine | v3.0.0 | 4/4 | Complete   | 2026-05-25 |

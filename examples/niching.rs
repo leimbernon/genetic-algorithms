@@ -31,8 +31,8 @@ use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::population::Population;
 use genetic_algorithms::stats::GenerationStats;
 use genetic_algorithms::traits::{
-    ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, NichingConfig, SelectionConfig,
-    StoppingConfig,
+    ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig, NichingConfig,
+    SelectionConfig, StoppingConfig,
 };
 use genetic_algorithms::LogObserver;
 use std::sync::Arc;
@@ -60,11 +60,11 @@ fn main() {
     // --- Build the GA configuration ---
     let mut ga = Ga::new()
         // 1-D problem: one gene (x) per chromosome
-        .with_genes_per_chromosome(1)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(1))
         .with_population_size(POP_SIZE)
         // Random initialisation within [0.0, 10.0]
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |genes_per_chromosome, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
         })
         .with_fitness_fn(fitness_fn)
         // Selection: Tournament

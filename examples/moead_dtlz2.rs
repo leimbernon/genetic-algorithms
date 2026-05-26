@@ -70,9 +70,10 @@ fn main() {
         .with_max_neighbor_replacements(MAX_NEIGHBOR_REPLACEMENTS);
 
     // --- Base GA configuration ---
-    let mut ga_config = GaConfiguration::default();
-    ga_config.limit_configuration.genes_per_chromosome = N_VARS;
-    ga_config.limit_configuration.alleles_can_be_repeated = true;
+    use genetic_algorithms::ChromosomeLength;
+    use genetic_algorithms::traits::ConfigurationT;
+    let ga_config = GaConfiguration::default()
+        .with_chromosome_length(ChromosomeLength::Fixed(N_VARS));
 
     // --- Allele definition: each of the 12 variables lives in [0.0, 1.0] ---
     let alleles = vec![RangeGenotype::new(0, vec![(0.0_f64, 1.0_f64)], 0.0_f64)];
@@ -99,8 +100,8 @@ fn main() {
     // --- Build the MOEA/D optimizer ---
     let mut moead = MoeaDGa::<RangeChromosome<f64>>::new(moead_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |n, _, _| {
-            range_random_initialization(n, Some(&alleles_clone), Some(true))
+        .with_initialization_fn(move |n, _| {
+            range_random_initialization(n, Some(&alleles_clone))
         })
         .with_objective_fns(vec![Box::new(f1), Box::new(f2), Box::new(f3)])
         .with_observer(

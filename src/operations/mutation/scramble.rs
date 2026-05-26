@@ -4,7 +4,7 @@
 //! chromosome. Like inversion mutation it preserves alleles, making it
 //! suitable for permutation-based encodings.
 
-use crate::traits::ChromosomeT;
+use crate::traits::LinearChromosome;
 use log::{debug, trace};
 pub(crate) use rand::Rng;
 
@@ -14,7 +14,7 @@ pub(crate) use rand::Rng;
 /// Two indices `i` and `j` are picked such that `i < j`, and every gene
 /// in `[i, j)` is swapped with another randomly chosen gene in the same
 /// range. If the DNA has fewer than 2 genes the function is a no-op.
-pub fn scramble<U: ChromosomeT>(chromosome: &mut U) {
+pub fn scramble<U: LinearChromosome>(chromosome: &mut U) {
     //Getting two random genes from the dna of the chromosome
     debug!(target="mutation_events", method="scramble"; "Starting the scramble mutation");
     if chromosome.dna().len() < 2 {

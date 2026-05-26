@@ -55,9 +55,10 @@ fn main() {
             ObjectiveDirection::Minimize,
         ]);
 
-    let mut ga_config = GaConfiguration::default();
-    ga_config.limit_configuration.genes_per_chromosome = N_VARS;
-    ga_config.limit_configuration.alleles_can_be_repeated = true;
+    use genetic_algorithms::ChromosomeLength;
+    use genetic_algorithms::traits::ConfigurationT;
+    let ga_config = GaConfiguration::default()
+        .with_chromosome_length(ChromosomeLength::Fixed(N_VARS));
 
     let alleles = vec![RangeGenotype::new(0, vec![(0.0_f64, 1.0_f64)], 0.0_f64)];
     let alleles_clone = alleles.clone();
@@ -75,8 +76,8 @@ fn main() {
 
     let mut ibea = IbeaGa::<RangeChromosome<f64>>::new(ibea_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |n, _, _| {
-            range_random_initialization(n, Some(&alleles_clone), Some(true))
+        .with_initialization_fn(move |n, _| {
+            range_random_initialization(n, Some(&alleles_clone))
         })
         .with_objective_fns(vec![Box::new(obj_f1), Box::new(obj_f2)])
         .with_observer(

@@ -18,7 +18,7 @@
 use crate::configuration::{LimitConfiguration, ProblemSolving};
 use crate::error::GaError;
 use crate::operations::Survivor;
-use crate::traits::ChromosomeT;
+use crate::traits::LinearChromosome;
 use log::debug;
 
 /// Computes the parsimony-adjusted fitness for a single chromosome.
@@ -60,7 +60,7 @@ fn adjusted_fitness(
 /// # Errors
 ///
 /// Propagates any `GaError` from the underlying survivor-selection call.
-pub fn apply_parsimony_pressure<U: ChromosomeT>(
+pub fn apply_parsimony_pressure<U: LinearChromosome>(
     survivor: Survivor,
     chromosomes: &mut Vec<U>,
     population_size: usize,

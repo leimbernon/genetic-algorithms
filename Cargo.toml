@@ -13,13 +13,20 @@ documentation = "https://docs.rs/genetic_algorithms/latest/genetic_algorithms"
 keywords = ["genetics", "algorithm", "ai", "artificial", "intelligence"]
 categories = ["emulators","development-tools", "science", "simulation"]
 
-exclude = [
-    ".planning/**",
-    ".github/**",
-    ".claire/**",
-    ".devcontainer/**",
-    "*.log",
-    "DEVELOPMENT.md",
+include = [
+    "/src",
+    "/examples",
+    "/tests",
+    "/benches",
+    "/docs",
+    "/build.rs",
+    "/Cargo.toml",
+    "/README.md",
+    "/CHANGELOG.md",
+    "/CONTRIBUTING.md",
+    "/LICENSE",
+    "/SECURITY.md",
+    "MIGRATION.md",
 ]
 
 [features]

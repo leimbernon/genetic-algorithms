@@ -2,7 +2,7 @@
 # Job Scheduling -- Permutation-Based Makespan Minimization
 
 This example demonstrates how to use the `genetic_algorithms` library to solve a parallel machine
-scheduling problem using permutation encoding.
+scheduling problem using permutation encoding with `UniqueChromosome<i32>`.
 
 ## Problem
 
@@ -12,9 +12,9 @@ completion time, defined as the maximum finish time across all machines.
 
 ## Representation
 
-- Chromosome: `RangeChromosome<i32>` where each gene holds a job index in `[0, 14]`
-- Each chromosome is a permutation of job indices -- no repetition allowed
-- Permutation initialization is achieved by passing `Some(false)` to `range_random_initialization`
+- Chromosome: `UniqueChromosome<i32>` where each gene holds a job index in `[0, 14]`
+- Each chromosome is a permutation of job indices -- no repetition, all jobs present
+- Initialized via `unique_random_initialization` (Fisher-Yates shuffle of the alphabet)
 
 ## Operators
 
@@ -26,7 +26,7 @@ completion time, defined as the maximum finish time across all machines.
 Both operators are permutation-safe and will never introduce duplicate job indices.
 
 ## Features demonstrated
-- Permutation chromosomes (`Range<i32>`) for combinatorial optimization
+- Permutation chromosomes (`UniqueChromosome<i32>`) for combinatorial optimization
 - Order crossover (OX) and PermutationInsert mutation
 - Minimization mode (makespan)
 - LogObserver lifecycle hooks
@@ -44,16 +44,17 @@ cargo run --example job_scheduling
 ```
 */
 
-use genetic_algorithms::chromosomes::Range as RangeChromosome;
+use genetic_algorithms::chromosomes::UniqueChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::{Ga, TerminationCause};
-use genetic_algorithms::genotypes::Range as RangeGenotype;
-use genetic_algorithms::initializers::range_random_initialization;
+use genetic_algorithms::genotypes::UniqueGenotype;
+use genetic_algorithms::initializers::unique_random_initialization;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::population::Population;
 use genetic_algorithms::stats::GenerationStats;
 use genetic_algorithms::traits::{
-    ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+    ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig, SelectionConfig,
+    StoppingConfig,
 };
 use genetic_algorithms::LogObserver;
 use std::sync::Arc;
@@ -87,7 +88,7 @@ fn main() {
 
     // --- Fitness function: greedy parallel machine scheduling (minimize makespan) ---
     // Jobs are assigned in permutation order to whichever machine finishes earliest.
-    let fitness_fn = |dna: &[RangeGenotype<i32>]| -> f64 {
+    let fitness_fn = |dna: &[UniqueGenotype<i32>]| -> f64 {
         let mut machine_finish = [0u32; N_MACHINES];
         for gene in dna {
             let job = gene.value as usize;
@@ -102,19 +103,18 @@ fn main() {
         *machine_finish.iter().max().unwrap() as f64
     };
 
-    // --- Alleles: each gene is a job index in [0, N_JOBS-1] ---
-    // RangeGenotype::new(id, ranges, default_value)
-    let alleles = vec![RangeGenotype::new(0, vec![(0, N_JOBS as i32 - 1)], 0)];
-    let alleles_clone = alleles.clone();
+    // --- Alphabet: job indices 0..N_JOBS ---
+    // unique_random_initialization produces a Fisher-Yates permutation of the alphabet.
+    let alphabet: Vec<i32> = (0..N_JOBS as i32).collect();
 
     // --- Build the GA configuration ---
     let mut ga = Ga::new()
         // Each chromosome encodes a permutation of N_JOBS job indices
-        .with_genes_per_chromosome(N_JOBS)
         .with_population_size(POP_SIZE)
-        // Permutation initialization: Some(false) disables allele repetition
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        // Initialize each chromosome as a random permutation of the job alphabet
+        .with_initialization_fn({
+            let alphabet = alphabet.clone();
+            move |_n, _| unique_random_initialization(&alphabet)
         })
         .with_fitness_fn(fitness_fn)
         // Selection: Tournament -- competitive pressure, works well for combinatorial problems
@@ -146,7 +146,7 @@ fn main() {
     let result = ga.run_with_callback(
         Some(
             |gen: &usize,
-             pop: &Population<RangeChromosome<i32>>,
+             pop: &Population<UniqueChromosome<i32>>,
              _stats: &GenerationStats,
              _cause: &TerminationCause|
              -> std::ops::ControlFlow<()> {

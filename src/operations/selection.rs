@@ -8,12 +8,13 @@
 
 use crate::configuration::SelectionConfiguration;
 use crate::error::GaError;
-use crate::traits::{ChromosomeT, SelectionOperator};
+use crate::traits::{ChromosomeT, MultiCaseFitness, SelectionOperator};
 
 pub use self::boltzmann::boltzmann_selection;
 pub use self::clearing::clearing_selection;
 pub use self::fitness_proportionate::roulette_wheel_selection;
 pub use self::fitness_proportionate::stochastic_universal_sampling;
+pub use self::lexicase::{epsilon_lexicase_selection, lexicase_selection};
 pub use self::random::random;
 pub use self::rank::rank_selection;
 pub use self::tournament::tournament;
@@ -24,6 +25,7 @@ use super::Selection;
 pub mod boltzmann;
 pub mod clearing;
 pub mod fitness_proportionate;
+pub mod lexicase;
 pub mod random;
 pub mod rank;
 pub mod tournament;
@@ -60,6 +62,13 @@ impl SelectionOperator for Selection {
                      niche_radius defaults to 0.1 (configured value ignored). \
                      Use selection::factory for the full configuration.");
                 clearing_selection(chromosomes, 0.1, number_of_couples)
+            }
+            Selection::Lexicase | Selection::EpsilonLexicase => {
+                panic!(
+                    "Selection::Lexicase/EpsilonLexicase cannot be called through SelectionOperator \
+                     trait: use selection::factory_lexicase for Lexicase/EpsilonLexicase operators. \
+                     Island-model and NSGA-II paths do not support MultiCaseFitness."
+                );
             }
         }
     }
@@ -107,12 +116,91 @@ where
             configuration.niche_radius,
             configuration.number_of_couples,
         ),
+        Selection::Lexicase | Selection::EpsilonLexicase => {
+            return Err(GaError::ConfigurationError(
+                "Use selection::factory_lexicase for Lexicase/EpsilonLexicase; \
+                 standard factory() does not support MultiCaseFitness bound."
+                    .into(),
+            ));
+        }
         _ => configuration.method.select(
             chromosomes,
             configuration.number_of_couples,
             number_of_threads,
         ),
     };
+
+    Ok(pairs)
+}
+
+/// Dispatches parent selection for [`Selection::Lexicase`] and [`Selection::EpsilonLexicase`].
+///
+/// Unlike [`factory`], this function requires chromosomes to implement [`MultiCaseFitness`].
+/// It also syncs each chromosome's scalar fitness to the mean of its case scores after selection
+/// (D-04: lexicase mean-fitness sync).
+///
+/// # Errors
+///
+/// - `GaError::SelectionError` if the population has fewer than 2 individuals.
+/// - `GaError::SelectionError` if `case_fitness()` is empty on the first chromosome.
+/// - `GaError::SelectionError` if any chromosome has a NaN case fitness.
+/// - `GaError::ConfigurationError` if called with a non-lexicase selection method.
+pub fn factory_lexicase<U>(
+    chromosomes: &mut [U],
+    configuration: SelectionConfiguration,
+    _number_of_threads: usize,
+) -> Result<Vec<(usize, usize)>, GaError>
+where
+    U: ChromosomeT + MultiCaseFitness + Sync + Send + 'static + Clone,
+{
+    if chromosomes.len() < 2 {
+        return Err(GaError::SelectionError(
+            "Population must have at least 2 chromosomes".into(),
+        ));
+    }
+    if chromosomes[0].case_fitness().is_empty() {
+        return Err(GaError::SelectionError(
+            "case_fitness() is empty — call set_case_fitness in calculate_fitness".into(),
+        ));
+    }
+    // NaN guard
+    for (i, c) in chromosomes.iter().enumerate() {
+        if c.case_fitness().iter().any(|&s| s.is_nan()) {
+            return Err(GaError::SelectionError(format!(
+                "NaN in case_fitness at chromosome {}",
+                i
+            )));
+        }
+    }
+
+    let pairs = match configuration.method {
+        Selection::Lexicase => {
+            lexicase_selection(chromosomes, configuration.number_of_couples)
+        }
+        Selection::EpsilonLexicase => epsilon_lexicase_selection(
+            chromosomes,
+            configuration.number_of_couples,
+            if configuration.epsilon == 0.0 {
+                None
+            } else {
+                Some(configuration.epsilon)
+            },
+        ),
+        _ => {
+            return Err(GaError::ConfigurationError(
+                "factory_lexicase called with non-lexicase selection method".into(),
+            ));
+        }
+    };
+
+    // D-04: sync scalar fitness to mean of case scores
+    for c in chromosomes.iter_mut() {
+        let scores = c.case_fitness().to_vec();
+        if !scores.is_empty() {
+            let mean = scores.iter().sum::<f64>() / scores.len() as f64;
+            c.set_fitness(mean);
+        }
+    }
 
     Ok(pairs)
 }

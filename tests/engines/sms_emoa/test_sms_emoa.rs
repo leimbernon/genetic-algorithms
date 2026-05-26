@@ -3,6 +3,7 @@
 //! Wave 0 scope: validate() error paths. Plan 38-03 appends run() integration
 //! tests once the run() loop is implemented.
 
+use genetic_algorithms::traits::ConfigurationT;
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::GaConfiguration;
 use genetic_algorithms::error::GaError;
@@ -23,7 +24,7 @@ fn test_sms_emoa_validate_zero_objectives() {
     let config = SmsEmoaConfiguration::new().with_num_objectives(0);
     let ga_config = GaConfiguration::default();
     let sms = SmsEmoaGa::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![]);
+        .with_initialization_fn(|_, _| vec![]);
     let result = sms.validate();
     assert!(matches!(result, Err(GaError::InvalidSmsEmoaConfiguration(_))));
 }
@@ -34,7 +35,7 @@ fn test_sms_emoa_validate_one_objective() {
     let config = SmsEmoaConfiguration::new().with_num_objectives(1);
     let ga_config = GaConfiguration::default();
     let sms = SmsEmoaGa::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
+        .with_initialization_fn(|_, _| vec![])
         .with_objective_fns(vec![Box::new(|_| 0.0)]);
     let result = sms.validate();
     assert!(matches!(result, Err(GaError::InvalidSmsEmoaConfiguration(_))));
@@ -47,7 +48,7 @@ fn test_sms_emoa_validate_population_too_small() {
         .with_population_size(1);
     let ga_config = GaConfiguration::default();
     let sms = SmsEmoaGa::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
+        .with_initialization_fn(|_, _| vec![])
         .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0)]);
     let result = sms.validate();
     assert!(matches!(result, Err(GaError::InvalidSmsEmoaConfiguration(_))));
@@ -58,7 +59,7 @@ fn test_sms_emoa_validate_mismatched_objective_fns() {
     let config = SmsEmoaConfiguration::new().with_num_objectives(3);
     let ga_config = GaConfiguration::default();
     let sms = SmsEmoaGa::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
+        .with_initialization_fn(|_, _| vec![])
         .with_objective_fns(vec![Box::new(|_| 0.0)]);
     let result = sms.validate();
     assert!(matches!(result, Err(GaError::InvalidSmsEmoaConfiguration(_))));
@@ -71,7 +72,7 @@ fn test_sms_emoa_validate_mismatched_objective_directions() {
         .with_objective_directions(vec![genetic_algorithms::sms_emoa::configuration::ObjectiveDirection::Minimize]);
     let ga_config = GaConfiguration::default();
     let sms = SmsEmoaGa::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
+        .with_initialization_fn(|_, _| vec![])
         .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0), Box::new(|_| 0.0)]);
     assert!(matches!(
         sms.validate(),
@@ -86,7 +87,7 @@ fn test_sms_emoa_validate_passes_with_complete_config() {
         .with_population_size(20);
     let ga_config = GaConfiguration::default();
     let sms = SmsEmoaGa::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
+        .with_initialization_fn(|_, _| vec![])
         .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0)]);
     assert!(sms.validate().is_ok());
 }
@@ -100,9 +101,8 @@ fn test_sms_emoa_run_produces_pareto_front() {
         .with_num_objectives(2)
         .with_population_size(8)
         .with_max_generations(5);
-    let mut ga_config = genetic_algorithms::configuration::GaConfiguration::default();
-    ga_config.limit_configuration.genes_per_chromosome = 3;
-    ga_config.limit_configuration.alleles_can_be_repeated = true;
+    let ga_config = genetic_algorithms::configuration::GaConfiguration::default()
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(3));
 
     let alleles = vec![genetic_algorithms::genotypes::Range::new(0, vec![(0.0_f64, 1.0_f64)], 0.0_f64)];
     let alleles_clone = alleles.clone();
@@ -111,8 +111,8 @@ fn test_sms_emoa_run_produces_pareto_front() {
         genetic_algorithms::chromosomes::Range<f64>,
     >::new(config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |n, _, _| {
-            genetic_algorithms::initializers::range_random_initialization(n, Some(&alleles_clone), Some(true))
+        .with_initialization_fn(move |n, _| {
+            genetic_algorithms::initializers::range_random_initialization(n, Some(&alleles_clone))
         })
         .with_objective_fns(vec![
             Box::new(|dna: &[genetic_algorithms::genotypes::Range<f64>]| dna[0].value),
@@ -135,9 +135,8 @@ fn test_sms_emoa_run_small_population() {
         .with_num_objectives(2)
         .with_population_size(4)
         .with_max_generations(3);
-    let mut ga_config = genetic_algorithms::configuration::GaConfiguration::default();
-    ga_config.limit_configuration.genes_per_chromosome = 2;
-    ga_config.limit_configuration.alleles_can_be_repeated = true;
+    let _ga_config = genetic_algorithms::configuration::GaConfiguration::default()
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(2));
 
     let alleles = vec![genetic_algorithms::genotypes::Range::new(0, vec![(0.0_f64, 1.0_f64)], 0.0_f64)];
     let alleles_clone = alleles.clone();
@@ -146,8 +145,8 @@ fn test_sms_emoa_run_small_population() {
         genetic_algorithms::chromosomes::Range<f64>,
     >::new(config, genetic_algorithms::configuration::GaConfiguration::default())
         .with_alleles(alleles)
-        .with_initialization_fn(move |n, _, _| {
-            genetic_algorithms::initializers::range_random_initialization(n, Some(&alleles_clone), Some(true))
+        .with_initialization_fn(move |n, _| {
+            genetic_algorithms::initializers::range_random_initialization(n, Some(&alleles_clone))
         })
         .with_objective_fns(vec![
             Box::new(|_: &[genetic_algorithms::genotypes::Range<f64>]| 0.5),
@@ -170,9 +169,8 @@ fn test_sms_emoa_run_invokes_observer_hooks() {
         .with_num_objectives(2)
         .with_population_size(6)
         .with_max_generations(4);
-    let mut ga_config = genetic_algorithms::configuration::GaConfiguration::default();
-    ga_config.limit_configuration.genes_per_chromosome = 2;
-    ga_config.limit_configuration.alleles_can_be_repeated = true;
+    let ga_config = genetic_algorithms::configuration::GaConfiguration::default()
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(2));
 
     let alleles = vec![genetic_algorithms::genotypes::Range::new(0, vec![(0.0_f64, 1.0_f64)], 0.0_f64)];
     let alleles_clone = alleles.clone();
@@ -181,8 +179,8 @@ fn test_sms_emoa_run_invokes_observer_hooks() {
         genetic_algorithms::chromosomes::Range<f64>,
     >::new(config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |n, _, _| {
-            genetic_algorithms::initializers::range_random_initialization(n, Some(&alleles_clone), Some(true))
+        .with_initialization_fn(move |n, _| {
+            genetic_algorithms::initializers::range_random_initialization(n, Some(&alleles_clone))
         })
         .with_objective_fns(vec![
             Box::new(|_: &[genetic_algorithms::genotypes::Range<f64>]| 0.5),

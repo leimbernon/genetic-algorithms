@@ -17,7 +17,7 @@
 
 use crate::chromosomes::ChromosomeLength;
 use crate::error::GaError;
-use crate::traits::ChromosomeT;
+use crate::traits::LinearChromosome;
 use log::debug;
 use rand::Rng;
 use std::borrow::Cow;
@@ -41,7 +41,7 @@ use std::borrow::Cow;
 ///
 /// Returns `Err(GaError::MutationError)` when `chromosome_length` is
 /// `ChromosomeLength::Fixed(_)`.
-pub fn length_insertion_mutation<U: ChromosomeT>(
+pub fn length_insertion_mutation<U: LinearChromosome>(
     individual: &mut U,
     chromosome_length: ChromosomeLength,
 ) -> Result<(), GaError> {
@@ -105,7 +105,7 @@ pub fn length_insertion_mutation<U: ChromosomeT>(
 ///
 /// Returns `Err(GaError::MutationError)` when `chromosome_length` is
 /// `ChromosomeLength::Fixed(_)`.
-pub fn length_deletion_mutation<U: ChromosomeT>(
+pub fn length_deletion_mutation<U: LinearChromosome>(
     individual: &mut U,
     chromosome_length: ChromosomeLength,
 ) -> Result<(), GaError> {

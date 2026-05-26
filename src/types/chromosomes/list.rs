@@ -7,7 +7,7 @@
 
 use crate::fitness::FitnessFnWrapper;
 use crate::genotypes::List as ListGenotype;
-use crate::traits::ChromosomeT;
+use crate::traits::{ChromosomeT, LinearChromosome, OperatorCompat};
 use std::borrow::Cow;
 use std::fmt;
 use std::fmt::Debug;
@@ -48,6 +48,11 @@ pub struct ListChromosome<T: Sync + Send + Clone + Default + Debug> {
     #[cfg_attr(feature = "serde", serde(skip, default))]
     pub fitness_fn: FitnessFnWrapper<ListGenotype<T>>,
 }
+
+/// `ListChromosome<T>` imposes no operator restrictions — all crossovers and
+/// mutations are accepted. The default `None`-returning methods are inherited
+/// from the trait.
+impl<T: Sync + Send + Clone + Default + Debug> OperatorCompat for ListChromosome<T> {}
 
 impl<T: Sync + Send + Clone + Default + Debug> Default for ListChromosome<T> {
     fn default() -> Self {
@@ -116,6 +121,30 @@ impl<T: Sync + Send + Clone + Default + Debug> ListChromosome<T> {
 impl<T: Sync + Send + Clone + Default + Debug + 'static> ChromosomeT for ListChromosome<T> {
     type Gene = ListGenotype<T>;
 
+    fn calculate_fitness(&mut self) {
+        self.fitness = self.fitness_fn.call(&self.dna);
+    }
+
+    fn fitness(&self) -> f64 {
+        self.fitness
+    }
+
+    fn set_fitness(&mut self, fitness: f64) -> &mut Self {
+        self.fitness = fitness;
+        self
+    }
+
+    fn set_age(&mut self, age: usize) -> &mut Self {
+        self.age = age;
+        self
+    }
+
+    fn age(&self) -> usize {
+        self.age
+    }
+}
+
+impl<T: Sync + Send + Clone + Default + Debug + 'static> LinearChromosome for ListChromosome<T> {
     fn dna(&self) -> &[Self::Gene] {
         &self.dna
     }
@@ -142,28 +171,6 @@ impl<T: Sync + Send + Clone + Default + Debug + 'static> ChromosomeT for ListChr
     {
         self.fitness_fn = FitnessFnWrapper::new(fitness_fn);
         self
-    }
-
-    fn calculate_fitness(&mut self) {
-        self.fitness = self.fitness_fn.call(&self.dna);
-    }
-
-    fn fitness(&self) -> f64 {
-        self.fitness
-    }
-
-    fn set_fitness(&mut self, fitness: f64) -> &mut Self {
-        self.fitness = fitness;
-        self
-    }
-
-    fn set_age(&mut self, age: usize) -> &mut Self {
-        self.age = age;
-        self
-    }
-
-    fn age(&self) -> usize {
-        self.age
     }
 }
 

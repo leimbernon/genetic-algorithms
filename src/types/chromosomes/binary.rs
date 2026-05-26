@@ -8,7 +8,7 @@ use crate::error::GaError;
 use crate::fitness::FitnessFnWrapper;
 use crate::genotypes::Binary as BinaryGenotype;
 use crate::operations::mutation::ValueMutable;
-use crate::traits::ChromosomeT;
+use crate::traits::{ChromosomeT, LinearChromosome, OperatorCompat};
 use std::borrow::Cow;
 use std::fmt;
 
@@ -32,6 +32,30 @@ pub struct Binary {
 impl ChromosomeT for Binary {
     type Gene = BinaryGenotype;
 
+    fn calculate_fitness(&mut self) {
+        self.fitness = self.fitness_fn.call(&self.dna);
+    }
+
+    fn fitness(&self) -> f64 {
+        self.fitness
+    }
+
+    fn set_fitness(&mut self, fitness: f64) -> &mut Self {
+        self.fitness = fitness;
+        self
+    }
+
+    fn set_age(&mut self, age: usize) -> &mut Self {
+        self.age = age;
+        self
+    }
+
+    fn age(&self) -> usize {
+        self.age
+    }
+}
+
+impl LinearChromosome for Binary {
     fn dna(&self) -> &[Self::Gene] {
         &self.dna
     }
@@ -59,29 +83,12 @@ impl ChromosomeT for Binary {
         self.fitness_fn = FitnessFnWrapper::new(fitness_fn);
         self
     }
-
-    fn calculate_fitness(&mut self) {
-        self.fitness = self.fitness_fn.call(&self.dna);
-    }
-
-    fn fitness(&self) -> f64 {
-        self.fitness
-    }
-
-    fn set_fitness(&mut self, fitness: f64) -> &mut Self {
-        self.fitness = fitness;
-        self
-    }
-
-    fn set_age(&mut self, age: usize) -> &mut Self {
-        self.age = age;
-        self
-    }
-
-    fn age(&self) -> usize {
-        self.age
-    }
 }
+
+/// `BinaryChromosome` imposes no operator restrictions — all crossovers and
+/// mutations are accepted. The default `None`-returning methods are inherited
+/// from the trait.
+impl OperatorCompat for Binary {}
 
 impl Default for Binary {
     fn default() -> Self {

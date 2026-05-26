@@ -4,6 +4,7 @@
 //! tests once the run() loop is implemented; Plan 36-03 adds the LogObserver
 //! integration test.
 
+use genetic_algorithms::traits::{ConfigurationT, MutationConfig};
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::GaConfiguration;
 use genetic_algorithms::error::GaError;
@@ -34,7 +35,7 @@ fn test_moead_validate_zero_objectives() {
         .with_weight_vectors_auto(4);
     let ga_config = GaConfiguration::default();
     let moead = MoeaDGa::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![]);
+        .with_initialization_fn(|_, _| vec![]);
     let result = moead.validate();
     assert!(matches!(result, Err(GaError::InvalidMoeaDConfiguration(_))));
 }
@@ -47,7 +48,7 @@ fn test_moead_validate_population_too_small() {
         .with_weight_vectors_auto(4);
     let ga_config = GaConfiguration::default();
     let moead = MoeaDGa::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
+        .with_initialization_fn(|_, _| vec![])
         .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0), Box::new(|_| 0.0)]);
     let result = moead.validate();
     assert!(matches!(result, Err(GaError::InvalidMoeaDConfiguration(_))));
@@ -60,7 +61,7 @@ fn test_moead_validate_mismatched_objective_fns() {
         .with_weight_vectors_auto(4);
     let ga_config = GaConfiguration::default();
     let moead = MoeaDGa::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
+        .with_initialization_fn(|_, _| vec![])
         .with_objective_fns(vec![Box::new(|_| 0.0)]);
     let result = moead.validate();
     assert!(matches!(result, Err(GaError::InvalidMoeaDConfiguration(_))));
@@ -72,7 +73,7 @@ fn test_moead_validate_missing_weight_vectors() {
     let config = MoeaDConfiguration::new().with_num_objectives(3);
     let ga_config = GaConfiguration::default();
     let moead = MoeaDGa::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
+        .with_initialization_fn(|_, _| vec![])
         .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0), Box::new(|_| 0.0)]);
     let result = moead.validate();
     assert!(matches!(result, Err(GaError::InvalidMoeaDConfiguration(ref msg)) if msg.contains("weight vectors")));
@@ -85,7 +86,7 @@ fn test_moead_validate_custom_weight_vector_wrong_dimension() {
         .with_weight_vectors(vec![vec![0.5, 0.5]]); // 2-dim, not 3
     let ga_config = GaConfiguration::default();
     let moead = MoeaDGa::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
+        .with_initialization_fn(|_, _| vec![])
         .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0), Box::new(|_| 0.0)]);
     let result = moead.validate();
     assert!(matches!(result, Err(GaError::InvalidMoeaDConfiguration(ref msg)) if msg.contains("dimension")));
@@ -98,7 +99,7 @@ fn test_moead_validate_das_dennis_p_zero() {
         .with_weight_vectors_auto(0);
     let ga_config = GaConfiguration::default();
     let moead = MoeaDGa::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
+        .with_initialization_fn(|_, _| vec![])
         .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0), Box::new(|_| 0.0)]);
     let result = moead.validate();
     assert!(matches!(result, Err(GaError::InvalidMoeaDConfiguration(ref msg)) if msg.contains("Das-Dennis")));
@@ -112,7 +113,7 @@ fn test_moead_validate_mismatched_objective_directions() {
         .with_weight_vectors_auto(4);
     let ga_config = GaConfiguration::default();
     let moead = MoeaDGa::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
+        .with_initialization_fn(|_, _| vec![])
         .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0), Box::new(|_| 0.0)]);
     assert!(matches!(
         moead.validate(),
@@ -127,7 +128,7 @@ fn test_moead_validate_passes_with_complete_config() {
         .with_weight_vectors_auto(4);
     let ga_config = GaConfiguration::default();
     let moead = MoeaDGa::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
+        .with_initialization_fn(|_, _| vec![])
         .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0), Box::new(|_| 0.0)]);
     assert!(moead.validate().is_ok());
 }
@@ -181,18 +182,17 @@ fn build_test_moead(
         .with_neighborhood_size(5)              // small T for fast tests
         .with_max_neighbor_replacements(2);
 
-    let mut ga_config = GaConfiguration::default();
-    ga_config.limit_configuration.genes_per_chromosome = 4;
-    ga_config.limit_configuration.alleles_can_be_repeated = true;
-    ga_config.rng_seed = Some(42);
+    let ga_config = GaConfiguration::default()
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(4))
+        .with_rng_seed(42);
 
     let alleles = vec![RangeGenotype::<f64>::new(0, vec![(0.0, 1.0)], 0.0)];
     let alleles_clone = alleles.clone();
 
     MoeaDGa::<RangeChromosome<f64>>::new(moead_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |n, _, _| {
-            range_random_initialization(n, Some(&alleles_clone), Some(true))
+        .with_initialization_fn(move |n, _| {
+            range_random_initialization(n, Some(&alleles_clone))
         })
         .with_objective_fns(dtlz2_objectives())
         .build()
@@ -247,18 +247,17 @@ fn test_moead_run_with_custom_weight_vectors() {
         .with_neighborhood_size(3)
         .with_max_neighbor_replacements(2);
 
-    let mut ga_config = GaConfiguration::default();
-    ga_config.limit_configuration.genes_per_chromosome = 4;
-    ga_config.limit_configuration.alleles_can_be_repeated = true;
-    ga_config.rng_seed = Some(7);
+    let ga_config = GaConfiguration::default()
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(4))
+        .with_rng_seed(7);
 
     let alleles = vec![RangeGenotype::<f64>::new(0, vec![(0.0, 1.0)], 0.0)];
     let alleles_clone = alleles.clone();
 
     let mut moead = MoeaDGa::<RangeChromosome<f64>>::new(moead_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |n, _, _| {
-            range_random_initialization(n, Some(&alleles_clone), Some(true))
+        .with_initialization_fn(move |n, _| {
+            range_random_initialization(n, Some(&alleles_clone))
         })
         .with_objective_fns(dtlz2_objectives())
         .build()
@@ -305,18 +304,17 @@ fn test_moead_run_invokes_observer_hooks() {
         .with_neighborhood_size(5)
         .with_max_neighbor_replacements(2);
 
-    let mut ga_config = GaConfiguration::default();
-    ga_config.limit_configuration.genes_per_chromosome = 4;
-    ga_config.limit_configuration.alleles_can_be_repeated = true;
-    ga_config.rng_seed = Some(123);
+    let ga_config = GaConfiguration::default()
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(4))
+        .with_rng_seed(123);
 
     let alleles = vec![RangeGenotype::<f64>::new(0, vec![(0.0, 1.0)], 0.0)];
     let alleles_clone = alleles.clone();
 
     let mut moead = MoeaDGa::<RangeChromosome<f64>>::new(moead_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |n, _, _| {
-            range_random_initialization(n, Some(&alleles_clone), Some(true))
+        .with_initialization_fn(move |n, _| {
+            range_random_initialization(n, Some(&alleles_clone))
         })
         .with_objective_fns(dtlz2_objectives())
         .with_observer(
@@ -336,8 +334,7 @@ fn test_moead_run_invokes_observer_hooks() {
 fn test_moead_run_rejects_differential_mutation() {
     use genetic_algorithms::operations::Mutation;
     let mut moead = build_test_moead(15, 3, ScalarizationFn::Tchebycheff);
-    moead.ga_config.mutation_configuration.method = Mutation::Differential;
-    moead.ga_config.mutation_configuration.probability_max = Some(1.0);
+    moead.ga_config = moead.ga_config.with_mutation_method(Mutation::Differential).with_mutation_probability_max(1.0);
     let result = moead.run();
     assert!(matches!(result, Err(GaError::MutationError(ref msg)) if msg.contains("Differential mutation is not supported in MOEA/D")));
 }
