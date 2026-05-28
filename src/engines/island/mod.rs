@@ -535,16 +535,18 @@ where
                 ) = island_configs[idx];
                 let pop_size = limit_config.population_size;
 
-                // Selection: returns Vec<(usize, usize)> parent index pairs
+                // Selection: returns Vec<Vec<usize>> parent index groups (island uses 2-parent crossover)
                 let parent_pairs =
-                    selection::factory(&island.chromosomes, selection_config, num_threads)?;
+                    selection::factory(&island.chromosomes, selection_config, num_threads, 2)?;
 
-                // Crossover: iterate over parent pairs
+                // Crossover: iterate over parent groups
                 let mut rng = crate::rng::make_rng();
                 let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
 
                 let mut offspring: Vec<U> = Vec::new();
-                for &(idx_a, idx_b) in &parent_pairs {
+                for group in &parent_pairs {
+                    let idx_a = group[0];
+                    let idx_b = group[1];
                     let p: f64 = rng.random();
                     if p <= crossover_prob {
                         let children = crossover::factory(

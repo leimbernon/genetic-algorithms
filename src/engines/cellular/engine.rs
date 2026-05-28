@@ -168,10 +168,12 @@ where
                     }
 
                     // Select a mate from the neighborhood using the configured operator.
-                    // We ask for 1 couple; take the second element of the pair as the
-                    // mate so we don't just pick the cell itself.
-                    let pairs = self.config.selection.select(&local, 1, 1);
-                    let mate_local_idx = if let Some(&(a, b)) = pairs.first() {
+                    // We ask for 1 couple with num_parents=2; take the second element of the
+                    // group as the mate so we don't just pick the cell itself.
+                    let pairs = self.config.selection.select(&local, 1, 1, 2);
+                    let mate_local_idx = if let Some(group) = pairs.first() {
+                        let a = group[0];
+                        let b = group[1];
                         // Prefer the non-self member of the pair; fall back to `b`.
                         if a != 0 {
                             a

@@ -99,7 +99,7 @@ fn select_one_winner<U: MultiCaseFitness>(
     winner
 }
 
-/// Lexicase selection: selects parent pairs by per-case filtering with shuffled case order.
+/// Lexicase selection: selects parent groups by per-case filtering with shuffled case order.
 ///
 /// Requires chromosomes implementing [`MultiCaseFitness`]. Each parent is
 /// independently selected by iterating through test cases in a random order,
@@ -108,19 +108,22 @@ fn select_one_winner<U: MultiCaseFitness>(
 /// # Arguments
 ///
 /// * `chromosomes` - Population slice (must have at least 2 individuals with non-empty case scores).
-/// * `number_of_couples` - Number of parent pairs to produce.
+/// * `number_of_couples` - Number of parent groups to produce.
+/// * `num_parents` - Number of parents per group (must be >= 2).
 ///
 /// # Returns
 ///
-/// `Vec<(usize, usize)>` of parent index pairs. Returns empty vec if population
+/// `Vec<Vec<usize>>` of parent index groups. Returns empty vec if population
 /// has fewer than 2 individuals or case scores are empty.
 pub fn lexicase_selection<U>(
     chromosomes: &[U],
     number_of_couples: usize,
-) -> Vec<(usize, usize)>
+    num_parents: usize,
+) -> Vec<Vec<usize>>
 where
     U: ChromosomeT + MultiCaseFitness,
 {
+    let num_parents = num_parents.max(2);
     debug!(target = "selection_events", method = "lexicase"; "Starting lexicase selection with number_of_couples={}", number_of_couples);
 
     if chromosomes.len() < 2 || chromosomes[0].case_fitness().is_empty() {
@@ -133,13 +136,15 @@ where
     let mut mating = Vec::with_capacity(number_of_couples);
 
     while mating.len() < number_of_couples {
-        let p1 = select_one_winner(chromosomes, num_cases, &zero_eps, &mut rng);
-        let p2 = select_one_winner(chromosomes, num_cases, &zero_eps, &mut rng);
-        mating.push((p1, p2));
-        trace!(target = "selection_events", method = "lexicase"; "Pair: ({}, {})", p1, p2);
+        let mut group = Vec::with_capacity(num_parents);
+        for _ in 0..num_parents {
+            group.push(select_one_winner(chromosomes, num_cases, &zero_eps, &mut rng));
+        }
+        trace!(target = "selection_events", method = "lexicase"; "Group: {:?}", group);
+        mating.push(group);
     }
 
-    debug!(target = "selection_events", method = "lexicase"; "Lexicase selection finished: {} pairs", mating.len());
+    debug!(target = "selection_events", method = "lexicase"; "Lexicase selection finished: {} groups", mating.len());
     mating
 }
 
@@ -152,21 +157,24 @@ where
 /// # Arguments
 ///
 /// * `chromosomes` - Population slice (must have at least 2 individuals with non-empty case scores).
-/// * `number_of_couples` - Number of parent pairs to produce.
+/// * `number_of_couples` - Number of parent groups to produce.
 /// * `epsilon` - Fixed tolerance (`Some(e)`) or dynamic MAD (`None`).
+/// * `num_parents` - Number of parents per group (must be >= 2).
 ///
 /// # Returns
 ///
-/// `Vec<(usize, usize)>` of parent index pairs. Returns empty vec if population
+/// `Vec<Vec<usize>>` of parent index groups. Returns empty vec if population
 /// has fewer than 2 individuals or case scores are empty.
 pub fn epsilon_lexicase_selection<U>(
     chromosomes: &[U],
     number_of_couples: usize,
     epsilon: Option<f64>,
-) -> Vec<(usize, usize)>
+    num_parents: usize,
+) -> Vec<Vec<usize>>
 where
     U: ChromosomeT + MultiCaseFitness,
 {
+    let num_parents = num_parents.max(2);
     debug!(target = "selection_events", method = "epsilon_lexicase"; "Starting epsilon-lexicase selection with number_of_couples={} epsilon={:?}", number_of_couples, epsilon);
 
     if chromosomes.len() < 2 || chromosomes[0].case_fitness().is_empty() {
@@ -182,12 +190,14 @@ where
     let mut mating = Vec::with_capacity(number_of_couples);
 
     while mating.len() < number_of_couples {
-        let p1 = select_one_winner(chromosomes, num_cases, &per_case_eps, &mut rng);
-        let p2 = select_one_winner(chromosomes, num_cases, &per_case_eps, &mut rng);
-        mating.push((p1, p2));
-        trace!(target = "selection_events", method = "epsilon_lexicase"; "Pair: ({}, {})", p1, p2);
+        let mut group = Vec::with_capacity(num_parents);
+        for _ in 0..num_parents {
+            group.push(select_one_winner(chromosomes, num_cases, &per_case_eps, &mut rng));
+        }
+        trace!(target = "selection_events", method = "epsilon_lexicase"; "Group: {:?}", group);
+        mating.push(group);
     }
 
-    debug!(target = "selection_events", method = "epsilon_lexicase"; "Epsilon-lexicase selection finished: {} pairs", mating.len());
+    debug!(target = "selection_events", method = "epsilon_lexicase"; "Epsilon-lexicase selection finished: {} groups", mating.len());
     mating
 }

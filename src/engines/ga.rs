@@ -1578,10 +1578,19 @@ where
             } else {
                 None
             };
+            // Derive num_parents from crossover method: UNDX/SPX/PCX carry their own
+            // num_parents field; all other variants use standard 2-parent crossover.
+            let num_parents = match self.configuration.crossover_configuration.method {
+                crate::operations::Crossover::Undx { num_parents }
+                | crate::operations::Crossover::Spx { num_parents }
+                | crate::operations::Crossover::Pcx { num_parents } => num_parents,
+                _ => 2,
+            };
             let parents = selection::factory(
                 &self.population.chromosomes,
                 self.configuration.selection_configuration,
                 self.configuration.number_of_threads,
+                num_parents,
             )?;
             if let Some(t) = t_sel {
                 self.notify(|obs| obs.on_selection_complete(i, t.elapsed(), parents.len()));
@@ -2511,7 +2520,7 @@ where
 /// - Produces children, mutates them, computes their fitness, and returns the offspring.
 #[allow(clippy::too_many_arguments)]
 fn parent_crossover<U>(
-    parents: &[(usize, usize)],
+    parents: &[Vec<usize>],
     chromosomes: &[U],
     configuration: &GaConfiguration,
     age: usize,
@@ -2576,20 +2585,30 @@ where
         None
     };
 
-    // Shared per-pair closure: produces two children from one (key, value) parent pair.
+    // Shared per-group closure: produces children from one N-ary parent group.
     // cfg-gated only for the iterator kind (par_iter on native, iter on wasm32).
-    let process_pair = |(key, value): &(usize, usize)| -> Result<Vec<U>, GaError> {
+    let process_pair = |group: &Vec<usize>| -> Result<Vec<U>, GaError> {
         let mut rng = crate::rng::make_rng();
 
+        // T-54-01: guard against out-of-bounds or too-small group (minimum 2 parents)
+        if group.len() < 2 {
+            return Err(GaError::SelectionError(format!(
+                "Selection group has fewer than 2 parents (got {})",
+                group.len()
+            )));
+        }
+        let key = group[0];
+        let value = group[1];
+
         // Getting the parent 1 and 2 for crossover
-        let parent_1 = chromosomes.get(*key).ok_or_else(|| {
+        let parent_1 = chromosomes.get(key).ok_or_else(|| {
             GaError::SelectionError(format!(
                 "Selection returned out-of-bounds index {} (population size {})",
                 key,
                 chromosomes.len()
             ))
         })?;
-        let parent_2 = chromosomes.get(*value).ok_or_else(|| {
+        let parent_2 = chromosomes.get(value).ok_or_else(|| {
             GaError::SelectionError(format!(
                 "Selection returned out-of-bounds index {} (population size {})",
                 value,
@@ -2671,29 +2690,30 @@ where
                 .map(|(_, op)| op)
                 .unwrap_or(configuration.crossover_configuration.method);
 
-            let mut children = match effective_method {
-                // Multi-parent crossover path (Phase 51): UNDX, SPX, PCX
-                Crossover::Undx { num_parents }
-                | Crossover::Spx { num_parents }
-                | Crossover::Pcx { num_parents } => {
-                    // Collect primary pair + (num_parents - 2) random extras from population
-                    let mut parent_refs: Vec<&U> = vec![parent_1, parent_2];
-                    let extras = num_parents.saturating_sub(2);
-                    for _ in 0..extras {
-                        let idx = rng.random_range(0..chromosomes.len());
-                        parent_refs.push(&chromosomes[idx]);
-                    }
-                    let mut cx_config = configuration.crossover_configuration;
-                    cx_config.method = effective_method;
-                    // Returns 1 offspring per D-04 (single-offspring contract)
-                    crossover::factory_multi_parent_dispatch(&parent_refs, cx_config)?
+            // Dispatch crossover by group size: groups of 2 use the standard 2-parent path;
+            // larger groups use the multi-parent dispatch (UNDX/SPX/PCX via group.len() > 2).
+            let mut children = if group.len() > 2 {
+                // Multi-parent crossover path: collect all parents from the group
+                let mut parent_refs: Vec<&U> = Vec::with_capacity(group.len());
+                for &idx in group.iter() {
+                    let p = chromosomes.get(idx).ok_or_else(|| {
+                        GaError::SelectionError(format!(
+                            "Selection returned out-of-bounds index {} (population size {})",
+                            idx,
+                            chromosomes.len()
+                        ))
+                    })?;
+                    parent_refs.push(p);
                 }
-                // Standard 2-parent crossover path — all other variants
-                _ => {
-                    let mut cx_config = configuration.crossover_configuration;
-                    cx_config.method = effective_method;
-                    crossover::factory(parent_1, parent_2, cx_config)?
-                }
+                let mut cx_config = configuration.crossover_configuration;
+                cx_config.method = effective_method;
+                // Returns 1 offspring per D-04 (single-offspring contract)
+                crossover::factory_multi_parent_dispatch(&parent_refs, cx_config)?
+            } else {
+                // Standard 2-parent crossover path — all variants with group.len() == 2
+                let mut cx_config = configuration.crossover_configuration;
+                cx_config.method = effective_method;
+                crossover::factory(parent_1, parent_2, cx_config)?
             };
 
             // factory_multi_parent_dispatch returns 1 child; factory returns 2.
@@ -2722,7 +2742,7 @@ where
                 crate::operations::mutation::differential::differential_mutation(
                     &mut child_1,
                     chromosomes,
-                    *key,
+                    key,
                     f,
                 )?;
             } else if mutation_method == crate::operations::Mutation::Cauchy {
@@ -2786,7 +2806,7 @@ where
                 crate::operations::mutation::differential::differential_mutation(
                     &mut child_2,
                     chromosomes,
-                    *value,
+                    value,
                     f,
                 )?;
             } else if mutation_method == crate::operations::Mutation::Cauchy {
@@ -3048,7 +3068,7 @@ where
     /// // Users with MultiCaseFitness chromosomes call select_parents_lexicase() directly.
     /// let pairs = ga.select_parents_lexicase()?;
     /// ```
-    pub fn select_parents_lexicase(&mut self) -> Result<Vec<(usize, usize)>, GaError> {
+    pub fn select_parents_lexicase(&mut self) -> Result<Vec<Vec<usize>>, GaError> {
         crate::operations::selection::factory_lexicase(
             &mut self.population.chromosomes,
             self.configuration.selection_configuration,
