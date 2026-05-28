@@ -25,18 +25,21 @@ use rand::Rng;
 /// # Arguments
 ///
 /// * `chromosomes` - Population to select from.
-/// * `couples` - Number of parent pairs to produce.
+/// * `couples` - Number of parent groups to produce.
 /// * `temperature` - Controls selective pressure. If `<= 0.0`, defaults to `1.0`.
+/// * `num_parents` - Number of parents per group (must be >= 2).
 ///
 /// # Returns
 ///
-/// A vector of `(usize, usize)` parent index pairs. Returns an empty vector if the
+/// A vector of `Vec<usize>` parent index groups. Returns an empty vector if the
 /// population has fewer than 2 individuals.
 pub fn boltzmann_selection<U: ChromosomeT>(
     chromosomes: &[U],
     couples: usize,
     temperature: f64,
-) -> Vec<(usize, usize)> {
+    num_parents: usize,
+) -> Vec<Vec<usize>> {
+    let num_parents = num_parents.max(2);
     debug!(target="selection_events", method="boltzmann"; "Starting Boltzmann selection");
 
     let n = chromosomes.len();
@@ -86,7 +89,7 @@ pub fn boltzmann_selection<U: ChromosomeT>(
 
     // Select parents via roulette-wheel sampling on Boltzmann probabilities
     let mut rng = crate::rng::make_rng();
-    let total_parents = couples * 2;
+    let total_parents = couples * num_parents;
     let mut selected = Vec::with_capacity(total_parents);
 
     for _ in 0..total_parents {
@@ -95,15 +98,16 @@ pub fn boltzmann_selection<U: ChromosomeT>(
         selected.push(idx);
     }
 
-    // Pair selected parents
+    // Group selected parents into N-ary groups
     let mut mating = Vec::new();
-    for chunk in selected.chunks(2) {
-        if chunk.len() == 2 {
-            mating.push((chunk[0], chunk[1]));
-            trace!(target="selection_events", method="boltzmann"; "Mating pair: {} - {}", chunk[0], chunk[1]);
+    for chunk in selected.chunks(num_parents) {
+        if chunk.len() == num_parents {
+            let group = chunk.to_vec();
+            trace!(target="selection_events", method="boltzmann"; "Mating group: {:?}", group);
+            mating.push(group);
         }
     }
 
-    debug!(target="selection_events", method="boltzmann"; "Boltzmann selection finished with {} pairs", mating.len());
+    debug!(target="selection_events", method="boltzmann"; "Boltzmann selection finished with {} groups", mating.len());
     mating
 }

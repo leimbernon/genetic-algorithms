@@ -23,7 +23,8 @@ use crate::traits::{ChromosomeT, LinearChromosome};
 ///         chromosomes: &[U],
 ///         number_of_couples: usize,
 ///         number_of_threads: usize,
-///     ) -> Vec<(usize, usize)>
+///         num_parents: usize,
+///     ) -> Vec<Vec<usize>>
 ///     where
 ///         U: ChromosomeT + Sync + Send + 'static + Clone,
 ///     {
@@ -33,16 +34,19 @@ use crate::traits::{ChromosomeT, LinearChromosome};
 /// }
 /// ```
 pub trait SelectionOperator {
-    /// Select parent pairs from the population.
+    /// Select N-ary parent groups from the population.
     ///
-    /// Returns a vector of `(index_a, index_b)` pairs representing
-    /// the indices of selected parents in the `chromosomes` slice.
+    /// Returns a vector of groups, each containing `num_parents` population
+    /// indices representing the selected parents for one crossover operation.
+    /// For standard 2-parent crossover pass `num_parents = 2`; for multi-parent
+    /// operators (UNDX, SPX, PCX) pass the operator's `num_parents` value.
     fn select<U>(
         &self,
         chromosomes: &[U],
         number_of_couples: usize,
         number_of_threads: usize,
-    ) -> Vec<(usize, usize)>
+        num_parents: usize,
+    ) -> Vec<Vec<usize>>
     where
         U: ChromosomeT + Sync + Send + 'static + Clone;
 }
