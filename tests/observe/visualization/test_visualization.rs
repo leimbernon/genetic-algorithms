@@ -21,6 +21,7 @@ fn make_stats(n: usize) -> Vec<GenerationStats> {
             population_size: 100,
             diversity: 10.0,
             dynamic_mutation_probability: None,
+            avg_node_count: 0.0,
         })
         .collect()
 }

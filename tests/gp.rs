@@ -167,8 +167,8 @@ fn test_math_node_gp_node_impl() {
     assert!(!MathNode::Add.is_terminal());
 
     // Terminal nodes
-    assert_eq!(MathNode::Const(3.14).arity(), 0);
-    assert!(MathNode::Const(3.14).is_terminal());
+    assert_eq!(MathNode::Const(7.0).arity(), 0);
+    assert!(MathNode::Const(7.0).is_terminal());
     assert_eq!(MathNode::Var(0).arity(), 0);
     assert!(MathNode::Var(0).is_terminal());
 

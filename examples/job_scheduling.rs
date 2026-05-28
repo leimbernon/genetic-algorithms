@@ -121,8 +121,8 @@ fn main() {
         .with_selection_method(Selection::Tournament)
         // Crossover: Order (OX) -- preserves relative job order, permutation-safe
         .with_crossover_method(Crossover::Order)
-        // Mutation: PermutationInsert -- moves a job to a new position, permutation-safe
-        .with_mutation_method(Mutation::PermutationInsert)
+        // Mutation: Insertion -- moves a job to a new position, permutation-safe
+        .with_mutation_method(Mutation::Insertion)
         // Survivor selection: Fitness-based
         .with_survivor_method(Survivor::Fitness)
         // Objective: minimize makespan
@@ -138,7 +138,7 @@ fn main() {
         "Jobs: {}, Machines: {}, Population: {}, Max generations: {}",
         N_JOBS, N_MACHINES, POP_SIZE, MAX_GENERATIONS
     );
-    println!("Operators: Selection=Tournament, Crossover=Order, Mutation=PermutationInsert");
+    println!("Operators: Selection=Tournament, Crossover=Order, Mutation=Insertion");
     println!("-------------------------------------------------------");
 
     // --- Run the GA with a progress callback every 50 generations ---
