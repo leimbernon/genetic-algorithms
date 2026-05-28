@@ -94,6 +94,9 @@ Eliminated unnecessary heap allocations, reduced algorithmic complexity, and imp
 - ✓ Constraint handling, Hall of Fame, warm start, AOS, memetic algorithm framework (#212–#219) — v2.4.0
 - ✓ ZDT, DTLZ, single-objective benchmark suites — v2.4.0
 - ✓ WASM (wasm32-unknown-unknown) support — v2.4.0
+- ✓ `MultiCaseFitness: ChromosomeT` opt-in trait: `case_fitness() -> &[f64]`, `set_case_fitness(Vec<f64>)` — v3.0.0 Phase 50
+- ✓ `LexicaseSelection`: shuffles test cases per event, filters case-by-case to elites, syncs scalar fitness to mean — v3.0.0 Phase 50
+- ✓ `EpsilonLexicaseSelection`: fixed or dynamic MAD epsilon per case; `SelectionConfiguration::epsilon` with `0.0` = dynamic MAD sentinel — v3.0.0 Phase 50
 
 ### Active
 
@@ -108,7 +111,6 @@ Eliminated unnecessary heap allocations, reduced algorithmic complexity, and imp
 - [ ] `Unique<T>` genotype for permutation problems (TSP, scheduling) (#174) — v3.0.0
 - [ ] `MultiRange<T>` genotype: per-gene independent ranges and mutation behavior (#175) — v3.0.0
 - [ ] `MultiUnique<T>` genotype: multiple independent permutation groups (#176) — v3.0.0
-- [ ] Lexicase Selection: multi-case fitness evaluation, breaking `ChromosomeT` scalar fitness (#220) — v3.0.0
 - [ ] Multi-parent crossover operators: UNDX, SPX, PCX (#221) — v3.0.0
 - [ ] Self-adaptive mutation: strategy parameters co-evolving within the chromosome (#222) — v3.0.0
 - [ ] Tree Chromosome for Genetic Programming: breaks `dna() -> &[Gene]` linear assumption (#223) — v3.0.0
@@ -204,4 +206,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-18 — Milestone v3.0.0 started: Architecture simplification, advanced representations, alternative strategies.*
+*Last updated: 2026-05-23 after Phase 50 — LexicaseSelection + EpsilonLexicaseSelection shipped; MultiCaseFitness trait established for GP reuse in Phase 53.*

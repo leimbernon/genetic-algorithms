@@ -44,6 +44,8 @@ pub mod linear_chromosome;
 pub mod multi_case_fitness;
 pub mod operator_compat;
 pub mod operators;
+pub mod real_valued;
+pub mod self_adaptive;
 pub mod strategy;
 pub use strategy::Strategy;
 
@@ -51,6 +53,8 @@ pub use chromosome::ChromosomeT;
 pub use common::{initialize_chromosomes, initialize_chromosomes_par, FitnessFn, InitializationFn};
 pub use linear_chromosome::LinearChromosome;
 pub use multi_case_fitness::MultiCaseFitness;
+pub use real_valued::RealValued;
+pub use self_adaptive::SelfAdaptive;
 pub use configuration::{
     ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, LocalSearchConfig,
     MutationConfig, NichingConfig, SelectionConfig, StoppingConfig, SurvivorConfig,

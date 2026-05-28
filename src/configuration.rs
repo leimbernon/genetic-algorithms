@@ -144,6 +144,22 @@ pub struct CrossoverConfiguration {
     /// Alpha parameter for Arithmetic crossover. Controls weighting between parents.
     /// α=0.5 gives uniform arithmetic crossover (midpoint). Default is 0.5.
     pub arithmetic_alpha: Option<f64>,
+    /// Override for the UNDX orthogonal noise scale (σ_xi).
+    /// Default (when `None`): `0.35 / sqrt(n_parents - 1)`.
+    /// Only consulted when `method == Crossover::Undx`.
+    pub undx_sigma_xi: Option<f64>,
+    /// Override for the UNDX primary-direction noise scale (σ_eta).
+    /// Default (when `None`): `0.35 / sqrt(n_parents)`.
+    /// Only consulted when `method == Crossover::Undx`.
+    pub undx_sigma_eta: Option<f64>,
+    /// Override for the PCX directional noise scale (σ_eta).
+    /// Default (when `None`): `0.1`.
+    /// Only consulted when `method == Crossover::Pcx`.
+    pub pcx_sigma_eta: Option<f64>,
+    /// Override for the PCX orthogonal noise scale (σ_zeta).
+    /// Default (when `None`): `0.1`.
+    /// Only consulted when `method == Crossover::Pcx`.
+    pub pcx_sigma_zeta: Option<f64>,
 }
 impl Default for CrossoverConfiguration {
     fn default() -> Self {
@@ -155,6 +171,10 @@ impl Default for CrossoverConfiguration {
             sbx_eta: None,
             blend_alpha: None,
             arithmetic_alpha: None,
+            undx_sigma_xi: None,
+            undx_sigma_eta: None,
+            pcx_sigma_eta: None,
+            pcx_sigma_zeta: None,
         }
     }
 }
@@ -191,6 +211,23 @@ pub struct MutationConfiguration {
     /// Stability index (α) for `Mutation::LevyFlight`. Valid range: (0.0, 2.0). Default is `1.5` when `None`.
     /// Only consulted when `method == Mutation::LevyFlight`.
     pub levy_alpha: Option<f64>,
+    /// Per-dimension learning rate τ for `Mutation::SelfAdaptiveGaussian`.
+    /// Default (when `None`): `1.0 / sqrt(2.0 * n)` where `n = strategy_params().len()`.
+    /// Only consulted when `method == Mutation::SelfAdaptiveGaussian`.
+    pub self_adaptive_tau: Option<f64>,
+    /// Global learning rate τ' for `Mutation::SelfAdaptiveGaussian`.
+    /// Default (when `None`): `1.0 / sqrt(2.0 * sqrt(n))` where `n = strategy_params().len()`.
+    /// Only consulted when `method == Mutation::SelfAdaptiveGaussian`.
+    pub self_adaptive_tau_prime: Option<f64>,
+    /// Sigma lower bound for `Mutation::SelfAdaptiveGaussian`.
+    /// After the log-normal update, every σ is clamped to this value. Default is `1e-5` when `None`.
+    /// Only consulted when `method == Mutation::SelfAdaptiveGaussian`.
+    pub sigma_min: Option<f64>,
+    /// Sigma upper bound for `Mutation::SelfAdaptiveGaussian`.
+    /// After the log-normal update, every σ is clamped to this value to prevent unbounded
+    /// explosion. When `None` (default), no upper bound is applied.
+    /// Only consulted when `method == Mutation::SelfAdaptiveGaussian`.
+    pub sigma_max: Option<f64>,
     /// Enable dynamic mutation probability adjustment based on population cardinality.
     /// When enabled, mutation probability is adjusted each generation: increased when
     /// diversity is low and decreased when diversity is high.
@@ -214,6 +251,10 @@ impl Default for MutationConfiguration {
             differential_f: None,
             cauchy_scale: None,
             levy_alpha: None,
+            self_adaptive_tau: None,
+            self_adaptive_tau_prime: None,
+            sigma_min: None,
+            sigma_max: None,
             dynamic_mutation: false,
             target_cardinality: None,
             probability_step: None,
@@ -504,6 +545,22 @@ impl CrossoverConfig for GaConfiguration {
         self.crossover_configuration.blend_alpha = Some(alpha);
         self
     }
+    fn with_undx_sigma_xi(mut self, value: f64) -> Self {
+        self.crossover_configuration.undx_sigma_xi = Some(value);
+        self
+    }
+    fn with_undx_sigma_eta(mut self, value: f64) -> Self {
+        self.crossover_configuration.undx_sigma_eta = Some(value);
+        self
+    }
+    fn with_pcx_sigma_eta(mut self, value: f64) -> Self {
+        self.crossover_configuration.pcx_sigma_eta = Some(value);
+        self
+    }
+    fn with_pcx_sigma_zeta(mut self, value: f64) -> Self {
+        self.crossover_configuration.pcx_sigma_zeta = Some(value);
+        self
+    }
 }
 
 impl MutationConfig for GaConfiguration {
@@ -560,6 +617,22 @@ impl MutationConfig for GaConfiguration {
             alpha
         );
         self.mutation_configuration.levy_alpha = Some(alpha);
+        self
+    }
+    fn with_self_adaptive_tau(mut self, value: f64) -> Self {
+        self.mutation_configuration.self_adaptive_tau = Some(value);
+        self
+    }
+    fn with_self_adaptive_tau_prime(mut self, value: f64) -> Self {
+        self.mutation_configuration.self_adaptive_tau_prime = Some(value);
+        self
+    }
+    fn with_sigma_min(mut self, value: f64) -> Self {
+        self.mutation_configuration.sigma_min = Some(value);
+        self
+    }
+    fn with_sigma_max(mut self, value: f64) -> Self {
+        self.mutation_configuration.sigma_max = Some(value);
         self
     }
 }

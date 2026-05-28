@@ -422,6 +422,22 @@ where
         self.configuration.crossover_configuration.blend_alpha = Some(alpha);
         self
     }
+    fn with_undx_sigma_xi(mut self, value: f64) -> Self {
+        self.configuration.crossover_configuration.undx_sigma_xi = Some(value);
+        self
+    }
+    fn with_undx_sigma_eta(mut self, value: f64) -> Self {
+        self.configuration.crossover_configuration.undx_sigma_eta = Some(value);
+        self
+    }
+    fn with_pcx_sigma_eta(mut self, value: f64) -> Self {
+        self.configuration.crossover_configuration.pcx_sigma_eta = Some(value);
+        self
+    }
+    fn with_pcx_sigma_zeta(mut self, value: f64) -> Self {
+        self.configuration.crossover_configuration.pcx_sigma_zeta = Some(value);
+        self
+    }
 }
 
 impl<U> MutationConfig for Ga<U>
@@ -474,6 +490,22 @@ where
     }
     fn with_levy_alpha(mut self, alpha: f64) -> Self {
         self.configuration.mutation_configuration.levy_alpha = Some(alpha);
+        self
+    }
+    fn with_self_adaptive_tau(mut self, value: f64) -> Self {
+        self.configuration.mutation_configuration.self_adaptive_tau = Some(value);
+        self
+    }
+    fn with_self_adaptive_tau_prime(mut self, value: f64) -> Self {
+        self.configuration.mutation_configuration.self_adaptive_tau_prime = Some(value);
+        self
+    }
+    fn with_sigma_min(mut self, value: f64) -> Self {
+        self.configuration.mutation_configuration.sigma_min = Some(value);
+        self
+    }
+    fn with_sigma_max(mut self, value: f64) -> Self {
+        self.configuration.mutation_configuration.sigma_max = Some(value);
         self
     }
 }
@@ -750,6 +782,21 @@ where
 
         // Check operator compatibility for this chromosome type (OperatorCompat trait)
         crate::validators::generic_validator::operator_compat_check::<U>(&self.configuration)?;
+
+        // Validate num_parents >= 3 for multi-parent crossover operators
+        match self.configuration.crossover_configuration.method {
+            crate::operations::Crossover::Undx { num_parents }
+            | crate::operations::Crossover::Spx { num_parents }
+            | crate::operations::Crossover::Pcx { num_parents }
+                if num_parents < 3 =>
+            {
+                return Err(GaError::ConfigurationError(format!(
+                    "Multi-parent crossover requires num_parents >= 3, got {}",
+                    num_parents
+                )));
+            }
+            _ => {}
+        }
 
         // Wrap fitness function with LRU cache if configured
         if let Some(cache_size) = self.fitness_cache_size {
@@ -2619,21 +2666,43 @@ where
         let mut child_2: U;
 
         if crossover_probability <= effective_crossover_prob {
-            let mut children = if let Some((_op_idx, cx_op)) = selected_crossover {
-                // Use AOS-selected operator (Phase 43)
-                let mut cx_config = configuration.crossover_configuration;
-                cx_config.method = cx_op;
-                crossover::factory(parent_1, parent_2, cx_config)?
-            } else {
-                // Standard single-operator dispatch
-                crossover::factory(parent_1, parent_2, configuration.crossover_configuration)?
+            // Determine the effective crossover method (AOS-selected or user-configured)
+            let effective_method = selected_crossover
+                .map(|(_, op)| op)
+                .unwrap_or(configuration.crossover_configuration.method);
+
+            let mut children = match effective_method {
+                // Multi-parent crossover path (Phase 51): UNDX, SPX, PCX
+                Crossover::Undx { num_parents }
+                | Crossover::Spx { num_parents }
+                | Crossover::Pcx { num_parents } => {
+                    // Collect primary pair + (num_parents - 2) random extras from population
+                    let mut parent_refs: Vec<&U> = vec![parent_1, parent_2];
+                    let extras = num_parents.saturating_sub(2);
+                    for _ in 0..extras {
+                        let idx = rng.random_range(0..chromosomes.len());
+                        parent_refs.push(&chromosomes[idx]);
+                    }
+                    let mut cx_config = configuration.crossover_configuration;
+                    cx_config.method = effective_method;
+                    // Returns 1 offspring per D-04 (single-offspring contract)
+                    crossover::factory_multi_parent_dispatch(&parent_refs, cx_config)?
+                }
+                // Standard 2-parent crossover path — all other variants
+                _ => {
+                    let mut cx_config = configuration.crossover_configuration;
+                    cx_config.method = effective_method;
+                    crossover::factory(parent_1, parent_2, cx_config)?
+                }
             };
-            child_2 = children.pop().ok_or_else(|| {
-                GaError::CrossoverError("Crossover returned fewer than 2 children".to_string())
-            })?;
+
+            // factory_multi_parent_dispatch returns 1 child; factory returns 2.
+            // For the 1-child path, child_1 gets the actual offspring; child_2 falls back to
+            // parent_1.clone() (D-04 / Pitfall 1). For the 2-child path, both pops succeed.
             child_1 = children.pop().ok_or_else(|| {
-                GaError::CrossoverError("Crossover returned fewer than 2 children".to_string())
+                GaError::CrossoverError("Crossover returned no children".to_string())
             })?;
+            child_2 = children.pop().unwrap_or_else(|| parent_1.clone());
         } else {
             child_1 = parent_1.clone();
             child_2 = parent_2.clone();
@@ -2688,6 +2757,15 @@ where
                     configuration.mutation_configuration.step,
                     configuration.mutation_configuration.sigma,
                 )?;
+            } else if mutation_method == Mutation::SelfAdaptiveGaussian {
+                // Phase 51: pass user-configured tau/tau_prime/sigma_min/sigma_max (or None for ES defaults)
+                mutation::factory_self_adaptive(
+                    &mut child_1,
+                    configuration.mutation_configuration.self_adaptive_tau,
+                    configuration.mutation_configuration.self_adaptive_tau_prime,
+                    configuration.mutation_configuration.sigma_min,
+                    configuration.mutation_configuration.sigma_max,
+                )?;
             } else {
                 mutation::factory_with_params(
                     mutation_method,
@@ -2740,6 +2818,15 @@ where
                     Some(configuration.limit_configuration.chromosome_length),
                     configuration.mutation_configuration.step,
                     configuration.mutation_configuration.sigma,
+                )?;
+            } else if mutation_method == Mutation::SelfAdaptiveGaussian {
+                // Phase 51: pass user-configured tau/tau_prime/sigma_min/sigma_max (or None for ES defaults)
+                mutation::factory_self_adaptive(
+                    &mut child_2,
+                    configuration.mutation_configuration.self_adaptive_tau,
+                    configuration.mutation_configuration.self_adaptive_tau_prime,
+                    configuration.mutation_configuration.sigma_min,
+                    configuration.mutation_configuration.sigma_max,
                 )?;
             } else {
                 mutation::factory_with_params(

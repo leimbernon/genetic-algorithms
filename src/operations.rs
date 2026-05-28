@@ -161,6 +161,35 @@ pub enum Crossover {
     /// by `MultiUniqueChromosome::group_ranges()`. Each group is treated as a separate
     /// permutation; relative order is preserved within groups, not across them.
     MultiGroupOx,
+    /// Unimodal Normal Distribution Crossover (UNDX) for real-valued chromosomes.
+    ///
+    /// Requires at least 3 parents and chromosomes implementing
+    /// [`RealValued`](crate::traits::RealValued). Dispatched via
+    /// `factory_multi_parent` (Plan 02). Each call produces **1 offspring**
+    /// centered at the centroid of all parents, perturbed normally along
+    /// inter-parent directions.
+    ///
+    /// `num_parents` must be `>= 3`.
+    Undx { num_parents: usize },
+    /// Simplex Crossover (SPX) for real-valued chromosomes.
+    ///
+    /// Requires at least 3 parents and chromosomes implementing
+    /// [`RealValued`](crate::traits::RealValued). Dispatched via
+    /// `factory_multi_parent` (Plan 02). Samples offspring uniformly from
+    /// the expanded simplex defined by the parent vertices.
+    ///
+    /// `num_parents` must be `>= 3`.
+    Spx { num_parents: usize },
+    /// Parent-Centric Crossover (PCX) for real-valued chromosomes.
+    ///
+    /// Requires at least 3 parents and chromosomes implementing
+    /// [`RealValued`](crate::traits::RealValued). Dispatched via
+    /// `factory_multi_parent` (Plan 02). Produces offspring biased toward
+    /// the primary parent (index 0) with perturbation along directions from
+    /// the other parents.
+    ///
+    /// `num_parents` must be `>= 3`.
+    Pcx { num_parents: usize },
 }
 
 /// Mutation strategies.
@@ -238,6 +267,25 @@ pub enum Mutation {
     /// Equivalent to gene re-initialization. No configuration parameters required.
     /// Returns `GaError::MutationError` for non-`Range<T>` chromosomes.
     Uniform,
+    /// Self-adaptive Gaussian mutation for chromosomes implementing
+    /// [`SelfAdaptive`](crate::traits::SelfAdaptive).
+    ///
+    /// Co-evolves per-dimension step-size parameters (σ) alongside gene values
+    /// using the standard Evolution Strategy log-normal update:
+    ///
+    /// ```text
+    /// σ'_i = σ_i × exp(τ' × N_global(0,1) + τ × N_i_local(0,1))
+    /// ```
+    ///
+    /// After updating σ, one randomly-selected gene is mutated by `N(0, σ'_i)`.
+    ///
+    /// Learning rates are read from [`MutationConfiguration`](crate::configuration::MutationConfiguration):
+    /// - `self_adaptive_tau` (τ) — per-dimension rate; default `1.0 / sqrt(2.0 * n)`
+    /// - `self_adaptive_tau_prime` (τ') — global rate; default `1.0 / sqrt(2.0 * sqrt(n))`
+    /// - `sigma_min` — σ lower bound; default `1e-5`
+    ///
+    /// Returns `GaError::MutationError` for chromosomes not implementing `SelfAdaptive`.
+    SelfAdaptiveGaussian,
 }
 
 /// Survivor-selection strategies.

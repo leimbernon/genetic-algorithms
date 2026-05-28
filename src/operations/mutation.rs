@@ -40,6 +40,7 @@ pub mod list_value;
 pub mod non_uniform;
 pub mod polynomial;
 pub mod scramble;
+pub mod self_adaptive_gaussian;
 pub mod swap;
 pub mod uniform;
 pub mod value;
@@ -127,6 +128,34 @@ fn try_uniform<U: LinearChromosome + 'static>(
             if let Some(ind) = (individual as &mut dyn Any).downcast_mut::<RangeChromosome<$t>>() {
                 uniform::uniform_mutation(ind);
                 return Some(Ok(()));
+            }
+        };
+    }
+    try_type!(f64);
+    try_type!(f32);
+    try_type!(i32);
+    try_type!(i64);
+    None
+}
+
+/// Attempt self-adaptive Gaussian mutation by downcasting a generic individual to `Range<T>`.
+///
+/// Tries `f64`, `f32`, `i32`, `i64` in order. Returns `Some(Ok(()))` or
+/// `Some(Err(...))` if the type matched, `None` if no supported type matched
+/// (indicating the chromosome does not implement [`SelfAdaptive`](crate::traits::SelfAdaptive)).
+fn try_self_adaptive<U: LinearChromosome + 'static>(
+    individual: &mut U,
+    tau: f64,
+    tau_prime: f64,
+    sigma_min: f64,
+    sigma_max: Option<f64>,
+) -> Option<Result<(), GaError>> {
+    macro_rules! try_type {
+        ($t:ty) => {
+            if let Some(ind) = (individual as &mut dyn Any).downcast_mut::<RangeChromosome<$t>>() {
+                return Some(self_adaptive_gaussian::self_adaptive_gaussian_mutation(
+                    ind, tau, tau_prime, sigma_min, sigma_max,
+                ));
             }
         };
     }
@@ -297,6 +326,19 @@ impl MutationOperator for Mutation {
                     ))
                 });
             }
+            Mutation::SelfAdaptiveGaussian => {
+                let n_hint = individual.dna().len().max(1);
+                let tau = 1.0 / (2.0 * n_hint as f64).sqrt();
+                let tau_prime = 1.0 / (2.0 * (n_hint as f64).sqrt()).sqrt();
+                let sigma_min_val = 1e-5_f64;
+                return try_self_adaptive(individual, tau, tau_prime, sigma_min_val, None)
+                    .unwrap_or_else(|| {
+                        Err(GaError::MutationError(
+                            "SelfAdaptiveGaussian requires a chromosome implementing SelfAdaptive (RangeChromosome<T>)."
+                                .to_string(),
+                        ))
+                    });
+            }
         }
         Ok(())
     }
@@ -385,6 +427,44 @@ where
         }
         other => factory_with_params(other, individual, step, sigma),
     }
+}
+
+/// Applies the `SelfAdaptiveGaussian` mutation operator with explicit ES parameters.
+///
+/// This is the `ga.rs` integration entry point for `Mutation::SelfAdaptiveGaussian`.
+/// It forwards to the internal downcast dispatcher using the caller-supplied `tau`,
+/// `tau_prime`, `sigma_min`, and `sigma_max` values, which may come from
+/// [`crate::configuration::MutationConfiguration`] when the user has configured them
+/// explicitly.
+///
+/// Returns `Err(GaError::MutationError)` if the chromosome does not downcast to a
+/// supported `SelfAdaptive` type (i.e., `RangeChromosome<f64|f32|i32|i64>`).
+pub fn factory_self_adaptive<U: LinearChromosome + 'static>(
+    individual: &mut U,
+    tau: Option<f64>,
+    tau_prime: Option<f64>,
+    sigma_min: Option<f64>,
+    sigma_max: Option<f64>,
+) -> Result<(), GaError> {
+    let n_hint = individual.dna().len().max(1);
+    let effective_tau = tau.unwrap_or_else(|| 1.0 / (2.0 * n_hint as f64).sqrt());
+    let effective_tau_prime =
+        tau_prime.unwrap_or_else(|| 1.0 / (2.0 * (n_hint as f64).sqrt()).sqrt());
+    let effective_sigma_min = sigma_min.unwrap_or(1e-5_f64);
+    try_self_adaptive(
+        individual,
+        effective_tau,
+        effective_tau_prime,
+        effective_sigma_min,
+        sigma_max,
+    )
+    .unwrap_or_else(|| {
+        Err(GaError::MutationError(
+            "SelfAdaptiveGaussian requires a chromosome implementing SelfAdaptive \
+             (RangeChromosome<f64|f32|i32|i64>)."
+                .to_string(),
+        ))
+    })
 }
 
 /// Applies a non-value mutation operator to the given individual.
@@ -478,6 +558,10 @@ where
         Mutation::Uniform => Err(GaError::MutationError(
             "Mutation::Uniform requires Range<T> chromosomes where T is f64, f32, i32, or i64. \
              Use Swap, Inversion, or Scramble for non-Range chromosomes.".to_string(),
+        )),
+        Mutation::SelfAdaptiveGaussian => Err(GaError::MutationError(
+            "Mutation::SelfAdaptiveGaussian requires a chromosome implementing SelfAdaptive. \
+             Use Swap, Inversion, or Scramble for non-SelfAdaptive chromosomes.".to_string(),
         )),
     }
 }
