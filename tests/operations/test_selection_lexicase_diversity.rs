@@ -78,13 +78,13 @@ fn test_lexicase_produces_more_specialists_than_tournament() {
         number_of_couples: COUPLES,
         ..Default::default()
     };
-    let tour_pairs = selection::factory(&pop_tour, tour_config, 1)
+    let tour_pairs = selection::factory(&pop_tour, tour_config, 1, 2)
         .expect("tournament selection failed");
 
     // Compute average per-case variance across selected individuals.
     // Higher variance = more diverse case-score profiles = more specialists selected.
-    let avg_case_variance = |pairs: &[(usize, usize)], population: &[MultiCaseChromosome]| -> f64 {
-        let indices: Vec<usize> = pairs.iter().flat_map(|&(a, b)| [a, b]).collect();
+    let avg_case_variance = |pairs: &[Vec<usize>], population: &[MultiCaseChromosome]| -> f64 {
+        let indices: Vec<usize> = pairs.iter().flat_map(|group| [group[0], group[1]]).collect();
         let total = indices.len() as f64;
         let mut total_var = 0.0;
         for case_i in 0..K {
