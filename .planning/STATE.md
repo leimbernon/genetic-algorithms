@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v3.0.0
 milestone_name: — Advanced Representations, Alternative Strategies & Architecture Simplification
-status: planned
-stopped_at: Phase 52 planned — ready to execute
-last_updated: "2026-05-24T12:00:00.000Z"
-last_activity: 2026-05-24 -- Phase 52 planned (4 plans, 4 waves)
+status: verifying
+stopped_at: Phase 52 verified, passing
+last_updated: "2026-05-28T14:36:13.985Z"
+last_activity: 2026-05-28 -- Phase 52 verified (4/4 pass)
 progress:
   total_phases: 24
-  completed_phases: 11
+  completed_phases: 12
   total_plans: 50
-  completed_plans: 62
-  percent: 46
+  completed_plans: 66
+  percent: 50
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-23)
 
 **Core value:** Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library
-**Current focus:** Phase 52 — variable-length-chromosomes
+**Current focus:** Phase 53 — tree-chromosome-gp-engine
 
 ## Current Position
 
-Phase: 52 (variable-length-chromosomes) — PLANNED, ready to execute
-Plans: 4 plans in 4 waves (Wave 0→1→2→3)
-Status: Phase 52 planned
-Last activity: 2026-05-24 -- Phase 52 planned (4 plans)
+Phase: 52 (variable-length-chromosomes) — COMPLETE, verified 2026-05-28
+Plans: 4 plans in 4 waves (all complete)
+Status: Phase 52 verified — ready to ship
+Last activity: 2026-05-28 -- Phase 52 verified (4/4 pass)
 
-Progress bar: [░░░░░░░] 0/7 phases complete
+Progress bar: [█░░░░░░] 1/7 phases complete
 
 ## Accumulated Context
 
@@ -53,6 +53,11 @@ Progress bar: [░░░░░░░] 0/7 phases complete
 - v3.0.0 Phase 50: `factory_lexicase<U: ChromosomeT + MultiCaseFitness>()` is the dispatch path for lexicase — standard `factory()` returns ConfigurationError for Lexicase/EpsilonLexicase variants
 - v3.0.0 Phase 50: `epsilon = 0.0` in SelectionConfiguration is the sentinel for dynamic MAD mode; any positive value is fixed epsilon — SelectionConfiguration remains Copy
 - v3.0.0 Phase 50: `Ga<U: MultiCaseFitness>` adds `select_parents_lexicase()` in a separate impl block — Rust cannot overload `run()`; users call this explicitly for the lexicase path
+- v3.0.0 Phase 52: `ChromosomeLength::Variable { min, max }` lives in `src/types/chromosomes/mod.rs` — re-exported as `genetic_algorithms::chromosomes::ChromosomeLength`
+- v3.0.0 Phase 52: `Mutation::Insertion` (old permutation-insert operator) renamed to `Mutation::PermutationInsert` — breaking change, documented in MIGRATION.md
+- v3.0.0 Phase 52: Variable init uses per-individual `rng.random_range(min..=max)` for length sampling — zero changes to `init_fn` signature
+- v3.0.0 Phase 52: Parsimony pressure adjusts fitness temporarily in `apply_parsimony_pressure` — stored `fitness()` never permanently mutated
+- v3.0.0 Phase 52: `initialize_with_seeds()` does NOT yet support `ChromosomeLength::Variable` — returns ConfigurationError; only random init supports Variable
 
 ### Roadmap Evolution
 
@@ -63,9 +68,10 @@ Progress bar: [░░░░░░░] 0/7 phases complete
 - Phase 47 is the highest-risk change (~30 files touched mechanically) — it must merge and pass CI before any feature branch touching `ChromosomeT` opens a PR
 - `serde_stacker` wasm32 compatibility is unverified — must be checked in Phase 53 before committing to it; if it fails, an iterative serde approach is needed
 - Fitness function removal from chromosomes (Phase 47 decision) may break users calling `chromosome.calculate_fitness()` directly — scope must be validated and a migration path documented in MIGRATION.md
+- Phase 52 gap: `initialize_with_seeds()` returns ConfigurationError for `ChromosomeLength::Variable` — needs follow-up in a future phase or bugfix
 
 ## Session Continuity
 
-Last session: 2026-05-24T11:30:53.163Z
-Stopped at: Phase 52 context gathered
-Resume file: .planning/phases/52-variable-length-chromosomes/52-CONTEXT.md
+Last session: 2026-05-28T00:00:00Z
+Stopped at: Phase 52 verified, passing
+Resume file: .planning/phases/52-variable-length-chromosomes/52-VERIFICATION.md
