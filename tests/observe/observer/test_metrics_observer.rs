@@ -20,6 +20,7 @@ use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::traits::{
     ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
 };
+use genetic_algorithms::ChromosomeLength;
 use genetic_algorithms::MetricsObserver;
 
 // ============================================================================
@@ -34,7 +35,7 @@ fn test_metrics_observer_attaches_and_runs() {
     let obs = Arc::new(MetricsObserver::new("test_run"));
 
     let mut ga = Ga::<BinaryChromosome>::new()
-        .with_genes_per_chromosome(8)
+        .with_chromosome_length(ChromosomeLength::Fixed(8))
         .with_population_size(20)
         .with_initialization_fn(binary_random_initialization)
         .with_fitness_fn(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64)
@@ -104,7 +105,7 @@ fn test_metrics_observer_island_no_panic() {
 
     let ga_config = GaConfiguration::new()
         .with_population_size(10)
-        .with_genes_per_chromosome(8)
+        .with_chromosome_length(ChromosomeLength::Fixed(8))
         .with_max_generations(10)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)

@@ -118,6 +118,32 @@ Pairs each offspring (identified by `age() == 0`) with its most similar parent (
 
 ---
 
+### Parsimony Pressure
+
+Parsimony pressure is not a standalone survivor strategy — it is a fitness adjustment that wraps any of the above strategies. When configured, each chromosome's effective fitness during survivor selection is temporarily adjusted by `±(length_penalty × dna_length)`. The stored `fitness()` value is **never** permanently mutated.
+
+**Sign convention (auto-adjusted per optimization direction):**
+- **Maximization** — `adjusted = fitness - (penalty × length)` (longer chromosomes appear worse)
+- **Minimization** — `adjusted = fitness + (penalty × length)` (longer chromosomes appear worse)
+
+```rust
+// Enable parsimony pressure: penalize chromosomes with more genes.
+let mut ga = Ga::new()
+    .with_survivor_method(Survivor::Fitness)    // any survivor strategy
+    .with_length_penalty(0.01)                   // parsimony coefficient
+    // ... rest of configuration
+    .build()
+    .expect("valid config");
+```
+
+**Builder:** `.with_length_penalty(coefficient: f64)`
+
+**When to use:** Variable-length chromosomes where you want to bias toward shorter, more parsimonious solutions — avoids bloat when using `Mutation::Insertion`.
+
+**Added in:** v3.0.0
+
+---
+
 ### `factory`
 
 Dispatches survivor selection according to the configured method.

@@ -20,14 +20,14 @@ completion time, defined as the maximum finish time across all machines.
 
 - **Order crossover (OX)** (`Crossover::Order`): preserves the relative ordering of jobs from
   each parent, ensuring the offspring is also a valid permutation
-- **Insertion mutation** (`Mutation::Insertion`): picks a random gene and moves it to a new
+- **Permutation-insert mutation** (`Mutation::PermutationInsert`): picks a random gene and moves it to a new
   random position, producing another valid permutation
 
 Both operators are permutation-safe and will never introduce duplicate job indices.
 
 ## Features demonstrated
 - Permutation chromosomes (`UniqueChromosome<i32>`) for combinatorial optimization
-- Order crossover (OX) and Insertion mutation
+- Order crossover (OX) and PermutationInsert mutation
 - Minimization mode (makespan)
 - LogObserver lifecycle hooks
 

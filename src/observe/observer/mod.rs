@@ -267,12 +267,7 @@ pub trait SmsEmoaObserver<U: ChromosomeT>: Send + Sync {
     ) {
     }
     /// Called after steady-state (mu+1) removal in the current generation.
-    fn on_steady_state_removal(
-        &self,
-        _generation: usize,
-        _population_size: usize,
-    ) {
-    }
+    fn on_steady_state_removal(&self, _generation: usize, _population_size: usize) {}
 }
 
 /// Observer for [`IbeaGa<U>`](crate::ibea::IbeaGa) engine-specific events.

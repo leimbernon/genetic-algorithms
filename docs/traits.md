@@ -259,6 +259,46 @@ Trait for chromosome representation.
 | `get_age`             | `fn get_age(&self) -> i32`                                                | Gets chromosome age.                                      |
 | `get_fitness_distance`| `fn get_fitness_distance(&self, fitness_target: &f64) -> f64`             | Computes distance to target fitness.                      |
 
+### `TreeChromosome`
+
+Supertrait of [`ChromosomeT`] for tree-structured chromosomes used by the Genetic Programming engine (`GpGa<N>`). Implementors expose the root expression tree and tree-level statistics. This trait does **not** extend `LinearChromosome` — tree chromosomes have no flat DNA slice (`dna()`, `dna_mut()`, `set_dna()` all panic on `GpChromosome<N>`).
+
+**Associated Types:**
+
+| Name | Description |
+|------|-------------|
+| `GpNodeType: GpNode` | The primitive set enum stored in this chromosome's expression tree. |
+
+**Methods:**
+
+| Name | Signature | Description |
+|------|-----------|-------------|
+| `tree` | `fn tree(&self) -> &Node<Self::GpNodeType>` | Returns a reference to the root node of the expression tree. |
+| `tree_mut` | `fn tree_mut(&mut self) -> &mut Node<Self::GpNodeType>` | Returns a mutable reference to the root node. |
+| `depth` | `fn depth(&self) -> usize` | Returns the depth of the expression tree. |
+| `node_count` | `fn node_count(&self) -> usize` | Returns the total number of nodes in the tree. |
+
+The only built-in implementor is [`GpChromosome<N>`](../src/engines/gp/chromosome.rs). See [Genetic Programming](gp.md) for the full guide.
+
+### `GpNode`
+
+User-implemented trait that defines the function and terminal set for Genetic Programming. Implement on your own enum and use as the type parameter `N` in `GpChromosome<N>` and `GpGa<N>`.
+
+**Required methods:**
+
+| Name | Signature | Description |
+|------|-----------|-------------|
+| `arity` | `fn arity(&self) -> usize` | Number of child arguments this node consumes (0 = terminal). |
+| `evaluate` | `fn evaluate(&self, args: &[f64]) -> f64` | Evaluate this node given pre-evaluated child values. |
+| `sample_random_terminal` | `fn sample_random_terminal(rng: &mut impl Rng) -> Self` | Produce a fresh terminal node (used during init and subtree mutation). |
+| `all_functions` | `fn all_functions() -> Vec<Self>` | Enumerate all non-terminal variants (used by point mutation). |
+
+**Provided methods:**
+
+| Name | Signature | Description |
+|------|-----------|-------------|
+| `is_terminal` | `fn is_terminal(&self) -> bool` | Default impl returns `self.arity() == 0`. |
+
 ### `ConfigurationT`
 
 Trait for genetic algorithm configuration.
@@ -297,6 +337,8 @@ Trait for genetic algorithm configuration.
 | `with_save_progress_path`     | `fn with_save_progress_path(&mut self, save_progress_path: String) -> &mut Self`| Sets save path.                       |
 | `with_elitism`                | `fn with_elitism(&mut self, elitism_count: usize) -> &mut Self`  | Sets number of elite chromosomes.                    |
 | `with_stopping_criteria`      | `fn with_stopping_criteria(&mut self, criteria: StoppingCriteria) -> &mut Self`| Sets compound stopping criteria.           |
+| `with_chromosome_length`      | `fn with_chromosome_length(&mut self, len: ChromosomeLength) -> &mut Self`| Configures `Fixed`/`Variable` length policy. Required for `Mutation::Insertion`/`Deletion`. |
+| `with_length_penalty`         | `fn with_length_penalty(&mut self, penalty: f64) -> &mut Self`   | Enables parsimony pressure during survivor selection. |
 
 ## Observer Traits
 

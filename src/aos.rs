@@ -59,10 +59,7 @@ impl AosStrategy {
     /// Adaptive Pursuit with literature-standard parameters:
     /// `beta = 0.5`, `c = 1.5`.
     pub fn ap_default() -> Self {
-        AosStrategy::AdaptivePursuit {
-            beta: 0.5,
-            c: 1.5,
-        }
+        AosStrategy::AdaptivePursuit { beta: 0.5, c: 1.5 }
     }
 
     /// Multi-Armed Bandit with literature-standard parameters:
@@ -178,9 +175,7 @@ impl AosState {
                 AosStrategy::ProbabilityMatching { .. } | AosStrategy::AdaptivePursuit { .. } => {
                     self.roulette_wheel_select(rng)
                 }
-                AosStrategy::MultiArmedBandit { c, epsilon } => {
-                    self.mab_select(rng, c, epsilon)
-                }
+                AosStrategy::MultiArmedBandit { c, epsilon } => self.mab_select(rng, c, epsilon),
             }
         };
 
@@ -261,7 +256,10 @@ impl AosState {
     /// **MAB**: no probability update needed (UCB handles exploration).
     pub fn update(&mut self) {
         match self.strategy {
-            AosStrategy::ProbabilityMatching { alpha, learning_rate: _ } => {
+            AosStrategy::ProbabilityMatching {
+                alpha,
+                learning_rate: _,
+            } => {
                 self.update_pm(alpha);
             }
             AosStrategy::AdaptivePursuit { beta, c: _ } => {
@@ -304,10 +302,12 @@ impl AosState {
         for i in 0..self.num_arms {
             if i == best_idx {
                 let target = 0.9;
-                self.probabilities[i] = self.probabilities[i] + beta * (target - self.probabilities[i]);
+                self.probabilities[i] =
+                    self.probabilities[i] + beta * (target - self.probabilities[i]);
             } else {
                 let target = 0.1 / (n - 1.0);
-                self.probabilities[i] = self.probabilities[i] + beta * (target - self.probabilities[i]);
+                self.probabilities[i] =
+                    self.probabilities[i] + beta * (target - self.probabilities[i]);
             }
             self.probabilities[i] = self.probabilities[i].clamp(0.01, 0.99);
         }
@@ -413,7 +413,10 @@ mod tests {
     fn test_pm_default() {
         let s = AosStrategy::pm_default();
         match s {
-            AosStrategy::ProbabilityMatching { alpha, learning_rate } => {
+            AosStrategy::ProbabilityMatching {
+                alpha,
+                learning_rate,
+            } => {
                 assert!((alpha - 0.8).abs() < 1e-10);
                 assert!((learning_rate - 0.3).abs() < 1e-10);
             }
@@ -618,10 +621,18 @@ mod tests {
         state.update();
         // After update, arm 0 should have higher probability
         let probs = state.probabilities().to_vec();
-        assert!(probs[0] > probs[1], "Arm 0 should have higher prob, got {:?}", probs);
+        assert!(
+            probs[0] > probs[1],
+            "Arm 0 should have higher prob, got {:?}",
+            probs
+        );
         // Probabilities should sum to ~1.0
         let sum: f64 = probs.iter().sum();
-        assert!((sum - 1.0).abs() < 0.01, "Probabilities should sum to ~1.0, got {}", sum);
+        assert!(
+            (sum - 1.0).abs() < 0.01,
+            "Probabilities should sum to ~1.0, got {}",
+            sum
+        );
     }
 
     // ---------------------------------------------------------------------------
@@ -630,19 +641,16 @@ mod tests {
 
     #[test]
     fn test_update_ap() {
-        let mut state = AosState::new(
-            2,
-            AosStrategy::AdaptivePursuit {
-                beta: 0.5,
-                c: 1.5,
-            },
-            10,
-        );
+        let mut state = AosState::new(2, AosStrategy::AdaptivePursuit { beta: 0.5, c: 1.5 }, 10);
         state.record_rewards(&[(0, 1.0), (1, -1.0)]);
         state.update();
         let probs = state.probabilities().to_vec();
         let sum: f64 = probs.iter().sum();
-        assert!((sum - 1.0).abs() < 0.01, "Probabilities should sum to ~1.0, got {}", sum);
+        assert!(
+            (sum - 1.0).abs() < 0.01,
+            "Probabilities should sum to ~1.0, got {}",
+            sum
+        );
     }
 
     // ---------------------------------------------------------------------------
@@ -668,34 +676,57 @@ mod tests {
     fn test_compute_normalized_reward_positive() {
         // Offspring better (lower fitness) than parent: positive reward
         let reward = compute_normalized_reward(10.0, 5.0, 20.0);
-        assert!(reward > 0.0, "Better offspring should give positive reward, got {}", reward);
-        assert!((reward - 0.25).abs() < 1e-10, "Expected ~0.25, got {}", reward);
+        assert!(
+            reward > 0.0,
+            "Better offspring should give positive reward, got {}",
+            reward
+        );
+        assert!(
+            (reward - 0.25).abs() < 1e-10,
+            "Expected ~0.25, got {}",
+            reward
+        );
     }
 
     #[test]
     fn test_compute_normalized_reward_negative() {
         // Offspring worse (higher fitness) than parent: negative reward
         let reward = compute_normalized_reward(5.0, 10.0, 20.0);
-        assert!(reward < 0.0, "Worse offspring should give negative reward, got {}", reward);
+        assert!(
+            reward < 0.0,
+            "Worse offspring should give negative reward, got {}",
+            reward
+        );
     }
 
     #[test]
     fn test_compute_normalized_reward_zero_delta() {
         let reward = compute_normalized_reward(10.0, 10.0, 20.0);
-        assert!((reward).abs() < 1e-10, "Equal fitness should give ~0 reward, got {}", reward);
+        assert!(
+            (reward).abs() < 1e-10,
+            "Equal fitness should give ~0 reward, got {}",
+            reward
+        );
     }
 
     #[test]
     fn test_compute_normalized_reward_zero_best() {
         // Best fitness of 0 should not cause NaN (EPSILON clamp)
         let reward = compute_normalized_reward(10.0, 5.0, 0.0);
-        assert!(!reward.is_nan(), "Reward should not be NaN when best_fitness=0");
+        assert!(
+            !reward.is_nan(),
+            "Reward should not be NaN when best_fitness=0"
+        );
         assert!(reward > 0.0, "Positive reward expected");
     }
 
     #[test]
     fn test_compute_normalized_reward_best_nonzero() {
         let reward = compute_normalized_reward(100.0, 95.0, 50.0);
-        assert!((reward - 0.1).abs() < 1e-10, "Expected ~0.1, got {}", reward);
+        assert!(
+            (reward - 0.1).abs() < 1e-10,
+            "Expected ~0.1, got {}",
+            reward
+        );
     }
 }

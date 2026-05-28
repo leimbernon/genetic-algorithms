@@ -15,7 +15,7 @@
 //! |------|-------------|
 //! | [`Selection`] | Selection operator enum (Tournament, RouletteWheel, SUS, Rank, Boltzmann, Truncation, Clearing, Random) |
 //! | [`Crossover`] | Crossover operator enum (Cycle, MultiPoint, Uniform, SinglePoint, Order, PMX, SBX, BlendAlpha, Arithmetic, Edge, Clone, Rejuvenate) |
-//! | [`Mutation`] | Mutation operator enum (Swap, Inversion, Scramble, Value, BitFlip, Creep, Gaussian, Polynomial, NonUniform, Insertion, Cauchy, LevyFlight, Uniform, ListValue) |
+//! | [`Mutation`] | Mutation operator enum (Swap, Inversion, Scramble, Value, BitFlip, Creep, Gaussian, Polynomial, NonUniform, PermutationInsert, Insertion, Deletion, Cauchy, LevyFlight, Uniform, ListValue) |
 //! | [`Survivor`] | Survivor operator enum (Fitness, Age, MuPlusLambda, MuCommaLambda, DeterministicCrowding) |
 //! | [`Extension`] | Extension strategy enum (Noop, MassExtinction, MassGenesis, MassDegeneration, MassDeduplication) |
 //!
@@ -32,8 +32,8 @@ pub mod selection;
 pub mod survivor;
 
 pub use local_search::{
-    factory, factory_with_config, HillClimbingConfig, LocalSearch,
-    LocalSearchApplicationStrategy, LocalSearchMode,
+    factory, factory_with_config, HillClimbingConfig, LocalSearch, LocalSearchApplicationStrategy,
+    LocalSearchMode,
 };
 
 /// Parent-selection strategies.
@@ -78,6 +78,29 @@ pub enum Selection {
     EpsilonLexicase,
 }
 
+/// Alignment strategy for variable-length crossover.
+///
+/// When the two parents have different DNA lengths, `AlignmentStrategy` determines
+/// how the lengths are reconciled before the single-point crossover is applied.
+///
+/// # Variants
+///
+/// - `Trim` — both parents are truncated to `min(len_a, len_b)` before recombination.
+///   Offspring length equals `min(len_a, len_b)`.
+/// - `Pad` — the shorter parent is padded with genes sampled from its own alleles
+///   until both parents reach `max(len_a, len_b)`. Offspring length equals
+///   `max(len_a, len_b)`.
+#[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum AlignmentStrategy {
+    /// Trim both parents to the shorter length before crossover.
+    /// Offspring have length `min(len_a, len_b)`.
+    Trim,
+    /// Pad the shorter parent (from its alleles) to the longer length before crossover.
+    /// Offspring have length `max(len_a, len_b)`.
+    Pad,
+}
+
 /// Crossover (recombination) strategies.
 ///
 /// Determines how two parent chromosomes are combined to produce offspring.
@@ -117,6 +140,17 @@ pub enum Crossover {
     /// Builds a union adjacency list from both parents and constructs offspring that
     /// preserve adjacency relationships found in either parent. Requires unique gene IDs.
     EdgeRecombination,
+    /// Variable-length crossover for chromosomes with different DNA lengths.
+    ///
+    /// Applies single-point crossover after aligning the two parents according to
+    /// the specified [`AlignmentStrategy`]:
+    /// - [`AlignmentStrategy::Trim`] — both parents are truncated to `min(len_a, len_b)`.
+    /// - [`AlignmentStrategy::Pad`] — the shorter parent is padded to `max(len_a, len_b)`.
+    ///
+    /// Fixed-length crossover operators (`SinglePoint`, `Uniform`, etc.) return
+    /// `GaError::CrossoverError` when parents have unequal lengths. Use this variant
+    /// when variable-length chromosomes are in the population.
+    VariableLength(AlignmentStrategy),
     /// Multi-group PMX crossover for `MultiUniqueChromosome<T>`.
     /// Applies Partially Mapped Crossover (PMX) independently within each permutation
     /// group defined by `MultiUniqueChromosome::group_ranges()`. Each group is treated
@@ -158,9 +192,25 @@ pub enum Mutation {
     /// Non-uniform mutation for `Range<T>` chromosomes.
     /// Mutation magnitude decreases over generations.
     NonUniform,
-    /// Insertion mutation for permutation-based chromosomes.
-    /// Removes a gene and reinserts it at a different position.
+    /// Permutation-insert mutation for permutation-based chromosomes.
+    /// Removes a gene and reinserts it at a different position, preserving all alleles
+    /// and chromosome length. This is the permutation-preserving insertion move (formerly
+    /// `Mutation::Insertion` in previous versions).
+    PermutationInsert,
+    /// Insertion mutation for variable-length chromosomes.
+    /// Inserts a new gene at a random position, growing the chromosome length by 1
+    /// (clamped to the configured maximum). Requires
+    /// [`ChromosomeLength::Variable`](crate::chromosomes::ChromosomeLength) in
+    /// `MutationConfiguration`. Returns `GaError::MutationError` for
+    /// `ChromosomeLength::Fixed`.
     Insertion,
+    /// Deletion mutation for variable-length chromosomes.
+    /// Removes a gene at a random position, shrinking the chromosome length by 1
+    /// (clamped to the configured minimum). Requires
+    /// [`ChromosomeLength::Variable`](crate::chromosomes::ChromosomeLength) in
+    /// `MutationConfiguration`. Returns `GaError::MutationError` for
+    /// `ChromosomeLength::Fixed`.
+    Deletion,
     /// List-value mutation — replaces a single gene's value with a different allele
     /// from that gene's allele set. Requires a `ListChromosome<T>`.
     ListValue,

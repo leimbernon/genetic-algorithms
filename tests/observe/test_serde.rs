@@ -4,6 +4,7 @@
 //! the JSON round-trip for core GA types.
 #![cfg(feature = "serde")]
 
+use genetic_algorithms::aos::AosStrategy;
 use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::{GaConfiguration, ProblemSolving};
@@ -16,7 +17,7 @@ use genetic_algorithms::island::configuration::{IslandConfiguration, MigrationPo
 use genetic_algorithms::island::topology::MigrationTopology;
 use genetic_algorithms::niching::configuration::NichingConfiguration;
 use genetic_algorithms::nsga2::configuration::{Nsga2Configuration, ObjectiveDirection};
-use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+use genetic_algorithms::operations::{AlignmentStrategy, Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::population::Population;
 use genetic_algorithms::stats::GenerationStats;
 
@@ -60,10 +61,24 @@ fn serde_crossover_enum() {
         Crossover::Clone,
         Crossover::Rejuvenate,
         Crossover::EdgeRecombination,
+        Crossover::VariableLength(AlignmentStrategy::Trim),
+        Crossover::VariableLength(AlignmentStrategy::Pad),
     ];
     for v in &variants {
         assert_eq!(&round_trip(v), v);
     }
+}
+
+#[test]
+fn serde_alignment_strategy_enum() {
+    assert_eq!(
+        &round_trip(&AlignmentStrategy::Trim),
+        &AlignmentStrategy::Trim
+    );
+    assert_eq!(
+        &round_trip(&AlignmentStrategy::Pad),
+        &AlignmentStrategy::Pad
+    );
 }
 
 #[test]
@@ -78,7 +93,9 @@ fn serde_mutation_enum() {
         Mutation::Gaussian,
         Mutation::Polynomial,
         Mutation::NonUniform,
+        Mutation::PermutationInsert,
         Mutation::Insertion,
+        Mutation::Deletion,
         Mutation::Differential,
         Mutation::Cauchy,
         Mutation::LevyFlight,

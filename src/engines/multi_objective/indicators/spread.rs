@@ -1,7 +1,5 @@
+use super::{squared_euclidean_distance, validate_dimension_consistency, validate_non_empty};
 use crate::error::GaError;
-use super::{
-    squared_euclidean_distance, validate_dimension_consistency, validate_non_empty,
-};
 
 /// Computes the Spread indicator (Deb et al. 2002).
 ///
@@ -38,10 +36,7 @@ use super::{
 /// - `approx_front` is empty
 /// - `extreme_points` is empty
 /// - Dimensions are inconsistent
-pub fn spread(
-    approx_front: &[Vec<f64>],
-    extreme_points: &[Vec<f64>],
-) -> Result<f64, GaError> {
+pub fn spread(approx_front: &[Vec<f64>], extreme_points: &[Vec<f64>]) -> Result<f64, GaError> {
     validate_non_empty("approx_front", approx_front)?;
     validate_non_empty("extreme_points", extreme_points)?;
     let dim = validate_dimension_consistency(approx_front)?;
@@ -49,13 +44,11 @@ pub fn spread(
 
     // Verify extreme_points have same dimension as approx_front
     if extreme_points[0].len() != dim {
-        return Err(GaError::InvalidIndicatorConfiguration(
-            format!(
-                "Dimension mismatch: approx_front has {} dimensions, extreme_points have {}",
-                dim,
-                extreme_points[0].len(),
-            ),
-        ));
+        return Err(GaError::InvalidIndicatorConfiguration(format!(
+            "Dimension mismatch: approx_front has {} dimensions, extreme_points have {}",
+            dim,
+            extreme_points[0].len(),
+        )));
     }
 
     let n = approx_front.len();
@@ -67,9 +60,7 @@ pub fn spread(
 
     // Sort by first objective ascending (per Deb 2002)
     let mut sorted: Vec<&[f64]> = approx_front.iter().map(|v| v.as_slice()).collect();
-    sorted.sort_by(|a, b| {
-        a[0].partial_cmp(&b[0]).unwrap_or(std::cmp::Ordering::Equal)
-    });
+    sorted.sort_by(|a, b| a[0].partial_cmp(&b[0]).unwrap_or(std::cmp::Ordering::Equal));
 
     // Consecutive Euclidean distances
     let mut d = Vec::with_capacity(n - 1);
@@ -140,16 +131,25 @@ mod tests {
         let points = vec![vec![0.0, 0.0]];
         let extremes = vec![vec![0.0, 0.0]];
         let result = spread(&points, &extremes);
-        assert!(matches!(result, Err(GaError::InvalidIndicatorConfiguration(_))));
+        assert!(matches!(
+            result,
+            Err(GaError::InvalidIndicatorConfiguration(_))
+        ));
     }
 
     #[test]
     fn test_spread_rejects_empty() {
         let result = spread(&[], &[vec![0.0, 0.0]]);
-        assert!(matches!(result, Err(GaError::InvalidIndicatorConfiguration(_))));
+        assert!(matches!(
+            result,
+            Err(GaError::InvalidIndicatorConfiguration(_))
+        ));
 
         let result = spread(&[vec![0.0, 0.0], vec![1.0, 0.0]], &[]);
-        assert!(matches!(result, Err(GaError::InvalidIndicatorConfiguration(_))));
+        assert!(matches!(
+            result,
+            Err(GaError::InvalidIndicatorConfiguration(_))
+        ));
     }
 
     #[test]
@@ -157,6 +157,9 @@ mod tests {
         let points = vec![vec![0.0, 0.0], vec![1.0, 0.0]];
         let extremes = vec![vec![0.0, 0.0, 0.0]];
         let result = spread(&points, &extremes);
-        assert!(matches!(result, Err(GaError::InvalidIndicatorConfiguration(_))));
+        assert!(matches!(
+            result,
+            Err(GaError::InvalidIndicatorConfiguration(_))
+        ));
     }
 }

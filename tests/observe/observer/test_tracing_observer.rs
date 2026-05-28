@@ -15,7 +15,7 @@ use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::traits::{
     ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
 };
-use genetic_algorithms::{CompositeObserver, TracingObserver};
+use genetic_algorithms::{ChromosomeLength, CompositeObserver, TracingObserver};
 use std::sync::Arc;
 
 /// Build a standard 10-generation onemax GA with the given observer.
@@ -23,7 +23,7 @@ fn build_test_ga(
     observer: Arc<dyn GaObserver<BinaryChromosome> + Send + Sync>,
 ) -> Ga<BinaryChromosome> {
     Ga::new()
-        .with_genes_per_chromosome(8)
+        .with_chromosome_length(ChromosomeLength::Fixed(8))
         .with_population_size(50)
         .with_initialization_fn(binary_random_initialization)
         .with_fitness_fn(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64)

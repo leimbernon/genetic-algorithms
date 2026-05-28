@@ -1,7 +1,7 @@
 //! Binomial and exponential crossover for Differential Evolution.
 
-use super::gene::DeGene;
 use super::configuration::DeCrossoverMode;
+use super::gene::DeGene;
 use rand::Rng;
 
 /// Apply crossover between the `target` (current individual) and `mutant`,
@@ -62,6 +62,12 @@ fn exponential<G: DeGene>(
         j = (j + 1) % dim;
     }
     (0..dim)
-        .map(|k| if take[k] { mutant[k].clone() } else { target[k].clone() })
+        .map(|k| {
+            if take[k] {
+                mutant[k].clone()
+            } else {
+                target[k].clone()
+            }
+        })
         .collect()
 }

@@ -41,6 +41,7 @@ Combines two parent chromosomes to produce offspring:
 | `EdgeRecombination` | Adjacency-preserving for TSP-style problems. | Permutation |
 | `Clone` | Copy parents directly without exchange. | Any (mutation-only) |
 | `Rejuvenate` | Clone + reset age to zero. | Any (age-aware) |
+| `VariableLength(AlignmentStrategy)` | Single-point crossover after aligning parents of different lengths via `Trim` or `Pad`. | Variable-length |
 
 ## Mutation Operators
 
@@ -57,7 +58,9 @@ Randomly alters offspring to maintain diversity:
 | `Gaussian` | Normal distribution perturbation by sigma. | Range<T> |
 | `Polynomial` | Polynomial distribution (NSGA-II style) with eta_m. | Range<T> |
 | `NonUniform` | Decreasing perturbation over generations. | Range<T> |
-| `Insertion` | Move random gene to random position. | Permutation |
+| `PermutationInsert` | Move random gene to random position (preserves length and alleles). | Permutation |
+| `Insertion` | Grow chromosome by 1 gene at random position. Requires `ChromosomeLength::Variable`. | Variable-length |
+| `Deletion` | Shrink chromosome by 1 gene at random position. Requires `ChromosomeLength::Variable`. | Variable-length |
 | `Cauchy` | Cauchy distribution perturbation by scale. | Range<T> |
 | `LevyFlight` | Levy-stable distribution perturbation by alpha. | Range<T> |
 | `Uniform` | Replace gene with uniform random value. | Range<T> |
@@ -75,6 +78,21 @@ Determines which individuals survive to the next generation:
 | `MuPlusLambda` | (mu+lambda): combine parents and offspring, select best. | Standard GA pattern. |
 | `MuCommaLambda` | (mu,lambda): select only from offspring, discard parents. | Generational replacement. |
 | `DeterministicCrowding` | Replace similar individuals, preserving diversity. | Niching / multimodal. |
+
+### Parsimony Pressure
+
+Parsimony pressure is not a standalone survivor strategy — it is a fitness adjustment that wraps any of the survivor variants. Enable via `.with_length_penalty(coefficient)`. The adjustment is computed as `±(length_penalty × dna_length)` (sign auto-adjusted per `ProblemSolving` mode). The stored `fitness()` value is never permanently mutated. Useful for combatting bloat in variable-length GAs.
+
+## GP Operators (separate enums for tree chromosomes)
+
+The Genetic Programming engine `GpGa<N>` uses its own operator enums distinct from the linear chromosome operators above:
+
+| Operator family | Enum | Variants |
+|-----------------|------|----------|
+| Crossover | `GpCrossover` | `SubtreeCrossover` |
+| Mutation | `GpMutation` | `SubtreeMutation { mutation_max_depth }`, `PointMutation { p_per_node }`, `HoistMutation` |
+
+See [Genetic Programming](gp.md) for the full operator reference.
 
 ## Extension Operators
 

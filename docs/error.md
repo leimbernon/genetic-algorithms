@@ -29,6 +29,8 @@ The `GaError` enum is the single error type for the entire crate. All fallible o
 | `MigrationError(String)` | Island migration failed. | Migrant selection or transfer failure. |
 | `CheckpointError(String)` | Checkpoint save/load failed. | I/O errors, serialization failures (requires `serde` feature). |
 | `LocalSearchError(String)` | Local search operation failed. | Hill climbing failure, bounds violation. |
+| `TreeDepthExceeded(String)` | GP tree depth limit violated. | Subtree crossover or mutation produced a tree deeper than `max_depth`. |
+| `TreeSizeExceeded(String)` | GP tree node count limit violated. | Subtree crossover or mutation produced a tree with more nodes than `max_node_count`. |
 
 ## Usage Example
 
