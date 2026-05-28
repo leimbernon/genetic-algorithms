@@ -44,6 +44,13 @@ pub struct GenerationStats {
     /// `None` when dynamic mutation is disabled.
     #[cfg_attr(feature = "serde", serde(default))]
     pub dynamic_mutation_probability: Option<f64>,
+    /// Average node count across the surviving population (GP only).
+    ///
+    /// Set to `0.0` for non-GP engines. Used by `GpGa` for bloat monitoring
+    /// (CHR-05). The `serde(default)` attribute ensures backward-compatible
+    /// deserialization of checkpoints created before this field was added.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub avg_node_count: f64,
 }
 
 impl GenerationStats {
@@ -66,6 +73,7 @@ impl GenerationStats {
                 population_size: 0,
                 diversity: 0.0,
                 dynamic_mutation_probability: None,
+                avg_node_count: 0.0,
             };
         }
 
@@ -105,6 +113,7 @@ impl GenerationStats {
             population_size: n,
             diversity: std_dev,
             dynamic_mutation_probability: None,
+            avg_node_count: 0.0,
         }
     }
 }

@@ -8,13 +8,14 @@
 
 pub use self::clone::clone_crossover;
 pub use self::cycle::cycle;
+pub use self::edge_recombination::erx;
 pub use self::multipoint::multipoint;
 pub use self::order::order;
-pub use self::edge_recombination::erx;
 pub use self::pmx::pmx;
 pub use self::rejuvenate::rejuvenate;
 pub use self::single_point::single_point;
 pub use self::uniform_crossover::uniform;
+pub use self::variable_length::variable_length_crossover;
 pub(crate) use super::Crossover;
 use crate::chromosomes::Range as RangeChromosome;
 use crate::configuration::CrossoverConfiguration;
@@ -26,16 +27,17 @@ pub mod arithmetic;
 pub mod blend_alpha;
 pub mod clone;
 pub mod cycle;
+pub mod edge_recombination;
 pub mod multi_group_ox;
 pub mod multi_group_pmx;
 pub mod multipoint;
 pub mod order;
-pub mod edge_recombination;
 pub mod pmx;
 pub mod rejuvenate;
 pub mod sbx;
 pub mod single_point;
 pub mod uniform_crossover;
+pub mod variable_length;
 
 use multi_group_ox::multi_group_ox;
 use multi_group_pmx::multi_group_pmx;
@@ -195,6 +197,9 @@ impl CrossoverOperator for Crossover {
             Crossover::Clone => clone_crossover(parent_1, parent_2),
             Crossover::Rejuvenate => rejuvenate(parent_1, parent_2),
             Crossover::EdgeRecombination => erx(parent_1, parent_2),
+            Crossover::VariableLength(strategy) => {
+                variable_length_crossover(parent_1, parent_2, *strategy)
+            }
             Crossover::MultiGroupPmx => multi_group_pmx(parent_1, parent_2),
             Crossover::MultiGroupOx => multi_group_ox(parent_1, parent_2),
         }
@@ -247,6 +252,9 @@ impl CrossoverOperator for CrossoverConfiguration {
             Crossover::Clone => clone_crossover(parent_1, parent_2),
             Crossover::Rejuvenate => rejuvenate(parent_1, parent_2),
             Crossover::EdgeRecombination => erx(parent_1, parent_2),
+            Crossover::VariableLength(strategy) => {
+                variable_length_crossover(parent_1, parent_2, strategy)
+            }
             Crossover::MultiGroupPmx => multi_group_pmx(parent_1, parent_2),
             Crossover::MultiGroupOx => multi_group_ox(parent_1, parent_2),
         }

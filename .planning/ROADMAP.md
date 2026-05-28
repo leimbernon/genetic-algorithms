@@ -120,8 +120,8 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 - [x] **Phase 49: Unified Strategy Trait + Alternative Strategy Engines** — `Strategy<U>` trait; `HillClimbEngine` (Stochastic + SteepestAscent); `PermutateEngine` with safety gate; observer hooks throughout
 - [x] **Phase 50: Lexicase Selection** — `MultiCaseFitness: ChromosomeT` trait; `LexicaseSelection`; epsilon-lexicase variant; behavioral diversity CI test (completed 2026-05-23)
 - [ ] **Phase 51: Multi-Parent Crossover + Self-Adaptive Mutation** — UNDX, SPX, PCX operators with `RealValued` marker trait; `SelfAdaptive: ChromosomeT` trait; `Mutation::SelfAdaptiveGaussian` with log-normal sigma update
-- [ ] **Phase 52: Variable-Length Chromosomes** — `ChromosomeLength::Variable { min, max }`; `Mutation::Insertion` / `Mutation::Deletion`; `Crossover::VariableLength(AlignmentStrategy)`; parsimony pressure survivor config
-- [ ] **Phase 53: Tree Chromosome + GpGa Engine** — `TreeChromosome: ChromosomeT` supertrait; `GpGa<U>` engine; ramped half-and-half init; subtree crossover + mutation; bloat control; serde with `serde_stacker`; `Display` as expression string
+- [x] **Phase 52: Variable-Length Chromosomes** — `ChromosomeLength::Variable { min, max }`; `Mutation::Insertion` / `Mutation::Deletion`; `Crossover::VariableLength(AlignmentStrategy)`; parsimony pressure survivor config (completed 2026-05-24)
+- [x] **Phase 53: Tree Chromosome + GpGa Engine** — `TreeChromosome: ChromosomeT` supertrait; `GpGa<U>` engine; ramped half-and-half init; subtree crossover + mutation; bloat control; serde with `serde_stacker`; `Display` as expression string (completed 2026-05-25)
 
 ## Phase Details
 
@@ -546,7 +546,14 @@ Plans:
   2. User can configure `Crossover::VariableLength(AlignmentStrategy)` to handle parents of different lengths; all 9 existing fixed-length crossover operators return `GaError::IncompatibleChromosomeLength` when applied to unequal-length parents instead of silently truncating
   3. The `ExtensionOperator` samples length from the current population distribution during regrowth rather than using a fixed length — new individuals have lengths drawn from the observed population range
   4. User can configure `length_penalty: f64` in the survivor configuration; longer chromosomes receive a proportional fitness penalty, preventing unbounded length growth across generations
-**Plans**: TBD
+**Plans**: 4 plans (4 complete — PHASE COMPLETE 2026-05-24)
+
+Plans:
+- [x] 52-01-PLAN.md — Wave 0: Test stubs (Nyquist compliance)
+- [x] 52-02-PLAN.md — Wave 1: ChromosomeLength enum + MUT-06 length operators
+- [x] 52-03-PLAN.md — Wave 2: Crossover::VariableLength + AlignmentStrategy + fixed-operator guard
+- [x] 52-04-PLAN.md — Wave 3: Variable init, extension regrowth, parsimony pressure (all 13 tests enabled)
+
 **UI hint**: no
 
 ### Phase 53: Tree Chromosome + GpGa Engine
@@ -559,7 +566,21 @@ Plans:
   3. User can set `max_depth` and `max_node_count` in `GpConfiguration`; any subtree crossover or mutation that would produce a tree exceeding either limit returns `GaError::TreeDepthExceeded` or `GaError::TreeSizeExceeded` rather than silently accepting the oversized tree; `GenerationStats` includes average node count
   4. User can enable the `serde` feature flag and checkpoint/restore a GP run containing trees of depth >= 64 without stack overflow; CI runs this serialization test in the `serde` test suite
   5. User can call `.to_string()` on a `GpChromosome` and read the evolved program as a human-readable infix or prefix expression
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+**Wave 0** (API contract)
+- [x] 53-01-PLAN.md — Core types: GpNode trait, Node<N>, GpChromosome, TreeChromosome, GaError variants, GenerationStats.avg_node_count, tests/gp.rs stubs (CHR-03, CHR-07)
+
+**Wave 1** *(blocked on Wave 0)*
+- [x] 53-02-PLAN.md — GP operators: SubtreeCrossover + SubtreeMutation/PointMutation/HoistMutation with bloat enforcement (CHR-05)
+
+**Wave 2** *(blocked on Wave 1)*
+- [x] 53-03-PLAN.md — GpGa engine loop: ramped half-and-half init + full run() loop + observer hooks + avg_node_count (CHR-04, CHR-05)
+
+**Wave 3** *(blocked on Wave 2)*
+- [x] 53-04-PLAN.md — Serde checkpoint: serde_stacker dep + stack-safe Node<N> serde + depth-64 CI test (CHR-06)
+
 **UI hint**: no
 
 ## Progress
@@ -614,4 +635,4 @@ Plans:
 | 50. Lexicase Selection | v3.0.0 | 2/2 | Complete   | 2026-05-23 |
 | 51. Multi-Parent Crossover + Self-Adaptive Mutation | v3.0.0 | 0 | Not started | — |
 | 52. Variable-Length Chromosomes | v3.0.0 | 0 | Not started | — |
-| 53. Tree Chromosome + GpGa Engine | v3.0.0 | 0 | Not started | — |
+| 53. Tree Chromosome + GpGa Engine | v3.0.0 | 4/4 | Complete   | 2026-05-25 |

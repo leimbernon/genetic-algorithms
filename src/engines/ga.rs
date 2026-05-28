@@ -148,9 +148,9 @@ use crate::{
     },
     population::Population,
     traits::{
-        ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, GeneT,
-        LinearChromosome, LocalSearchConfig, LocalSearchOperator, MultiCaseFitness, MutationConfig,
-        NichingConfig, OperatorCompat, SelectionConfig, StoppingConfig, Strategy,
+        ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, GeneT, LinearChromosome,
+        LocalSearchConfig, LocalSearchOperator, MultiCaseFitness, MutationConfig, NichingConfig,
+        OperatorCompat, SelectionConfig, StoppingConfig, Strategy, SurvivorConfig,
     },
 };
 use rand::Rng;
@@ -537,6 +537,16 @@ where
 {
     fn with_elitism(mut self, elitism_count: usize) -> Self {
         self.configuration.elitism_count = elitism_count;
+        self
+    }
+}
+
+impl<U> SurvivorConfig for Ga<U>
+where
+    U: LinearChromosome,
+{
+    fn with_length_penalty(mut self, penalty: f64) -> Self {
+        self.configuration.length_penalty = Some(penalty);
         self
     }
 }
@@ -1091,29 +1101,75 @@ where
         U: LinearChromosome + Send + Sync + 'static + Clone,
     {
         let population_size = self.configuration.limit_configuration.population_size;
-        let length = match self.configuration.limit_configuration.chromosome_length {
-            crate::chromosomes::ChromosomeLength::Fixed(n) => n,
-            crate::chromosomes::ChromosomeLength::Variable { .. } => {
-                return Err(GaError::ConfigurationError(
-                    "ChromosomeLength::Variable is not yet supported (Phase 52). Use ChromosomeLength::Fixed.".into(),
-                ));
-            }
-        };
+        let chromosome_length = self.configuration.limit_configuration.chromosome_length;
         let init_fn = self.initialization_fn.as_ref().unwrap();
         let fitness_fn = self.fitness_fn.as_ref().unwrap();
 
-        let chromosomes = crate::traits::initialize_chromosomes_par::<U>(
-            population_size,
-            length,
-            if self.alleles.is_empty() {
-                None
-            } else {
-                Some(&self.alleles)
-            },
-            init_fn,
-            Some(fitness_fn),
-            0,
-        );
+        let chromosomes = match chromosome_length {
+            crate::chromosomes::ChromosomeLength::Fixed(length) => {
+                crate::traits::initialize_chromosomes_par::<U>(
+                    population_size,
+                    length,
+                    if self.alleles.is_empty() {
+                        None
+                    } else {
+                        Some(&self.alleles)
+                    },
+                    init_fn,
+                    Some(fitness_fn),
+                    0,
+                )
+            }
+            crate::chromosomes::ChromosomeLength::Variable { min, max } => {
+                // For variable-length chromosomes, each individual gets a random
+                // length sampled uniformly from [min, max].
+                // Decision: pass sampled length as genes_per_chromosome to init_fn
+                // (per Phase 52 discussion log — zero changes to init_fn signature).
+                let alleles_ref: Option<&[U::Gene]> = if self.alleles.is_empty() {
+                    None
+                } else {
+                    Some(self.alleles.as_slice())
+                };
+                let ff = std::sync::Arc::clone(fitness_fn);
+
+                #[cfg(not(target_arch = "wasm32"))]
+                let result: Vec<U> = (0..population_size)
+                    .into_par_iter()
+                    .map(|_| {
+                        let len = {
+                            let mut rng = crate::rng::make_rng();
+                            rng.random_range(min..=max)
+                        };
+                        let genes = init_fn(len, alleles_ref);
+                        let mut c = U::new();
+                        c.set_dna(std::borrow::Cow::Owned(genes));
+                        let ff_clone = std::sync::Arc::clone(&ff);
+                        c.set_fitness_fn(move |dna| ff_clone(dna));
+                        c.calculate_fitness();
+                        c.set_age(0);
+                        c
+                    })
+                    .collect();
+                #[cfg(target_arch = "wasm32")]
+                let result: Vec<U> = (0..population_size)
+                    .map(|_| {
+                        let len = {
+                            let mut rng = crate::rng::make_rng();
+                            rng.random_range(min..=max)
+                        };
+                        let genes = init_fn(len, alleles_ref);
+                        let mut c = U::new();
+                        c.set_dna(std::borrow::Cow::Owned(genes));
+                        let ff_clone = std::sync::Arc::clone(&ff);
+                        c.set_fitness_fn(move |dna| ff_clone(dna));
+                        c.calculate_fitness();
+                        c.set_age(0);
+                        c
+                    })
+                    .collect();
+                result
+            }
+        };
 
         // Set population directly (with_population is consuming, so we assign inline)
         let new_population = Population::new(chromosomes);
@@ -1542,10 +1598,7 @@ where
             if let Some(ref constraint_fns) = self.constraint_fns {
                 for c in offspring.iter_mut() {
                     let dna = c.dna();
-                    let total_viol: f64 = constraint_fns
-                        .iter()
-                        .map(|f| f(dna))
-                        .sum();
+                    let total_viol: f64 = constraint_fns.iter().map(|f| f(dna)).sum();
                     if total_viol > 0.0 {
                         match self.penalty_strategy {
                             PenaltyStrategy::None => {}
@@ -1715,12 +1768,22 @@ where
             } else {
                 None
             };
-            survivor::factory(
-                self.configuration.survivor,
-                &mut self.population.chromosomes,
-                initial_population_size,
-                self.configuration.limit_configuration,
-            )?;
+            if let Some(penalty) = self.configuration.length_penalty {
+                survivor::apply_parsimony_pressure(
+                    self.configuration.survivor,
+                    &mut self.population.chromosomes,
+                    initial_population_size,
+                    self.configuration.limit_configuration,
+                    penalty,
+                )?;
+            } else {
+                survivor::factory(
+                    self.configuration.survivor,
+                    &mut self.population.chromosomes,
+                    initial_population_size,
+                    self.configuration.limit_configuration,
+                )?;
+            }
             if let Some(t) = t_surv {
                 let pop_size = self.population.chromosomes.len();
                 self.notify(|obs| obs.on_survivor_selection_complete(i, t.elapsed(), pop_size));
@@ -1902,14 +1965,8 @@ where
                         if let Some(ref init_fn) = self.initialization_fn {
                             let deficit =
                                 initial_population_size - self.population.chromosomes.len();
-                            let length = match self.configuration.limit_configuration.chromosome_length {
-                                crate::chromosomes::ChromosomeLength::Fixed(n) => n,
-                                crate::chromosomes::ChromosomeLength::Variable { .. } => {
-                                    return Err(GaError::ConfigurationError(
-                                        "ChromosomeLength::Variable is not yet supported (Phase 52). Use ChromosomeLength::Fixed.".into(),
-                                    ));
-                                }
-                            };
+                            let chromosome_length =
+                                self.configuration.limit_configuration.chromosome_length;
                             let alleles_ref: Option<&[U::Gene]> = if self.alleles.is_empty() {
                                 None
                             } else {
@@ -1917,14 +1974,42 @@ where
                             };
                             let ff = self.fitness_fn.as_ref().map(Arc::clone);
 
+                            // For variable-length chromosomes, sample regrowth lengths from
+                            // [min_observed, max_observed] of the surviving population.
+                            // Decision: Phase 52 discussion log — adaptive range from survivors.
+                            let (min_obs, max_obs): (usize, usize) = match chromosome_length {
+                                crate::chromosomes::ChromosomeLength::Variable { min, max } => {
+                                    let observed_min = self
+                                        .population
+                                        .chromosomes
+                                        .iter()
+                                        .map(|c| c.dna().len())
+                                        .min()
+                                        .unwrap_or(min);
+                                    let observed_max = self
+                                        .population
+                                        .chromosomes
+                                        .iter()
+                                        .map(|c| c.dna().len())
+                                        .max()
+                                        .unwrap_or(max);
+                                    // Clamp to configured bounds
+                                    (observed_min.max(min), observed_max.min(max))
+                                }
+                                crate::chromosomes::ChromosomeLength::Fixed(n) => (n, n),
+                            };
+
                             #[cfg(not(target_arch = "wasm32"))]
                             let new_chromosomes: Vec<U> = (0..deficit)
                                 .into_par_iter()
                                 .map(|_| {
-                                    let genes = init_fn(
-                                        length,
-                                        alleles_ref,
-                                    );
+                                    let len = if min_obs == max_obs {
+                                        min_obs
+                                    } else {
+                                        let mut rng = crate::rng::make_rng();
+                                        rng.random_range(min_obs..=max_obs)
+                                    };
+                                    let genes = init_fn(len, alleles_ref);
                                     let mut new_chromosome = U::new();
                                     new_chromosome.set_dna(std::borrow::Cow::Owned(genes));
                                     if let Some(ref ff) = ff {
@@ -1939,10 +2024,13 @@ where
                             #[cfg(target_arch = "wasm32")]
                             let new_chromosomes: Vec<U> = (0..deficit)
                                 .map(|_| {
-                                    let genes = init_fn(
-                                        length,
-                                        alleles_ref,
-                                    );
+                                    let len = if min_obs == max_obs {
+                                        min_obs
+                                    } else {
+                                        let mut rng = crate::rng::make_rng();
+                                        rng.random_range(min_obs..=max_obs)
+                                    };
+                                    let genes = init_fn(len, alleles_ref);
                                     let mut new_chromosome = U::new();
                                     new_chromosome.set_dna(std::borrow::Cow::Owned(genes));
                                     if let Some(ref ff) = ff {
@@ -2590,6 +2678,16 @@ where
                     .polynomial_eta
                     .or(configuration.mutation_configuration.step);
                 mutation::factory_with_params(mutation_method, &mut child_1, eta, None)?;
+            } else if mutation_method == crate::operations::Mutation::Insertion
+                || mutation_method == crate::operations::Mutation::Deletion
+            {
+                mutation::factory_with_chromosome_length(
+                    mutation_method,
+                    &mut child_1,
+                    Some(configuration.limit_configuration.chromosome_length),
+                    configuration.mutation_configuration.step,
+                    configuration.mutation_configuration.sigma,
+                )?;
             } else {
                 mutation::factory_with_params(
                     mutation_method,
@@ -2633,6 +2731,16 @@ where
                     .polynomial_eta
                     .or(configuration.mutation_configuration.step);
                 mutation::factory_with_params(mutation_method, &mut child_2, eta, None)?;
+            } else if mutation_method == crate::operations::Mutation::Insertion
+                || mutation_method == crate::operations::Mutation::Deletion
+            {
+                mutation::factory_with_chromosome_length(
+                    mutation_method,
+                    &mut child_2,
+                    Some(configuration.limit_configuration.chromosome_length),
+                    configuration.mutation_configuration.step,
+                    configuration.mutation_configuration.sigma,
+                )?;
             } else {
                 mutation::factory_with_params(
                     mutation_method,

@@ -70,9 +70,13 @@ impl BenchmarkFn for ZDT1 {
     }
 
     fn evaluate(&self, x: &[f64]) -> Vec<f64> {
-        assert_eq!(x.len(), self.n_vars,
+        assert_eq!(
+            x.len(),
+            self.n_vars,
             "ZDT1::evaluate called with {} variables, expected {}",
-            x.len(), self.n_vars);
+            x.len(),
+            self.n_vars
+        );
         let f1 = x[0];
         let g = 1.0 + 9.0 * x[1..].iter().sum::<f64>() / (self.n_vars - 1) as f64;
         let f2 = g * (1.0 - (x[0] / g).sqrt());
@@ -123,9 +127,13 @@ impl BenchmarkFn for ZDT2 {
     }
 
     fn evaluate(&self, x: &[f64]) -> Vec<f64> {
-        assert_eq!(x.len(), self.n_vars,
+        assert_eq!(
+            x.len(),
+            self.n_vars,
             "ZDT2::evaluate called with {} variables, expected {}",
-            x.len(), self.n_vars);
+            x.len(),
+            self.n_vars
+        );
         let f1 = x[0];
         let g = 1.0 + 9.0 * x[1..].iter().sum::<f64>() / (self.n_vars - 1) as f64;
         let f2 = g * (1.0 - (x[0] / g).powi(2));
@@ -176,9 +184,13 @@ impl BenchmarkFn for ZDT3 {
     }
 
     fn evaluate(&self, x: &[f64]) -> Vec<f64> {
-        assert_eq!(x.len(), self.n_vars,
+        assert_eq!(
+            x.len(),
+            self.n_vars,
             "ZDT3::evaluate called with {} variables, expected {}",
-            x.len(), self.n_vars);
+            x.len(),
+            self.n_vars
+        );
         let f1 = x[0];
         let g = 1.0 + 9.0 * x[1..].iter().sum::<f64>() / (self.n_vars - 1) as f64;
         let x0_g = x[0] / g;
@@ -231,9 +243,13 @@ impl BenchmarkFn for ZDT4 {
     }
 
     fn evaluate(&self, x: &[f64]) -> Vec<f64> {
-        assert_eq!(x.len(), self.n_vars,
+        assert_eq!(
+            x.len(),
+            self.n_vars,
             "ZDT4::evaluate called with {} variables, expected {}",
-            x.len(), self.n_vars);
+            x.len(),
+            self.n_vars
+        );
         let f1 = x[0];
         let g = 1.0
             + 10.0 * (self.n_vars - 1) as f64
@@ -296,9 +312,13 @@ impl BenchmarkFn for ZDT5 {
     }
 
     fn evaluate(&self, x: &[f64]) -> Vec<f64> {
-        assert_eq!(x.len(), self.n_vars,
+        assert_eq!(
+            x.len(),
+            self.n_vars,
             "ZDT5::evaluate called with {} variables, expected {}",
-            x.len(), self.n_vars);
+            x.len(),
+            self.n_vars
+        );
         let z0 = (1.0 + 30.0 * x[0]).floor();
         let zi_sum: f64 = x[1..].iter().map(|&xi| (1.0 + 5.0 * xi).floor()).sum();
         let u = z0;
@@ -352,9 +372,13 @@ impl BenchmarkFn for ZDT6 {
     }
 
     fn evaluate(&self, x: &[f64]) -> Vec<f64> {
-        assert_eq!(x.len(), self.n_vars,
+        assert_eq!(
+            x.len(),
+            self.n_vars,
             "ZDT6::evaluate called with {} variables, expected {}",
-            x.len(), self.n_vars);
+            x.len(),
+            self.n_vars
+        );
         let f1 = 1.0 - (-4.0 * x[0]).exp() * (6.0 * std::f64::consts::PI * x[0]).sin().powi(6);
         let g = 1.0 + 9.0 * (x[1..].iter().sum::<f64>() / (self.n_vars - 1) as f64).powf(0.25);
         let f2 = g * (1.0 - (f1 / g).powi(2));
@@ -377,8 +401,16 @@ mod tests {
         // At x = [0, 0, ..., 0]: f1 = 0, g = 1, f2 = 1 * (1 - 0) = 1
         let zdt1 = ZDT1::default();
         let result = zdt1.evaluate(&[0.0; 30]);
-        assert!((result[0] - 0.0).abs() < EPSILON, "ZDT1 f1 expected 0, got {}", result[0]);
-        assert!((result[1] - 1.0).abs() < EPSILON, "ZDT1 f2 expected 1, got {}", result[1]);
+        assert!(
+            (result[0] - 0.0).abs() < EPSILON,
+            "ZDT1 f1 expected 0, got {}",
+            result[0]
+        );
+        assert!(
+            (result[1] - 1.0).abs() < EPSILON,
+            "ZDT1 f2 expected 1, got {}",
+            result[1]
+        );
     }
 
     // ── ZDT2 ────────────────────────────────────────────────────
@@ -387,8 +419,16 @@ mod tests {
     fn test_zdt2_optimum() {
         let zdt2 = ZDT2::default();
         let result = zdt2.evaluate(&[0.0; 30]);
-        assert!((result[0] - 0.0).abs() < EPSILON, "ZDT2 f1 expected 0, got {}", result[0]);
-        assert!((result[1] - 1.0).abs() < EPSILON, "ZDT2 f2 expected 1, got {}", result[1]);
+        assert!(
+            (result[0] - 0.0).abs() < EPSILON,
+            "ZDT2 f1 expected 0, got {}",
+            result[0]
+        );
+        assert!(
+            (result[1] - 1.0).abs() < EPSILON,
+            "ZDT2 f2 expected 1, got {}",
+            result[1]
+        );
     }
 
     // ── ZDT3 ────────────────────────────────────────────────────
@@ -398,8 +438,16 @@ mod tests {
         let zdt3 = ZDT3::default();
         let result = zdt3.evaluate(&[0.0; 30]);
         // At x_0 = 0: sin(10*pi*0) = 0
-        assert!((result[0] - 0.0).abs() < EPSILON, "ZDT3 f1 expected 0, got {}", result[0]);
-        assert!((result[1] - 1.0).abs() < EPSILON, "ZDT3 f2 expected 1, got {}", result[1]);
+        assert!(
+            (result[0] - 0.0).abs() < EPSILON,
+            "ZDT3 f1 expected 0, got {}",
+            result[0]
+        );
+        assert!(
+            (result[1] - 1.0).abs() < EPSILON,
+            "ZDT3 f2 expected 1, got {}",
+            result[1]
+        );
     }
 
     // ── ZDT4 ────────────────────────────────────────────────────
@@ -410,8 +458,16 @@ mod tests {
         // = 1 + 90 + 9*(-10) = 91 - 90 = 1. f1 = 0, f2 = 1*(1-0) = 1
         let zdt4 = ZDT4::default();
         let result = zdt4.evaluate(&[0.0; 10]);
-        assert!((result[0] - 0.0).abs() < EPSILON, "ZDT4 f1 expected 0, got {}", result[0]);
-        assert!((result[1] - 1.0).abs() < EPSILON, "ZDT4 f2 expected 1, got {}", result[1]);
+        assert!(
+            (result[0] - 0.0).abs() < EPSILON,
+            "ZDT4 f1 expected 0, got {}",
+            result[0]
+        );
+        assert!(
+            (result[1] - 1.0).abs() < EPSILON,
+            "ZDT4 f2 expected 1, got {}",
+            result[1]
+        );
     }
 
     // ── ZDT5 ────────────────────────────────────────────────────
@@ -421,8 +477,16 @@ mod tests {
         // At x = [0, ..., 0]: z_0=1, z_i=1, u=1, v=10, g=11, f1=2, f2=11/2=5.5
         let zdt5 = ZDT5::default();
         let result = zdt5.evaluate(&[0.0; 11]);
-        assert!((result[0] - 2.0).abs() < EPSILON, "ZDT5 f1 expected 2, got {}", result[0]);
-        assert!((result[1] - 5.5).abs() < EPSILON, "ZDT5 f2 expected 5.5, got {}", result[1]);
+        assert!(
+            (result[0] - 2.0).abs() < EPSILON,
+            "ZDT5 f1 expected 2, got {}",
+            result[0]
+        );
+        assert!(
+            (result[1] - 5.5).abs() < EPSILON,
+            "ZDT5 f2 expected 5.5, got {}",
+            result[1]
+        );
     }
 
     // ── ZDT6 ────────────────────────────────────────────────────
@@ -435,8 +499,16 @@ mod tests {
         // f2 = 1 * (1 - (1/1)^2) = 0
         let zdt6 = ZDT6::default();
         let result = zdt6.evaluate(&[0.0; 10]);
-        assert!((result[0] - 1.0).abs() < EPSILON, "ZDT6 f1 expected 1, got {}", result[0]);
-        assert!((result[1] - 0.0).abs() < EPSILON, "ZDT6 f2 expected 0, got {}", result[1]);
+        assert!(
+            (result[0] - 1.0).abs() < EPSILON,
+            "ZDT6 f1 expected 1, got {}",
+            result[0]
+        );
+        assert!(
+            (result[1] - 0.0).abs() < EPSILON,
+            "ZDT6 f2 expected 0, got {}",
+            result[1]
+        );
     }
 
     // ── Dimension mismatch ──────────────────────────────────────

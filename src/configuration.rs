@@ -41,7 +41,7 @@ use crate::{
     operations::{Crossover, Extension, Mutation, Selection, Survivor},
     traits::{
         ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, LocalSearchConfig,
-        MutationConfig, NichingConfig, SelectionConfig, StoppingConfig,
+        MutationConfig, NichingConfig, SelectionConfig, StoppingConfig, SurvivorConfig,
     },
 };
 
@@ -342,6 +342,20 @@ pub struct GaConfiguration {
     /// Optional local search configuration for memetic algorithms.
     /// When `None`, no local search is performed (zero overhead).
     pub(crate) local_search_configuration: Option<LocalSearchConfiguration>,
+    /// Parsimony pressure penalty coefficient.
+    ///
+    /// When set, each chromosome's effective fitness during survivor selection is adjusted
+    /// by `±(length_penalty × chromosome_dna_length)`. The stored `fitness()` value is
+    /// **never** mutated — only the comparison value is adjusted.
+    ///
+    /// Sign convention (auto-adjusted per `ProblemSolving` mode):
+    /// - **Maximization** — adjusted = fitness - (length_penalty × length)
+    ///   (longer chromosomes appear worse)
+    /// - **Minimization** — adjusted = fitness + (length_penalty × length)
+    ///   (longer chromosomes appear worse)
+    ///
+    /// Set to `None` (default) to disable parsimony pressure.
+    pub(crate) length_penalty: Option<f64>,
 }
 impl Default for GaConfiguration {
     fn default() -> Self {
@@ -377,6 +391,7 @@ impl Default for GaConfiguration {
             aos_strategy: crate::aos::AosStrategy::pm_default(),
             aos_reward_window: 50,
             local_search_configuration: None,
+            length_penalty: None,
         }
     }
 }
@@ -596,6 +611,13 @@ impl NichingConfig for GaConfiguration {
 impl ElitismConfig for GaConfiguration {
     fn with_elitism(mut self, elitism_count: usize) -> Self {
         self.elitism_count = elitism_count;
+        self
+    }
+}
+
+impl SurvivorConfig for GaConfiguration {
+    fn with_length_penalty(mut self, penalty: f64) -> Self {
+        self.length_penalty = Some(penalty);
         self
     }
 }

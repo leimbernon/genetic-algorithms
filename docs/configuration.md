@@ -28,7 +28,7 @@ Some configuration options require optional Cargo features:
 Enable features in `Cargo.toml`:
 
 ```toml
-genetic_algorithms = { version = "2.4.0", features = ["serde"] }
+genetic_algorithms = { version = "3.0.0", features = ["serde"] }
 ```
 
 ---
@@ -275,8 +275,35 @@ operator uses an internal fallback of `0.5`.
 | `Gaussian` | `Range<T>` | Normal distribution perturbation; requires `sigma` |
 | `Polynomial` | `Range<T>` | NSGA-II style; uses `polynomial_eta` |
 | `NonUniform` | `Range<T>` | Magnitude decreases over generations; uses `non_uniform_b` |
-| `Insertion` | Permutation | Gene removed and reinserted at a different position |
+| `PermutationInsert` | Permutation | Gene removed and reinserted at a different position (length-preserving) |
+| `Insertion` | Variable-length | Grows chromosome by 1 gene; requires `ChromosomeLength::Variable` |
+| `Deletion` | Variable-length | Shrinks chromosome by 1 gene; requires `ChromosomeLength::Variable` |
 | `ListValue` | `ListChromosome<T>` | Gene replaced with a different allele from its allele set |
+| `Cauchy` | `Range<T>` | Heavy-tailed Cauchy perturbation; uses `cauchy_scale` |
+| `LevyFlight` | `Range<T>` | Long-range Lévy flight; uses `levy_alpha` |
+| `Uniform` | `Range<T>` | Random gene reset to uniform value within gene range |
+| `Differential` | `Range<T>` | DE-style mutation using three random population members |
+
+### Variable-length mutation configuration
+
+To enable `Mutation::Insertion` and `Mutation::Deletion`, set `chromosome_length` on `MutationConfiguration`:
+
+```rust
+use genetic_algorithms::chromosomes::ChromosomeLength;
+use genetic_algorithms::operations::Mutation;
+use genetic_algorithms::traits::MutationConfig;
+
+let mut ga = Ga::new()
+    .with_mutation_method(Mutation::Insertion)
+    .with_chromosome_length(ChromosomeLength::Variable { min: 2, max: 20 })
+    // ...
+    .build()
+    .unwrap();
+```
+
+| Builder Method | Type | Default | Description |
+|---------------|------|---------|-------------|
+| `with_chromosome_length(ChromosomeLength)` | `ChromosomeLength` | `None` | Required for `Insertion`/`Deletion` mutations |
 
 ---
 
@@ -290,6 +317,26 @@ Set via `with_survivor_method(Survivor)`. Default is `Survivor::Fitness`.
 | `Age` | Keep the youngest individuals |
 | `MuPlusLambda` | Parents and offspring compete together (μ+λ) |
 | `MuCommaLambda` | Only offspring (age == 0) are eligible (μ,λ) |
+| `DeterministicCrowding` | Each offspring competes against its most similar parent |
+
+### Parsimony pressure
+
+Add a length penalty to bias survivor selection toward shorter chromosomes. Does not mutate stored fitness — applies a temporary adjustment for comparison only.
+
+```rust
+use genetic_algorithms::traits::SurvivorConfig;
+
+let mut ga = Ga::new()
+    .with_survivor_method(Survivor::Fitness)
+    .with_length_penalty(0.01)   // adjusted_fitness += 0.01 * dna_length (minimization)
+    // ...
+    .build()
+    .unwrap();
+```
+
+| Builder Method | Default | Description |
+|---------------|---------|-------------|
+| `with_length_penalty(f64)` | `None` (disabled) | Parsimony penalty coefficient |
 
 ---
 
@@ -412,7 +459,7 @@ a run can be resumed later.
 
 ```toml
 # Cargo.toml — required
-genetic_algorithms = { version = "2.4.0", features = ["serde"] }
+genetic_algorithms = { version = "3.0.0", features = ["serde"] }
 ```
 
 ---

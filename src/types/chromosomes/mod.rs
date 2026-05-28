@@ -7,7 +7,9 @@
 //! - [`ListChromosome`] — a chromosome whose DNA is a vector of [`genotypes::List`](crate::genotypes::List) genes.
 //! - [`UniqueChromosome`] — a chromosome whose DNA is a permutation of a shared alphabet.
 //! - [`MultiRangeChromosome`] — a chromosome with per-gene independent `(lo, hi)` bounds and mutation rates.
-//! - [`ChromosomeLength`] — enum describing fixed or variable chromosome length.
+//! - [`MultiUniqueChromosome`] — a chromosome with multiple permutation groups.
+//! - [`ChromosomeLength`] — enum describing fixed or variable chromosome length. Used by
+//!   `Mutation::Insertion` / `Mutation::Deletion` to control length-changing operators.
 
 pub mod binary;
 pub mod length;

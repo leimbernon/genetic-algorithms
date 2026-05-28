@@ -10,8 +10,8 @@
 //! [`crate::genotypes::Range<f64>`] implements `DeGene` automatically, so
 //! existing range chromosomes work with the DE engine out of the box.
 
-use crate::traits::GeneT;
 use crate::genotypes::Range;
+use crate::traits::GeneT;
 
 /// Extension of [`GeneT`] that enables Differential Evolution arithmetic.
 ///

@@ -2,6 +2,10 @@ on:
   release:
     types: [published]
 name: Rust Publish
+
+permissions:
+  contents: read
+
 jobs:
   publish:
     runs-on: ubuntu-latest

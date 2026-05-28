@@ -1,7 +1,7 @@
 //! DE mutation strategies and adaptive parameter generation.
 
-use super::gene::DeGene;
 use super::configuration::DeMutationStrategy;
+use super::gene::DeGene;
 use crate::traits::LinearChromosome;
 use rand::Rng;
 
@@ -70,33 +70,60 @@ where
         }
         DeMutationStrategy::Best1 => {
             let rs = pick_distinct(rng, pop.len(), i, 2);
-            mutant_from_base(pop[best_idx].dna(), pop[rs[0]].dna(), pop[rs[1]].dna(), f, dim)
+            mutant_from_base(
+                pop[best_idx].dna(),
+                pop[rs[0]].dna(),
+                pop[rs[1]].dna(),
+                f,
+                dim,
+            )
         }
         DeMutationStrategy::CurrentToBest1 => {
             let rs = pick_distinct(rng, pop.len(), i, 2);
-            current_to_best(pop[i].dna(), pop[best_idx].dna(), pop[rs[0]].dna(), pop[rs[1]].dna(), f, dim, archive, rng)
+            current_to_best(
+                pop[i].dna(),
+                pop[best_idx].dna(),
+                pop[rs[0]].dna(),
+                pop[rs[1]].dna(),
+                f,
+                dim,
+                archive,
+                rng,
+            )
         }
         DeMutationStrategy::Rand2 => {
             let rs = pick_distinct(rng, pop.len(), i, 5);
-            two_diff_base(pop[rs[0]].dna(), pop[rs[1]].dna(), pop[rs[2]].dna(), pop[rs[3]].dna(), pop[rs[4]].dna(), f, dim)
+            two_diff_base(
+                pop[rs[0]].dna(),
+                pop[rs[1]].dna(),
+                pop[rs[2]].dna(),
+                pop[rs[3]].dna(),
+                pop[rs[4]].dna(),
+                f,
+                dim,
+            )
         }
         DeMutationStrategy::Best2 => {
             let rs = pick_distinct(rng, pop.len(), i, 4);
-            two_diff_base(pop[best_idx].dna(), pop[rs[0]].dna(), pop[rs[1]].dna(), pop[rs[2]].dna(), pop[rs[3]].dna(), f, dim)
+            two_diff_base(
+                pop[best_idx].dna(),
+                pop[rs[0]].dna(),
+                pop[rs[1]].dna(),
+                pop[rs[2]].dna(),
+                pop[rs[3]].dna(),
+                f,
+                dim,
+            )
         }
     }
 }
 
 /// `base + F * (a - b)`
-fn mutant_from_base<G: DeGene>(
-    base: &[G],
-    a: &[G],
-    b: &[G],
-    f: f64,
-    dim: usize,
-) -> Vec<G> {
+fn mutant_from_base<G: DeGene>(base: &[G], a: &[G], b: &[G], f: f64, dim: usize) -> Vec<G> {
     (0..dim)
-        .map(|j| base[j].with_de_value(base[j].de_value() + f * (a[j].de_value() - b[j].de_value())))
+        .map(|j| {
+            base[j].with_de_value(base[j].de_value() + f * (a[j].de_value() - b[j].de_value()))
+        })
         .collect()
 }
 
@@ -177,7 +204,12 @@ impl Default for JadeState {
 
 impl JadeState {
     pub fn new() -> Self {
-        Self { mu_f: 0.5, mu_cr: 0.5, s_f: Vec::new(), s_cr: Vec::new() }
+        Self {
+            mu_f: 0.5,
+            mu_cr: 0.5,
+            s_f: Vec::new(),
+            s_cr: Vec::new(),
+        }
     }
 
     /// Draw F from Cauchy(μ_F, 0.1), clipped to (0, 1].
@@ -281,11 +313,17 @@ impl LShadeState {
 fn lehmer_mean(xs: &[f64]) -> f64 {
     let num: f64 = xs.iter().map(|x| x * x).sum();
     let den: f64 = xs.iter().sum();
-    if den == 0.0 { 0.5 } else { num / den }
+    if den == 0.0 {
+        0.5
+    } else {
+        num / den
+    }
 }
 
 /// Arithmetic mean.
 fn arithmetic_mean(xs: &[f64]) -> f64 {
-    if xs.is_empty() { return 0.5; }
+    if xs.is_empty() {
+        return 0.5;
+    }
     xs.iter().sum::<f64>() / xs.len() as f64
 }

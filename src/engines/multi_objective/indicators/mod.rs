@@ -13,13 +13,13 @@
 
 use crate::error::GaError;
 
-mod hypervolume;
 mod generational_distance;
+mod hypervolume;
 mod inverted_generational_distance;
 mod spread;
 
-pub use hypervolume::hypervolume;
 pub use generational_distance::generational_distance;
+pub use hypervolume::hypervolume;
 pub use inverted_generational_distance::inverted_generational_distance;
 pub use spread::spread;
 
@@ -30,9 +30,10 @@ pub use spread::spread;
 /// Validate that a point set is non-empty.
 pub(crate) fn validate_non_empty(name: &str, points: &[Vec<f64>]) -> Result<(), GaError> {
     if points.is_empty() {
-        return Err(GaError::InvalidIndicatorConfiguration(
-            format!("{} must not be empty", name),
-        ));
+        return Err(GaError::InvalidIndicatorConfiguration(format!(
+            "{} must not be empty",
+            name
+        )));
     }
     Ok(())
 }
@@ -51,14 +52,12 @@ pub(crate) fn validate_dimension_consistency(points: &[Vec<f64>]) -> Result<usiz
     }
     for (i, point) in points.iter().enumerate().skip(1) {
         if point.len() != dim {
-            return Err(GaError::InvalidIndicatorConfiguration(
-                format!(
-                    "Dimension mismatch at index {}: expected {} dimensions, got {}",
-                    i,
-                    dim,
-                    point.len()
-                ),
-            ));
+            return Err(GaError::InvalidIndicatorConfiguration(format!(
+                "Dimension mismatch at index {}: expected {} dimensions, got {}",
+                i,
+                dim,
+                point.len()
+            )));
         }
     }
     Ok(dim)
@@ -71,14 +70,12 @@ pub(crate) fn validate_dimension(
     expected_dim: usize,
 ) -> Result<(), GaError> {
     if point.len() != expected_dim {
-        return Err(GaError::InvalidIndicatorConfiguration(
-            format!(
-                "{} has {} dimensions, expected {}",
-                name,
-                point.len(),
-                expected_dim
-            ),
-        ));
+        return Err(GaError::InvalidIndicatorConfiguration(format!(
+            "{} has {} dimensions, expected {}",
+            name,
+            point.len(),
+            expected_dim
+        )));
     }
     Ok(())
 }
@@ -86,10 +83,7 @@ pub(crate) fn validate_dimension(
 /// Squared Euclidean distance between two points.
 #[inline]
 pub(crate) fn squared_euclidean_distance(a: &[f64], b: &[f64]) -> f64 {
-    a.iter()
-        .zip(b.iter())
-        .map(|(x, y)| (x - y) * (x - y))
-        .sum()
+    a.iter().zip(b.iter()).map(|(x, y)| (x - y) * (x - y)).sum()
 }
 
 /// Euclidean distance from a single point to the nearest point in a front,

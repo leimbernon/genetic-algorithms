@@ -4,7 +4,7 @@
 
 ## Overview
 
-The library provides eleven engines for different problem structures and evolutionary strategies:
+The library provides twelve engines for different problem structures and evolutionary strategies:
 
 | Engine | Module | Output type | Use case |
 |--------|--------|-------------|----------|
@@ -14,6 +14,7 @@ The library provides eleven engines for different problem structures and evoluti
 | `ScatterEngine<U>` | `scatter` | Reference set + best | Reference-set search with linear combination |
 | `CellularEngine<U>` | `cellular` | Best + final grid | Spatial locality — neighbourhood-only competition |
 | `AlpsEngine<U>` | `alps` | Best + layer results | Prevent premature convergence via age layers |
+| `GpGa<N>` | `gp` | `GpResult<N>` (best tree + population) | Genetic Programming — symbolic regression, program synthesis |
 | `Nsga2Ga<U>` | `nsga2` | Pareto front | 2-objective optimisation |
 | `Nsga3Ga<U>` | `nsga3` | Pareto front | 3+ objective (many-objective) optimisation |
 | `MoeaDGa<U>` | `moead` | Pareto front | Decomposition-based multi-objective |
@@ -82,6 +83,50 @@ according to the configured topology.
 
 Each island uses the same `GaConfiguration` as a standard `Ga<U>`. Set the inner config
 via `IslandConfiguration::with_ga_configuration(...)`.
+
+---
+
+## `GpGa<N>` — Genetic Programming
+
+Evolves tree-structured programs (expression trees) over a user-defined primitive set `N: GpNode`. Each individual is a `GpChromosome<N>`. The engine applies subtree crossover, subtree/point/hoist mutation, and uses ramped-half-and-half initialization by default.
+
+**Entry point:** `src/engines/gp/`
+
+**Full guide:** [Genetic Programming](gp.md)
+
+### Key configuration fields (`GpConfiguration`)
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `population_size` | 100 | Number of tree individuals |
+| `max_generations` | 50 | Generation limit |
+| `init_max_depth` | 4 | Max depth during ramped half-and-half initialization |
+| `max_depth` | 8 | Hard depth limit after crossover/mutation (bloat control) |
+| `max_node_count` | 200 | Hard node-count limit after crossover/mutation |
+| `crossover` | `SubtreeCrossover` | GP crossover operator |
+| `mutations` | `[(SubtreeMutation{4}, 0.1)]` | `(GpMutation, probability)` list |
+| `is_maximization` | `false` | `true` for maximization problems |
+| `max_stagnation` | `None` | Stop after N generations without improvement |
+| `fitness_target` | `None` | Stop when best fitness reaches this value |
+
+### Quick example
+
+```rust
+use genetic_algorithms::gp::{GpConfiguration, GpGa, MathNode};
+
+let config = GpConfiguration::new()
+    .with_population_size(100)
+    .with_max_generations(50);
+
+let mut engine = GpGa::<MathNode>::with_ramped_half_and_half(config, |tree| {
+    // return fitness for this expression tree
+    0.0
+});
+let result = engine.run().unwrap();
+println!("Best: {} (fitness={:.4})", result.best, result.best_fitness);
+```
+
+**Added in:** v3.0.0
 
 ---
 

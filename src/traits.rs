@@ -53,12 +53,12 @@ pub use linear_chromosome::LinearChromosome;
 pub use multi_case_fitness::MultiCaseFitness;
 pub use configuration::{
     ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, LocalSearchConfig,
-    MutationConfig, NichingConfig, SelectionConfig, StoppingConfig,
+    MutationConfig, NichingConfig, SelectionConfig, StoppingConfig, SurvivorConfig,
 };
 pub use gene::GeneT;
 pub use group_aware::GroupAware;
 pub use operator_compat::OperatorCompat;
 pub use operators::{
-    CrossoverOperator, ExtensionOperator, LocalSearchOperator, MutationOperator,
-    SelectionOperator, SurvivorOperator,
+    CrossoverOperator, ExtensionOperator, LocalSearchOperator, MutationOperator, SelectionOperator,
+    SurvivorOperator,
 };

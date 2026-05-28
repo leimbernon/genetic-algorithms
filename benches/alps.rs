@@ -5,7 +5,7 @@ use genetic_algorithms::alps::{AlpsAgeScheme, AlpsConfiguration, AlpsEngine};
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::de::{DeConfiguration, DeEngine, DeMutationStrategy};
 use genetic_algorithms::genotypes::Range as RangeGene;
-use genetic_algorithms::traits::ChromosomeT;
+use genetic_algorithms::traits::{ChromosomeT, LinearChromosome};
 use rand::Rng;
 
 fn sphere(dna: &[RangeGene<f64>]) -> f64 {

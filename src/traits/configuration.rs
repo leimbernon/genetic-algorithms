@@ -6,8 +6,8 @@
 //! single supertrait.
 
 use crate::chromosomes::ChromosomeLength;
-use crate::configuration::{LogLevel, ProblemSolving};
 use crate::configuration::LocalSearchConfiguration;
+use crate::configuration::{LogLevel, ProblemSolving};
 use crate::operations::{Crossover, Extension, Mutation, Selection, Survivor};
 
 /// Configuration for parent selection.
@@ -72,6 +72,19 @@ pub trait MutationConfig {
     /// Sets the stability index (α) for Lévy Flight mutation. Valid range: (0.0, 2.0). Default is 1.5.
     /// Only used when the mutation method is `Mutation::LevyFlight`.
     fn with_levy_alpha(self, alpha: f64) -> Self;
+}
+
+/// Configuration for survivor selection.
+pub trait SurvivorConfig {
+    /// Sets the parsimony pressure penalty coefficient for survivor selection.
+    ///
+    /// When non-zero, each chromosome's effective fitness during survivor selection
+    /// is adjusted by `±(length_penalty × dna_length)` according to the
+    /// `ProblemSolving` mode. The stored `fitness()` value is not mutated —
+    /// only the comparison value is adjusted.
+    ///
+    /// Use `None` (or don't call this method) to disable parsimony pressure.
+    fn with_length_penalty(self, penalty: f64) -> Self;
 }
 
 /// Configuration for stopping / termination criteria.
@@ -147,6 +160,7 @@ pub trait ConfigurationT:
     + ElitismConfig
     + ExtensionConfig
     + LocalSearchConfig
+    + SurvivorConfig
 {
     /// Creates a new instance with default configuration values.
     fn new() -> Self;

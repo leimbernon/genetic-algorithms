@@ -59,7 +59,6 @@ pub enum PenaltyStrategy {
     },
 }
 
-
 /// Constraint handling method for comparisons in selection, survivor, and elite operations.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum ConstraintHandling {
