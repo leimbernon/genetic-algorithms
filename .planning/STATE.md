@@ -62,6 +62,7 @@ Progress bar: [█░░░░░░] 1/7 phases complete
 ### Roadmap Evolution
 
 - 2026-05-19: Roadmap created — Phases 47-53 defined for v3.0.0
+- 2026-05-28: Phases 54-65 added from v3.0.0-EXECUTION-ORDER.md (N-ary Selection, RFC Multi-Valued Fitness, CMA-ES/PSO/EDA engines, Restart Strategies, Batch Fitness, Performance, Surrogate, Visualization, Test+Doc Quality, Migration Guide)
 
 ### Blockers/Concerns
 
