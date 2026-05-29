@@ -196,7 +196,14 @@ pub enum Crossover {
 ///
 /// Determines how offspring chromosomes are randomly altered to maintain
 /// genetic diversity.
-#[derive(Copy, Clone, Debug, PartialEq)]
+///
+/// # Per-variant parameters
+///
+/// Several variants carry inline `Option<f64>` parameters. When `None`, a sensible
+/// default is applied (see each variant's documentation). This replaces the old
+/// `MutationConfiguration` operator-specific fields (`step`, `sigma`, etc.) which
+/// have been removed in v3.0.0.
+#[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Mutation {
     /// Swap mutation — two random genes exchange positions.
@@ -210,17 +217,41 @@ pub enum Mutation {
     /// Bit-flip mutation — each bit (gene) is flipped with a given probability (binary chromosomes).
     BitFlip,
     /// Small uniform perturbation mutation for `Range<T>` chromosomes.
-    /// Requires a step size configured via `MutationConfiguration`.
-    Creep,
+    ///
+    /// The `step` parameter controls the maximum perturbation magnitude.
+    /// Default when `None`: `0.01`.
+    Creep {
+        /// Step size for the perturbation. Default: `0.01`.
+        #[cfg_attr(feature = "serde", serde(default))]
+        step: Option<f64>,
+    },
     /// Gaussian (normal distribution) perturbation mutation for `Range<T>` chromosomes.
-    /// Requires a sigma configured via `MutationConfiguration`.
-    Gaussian,
+    ///
+    /// The `sigma` parameter is the standard deviation of the Gaussian noise.
+    /// Default when `None`: `0.1`.
+    Gaussian {
+        /// Standard deviation of the Gaussian noise. Default: `0.1`.
+        #[cfg_attr(feature = "serde", serde(default))]
+        sigma: Option<f64>,
+    },
     /// Polynomial mutation for `Range<T>` chromosomes (NSGA-II style).
-    /// Uses a distribution index (eta_m) from `MutationConfiguration`.
-    Polynomial,
+    ///
+    /// The `eta` parameter is the distribution index (higher values → smaller perturbations).
+    /// Typical range: 20–100. Default when `None`: `20.0`.
+    Polynomial {
+        /// Distribution index η_m. Default: `20.0`.
+        #[cfg_attr(feature = "serde", serde(default))]
+        eta: Option<f64>,
+    },
     /// Non-uniform mutation for `Range<T>` chromosomes.
     /// Mutation magnitude decreases over generations.
-    NonUniform,
+    ///
+    /// The `b` parameter controls decay rate. Default when `None`: `2.0`.
+    NonUniform {
+        /// Decay parameter b. Default: `2.0`.
+        #[cfg_attr(feature = "serde", serde(default))]
+        b: Option<f64>,
+    },
     /// Permutation-insert mutation for permutation-based chromosomes.
     /// Removes a gene and reinserts it at a different position, preserving all alleles
     /// and chromosome length. This is the permutation-preserving insertion move (formerly
@@ -230,14 +261,14 @@ pub enum Mutation {
     /// Inserts a new gene at a random position, growing the chromosome length by 1
     /// (clamped to the configured maximum). Requires
     /// [`ChromosomeLength::Variable`](crate::chromosomes::ChromosomeLength) in
-    /// `MutationConfiguration`. Returns `GaError::MutationError` for
+    /// the engine configuration. Returns `GaError::MutationError` for
     /// `ChromosomeLength::Fixed`.
     Insertion,
     /// Deletion mutation for variable-length chromosomes.
     /// Removes a gene at a random position, shrinking the chromosome length by 1
     /// (clamped to the configured minimum). Requires
     /// [`ChromosomeLength::Variable`](crate::chromosomes::ChromosomeLength) in
-    /// `MutationConfiguration`. Returns `GaError::MutationError` for
+    /// the engine configuration. Returns `GaError::MutationError` for
     /// `ChromosomeLength::Fixed`.
     Deletion,
     /// List-value mutation — replaces a single gene's value with a different allele
@@ -246,22 +277,32 @@ pub enum Mutation {
     /// DE-style differential mutation for `Range<T>` chromosomes.
     /// Computes mutant vector as `x_r1 + F * (x_r2 - x_r3)` from three distinct
     /// random population members (all distinct from the target), clamped to gene
-    /// ranges. Configure F via `MutationConfiguration::differential_f` (default 0.5).
+    /// ranges. Default `f` when `None`: `0.5`.
     /// Requires `population_size >= 4`. Applied automatically by the standard GA
     /// engine — do not call `factory_with_params` for this variant.
-    Differential,
+    Differential {
+        /// F scale factor for the perturbation. Default: `0.5`.
+        #[cfg_attr(feature = "serde", serde(default))]
+        f: Option<f64>,
+    },
     /// Cauchy (Lorentzian) perturbation for `Range<T>` chromosomes.
     /// Uses the inverse-CDF method: `noise = scale * tan(π * (u - 0.5))`, where `u ~ Uniform(0, 1)`.
-    /// Configure scale via [`crate::configuration::MutationConfiguration::cauchy_scale`]
-    /// or the [`crate::traits::MutationConfig::with_cauchy_scale`] builder. Default scale: `1.0`.
+    /// Default `scale` when `None`: `1.0`.
     /// Returns `GaError::MutationError` for non-`Range<T>` chromosomes (Binary, List).
-    Cauchy,
+    Cauchy {
+        /// Scale parameter γ. Default: `1.0`.
+        #[cfg_attr(feature = "serde", serde(default))]
+        scale: Option<f64>,
+    },
     /// Lévy Flight mutation for `Range<T>` chromosomes (Mantegna's algorithm).
     /// Generates heavy-tailed steps via `step = σ_u * u / |v|^(1/α)`.
-    /// Configure the stability index (α) via [`crate::configuration::MutationConfiguration::levy_alpha`]
-    /// or [`crate::traits::MutationConfig::with_levy_alpha`]. Valid range: (0.0, 2.0). Default α: `1.5`.
+    /// Valid `alpha` range: (0.0, 2.0). Default `alpha` when `None`: `1.5`.
     /// Returns `GaError::MutationError` for non-`Range<T>` chromosomes.
-    LevyFlight,
+    LevyFlight {
+        /// Stability index α. Default: `1.5`.
+        #[cfg_attr(feature = "serde", serde(default))]
+        alpha: Option<f64>,
+    },
     /// Uniform reset mutation for `Range<T>` chromosomes.
     /// Resets a single randomly chosen gene to a uniform sample within its declared range.
     /// Equivalent to gene re-initialization. No configuration parameters required.
@@ -279,13 +320,27 @@ pub enum Mutation {
     ///
     /// After updating σ, one randomly-selected gene is mutated by `N(0, σ'_i)`.
     ///
-    /// Learning rates are read from [`MutationConfiguration`](crate::configuration::MutationConfiguration):
-    /// - `self_adaptive_tau` (τ) — per-dimension rate; default `1.0 / sqrt(2.0 * n)`
-    /// - `self_adaptive_tau_prime` (τ') — global rate; default `1.0 / sqrt(2.0 * sqrt(n))`
-    /// - `sigma_min` — σ lower bound; default `1e-5`
+    /// All parameters default to ES-standard values when `None`:
+    /// - `tau`: `1.0 / sqrt(2.0 * n)`
+    /// - `tau_prime`: `1.0 / sqrt(2.0 * sqrt(n))`
+    /// - `sigma_min`: `1e-5`
+    /// - `sigma_max`: no upper bound
     ///
     /// Returns `GaError::MutationError` for chromosomes not implementing `SelfAdaptive`.
-    SelfAdaptiveGaussian,
+    SelfAdaptiveGaussian {
+        /// Per-dimension learning rate τ. Default: `1.0 / sqrt(2.0 * n)`.
+        #[cfg_attr(feature = "serde", serde(default))]
+        tau: Option<f64>,
+        /// Global learning rate τ'. Default: `1.0 / sqrt(2.0 * sqrt(n))`.
+        #[cfg_attr(feature = "serde", serde(default))]
+        tau_prime: Option<f64>,
+        /// Sigma lower bound. Default: `1e-5`.
+        #[cfg_attr(feature = "serde", serde(default))]
+        sigma_min: Option<f64>,
+        /// Sigma upper bound. Default: no upper bound.
+        #[cfg_attr(feature = "serde", serde(default))]
+        sigma_max: Option<f64>,
+    },
 }
 
 /// Survivor-selection strategies.

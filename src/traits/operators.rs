@@ -2,6 +2,7 @@ use crate::configuration::{LimitConfiguration, ProblemSolving};
 use crate::error::GaError;
 use crate::extension::configuration::ExtensionConfiguration;
 use crate::operations::mutation::ValueMutable;
+use crate::operations::Mutation;
 use crate::traits::{ChromosomeT, LinearChromosome};
 
 /// Trait for parent selection operators.
@@ -97,6 +98,7 @@ pub trait CrossoverOperator {
 ///
 /// ```rust,ignore
 /// use genetic_algorithms::traits::MutationOperator;
+/// use genetic_algorithms::operations::Mutation;
 ///
 /// struct MyMutation;
 ///
@@ -104,8 +106,7 @@ pub trait CrossoverOperator {
 ///     fn mutate<U>(
 ///         &self,
 ///         individual: &mut U,
-///         step: Option<f64>,
-///         sigma: Option<f64>,
+///         mutation: &Mutation,
 ///     ) -> Result<(), GaError>
 ///     where
 ///         U: LinearChromosome + ValueMutable + 'static,
@@ -121,15 +122,15 @@ pub trait MutationOperator {
     /// # Arguments
     ///
     /// * `individual` - The chromosome to mutate.
-    /// * `step` - Optional step size (used by Creep mutation); **also used as the
-    ///   `scale` (γ) parameter for `Mutation::Cauchy`** (default 1.0 when `None`).
-    /// * `sigma` - Optional standard deviation (used by Gaussian mutation); **also
-    ///   used as the stability index `α` for `Mutation::LevyFlight`** (default 1.5 when `None`).
+    /// * `mutation` - The `Mutation` variant to apply, carrying its own inline parameters.
+    ///   Each variant extracts its own parameters (e.g. `Gaussian { sigma }` uses
+    ///   `sigma.unwrap_or(0.1)`). Context-dependent variants (`Differential`,
+    ///   `NonUniform`, `Insertion`, `Deletion`) are handled by the GA engine before
+    ///   this trait is called and return `GaError::MutationError` when invoked directly.
     fn mutate<U>(
         &self,
         individual: &mut U,
-        step: Option<f64>,
-        sigma: Option<f64>,
+        mutation: &Mutation,
     ) -> Result<(), GaError>
     where
         U: LinearChromosome + ValueMutable + 'static;

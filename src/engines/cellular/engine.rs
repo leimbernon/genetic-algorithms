@@ -21,10 +21,9 @@ use std::sync::Arc;
 
 use crate::configuration::{CrossoverConfiguration, ProblemSolving};
 use crate::operations::mutation::ValueMutable;
-use crate::operations::{crossover, mutation};
+use crate::operations::crossover;
 use crate::rng::make_rng;
-use crate::traits::SelectionOperator;
-use crate::traits::{FitnessFn, LinearChromosome};
+use crate::traits::{FitnessFn, LinearChromosome, MutationOperator, SelectionOperator};
 use rand::Rng;
 
 use super::configuration::{CellularConfiguration, Neighborhood, UpdateMode};
@@ -199,12 +198,7 @@ where
                         };
 
                     // Mutate offspring
-                    let _ = mutation::factory_with_params(
-                        self.config.mutation,
-                        &mut offspring,
-                        self.config.mutation_step,
-                        self.config.mutation_sigma,
-                    );
+                    let _ = self.config.mutation.mutate(&mut offspring, &self.config.mutation);
 
                     // Evaluate
                     let offspring_fitness = (self.fitness_fn)(offspring.dna());

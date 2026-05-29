@@ -124,7 +124,7 @@ use crate::multi_objective::ObjectiveFn;
 use crate::nsga2::configuration::ObjectiveDirection;
 use crate::observer::IbeaObserver;
 use crate::operations::{crossover, mutation};
-use crate::traits::{LinearChromosome, InitializationFn};
+use crate::traits::{InitializationFn, LinearChromosome, MutationOperator};
 use rand::Rng;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
@@ -418,7 +418,7 @@ where
         let n = population.len();
 
         let crossover_config = self.ga_config.crossover_configuration;
-        let mutation_config = self.ga_config.mutation_configuration;
+        let mutation_config = self.ga_config.mutation_configuration.clone();
         let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
         let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
 
@@ -441,12 +441,7 @@ where
             for mut child in children {
                 let mp: f64 = rng.random();
                 if mp <= mut_prob {
-                    mutation::factory_with_params(
-                        mutation_config.method,
-                        &mut child,
-                        mutation_config.step,
-                        mutation_config.sigma,
-                    )?;
+                    mutation_config.method.mutate(&mut child, &mutation_config.method)?;
                 }
                 offspring.push(child);
                 if offspring.len() >= pop_size {

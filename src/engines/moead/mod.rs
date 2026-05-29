@@ -139,7 +139,7 @@ use crate::multi_objective::pareto::{ParetoFront, ParetoIndividual};
 use crate::multi_objective::ObjectiveFn;
 use crate::observer::MoeaDObserver;
 use crate::operations::{crossover, mutation};
-use crate::traits::{LinearChromosome, InitializationFn};
+use crate::traits::{InitializationFn, LinearChromosome, MutationOperator};
 use rand::Rng;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
@@ -608,7 +608,7 @@ where
         rng: &mut impl Rng,
     ) -> Result<U, GaError> {
         let crossover_config = self.ga_config.crossover_configuration;
-        let mutation_config = self.ga_config.mutation_configuration;
+        let mutation_config = self.ga_config.mutation_configuration.clone();
         let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
         let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
 
@@ -624,40 +624,17 @@ where
         // Drop the rest deterministically (no use for the second child in MOEA/D).
         drop(children);
 
-        // Mutation dispatch — mirrors NSGA-III's per-method parameter routing exactly.
+        // Mutation dispatch — trait-based single call (params are in the variant).
         let mp: f64 = rng.random();
         if mp <= mut_prob {
-            if mutation_config.method == crate::operations::Mutation::Differential {
+            if matches!(mutation_config.method, crate::operations::Mutation::Differential { .. }) {
                 return Err(GaError::MutationError(
                     "Differential mutation is not supported in MOEA/D; \
                      use Cauchy, LevyFlight, Polynomial, or a standard mutation method instead."
                         .to_string(),
                 ));
-            } else if mutation_config.method == crate::operations::Mutation::Cauchy {
-                mutation::factory_with_params(
-                    mutation_config.method,
-                    &mut child,
-                    mutation_config.cauchy_scale,
-                    None,
-                )?;
-            } else if mutation_config.method == crate::operations::Mutation::LevyFlight {
-                mutation::factory_with_params(
-                    mutation_config.method,
-                    &mut child,
-                    None,
-                    mutation_config.levy_alpha,
-                )?;
-            } else if mutation_config.method == crate::operations::Mutation::Polynomial {
-                let eta = mutation_config.polynomial_eta.or(mutation_config.step);
-                mutation::factory_with_params(mutation_config.method, &mut child, eta, None)?;
-            } else {
-                mutation::factory_with_params(
-                    mutation_config.method,
-                    &mut child,
-                    mutation_config.step,
-                    mutation_config.sigma,
-                )?;
             }
+            mutation_config.method.mutate(&mut child, &mutation_config.method)?;
         }
 
         Ok(child)

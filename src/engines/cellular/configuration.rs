@@ -60,9 +60,11 @@ pub struct CellularConfiguration {
     pub crossover: Crossover,
     /// Mutation operator applied to each offspring.
     pub mutation: Mutation,
-    /// Optional step size for Creep mutation.
+    /// Optional step size for Creep mutation (deprecated — embed in `Mutation::Creep { step }`).
+    #[deprecated(since = "3.0.0", note = "Use `Mutation::Creep { step: Some(value) }` instead")]
     pub mutation_step: Option<f64>,
-    /// Optional standard deviation for Gaussian mutation.
+    /// Optional standard deviation for Gaussian mutation (deprecated — embed in `Mutation::Gaussian { sigma }`).
+    #[deprecated(since = "3.0.0", note = "Use `Mutation::Gaussian { sigma: Some(value) }` instead")]
     pub mutation_sigma: Option<f64>,
     /// Whether to minimise or maximise fitness.
     pub problem_solving: ProblemSolving,
@@ -70,6 +72,7 @@ pub struct CellularConfiguration {
     pub fitness_target: Option<f64>,
 }
 
+#[allow(deprecated)]
 impl Default for CellularConfiguration {
     fn default() -> Self {
         Self {
@@ -80,9 +83,9 @@ impl Default for CellularConfiguration {
             max_generations: 1000,
             selection: Selection::Tournament,
             crossover: Crossover::Uniform,
-            mutation: Mutation::Gaussian,
+            mutation: Mutation::Gaussian { sigma: Some(0.1) },
             mutation_step: None,
-            mutation_sigma: Some(0.1),
+            mutation_sigma: None,
             problem_solving: ProblemSolving::Minimization,
             fitness_target: None,
         }
@@ -127,11 +130,15 @@ impl CellularConfiguration {
         self
     }
     /// Builder: set mutation step size (for Creep mutation).
+    /// **Deprecated** — use `Mutation::Creep { step: Some(value) }` with `with_mutation()`.
+    #[allow(deprecated)]
     pub fn with_mutation_step(mut self, step: f64) -> Self {
         self.mutation_step = Some(step);
         self
     }
     /// Builder: set mutation sigma (for Gaussian mutation).
+    /// **Deprecated** — use `Mutation::Gaussian { sigma: Some(value) }` with `with_mutation()`.
+    #[allow(deprecated)]
     pub fn with_mutation_sigma(mut self, sigma: f64) -> Self {
         self.mutation_sigma = Some(sigma);
         self

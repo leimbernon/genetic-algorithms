@@ -53,7 +53,7 @@ use crate::nsga2::non_dominated_sort::{assign_ranks, non_dominated_sort};
 use crate::nsga2::pareto::{ParetoFront, ParetoIndividual};
 use crate::nsga2::ObjectiveFn;
 use crate::operations::mutation;
-use crate::traits::{LinearChromosome, InitializationFn};
+use crate::traits::{InitializationFn, LinearChromosome, MutationOperator};
 use log::{debug, info};
 use rand::Rng;
 use rayon::prelude::*;
@@ -365,11 +365,11 @@ where
     /// 3. Non-dominated sort + crowding distance on combined.
     /// 4. Environmental selection: sort by (rank asc, crowding desc), truncate to `pop_size`.
     fn evolve_islands_one_generation(&mut self, pop_size: usize) -> Result<(), GaError> {
-        use crate::operations::{crossover, mutation};
+        use crate::operations::crossover;
         use rayon::prelude::*;
 
         let crossover_config = self.ga_config.crossover_configuration;
-        let mutation_config = self.ga_config.mutation_configuration;
+        let mutation_config = self.ga_config.mutation_configuration.clone();
         let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
         let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
         let objective_fns = &self.objective_fns;
@@ -401,29 +401,7 @@ where
                 for child in children.iter_mut() {
                     let mp: f64 = rng.random();
                     if mp <= mut_prob {
-                        if mutation_config.method == crate::operations::Mutation::Cauchy {
-                            mutation::factory_with_params(
-                                mutation_config.method,
-                                child,
-                                mutation_config.cauchy_scale,
-                                None,
-                            )?;
-                        } else if mutation_config.method == crate::operations::Mutation::LevyFlight
-                        {
-                            mutation::factory_with_params(
-                                mutation_config.method,
-                                child,
-                                None,
-                                mutation_config.levy_alpha,
-                            )?;
-                        } else {
-                            mutation::factory_with_params(
-                                mutation_config.method,
-                                child,
-                                mutation_config.step,
-                                mutation_config.sigma,
-                            )?;
-                        }
+                        mutation_config.method.mutate(child, &mutation_config.method)?;
                     }
                 }
 

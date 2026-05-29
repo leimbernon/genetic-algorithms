@@ -138,7 +138,7 @@ use crate::error::GaError;
 use crate::hall_of_fame::{HallOfFame, HallOfFameConfig};
 use crate::observer::{ExtensionEvent, GaObserver};
 use crate::stats::GenerationStats;
-use crate::traits::{FitnessFn, InitializationFn};
+use crate::traits::{FitnessFn, InitializationFn, MutationOperator};
 use crate::validators::validator_factory as ValidatorFactory;
 use crate::{
     configuration::{LimitConfiguration, LocalSearchConfiguration, LogLevel, ProblemSolving},
@@ -456,14 +456,6 @@ where
         self.configuration.mutation_configuration.method = method;
         self
     }
-    fn with_mutation_step(mut self, step: f64) -> Self {
-        self.configuration.mutation_configuration.step = Some(step);
-        self
-    }
-    fn with_mutation_sigma(mut self, sigma: f64) -> Self {
-        self.configuration.mutation_configuration.sigma = Some(sigma);
-        self
-    }
     fn with_dynamic_mutation(mut self, enabled: bool) -> Self {
         self.configuration.mutation_configuration.dynamic_mutation = enabled;
         self
@@ -474,38 +466,6 @@ where
     }
     fn with_mutation_probability_step(mut self, step: f64) -> Self {
         self.configuration.mutation_configuration.probability_step = Some(step);
-        self
-    }
-    fn with_differential_f(mut self, f: f64) -> Self {
-        self.configuration.mutation_configuration.differential_f = Some(f);
-        self
-    }
-    fn with_polynomial_eta(mut self, eta: f64) -> Self {
-        self.configuration.mutation_configuration.polynomial_eta = Some(eta);
-        self
-    }
-    fn with_cauchy_scale(mut self, scale: f64) -> Self {
-        self.configuration.mutation_configuration.cauchy_scale = Some(scale);
-        self
-    }
-    fn with_levy_alpha(mut self, alpha: f64) -> Self {
-        self.configuration.mutation_configuration.levy_alpha = Some(alpha);
-        self
-    }
-    fn with_self_adaptive_tau(mut self, value: f64) -> Self {
-        self.configuration.mutation_configuration.self_adaptive_tau = Some(value);
-        self
-    }
-    fn with_self_adaptive_tau_prime(mut self, value: f64) -> Self {
-        self.configuration.mutation_configuration.self_adaptive_tau_prime = Some(value);
-        self
-    }
-    fn with_sigma_min(mut self, value: f64) -> Self {
-        self.configuration.mutation_configuration.sigma_min = Some(value);
-        self
-    }
-    fn with_sigma_max(mut self, value: f64) -> Self {
-        self.configuration.mutation_configuration.sigma_max = Some(value);
         self
     }
 }
@@ -1422,7 +1382,7 @@ where
                 // 1. Save builder's operator settings
                 let builder_selection = self.configuration.selection_configuration.method;
                 let builder_crossover = self.configuration.crossover_configuration.method;
-                let builder_mutation = self.configuration.mutation_configuration.method;
+                let builder_mutation = self.configuration.mutation_configuration.method.clone();
                 let builder_survivor = self.configuration.survivor;
                 let builder_problem_solving =
                     self.configuration.limit_configuration.problem_solving;
@@ -2635,7 +2595,7 @@ where
             if let (Some(portfolio), Some(aos_state)) = (mutation_portfolio, aos_mutation_state) {
                 let mut state = aos_state.lock().unwrap();
                 let op_idx = state.select_operator(&mut rng, generation);
-                Some((op_idx, portfolio[op_idx]))
+                Some((op_idx, portfolio[op_idx].clone()))
             } else {
                 None
             };
@@ -2729,132 +2689,61 @@ where
         }
 
         // Determine mutation method: AOS-selected or configured single operator
+        let selected_mutation_idx = selected_mutation.as_ref().map(|(idx, _)| *idx);
         let mutation_method = selected_mutation
             .map(|(_, op)| op)
-            .unwrap_or(configuration.mutation_configuration.method);
+            .unwrap_or_else(|| configuration.mutation_configuration.method.clone());
 
         if mutation_probability <= effective_mutation_prob {
-            if mutation_method == crate::operations::Mutation::Differential {
-                let f = configuration
-                    .mutation_configuration
-                    .differential_f
-                    .unwrap_or(0.5);
-                crate::operations::mutation::differential::differential_mutation(
-                    &mut child_1,
-                    chromosomes,
-                    key,
-                    f,
-                )?;
-            } else if mutation_method == crate::operations::Mutation::Cauchy {
-                mutation::factory_with_params(
-                    mutation_method,
-                    &mut child_1,
-                    configuration.mutation_configuration.cauchy_scale,
-                    None,
-                )?;
-            } else if mutation_method == crate::operations::Mutation::LevyFlight {
-                mutation::factory_with_params(
-                    mutation_method,
-                    &mut child_1,
-                    None,
-                    configuration.mutation_configuration.levy_alpha,
-                )?;
-            } else if mutation_method == crate::operations::Mutation::Polynomial {
-                // Use dedicated `polynomial_eta` field if set; fall back to `step` for
-                // backward compatibility with callers that used `with_mutation_step` for eta.
-                let eta = configuration
-                    .mutation_configuration
-                    .polynomial_eta
-                    .or(configuration.mutation_configuration.step);
-                mutation::factory_with_params(mutation_method, &mut child_1, eta, None)?;
-            } else if mutation_method == crate::operations::Mutation::Insertion
-                || mutation_method == crate::operations::Mutation::Deletion
-            {
-                mutation::factory_with_chromosome_length(
-                    mutation_method,
-                    &mut child_1,
-                    Some(configuration.limit_configuration.chromosome_length),
-                    configuration.mutation_configuration.step,
-                    configuration.mutation_configuration.sigma,
-                )?;
-            } else if mutation_method == Mutation::SelfAdaptiveGaussian {
-                // Phase 51: pass user-configured tau/tau_prime/sigma_min/sigma_max (or None for ES defaults)
-                mutation::factory_self_adaptive(
-                    &mut child_1,
-                    configuration.mutation_configuration.self_adaptive_tau,
-                    configuration.mutation_configuration.self_adaptive_tau_prime,
-                    configuration.mutation_configuration.sigma_min,
-                    configuration.mutation_configuration.sigma_max,
-                )?;
-            } else {
-                mutation::factory_with_params(
-                    mutation_method,
-                    &mut child_1,
-                    configuration.mutation_configuration.step,
-                    configuration.mutation_configuration.sigma,
-                )?;
+            match &mutation_method {
+                Mutation::Differential { f } => {
+                    let f_val = f.unwrap_or(0.5);
+                    crate::operations::mutation::differential::differential_mutation(
+                        &mut child_1,
+                        chromosomes,
+                        key,
+                        f_val,
+                    )?;
+                }
+                Mutation::Insertion | Mutation::Deletion => {
+                    mutation::factory_with_chromosome_length(
+                        mutation_method.clone(),
+                        &mut child_1,
+                        Some(configuration.limit_configuration.chromosome_length),
+                        None,
+                        None,
+                    )?;
+                }
+                _ => {
+                    mutation_method.mutate(&mut child_1, &mutation_method)?;
+                }
             }
         }
 
         mutation_probability = rng.random_range(0.0..1.0);
         if mutation_probability <= effective_mutation_prob {
-            if mutation_method == crate::operations::Mutation::Differential {
-                let f = configuration
-                    .mutation_configuration
-                    .differential_f
-                    .unwrap_or(0.5);
-                crate::operations::mutation::differential::differential_mutation(
-                    &mut child_2,
-                    chromosomes,
-                    value,
-                    f,
-                )?;
-            } else if mutation_method == crate::operations::Mutation::Cauchy {
-                mutation::factory_with_params(
-                    mutation_method,
-                    &mut child_2,
-                    configuration.mutation_configuration.cauchy_scale,
-                    None,
-                )?;
-            } else if mutation_method == crate::operations::Mutation::LevyFlight {
-                mutation::factory_with_params(
-                    mutation_method,
-                    &mut child_2,
-                    None,
-                    configuration.mutation_configuration.levy_alpha,
-                )?;
-            } else if mutation_method == crate::operations::Mutation::Polynomial {
-                let eta = configuration
-                    .mutation_configuration
-                    .polynomial_eta
-                    .or(configuration.mutation_configuration.step);
-                mutation::factory_with_params(mutation_method, &mut child_2, eta, None)?;
-            } else if mutation_method == crate::operations::Mutation::Insertion
-                || mutation_method == crate::operations::Mutation::Deletion
-            {
-                mutation::factory_with_chromosome_length(
-                    mutation_method,
-                    &mut child_2,
-                    Some(configuration.limit_configuration.chromosome_length),
-                    configuration.mutation_configuration.step,
-                    configuration.mutation_configuration.sigma,
-                )?;
-            } else if mutation_method == Mutation::SelfAdaptiveGaussian {
-                // Phase 51: pass user-configured tau/tau_prime/sigma_min/sigma_max (or None for ES defaults)
-                mutation::factory_self_adaptive(
-                    &mut child_2,
-                    configuration.mutation_configuration.self_adaptive_tau,
-                    configuration.mutation_configuration.self_adaptive_tau_prime,
-                    configuration.mutation_configuration.sigma_min,
-                    configuration.mutation_configuration.sigma_max,
-                )?;
-            } else {
-                mutation::factory_with_params(
-                    mutation_method,
-                    &mut child_2,
-                    configuration.mutation_configuration.step,
-                    configuration.mutation_configuration.sigma,
-                )?;
+            match &mutation_method {
+                Mutation::Differential { f } => {
+                    let f_val = f.unwrap_or(0.5);
+                    crate::operations::mutation::differential::differential_mutation(
+                        &mut child_2,
+                        chromosomes,
+                        value,
+                        f_val,
+                    )?;
+                }
+                Mutation::Insertion | Mutation::Deletion => {
+                    mutation::factory_with_chromosome_length(
+                        mutation_method.clone(),
+                        &mut child_2,
+                        Some(configuration.limit_configuration.chromosome_length),
+                        None,
+                        None,
+                    )?;
+                }
+                _ => {
+                    mutation_method.mutate(&mut child_2, &mutation_method)?;
+                }
             }
         }
 
@@ -2890,7 +2779,7 @@ where
         }
         // Mutation reward: compare parent vs child fitness
         if let Some(ref acc) = mutation_reward_acc {
-            if let Some((m_op_idx, _)) = selected_mutation {
+            if let Some(m_op_idx) = selected_mutation_idx {
                 let (p, c) = if is_maximization {
                     (child_1.fitness(), parent_1.fitness())
                 } else {

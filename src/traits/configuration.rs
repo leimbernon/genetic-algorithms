@@ -57,43 +57,22 @@ pub trait MutationConfig {
     fn with_mutation_probability_max(self, probability_max: f64) -> Self;
     /// Sets the minimum mutation probability (used only by adaptive GA).
     fn with_mutation_probability_min(self, probability_min: f64) -> Self;
-    /// Sets the mutation method (e.g., swap, inversion, Gaussian).
+    /// Sets the mutation method (e.g., `Mutation::Swap`, `Mutation::Gaussian { sigma: Some(0.1) }`).
+    ///
+    /// Operator-specific parameters are now embedded directly in the variant:
+    /// ```rust,ignore
+    /// use genetic_algorithms::operations::Mutation;
+    /// // v3.0.0 — pass params inside the variant:
+    /// ga.with_mutation_method(Mutation::Gaussian { sigma: Some(0.05) });
+    /// ga.with_mutation_method(Mutation::Creep { step: Some(0.1) });
+    /// ```
     fn with_mutation_method(self, method: Mutation) -> Self;
-    /// Sets the step size for Creep mutation.
-    fn with_mutation_step(self, step: f64) -> Self;
-    /// Sets the sigma for Gaussian mutation.
-    fn with_mutation_sigma(self, sigma: f64) -> Self;
     /// Enables or disables dynamic mutation probability adjustment based on population cardinality.
     fn with_dynamic_mutation(self, enabled: bool) -> Self;
     /// Sets the target cardinality ratio for dynamic mutation (0.0..1.0).
     fn with_mutation_target_cardinality(self, target: f64) -> Self;
     /// Sets the probability step size for dynamic mutation adjustment.
     fn with_mutation_probability_step(self, step: f64) -> Self;
-    /// Sets the F scale factor for Differential mutation (DE-style).
-    /// Typical range: 0.4–1.0. Default is 0.5 when not set.
-    fn with_differential_f(self, f: f64) -> Self;
-    /// Sets the distribution index (η_m) for Polynomial mutation.
-    /// Higher values produce smaller perturbations. Typical range: 20–100. Default is 20.0.
-    /// Only used when the mutation method is `Mutation::Polynomial`.
-    fn with_polynomial_eta(self, eta: f64) -> Self;
-    /// Sets the scale parameter (γ) for Cauchy mutation. Default is 1.0.
-    /// Only used when the mutation method is `Mutation::Cauchy`.
-    fn with_cauchy_scale(self, scale: f64) -> Self;
-    /// Sets the stability index (α) for Lévy Flight mutation. Valid range: (0.0, 2.0). Default is 1.5.
-    /// Only used when the mutation method is `Mutation::LevyFlight`.
-    fn with_levy_alpha(self, alpha: f64) -> Self;
-    /// Sets the per-dimension learning rate (τ) for `Mutation::SelfAdaptiveGaussian`.
-    /// Default (when not set): `1.0 / sqrt(2.0 * n)` where `n = strategy_params().len()`.
-    fn with_self_adaptive_tau(self, value: f64) -> Self;
-    /// Sets the global learning rate (τ') for `Mutation::SelfAdaptiveGaussian`.
-    /// Default (when not set): `1.0 / sqrt(2.0 * sqrt(n))` where `n = strategy_params().len()`.
-    fn with_self_adaptive_tau_prime(self, value: f64) -> Self;
-    /// Sets the sigma lower bound for `Mutation::SelfAdaptiveGaussian`. Default is `1e-5` when not set.
-    fn with_sigma_min(self, value: f64) -> Self;
-    /// Sets the sigma upper bound for `Mutation::SelfAdaptiveGaussian`.
-    /// When set, prevents unbounded sigma explosion in the log-normal update rule.
-    /// Default (when not set): no upper bound.
-    fn with_sigma_max(self, value: f64) -> Self;
 }
 
 /// Configuration for survivor selection.

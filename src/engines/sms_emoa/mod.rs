@@ -120,7 +120,7 @@ use crate::multi_objective::ObjectiveFn;
 use crate::observer::SmsEmoaObserver;
 use crate::operations::{crossover, mutation};
 use crate::sms_emoa::configuration::SmsEmoaConfiguration;
-use crate::traits::{LinearChromosome, InitializationFn};
+use crate::traits::{InitializationFn, LinearChromosome, MutationOperator};
 use rand::Rng;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
@@ -355,17 +355,12 @@ where
             vec![parent_a.clone()]
         };
 
-        let mutation_config = self.ga_config.mutation_configuration;
+        let mutation_config = &self.ga_config.mutation_configuration;
         let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
         for child in children.iter_mut() {
             let mp: f64 = rng.random();
             if mp <= mut_prob {
-                mutation::factory_with_params(
-                    mutation_config.method,
-                    child,
-                    mutation_config.step,
-                    mutation_config.sigma,
-                )?;
+                mutation_config.method.mutate(child, &mutation_config.method)?;
             }
         }
 

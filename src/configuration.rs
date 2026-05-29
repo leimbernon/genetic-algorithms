@@ -181,53 +181,21 @@ impl Default for CrossoverConfiguration {
 
 /// Configuration for the mutation operator.
 ///
-/// Specifies the mutation method, probability bounds (for adaptive GA),
-/// and method-specific parameters like step size, sigma, or polynomial eta.
-#[derive(Copy, Clone, Debug, PartialEq)]
+/// Specifies the mutation method and probability bounds (for adaptive GA).
+/// Operator-specific parameters (step size, sigma, eta, etc.) are now carried
+/// directly by the [`Mutation`] variant — see the variant documentation for defaults.
+///
+/// **v3.0.0 breaking change:** The fields `step`, `sigma`, `polynomial_eta`,
+/// `non_uniform_b`, `differential_f`, `cauchy_scale`, `levy_alpha`,
+/// `self_adaptive_tau`, `self_adaptive_tau_prime`, `sigma_min`, and `sigma_max`
+/// have been removed. Embed parameters in the variant directly, e.g.:
+/// `Mutation::Gaussian { sigma: Some(0.05) }`.
+#[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MutationConfiguration {
     pub probability_max: Option<f64>,
     pub probability_min: Option<f64>,
     pub method: Mutation,
-    /// Step size for Creep mutation. Only used when method is `Mutation::Creep`.
-    /// Default is 1.0.
-    pub step: Option<f64>,
-    /// Standard deviation for Gaussian mutation. Only used when method is `Mutation::Gaussian`.
-    /// Default is 1.0.
-    pub sigma: Option<f64>,
-    /// Distribution index for Polynomial mutation. Higher values produce smaller
-    /// perturbations. Typical range: 20–100. Default is 20.0.
-    pub polynomial_eta: Option<f64>,
-    /// Decay parameter for NonUniform mutation. Controls how fast mutation
-    /// magnitude decreases over generations. Typical range: 2–5. Default is 2.0.
-    pub non_uniform_b: Option<f64>,
-    /// F scale factor for Differential mutation. Controls perturbation magnitude.
-    /// Typical range: 0.4–1.0. Default is 0.5 when `None`.
-    /// Only used when `method` is `Mutation::Differential`.
-    pub differential_f: Option<f64>,
-    /// Scale parameter (γ) for `Mutation::Cauchy`. Default is `1.0` when `None`.
-    /// Only consulted when `method == Mutation::Cauchy`.
-    pub cauchy_scale: Option<f64>,
-    /// Stability index (α) for `Mutation::LevyFlight`. Valid range: (0.0, 2.0). Default is `1.5` when `None`.
-    /// Only consulted when `method == Mutation::LevyFlight`.
-    pub levy_alpha: Option<f64>,
-    /// Per-dimension learning rate τ for `Mutation::SelfAdaptiveGaussian`.
-    /// Default (when `None`): `1.0 / sqrt(2.0 * n)` where `n = strategy_params().len()`.
-    /// Only consulted when `method == Mutation::SelfAdaptiveGaussian`.
-    pub self_adaptive_tau: Option<f64>,
-    /// Global learning rate τ' for `Mutation::SelfAdaptiveGaussian`.
-    /// Default (when `None`): `1.0 / sqrt(2.0 * sqrt(n))` where `n = strategy_params().len()`.
-    /// Only consulted when `method == Mutation::SelfAdaptiveGaussian`.
-    pub self_adaptive_tau_prime: Option<f64>,
-    /// Sigma lower bound for `Mutation::SelfAdaptiveGaussian`.
-    /// After the log-normal update, every σ is clamped to this value. Default is `1e-5` when `None`.
-    /// Only consulted when `method == Mutation::SelfAdaptiveGaussian`.
-    pub sigma_min: Option<f64>,
-    /// Sigma upper bound for `Mutation::SelfAdaptiveGaussian`.
-    /// After the log-normal update, every σ is clamped to this value to prevent unbounded
-    /// explosion. When `None` (default), no upper bound is applied.
-    /// Only consulted when `method == Mutation::SelfAdaptiveGaussian`.
-    pub sigma_max: Option<f64>,
     /// Enable dynamic mutation probability adjustment based on population cardinality.
     /// When enabled, mutation probability is adjusted each generation: increased when
     /// diversity is low and decreased when diversity is high.
@@ -244,17 +212,6 @@ impl Default for MutationConfiguration {
             probability_max: None,
             probability_min: None,
             method: Mutation::Swap,
-            step: None,
-            sigma: None,
-            polynomial_eta: None,
-            non_uniform_b: None,
-            differential_f: None,
-            cauchy_scale: None,
-            levy_alpha: None,
-            self_adaptive_tau: None,
-            self_adaptive_tau_prime: None,
-            sigma_min: None,
-            sigma_max: None,
             dynamic_mutation: false,
             target_cardinality: None,
             probability_step: None,
@@ -576,14 +533,6 @@ impl MutationConfig for GaConfiguration {
         self.mutation_configuration.method = method;
         self
     }
-    fn with_mutation_step(mut self, step: f64) -> Self {
-        self.mutation_configuration.step = Some(step);
-        self
-    }
-    fn with_mutation_sigma(mut self, sigma: f64) -> Self {
-        self.mutation_configuration.sigma = Some(sigma);
-        self
-    }
     fn with_dynamic_mutation(mut self, enabled: bool) -> Self {
         self.mutation_configuration.dynamic_mutation = enabled;
         self
@@ -596,46 +545,8 @@ impl MutationConfig for GaConfiguration {
         self.mutation_configuration.probability_step = Some(step);
         self
     }
-    fn with_differential_f(mut self, f: f64) -> Self {
-        self.mutation_configuration.differential_f = Some(f);
-        self
-    }
-    fn with_polynomial_eta(mut self, eta: f64) -> Self {
-        self.mutation_configuration.polynomial_eta = Some(eta);
-        self
-    }
-    fn with_cauchy_scale(mut self, scale: f64) -> Self {
-        // A scale of 0 or negative makes the perturbation a no-op or invalid.
-        debug_assert!(scale > 0.0, "cauchy_scale must be positive; got {}", scale);
-        self.mutation_configuration.cauchy_scale = Some(scale);
-        self
-    }
-    fn with_levy_alpha(mut self, alpha: f64) -> Self {
-        debug_assert!(
-            alpha > 0.0 && alpha < 2.0,
-            "levy_alpha must be in (0.0, 2.0); got {}. Values outside this range are clamped.",
-            alpha
-        );
-        self.mutation_configuration.levy_alpha = Some(alpha);
-        self
-    }
-    fn with_self_adaptive_tau(mut self, value: f64) -> Self {
-        self.mutation_configuration.self_adaptive_tau = Some(value);
-        self
-    }
-    fn with_self_adaptive_tau_prime(mut self, value: f64) -> Self {
-        self.mutation_configuration.self_adaptive_tau_prime = Some(value);
-        self
-    }
-    fn with_sigma_min(mut self, value: f64) -> Self {
-        self.mutation_configuration.sigma_min = Some(value);
-        self
-    }
-    fn with_sigma_max(mut self, value: f64) -> Self {
-        self.mutation_configuration.sigma_max = Some(value);
-        self
-    }
 }
+
 
 impl StoppingConfig for GaConfiguration {
     fn with_max_generations(mut self, max_generations: usize) -> Self {
