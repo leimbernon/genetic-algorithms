@@ -374,7 +374,7 @@ fn test_hoist_mutation() {
 
 #[test]
 fn test_bloat_limit_mutation() {
-    let mut rng = SmallRng::seed_from_u64(99);
+    let rng = SmallRng::seed_from_u64(99);
     // SubtreeMutation with mutation_max_depth=5 on a chromosome with max_depth=1
     // — the generated subtree (depth up to 5) will violate the max_depth=1 constraint.
     // We try multiple seeds until we hit the error.

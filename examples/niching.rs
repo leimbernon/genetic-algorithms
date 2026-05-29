@@ -72,7 +72,7 @@ fn main() {
         // Crossover: Uniform
         .with_crossover_method(Crossover::Uniform)
         // Mutation: Gaussian (small perturbations to x)
-        .with_mutation_method(Mutation::Gaussian)
+        .with_mutation_method(Mutation::Gaussian { sigma: None })
         // Survivor selection: Fitness-based
         .with_survivor_method(Survivor::Fitness)
         // Problem: maximise the fitness landscape

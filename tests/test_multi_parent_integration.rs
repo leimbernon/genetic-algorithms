@@ -41,7 +41,7 @@ fn build_ga_with_crossover(method: Crossover) -> Ga<RangeChromosome<f64>> {
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(method)
         .with_crossover_probability_max(0.9)
-        .with_mutation_method(Mutation::Gaussian)
+        .with_mutation_method(Mutation::Gaussian { sigma: None })
         .with_mutation_probability_max(0.1)
         .with_survivor_method(Survivor::Fitness)
         .with_problem_solving(ProblemSolving::Maximization)
@@ -124,7 +124,7 @@ fn end_to_end_self_adaptive_gaussian_sigmas_evolve() {
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
         .with_crossover_probability_max(0.9)
-        .with_mutation_method(Mutation::SelfAdaptiveGaussian)
+        .with_mutation_method(Mutation::SelfAdaptiveGaussian { tau: None, tau_prime: None, sigma_min: None, sigma_max: None })
         .with_mutation_probability_max(0.9) // high probability to ensure mutations fire
         .with_survivor_method(Survivor::Fitness)
         .with_problem_solving(ProblemSolving::Maximization)

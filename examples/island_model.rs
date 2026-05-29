@@ -111,7 +111,7 @@ fn main() {
                 .with_problem_solving(ProblemSolving::Minimization)
                 .with_max_generations(MAX_GENERATIONS)
                 .with_mutation_probability_max(prob)
-                .with_mutation_method(Mutation::Gaussian)
+                .with_mutation_method(Mutation::Gaussian { sigma: None })
                 .with_crossover_method(Crossover::Uniform)
                 .with_selection_method(Selection::Tournament)
                 .with_survivor_method(Survivor::Fitness)

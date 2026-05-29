@@ -1,6 +1,6 @@
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
-use genetic_algorithms::traits::{ChromosomeT, LinearChromosome, SelfAdaptive};
+use genetic_algorithms::traits::{LinearChromosome, SelfAdaptive};
 use std::borrow::Cow;
 
 #[test]

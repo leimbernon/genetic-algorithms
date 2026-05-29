@@ -561,7 +561,7 @@ fn test_factory_non_value_creep_returns_error() {
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
     };
-    let result = mutation::factory_non_value(Mutation::Creep, &mut chromosome);
+    let result = mutation::factory_non_value(Mutation::Creep { step: None }, &mut chromosome);
     assert!(
         result.is_err(),
         "factory_non_value should reject Mutation::Creep"
@@ -576,7 +576,7 @@ fn test_factory_non_value_gaussian_returns_error() {
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
     };
-    let result = mutation::factory_non_value(Mutation::Gaussian, &mut chromosome);
+    let result = mutation::factory_non_value(Mutation::Gaussian { sigma: None }, &mut chromosome);
     assert!(
         result.is_err(),
         "factory_non_value should reject Mutation::Gaussian"
