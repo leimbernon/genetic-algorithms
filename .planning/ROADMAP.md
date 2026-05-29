@@ -122,7 +122,7 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 - [x] **Phase 51: Multi-Parent Crossover + Self-Adaptive Mutation** — UNDX, SPX, PCX operators with `RealValued` marker trait; `SelfAdaptive: ChromosomeT` trait; `Mutation::SelfAdaptiveGaussian` with log-normal sigma update (completed 2026-05-23)
 - [x] **Phase 52: Variable-Length Chromosomes** — `ChromosomeLength::Variable { min, max }`; `Mutation::Insertion` / `Mutation::Deletion`; `Crossover::VariableLength(AlignmentStrategy)`; parsimony pressure survivor config (completed 2026-05-24)
 - [x] **Phase 53: Tree Chromosome + GpGa Engine** — `TreeChromosome: ChromosomeT` supertrait; `GpGa<U>` engine; ramped half-and-half init; subtree crossover + mutation; bloat control; serde with `serde_stacker`; `Display` as expression string (completed 2026-05-25)
-- [ ] **Phase 54: N-ary Selection + Per-Operator Mutation Params** — Generalize `SelectionOperator::select` to return `Vec<Vec<usize>>` (N-ary groups, #248); replace `mutate(step, sigma)` overloaded signature with typed per-operator params (#249); update all built-in operators and GA loop
+- [x] **Phase 54: N-ary Selection + Per-Operator Mutation Params** — Generalize `SelectionOperator::select` to return `Vec<Vec<usize>>` (N-ary groups, #248); replace `mutate(step, sigma)` overloaded signature with typed per-operator params (#249); update all built-in operators and GA loop
 - [ ] **Phase 55: RFC Multi-Valued Fitness** — Design and implement `MultiCaseFitness` → first-class `fitness() -> &[f64]` decision (#251); coordinate with MO engines (nsga2/nsga3/moead/spea2/sms_emoa/ibea); document migration impact
 - [ ] **Phase 56: CMA-ES Engine** — `CmaEsEngine` under `src/engines/`; covariance matrix adaptation; configurable strategy params; observer hooks; WASM-compatible (#252)
 - [ ] **Phase 57: PSO Engine** — `PsoEngine` under `src/engines/`; velocity/position update; gbest/lbest topologies; inertia, cognitive, social coefficients; WASM-compatible (#253)
@@ -457,10 +457,10 @@ Plans:
 
 Plans:
 **Wave 1**
-- [ ] 54-01-PLAN.md — N-ary selection: SelectionOperator/factory return Vec<Vec<usize>> + group.len() crossover dispatch + island/GP/cellular call sites (SEL-NARY-01)
+- [x] 54-01-PLAN.md — N-ary selection: SelectionOperator/factory return Vec<Vec<usize>> + group.len() crossover dispatch + island/GP/cellular call sites (SEL-NARY-01)
 
 **Wave 2** *(blocked on Wave 1 — shares ga.rs and traits/operators.rs)*
-- [ ] 54-02-PLAN.md — Per-operator mutation params: parameterized non-Copy Mutation enum + &Mutation trait + slimmed MutationConfiguration + collapsed GA dispatch (MUT-PARAM-01)
+- [x] 54-02-PLAN.md — Per-operator mutation params: parameterized non-Copy Mutation enum + &Mutation trait + slimmed MutationConfiguration + collapsed GA dispatch (MUT-PARAM-01)
 
 ### Phase 55: RFC Multi-Valued Fitness
 
