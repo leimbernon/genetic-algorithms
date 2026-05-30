@@ -149,7 +149,7 @@ use crate::{
     population::Population,
     traits::{
         ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, GeneT, LinearChromosome,
-        LocalSearchConfig, LocalSearchOperator, MultiCaseFitness, MutationConfig, NichingConfig,
+        LocalSearchConfig, LocalSearchOperator, VectorFitness, MutationConfig, NichingConfig,
         OperatorCompat, SelectionConfig, StoppingConfig, Strategy, SurvivorConfig,
     },
 };
@@ -2924,7 +2924,7 @@ where
 impl<U> Ga<U>
 where
     U: LinearChromosome
-        + MultiCaseFitness
+        + VectorFitness
         + Send
         + Sync
         + 'static

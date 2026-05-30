@@ -8,7 +8,7 @@
 
 use crate::configuration::SelectionConfiguration;
 use crate::error::GaError;
-use crate::traits::{ChromosomeT, MultiCaseFitness, SelectionOperator};
+use crate::traits::{ChromosomeT, VectorFitness, SelectionOperator};
 
 pub use self::boltzmann::boltzmann_selection;
 pub use self::clearing::clearing_selection;
@@ -158,7 +158,7 @@ where
 /// # Errors
 ///
 /// - `GaError::SelectionError` if the population has fewer than 2 individuals.
-/// - `GaError::SelectionError` if `case_fitness()` is empty on the first chromosome.
+/// - `GaError::SelectionError` if `fitness_values()` is empty on the first chromosome.
 /// - `GaError::SelectionError` if any chromosome has a NaN case fitness.
 /// - `GaError::ConfigurationError` if called with a non-lexicase selection method.
 pub fn factory_lexicase<U>(
@@ -167,21 +167,21 @@ pub fn factory_lexicase<U>(
     _number_of_threads: usize,
 ) -> Result<Vec<Vec<usize>>, GaError>
 where
-    U: ChromosomeT + MultiCaseFitness + Sync + Send + 'static + Clone,
+    U: ChromosomeT + VectorFitness + Sync + Send + 'static + Clone,
 {
     if chromosomes.len() < 2 {
         return Err(GaError::SelectionError(
             "Population must have at least 2 chromosomes".into(),
         ));
     }
-    if chromosomes[0].case_fitness().is_empty() {
+    if chromosomes[0].fitness_values().is_empty() {
         return Err(GaError::SelectionError(
-            "case_fitness() is empty — call set_case_fitness in calculate_fitness".into(),
+            "fitness_values() is empty — call set_case_fitness in calculate_fitness".into(),
         ));
     }
     // NaN guard
     for (i, c) in chromosomes.iter().enumerate() {
-        if c.case_fitness().iter().any(|&s| s.is_nan()) {
+        if c.fitness_values().iter().any(|&s| s.is_nan()) {
             return Err(GaError::SelectionError(format!(
                 "NaN in case_fitness at chromosome {}",
                 i
@@ -213,7 +213,7 @@ where
 
     // D-04: sync scalar fitness to mean of case scores
     for c in chromosomes.iter_mut() {
-        let scores = c.case_fitness().to_vec();
+        let scores = c.fitness_values().to_vec();
         if !scores.is_empty() {
             let mean = scores.iter().sum::<f64>() / scores.len() as f64;
             c.set_fitness(mean);
