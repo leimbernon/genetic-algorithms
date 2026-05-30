@@ -55,7 +55,6 @@
 //! | `population_size` | `usize` | `100` | Population size (≥ 2). |
 //! | `max_generations` | `usize` | `200` | Maximum generations. |
 //! | `init_fn` | `Fn` | — | Chromosome initialisation. |
-//! | `objective_fns` | `Vec<ObjectiveFn>` | — | One per objective. |
 //! | `reference_points` | `auto` or `custom` | — | See §Reference Points. |
 //!
 //! ### Optional Parameters
@@ -90,11 +89,6 @@
 //! let ga_config = GaConfiguration::default();
 //! let mut nsga3 = Nsga3Ga::<MyChromosome>::new(nsga3_config, ga_config)
 //!     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
-//!     .with_objective_fns(vec![
-//!         Box::new(|dna| { /* DTLZ2 f1 */ 0.0 }),
-//!         Box::new(|dna| { /* DTLZ2 f2 */ 0.0 }),
-//!         Box::new(|dna| { /* DTLZ2 f3 */ 0.0 }),
-//!     ])
 //!     .build()?;
 //!
 //! let pareto_front = nsga3.run()?;
@@ -137,12 +131,11 @@ use crate::multi_objective::non_dominated_sort::{
     assign_ranks, non_dominated_sort_with_directions,
 };
 use crate::multi_objective::pareto::{ParetoFront, ParetoIndividual};
-use crate::multi_objective::ObjectiveFn;
 use crate::nsga2::configuration::ObjectiveDirection;
 use crate::nsga3::configuration::Nsga3Configuration;
 use crate::observer::Nsga3Observer;
 use crate::operations::mutation;
-use crate::traits::{InitializationFn, LinearChromosome, MutationOperator};
+use crate::traits::{InitializationFn, LinearChromosome, MutationOperator, VectorFitness};
 use rand::Rng;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
@@ -156,7 +149,7 @@ use std::time::Instant;
 /// * `U` - Chromosome type implementing `ChromosomeT`.
 pub struct Nsga3Ga<U>
 where
-    U: LinearChromosome,
+    U: LinearChromosome + VectorFitness,
 {
     /// NSGA-III specific configuration.
     pub nsga3_config: Nsga3Configuration,
@@ -166,15 +159,13 @@ where
     pub alleles: Vec<U::Gene>,
     /// Initialization function.
     pub initialization_fn: Option<Arc<InitializationFn<U::Gene>>>,
-    /// Objective functions (one per objective).
-    pub objective_fns: Vec<Arc<ObjectiveFn<U::Gene>>>,
     /// Optional structured lifecycle observer for NSGA-III-specific events.
     pub observer: Option<Arc<dyn Nsga3Observer<U> + Send + Sync>>,
 }
 
 impl<U> Nsga3Ga<U>
 where
-    U: LinearChromosome,
+    U: LinearChromosome + VectorFitness,
 {
     /// Creates a new `Nsga3Ga` with the given configurations.
     pub fn new(nsga3_config: Nsga3Configuration, ga_config: GaConfiguration) -> Self {
@@ -183,7 +174,6 @@ where
             ga_config,
             alleles: Vec::new(),
             initialization_fn: None,
-            objective_fns: Vec::new(),
             observer: None,
         }
     }
@@ -217,12 +207,6 @@ where
         self
     }
 
-    /// Sets the objective functions.
-    pub fn with_objective_fns(mut self, fns: Vec<Box<ObjectiveFn<U::Gene>>>) -> Self {
-        self.objective_fns = fns.into_iter().map(Arc::from).collect();
-        self
-    }
-
     /// Validates configuration and returns a ready-to-run instance.
     pub fn build(self) -> Result<Self, GaError> {
         self.validate()?;
@@ -249,13 +233,6 @@ where
             return Err(GaError::InvalidNsga3Configuration(
                 "initialization_fn is required".to_string(),
             ));
-        }
-        if self.objective_fns.len() != self.nsga3_config.num_objectives {
-            return Err(GaError::InvalidNsga3Configuration(format!(
-                "Expected {} objective functions, got {}",
-                self.nsga3_config.num_objectives,
-                self.objective_fns.len()
-            )));
         }
         if !self.nsga3_config.objective_directions.is_empty()
             && self.nsga3_config.objective_directions.len() != self.nsga3_config.num_objectives
@@ -325,13 +302,6 @@ where
                 "initialization_fn is required".to_string(),
             ));
         }
-        if self.objective_fns.len() != self.nsga3_config.num_objectives {
-            return Err(GaError::InvalidNsga3Configuration(format!(
-                "Expected {} objective functions, got {}",
-                self.nsga3_config.num_objectives,
-                self.objective_fns.len()
-            )));
-        }
         if !self.nsga3_config.objective_directions.is_empty()
             && self.nsga3_config.objective_directions.len() != self.nsga3_config.num_objectives
         {
@@ -378,7 +348,7 @@ where
 
 impl<U> Nsga3Ga<U>
 where
-    U: LinearChromosome + mutation::ValueMutable,
+    U: LinearChromosome + VectorFitness + mutation::ValueMutable,
 {
     /// Runs the NSGA-III algorithm and returns the first Pareto front.
     ///
@@ -409,6 +379,17 @@ where
         let directions = self.nsga3_config.effective_directions();
 
         let mut population = self.initialize_population()?;
+
+        // Runtime check: verify chromosome's fitness_values() matches num_objectives.
+        if let Some(first) = population.first() {
+            let got = first.chromosome.fitness_values().len();
+            if got != self.nsga3_config.num_objectives {
+                return Err(GaError::InvalidNsga3Configuration(format!(
+                    "Expected {} objectives from fitness_values(), got {}",
+                    self.nsga3_config.num_objectives, got
+                )));
+            }
+        }
 
         for gen in 0..max_gens {
             // Step 1: non-dominated sorting on the parent population (for tournament selection rank).
@@ -511,20 +492,21 @@ where
             0,
         );
 
-        let objective_fns = &self.objective_fns;
         #[cfg(not(target_arch = "wasm32"))]
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_par_iter()
-            .map(|chrom| {
-                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
+            .map(|mut chrom| {
+                chrom.calculate_fitness();
+                let objectives = chrom.fitness_values().to_vec();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
         #[cfg(target_arch = "wasm32")]
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_iter()
-            .map(|chrom| {
-                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
+            .map(|mut chrom| {
+                chrom.calculate_fitness();
+                let objectives = chrom.fitness_values().to_vec();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
@@ -588,20 +570,21 @@ where
             }
         }
 
-        let objective_fns = &self.objective_fns;
         #[cfg(not(target_arch = "wasm32"))]
         let offspring: Vec<ParetoIndividual<U>> = raw_offspring
             .into_par_iter()
-            .map(|chrom| {
-                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
+            .map(|mut chrom| {
+                chrom.calculate_fitness();
+                let objectives = chrom.fitness_values().to_vec();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
         #[cfg(target_arch = "wasm32")]
         let offspring: Vec<ParetoIndividual<U>> = raw_offspring
             .into_iter()
-            .map(|chrom| {
-                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
+            .map(|mut chrom| {
+                chrom.calculate_fitness();
+                let objectives = chrom.fitness_values().to_vec();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();

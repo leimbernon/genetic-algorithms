@@ -52,7 +52,6 @@
 //! | `population_size` | `usize` | `100` | Population size (one per sub-problem). |
 //! | `max_generations` | `usize` | `200` | Maximum generations. |
 //! | `init_fn` | `Fn` | — | Chromosome initialisation. |
-//! | `objective_fns` | `Vec<ObjectiveFn>` | — | One per objective. |
 //!
 //! ### Optional Parameters
 //!
@@ -86,11 +85,6 @@
 //! let ga_config = GaConfiguration::default();
 //! let mut moead = MoeaDGa::<MyChromosome>::new(moead_config, ga_config)
 //!     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
-//!     .with_objective_fns(vec![
-//!         Box::new(|dna| { /* DTLZ2 f1 */ 0.0 }),
-//!         Box::new(|dna| { /* DTLZ2 f2 */ 0.0 }),
-//!         Box::new(|dna| { /* DTLZ2 f3 */ 0.0 }),
-//!     ])
 //!     .build()?;
 //!
 //! let pareto_front = moead.run()?;
@@ -136,10 +130,9 @@ use crate::multi_objective::non_dominated_sort::{
     assign_ranks, non_dominated_sort_with_directions,
 };
 use crate::multi_objective::pareto::{ParetoFront, ParetoIndividual};
-use crate::multi_objective::ObjectiveFn;
 use crate::observer::MoeaDObserver;
 use crate::operations::{crossover, mutation};
-use crate::traits::{InitializationFn, LinearChromosome, MutationOperator};
+use crate::traits::{InitializationFn, LinearChromosome, MutationOperator, VectorFitness};
 use rand::Rng;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
@@ -153,7 +146,7 @@ use std::time::Instant;
 /// * `U` - Chromosome type implementing `ChromosomeT`.
 pub struct MoeaDGa<U>
 where
-    U: LinearChromosome,
+    U: LinearChromosome + VectorFitness,
 {
     /// MOEA/D specific configuration.
     pub moead_config: MoeaDConfiguration,
@@ -163,8 +156,6 @@ where
     pub alleles: Vec<U::Gene>,
     /// Initialization function.
     pub initialization_fn: Option<Arc<InitializationFn<U::Gene>>>,
-    /// Objective functions (one per objective).
-    pub objective_fns: Vec<Arc<ObjectiveFn<U::Gene>>>,
     /// Optional structured lifecycle observer for MOEA/D-specific events.
     pub observer: Option<Arc<dyn MoeaDObserver<U> + Send + Sync>>,
 }
@@ -172,7 +163,7 @@ where
 #[allow(dead_code)]
 impl<U> MoeaDGa<U>
 where
-    U: LinearChromosome,
+    U: LinearChromosome + VectorFitness,
 {
     /// Creates a new `MoeaDGa` with the given configurations.
     pub fn new(moead_config: MoeaDConfiguration, ga_config: GaConfiguration) -> Self {
@@ -181,7 +172,6 @@ where
             ga_config,
             alleles: Vec::new(),
             initialization_fn: None,
-            objective_fns: Vec::new(),
             observer: None,
         }
     }
@@ -215,12 +205,6 @@ where
         self
     }
 
-    /// Sets the objective functions.
-    pub fn with_objective_fns(mut self, fns: Vec<Box<ObjectiveFn<U::Gene>>>) -> Self {
-        self.objective_fns = fns.into_iter().map(Arc::from).collect();
-        self
-    }
-
     /// Validates configuration and returns a ready-to-run instance.
     pub fn build(self) -> Result<Self, GaError> {
         self.validate()?;
@@ -247,13 +231,6 @@ where
             return Err(GaError::InvalidMoeaDConfiguration(
                 "initialization_fn is required".to_string(),
             ));
-        }
-        if self.objective_fns.len() != self.moead_config.num_objectives {
-            return Err(GaError::InvalidMoeaDConfiguration(format!(
-                "Expected {} objective functions, got {}",
-                self.moead_config.num_objectives,
-                self.objective_fns.len()
-            )));
         }
         if !self.moead_config.objective_directions.is_empty()
             && self.moead_config.objective_directions.len() != self.moead_config.num_objectives
@@ -321,13 +298,6 @@ where
                 "initialization_fn is required".to_string(),
             ));
         }
-        if self.objective_fns.len() != self.moead_config.num_objectives {
-            return Err(GaError::InvalidMoeaDConfiguration(format!(
-                "Expected {} objective functions, got {}",
-                self.moead_config.num_objectives,
-                self.objective_fns.len()
-            )));
-        }
         if !self.moead_config.objective_directions.is_empty()
             && self.moead_config.objective_directions.len() != self.moead_config.num_objectives
         {
@@ -373,7 +343,7 @@ where
 
 impl<U> MoeaDGa<U>
 where
-    U: LinearChromosome + mutation::ValueMutable,
+    U: LinearChromosome + VectorFitness + mutation::ValueMutable,
 {
     /// Runs the MOEA/D algorithm and returns the post-hoc Pareto front.
     ///
@@ -423,6 +393,17 @@ where
         // Step 3: initialise population (one individual per sub-problem; pop_size aligned with N).
         let mut population = self.initialize_population()?;
 
+        // Runtime check: verify chromosome's fitness_values() matches num_objectives.
+        if let Some(first) = population.first() {
+            let got = first.chromosome.fitness_values().len();
+            if got != self.moead_config.num_objectives {
+                return Err(GaError::InvalidMoeaDConfiguration(format!(
+                    "Expected {} objectives from fitness_values(), got {}",
+                    self.moead_config.num_objectives, got
+                )));
+            }
+        }
+
         // Step 4: initialise ideal point z* across all initial individuals.
         let mut ideal_point = vec![f64::INFINITY; num_objectives];
         for ind in &population {
@@ -471,12 +452,10 @@ where
                     &mut rng,
                 )?;
 
-                // 5c: evaluate offspring objectives.
-                let offspring_objectives: Vec<f64> = self
-                    .objective_fns
-                    .iter()
-                    .map(|f| f(offspring_chrom.dna()))
-                    .collect();
+                // 5c: evaluate offspring objectives via VectorFitness.
+                let mut offspring_chrom = offspring_chrom;
+                offspring_chrom.calculate_fitness();
+                let offspring_objectives = offspring_chrom.fitness_values().to_vec();
 
                 // 5d: update ideal point z* incrementally per component.
                 for (k, &f) in offspring_objectives.iter().enumerate() {
@@ -574,20 +553,21 @@ where
             0,
         );
 
-        let objective_fns = &self.objective_fns;
         #[cfg(not(target_arch = "wasm32"))]
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_par_iter()
-            .map(|chrom| {
-                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
+            .map(|mut chrom| {
+                chrom.calculate_fitness();
+                let objectives = chrom.fitness_values().to_vec();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
         #[cfg(target_arch = "wasm32")]
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_iter()
-            .map(|chrom| {
-                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
+            .map(|mut chrom| {
+                chrom.calculate_fitness();
+                let objectives = chrom.fitness_values().to_vec();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
