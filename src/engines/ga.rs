@@ -149,7 +149,7 @@ use crate::{
     population::Population,
     traits::{
         ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, GeneT, LinearChromosome,
-        LocalSearchConfig, LocalSearchOperator, MultiCaseFitness, MutationConfig, NichingConfig,
+        LocalSearchConfig, LocalSearchOperator, MutationConfig, NichingConfig, VectorFitness,
         OperatorCompat, SelectionConfig, StoppingConfig, Strategy, SurvivorConfig,
     },
 };
@@ -2924,7 +2924,7 @@ where
 impl<U> Ga<U>
 where
     U: LinearChromosome
-        + MultiCaseFitness
+        + VectorFitness
         + Send
         + Sync
         + 'static
@@ -2938,7 +2938,7 @@ where
 {
     /// Selects parents using lexicase or epsilon-lexicase selection.
     ///
-    /// Call this instead of the standard `run()` selection step when `U:` [`MultiCaseFitness`]
+    /// Call this instead of the standard `run()` selection step when `U:` [`VectorFitness`]
     /// and `Selection::Lexicase` or `Selection::EpsilonLexicase` is configured.
     /// Also syncs each chromosome's scalar fitness to the mean of its case scores (D-04).
     ///
@@ -2953,8 +2953,8 @@ where
     ///
     /// ```rust,ignore
     /// // Selection::Lexicase / EpsilonLexicase reach run() only when U does not implement
-    /// // MultiCaseFitness; factory() returns GaError::ConfigurationError for those variants per D-06.
-    /// // Users with MultiCaseFitness chromosomes call select_parents_lexicase() directly.
+    /// // VectorFitness; factory() returns GaError::ConfigurationError for those variants per D-06.
+    /// // Users with VectorFitness chromosomes call select_parents_lexicase() directly.
     /// let pairs = ga.select_parents_lexicase()?;
     /// ```
     pub fn select_parents_lexicase(&mut self) -> Result<Vec<Vec<usize>>, GaError> {
