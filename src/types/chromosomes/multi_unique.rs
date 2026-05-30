@@ -35,7 +35,7 @@ use crate::fitness::FitnessFnWrapper;
 use crate::genotypes::UniqueGenotype;
 use crate::operations::mutation::ValueMutable;
 use crate::operations::{Crossover, Mutation};
-use crate::traits::{ChromosomeT, LinearChromosome, OperatorCompat};
+use crate::traits::{ChromosomeT, LinearChromosome, OperatorCompat, VectorFitness};
 use std::borrow::Cow;
 use std::fmt;
 use std::fmt::Debug;
@@ -88,6 +88,8 @@ pub struct MultiUniqueChromosome<T: Sync + Send + Clone + Default + Debug> {
     pub groups: Vec<Arc<[T]>>,
     pub fitness: f64,
     pub age: usize,
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub fitness_values: Vec<f64>,
     #[cfg_attr(feature = "serde", serde(skip, default))]
     pub fitness_fn: FitnessFnWrapper<UniqueGenotype<T>>,
 }
@@ -119,6 +121,7 @@ impl<T: Sync + Send + Clone + Default + Debug> MultiUniqueChromosome<T> {
             groups: groups_arc,
             fitness: f64::NAN,
             age: 0,
+            fitness_values: Vec::new(),
             fitness_fn: FitnessFnWrapper::default(),
         }
     }
@@ -171,6 +174,7 @@ impl<T: Sync + Send + Clone + Default + Debug> Default for MultiUniqueChromosome
             groups: Vec::new(),
             fitness: f64::NAN,
             age: 0,
+            fitness_values: Vec::new(),
             fitness_fn: FitnessFnWrapper::default(),
         }
     }
@@ -222,6 +226,18 @@ impl<T: Sync + Send + Clone + Default + Debug + 'static> ChromosomeT
 
     fn age(&self) -> usize {
         self.age
+    }
+}
+
+impl<T: Sync + Send + Clone + Default + Debug + 'static> VectorFitness
+    for MultiUniqueChromosome<T>
+{
+    fn fitness_values(&self) -> &[f64] {
+        &self.fitness_values
+    }
+
+    fn set_fitness_values(&mut self, values: Vec<f64>) {
+        self.fitness_values = values;
     }
 }
 

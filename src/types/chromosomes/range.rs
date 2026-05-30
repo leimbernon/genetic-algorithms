@@ -7,7 +7,7 @@
 
 use crate::fitness::FitnessFnWrapper;
 use crate::genotypes::Range as RangeGenotype;
-use crate::traits::{ChromosomeT, LinearChromosome, OperatorCompat, RealValued, SelfAdaptive};
+use crate::traits::{ChromosomeT, LinearChromosome, OperatorCompat, RealValued, SelfAdaptive, VectorFitness};
 use std::borrow::Cow;
 use std::fmt;
 use std::fmt::Debug;
@@ -44,6 +44,8 @@ pub struct Range<T: Sync + Send + Copy + Default + Debug> {
     pub dna: Vec<RangeGenotype<T>>,
     pub fitness: f64,
     pub age: usize,
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub fitness_values: Vec<f64>,
     #[cfg_attr(feature = "serde", serde(skip, default))]
     pub fitness_fn: FitnessFnWrapper<RangeGenotype<T>>,
     /// Per-dimension strategy parameters (σ values) for self-adaptive mutation.
@@ -65,6 +67,7 @@ impl<T: Sync + Send + Copy + Default + Debug> Default for Range<T> {
             dna: Vec::new(),
             fitness: f64::NAN,
             age: 0,
+            fitness_values: Vec::new(),
             fitness_fn: FitnessFnWrapper::default(),
             strategy_params: Vec::new(),
         }
@@ -91,6 +94,7 @@ impl<T: Sync + Send + Copy + Default + Debug> Range<T> {
             dna: Vec::new(),
             fitness: f64::NAN,
             age: 0,
+            fitness_values: Vec::new(),
             fitness_fn: FitnessFnWrapper::default(),
             strategy_params: Vec::new(),
         }
@@ -145,6 +149,16 @@ impl<T: Sync + Send + Copy + Default + Debug + 'static> ChromosomeT for Range<T>
 
     fn age(&self) -> usize {
         self.age
+    }
+}
+
+impl<T: Sync + Send + Copy + Default + Debug + 'static> VectorFitness for Range<T> {
+    fn fitness_values(&self) -> &[f64] {
+        &self.fitness_values
+    }
+
+    fn set_fitness_values(&mut self, values: Vec<f64>) {
+        self.fitness_values = values;
     }
 }
 
