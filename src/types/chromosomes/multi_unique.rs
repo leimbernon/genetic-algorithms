@@ -229,9 +229,7 @@ impl<T: Sync + Send + Clone + Default + Debug + 'static> ChromosomeT
     }
 }
 
-impl<T: Sync + Send + Clone + Default + Debug + 'static> VectorFitness
-    for MultiUniqueChromosome<T>
-{
+impl<T: Sync + Send + Clone + Default + Debug + 'static> VectorFitness for MultiUniqueChromosome<T> {
     fn fitness_values(&self) -> &[f64] {
         &self.fitness_values
     }
