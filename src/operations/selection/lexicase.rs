@@ -11,7 +11,7 @@
 //! WASM note: This implementation uses sequential `.iter()` throughout.
 //! The shrinking-pool state in the filter cascade cannot be parallelised.
 
-use crate::traits::{ChromosomeT, MultiCaseFitness};
+use crate::traits::{ChromosomeT, VectorFitness};
 use log::{debug, trace};
 use rand::Rng;
 
@@ -23,12 +23,12 @@ use rand::Rng;
 /// For each test case i, computes the Median Absolute Deviation (MAD) of the
 /// case scores across all chromosomes. This provides a data-driven adaptive
 /// tolerance that scales with the spread of scores on each case.
-fn compute_mad_epsilons<U: MultiCaseFitness>(chromosomes: &[U], num_cases: usize) -> Vec<f64> {
+fn compute_mad_epsilons<U: VectorFitness>(chromosomes: &[U], num_cases: usize) -> Vec<f64> {
     (0..num_cases)
         .map(|case_i| {
             let mut scores: Vec<f64> = chromosomes
                 .iter()
-                .map(|c| c.case_fitness()[case_i])
+                .map(|c| c.fitness_values()[case_i])
                 .collect();
             scores.sort_unstable_by(|a, b| {
                 a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal)
@@ -60,7 +60,7 @@ fn compute_mad_epsilons<U: MultiCaseFitness>(chromosomes: &[U], num_cases: usize
 /// Cases are iterated in a randomly shuffled order (Fisher-Yates). At each
 /// case, only candidates within `per_case_epsilon[case]` of the case-best
 /// score are retained. Returns the index (into `chromosomes`) of the winner.
-fn select_one_winner<U: MultiCaseFitness>(
+fn select_one_winner<U: VectorFitness>(
     chromosomes: &[U],
     num_cases: usize,
     per_case_epsilon: &[f64],
@@ -81,10 +81,10 @@ fn select_one_winner<U: MultiCaseFitness>(
         }
         let best = pool
             .iter()
-            .map(|&i| chromosomes[i].case_fitness()[case])
+            .map(|&i| chromosomes[i].fitness_values()[case])
             .fold(f64::NEG_INFINITY, f64::max);
         let eps = per_case_epsilon[case];
-        pool.retain(|&i| chromosomes[i].case_fitness()[case] >= best - eps);
+        pool.retain(|&i| chromosomes[i].fitness_values()[case] >= best - eps);
         debug_assert!(
             !pool.is_empty(),
             "Lexicase pool became empty — case {} best={} eps={}",
@@ -101,7 +101,7 @@ fn select_one_winner<U: MultiCaseFitness>(
 
 /// Lexicase selection: selects parent groups by per-case filtering with shuffled case order.
 ///
-/// Requires chromosomes implementing [`MultiCaseFitness`]. Each parent is
+/// Requires chromosomes implementing [`VectorFitness`]. Each parent is
 /// independently selected by iterating through test cases in a random order,
 /// retaining only those that match the case-best score exactly.
 ///
@@ -121,16 +121,16 @@ pub fn lexicase_selection<U>(
     num_parents: usize,
 ) -> Vec<Vec<usize>>
 where
-    U: ChromosomeT + MultiCaseFitness,
+    U: ChromosomeT + VectorFitness,
 {
     let num_parents = num_parents.max(2);
     debug!(target = "selection_events", method = "lexicase"; "Starting lexicase selection with number_of_couples={}", number_of_couples);
 
-    if chromosomes.len() < 2 || chromosomes[0].case_fitness().is_empty() {
+    if chromosomes.len() < 2 || chromosomes[0].fitness_values().is_empty() {
         return Vec::new();
     }
 
-    let num_cases = chromosomes[0].case_fitness().len();
+    let num_cases = chromosomes[0].fitness_values().len();
     let zero_eps = vec![0.0f64; num_cases];
     let mut rng = crate::rng::make_rng();
     let mut mating = Vec::with_capacity(number_of_couples);
@@ -172,16 +172,16 @@ pub fn epsilon_lexicase_selection<U>(
     num_parents: usize,
 ) -> Vec<Vec<usize>>
 where
-    U: ChromosomeT + MultiCaseFitness,
+    U: ChromosomeT + VectorFitness,
 {
     let num_parents = num_parents.max(2);
     debug!(target = "selection_events", method = "epsilon_lexicase"; "Starting epsilon-lexicase selection with number_of_couples={} epsilon={:?}", number_of_couples, epsilon);
 
-    if chromosomes.len() < 2 || chromosomes[0].case_fitness().is_empty() {
+    if chromosomes.len() < 2 || chromosomes[0].fitness_values().is_empty() {
         return Vec::new();
     }
 
-    let num_cases = chromosomes[0].case_fitness().len();
+    let num_cases = chromosomes[0].fitness_values().len();
     let per_case_eps = match epsilon {
         Some(e) => vec![e; num_cases],
         None => compute_mad_epsilons(chromosomes, num_cases),
