@@ -467,7 +467,7 @@ Plans:
 **Goal:** Users implement `VectorFitness` (renamed from `MultiCaseFitness`) on their chromosomes to drive both lexicase selection and every multi-objective engine (NSGA-II, NSGA-III, MOEA/D, SPEA2, SMS-EMOA, IBEA, Island NSGA-II), with objective evaluation co-located inside `calculate_fitness()` instead of via external `.with_objective_fns(...)` closures — a v3.0.0 breaking change cleanup of the multi-valued fitness API.
 **Requirements**: TRAITS-01, SEL-02, SEL-03
 **Depends on:** Phase 54
-**Plans:** 2/6 plans executed
+**Plans:** 3/6 plans executed
 
 Plans:
 **Wave 1**
@@ -479,7 +479,7 @@ Plans:
 **Wave 3** *(parallel — disjoint files; all depend on Waves 1-2)*
 - [ ] 55-03-PLAN.md — Lexicase callers migration: selection.rs, lexicase.rs, ga.rs (TRAITS-01, SEL-02, SEL-03)
 - [ ] 55-04-PLAN.md — MO engine migration: NSGA-II + NSGA-III + MOEA/D (TRAITS-01)
-- [ ] 55-05-PLAN.md — MO engine migration: SPEA2 + SMS-EMOA + IBEA + Island NSGA-II (TRAITS-01)
+- [x] 55-05-PLAN.md — MO engine migration: SPEA2 + SMS-EMOA + IBEA + Island NSGA-II (TRAITS-01)
 
 **Wave 4** *(blocked on Waves 1-3)*
 - [ ] 55-06-PLAN.md — Tests + examples migration + phase verification gate (TRAITS-01, SEL-02, SEL-03)
