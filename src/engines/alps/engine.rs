@@ -106,6 +106,12 @@ where
 {
     /// Run the ALPS algorithm and return the result.
     pub fn run(&mut self) -> AlpsResult<U> {
+        if self.config.layer_size == 0 {
+            panic!("AlpsEngine: layer_size must be > 0");
+        }
+        if self.config.n_layers == 0 {
+            panic!("AlpsEngine: n_layers must be > 0");
+        }
         let max_ages = self.config.max_ages();
         let crossover_cfg = CrossoverConfiguration {
             method: self.config.crossover,
