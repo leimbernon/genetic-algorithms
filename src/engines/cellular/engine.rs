@@ -117,6 +117,9 @@ where
         }
 
         // ── Best tracking ─────────────────────────────────────────────────────
+        if pop.is_empty() {
+            panic!("CellularEngine: grid must have at least 1 cell (rows > 0 && cols > 0)");
+        }
         let mut best_fitness = pop[0].fitness();
         let mut best = pop[0].clone();
         for ind in &pop {
