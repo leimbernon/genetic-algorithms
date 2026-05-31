@@ -131,6 +131,10 @@ where
     }
 
     let num_cases = chromosomes[0].fitness_values().len();
+    if chromosomes.iter().any(|c| c.fitness_values().len() != num_cases) {
+        log::warn!(target: "selection_events", "lexicase: fitness_values length mismatch — returning empty selection");
+        return Vec::new();
+    }
     let zero_eps = vec![0.0f64; num_cases];
     let mut rng = crate::rng::make_rng();
     let mut mating = Vec::with_capacity(number_of_couples);
@@ -182,6 +186,10 @@ where
     }
 
     let num_cases = chromosomes[0].fitness_values().len();
+    if chromosomes.iter().any(|c| c.fitness_values().len() != num_cases) {
+        log::warn!(target: "selection_events", "epsilon_lexicase: fitness_values length mismatch — returning empty selection");
+        return Vec::new();
+    }
     let per_case_eps = match epsilon {
         Some(e) => vec![e; num_cases],
         None => compute_mad_epsilons(chromosomes, num_cases),
