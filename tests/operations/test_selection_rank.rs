@@ -10,15 +10,16 @@ fn test_rank_selection_produces_correct_pairs() {
             fitness: i as f64 * 10.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
 
-    let pairs = rank_selection(&population, 3);
+    let pairs = rank_selection(&population, 3, 2);
     assert_eq!(pairs.len(), 3);
 
-    for (a, b) in &pairs {
-        assert!(*a < population.len(), "Index out of bounds: {}", a);
-        assert!(*b < population.len(), "Index out of bounds: {}", b);
+    for group in &pairs {
+        assert!(group[0] < population.len(), "Index out of bounds: {}", group[0]);
+        assert!(group[1] < population.len(), "Index out of bounds: {}", group[1]);
     }
 }
 
@@ -30,16 +31,18 @@ fn test_rank_selection_with_two_chromosomes() {
             fitness: 10.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: vec![Gene { id: 2 }],
             fitness: 90.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
     ];
 
-    let pairs = rank_selection(&population, 1);
+    let pairs = rank_selection(&population, 1, 2);
     assert_eq!(pairs.len(), 1);
 }
 
@@ -51,12 +54,13 @@ fn test_rank_selection_returns_valid_indices() {
             fitness: i as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
-    let pairs = rank_selection(&pop, 3);
-    for (a, b) in &pairs {
-        assert!(*a < pop.len(), "Index {} out of bounds", a);
-        assert!(*b < pop.len(), "Index {} out of bounds", b);
+    let pairs = rank_selection(&pop, 3, 2);
+    for group in &pairs {
+        assert!(group[0] < pop.len(), "Index {} out of bounds", group[0]);
+        assert!(group[1] < pop.len(), "Index {} out of bounds", group[1]);
     }
 }
 
@@ -68,19 +72,20 @@ fn test_rank_selection_favors_higher_fitness() {
             fitness: i as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
 
     // Run many selections and count how often high-fitness individuals appear
     let mut high_fitness_count = 0;
     for _ in 0..200 {
-        let pairs = rank_selection(&population, 5);
-        for (a, b) in &pairs {
+        let pairs = rank_selection(&population, 5, 2);
+        for group in &pairs {
             // Indices 15-19 are the fittest
-            if *a >= 15 {
+            if group[0] >= 15 {
                 high_fitness_count += 1;
             }
-            if *b >= 15 {
+            if group[1] >= 15 {
                 high_fitness_count += 1;
             }
         }

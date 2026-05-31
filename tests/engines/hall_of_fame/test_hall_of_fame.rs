@@ -15,6 +15,7 @@ fn make_chromosome(id_values: &[i32], fitness: f64) -> Chromosome {
         fitness,
         age: 0,
         fitness_fn: Default::default(),
+        fitness_values: vec![],
     }
 }
 

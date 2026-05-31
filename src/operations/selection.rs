@@ -8,7 +8,7 @@
 
 use crate::configuration::SelectionConfiguration;
 use crate::error::GaError;
-use crate::traits::{ChromosomeT, MultiCaseFitness, SelectionOperator};
+use crate::traits::{ChromosomeT, SelectionOperator, VectorFitness};
 
 pub use self::boltzmann::boltzmann_selection;
 pub use self::clearing::clearing_selection;
@@ -37,20 +37,21 @@ impl SelectionOperator for Selection {
         chromosomes: &[U],
         number_of_couples: usize,
         number_of_threads: usize,
-    ) -> Vec<(usize, usize)>
+        num_parents: usize,
+    ) -> Vec<Vec<usize>>
     where
         U: ChromosomeT + Sync + Send + 'static + Clone,
     {
         match self {
-            Selection::Random => random(chromosomes),
-            Selection::RouletteWheel => roulette_wheel_selection(chromosomes),
+            Selection::Random => random(chromosomes, num_parents),
+            Selection::RouletteWheel => roulette_wheel_selection(chromosomes, num_parents),
             Selection::StochasticUniversalSampling => {
-                stochastic_universal_sampling(chromosomes, number_of_couples)
+                stochastic_universal_sampling(chromosomes, number_of_couples, num_parents)
             }
-            Selection::Tournament => tournament(chromosomes, number_of_couples, number_of_threads),
-            Selection::Rank => rank_selection(chromosomes, number_of_couples),
-            Selection::Boltzmann => boltzmann_selection(chromosomes, number_of_couples, 1.0),
-            Selection::Truncation => truncation_selection(chromosomes, number_of_couples),
+            Selection::Tournament => tournament(chromosomes, number_of_couples, number_of_threads, num_parents),
+            Selection::Rank => rank_selection(chromosomes, number_of_couples, num_parents),
+            Selection::Boltzmann => boltzmann_selection(chromosomes, number_of_couples, 1.0, num_parents),
+            Selection::Truncation => truncation_selection(chromosomes, number_of_couples, num_parents),
             // WARNING: The `SelectionOperator` trait does not carry operator-specific
             // configuration, so `niche_radius` defaults to 0.1 on this path.
             // Island-model and NSGA-II callers that use `Selection::Clearing` with
@@ -61,13 +62,13 @@ impl SelectionOperator for Selection {
                     "Selection::Clearing called through SelectionOperator trait: \
                      niche_radius defaults to 0.1 (configured value ignored). \
                      Use selection::factory for the full configuration.");
-                clearing_selection(chromosomes, 0.1, number_of_couples)
+                clearing_selection(chromosomes, 0.1, number_of_couples, num_parents)
             }
             Selection::Lexicase | Selection::EpsilonLexicase => {
                 panic!(
                     "Selection::Lexicase/EpsilonLexicase cannot be called through SelectionOperator \
                      trait: use selection::factory_lexicase for Lexicase/EpsilonLexicase operators. \
-                     Island-model and NSGA-II paths do not support MultiCaseFitness."
+                     Island-model and NSGA-II paths do not support VectorFitness."
                 );
             }
         }
@@ -76,15 +77,24 @@ impl SelectionOperator for Selection {
 
 /// Dispatches parent selection according to the configured method.
 ///
+/// # Arguments
+///
+/// * `chromosomes` - Population to select from.
+/// * `configuration` - Selection configuration (method, number_of_couples, etc.).
+/// * `number_of_threads` - Parallelism hint passed to the operator.
+/// * `num_parents` - Number of parents per group. Pass `2` for standard crossover;
+///   pass the operator's `num_parents` for multi-parent operators (UNDX/SPX/PCX).
+///
 /// # Returns
 ///
-/// `Ok(Vec<(usize, usize)>)` with the parent pairs, or `Err(GaError::SelectionError)` if
-/// the population is too small to form pairs.
+/// `Ok(Vec<Vec<usize>>)` with parent groups (each inner Vec has `num_parents` indices),
+/// or `Err(GaError::SelectionError)` if the population is too small to form groups.
 pub fn factory<U>(
     chromosomes: &[U],
     configuration: SelectionConfiguration,
     number_of_threads: usize,
-) -> Result<Vec<(usize, usize)>, GaError>
+    num_parents: usize,
+) -> Result<Vec<Vec<usize>>, GaError>
 where
     U: ChromosomeT + Sync + Send + 'static + Clone,
 {
@@ -105,21 +115,23 @@ where
         }
     }
 
-    let pairs = match configuration.method {
+    let groups = match configuration.method {
         Selection::Boltzmann => boltzmann_selection(
             chromosomes,
             configuration.number_of_couples,
             configuration.boltzmann_temperature,
+            num_parents,
         ),
         Selection::Clearing => clearing_selection(
             chromosomes,
             configuration.niche_radius,
             configuration.number_of_couples,
+            num_parents,
         ),
         Selection::Lexicase | Selection::EpsilonLexicase => {
             return Err(GaError::ConfigurationError(
                 "Use selection::factory_lexicase for Lexicase/EpsilonLexicase; \
-                 standard factory() does not support MultiCaseFitness bound."
+                 standard factory() does not support VectorFitness bound."
                     .into(),
             ));
         }
@@ -127,55 +139,60 @@ where
             chromosomes,
             configuration.number_of_couples,
             number_of_threads,
+            num_parents,
         ),
     };
 
-    Ok(pairs)
+    Ok(groups)
 }
 
 /// Dispatches parent selection for [`Selection::Lexicase`] and [`Selection::EpsilonLexicase`].
 ///
-/// Unlike [`factory`], this function requires chromosomes to implement [`MultiCaseFitness`].
-/// It also syncs each chromosome's scalar fitness to the mean of its case scores after selection
+/// Unlike [`factory`], this function requires chromosomes to implement [`VectorFitness`].
+/// It also syncs each chromosome's scalar fitness to the mean of its fitness values after selection
 /// (D-04: lexicase mean-fitness sync).
+///
+/// Lexicase always produces groups of 2 (standard 2-parent crossover); `num_parents` is
+/// accepted for API consistency but clamped to 2 for this operator.
 ///
 /// # Errors
 ///
 /// - `GaError::SelectionError` if the population has fewer than 2 individuals.
-/// - `GaError::SelectionError` if `case_fitness()` is empty on the first chromosome.
-/// - `GaError::SelectionError` if any chromosome has a NaN case fitness.
+/// - `GaError::SelectionError` if `fitness_values()` is empty on the first chromosome.
+/// - `GaError::SelectionError` if any chromosome has a NaN fitness value.
 /// - `GaError::ConfigurationError` if called with a non-lexicase selection method.
 pub fn factory_lexicase<U>(
     chromosomes: &mut [U],
     configuration: SelectionConfiguration,
     _number_of_threads: usize,
-) -> Result<Vec<(usize, usize)>, GaError>
+) -> Result<Vec<Vec<usize>>, GaError>
 where
-    U: ChromosomeT + MultiCaseFitness + Sync + Send + 'static + Clone,
+    U: ChromosomeT + VectorFitness + Sync + Send + 'static + Clone,
 {
     if chromosomes.len() < 2 {
         return Err(GaError::SelectionError(
             "Population must have at least 2 chromosomes".into(),
         ));
     }
-    if chromosomes[0].case_fitness().is_empty() {
+    if chromosomes[0].fitness_values().is_empty() {
         return Err(GaError::SelectionError(
-            "case_fitness() is empty — call set_case_fitness in calculate_fitness".into(),
+            "fitness_values() is empty — call set_fitness_values in calculate_fitness".into(),
         ));
     }
     // NaN guard
     for (i, c) in chromosomes.iter().enumerate() {
-        if c.case_fitness().iter().any(|&s| s.is_nan()) {
+        if c.fitness_values().iter().any(|&s| s.is_nan()) {
             return Err(GaError::SelectionError(format!(
-                "NaN in case_fitness at chromosome {}",
+                "NaN in fitness_values at chromosome {}",
                 i
             )));
         }
     }
 
-    let pairs = match configuration.method {
+    // Lexicase always produces 2-parent groups
+    let groups = match configuration.method {
         Selection::Lexicase => {
-            lexicase_selection(chromosomes, configuration.number_of_couples)
+            lexicase_selection(chromosomes, configuration.number_of_couples, 2)
         }
         Selection::EpsilonLexicase => epsilon_lexicase_selection(
             chromosomes,
@@ -185,6 +202,7 @@ where
             } else {
                 Some(configuration.epsilon)
             },
+            2,
         ),
         _ => {
             return Err(GaError::ConfigurationError(
@@ -193,14 +211,14 @@ where
         }
     };
 
-    // D-04: sync scalar fitness to mean of case scores
+    // D-04: sync scalar fitness to mean of fitness values
     for c in chromosomes.iter_mut() {
-        let scores = c.case_fitness().to_vec();
+        let scores = c.fitness_values().to_vec();
         if !scores.is_empty() {
             let mean = scores.iter().sum::<f64>() / scores.len() as f64;
             c.set_fitness(mean);
         }
     }
 
-    Ok(pairs)
+    Ok(groups)
 }

@@ -83,26 +83,45 @@ fn serde_alignment_strategy_enum() {
 
 #[test]
 fn serde_mutation_enum() {
-    let variants = [
+    let variants = vec![
         Mutation::Swap,
         Mutation::Inversion,
         Mutation::Scramble,
         Mutation::Value,
         Mutation::BitFlip,
-        Mutation::Creep,
-        Mutation::Gaussian,
-        Mutation::Polynomial,
-        Mutation::NonUniform,
+        Mutation::Creep { step: None },
+        Mutation::Creep { step: Some(0.05) },
+        Mutation::Gaussian { sigma: None },
+        Mutation::Gaussian { sigma: Some(0.2) },
+        Mutation::Polynomial { eta: None },
+        Mutation::Polynomial { eta: Some(20.0) },
+        Mutation::NonUniform { b: None },
+        Mutation::NonUniform { b: Some(2.0) },
         Mutation::PermutationInsert,
         Mutation::Insertion,
         Mutation::Deletion,
-        Mutation::Differential,
-        Mutation::Cauchy,
-        Mutation::LevyFlight,
+        Mutation::Differential { f: None },
+        Mutation::Differential { f: Some(0.5) },
+        Mutation::Cauchy { scale: None },
+        Mutation::Cauchy { scale: Some(1.0) },
+        Mutation::LevyFlight { alpha: None },
+        Mutation::LevyFlight { alpha: Some(1.5) },
         Mutation::Uniform,
+        Mutation::SelfAdaptiveGaussian {
+            tau: None,
+            tau_prime: None,
+            sigma_min: None,
+            sigma_max: None,
+        },
+        Mutation::SelfAdaptiveGaussian {
+            tau: Some(0.3),
+            tau_prime: Some(0.2),
+            sigma_min: Some(1e-5),
+            sigma_max: Some(1.0),
+        },
     ];
     for v in &variants {
-        assert_eq!(&round_trip(v), v);
+        assert_eq!(&round_trip(v), v, "Round-trip failed for {:?}", v);
     }
 }
 
@@ -145,7 +164,7 @@ fn serde_ga_configuration_with_values() {
         .with_chromosome_length(ChromosomeLength::Fixed(16))
         .with_selection_method(Selection::Boltzmann)
         .with_crossover_method(Crossover::Sbx)
-        .with_mutation_method(Mutation::Polynomial)
+        .with_mutation_method(Mutation::Polynomial { eta: None })
         .with_survivor_method(Survivor::MuPlusLambda)
         .with_problem_solving(ProblemSolving::Maximization)
         .with_max_generations(500)

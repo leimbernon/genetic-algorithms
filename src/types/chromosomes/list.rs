@@ -7,7 +7,7 @@
 
 use crate::fitness::FitnessFnWrapper;
 use crate::genotypes::List as ListGenotype;
-use crate::traits::{ChromosomeT, LinearChromosome, OperatorCompat};
+use crate::traits::{ChromosomeT, LinearChromosome, OperatorCompat, VectorFitness};
 use std::borrow::Cow;
 use std::fmt;
 use std::fmt::Debug;
@@ -45,6 +45,8 @@ pub struct ListChromosome<T: Sync + Send + Clone + Default + Debug> {
     pub dna: Vec<ListGenotype<T>>,
     pub fitness: f64,
     pub age: usize,
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub fitness_values: Vec<f64>,
     #[cfg_attr(feature = "serde", serde(skip, default))]
     pub fitness_fn: FitnessFnWrapper<ListGenotype<T>>,
 }
@@ -60,6 +62,7 @@ impl<T: Sync + Send + Clone + Default + Debug> Default for ListChromosome<T> {
             dna: Vec::new(),
             fitness: f64::NAN,
             age: 0,
+            fitness_values: Vec::new(),
             fitness_fn: FitnessFnWrapper::default(),
         }
     }
@@ -85,6 +88,7 @@ impl<T: Sync + Send + Clone + Default + Debug> ListChromosome<T> {
             dna: Vec::new(),
             fitness: f64::NAN,
             age: 0,
+            fitness_values: Vec::new(),
             fitness_fn: FitnessFnWrapper::default(),
         }
     }
@@ -141,6 +145,16 @@ impl<T: Sync + Send + Clone + Default + Debug + 'static> ChromosomeT for ListChr
 
     fn age(&self) -> usize {
         self.age
+    }
+}
+
+impl<T: Sync + Send + Clone + Default + Debug + 'static> VectorFitness for ListChromosome<T> {
+    fn fitness_values(&self) -> &[f64] {
+        &self.fitness_values
+    }
+
+    fn set_fitness_values(&mut self, values: Vec<f64>) {
+        self.fitness_values = values;
     }
 }
 

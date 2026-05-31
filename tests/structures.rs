@@ -1,6 +1,6 @@
 use genetic_algorithms::fitness::FitnessFnWrapper;
 use genetic_algorithms::operations::mutation::ValueMutable;
-use genetic_algorithms::traits::{ChromosomeT, GeneT, LinearChromosome, MultiCaseFitness, OperatorCompat};
+use genetic_algorithms::traits::{ChromosomeT, GeneT, LinearChromosome, OperatorCompat, VectorFitness};
 use std::borrow::Cow;
 
 //Structures definition
@@ -25,6 +25,7 @@ pub struct Chromosome {
     pub dna: Vec<Gene>,
     pub fitness: f64,
     pub age: usize,
+    pub fitness_values: Vec<f64>,
     #[cfg_attr(feature = "serde", serde(skip, default))]
     pub fitness_fn: FitnessFnWrapper<Gene>,
 }
@@ -51,12 +52,11 @@ impl ChromosomeT for Chromosome {
     }
 
     fn calculate_fitness(&mut self) {
-        self.fitness = 0.0;
-
-        for (i, gene) in self.dna.iter().enumerate() {
-            let fitness = f64::from(gene.id() * i as i32);
-            self.fitness += fitness;
-        }
+        let sum: f64 = self.dna.iter().enumerate()
+            .map(|(i, gene)| f64::from(gene.id() * i as i32))
+            .sum();
+        self.fitness = sum;
+        self.fitness_values = vec![sum, -sum];
     }
 }
 
@@ -86,11 +86,22 @@ impl LinearChromosome for Chromosome {
     }
 }
 
+impl VectorFitness for Chromosome {
+    fn fitness_values(&self) -> &[f64] {
+        &self.fitness_values
+    }
+
+    fn set_fitness_values(&mut self, values: Vec<f64>) {
+        self.fitness_values = values;
+    }
+}
+
 impl ValueMutable for Chromosome {}
 
 impl OperatorCompat for Chromosome {}
 
-/// Test fixture for lexicase selection. Extends `Chromosome` with per-case fitness scores.
+/// Test fixture for lexicase selection and multi-objective engines.
+/// Extends `Chromosome` with per-case / per-objective fitness scores via VectorFitness.
 #[allow(dead_code)]
 #[derive(Debug, Clone, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -98,7 +109,7 @@ pub struct MultiCaseChromosome {
     pub dna: Vec<Gene>,
     pub fitness: f64,
     pub age: usize,
-    pub case_scores: Vec<f64>,
+    pub fitness_values: Vec<f64>,
     #[cfg_attr(feature = "serde", serde(skip, default))]
     pub fitness_fn: FitnessFnWrapper<Gene>,
 }
@@ -125,14 +136,14 @@ impl ChromosomeT for MultiCaseChromosome {
     }
 
     fn calculate_fitness(&mut self) {
-        // Populate case_scores from gene ids (each gene contributes one case score).
+        // Populate fitness_values from gene ids (each gene contributes one case score).
         let scores: Vec<f64> = self.dna.iter().map(|g| f64::from(g.id())).collect();
         let mean = if scores.is_empty() {
             0.0
         } else {
             scores.iter().sum::<f64>() / scores.len() as f64
         };
-        self.case_scores = scores;
+        self.fitness_values = scores;
         self.fitness = mean;
     }
 }
@@ -163,13 +174,13 @@ impl LinearChromosome for MultiCaseChromosome {
     }
 }
 
-impl MultiCaseFitness for MultiCaseChromosome {
-    fn case_fitness(&self) -> &[f64] {
-        &self.case_scores
+impl VectorFitness for MultiCaseChromosome {
+    fn fitness_values(&self) -> &[f64] {
+        &self.fitness_values
     }
 
-    fn set_case_fitness(&mut self, scores: Vec<f64>) {
-        self.case_scores = scores;
+    fn set_fitness_values(&mut self, values: Vec<f64>) {
+        self.fitness_values = values;
     }
 }
 

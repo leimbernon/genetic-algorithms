@@ -19,17 +19,19 @@ use rand::Rng;
 /// Algorithm:
 /// 1. Sort chromosomes by fitness (ascending — worst = rank 1, best = rank N).
 /// 2. Assign each individual a selection probability proportional to its rank.
-/// 3. Use roulette-wheel sampling on ranks to select parent pairs.
+/// 3. Use roulette-wheel sampling on ranks to select N-ary parent groups.
 ///
 /// # Arguments
 ///
 /// * `chromosomes` - Population to select from.
-/// * `couples` - Number of parent pairs to produce.
+/// * `couples` - Number of parent groups to produce.
+/// * `num_parents` - Number of parents per group (must be >= 2).
 ///
 /// # Returns
 ///
-/// A vector of `(usize, usize)` parent index pairs.
-pub fn rank_selection<U: ChromosomeT>(chromosomes: &[U], couples: usize) -> Vec<(usize, usize)> {
+/// A vector of `Vec<usize>` parent index groups.
+pub fn rank_selection<U: ChromosomeT>(chromosomes: &[U], couples: usize, num_parents: usize) -> Vec<Vec<usize>> {
+    let num_parents = num_parents.max(2);
     debug!(target="selection_events", method="rank_selection"; "Starting rank-based selection");
 
     let n = chromosomes.len();
@@ -61,7 +63,7 @@ pub fn rank_selection<U: ChromosomeT>(chromosomes: &[U], couples: usize) -> Vec<
 
     // Select parents via roulette on ranks
     let mut rng = crate::rng::make_rng();
-    let total_parents = couples * 2;
+    let total_parents = couples * num_parents;
     let mut selected = Vec::with_capacity(total_parents);
 
     for _ in 0..total_parents {
@@ -70,15 +72,16 @@ pub fn rank_selection<U: ChromosomeT>(chromosomes: &[U], couples: usize) -> Vec<
         selected.push(cumulative[idx].0);
     }
 
-    // Pair selected parents
+    // Group selected parents into N-ary groups
     let mut mating = Vec::new();
-    for chunk in selected.chunks(2) {
-        if chunk.len() == 2 {
-            mating.push((chunk[0], chunk[1]));
-            trace!(target="selection_events", method="rank_selection"; "Mating pair: {} - {}", chunk[0], chunk[1]);
+    for chunk in selected.chunks(num_parents) {
+        if chunk.len() == num_parents {
+            let group = chunk.to_vec();
+            trace!(target="selection_events", method="rank_selection"; "Mating group: {:?}", group);
+            mating.push(group);
         }
     }
 
-    debug!(target="selection_events", method="rank_selection"; "Rank-based selection finished with {} pairs", mating.len());
+    debug!(target="selection_events", method="rank_selection"; "Rank-based selection finished with {} groups", mating.len());
     mating
 }

@@ -10,13 +10,14 @@ fn make_chromosome(fitness: f64) -> Chromosome {
         fitness,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     }
 }
 
 #[test]
 fn test_boltzmann_selection_produces_correct_number_of_pairs() {
     let pop: Vec<Chromosome> = (0..10).map(|i| make_chromosome(i as f64 * 10.0)).collect();
-    let pairs = boltzmann_selection(&pop, 5, 1.0);
+    let pairs = boltzmann_selection(&pop, 5, 1.0, 2);
     assert_eq!(pairs.len(), 5);
 }
 
@@ -24,12 +25,12 @@ fn test_boltzmann_selection_produces_correct_number_of_pairs() {
 fn test_boltzmann_selection_empty_on_small_population() {
     // Single chromosome
     let pop = vec![make_chromosome(10.0)];
-    let pairs = boltzmann_selection(&pop, 3, 1.0);
+    let pairs = boltzmann_selection(&pop, 3, 1.0, 2);
     assert!(pairs.is_empty());
 
     // Empty population
     let empty: Vec<Chromosome> = Vec::new();
-    let pairs = boltzmann_selection(&empty, 3, 1.0);
+    let pairs = boltzmann_selection(&empty, 3, 1.0, 2);
     assert!(pairs.is_empty());
 }
 
@@ -46,10 +47,10 @@ fn test_boltzmann_selection_high_temperature_approaches_uniform() {
     let mut counts = vec![0usize; n];
 
     for _ in 0..trials {
-        let pairs = boltzmann_selection(&pop, couples_per_trial, 1e12);
-        for (a, b) in &pairs {
-            counts[*a] += 1;
-            counts[*b] += 1;
+        let pairs = boltzmann_selection(&pop, couples_per_trial, 1e12, 2);
+        for group in &pairs {
+            counts[group[0]] += 1;
+            counts[group[1]] += 1;
         }
     }
 
@@ -77,12 +78,12 @@ fn test_boltzmann_selection_low_temperature_favors_fittest() {
     let mut fittest_count = 0;
     let trials = 500;
     for _ in 0..trials {
-        let pairs = boltzmann_selection(&pop, 5, 0.01);
-        for (a, b) in &pairs {
-            if *a == 9 {
+        let pairs = boltzmann_selection(&pop, 5, 0.01, 2);
+        for group in &pairs {
+            if group[0] == 9 {
                 fittest_count += 1;
             }
-            if *b == 9 {
+            if group[1] == 9 {
                 fittest_count += 1;
             }
         }
@@ -101,11 +102,11 @@ fn test_boltzmann_selection_low_temperature_favors_fittest() {
 fn test_boltzmann_selection_handles_equal_fitness() {
     // When all fitnesses are equal, selection should be effectively uniform
     let pop: Vec<Chromosome> = (0..4).map(|_| make_chromosome(42.0)).collect();
-    let pairs = boltzmann_selection(&pop, 3, 1.0);
+    let pairs = boltzmann_selection(&pop, 3, 1.0, 2);
     assert_eq!(pairs.len(), 3);
-    for (a, b) in &pairs {
-        assert!(*a < pop.len());
-        assert!(*b < pop.len());
+    for group in &pairs {
+        assert!(group[0] < pop.len());
+        assert!(group[1] < pop.len());
     }
 }
 
@@ -114,10 +115,10 @@ fn test_boltzmann_selection_invalid_temperature_uses_fallback() {
     let pop: Vec<Chromosome> = (0..5).map(|i| make_chromosome(i as f64)).collect();
 
     // Zero temperature
-    let pairs = boltzmann_selection(&pop, 2, 0.0);
+    let pairs = boltzmann_selection(&pop, 2, 0.0, 2);
     assert_eq!(pairs.len(), 2);
 
     // Negative temperature
-    let pairs = boltzmann_selection(&pop, 2, -5.0);
+    let pairs = boltzmann_selection(&pop, 2, -5.0, 2);
     assert_eq!(pairs.len(), 2);
 }

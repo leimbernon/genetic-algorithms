@@ -89,60 +89,70 @@ fn test_ga_start_maximize() {
             fitness: 1.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_2,
             fitness: 2.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_3,
             fitness: 3.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_4,
             fitness: 4.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_5,
             fitness: 5.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_6,
             fitness: 6.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_7,
             fitness: 7.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_8,
             fitness: 8.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_9,
             fitness: 9.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_10,
             fitness: 10.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
     ];
 
@@ -230,60 +240,70 @@ fn test_ga_run_minimize() {
             fitness: 1.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_2,
             fitness: 2.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_3,
             fitness: 3.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_4,
             fitness: 4.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_5,
             fitness: 5.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_6,
             fitness: 6.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_7,
             fitness: 7.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_8,
             fitness: 8.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_9,
             fitness: 9.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_10,
             fitness: 10.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
     ];
 
@@ -372,60 +392,70 @@ fn test_ga_run() {
             fitness: 1.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_2,
             fitness: 2.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_3,
             fitness: 3.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_4,
             fitness: 4.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_5,
             fitness: 5.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_6,
             fitness: 6.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_7,
             fitness: 7.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_8,
             fitness: 8.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_9,
             fitness: 9.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_10,
             fitness: 10.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
     ];
 
@@ -608,60 +638,70 @@ fn test_callback_function() {
             fitness: 1.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_2,
             fitness: 2.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_3,
             fitness: 3.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_4,
             fitness: 4.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_5,
             fitness: 5.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_6,
             fitness: 6.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_7,
             fitness: 7.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_8,
             fitness: 8.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_9,
             fitness: 9.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_10,
             fitness: 10.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
     ];
 
@@ -697,6 +737,7 @@ fn test_elitism_preserves_best_individual() {
             fitness: 0.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         };
         chromosome.set_fitness_fn(|genes: &[Gene]| genes.iter().map(|g| g.id as f64).sum::<f64>());
         chromosome.calculate_fitness();
@@ -746,6 +787,7 @@ fn test_stagnation_stopping_criterion() {
             fitness: 0.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         };
         chromosome.set_fitness_fn(|_genes: &[Gene]| 42.0); // constant fitness
         chromosome.calculate_fitness();
@@ -782,6 +824,7 @@ fn test_convergence_stopping_criterion() {
             fitness: 0.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         };
         chromosome.set_fitness_fn(|_genes: &[Gene]| 100.0); // constant fitness
         chromosome.calculate_fitness();
@@ -820,6 +863,7 @@ fn test_time_limit_stopping_criterion() {
             fitness: 0.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         };
         chromosome.set_fitness_fn(|genes: &[Gene]| genes.iter().map(|g| g.id as f64).sum::<f64>());
         chromosome.calculate_fitness();
@@ -860,6 +904,7 @@ fn test_rank_selection_in_ga() {
             fitness: 0.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         };
         chromosome.set_fitness_fn(|genes: &[Gene]| genes.iter().map(|g| g.id as f64).sum::<f64>());
         chromosome.calculate_fitness();
@@ -915,6 +960,7 @@ fn test_ga_with_niching_enabled() {
             fitness: 10.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         });
     }
     // 2 different chromosomes
@@ -924,6 +970,7 @@ fn test_ga_with_niching_enabled() {
             fitness: 10.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         });
     }
 
@@ -961,6 +1008,7 @@ fn test_ga_with_niching_disabled() {
             fitness: (i + 1) as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
 
@@ -990,6 +1038,7 @@ fn test_set_gene_out_of_bounds_is_noop() {
         fitness: 5.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     // Out-of-bounds set_gene should not panic and should leave DNA unchanged
@@ -1026,6 +1075,7 @@ fn test_termination_cause_set_without_callback() {
                 fitness: (i + 1) as f64,
                 age: 0,
                 fitness_fn: FitnessFnWrapper::default(),
+                fitness_values: vec![],
             }
         })
         .collect();
@@ -1066,6 +1116,7 @@ fn test_elitism_count_exceeding_population_does_not_panic() {
                 fitness: (i + 1) as f64,
                 age: 0,
                 fitness_fn: FitnessFnWrapper::default(),
+                fitness_values: vec![],
             }
         })
         .collect();
@@ -1172,12 +1223,6 @@ fn test_island_nsga2_run_returns_pareto_front() {
                 })
                 .collect()
         })
-        .with_objective_fns(vec![
-            // Objective 1: sum of gene IDs (minimize)
-            Box::new(|dna: &[Gene]| dna.iter().map(|g| g.id as f64).sum()),
-            // Objective 2: negative sum (conflicting with obj 1)
-            Box::new(|dna: &[Gene]| -(dna.iter().map(|g| g.id as f64).sum::<f64>())),
-        ])
         .build()
         .expect("Configuration should be valid");
 
@@ -1214,7 +1259,6 @@ fn test_island_nsga2_build_validates() {
     let ga_config = GaConfiguration::default();
 
     let result = IslandNsga2Ga::<Chromosome>::new(island_config, nsga2_config, ga_config)
-        .with_objective_fns(vec![Box::new(|_: &[Gene]| 0.0), Box::new(|_: &[Gene]| 0.0)])
         .build();
 
     assert!(
@@ -1263,10 +1307,6 @@ fn test_island_nsga2_migration_improves_diversity() {
                 })
                 .collect()
         })
-        .with_objective_fns(vec![
-            Box::new(|dna: &[Gene]| dna.iter().map(|g| g.id as f64).sum()),
-            Box::new(|dna: &[Gene]| dna.iter().map(|g| (g.id as f64 - 1.5).powi(2)).sum::<f64>()),
-        ])
         .build()
         .expect("Configuration should be valid");
 
@@ -1321,13 +1361,7 @@ fn test_nsga2_run_returns_pareto_front() {
                     alleles_clone[idx]
                 })
                 .collect()
-        })
-        .with_objective_fns(vec![
-            // Objective 1: sum of gene IDs
-            Box::new(|dna: &[Gene]| dna.iter().map(|g| g.id as f64).sum()),
-            // Objective 2: negative sum (conflicting)
-            Box::new(|dna: &[Gene]| -(dna.iter().map(|g| g.id as f64).sum::<f64>())),
-        ]);
+        });
 
     let result = nsga2.run();
     assert!(result.is_ok(), "NSGA-II run should succeed");
@@ -1388,21 +1422,14 @@ fn test_nsga2_three_objectives() {
             (0..genes_per_chrom)
                 .map(|_| alleles_clone[rng.random_range(0..alleles_clone.len())])
                 .collect()
-        })
-        .with_objective_fns(vec![
-            Box::new(|dna: &[Gene]| dna.iter().map(|g| g.id as f64).sum()),
-            Box::new(|dna: &[Gene]| -(dna.iter().map(|g| g.id as f64).sum::<f64>())),
-            Box::new(|dna: &[Gene]| dna.iter().map(|g| (g.id as f64 - 2.0).powi(2)).sum::<f64>()),
-        ]);
+        });
 
+    // Chromosome.calculate_fitness() produces 2 fitness_values; num_objectives=3 causes runtime error
     let result = nsga2.run();
-    assert!(result.is_ok(), "NSGA-II with 3 objectives should succeed");
-
-    let front = result.unwrap();
-    assert!(!front.is_empty());
-    for ind in &front.individuals {
-        assert_eq!(ind.objectives.len(), 3);
-    }
+    assert!(
+        result.is_err(),
+        "NSGA-II should reject chromosome with 2 objectives when 3 expected"
+    );
 }
 
 // ============================================================================
@@ -1683,6 +1710,7 @@ fn test_niching_promotes_diversity() {
                 fitness: 10.0,
                 age: 0,
                 fitness_fn: FitnessFnWrapper::default(),
+                fitness_values: vec![],
             });
         }
         for _ in 0..2 {
@@ -1691,6 +1719,7 @@ fn test_niching_promotes_diversity() {
                 fitness: 10.0,
                 age: 0,
                 fitness_fn: FitnessFnWrapper::default(),
+                fitness_values: vec![],
             });
         }
         Population::new(chromosomes)
@@ -1765,6 +1794,7 @@ fn test_adaptive_ga_runs_without_error() {
             fitness: 0.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         };
         chromosome.set_fitness_fn(|genes: &[Gene]| genes.iter().map(|g| g.id as f64).sum::<f64>());
         chromosome.calculate_fitness();
@@ -1822,6 +1852,7 @@ fn test_adaptive_ga_minimization() {
             fitness: 0.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         };
         chromosome.set_fitness_fn(|genes: &[Gene]| genes.iter().map(|g| g.id as f64).sum::<f64>());
         chromosome.calculate_fitness();
@@ -1871,6 +1902,7 @@ fn test_fitness_target_reached_minimization() {
             fitness: 0.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         });
     }
 
@@ -2068,6 +2100,7 @@ fn test_ga_stats_diversity_populated() {
             fitness: 1.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: vec![
@@ -2079,6 +2112,7 @@ fn test_ga_stats_diversity_populated() {
             fitness: 2.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: vec![
@@ -2090,6 +2124,7 @@ fn test_ga_stats_diversity_populated() {
             fitness: 3.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: vec![
@@ -2101,6 +2136,7 @@ fn test_ga_stats_diversity_populated() {
             fitness: 4.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: vec![
@@ -2112,6 +2148,7 @@ fn test_ga_stats_diversity_populated() {
             fitness: 5.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: vec![
@@ -2123,6 +2160,7 @@ fn test_ga_stats_diversity_populated() {
             fitness: 6.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: vec![
@@ -2134,6 +2172,7 @@ fn test_ga_stats_diversity_populated() {
             fitness: 7.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: vec![
@@ -2145,6 +2184,7 @@ fn test_ga_stats_diversity_populated() {
             fitness: 8.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: vec![
@@ -2156,6 +2196,7 @@ fn test_ga_stats_diversity_populated() {
             fitness: 9.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: vec![
@@ -2167,6 +2208,7 @@ fn test_ga_stats_diversity_populated() {
             fitness: 10.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
     ];
 

@@ -15,12 +15,14 @@ fn test_clone_crossover_produces_exact_copies() {
         fitness: 10.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 4 }, Gene { id: 5 }, Gene { id: 6 }],
         fitness: 20.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     let mut offspring = clone_crossover(&parent_1, &parent_2).unwrap();
@@ -46,12 +48,14 @@ fn test_clone_crossover_returns_two_children() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 3 }, Gene { id: 4 }],
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     let offspring = clone_crossover(&parent_1, &parent_2).unwrap();
@@ -65,12 +69,14 @@ fn test_clone_crossover_different_lengths_returns_error() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 3 }],
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     let result = clone_crossover(&parent_1, &parent_2);
@@ -85,6 +91,7 @@ fn test_clone_crossover_identical_parents() {
         fitness: 5.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     let offspring = clone_crossover(&parent, &parent).unwrap();
@@ -102,12 +109,14 @@ fn test_clone_crossover_single_gene() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 99 }],
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     let offspring = clone_crossover(&parent_1, &parent_2).unwrap();
@@ -122,12 +131,14 @@ fn test_clone_crossover_empty_dna() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![],
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     let offspring = clone_crossover(&parent_1, &parent_2).unwrap();
@@ -143,12 +154,14 @@ fn test_clone_crossover_via_enum_dispatch() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 3 }, Gene { id: 4 }],
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     let offspring = Crossover::Clone.crossover(&parent_1, &parent_2).unwrap();
@@ -166,12 +179,14 @@ fn test_clone_crossover_via_configuration() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 3 }, Gene { id: 4 }],
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     let config = CrossoverConfiguration {

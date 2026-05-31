@@ -17,6 +17,7 @@ fn single_point_crossover_preserves_length() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![
@@ -30,6 +31,7 @@ fn single_point_crossover_preserves_length() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     let offspring = single_point(&parent_1, &parent_2).unwrap();
@@ -50,6 +52,7 @@ fn single_point_crossover_genes_come_from_parents() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![
@@ -61,6 +64,7 @@ fn single_point_crossover_genes_come_from_parents() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     // Run multiple times to account for randomness
@@ -97,12 +101,14 @@ fn single_point_crossover_error_on_different_lengths() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 3 }],
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     assert!(single_point(&parent_1, &parent_2).is_err());
@@ -123,6 +129,7 @@ fn single_point_crossover_children_start_with_fresh_metadata() {
         fitness: 99.0,
         age: 5,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let mut parent_2 = Chromosome {
         dna: vec![
@@ -134,6 +141,7 @@ fn single_point_crossover_children_start_with_fresh_metadata() {
         fitness: 77.0,
         age: 5,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     // Confirm parents have the non-zero metadata we expect
@@ -169,12 +177,14 @@ fn single_point_crossover_error_on_too_short() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 2 }],
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     assert!(single_point(&parent_1, &parent_2).is_err());

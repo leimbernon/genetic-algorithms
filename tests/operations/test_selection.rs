@@ -23,36 +23,42 @@ fn test_random_even_selection() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_2 = Chromosome {
         dna: dna_2,
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_3 = Chromosome {
         dna: dna_3,
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_4 = Chromosome {
         dna: dna_4,
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_5 = Chromosome {
         dna: dna_5,
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_6 = Chromosome {
         dna: dna_6,
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     //We create the population and create the random mating
@@ -64,7 +70,7 @@ fn test_random_even_selection() {
         chromosome_5,
         chromosome_6,
     ];
-    let mating_population = random::random(&population);
+    let mating_population = random::random(&population, 2);
     assert_eq!(mating_population.len(), 3);
 }
 
@@ -83,30 +89,35 @@ fn test_random_odd_selection() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_2 = Chromosome {
         dna: dna_2,
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_3 = Chromosome {
         dna: dna_3,
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_4 = Chromosome {
         dna: dna_4,
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_5 = Chromosome {
         dna: dna_5,
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     //We create the population and create the random mating
@@ -117,7 +128,7 @@ fn test_random_odd_selection() {
         chromosome_4,
         chromosome_5,
     ];
-    let mating_population = random::random(&population);
+    let mating_population = random::random(&population, 2);
     assert_eq!(mating_population.len(), 2);
 }
 
@@ -136,30 +147,35 @@ fn test_roulette_wheel_selection() {
         fitness: 10.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_2 = Chromosome {
         dna: dna_2,
         fitness: 20.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_3 = Chromosome {
         dna: dna_3,
         fitness: 30.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_4 = Chromosome {
         dna: dna_4,
         fitness: 40.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_5 = Chromosome {
         dna: dna_5,
         fitness: 50.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     //We create the population and create the random mating
@@ -170,7 +186,7 @@ fn test_roulette_wheel_selection() {
         chromosome_4,
         chromosome_5,
     ];
-    let mating_population = fitness_proportionate::roulette_wheel_selection(&population);
+    let mating_population = fitness_proportionate::roulette_wheel_selection(&population, 2);
     assert_ne!(mating_population.len(), 0);
 }
 
@@ -191,42 +207,49 @@ fn test_stochastic_universal_sampling() {
         fitness: 10.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_2 = Chromosome {
         dna: dna_2,
         fitness: 20.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_3 = Chromosome {
         dna: dna_3,
         fitness: 30.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_4 = Chromosome {
         dna: dna_4,
         fitness: 40.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_5 = Chromosome {
         dna: dna_5,
         fitness: 50.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_6 = Chromosome {
         dna: dna_6,
         fitness: 60.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_7 = Chromosome {
         dna: dna_7,
         fitness: 70.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     //We create the population and create the random mating
@@ -244,7 +267,7 @@ fn test_stochastic_universal_sampling() {
     let mut found = false;
     for _ in 0..10 {
         let mating_population =
-            fitness_proportionate::stochastic_universal_sampling(&population, 3);
+            fitness_proportionate::stochastic_universal_sampling(&population, 3, 2);
         if !mating_population.is_empty() {
             found = true;
             break;
@@ -271,30 +294,35 @@ fn test_tournament_singlethread() {
         fitness: 10.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_2 = Chromosome {
         dna: dna_2,
         fitness: 20.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_3 = Chromosome {
         dna: dna_3,
         fitness: 30.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_4 = Chromosome {
         dna: dna_4,
         fitness: 40.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_5 = Chromosome {
         dna: dna_5,
         fitness: 50.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     //We create the population and create the random mating
@@ -305,7 +333,7 @@ fn test_tournament_singlethread() {
         chromosome_4,
         chromosome_5,
     ];
-    let mating_population = tournament::tournament(&population, 2, 1);
+    let mating_population = tournament::tournament(&population, 2, 1, 2);
     assert_eq!(mating_population.len(), 2);
     assert_ne!(mating_population.len(), 0);
 }
@@ -325,30 +353,35 @@ fn test_tournament_multithread() {
         fitness: 10.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_2 = Chromosome {
         dna: dna_2,
         fitness: 20.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_3 = Chromosome {
         dna: dna_3,
         fitness: 30.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_4 = Chromosome {
         dna: dna_4,
         fitness: 40.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_5 = Chromosome {
         dna: dna_5,
         fitness: 50.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     //We create the population and create the random mating
@@ -359,7 +392,7 @@ fn test_tournament_multithread() {
         chromosome_4,
         chromosome_5,
     ];
-    let mating_population = tournament::tournament(&population, 2, 2);
+    let mating_population = tournament::tournament(&population, 2, 2, 2);
     assert_eq!(mating_population.len(), 2);
     assert_ne!(mating_population.len(), 0);
 }
@@ -379,18 +412,19 @@ fn test_roulette_wheel_favours_higher_fitness() {
             fitness: if i == 4 { 1000.0 } else { 1.0 },
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         });
     }
 
     let mut high_fitness_count = 0;
     let runs = 100;
     for _ in 0..runs {
-        let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes);
-        for (a, b) in &pairs {
-            if *a == 4 {
+        let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes, 2);
+        for group in &pairs {
+            if group[0] == 4 {
                 high_fitness_count += 1;
             }
-            if *b == 4 {
+            if group[1] == 4 {
                 high_fitness_count += 1;
             }
         }
@@ -414,9 +448,10 @@ fn test_roulette_wheel_returns_correct_pair_count() {
             fitness: 10.0 + i as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
-    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes);
+    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes, 2);
     assert_eq!(pairs.len(), 3);
 
     // 5 chromosomes => 5 selections => 2 pairs (odd, last dropped)
@@ -426,9 +461,10 @@ fn test_roulette_wheel_returns_correct_pair_count() {
             fitness: 10.0 + i as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
-    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes);
+    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes, 2);
     assert_eq!(pairs.len(), 2);
 }
 
@@ -441,9 +477,10 @@ fn test_roulette_wheel_zero_total_fitness() {
             fitness: 0.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
-    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes);
+    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes, 2);
     assert!(
         pairs.is_empty(),
         "Roulette wheel should return empty for zero total fitness"
@@ -459,9 +496,10 @@ fn test_roulette_wheel_negative_fitness() {
             fitness: -10.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
-    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes);
+    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes, 2);
     assert!(
         pairs.is_empty(),
         "Roulette wheel should return empty for negative total fitness"
@@ -477,13 +515,14 @@ fn test_roulette_wheel_all_equal_fitness() {
             fitness: 50.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
-    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes);
+    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes, 2);
     assert_eq!(pairs.len(), 3);
-    for (a, b) in &pairs {
-        assert!(*a < 6);
-        assert!(*b < 6);
+    for group in &pairs {
+        assert!(group[0] < 6);
+        assert!(group[1] < 6);
     }
 }
 
@@ -497,17 +536,18 @@ fn test_sus_returns_requested_couple_count() {
             fitness: 10.0 + i as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
 
     // Request 4 couples => 8 selections => 4 pairs
-    let pairs = fitness_proportionate::stochastic_universal_sampling(&chromosomes, 4);
+    let pairs = fitness_proportionate::stochastic_universal_sampling(&chromosomes, 4, 2);
     assert_eq!(pairs.len(), 4);
 
     // All indices should be valid
-    for (a, b) in &pairs {
-        assert!(*a < 10);
-        assert!(*b < 10);
+    for group in &pairs {
+        assert!(group[0] < 10);
+        assert!(group[1] < 10);
     }
 }
 
@@ -520,21 +560,22 @@ fn test_sus_more_couples_than_chromosomes() {
             fitness: 10.0 + i as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
 
-    let pairs = fitness_proportionate::stochastic_universal_sampling(&chromosomes, 10);
+    let pairs = fitness_proportionate::stochastic_universal_sampling(&chromosomes, 10, 2);
     assert_eq!(pairs.len(), 10);
-    for (a, b) in &pairs {
-        assert!(*a < 3);
-        assert!(*b < 3);
+    for group in &pairs {
+        assert!(group[0] < 3);
+        assert!(group[1] < 3);
     }
 }
 
 #[test]
 fn test_sus_empty_population() {
     let chromosomes: Vec<Chromosome> = vec![];
-    let pairs = fitness_proportionate::stochastic_universal_sampling(&chromosomes, 3);
+    let pairs = fitness_proportionate::stochastic_universal_sampling(&chromosomes, 3, 2);
     assert!(pairs.is_empty());
 }
 
@@ -546,9 +587,10 @@ fn test_sus_zero_couples() {
             fitness: 10.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
-    let pairs = fitness_proportionate::stochastic_universal_sampling(&chromosomes, 0);
+    let pairs = fitness_proportionate::stochastic_universal_sampling(&chromosomes, 0, 2);
     assert!(pairs.is_empty());
 }
 
@@ -560,9 +602,10 @@ fn test_sus_zero_fitness_population() {
             fitness: 0.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
-    let pairs = fitness_proportionate::stochastic_universal_sampling(&chromosomes, 3);
+    let pairs = fitness_proportionate::stochastic_universal_sampling(&chromosomes, 3, 2);
     assert!(
         pairs.is_empty(),
         "SUS should return empty for zero total fitness"
@@ -578,9 +621,10 @@ fn test_sus_all_equal_fitness() {
             fitness: 20.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
-    let pairs = fitness_proportionate::stochastic_universal_sampling(&chromosomes, 3);
+    let pairs = fitness_proportionate::stochastic_universal_sampling(&chromosomes, 3, 2);
     assert_eq!(pairs.len(), 3);
 }
 
@@ -595,13 +639,14 @@ fn test_random_selection_can_select_last_individual() {
             fitness: 0.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
 
     for _ in 0..20 {
-        let pairs = random::random(&chromosomes);
+        let pairs = random::random(&chromosomes, 2);
         assert_eq!(pairs.len(), 1);
-        let (a, b) = pairs[0];
+        let (a, b) = (pairs[0][0], pairs[0][1]);
         // Both indices 0 and 1 should appear
         assert!((a == 0 && b == 1) || (a == 1 && b == 0));
     }
@@ -616,15 +661,16 @@ fn test_random_selection_all_individuals_selectable() {
             fitness: 0.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
 
     let mut seen = [false; 4];
     for _ in 0..100 {
-        let pairs = random::random(&chromosomes);
-        for (a, b) in &pairs {
-            seen[*a] = true;
-            seen[*b] = true;
+        let pairs = random::random(&chromosomes, 2);
+        for group in &pairs {
+            seen[group[0]] = true;
+            seen[group[1]] = true;
         }
     }
     for (i, &was_seen) in seen.iter().enumerate() {
@@ -644,8 +690,9 @@ fn test_random_selection_single_chromosome() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     }];
-    let pairs = random::random(&chromosomes);
+    let pairs = random::random(&chromosomes, 2);
     assert!(
         pairs.is_empty(),
         "Random selection with 1 chromosome should produce no pairs"
@@ -665,18 +712,21 @@ fn test_selection_factory_rejects_nan_fitness() {
             fitness: 10.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: vec![Gene { id: 2 }],
             fitness: f64::NAN,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: vec![Gene { id: 3 }],
             fitness: 20.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
     ];
 
@@ -686,7 +736,7 @@ fn test_selection_factory_rejects_nan_fitness() {
         ..Default::default()
     };
 
-    let result = selection::factory(&chromosomes, config, 1);
+    let result = selection::factory(&chromosomes, config, 1, 2);
     assert!(
         result.is_err(),
         "Selection factory should reject NaN fitness"
@@ -708,6 +758,7 @@ fn test_selection_factory_accepts_valid_fitness() {
             fitness: 10.0 + i as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
 
@@ -717,7 +768,7 @@ fn test_selection_factory_accepts_valid_fitness() {
         ..Default::default()
     };
 
-    let result = selection::factory(&chromosomes, config, 1);
+    let result = selection::factory(&chromosomes, config, 1, 2);
     assert!(
         result.is_ok(),
         "Selection factory should accept valid fitness, got: {:?}",
@@ -737,7 +788,7 @@ fn test_selection_factory_empty_population() {
         number_of_couples: 1,
         ..Default::default()
     };
-    let result = selection::factory(&chromosomes, config, 1);
+    let result = selection::factory(&chromosomes, config, 1, 2);
     assert!(
         result.is_err(),
         "Selection factory should reject empty population"
@@ -751,13 +802,14 @@ fn test_selection_factory_single_chromosome() {
         fitness: 10.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     }];
     let config = SelectionConfiguration {
         method: Selection::Random,
         number_of_couples: 1,
         ..Default::default()
     };
-    let result = selection::factory(&chromosomes, config, 1);
+    let result = selection::factory(&chromosomes, config, 1, 2);
     assert!(
         result.is_err(),
         "Selection factory should reject population of size 1"
@@ -772,6 +824,7 @@ fn test_selection_factory_two_chromosomes_random() {
             fitness: 10.0 + i as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
     let config = SelectionConfiguration {
@@ -779,7 +832,7 @@ fn test_selection_factory_two_chromosomes_random() {
         number_of_couples: 1,
         ..Default::default()
     };
-    let result = selection::factory(&chromosomes, config, 1);
+    let result = selection::factory(&chromosomes, config, 1, 2);
     assert!(
         result.is_ok(),
         "Two chromosomes should be valid for selection"
@@ -798,6 +851,7 @@ fn test_selection_factory_roulette_wheel() {
             fitness: 10.0 + i as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
     let config = SelectionConfiguration {
@@ -805,7 +859,7 @@ fn test_selection_factory_roulette_wheel() {
         number_of_couples: 2,
         ..Default::default()
     };
-    let result = selection::factory(&chromosomes, config, 1);
+    let result = selection::factory(&chromosomes, config, 1, 2);
     assert!(result.is_ok());
 }
 
@@ -817,6 +871,7 @@ fn test_selection_factory_sus() {
             fitness: 10.0 + i as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
     let config = SelectionConfiguration {
@@ -824,7 +879,7 @@ fn test_selection_factory_sus() {
         number_of_couples: 2,
         ..Default::default()
     };
-    let result = selection::factory(&chromosomes, config, 1);
+    let result = selection::factory(&chromosomes, config, 1, 2);
     assert!(result.is_ok());
 }
 
@@ -836,6 +891,7 @@ fn test_selection_factory_tournament() {
             fitness: 10.0 + i as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
     let config = SelectionConfiguration {
@@ -843,7 +899,7 @@ fn test_selection_factory_tournament() {
         number_of_couples: 2,
         ..Default::default()
     };
-    let result = selection::factory(&chromosomes, config, 1);
+    let result = selection::factory(&chromosomes, config, 1, 2);
     assert!(result.is_ok());
 }
 
@@ -855,6 +911,7 @@ fn test_selection_factory_rank() {
             fitness: 10.0 + i as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
     let config = SelectionConfiguration {
@@ -862,7 +919,7 @@ fn test_selection_factory_rank() {
         number_of_couples: 2,
         ..Default::default()
     };
-    let result = selection::factory(&chromosomes, config, 1);
+    let result = selection::factory(&chromosomes, config, 1, 2);
     assert!(result.is_ok());
 }
 
@@ -876,9 +933,10 @@ fn test_tournament_couples_zero() {
             fitness: 10.0 + i as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
-    let pairs = tournament::tournament(&chromosomes, 0, 1);
+    let pairs = tournament::tournament(&chromosomes, 0, 1, 2);
     assert!(
         pairs.is_empty(),
         "Tournament with 0 couples should return empty"
@@ -894,9 +952,10 @@ fn test_tournament_couples_exceed_population() {
             fitness: 10.0 + i as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
-    let pairs = tournament::tournament(&chromosomes, 10, 1);
+    let pairs = tournament::tournament(&chromosomes, 10, 1, 2);
     // Can produce at most 2 pairs from 4 chromosomes (clamped to len/2)
     assert!(pairs.len() <= 2, "Should clamp couples to population/2");
 }
@@ -909,9 +968,10 @@ fn test_tournament_population_of_two() {
             fitness: 10.0 + i as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
-    let pairs = tournament::tournament(&chromosomes, 1, 1);
+    let pairs = tournament::tournament(&chromosomes, 1, 1, 2);
     assert_eq!(pairs.len(), 1);
 }
 
@@ -923,13 +983,14 @@ fn test_tournament_all_equal_fitness() {
             fitness: 50.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
-    let pairs = tournament::tournament(&chromosomes, 3, 1);
+    let pairs = tournament::tournament(&chromosomes, 3, 1, 2);
     assert_eq!(pairs.len(), 3);
-    for (a, b) in &pairs {
-        assert!(*a < 6);
-        assert!(*b < 6);
+    for group in &pairs {
+        assert!(group[0] < 6);
+        assert!(group[1] < 6);
     }
 }
 
@@ -938,7 +999,7 @@ fn test_tournament_all_equal_fitness() {
 #[test]
 fn test_random_selection_empty_population() {
     let chromosomes: Vec<Chromosome> = vec![];
-    let pairs = random::random(&chromosomes);
+    let pairs = random::random(&chromosomes, 2);
     assert!(
         pairs.is_empty(),
         "Random selection with empty population should return empty"
@@ -954,9 +1015,10 @@ fn test_roulette_wheel_single_chromosome() {
         fitness: 50.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     }];
     // 1 chromosome => 1 selection => 0 pairs (odd count, last dropped)
-    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes);
+    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes, 2);
     assert!(
         pairs.is_empty(),
         "Roulette wheel with 1 chromosome should return 0 pairs"
@@ -971,9 +1033,10 @@ fn test_roulette_wheel_two_chromosomes() {
             fitness: 10.0 + i as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
-    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes);
+    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes, 2);
     assert_eq!(pairs.len(), 1);
 }
 
@@ -986,8 +1049,9 @@ fn test_sus_single_chromosome() {
         fitness: 50.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     }];
-    let pairs = fitness_proportionate::stochastic_universal_sampling(&chromosomes, 1);
+    let pairs = fitness_proportionate::stochastic_universal_sampling(&chromosomes, 1, 2);
     assert_eq!(
         pairs.len(),
         1,
@@ -1003,9 +1067,10 @@ fn test_sus_negative_fitness() {
             fitness: -10.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
-    let pairs = fitness_proportionate::stochastic_universal_sampling(&chromosomes, 2);
+    let pairs = fitness_proportionate::stochastic_universal_sampling(&chromosomes, 2, 2);
     assert!(
         pairs.is_empty(),
         "SUS should return empty for negative total fitness"
@@ -1017,7 +1082,7 @@ fn test_sus_negative_fitness() {
 #[test]
 fn test_rank_selection_empty_population() {
     let pop: Vec<Chromosome> = vec![];
-    let pairs = genetic_algorithms::operations::selection::rank::rank_selection(&pop, 3);
+    let pairs = genetic_algorithms::operations::selection::rank::rank_selection(&pop, 3, 2);
     assert!(
         pairs.is_empty(),
         "Rank selection with empty population should return empty"
@@ -1032,9 +1097,10 @@ fn test_rank_selection_couples_zero() {
             fitness: 10.0 + i as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
-    let pairs = genetic_algorithms::operations::selection::rank::rank_selection(&pop, 0);
+    let pairs = genetic_algorithms::operations::selection::rank::rank_selection(&pop, 0, 2);
     assert!(
         pairs.is_empty(),
         "Rank selection with 0 couples should return empty"
@@ -1049,13 +1115,14 @@ fn test_rank_selection_all_equal_fitness() {
             fitness: 42.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
-    let pairs = genetic_algorithms::operations::selection::rank::rank_selection(&pop, 3);
+    let pairs = genetic_algorithms::operations::selection::rank::rank_selection(&pop, 3, 2);
     assert_eq!(pairs.len(), 3);
-    for (a, b) in &pairs {
-        assert!(*a < 6);
-        assert!(*b < 6);
+    for group in &pairs {
+        assert!(group[0] < 6);
+        assert!(group[1] < 6);
     }
 }
 
@@ -1066,10 +1133,69 @@ fn test_rank_selection_single_chromosome() {
         fitness: 42.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     }];
-    let pairs = genetic_algorithms::operations::selection::rank::rank_selection(&pop, 1);
+    let pairs = genetic_algorithms::operations::selection::rank::rank_selection(&pop, 1, 2);
     assert!(
         pairs.is_empty(),
         "Rank selection with 1 chromosome should return empty"
     );
+}
+
+// ==================== Phase 54 N-ary selection tests ====================
+
+#[test]
+fn test_factory_returns_groups_of_num_parents() {
+    // num_parents = 3: every returned group must have exactly 3 indices.
+    let chromosomes: Vec<Chromosome> = (0..10)
+        .map(|i| Chromosome {
+            dna: vec![Gene { id: i }],
+            fitness: 10.0 + i as f64,
+            age: 0,
+            fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
+        })
+        .collect();
+
+    let config = SelectionConfiguration {
+        method: Selection::Tournament,
+        number_of_couples: 4,
+        ..Default::default()
+    };
+
+    let result = selection::factory(&chromosomes, config, 1, 3);
+    assert!(result.is_ok(), "factory with num_parents=3 should succeed: {:?}", result.err());
+    let groups = result.unwrap();
+    assert!(!groups.is_empty(), "Should return at least one group");
+    for group in &groups {
+        assert_eq!(
+            group.len(),
+            3,
+            "Each group should have exactly 3 parents, got {} in {:?}",
+            group.len(),
+            group
+        );
+        for &idx in group {
+            assert!(idx < chromosomes.len(), "Index {} out of bounds", idx);
+        }
+    }
+
+    // num_parents = 2: every returned group must have exactly 2 indices.
+    let config2 = SelectionConfiguration {
+        method: Selection::Tournament,
+        number_of_couples: 4,
+        ..Default::default()
+    };
+    let result2 = selection::factory(&chromosomes, config2, 1, 2);
+    assert!(result2.is_ok(), "factory with num_parents=2 should succeed: {:?}", result2.err());
+    let groups2 = result2.unwrap();
+    for group in &groups2 {
+        assert_eq!(
+            group.len(),
+            2,
+            "Each group should have exactly 2 parents, got {} in {:?}",
+            group.len(),
+            group
+        );
+    }
 }

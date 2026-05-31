@@ -13,8 +13,7 @@ fn test_island_nsga2_validate_zero_islands() {
     let nsga2_config = Nsga2Configuration::new().with_num_objectives(2);
     let ga_config = GaConfiguration::default();
     let ga = IslandNsga2Ga::<Binary>::new(island_config, nsga2_config, ga_config)
-        .with_initialization_fn(|_, _| vec![])
-        .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0)]);
+        .with_initialization_fn(|_, _| vec![]);
 
     assert!(ga.validate().is_err());
 }
@@ -35,20 +34,7 @@ fn test_island_nsga2_validate_no_init_fn() {
     let island_config = IslandConfiguration::new().with_num_islands(2);
     let nsga2_config = Nsga2Configuration::new().with_num_objectives(2);
     let ga_config = GaConfiguration::default();
-    let ga = IslandNsga2Ga::<Binary>::new(island_config, nsga2_config, ga_config)
-        .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0)]);
-
-    assert!(ga.validate().is_err());
-}
-
-#[test]
-fn test_island_nsga2_validate_mismatched_objectives() {
-    let island_config = IslandConfiguration::new().with_num_islands(2);
-    let nsga2_config = Nsga2Configuration::new().with_num_objectives(2);
-    let ga_config = GaConfiguration::default();
-    let ga = IslandNsga2Ga::<Binary>::new(island_config, nsga2_config, ga_config)
-        .with_initialization_fn(|_, _| vec![])
-        .with_objective_fns(vec![Box::new(|_| 0.0)]); // only 1, need 2
+    let ga = IslandNsga2Ga::<Binary>::new(island_config, nsga2_config, ga_config);
 
     assert!(ga.validate().is_err());
 }
@@ -63,8 +49,7 @@ fn test_island_nsga2_validate_migration_count_exceeds_pop() {
         .with_population_size(100);
     let ga_config = GaConfiguration::default();
     let ga = IslandNsga2Ga::<Binary>::new(island_config, nsga2_config, ga_config)
-        .with_initialization_fn(|_, _| vec![])
-        .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0)]);
+        .with_initialization_fn(|_, _| vec![]);
 
     assert!(ga.validate().is_err());
 }
@@ -79,8 +64,7 @@ fn test_island_nsga2_validate_ok() {
         .with_population_size(20);
     let ga_config = GaConfiguration::default();
     let ga = IslandNsga2Ga::<Binary>::new(island_config, nsga2_config, ga_config)
-        .with_initialization_fn(|_, _| vec![])
-        .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0)]);
+        .with_initialization_fn(|_, _| vec![]);
 
     assert!(ga.validate().is_ok());
 }
@@ -96,7 +80,6 @@ fn test_island_nsga2_build_ok() {
     let ga_config = GaConfiguration::default();
     let result = IslandNsga2Ga::<Binary>::new(island_config, nsga2_config, ga_config)
         .with_initialization_fn(|_, _| vec![])
-        .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0)])
         .build();
 
     assert!(result.is_ok());

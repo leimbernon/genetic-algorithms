@@ -72,7 +72,7 @@ fn main() {
         .with_fitness_fn(fitness_fn)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::BlendAlpha)
-        .with_mutation_method(Mutation::Gaussian)
+        .with_mutation_method(Mutation::Gaussian { sigma: None })
         .with_problem_solving(ProblemSolving::Minimization)
         .with_survivor_method(Survivor::Fitness)
         .with_max_generations(MAX_GEN)

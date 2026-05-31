@@ -16,6 +16,7 @@ fn order_crossover_preserves_length() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![
@@ -28,6 +29,7 @@ fn order_crossover_preserves_length() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     let offspring = order(&parent_1, &parent_2).unwrap();
@@ -50,6 +52,7 @@ fn order_crossover_preserves_all_gene_ids() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![
@@ -63,6 +66,7 @@ fn order_crossover_preserves_all_gene_ids() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     // Run multiple times because of randomness
@@ -97,12 +101,14 @@ fn order_crossover_error_on_different_lengths() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 1 }, Gene { id: 2 }],
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     assert!(order(&parent_1, &parent_2).is_err());
@@ -115,12 +121,14 @@ fn order_crossover_error_on_too_short() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 2 }, Gene { id: 1 }],
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     assert!(order(&parent_1, &parent_2).is_err());
