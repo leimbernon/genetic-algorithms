@@ -34,7 +34,10 @@ matches the weight-vector count, the standard MOEA/D convention).
 - LogObserver attached as MoeaDObserver
 */
 
-use genetic_algorithms::chromosomes::Range as RangeChromosome;
+use std::borrow::Cow;
+use std::f64::consts::FRAC_PI_2;
+use std::sync::Arc;
+
 use genetic_algorithms::configuration::GaConfiguration;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::initializers::range_random_initialization;
@@ -42,9 +45,8 @@ use genetic_algorithms::moead::configuration::{
     MoeaDConfiguration, ObjectiveDirection, ScalarizationFn,
 };
 use genetic_algorithms::moead::MoeaDGa;
+use genetic_algorithms::traits::{ChromosomeT, LinearChromosome, VectorFitness};
 use genetic_algorithms::{LogObserver, MoeaDObserver};
-use std::f64::consts::FRAC_PI_2;
-use std::sync::Arc;
 
 const N_VARS: usize = 12;
 const POP_SIZE: usize = 91; // C(14, 2) = 91 weight vectors with p=12, M=3
@@ -52,6 +54,53 @@ const MAX_GENERATIONS: usize = 300;
 const DAS_DENNIS_P: usize = 12;
 const NEIGHBORHOOD_SIZE: usize = 20;        // Zhang & Li 2007 baseline
 const MAX_NEIGHBOR_REPLACEMENTS: usize = 2; // Zhang & Li 2007 baseline
+
+// Custom chromosome that encodes DTLZ2 objectives directly in calculate_fitness().
+#[derive(Debug, Clone, Default)]
+struct Dtlz2Chromosome {
+    dna: Vec<RangeGenotype<f64>>,
+    fitness: f64,
+    fitness_values: Vec<f64>,
+}
+
+impl ChromosomeT for Dtlz2Chromosome {
+    type Gene = RangeGenotype<f64>;
+    fn fitness(&self) -> f64 { self.fitness }
+    fn set_fitness(&mut self, v: f64) -> &mut Self { self.fitness = v; self }
+    fn set_age(&mut self, _: usize) -> &mut Self { self }
+    fn age(&self) -> usize { 0 }
+    fn calculate_fitness(&mut self) {
+        if self.dna.len() < 3 {
+            self.fitness_values = vec![0.0, 0.0, 0.0];
+            self.fitness = 0.0;
+            return;
+        }
+        let g: f64 = self.dna[2..].iter().map(|gene| (gene.value - 0.5).powi(2)).sum();
+        let f1 = (self.dna[0].value * FRAC_PI_2).cos() * (self.dna[1].value * FRAC_PI_2).cos() * (1.0 + g);
+        let f2 = (self.dna[0].value * FRAC_PI_2).cos() * (self.dna[1].value * FRAC_PI_2).sin() * (1.0 + g);
+        let f3 = (self.dna[0].value * FRAC_PI_2).sin() * (1.0 + g);
+        self.fitness_values = vec![f1, f2, f3];
+        self.fitness = f1 + f2 + f3;
+    }
+}
+
+impl LinearChromosome for Dtlz2Chromosome {
+    fn dna(&self) -> &[Self::Gene] { &self.dna }
+    fn dna_mut(&mut self) -> &mut [Self::Gene] { &mut self.dna }
+    fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
+        self.dna = dna.into_owned(); self
+    }
+    fn set_fitness_fn<F>(&mut self, _: F) -> &mut Self
+    where F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static { self }
+}
+
+impl VectorFitness for Dtlz2Chromosome {
+    fn fitness_values(&self) -> &[f64] { &self.fitness_values }
+    fn set_fitness_values(&mut self, values: Vec<f64>) { self.fitness_values = values; }
+}
+
+impl genetic_algorithms::operations::mutation::ValueMutable for Dtlz2Chromosome {}
+impl genetic_algorithms::traits::OperatorCompat for Dtlz2Chromosome {}
 
 fn main() {
     // --- MOEA/D configuration ---
@@ -79,33 +128,14 @@ fn main() {
     let alleles = vec![RangeGenotype::new(0, vec![(0.0_f64, 1.0_f64)], 0.0_f64)];
     let alleles_clone = alleles.clone();
 
-    // --- Objective functions (DTLZ2, M=3) ---
-    let g_fn = |dna: &[RangeGenotype<f64>]| -> f64 {
-        dna[2..].iter().map(|gene| (gene.value - 0.5).powi(2)).sum()
-    };
-
-    let f1 = move |dna: &[RangeGenotype<f64>]| -> f64 {
-        let g = g_fn(dna);
-        (dna[0].value * FRAC_PI_2).cos() * (dna[1].value * FRAC_PI_2).cos() * (1.0 + g)
-    };
-    let f2 = move |dna: &[RangeGenotype<f64>]| -> f64 {
-        let g = g_fn(dna);
-        (dna[0].value * FRAC_PI_2).cos() * (dna[1].value * FRAC_PI_2).sin() * (1.0 + g)
-    };
-    let f3 = move |dna: &[RangeGenotype<f64>]| -> f64 {
-        let g = g_fn(dna);
-        (dna[0].value * FRAC_PI_2).sin() * (1.0 + g)
-    };
-
     // --- Build the MOEA/D optimizer ---
-    let mut moead = MoeaDGa::<RangeChromosome<f64>>::new(moead_config, ga_config)
+    let mut moead = MoeaDGa::<Dtlz2Chromosome>::new(moead_config, ga_config)
         .with_alleles(alleles)
         .with_initialization_fn(move |n, _| {
             range_random_initialization(n, Some(&alleles_clone))
         })
-        .with_objective_fns(vec![Box::new(f1), Box::new(f2), Box::new(f3)])
         .with_observer(
-            Arc::new(LogObserver) as Arc<dyn MoeaDObserver<RangeChromosome<f64>> + Send + Sync>,
+            Arc::new(LogObserver) as Arc<dyn MoeaDObserver<Dtlz2Chromosome> + Send + Sync>,
         )
         .build()
         .expect("Failed to build MOEA/D");

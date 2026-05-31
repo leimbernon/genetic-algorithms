@@ -10,6 +10,7 @@ fn test_rank_selection_produces_correct_pairs() {
             fitness: i as f64 * 10.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
 
@@ -30,12 +31,14 @@ fn test_rank_selection_with_two_chromosomes() {
             fitness: 10.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: vec![Gene { id: 2 }],
             fitness: 90.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
     ];
 
@@ -51,6 +54,7 @@ fn test_rank_selection_returns_valid_indices() {
             fitness: i as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
     let pairs = rank_selection(&pop, 3, 2);
@@ -68,6 +72,7 @@ fn test_rank_selection_favors_higher_fitness() {
             fitness: i as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
 

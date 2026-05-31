@@ -30,72 +30,84 @@ fn test_fitness_survivor_minization() {
         fitness: 10.1,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_2 = Chromosome {
         dna: dna_2,
         fitness: 10.2,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_3 = Chromosome {
         dna: dna_3,
         fitness: 10.3,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_4 = Chromosome {
         dna: dna_4,
         fitness: 11.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_5 = Chromosome {
         dna: dna_5,
         fitness: 12.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_6 = Chromosome {
         dna: dna_6,
         fitness: 13.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_7 = Chromosome {
         dna: dna_7,
         fitness: 14.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_8 = Chromosome {
         dna: dna_8,
         fitness: 15.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_9 = Chromosome {
         dna: dna_9,
         fitness: 16.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_10 = Chromosome {
         dna: dna_10,
         fitness: 17.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_11 = Chromosome {
         dna: dna_11,
         fitness: 18.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_12 = Chromosome {
         dna: dna_12,
         fitness: 19.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     //We create the population and create the random mating
@@ -151,72 +163,84 @@ fn test_fitness_survivor_maximization() {
         fitness: 10.1,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_2 = Chromosome {
         dna: dna_2,
         fitness: 10.2,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_3 = Chromosome {
         dna: dna_3,
         fitness: 10.3,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_4 = Chromosome {
         dna: dna_4,
         fitness: 11.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_5 = Chromosome {
         dna: dna_5,
         fitness: 12.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_6 = Chromosome {
         dna: dna_6,
         fitness: 13.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_7 = Chromosome {
         dna: dna_7,
         fitness: 14.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_8 = Chromosome {
         dna: dna_8,
         fitness: 15.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_9 = Chromosome {
         dna: dna_9,
         fitness: 16.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_10 = Chromosome {
         dna: dna_10,
         fitness: 17.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_11 = Chromosome {
         dna: dna_11,
         fitness: 18.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_12 = Chromosome {
         dna: dna_12,
         fitness: 19.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     //We create the population and create the random mating
@@ -272,72 +296,84 @@ fn test_age_based_survivor() {
         fitness: 10.1,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_2 = Chromosome {
         dna: dna_2,
         fitness: 10.2,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_3 = Chromosome {
         dna: dna_3,
         fitness: 10.3,
         age: 1,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_4 = Chromosome {
         dna: dna_4,
         fitness: 11.0,
         age: 1,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_5 = Chromosome {
         dna: dna_5,
         fitness: 12.0,
         age: 3,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_6 = Chromosome {
         dna: dna_6,
         fitness: 13.0,
         age: 3,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_7 = Chromosome {
         dna: dna_7,
         fitness: 14.0,
         age: 2,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_8 = Chromosome {
         dna: dna_8,
         fitness: 15.0,
         age: 2,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_9 = Chromosome {
         dna: dna_9,
         fitness: 16.0,
         age: 2,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_10 = Chromosome {
         dna: dna_10,
         fitness: 17.0,
         age: 2,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_11 = Chromosome {
         dna: dna_11,
         fitness: 18.0,
         age: 1,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_12 = Chromosome {
         dna: dna_12,
         fitness: 19.0,
         age: 1,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     //We create the population and create the random mating
@@ -390,72 +426,84 @@ fn test_survivor_fitness_fixed() {
         fitness: 10.1,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_2 = Chromosome {
         dna: dna_2,
         fitness: 10.2,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_3 = Chromosome {
         dna: dna_3,
         fitness: 10.3,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_4 = Chromosome {
         dna: dna_4,
         fitness: 11.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_5 = Chromosome {
         dna: dna_5,
         fitness: 12.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_6 = Chromosome {
         dna: dna_6,
         fitness: 13.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_7 = Chromosome {
         dna: dna_7,
         fitness: 14.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_8 = Chromosome {
         dna: dna_8,
         fitness: 15.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_9 = Chromosome {
         dna: dna_9,
         fitness: 16.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_10 = Chromosome {
         dna: dna_10,
         fitness: 17.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_11 = Chromosome {
         dna: dna_11,
         fitness: 18.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_12 = Chromosome {
         dna: dna_12,
         fitness: 19.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     //We create the population and create the random mating
@@ -502,18 +550,21 @@ fn test_survivor_factory_rejects_nan_fitness() {
             fitness: 10.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: vec![Gene { id: 2 }],
             fitness: f64::NAN,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: vec![Gene { id: 3 }],
             fitness: 20.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
     ];
 
@@ -546,6 +597,7 @@ fn test_survivor_factory_accepts_valid_fitness() {
             fitness: 10.0 + i as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
 
@@ -615,6 +667,7 @@ fn test_fitness_survivor_at_target_size() {
             fitness: 10.0 + i as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
     fitness::fitness_based(
@@ -636,6 +689,7 @@ fn test_fitness_survivor_below_target_size() {
             fitness: 10.0 + i as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
     fitness::fitness_based(
@@ -658,6 +712,7 @@ fn test_age_survivor_at_target_size() {
             fitness: 10.0,
             age: i as usize,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
     age::age_based(&mut population, 5);
@@ -672,6 +727,7 @@ fn test_age_survivor_below_target_size() {
             fitness: 10.0,
             age: i as usize,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
     age::age_based(&mut population, 10);
@@ -688,6 +744,7 @@ fn test_fitness_survivor_target_zero() {
             fitness: 10.0 + i as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
     fitness::fitness_based(
@@ -712,6 +769,7 @@ fn test_age_survivor_target_zero() {
             fitness: 10.0,
             age: i as usize,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
     age::age_based(&mut population, 0);
@@ -731,6 +789,7 @@ fn test_fitness_survivor_target_one_maximization() {
             fitness: 10.0 + i as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
     fitness::fitness_based(
@@ -753,6 +812,7 @@ fn test_fitness_survivor_target_one_minimization() {
             fitness: 10.0 + i as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
     fitness::fitness_based(
@@ -775,6 +835,7 @@ fn test_age_survivor_target_one() {
             fitness: 10.0,
             age: i as usize,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
     age::age_based(&mut population, 1);
@@ -792,6 +853,7 @@ fn test_age_survivor_all_same_age() {
             fitness: 10.0 + i as f64,
             age: 5,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
     age::age_based(&mut population, 3);
@@ -812,6 +874,7 @@ fn test_survivor_factory_fitness_method() {
             fitness: 10.0 + i as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
     let result = survivor::factory(
@@ -835,6 +898,7 @@ fn test_survivor_factory_age_method() {
             fitness: 10.0 + i as f64,
             age: i as usize,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
     let result = survivor::factory(

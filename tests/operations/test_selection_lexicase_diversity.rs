@@ -4,7 +4,7 @@
 /// surviving genotypes than tournament on a matched-effort multi-case benchmark (SEL-02 criterion 4).
 ///
 /// Setup: 50 specialists (5 groups × 10 individuals, each group dominant on one case with
-/// case_score=1.0 and scalar fitness=0.2) + 10 generalists (all cases 0.3, scalar fitness=0.3).
+/// fitness_value=1.0 and scalar fitness=0.2) + 10 generalists (all cases 0.3, scalar fitness=0.3).
 ///
 /// Tournament strongly prefers generalists (scalar 0.3 > 0.2) → selected pool
 /// is overwhelmingly generalist → low case-score variance.
@@ -18,7 +18,7 @@ fn test_lexicase_produces_more_specialists_than_tournament() {
         configuration::SelectionConfiguration,
         fitness::FitnessFnWrapper,
         operations::{selection, selection::factory_lexicase, Selection},
-        traits::MultiCaseFitness,
+        traits::VectorFitness,
     };
 
     const K: usize = 5;            // number of cases
@@ -38,10 +38,10 @@ fn test_lexicase_produces_more_specialists_than_tournament() {
                 dna: vec![Gene { id: i as i32 }],
                 fitness: mean,
                 age: 0,
-                case_scores: vec![],
+                fitness_values: vec![],
                 fitness_fn: FitnessFnWrapper::default(),
             };
-            c.set_case_fitness(scores);
+            c.set_fitness_values(scores);
             c
         })
         .collect();
@@ -53,10 +53,10 @@ fn test_lexicase_produces_more_specialists_than_tournament() {
             dna: vec![Gene { id: i as i32 }],
             fitness: 0.3,
             age: 0,
-            case_scores: vec![],
+            fitness_values: vec![],
             fitness_fn: FitnessFnWrapper::default(),
         };
-        c.set_case_fitness(scores);
+        c.set_fitness_values(scores);
         pop.push(c);
     }
 
@@ -90,7 +90,7 @@ fn test_lexicase_produces_more_specialists_than_tournament() {
         for case_i in 0..K {
             let scores: Vec<f64> = indices
                 .iter()
-                .map(|&idx| population[idx].case_fitness()[case_i])
+                .map(|&idx| population[idx].fitness_values()[case_i])
                 .collect();
             let mean = scores.iter().sum::<f64>() / total;
             let var = scores.iter().map(|&s| (s - mean).powi(2)).sum::<f64>() / total;

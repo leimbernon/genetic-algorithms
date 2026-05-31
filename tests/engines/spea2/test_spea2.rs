@@ -1,24 +1,64 @@
 //! SPEA2 engine tests.
-//!
-//! Wave 0 scope: validate() error paths. Plan 37-02 appends run() integration
-//! tests once the run() loop is implemented; Plan 37-03 adds the LogObserver
-//! smoke test.
 
-use genetic_algorithms::chromosomes::Range as RangeChromosome;
+use std::borrow::Cow;
+use genetic_algorithms::traits::{ConfigurationT, ChromosomeT, LinearChromosome, VectorFitness};
 use genetic_algorithms::configuration::GaConfiguration;
 use genetic_algorithms::error::GaError;
+use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::spea2::configuration::{Spea2Configuration, ObjectiveDirection};
 use genetic_algorithms::spea2::Spea2Ga;
-use genetic_algorithms::traits::ConfigurationT;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use genetic_algorithms::LogObserver;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+
+// Custom 2-objective chromosome using RangeGenotype<f64> genes.
+// f1 = dna[0].value, f2 = 1.0 - sqrt(dna[0].value) (ZDT1-like simple objectives)
+#[derive(Debug, Clone, Default)]
+struct TwoObjRangeChromosome {
+    dna: Vec<RangeGenotype<f64>>,
+    fitness: f64,
+    fitness_values: Vec<f64>,
+}
+
+impl ChromosomeT for TwoObjRangeChromosome {
+    type Gene = RangeGenotype<f64>;
+    fn fitness(&self) -> f64 { self.fitness }
+    fn set_fitness(&mut self, v: f64) -> &mut Self { self.fitness = v; self }
+    fn set_age(&mut self, _: usize) -> &mut Self { self }
+    fn age(&self) -> usize { 0 }
+    fn calculate_fitness(&mut self) {
+        let f1 = self.dna.first().map(|g| g.value).unwrap_or(0.0);
+        let f2 = 1.0 - f1.sqrt();
+        self.fitness_values = vec![f1, f2];
+        self.fitness = f1;
+    }
+}
+
+impl LinearChromosome for TwoObjRangeChromosome {
+    fn dna(&self) -> &[Self::Gene] { &self.dna }
+    fn dna_mut(&mut self) -> &mut [Self::Gene] { &mut self.dna }
+    fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
+        self.dna = dna.into_owned(); self
+    }
+    fn set_fitness_fn<F>(&mut self, _: F) -> &mut Self
+    where F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static { self }
+}
+
+impl VectorFitness for TwoObjRangeChromosome {
+    fn fitness_values(&self) -> &[f64] { &self.fitness_values }
+    fn set_fitness_values(&mut self, values: Vec<f64>) { self.fitness_values = values; }
+}
+
+impl genetic_algorithms::operations::mutation::ValueMutable for TwoObjRangeChromosome {}
+impl genetic_algorithms::traits::OperatorCompat for TwoObjRangeChromosome {}
+
+// --- Validation tests ---
 
 #[test]
 fn test_spea2_validate_no_init_fn() {
     let config = Spea2Configuration::new().with_num_objectives(2);
     let ga_config = GaConfiguration::default();
-    let spea2 = Spea2Ga::<RangeChromosome<f64>>::new(config, ga_config);
+    let spea2 = Spea2Ga::<TwoObjRangeChromosome>::new(config, ga_config);
     let result = spea2.validate();
     assert!(matches!(result, Err(GaError::InvalidSpea2Configuration(_))));
 }
@@ -27,7 +67,7 @@ fn test_spea2_validate_no_init_fn() {
 fn test_spea2_validate_zero_objectives() {
     let config = Spea2Configuration::new().with_num_objectives(0);
     let ga_config = GaConfiguration::default();
-    let spea2 = Spea2Ga::<RangeChromosome<f64>>::new(config, ga_config)
+    let spea2 = Spea2Ga::<TwoObjRangeChromosome>::new(config, ga_config)
         .with_initialization_fn(|_, _| vec![]);
     let result = spea2.validate();
     assert!(matches!(result, Err(GaError::InvalidSpea2Configuration(_))));
@@ -39,52 +79,36 @@ fn test_spea2_validate_population_too_small() {
         .with_num_objectives(2)
         .with_population_size(1);
     let ga_config = GaConfiguration::default();
-    let spea2 = Spea2Ga::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _| vec![])
-        .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0)]);
+    let spea2 = Spea2Ga::<TwoObjRangeChromosome>::new(config, ga_config)
+        .with_initialization_fn(|_, _| vec![]);
     let result = spea2.validate();
     assert!(matches!(result, Err(GaError::InvalidSpea2Configuration(_))));
 }
 
 #[test]
 fn test_spea2_validate_archive_size_exceeds_population() {
-    // D-01: archive_size > population_size is rejected
     let config = Spea2Configuration::new()
         .with_num_objectives(2)
         .with_population_size(10)
         .with_archive_size(50);
     let ga_config = GaConfiguration::default();
-    let spea2 = Spea2Ga::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _| vec![])
-        .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0)]);
+    let spea2 = Spea2Ga::<TwoObjRangeChromosome>::new(config, ga_config)
+        .with_initialization_fn(|_, _| vec![]);
     let result = spea2.validate();
     assert!(matches!(result, Err(GaError::InvalidSpea2Configuration(ref msg)) if msg.contains("archive_size")));
 }
 
 #[test]
 fn test_spea2_validate_archive_size_zero() {
-    // D-01: archive_size == 0 is rejected
     let config = Spea2Configuration::new()
         .with_num_objectives(2)
         .with_population_size(20)
         .with_archive_size(0);
     let ga_config = GaConfiguration::default();
-    let spea2 = Spea2Ga::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _| vec![])
-        .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0)]);
+    let spea2 = Spea2Ga::<TwoObjRangeChromosome>::new(config, ga_config)
+        .with_initialization_fn(|_, _| vec![]);
     let result = spea2.validate();
     assert!(matches!(result, Err(GaError::InvalidSpea2Configuration(ref msg)) if msg.contains("archive_size")));
-}
-
-#[test]
-fn test_spea2_validate_mismatched_objective_fns() {
-    let config = Spea2Configuration::new().with_num_objectives(3);
-    let ga_config = GaConfiguration::default();
-    let spea2 = Spea2Ga::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _| vec![])
-        .with_objective_fns(vec![Box::new(|_| 0.0)]);
-    let result = spea2.validate();
-    assert!(matches!(result, Err(GaError::InvalidSpea2Configuration(_))));
 }
 
 #[test]
@@ -93,9 +117,8 @@ fn test_spea2_validate_mismatched_objective_directions() {
         .with_num_objectives(3)
         .with_objective_directions(vec![ObjectiveDirection::Minimize]);
     let ga_config = GaConfiguration::default();
-    let spea2 = Spea2Ga::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _| vec![])
-        .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0), Box::new(|_| 0.0)]);
+    let spea2 = Spea2Ga::<TwoObjRangeChromosome>::new(config, ga_config)
+        .with_initialization_fn(|_, _| vec![]);
     assert!(matches!(
         spea2.validate(),
         Err(GaError::InvalidSpea2Configuration(ref msg)) if msg.contains("objective_directions")
@@ -109,39 +132,18 @@ fn test_spea2_validate_passes_with_complete_config() {
         .with_population_size(20)
         .with_archive_size(15);
     let ga_config = GaConfiguration::default();
-    let spea2 = Spea2Ga::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _| vec![])
-        .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0)]);
+    let spea2 = Spea2Ga::<TwoObjRangeChromosome>::new(config, ga_config)
+        .with_initialization_fn(|_, _| vec![]);
     assert!(spea2.validate().is_ok());
 }
 
-// ===== Run() integration tests — added by Plan 37-02 =====
-
-/// ZDT1 objective functions (2-objective, 30 variables).
-///
-/// f1(x) = x_1
-/// f2(x) = g(x) * (1 - sqrt(x_1 / g(x)))
-/// g(x) = 1 + (9 / (n-1)) * sum(x_2..x_n)
-fn zdt1_objectives(
-) -> Vec<Box<genetic_algorithms::multi_objective::ObjectiveFn<genetic_algorithms::genotypes::Range<f64>>>> {
-    let g_fn = |dna: &[genetic_algorithms::genotypes::Range<f64>]| -> f64 {
-        let n = dna.len();
-        let sum: f64 = dna[1..].iter().map(|g| g.value).sum();
-        1.0 + (9.0 / (n - 1) as f64) * sum
-    };
-    let f1 = move |dna: &[genetic_algorithms::genotypes::Range<f64>]| -> f64 { dna[0].value };
-    let f2 = move |dna: &[genetic_algorithms::genotypes::Range<f64>]| -> f64 {
-        let g = g_fn(dna);
-        g * (1.0 - (dna[0].value / g).sqrt())
-    };
-    vec![Box::new(f1), Box::new(f2)]
-}
+// ===== Run() integration tests =====
 
 fn build_test_spea2(
     population_size: usize,
     archive_size: usize,
     max_generations: usize,
-) -> Spea2Ga<RangeChromosome<f64>> {
+) -> Spea2Ga<TwoObjRangeChromosome> {
     let spea2_config = Spea2Configuration::new()
         .with_num_objectives(2)
         .with_population_size(population_size)
@@ -149,25 +151,23 @@ fn build_test_spea2(
         .with_max_generations(max_generations);
 
     let ga_config = GaConfiguration::default()
-        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(30)) // ZDT1: 30 variables
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(3))
         .with_rng_seed(42);
 
-    let alleles = vec![genetic_algorithms::genotypes::Range::<f64>::new(0, vec![(0.0, 1.0)], 0.0)];
+    let alleles = vec![RangeGenotype::new(0, vec![(0.0_f64, 1.0_f64)], 0.0_f64)];
     let alleles_clone = alleles.clone();
 
-    Spea2Ga::<RangeChromosome<f64>>::new(spea2_config, ga_config)
+    Spea2Ga::<TwoObjRangeChromosome>::new(spea2_config, ga_config)
         .with_alleles(alleles)
         .with_initialization_fn(move |n, _| {
             genetic_algorithms::initializers::range_random_initialization(n, Some(&alleles_clone))
         })
-        .with_objective_fns(zdt1_objectives())
         .build()
         .expect("Spea2 build should succeed with all required builders called")
 }
 
 #[test]
 fn test_spea2_run_produces_pareto_front() {
-    // 20 population, 10 archive, 10 generations — small enough for fast tests.
     let mut spea2 = build_test_spea2(20, 10, 10);
     let result = spea2.run();
     assert!(result.is_ok(), "Spea2 run should succeed: {:?}", result.err());
@@ -181,13 +181,11 @@ fn test_spea2_run_produces_pareto_front() {
 
 #[test]
 fn test_spea2_run_with_archive_smaller_than_population() {
-    // D-01: archive_size < population_size is valid as long as archive > 0
     let mut spea2 = build_test_spea2(30, 15, 10);
     let result = spea2.run();
     assert!(result.is_ok(), "Run with archive_size < population_size should succeed: {:?}", result.err());
     let front = result.unwrap();
     assert!(!front.is_empty());
-    // Archive was limited to 15; the front extracted from archive should have <= 15 entries
     assert!(front.individuals.len() <= 15,
         "Front from archive of size 15 should have at most 15 members, got {}",
         front.individuals.len());
@@ -195,7 +193,6 @@ fn test_spea2_run_with_archive_smaller_than_population() {
 
 #[test]
 fn test_spea2_run_with_archive_equals_population() {
-    // Canonical SPEA2: archive_size == population_size
     let mut spea2 = build_test_spea2(15, 15, 10);
     let result = spea2.run();
     assert!(result.is_ok(), "Canonical SPEA2 run should succeed: {:?}", result.err());
@@ -210,7 +207,7 @@ struct CountingObserver {
     archive_count: AtomicUsize,
 }
 
-impl genetic_algorithms::Spea2Observer<RangeChromosome<f64>> for CountingObserver {
+impl genetic_algorithms::Spea2Observer<TwoObjRangeChromosome> for CountingObserver {
     fn on_fitness_assigned(
         &self,
         _generation: usize,
@@ -243,27 +240,25 @@ fn test_spea2_run_invokes_observer_hooks() {
         .with_max_generations(5);
 
     let ga_config = GaConfiguration::default()
-        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(30))
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(3))
         .with_rng_seed(123);
 
-    let alleles = vec![genetic_algorithms::genotypes::Range::<f64>::new(0, vec![(0.0, 1.0)], 0.0)];
+    let alleles = vec![RangeGenotype::new(0, vec![(0.0_f64, 1.0_f64)], 0.0_f64)];
     let alleles_clone = alleles.clone();
 
-    let mut spea2 = Spea2Ga::<RangeChromosome<f64>>::new(spea2_config, ga_config)
+    let mut spea2 = Spea2Ga::<TwoObjRangeChromosome>::new(spea2_config, ga_config)
         .with_alleles(alleles)
         .with_initialization_fn(move |n, _| {
             genetic_algorithms::initializers::range_random_initialization(n, Some(&alleles_clone))
         })
-        .with_objective_fns(zdt1_objectives())
         .with_observer(
-            observer as Arc<dyn genetic_algorithms::Spea2Observer<RangeChromosome<f64>> + Send + Sync>,
+            observer as Arc<dyn genetic_algorithms::Spea2Observer<TwoObjRangeChromosome> + Send + Sync>,
         )
         .build()
         .expect("build should succeed");
 
     spea2.run().expect("run should succeed");
 
-    // Both hooks fire once per generation (5 total) on non-WASM host tests.
     assert_eq!(observer_handle.fitness_count.load(Ordering::Relaxed), 5,
         "on_fitness_assigned should fire once per generation");
     assert_eq!(observer_handle.archive_count.load(Ordering::Relaxed), 5,
@@ -272,11 +267,9 @@ fn test_spea2_run_invokes_observer_hooks() {
 
 #[test]
 fn test_spea2_log_observer() {
-    // D-06 smoke test: confirm `impl<U> Spea2Observer<U> for LogObserver` compiles
-    // and runs without panic.
     let mut spea2 = build_test_spea2(15, 10, 3)
         .with_observer(
-            Arc::new(LogObserver) as Arc<dyn genetic_algorithms::Spea2Observer<RangeChromosome<f64>> + Send + Sync>,
+            Arc::new(LogObserver) as Arc<dyn genetic_algorithms::Spea2Observer<TwoObjRangeChromosome> + Send + Sync>,
         );
 
     let result = spea2.run();

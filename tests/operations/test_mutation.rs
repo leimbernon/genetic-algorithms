@@ -67,6 +67,7 @@ fn test_swap_mutation() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     // Swap is stochastic — may pick the same index twice, leaving DNA unchanged.
@@ -147,6 +148,7 @@ fn test_inversion_mutation() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     // Inversion is stochastic — may pick the same index twice (or adjacent), leaving DNA unchanged.
@@ -228,6 +230,7 @@ fn test_scramble_mutation() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     // Scramble is stochastic — it may rarely leave DNA unchanged when random indices
@@ -257,12 +260,14 @@ fn test_mutation_aga_probability_over_avg() {
         fitness: 25.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: Vec::<Gene>::new(),
         fitness: 100.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let f_avg = 50.0;
     let probability_max = 0.75;
@@ -288,12 +293,14 @@ fn test_mutation_aga_probability_under_avg() {
         fitness: 25.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: Vec::<Gene>::new(),
         fitness: 49.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let f_avg = 50.0;
     let probability_max = 0.75;
@@ -323,6 +330,7 @@ fn test_swap_empty_dna_no_panic() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     // Should return early without panicking
     swap::swap(&mut chromosome);
@@ -336,6 +344,7 @@ fn test_swap_single_gene_no_panic() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     swap::swap(&mut chromosome);
     assert_eq!(chromosome.dna.len(), 1);
@@ -349,6 +358,7 @@ fn test_inversion_empty_dna_no_panic() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     inversion::inversion(&mut chromosome);
     assert!(chromosome.dna.is_empty());
@@ -361,6 +371,7 @@ fn test_inversion_single_gene_no_panic() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     inversion::inversion(&mut chromosome);
     assert_eq!(chromosome.dna.len(), 1);
@@ -374,6 +385,7 @@ fn test_scramble_empty_dna_no_panic() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     scramble::scramble(&mut chromosome);
     assert!(chromosome.dna.is_empty());
@@ -386,6 +398,7 @@ fn test_scramble_single_gene_no_panic() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     scramble::scramble(&mut chromosome);
     assert_eq!(chromosome.dna.len(), 1);
@@ -400,6 +413,7 @@ fn test_swap_two_genes() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let mut chromosome = original.clone();
     swap::swap(&mut chromosome);
@@ -417,6 +431,7 @@ fn test_inversion_two_genes() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let mut chromosome = original.clone();
     inversion::inversion(&mut chromosome);
@@ -433,6 +448,7 @@ fn test_scramble_two_genes() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let mut chromosome = original.clone();
     scramble::scramble(&mut chromosome);
@@ -453,6 +469,7 @@ fn test_mutation_factory_swap() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let result = mutation::factory(Mutation::Swap, &mut chromosome);
     assert!(result.is_ok());
@@ -466,6 +483,7 @@ fn test_mutation_factory_inversion() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let result = mutation::factory(Mutation::Inversion, &mut chromosome);
     assert!(result.is_ok());
@@ -479,6 +497,7 @@ fn test_mutation_factory_scramble() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let result = mutation::factory(Mutation::Scramble, &mut chromosome);
     assert!(result.is_ok());
@@ -494,6 +513,7 @@ fn test_factory_non_value_swap() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let result = mutation::factory_non_value(Mutation::Swap, &mut chromosome);
     assert!(result.is_ok());
@@ -506,6 +526,7 @@ fn test_factory_non_value_inversion() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let result = mutation::factory_non_value(Mutation::Inversion, &mut chromosome);
     assert!(result.is_ok());
@@ -518,6 +539,7 @@ fn test_factory_non_value_scramble() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let result = mutation::factory_non_value(Mutation::Scramble, &mut chromosome);
     assert!(result.is_ok());
@@ -530,6 +552,7 @@ fn test_factory_non_value_value_returns_error() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let result = mutation::factory_non_value(Mutation::Value, &mut chromosome);
     assert!(
@@ -545,6 +568,7 @@ fn test_factory_non_value_bitflip_returns_error() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let result = mutation::factory_non_value(Mutation::BitFlip, &mut chromosome);
     assert!(
@@ -560,6 +584,7 @@ fn test_factory_non_value_creep_returns_error() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let result = mutation::factory_non_value(Mutation::Creep { step: None }, &mut chromosome);
     assert!(
@@ -575,6 +600,7 @@ fn test_factory_non_value_gaussian_returns_error() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let result = mutation::factory_non_value(Mutation::Gaussian { sigma: None }, &mut chromosome);
     assert!(
@@ -593,12 +619,14 @@ fn test_mutation_aga_probability_at_avg() {
         fitness: 50.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![],
         fitness: 50.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let prob = aga_probability(&parent_1, &parent_2, 50.0, 0.9, 0.1);
     // larger_f (50) >= f_avg (50) => probability_min
@@ -612,6 +640,7 @@ fn test_mutation_aga_probability_equal_parents_below_avg() {
         fitness: 25.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let prob = aga_probability(&parent, &parent, 50.0, 0.9, 0.1);
     // larger_f = 25 < f_avg = 50 => probability_max

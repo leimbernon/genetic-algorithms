@@ -7,24 +7,24 @@ use genetic_algorithms::{
     configuration::SelectionConfiguration,
     fitness::FitnessFnWrapper,
     operations::Selection,
-    traits::{ChromosomeT, MultiCaseFitness},
+    traits::{ChromosomeT, VectorFitness},
 };
 
 #[allow(dead_code)]
-fn make_multi_case_chromosome(case_scores: Vec<f64>, dna: Vec<Gene>) -> MultiCaseChromosome {
-    let mean = if case_scores.is_empty() {
+fn make_multi_case_chromosome(fitness_values: Vec<f64>, dna: Vec<Gene>) -> MultiCaseChromosome {
+    let mean = if fitness_values.is_empty() {
         0.0
     } else {
-        case_scores.iter().sum::<f64>() / case_scores.len() as f64
+        fitness_values.iter().sum::<f64>() / fitness_values.len() as f64
     };
     let mut c = MultiCaseChromosome {
         dna,
         fitness: mean,
         age: 0,
-        case_scores: vec![],
+        fitness_values: vec![],
         fitness_fn: FitnessFnWrapper::default(),
     };
-    c.set_case_fitness(case_scores);
+    c.set_fitness_values(fitness_values);
     c
 }
 
@@ -39,8 +39,8 @@ fn pop_with_cases(case_score_matrix: &[Vec<f64>]) -> Vec<MultiCaseChromosome> {
 #[test]
 fn test_multi_case_fitness_trait_roundtrip() {
     let mut c = MultiCaseChromosome::default();
-    c.set_case_fitness(vec![1.0, 2.0, 3.0]);
-    assert_eq!(c.case_fitness(), &[1.0, 2.0, 3.0]);
+    c.set_fitness_values(vec![1.0, 2.0, 3.0]);
+    assert_eq!(c.fitness_values(), &[1.0, 2.0, 3.0]);
 }
 
 #[test]
@@ -231,7 +231,7 @@ fn test_ga_engine_runs_with_lexicase_dispatch() {
         ga::Ga,
         operations::Selection,
         population::Population,
-        traits::{ConfigurationT, MultiCaseFitness, SelectionConfig, StoppingConfig},
+        traits::{ConfigurationT, VectorFitness, SelectionConfig, StoppingConfig},
         ChromosomeLength,
     };
     use crate::structures::{Gene, MultiCaseChromosome};
@@ -243,10 +243,10 @@ fn test_ga_engine_runs_with_lexicase_dispatch() {
             dna: vec![Gene { id: 1 }],
             fitness: mean,
             age: 0,
-            case_scores: scores.clone(),
+            fitness_values: scores.clone(),
             fitness_fn: Default::default(),
         };
-        c.set_case_fitness(scores);
+        c.set_fitness_values(scores);
         c
     };
 

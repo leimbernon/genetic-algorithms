@@ -10,6 +10,7 @@ fn make_chromosome(fitness: f64) -> Chromosome {
         fitness,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     }
 }
 
