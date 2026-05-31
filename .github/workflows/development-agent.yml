@@ -153,22 +153,10 @@ jobs:
         run: npm ci
         working-directory: .github/scripts/development
 
-      - name: Configure git with GPG signing
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+      - name: Configure git
         run: |
-          echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
-          gpgconf --kill gpg-agent || true
-          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
-          echo "$GPG_PASSPHRASE" | gpg --batch --passphrase-fd 0 \
-            --pinentry-mode loopback --quiet \
-            --quick-set-ownertrust "DBD00B0E5A1F178E779DD358C6FB2DF528C4AA3F:6:" 2>/dev/null || true
-          git config user.name "Luis Eduardo Imbernón"
-          git config user.email "imbernon@gmail.com"
-          git config commit.gpgsign true
-          git config user.signingkey C6FB2DF528C4AA3F
-          git config gpg.program gpg
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Run Prepare Branch
         id: prepare
@@ -214,22 +202,10 @@ jobs:
         run: npm ci
         working-directory: .github/scripts/development
 
-      - name: Configure git with GPG signing
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+      - name: Configure git
         run: |
-          echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
-          gpgconf --kill gpg-agent || true
-          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
-          echo "$GPG_PASSPHRASE" | gpg --batch --passphrase-fd 0 \
-            --pinentry-mode loopback --quiet \
-            --quick-set-ownertrust "DBD00B0E5A1F178E779DD358C6FB2DF528C4AA3F:6:" 2>/dev/null || true
-          git config user.name "Luis Eduardo Imbernón"
-          git config user.email "imbernon@gmail.com"
-          git config commit.gpgsign true
-          git config user.signingkey C6FB2DF528C4AA3F
-          git config gpg.program gpg
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Download triage result
         uses: actions/download-artifact@v4
@@ -295,22 +271,10 @@ jobs:
         run: npm ci
         working-directory: .github/scripts/development
 
-      - name: Configure git with GPG signing
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+      - name: Configure git
         run: |
-          echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
-          gpgconf --kill gpg-agent || true
-          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
-          echo "$GPG_PASSPHRASE" | gpg --batch --passphrase-fd 0 \
-            --pinentry-mode loopback --quiet \
-            --quick-set-ownertrust "DBD00B0E5A1F178E779DD358C6FB2DF528C4AA3F:6:" 2>/dev/null || true
-          git config user.name "Luis Eduardo Imbernón"
-          git config user.email "imbernon@gmail.com"
-          git config commit.gpgsign true
-          git config user.signingkey C6FB2DF528C4AA3F
-          git config gpg.program gpg
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -425,22 +389,10 @@ jobs:
         run: npm ci
         working-directory: .github/scripts/development
 
-      - name: Configure git with GPG signing
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+      - name: Configure git
         run: |
-          echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
-          gpgconf --kill gpg-agent || true
-          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
-          echo "$GPG_PASSPHRASE" | gpg --batch --passphrase-fd 0 \
-            --pinentry-mode loopback --quiet \
-            --quick-set-ownertrust "DBD00B0E5A1F178E779DD358C6FB2DF528C4AA3F:6:" 2>/dev/null || true
-          git config user.name "Luis Eduardo Imbernón"
-          git config user.email "imbernon@gmail.com"
-          git config commit.gpgsign true
-          git config user.signingkey C6FB2DF528C4AA3F
-          git config gpg.program gpg
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Run Handle Review
         id: review
