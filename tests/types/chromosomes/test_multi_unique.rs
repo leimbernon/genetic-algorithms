@@ -174,7 +174,7 @@ fn multi_unique_chromosome_valid_mutations_restricted() {
     assert!(valid_slice.contains(&Mutation::Swap));
     assert!(valid_slice.contains(&Mutation::Inversion));
     // Gaussian is excluded
-    assert!(!valid_slice.contains(&Mutation::Gaussian));
+    assert!(!valid_slice.contains(&Mutation::Gaussian { sigma: None }));
 }
 
 // -- Integration tests with Ga::build() --

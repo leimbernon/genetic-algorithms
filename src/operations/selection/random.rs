@@ -8,39 +8,41 @@ use crate::traits::ChromosomeT;
 use log::{debug, trace};
 use rand::Rng;
 
-/// Random selection: pairs all individuals randomly without regard to fitness.
+/// Random selection: groups individuals randomly without regard to fitness.
 ///
 /// Uses a Fisher-Yates partial shuffle so each pick is *O(1)* (swap-to-end)
 /// instead of *O(N)* (`Vec::remove` shifting). Total cost: *O(N)*.
 ///
-/// Each individual participates in at most one pair; if the population size
-/// is odd the last individual is left unpaired.
-pub fn random<U: ChromosomeT>(chromosomes: &[U]) -> Vec<(usize, usize)> {
+/// Each individual participates in at most one group; if the population size
+/// is not evenly divisible by `num_parents`, remaining individuals are left ungrouped.
+///
+/// # Arguments
+///
+/// * `chromosomes` - Population to select from.
+/// * `num_parents` - Number of parents per group (must be >= 2).
+pub fn random<U: ChromosomeT>(chromosomes: &[U], num_parents: usize) -> Vec<Vec<usize>> {
+    let num_parents = num_parents.max(2);
     let n = chromosomes.len();
-    let pair_count = n / 2;
-    let mut mating = Vec::with_capacity(pair_count);
+    let group_count = n / num_parents;
+    let mut mating = Vec::with_capacity(group_count);
     let mut indexes: Vec<usize> = (0..n).collect();
     let mut rng = crate::rng::make_rng();
     let mut remaining = n;
     debug!(target="selection_events", method="random"; "Starting random selection");
 
-    // Pick pairs via Fisher-Yates: swap chosen element with the last
+    // Pick groups via Fisher-Yates: swap chosen element with the last
     // unprocessed element and shrink the working range.
-    while remaining >= 2 {
-        // Pick first parent
-        let r1 = rng.random_range(0..remaining);
-        let index_value_1 = indexes[r1];
-        remaining -= 1;
-        indexes.swap(r1, remaining);
-
-        // Pick second parent
-        let r2 = rng.random_range(0..remaining);
-        let index_value_2 = indexes[r2];
-        remaining -= 1;
-        indexes.swap(r2, remaining);
-
-        mating.push((index_value_1, index_value_2));
-        trace!(target="selection_events", method="random"; "Mating index 1 {} with index 2 {}", index_value_1, index_value_2);
+    while remaining >= num_parents {
+        let mut group = Vec::with_capacity(num_parents);
+        for _ in 0..num_parents {
+            let r = rng.random_range(0..remaining);
+            let index_value = indexes[r];
+            remaining -= 1;
+            indexes.swap(r, remaining);
+            group.push(index_value);
+        }
+        trace!(target="selection_events", method="random"; "Mating group: {:?}", group);
+        mating.push(group);
     }
 
     mating

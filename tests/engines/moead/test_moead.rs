@@ -1,11 +1,7 @@
 //! MOEA/D engine tests.
-//!
-//! Wave 0 scope: validate() error paths. Plan 36-02 appends run() integration
-//! tests once the run() loop is implemented; Plan 36-03 adds the LogObserver
-//! integration test.
 
-use genetic_algorithms::traits::{ConfigurationT, MutationConfig};
-use genetic_algorithms::chromosomes::Range as RangeChromosome;
+use std::borrow::Cow;
+use genetic_algorithms::traits::{ConfigurationT, ChromosomeT, LinearChromosome, VectorFitness, MutationConfig};
 use genetic_algorithms::configuration::GaConfiguration;
 use genetic_algorithms::error::GaError;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
@@ -17,13 +13,57 @@ use genetic_algorithms::MoeaDObserver;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
+// Custom 3-objective chromosome using RangeGenotype<f64> genes.
+// Simple 3-objective: f1 = dna[0].value, f2 = dna[1].value, f3 = 1 - f1 - f2
+#[derive(Debug, Clone, Default)]
+struct ThreeObjRangeChromosome {
+    dna: Vec<RangeGenotype<f64>>,
+    fitness: f64,
+    fitness_values: Vec<f64>,
+}
+
+impl ChromosomeT for ThreeObjRangeChromosome {
+    type Gene = RangeGenotype<f64>;
+    fn fitness(&self) -> f64 { self.fitness }
+    fn set_fitness(&mut self, v: f64) -> &mut Self { self.fitness = v; self }
+    fn set_age(&mut self, _: usize) -> &mut Self { self }
+    fn age(&self) -> usize { 0 }
+    fn calculate_fitness(&mut self) {
+        let f1 = self.dna.first().map(|g| g.value).unwrap_or(0.0);
+        let f2 = self.dna.get(1).map(|g| g.value).unwrap_or(0.0);
+        let f3 = (1.0_f64 - f1 - f2).max(0.0);
+        self.fitness_values = vec![f1, f2, f3];
+        self.fitness = f1 + f2 + f3;
+    }
+}
+
+impl LinearChromosome for ThreeObjRangeChromosome {
+    fn dna(&self) -> &[Self::Gene] { &self.dna }
+    fn dna_mut(&mut self) -> &mut [Self::Gene] { &mut self.dna }
+    fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
+        self.dna = dna.into_owned(); self
+    }
+    fn set_fitness_fn<F>(&mut self, _: F) -> &mut Self
+    where F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static { self }
+}
+
+impl VectorFitness for ThreeObjRangeChromosome {
+    fn fitness_values(&self) -> &[f64] { &self.fitness_values }
+    fn set_fitness_values(&mut self, values: Vec<f64>) { self.fitness_values = values; }
+}
+
+impl genetic_algorithms::operations::mutation::ValueMutable for ThreeObjRangeChromosome {}
+impl genetic_algorithms::traits::OperatorCompat for ThreeObjRangeChromosome {}
+
+// --- Validation tests ---
+
 #[test]
 fn test_moead_validate_no_init_fn() {
     let config = MoeaDConfiguration::new()
         .with_num_objectives(3)
         .with_weight_vectors_auto(4);
     let ga_config = GaConfiguration::default();
-    let moead = MoeaDGa::<RangeChromosome<f64>>::new(config, ga_config);
+    let moead = MoeaDGa::<ThreeObjRangeChromosome>::new(config, ga_config);
     let result = moead.validate();
     assert!(matches!(result, Err(GaError::InvalidMoeaDConfiguration(_))));
 }
@@ -34,7 +74,7 @@ fn test_moead_validate_zero_objectives() {
         .with_num_objectives(0)
         .with_weight_vectors_auto(4);
     let ga_config = GaConfiguration::default();
-    let moead = MoeaDGa::<RangeChromosome<f64>>::new(config, ga_config)
+    let moead = MoeaDGa::<ThreeObjRangeChromosome>::new(config, ga_config)
         .with_initialization_fn(|_, _| vec![]);
     let result = moead.validate();
     assert!(matches!(result, Err(GaError::InvalidMoeaDConfiguration(_))));
@@ -47,34 +87,18 @@ fn test_moead_validate_population_too_small() {
         .with_population_size(1)
         .with_weight_vectors_auto(4);
     let ga_config = GaConfiguration::default();
-    let moead = MoeaDGa::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _| vec![])
-        .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0), Box::new(|_| 0.0)]);
-    let result = moead.validate();
-    assert!(matches!(result, Err(GaError::InvalidMoeaDConfiguration(_))));
-}
-
-#[test]
-fn test_moead_validate_mismatched_objective_fns() {
-    let config = MoeaDConfiguration::new()
-        .with_num_objectives(3)
-        .with_weight_vectors_auto(4);
-    let ga_config = GaConfiguration::default();
-    let moead = MoeaDGa::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _| vec![])
-        .with_objective_fns(vec![Box::new(|_| 0.0)]);
+    let moead = MoeaDGa::<ThreeObjRangeChromosome>::new(config, ga_config)
+        .with_initialization_fn(|_, _| vec![]);
     let result = moead.validate();
     assert!(matches!(result, Err(GaError::InvalidMoeaDConfiguration(_))));
 }
 
 #[test]
 fn test_moead_validate_missing_weight_vectors() {
-    // D-06: neither auto nor custom called
     let config = MoeaDConfiguration::new().with_num_objectives(3);
     let ga_config = GaConfiguration::default();
-    let moead = MoeaDGa::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _| vec![])
-        .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0), Box::new(|_| 0.0)]);
+    let moead = MoeaDGa::<ThreeObjRangeChromosome>::new(config, ga_config)
+        .with_initialization_fn(|_, _| vec![]);
     let result = moead.validate();
     assert!(matches!(result, Err(GaError::InvalidMoeaDConfiguration(ref msg)) if msg.contains("weight vectors")));
 }
@@ -85,9 +109,8 @@ fn test_moead_validate_custom_weight_vector_wrong_dimension() {
         .with_num_objectives(3)
         .with_weight_vectors(vec![vec![0.5, 0.5]]); // 2-dim, not 3
     let ga_config = GaConfiguration::default();
-    let moead = MoeaDGa::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _| vec![])
-        .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0), Box::new(|_| 0.0)]);
+    let moead = MoeaDGa::<ThreeObjRangeChromosome>::new(config, ga_config)
+        .with_initialization_fn(|_, _| vec![]);
     let result = moead.validate();
     assert!(matches!(result, Err(GaError::InvalidMoeaDConfiguration(ref msg)) if msg.contains("dimension")));
 }
@@ -98,9 +121,8 @@ fn test_moead_validate_das_dennis_p_zero() {
         .with_num_objectives(3)
         .with_weight_vectors_auto(0);
     let ga_config = GaConfiguration::default();
-    let moead = MoeaDGa::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _| vec![])
-        .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0), Box::new(|_| 0.0)]);
+    let moead = MoeaDGa::<ThreeObjRangeChromosome>::new(config, ga_config)
+        .with_initialization_fn(|_, _| vec![]);
     let result = moead.validate();
     assert!(matches!(result, Err(GaError::InvalidMoeaDConfiguration(ref msg)) if msg.contains("Das-Dennis")));
 }
@@ -112,9 +134,8 @@ fn test_moead_validate_mismatched_objective_directions() {
         .with_objective_directions(vec![ObjectiveDirection::Minimize])
         .with_weight_vectors_auto(4);
     let ga_config = GaConfiguration::default();
-    let moead = MoeaDGa::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _| vec![])
-        .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0), Box::new(|_| 0.0)]);
+    let moead = MoeaDGa::<ThreeObjRangeChromosome>::new(config, ga_config)
+        .with_initialization_fn(|_, _| vec![]);
     assert!(matches!(
         moead.validate(),
         Err(GaError::InvalidMoeaDConfiguration(ref msg)) if msg.contains("objective_directions")
@@ -127,59 +148,25 @@ fn test_moead_validate_passes_with_complete_config() {
         .with_num_objectives(3)
         .with_weight_vectors_auto(4);
     let ga_config = GaConfiguration::default();
-    let moead = MoeaDGa::<RangeChromosome<f64>>::new(config, ga_config)
-        .with_initialization_fn(|_, _| vec![])
-        .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0), Box::new(|_| 0.0)]);
+    let moead = MoeaDGa::<ThreeObjRangeChromosome>::new(config, ga_config)
+        .with_initialization_fn(|_, _| vec![]);
     assert!(moead.validate().is_ok());
 }
 
-// ===== Run() integration tests — added by Plan 36-02 =====
-
-/// 3-objective DTLZ2 sphere benchmark (M=3, k=2, n=4 variables for fast tests).
-///
-/// f_1 = cos(x_1 * pi/2) * cos(x_2 * pi/2) * (1 + g)
-/// f_2 = cos(x_1 * pi/2) * sin(x_2 * pi/2) * (1 + g)
-/// f_3 = sin(x_1 * pi/2) * (1 + g)
-/// g(x) = sum_{i=2}^{n-1} (x_i - 0.5)^2  (zero-indexed: indices 2..n)
-fn dtlz2_objectives(
-) -> Vec<Box<genetic_algorithms::multi_objective::ObjectiveFn<RangeGenotype<f64>>>> {
-    use std::f64::consts::FRAC_PI_2;
-
-    let g_fn = |dna: &[RangeGenotype<f64>]| -> f64 {
-        dna[2..].iter().map(|gene| (gene.value - 0.5).powi(2)).sum::<f64>()
-    };
-    let f1 = move |dna: &[RangeGenotype<f64>]| -> f64 {
-        let x1 = dna[0].value;
-        let x2 = dna[1].value;
-        let g = g_fn(dna);
-        (x1 * FRAC_PI_2).cos() * (x2 * FRAC_PI_2).cos() * (1.0 + g)
-    };
-    let f2 = move |dna: &[RangeGenotype<f64>]| -> f64 {
-        let x1 = dna[0].value;
-        let x2 = dna[1].value;
-        let g = g_fn(dna);
-        (x1 * FRAC_PI_2).cos() * (x2 * FRAC_PI_2).sin() * (1.0 + g)
-    };
-    let f3 = move |dna: &[RangeGenotype<f64>]| -> f64 {
-        let x1 = dna[0].value;
-        let g = g_fn(dna);
-        (x1 * FRAC_PI_2).sin() * (1.0 + g)
-    };
-    vec![Box::new(f1), Box::new(f2), Box::new(f3)]
-}
+// ===== Run() integration tests =====
 
 fn build_test_moead(
     population_size: usize,
     max_generations: usize,
     scalarization: ScalarizationFn,
-) -> MoeaDGa<RangeChromosome<f64>> {
+) -> MoeaDGa<ThreeObjRangeChromosome> {
     let moead_config = MoeaDConfiguration::new()
         .with_num_objectives(3)
         .with_population_size(population_size)
         .with_max_generations(max_generations)
-        .with_weight_vectors_auto(4)            // 15 weight vectors for M=3, p=4
+        .with_weight_vectors_auto(4)
         .with_scalarization(scalarization)
-        .with_neighborhood_size(5)              // small T for fast tests
+        .with_neighborhood_size(5)
         .with_max_neighbor_replacements(2);
 
     let ga_config = GaConfiguration::default()
@@ -189,19 +176,17 @@ fn build_test_moead(
     let alleles = vec![RangeGenotype::<f64>::new(0, vec![(0.0, 1.0)], 0.0)];
     let alleles_clone = alleles.clone();
 
-    MoeaDGa::<RangeChromosome<f64>>::new(moead_config, ga_config)
+    MoeaDGa::<ThreeObjRangeChromosome>::new(moead_config, ga_config)
         .with_alleles(alleles)
         .with_initialization_fn(move |n, _| {
             range_random_initialization(n, Some(&alleles_clone))
         })
-        .with_objective_fns(dtlz2_objectives())
         .build()
         .expect("MoeaD build should succeed with all required builders called")
 }
 
 #[test]
 fn test_moead_run_produces_pareto_front() {
-    // Tchebycheff scalarization, 15 weight vectors (p=4 for M=3).
     let mut moead = build_test_moead(15, 10, ScalarizationFn::Tchebycheff);
     let result = moead.run();
     assert!(result.is_ok(), "MoeaD run should succeed: {:?}", result.err());
@@ -215,7 +200,6 @@ fn test_moead_run_produces_pareto_front() {
 
 #[test]
 fn test_moead_run_with_pbi() {
-    // PBI scalarization with theta = 5.0 (Zhang & Li default).
     let mut moead = build_test_moead(15, 10, ScalarizationFn::Pbi { theta: 5.0 });
     let result = moead.run();
     assert!(result.is_ok(), "MoeaD run with PBI should succeed: {:?}", result.err());
@@ -254,12 +238,11 @@ fn test_moead_run_with_custom_weight_vectors() {
     let alleles = vec![RangeGenotype::<f64>::new(0, vec![(0.0, 1.0)], 0.0)];
     let alleles_clone = alleles.clone();
 
-    let mut moead = MoeaDGa::<RangeChromosome<f64>>::new(moead_config, ga_config)
+    let mut moead = MoeaDGa::<ThreeObjRangeChromosome>::new(moead_config, ga_config)
         .with_alleles(alleles)
         .with_initialization_fn(move |n, _| {
             range_random_initialization(n, Some(&alleles_clone))
         })
-        .with_objective_fns(dtlz2_objectives())
         .build()
         .expect("build should succeed with custom weight vectors");
 
@@ -276,7 +259,7 @@ struct CountingObserver {
     pareto_count: AtomicUsize,
 }
 
-impl MoeaDObserver<RangeChromosome<f64>> for CountingObserver {
+impl MoeaDObserver<ThreeObjRangeChromosome> for CountingObserver {
     fn on_pareto_front_assigned(
         &self,
         _generation: usize,
@@ -311,21 +294,19 @@ fn test_moead_run_invokes_observer_hooks() {
     let alleles = vec![RangeGenotype::<f64>::new(0, vec![(0.0, 1.0)], 0.0)];
     let alleles_clone = alleles.clone();
 
-    let mut moead = MoeaDGa::<RangeChromosome<f64>>::new(moead_config, ga_config)
+    let mut moead = MoeaDGa::<ThreeObjRangeChromosome>::new(moead_config, ga_config)
         .with_alleles(alleles)
         .with_initialization_fn(move |n, _| {
             range_random_initialization(n, Some(&alleles_clone))
         })
-        .with_objective_fns(dtlz2_objectives())
         .with_observer(
-            observer as Arc<dyn MoeaDObserver<RangeChromosome<f64>> + Send + Sync>,
+            observer as Arc<dyn MoeaDObserver<ThreeObjRangeChromosome> + Send + Sync>,
         )
         .build()
         .expect("build should succeed");
 
     moead.run().expect("run should succeed");
 
-    // Both hooks fire once per generation (5 total) on non-WASM host tests.
     assert_eq!(observer_handle.pareto_count.load(Ordering::Relaxed), 5);
     assert_eq!(observer_handle.sort_count.load(Ordering::Relaxed), 5);
 }
@@ -334,18 +315,16 @@ fn test_moead_run_invokes_observer_hooks() {
 fn test_moead_run_rejects_differential_mutation() {
     use genetic_algorithms::operations::Mutation;
     let mut moead = build_test_moead(15, 3, ScalarizationFn::Tchebycheff);
-    moead.ga_config = moead.ga_config.with_mutation_method(Mutation::Differential).with_mutation_probability_max(1.0);
+    moead.ga_config = moead.ga_config.with_mutation_method(Mutation::Differential { f: None }).with_mutation_probability_max(1.0);
     let result = moead.run();
     assert!(matches!(result, Err(GaError::MutationError(ref msg)) if msg.contains("Differential mutation is not supported in MOEA/D")));
 }
 
 #[test]
 fn test_moead_log_observer() {
-    // D-12 smoke test: confirm `impl<U> MoeaDObserver<U> for LogObserver` compiles
-    // and runs without panic.
     let mut moead = build_test_moead(15, 3, ScalarizationFn::Tchebycheff)
         .with_observer(
-            Arc::new(LogObserver) as Arc<dyn MoeaDObserver<RangeChromosome<f64>> + Send + Sync>,
+            Arc::new(LogObserver) as Arc<dyn MoeaDObserver<ThreeObjRangeChromosome> + Send + Sync>,
         );
 
     let result = moead.run();

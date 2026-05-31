@@ -138,7 +138,7 @@ use crate::error::GaError;
 use crate::hall_of_fame::{HallOfFame, HallOfFameConfig};
 use crate::observer::{ExtensionEvent, GaObserver};
 use crate::stats::GenerationStats;
-use crate::traits::{FitnessFn, InitializationFn};
+use crate::traits::{FitnessFn, InitializationFn, MutationOperator};
 use crate::validators::validator_factory as ValidatorFactory;
 use crate::{
     configuration::{LimitConfiguration, LocalSearchConfiguration, LogLevel, ProblemSolving},
@@ -149,7 +149,7 @@ use crate::{
     population::Population,
     traits::{
         ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, GeneT, LinearChromosome,
-        LocalSearchConfig, LocalSearchOperator, MultiCaseFitness, MutationConfig, NichingConfig,
+        LocalSearchConfig, LocalSearchOperator, MutationConfig, NichingConfig, VectorFitness,
         OperatorCompat, SelectionConfig, StoppingConfig, Strategy, SurvivorConfig,
     },
 };
@@ -422,6 +422,22 @@ where
         self.configuration.crossover_configuration.blend_alpha = Some(alpha);
         self
     }
+    fn with_undx_sigma_xi(mut self, value: f64) -> Self {
+        self.configuration.crossover_configuration.undx_sigma_xi = Some(value);
+        self
+    }
+    fn with_undx_sigma_eta(mut self, value: f64) -> Self {
+        self.configuration.crossover_configuration.undx_sigma_eta = Some(value);
+        self
+    }
+    fn with_pcx_sigma_eta(mut self, value: f64) -> Self {
+        self.configuration.crossover_configuration.pcx_sigma_eta = Some(value);
+        self
+    }
+    fn with_pcx_sigma_zeta(mut self, value: f64) -> Self {
+        self.configuration.crossover_configuration.pcx_sigma_zeta = Some(value);
+        self
+    }
 }
 
 impl<U> MutationConfig for Ga<U>
@@ -440,14 +456,6 @@ where
         self.configuration.mutation_configuration.method = method;
         self
     }
-    fn with_mutation_step(mut self, step: f64) -> Self {
-        self.configuration.mutation_configuration.step = Some(step);
-        self
-    }
-    fn with_mutation_sigma(mut self, sigma: f64) -> Self {
-        self.configuration.mutation_configuration.sigma = Some(sigma);
-        self
-    }
     fn with_dynamic_mutation(mut self, enabled: bool) -> Self {
         self.configuration.mutation_configuration.dynamic_mutation = enabled;
         self
@@ -458,22 +466,6 @@ where
     }
     fn with_mutation_probability_step(mut self, step: f64) -> Self {
         self.configuration.mutation_configuration.probability_step = Some(step);
-        self
-    }
-    fn with_differential_f(mut self, f: f64) -> Self {
-        self.configuration.mutation_configuration.differential_f = Some(f);
-        self
-    }
-    fn with_polynomial_eta(mut self, eta: f64) -> Self {
-        self.configuration.mutation_configuration.polynomial_eta = Some(eta);
-        self
-    }
-    fn with_cauchy_scale(mut self, scale: f64) -> Self {
-        self.configuration.mutation_configuration.cauchy_scale = Some(scale);
-        self
-    }
-    fn with_levy_alpha(mut self, alpha: f64) -> Self {
-        self.configuration.mutation_configuration.levy_alpha = Some(alpha);
         self
     }
 }
@@ -750,6 +742,21 @@ where
 
         // Check operator compatibility for this chromosome type (OperatorCompat trait)
         crate::validators::generic_validator::operator_compat_check::<U>(&self.configuration)?;
+
+        // Validate num_parents >= 3 for multi-parent crossover operators
+        match self.configuration.crossover_configuration.method {
+            crate::operations::Crossover::Undx { num_parents }
+            | crate::operations::Crossover::Spx { num_parents }
+            | crate::operations::Crossover::Pcx { num_parents }
+                if num_parents < 3 =>
+            {
+                return Err(GaError::ConfigurationError(format!(
+                    "Multi-parent crossover requires num_parents >= 3, got {}",
+                    num_parents
+                )));
+            }
+            _ => {}
+        }
 
         // Wrap fitness function with LRU cache if configured
         if let Some(cache_size) = self.fitness_cache_size {
@@ -1375,7 +1382,7 @@ where
                 // 1. Save builder's operator settings
                 let builder_selection = self.configuration.selection_configuration.method;
                 let builder_crossover = self.configuration.crossover_configuration.method;
-                let builder_mutation = self.configuration.mutation_configuration.method;
+                let builder_mutation = self.configuration.mutation_configuration.method.clone();
                 let builder_survivor = self.configuration.survivor;
                 let builder_problem_solving =
                     self.configuration.limit_configuration.problem_solving;
@@ -1531,10 +1538,19 @@ where
             } else {
                 None
             };
+            // Derive num_parents from crossover method: UNDX/SPX/PCX carry their own
+            // num_parents field; all other variants use standard 2-parent crossover.
+            let num_parents = match self.configuration.crossover_configuration.method {
+                crate::operations::Crossover::Undx { num_parents }
+                | crate::operations::Crossover::Spx { num_parents }
+                | crate::operations::Crossover::Pcx { num_parents } => num_parents,
+                _ => 2,
+            };
             let parents = selection::factory(
                 &self.population.chromosomes,
                 self.configuration.selection_configuration,
                 self.configuration.number_of_threads,
+                num_parents,
             )?;
             if let Some(t) = t_sel {
                 self.notify(|obs| obs.on_selection_complete(i, t.elapsed(), parents.len()));
@@ -2464,7 +2480,7 @@ where
 /// - Produces children, mutates them, computes their fitness, and returns the offspring.
 #[allow(clippy::too_many_arguments)]
 fn parent_crossover<U>(
-    parents: &[(usize, usize)],
+    parents: &[Vec<usize>],
     chromosomes: &[U],
     configuration: &GaConfiguration,
     age: usize,
@@ -2529,20 +2545,30 @@ where
         None
     };
 
-    // Shared per-pair closure: produces two children from one (key, value) parent pair.
+    // Shared per-group closure: produces children from one N-ary parent group.
     // cfg-gated only for the iterator kind (par_iter on native, iter on wasm32).
-    let process_pair = |(key, value): &(usize, usize)| -> Result<Vec<U>, GaError> {
+    let process_pair = |group: &Vec<usize>| -> Result<Vec<U>, GaError> {
         let mut rng = crate::rng::make_rng();
 
+        // T-54-01: guard against out-of-bounds or too-small group (minimum 2 parents)
+        if group.len() < 2 {
+            return Err(GaError::SelectionError(format!(
+                "Selection group has fewer than 2 parents (got {})",
+                group.len()
+            )));
+        }
+        let key = group[0];
+        let value = group[1];
+
         // Getting the parent 1 and 2 for crossover
-        let parent_1 = chromosomes.get(*key).ok_or_else(|| {
+        let parent_1 = chromosomes.get(key).ok_or_else(|| {
             GaError::SelectionError(format!(
                 "Selection returned out-of-bounds index {} (population size {})",
                 key,
                 chromosomes.len()
             ))
         })?;
-        let parent_2 = chromosomes.get(*value).ok_or_else(|| {
+        let parent_2 = chromosomes.get(value).ok_or_else(|| {
             GaError::SelectionError(format!(
                 "Selection returned out-of-bounds index {} (population size {})",
                 value,
@@ -2569,7 +2595,7 @@ where
             if let (Some(portfolio), Some(aos_state)) = (mutation_portfolio, aos_mutation_state) {
                 let mut state = aos_state.lock().unwrap();
                 let op_idx = state.select_operator(&mut rng, generation);
-                Some((op_idx, portfolio[op_idx]))
+                Some((op_idx, portfolio[op_idx].clone()))
             } else {
                 None
             };
@@ -2619,135 +2645,105 @@ where
         let mut child_2: U;
 
         if crossover_probability <= effective_crossover_prob {
-            let mut children = if let Some((_op_idx, cx_op)) = selected_crossover {
-                // Use AOS-selected operator (Phase 43)
+            // Determine the effective crossover method (AOS-selected or user-configured)
+            let effective_method = selected_crossover
+                .map(|(_, op)| op)
+                .unwrap_or(configuration.crossover_configuration.method);
+
+            // Dispatch crossover by group size: groups of 2 use the standard 2-parent path;
+            // larger groups use the multi-parent dispatch (UNDX/SPX/PCX via group.len() > 2).
+            let mut children = if group.len() > 2 {
+                // Multi-parent crossover path: collect all parents from the group
+                let mut parent_refs: Vec<&U> = Vec::with_capacity(group.len());
+                for &idx in group.iter() {
+                    let p = chromosomes.get(idx).ok_or_else(|| {
+                        GaError::SelectionError(format!(
+                            "Selection returned out-of-bounds index {} (population size {})",
+                            idx,
+                            chromosomes.len()
+                        ))
+                    })?;
+                    parent_refs.push(p);
+                }
                 let mut cx_config = configuration.crossover_configuration;
-                cx_config.method = cx_op;
-                crossover::factory(parent_1, parent_2, cx_config)?
+                cx_config.method = effective_method;
+                // Returns 1 offspring per D-04 (single-offspring contract)
+                crossover::factory_multi_parent_dispatch(&parent_refs, cx_config)?
             } else {
-                // Standard single-operator dispatch
-                crossover::factory(parent_1, parent_2, configuration.crossover_configuration)?
+                // Standard 2-parent crossover path — all variants with group.len() == 2
+                let mut cx_config = configuration.crossover_configuration;
+                cx_config.method = effective_method;
+                crossover::factory(parent_1, parent_2, cx_config)?
             };
-            child_2 = children.pop().ok_or_else(|| {
-                GaError::CrossoverError("Crossover returned fewer than 2 children".to_string())
-            })?;
+
+            // factory_multi_parent_dispatch returns 1 child; factory returns 2.
+            // For the 1-child path, child_1 gets the actual offspring; child_2 falls back to
+            // parent_1.clone() (D-04 / Pitfall 1). For the 2-child path, both pops succeed.
             child_1 = children.pop().ok_or_else(|| {
-                GaError::CrossoverError("Crossover returned fewer than 2 children".to_string())
+                GaError::CrossoverError("Crossover returned no children".to_string())
             })?;
+            child_2 = children.pop().unwrap_or_else(|| parent_1.clone());
         } else {
             child_1 = parent_1.clone();
             child_2 = parent_2.clone();
         }
 
         // Determine mutation method: AOS-selected or configured single operator
+        let selected_mutation_idx = selected_mutation.as_ref().map(|(idx, _)| *idx);
         let mutation_method = selected_mutation
             .map(|(_, op)| op)
-            .unwrap_or(configuration.mutation_configuration.method);
+            .unwrap_or_else(|| configuration.mutation_configuration.method.clone());
 
         if mutation_probability <= effective_mutation_prob {
-            if mutation_method == crate::operations::Mutation::Differential {
-                let f = configuration
-                    .mutation_configuration
-                    .differential_f
-                    .unwrap_or(0.5);
-                crate::operations::mutation::differential::differential_mutation(
-                    &mut child_1,
-                    chromosomes,
-                    *key,
-                    f,
-                )?;
-            } else if mutation_method == crate::operations::Mutation::Cauchy {
-                mutation::factory_with_params(
-                    mutation_method,
-                    &mut child_1,
-                    configuration.mutation_configuration.cauchy_scale,
-                    None,
-                )?;
-            } else if mutation_method == crate::operations::Mutation::LevyFlight {
-                mutation::factory_with_params(
-                    mutation_method,
-                    &mut child_1,
-                    None,
-                    configuration.mutation_configuration.levy_alpha,
-                )?;
-            } else if mutation_method == crate::operations::Mutation::Polynomial {
-                // Use dedicated `polynomial_eta` field if set; fall back to `step` for
-                // backward compatibility with callers that used `with_mutation_step` for eta.
-                let eta = configuration
-                    .mutation_configuration
-                    .polynomial_eta
-                    .or(configuration.mutation_configuration.step);
-                mutation::factory_with_params(mutation_method, &mut child_1, eta, None)?;
-            } else if mutation_method == crate::operations::Mutation::Insertion
-                || mutation_method == crate::operations::Mutation::Deletion
-            {
-                mutation::factory_with_chromosome_length(
-                    mutation_method,
-                    &mut child_1,
-                    Some(configuration.limit_configuration.chromosome_length),
-                    configuration.mutation_configuration.step,
-                    configuration.mutation_configuration.sigma,
-                )?;
-            } else {
-                mutation::factory_with_params(
-                    mutation_method,
-                    &mut child_1,
-                    configuration.mutation_configuration.step,
-                    configuration.mutation_configuration.sigma,
-                )?;
+            match &mutation_method {
+                Mutation::Differential { f } => {
+                    let f_val = f.unwrap_or(0.5);
+                    crate::operations::mutation::differential::differential_mutation(
+                        &mut child_1,
+                        chromosomes,
+                        key,
+                        f_val,
+                    )?;
+                }
+                Mutation::Insertion | Mutation::Deletion => {
+                    mutation::factory_with_chromosome_length(
+                        mutation_method.clone(),
+                        &mut child_1,
+                        Some(configuration.limit_configuration.chromosome_length),
+                        None,
+                        None,
+                    )?;
+                }
+                _ => {
+                    mutation_method.mutate(&mut child_1, &mutation_method)?;
+                }
             }
         }
 
         mutation_probability = rng.random_range(0.0..1.0);
         if mutation_probability <= effective_mutation_prob {
-            if mutation_method == crate::operations::Mutation::Differential {
-                let f = configuration
-                    .mutation_configuration
-                    .differential_f
-                    .unwrap_or(0.5);
-                crate::operations::mutation::differential::differential_mutation(
-                    &mut child_2,
-                    chromosomes,
-                    *value,
-                    f,
-                )?;
-            } else if mutation_method == crate::operations::Mutation::Cauchy {
-                mutation::factory_with_params(
-                    mutation_method,
-                    &mut child_2,
-                    configuration.mutation_configuration.cauchy_scale,
-                    None,
-                )?;
-            } else if mutation_method == crate::operations::Mutation::LevyFlight {
-                mutation::factory_with_params(
-                    mutation_method,
-                    &mut child_2,
-                    None,
-                    configuration.mutation_configuration.levy_alpha,
-                )?;
-            } else if mutation_method == crate::operations::Mutation::Polynomial {
-                let eta = configuration
-                    .mutation_configuration
-                    .polynomial_eta
-                    .or(configuration.mutation_configuration.step);
-                mutation::factory_with_params(mutation_method, &mut child_2, eta, None)?;
-            } else if mutation_method == crate::operations::Mutation::Insertion
-                || mutation_method == crate::operations::Mutation::Deletion
-            {
-                mutation::factory_with_chromosome_length(
-                    mutation_method,
-                    &mut child_2,
-                    Some(configuration.limit_configuration.chromosome_length),
-                    configuration.mutation_configuration.step,
-                    configuration.mutation_configuration.sigma,
-                )?;
-            } else {
-                mutation::factory_with_params(
-                    mutation_method,
-                    &mut child_2,
-                    configuration.mutation_configuration.step,
-                    configuration.mutation_configuration.sigma,
-                )?;
+            match &mutation_method {
+                Mutation::Differential { f } => {
+                    let f_val = f.unwrap_or(0.5);
+                    crate::operations::mutation::differential::differential_mutation(
+                        &mut child_2,
+                        chromosomes,
+                        value,
+                        f_val,
+                    )?;
+                }
+                Mutation::Insertion | Mutation::Deletion => {
+                    mutation::factory_with_chromosome_length(
+                        mutation_method.clone(),
+                        &mut child_2,
+                        Some(configuration.limit_configuration.chromosome_length),
+                        None,
+                        None,
+                    )?;
+                }
+                _ => {
+                    mutation_method.mutate(&mut child_2, &mutation_method)?;
+                }
             }
         }
 
@@ -2783,7 +2779,7 @@ where
         }
         // Mutation reward: compare parent vs child fitness
         if let Some(ref acc) = mutation_reward_acc {
-            if let Some((m_op_idx, _)) = selected_mutation {
+            if let Some(m_op_idx) = selected_mutation_idx {
                 let (p, c) = if is_maximization {
                     (child_1.fitness(), parent_1.fitness())
                 } else {
@@ -2928,7 +2924,7 @@ where
 impl<U> Ga<U>
 where
     U: LinearChromosome
-        + MultiCaseFitness
+        + VectorFitness
         + Send
         + Sync
         + 'static
@@ -2942,7 +2938,7 @@ where
 {
     /// Selects parents using lexicase or epsilon-lexicase selection.
     ///
-    /// Call this instead of the standard `run()` selection step when `U:` [`MultiCaseFitness`]
+    /// Call this instead of the standard `run()` selection step when `U:` [`VectorFitness`]
     /// and `Selection::Lexicase` or `Selection::EpsilonLexicase` is configured.
     /// Also syncs each chromosome's scalar fitness to the mean of its case scores (D-04).
     ///
@@ -2957,11 +2953,11 @@ where
     ///
     /// ```rust,ignore
     /// // Selection::Lexicase / EpsilonLexicase reach run() only when U does not implement
-    /// // MultiCaseFitness; factory() returns GaError::ConfigurationError for those variants per D-06.
-    /// // Users with MultiCaseFitness chromosomes call select_parents_lexicase() directly.
+    /// // VectorFitness; factory() returns GaError::ConfigurationError for those variants per D-06.
+    /// // Users with VectorFitness chromosomes call select_parents_lexicase() directly.
     /// let pairs = ga.select_parents_lexicase()?;
     /// ```
-    pub fn select_parents_lexicase(&mut self) -> Result<Vec<(usize, usize)>, GaError> {
+    pub fn select_parents_lexicase(&mut self) -> Result<Vec<Vec<usize>>, GaError> {
         crate::operations::selection::factory_lexicase(
             &mut self.population.chromosomes,
             self.configuration.selection_configuration,

@@ -10,13 +10,14 @@ fn make_chromosome(fitness: f64) -> Chromosome {
         fitness,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     }
 }
 
 #[test]
 fn test_truncation_selection_produces_correct_number_of_pairs() {
     let pop: Vec<Chromosome> = (0..10).map(|i| make_chromosome(i as f64 * 10.0)).collect();
-    let pairs = truncation_selection(&pop, 4);
+    let pairs = truncation_selection(&pop, 4, 2);
     assert_eq!(pairs.len(), 4);
 }
 
@@ -24,12 +25,12 @@ fn test_truncation_selection_produces_correct_number_of_pairs() {
 fn test_truncation_selection_empty_on_small_population() {
     // Single chromosome — cannot form any pair
     let pop = vec![make_chromosome(42.0)];
-    let pairs = truncation_selection(&pop, 1);
+    let pairs = truncation_selection(&pop, 1, 2);
     assert!(pairs.is_empty());
 
     // Empty population
     let empty: Vec<Chromosome> = Vec::new();
-    let pairs = truncation_selection(&empty, 1);
+    let pairs = truncation_selection(&empty, 1, 2);
     assert!(pairs.is_empty());
 }
 
@@ -43,18 +44,18 @@ fn test_truncation_selection_selects_only_from_top_half() {
 
     // Run many trials to ensure we never pick from the bottom half
     for _ in 0..200 {
-        let pairs = truncation_selection(&pop, 5);
-        for (a, b) in &pairs {
+        let pairs = truncation_selection(&pop, 5, 2);
+        for group in &pairs {
             assert!(
-                top_half_indices.contains(a),
+                top_half_indices.contains(&group[0]),
                 "Index {} is not in the top half ({:?})",
-                a,
+                group[0],
                 top_half_indices
             );
             assert!(
-                top_half_indices.contains(b),
+                top_half_indices.contains(&group[1]),
                 "Index {} is not in the top half ({:?})",
-                b,
+                group[1],
                 top_half_indices
             );
         }
@@ -66,11 +67,11 @@ fn test_truncation_selection_handles_equal_fitness() {
     // All individuals have the same fitness — any of them could be in the
     // top half. Selection should still succeed without panicking.
     let pop: Vec<Chromosome> = (0..10).map(|_| make_chromosome(5.0)).collect();
-    let pairs = truncation_selection(&pop, 3);
+    let pairs = truncation_selection(&pop, 3, 2);
     assert_eq!(pairs.len(), 3);
-    for (a, b) in &pairs {
-        assert!(*a < pop.len());
-        assert!(*b < pop.len());
+    for group in &pairs {
+        assert!(group[0] < pop.len());
+        assert!(group[1] < pop.len());
     }
 }
 
@@ -78,10 +79,10 @@ fn test_truncation_selection_handles_equal_fitness() {
 fn test_truncation_selection_with_two_chromosomes() {
     // Minimum viable population — both are in the elite pool
     let pop = vec![make_chromosome(1.0), make_chromosome(2.0)];
-    let pairs = truncation_selection(&pop, 1);
+    let pairs = truncation_selection(&pop, 1, 2);
     assert_eq!(pairs.len(), 1);
-    for (a, b) in &pairs {
-        assert!(*a < 2);
-        assert!(*b < 2);
+    for group in &pairs {
+        assert!(group[0] < 2);
+        assert!(group[1] < 2);
     }
 }

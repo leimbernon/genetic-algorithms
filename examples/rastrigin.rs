@@ -78,7 +78,7 @@ fn main() {
         // Crossover: Uniform blend
         .with_crossover_method(Crossover::Uniform)
         // Mutation: Gaussian perturbation (appropriate for continuous optimization)
-        .with_mutation_method(Mutation::Gaussian)
+        .with_mutation_method(Mutation::Gaussian { sigma: None })
         // Survivor selection: Fitness-based
         .with_survivor_method(Survivor::Fitness)
         // Problem: minimize fitness toward 0.0

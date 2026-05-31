@@ -2,6 +2,7 @@ use crate::configuration::{LimitConfiguration, ProblemSolving};
 use crate::error::GaError;
 use crate::extension::configuration::ExtensionConfiguration;
 use crate::operations::mutation::ValueMutable;
+use crate::operations::Mutation;
 use crate::traits::{ChromosomeT, LinearChromosome};
 
 /// Trait for parent selection operators.
@@ -23,7 +24,8 @@ use crate::traits::{ChromosomeT, LinearChromosome};
 ///         chromosomes: &[U],
 ///         number_of_couples: usize,
 ///         number_of_threads: usize,
-///     ) -> Vec<(usize, usize)>
+///         num_parents: usize,
+///     ) -> Vec<Vec<usize>>
 ///     where
 ///         U: ChromosomeT + Sync + Send + 'static + Clone,
 ///     {
@@ -33,16 +35,19 @@ use crate::traits::{ChromosomeT, LinearChromosome};
 /// }
 /// ```
 pub trait SelectionOperator {
-    /// Select parent pairs from the population.
+    /// Select N-ary parent groups from the population.
     ///
-    /// Returns a vector of `(index_a, index_b)` pairs representing
-    /// the indices of selected parents in the `chromosomes` slice.
+    /// Returns a vector of groups, each containing `num_parents` population
+    /// indices representing the selected parents for one crossover operation.
+    /// For standard 2-parent crossover pass `num_parents = 2`; for multi-parent
+    /// operators (UNDX, SPX, PCX) pass the operator's `num_parents` value.
     fn select<U>(
         &self,
         chromosomes: &[U],
         number_of_couples: usize,
         number_of_threads: usize,
-    ) -> Vec<(usize, usize)>
+        num_parents: usize,
+    ) -> Vec<Vec<usize>>
     where
         U: ChromosomeT + Sync + Send + 'static + Clone;
 }
@@ -93,6 +98,7 @@ pub trait CrossoverOperator {
 ///
 /// ```rust,ignore
 /// use genetic_algorithms::traits::MutationOperator;
+/// use genetic_algorithms::operations::Mutation;
 ///
 /// struct MyMutation;
 ///
@@ -100,8 +106,7 @@ pub trait CrossoverOperator {
 ///     fn mutate<U>(
 ///         &self,
 ///         individual: &mut U,
-///         step: Option<f64>,
-///         sigma: Option<f64>,
+///         mutation: &Mutation,
 ///     ) -> Result<(), GaError>
 ///     where
 ///         U: LinearChromosome + ValueMutable + 'static,
@@ -117,15 +122,15 @@ pub trait MutationOperator {
     /// # Arguments
     ///
     /// * `individual` - The chromosome to mutate.
-    /// * `step` - Optional step size (used by Creep mutation); **also used as the
-    ///   `scale` (γ) parameter for `Mutation::Cauchy`** (default 1.0 when `None`).
-    /// * `sigma` - Optional standard deviation (used by Gaussian mutation); **also
-    ///   used as the stability index `α` for `Mutation::LevyFlight`** (default 1.5 when `None`).
+    /// * `mutation` - The `Mutation` variant to apply, carrying its own inline parameters.
+    ///   Each variant extracts its own parameters (e.g. `Gaussian { sigma }` uses
+    ///   `sigma.unwrap_or(0.1)`). Context-dependent variants (`Differential`,
+    ///   `NonUniform`, `Insertion`, `Deletion`) are handled by the GA engine before
+    ///   this trait is called and return `GaError::MutationError` when invoked directly.
     fn mutate<U>(
         &self,
         individual: &mut U,
-        step: Option<f64>,
-        sigma: Option<f64>,
+        mutation: &Mutation,
     ) -> Result<(), GaError>
     where
         U: LinearChromosome + ValueMutable + 'static;

@@ -1,6 +1,10 @@
 mod operations {
     mod test_crossover;
     mod test_crossover_arithmetic;
+    mod test_crossover_undx;
+    mod test_crossover_spx;
+    mod test_crossover_pcx;
+    mod test_mutation_self_adaptive;
     mod test_crossover_blend_alpha;
     mod test_crossover_clone;
     mod test_crossover_order;

@@ -144,6 +144,22 @@ pub struct CrossoverConfiguration {
     /// Alpha parameter for Arithmetic crossover. Controls weighting between parents.
     /// α=0.5 gives uniform arithmetic crossover (midpoint). Default is 0.5.
     pub arithmetic_alpha: Option<f64>,
+    /// Override for the UNDX orthogonal noise scale (σ_xi).
+    /// Default (when `None`): `0.35 / sqrt(n_parents - 1)`.
+    /// Only consulted when `method == Crossover::Undx`.
+    pub undx_sigma_xi: Option<f64>,
+    /// Override for the UNDX primary-direction noise scale (σ_eta).
+    /// Default (when `None`): `0.35 / sqrt(n_parents)`.
+    /// Only consulted when `method == Crossover::Undx`.
+    pub undx_sigma_eta: Option<f64>,
+    /// Override for the PCX directional noise scale (σ_eta).
+    /// Default (when `None`): `0.1`.
+    /// Only consulted when `method == Crossover::Pcx`.
+    pub pcx_sigma_eta: Option<f64>,
+    /// Override for the PCX orthogonal noise scale (σ_zeta).
+    /// Default (when `None`): `0.1`.
+    /// Only consulted when `method == Crossover::Pcx`.
+    pub pcx_sigma_zeta: Option<f64>,
 }
 impl Default for CrossoverConfiguration {
     fn default() -> Self {
@@ -155,42 +171,31 @@ impl Default for CrossoverConfiguration {
             sbx_eta: None,
             blend_alpha: None,
             arithmetic_alpha: None,
+            undx_sigma_xi: None,
+            undx_sigma_eta: None,
+            pcx_sigma_eta: None,
+            pcx_sigma_zeta: None,
         }
     }
 }
 
 /// Configuration for the mutation operator.
 ///
-/// Specifies the mutation method, probability bounds (for adaptive GA),
-/// and method-specific parameters like step size, sigma, or polynomial eta.
-#[derive(Copy, Clone, Debug, PartialEq)]
+/// Specifies the mutation method and probability bounds (for adaptive GA).
+/// Operator-specific parameters (step size, sigma, eta, etc.) are now carried
+/// directly by the [`Mutation`] variant — see the variant documentation for defaults.
+///
+/// **v3.0.0 breaking change:** The fields `step`, `sigma`, `polynomial_eta`,
+/// `non_uniform_b`, `differential_f`, `cauchy_scale`, `levy_alpha`,
+/// `self_adaptive_tau`, `self_adaptive_tau_prime`, `sigma_min`, and `sigma_max`
+/// have been removed. Embed parameters in the variant directly, e.g.:
+/// `Mutation::Gaussian { sigma: Some(0.05) }`.
+#[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MutationConfiguration {
     pub probability_max: Option<f64>,
     pub probability_min: Option<f64>,
     pub method: Mutation,
-    /// Step size for Creep mutation. Only used when method is `Mutation::Creep`.
-    /// Default is 1.0.
-    pub step: Option<f64>,
-    /// Standard deviation for Gaussian mutation. Only used when method is `Mutation::Gaussian`.
-    /// Default is 1.0.
-    pub sigma: Option<f64>,
-    /// Distribution index for Polynomial mutation. Higher values produce smaller
-    /// perturbations. Typical range: 20–100. Default is 20.0.
-    pub polynomial_eta: Option<f64>,
-    /// Decay parameter for NonUniform mutation. Controls how fast mutation
-    /// magnitude decreases over generations. Typical range: 2–5. Default is 2.0.
-    pub non_uniform_b: Option<f64>,
-    /// F scale factor for Differential mutation. Controls perturbation magnitude.
-    /// Typical range: 0.4–1.0. Default is 0.5 when `None`.
-    /// Only used when `method` is `Mutation::Differential`.
-    pub differential_f: Option<f64>,
-    /// Scale parameter (γ) for `Mutation::Cauchy`. Default is `1.0` when `None`.
-    /// Only consulted when `method == Mutation::Cauchy`.
-    pub cauchy_scale: Option<f64>,
-    /// Stability index (α) for `Mutation::LevyFlight`. Valid range: (0.0, 2.0). Default is `1.5` when `None`.
-    /// Only consulted when `method == Mutation::LevyFlight`.
-    pub levy_alpha: Option<f64>,
     /// Enable dynamic mutation probability adjustment based on population cardinality.
     /// When enabled, mutation probability is adjusted each generation: increased when
     /// diversity is low and decreased when diversity is high.
@@ -207,13 +212,6 @@ impl Default for MutationConfiguration {
             probability_max: None,
             probability_min: None,
             method: Mutation::Swap,
-            step: None,
-            sigma: None,
-            polynomial_eta: None,
-            non_uniform_b: None,
-            differential_f: None,
-            cauchy_scale: None,
-            levy_alpha: None,
             dynamic_mutation: false,
             target_cardinality: None,
             probability_step: None,
@@ -504,6 +502,22 @@ impl CrossoverConfig for GaConfiguration {
         self.crossover_configuration.blend_alpha = Some(alpha);
         self
     }
+    fn with_undx_sigma_xi(mut self, value: f64) -> Self {
+        self.crossover_configuration.undx_sigma_xi = Some(value);
+        self
+    }
+    fn with_undx_sigma_eta(mut self, value: f64) -> Self {
+        self.crossover_configuration.undx_sigma_eta = Some(value);
+        self
+    }
+    fn with_pcx_sigma_eta(mut self, value: f64) -> Self {
+        self.crossover_configuration.pcx_sigma_eta = Some(value);
+        self
+    }
+    fn with_pcx_sigma_zeta(mut self, value: f64) -> Self {
+        self.crossover_configuration.pcx_sigma_zeta = Some(value);
+        self
+    }
 }
 
 impl MutationConfig for GaConfiguration {
@@ -519,14 +533,6 @@ impl MutationConfig for GaConfiguration {
         self.mutation_configuration.method = method;
         self
     }
-    fn with_mutation_step(mut self, step: f64) -> Self {
-        self.mutation_configuration.step = Some(step);
-        self
-    }
-    fn with_mutation_sigma(mut self, sigma: f64) -> Self {
-        self.mutation_configuration.sigma = Some(sigma);
-        self
-    }
     fn with_dynamic_mutation(mut self, enabled: bool) -> Self {
         self.mutation_configuration.dynamic_mutation = enabled;
         self
@@ -539,30 +545,8 @@ impl MutationConfig for GaConfiguration {
         self.mutation_configuration.probability_step = Some(step);
         self
     }
-    fn with_differential_f(mut self, f: f64) -> Self {
-        self.mutation_configuration.differential_f = Some(f);
-        self
-    }
-    fn with_polynomial_eta(mut self, eta: f64) -> Self {
-        self.mutation_configuration.polynomial_eta = Some(eta);
-        self
-    }
-    fn with_cauchy_scale(mut self, scale: f64) -> Self {
-        // A scale of 0 or negative makes the perturbation a no-op or invalid.
-        debug_assert!(scale > 0.0, "cauchy_scale must be positive; got {}", scale);
-        self.mutation_configuration.cauchy_scale = Some(scale);
-        self
-    }
-    fn with_levy_alpha(mut self, alpha: f64) -> Self {
-        debug_assert!(
-            alpha > 0.0 && alpha < 2.0,
-            "levy_alpha must be in (0.0, 2.0); got {}. Values outside this range are clamped.",
-            alpha
-        );
-        self.mutation_configuration.levy_alpha = Some(alpha);
-        self
-    }
 }
+
 
 impl StoppingConfig for GaConfiguration {
     fn with_max_generations(mut self, max_generations: usize) -> Self {

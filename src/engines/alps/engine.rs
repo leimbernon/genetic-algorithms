@@ -23,7 +23,8 @@ use std::sync::Arc;
 
 use crate::configuration::{CrossoverConfiguration, ProblemSolving};
 use crate::operations::mutation::ValueMutable;
-use crate::operations::{crossover, mutation};
+use crate::operations::crossover;
+use crate::traits::MutationOperator;
 use crate::rng::make_rng;
 use crate::traits::{LinearChromosome, FitnessFn};
 use rand::Rng;
@@ -189,12 +190,7 @@ where
                             _ => layers[layer_idx][a].clone(),
                         };
 
-                    let _ = mutation::factory_with_params(
-                        self.config.mutation,
-                        &mut offspring,
-                        self.config.mutation_step,
-                        self.config.mutation_sigma,
-                    );
+                    let _ = self.config.mutation.mutate(&mut offspring, &self.config.mutation);
 
                     let f = (self.fitness_fn)(offspring.dna());
                     offspring.set_fitness(f);

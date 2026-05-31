@@ -115,12 +115,11 @@ pub mod configuration;
 use crate::configuration::GaConfiguration;
 use crate::error::GaError;
 use crate::multi_objective::pareto::{ParetoFront, ParetoIndividual};
-use crate::multi_objective::ObjectiveFn;
 use crate::nsga2::configuration::ObjectiveDirection;
 use crate::observer::Spea2Observer;
 use crate::operations::{crossover, mutation};
 use crate::spea2::configuration::Spea2Configuration;
-use crate::traits::{InitializationFn, LinearChromosome};
+use crate::traits::{InitializationFn, LinearChromosome, MutationOperator, VectorFitness};
 use rand::Rng;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
@@ -144,8 +143,6 @@ where
     pub alleles: Vec<U::Gene>,
     /// Initialization function.
     pub initialization_fn: Option<Arc<InitializationFn<U::Gene>>>,
-    /// Objective functions (one per objective).
-    pub objective_fns: Vec<Arc<ObjectiveFn<U::Gene>>>,
     /// Optional structured lifecycle observer for SPEA2-specific events.
     pub observer: Option<Arc<dyn Spea2Observer<U> + Send + Sync>>,
 }
@@ -162,7 +159,6 @@ where
             ga_config,
             alleles: Vec::new(),
             initialization_fn: None,
-            objective_fns: Vec::new(),
             observer: None,
         }
     }
@@ -196,12 +192,6 @@ where
         self
     }
 
-    /// Sets the objective functions.
-    pub fn with_objective_fns(mut self, fns: Vec<Box<ObjectiveFn<U::Gene>>>) -> Self {
-        self.objective_fns = fns.into_iter().map(Arc::from).collect();
-        self
-    }
-
     /// Validates configuration and returns a ready-to-run instance.
     pub fn build(self) -> Result<Self, GaError> {
         self.validate()?;
@@ -228,13 +218,6 @@ where
             return Err(GaError::InvalidSpea2Configuration(
                 "initialization_fn is required".to_string(),
             ));
-        }
-        if self.objective_fns.len() != self.spea2_config.num_objectives {
-            return Err(GaError::InvalidSpea2Configuration(format!(
-                "Expected {} objective functions, got {}",
-                self.spea2_config.num_objectives,
-                self.objective_fns.len()
-            )));
         }
         if !self.spea2_config.objective_directions.is_empty()
             && self.spea2_config.objective_directions.len() != self.spea2_config.num_objectives
@@ -465,7 +448,7 @@ where
 
 impl<U> Spea2Ga<U>
 where
-    U: LinearChromosome + mutation::ValueMutable,
+    U: LinearChromosome + mutation::ValueMutable + VectorFitness,
 {
     /// Runs the SPEA2 algorithm and returns the Pareto front from the final archive.
     ///
@@ -495,6 +478,17 @@ where
 
         // Step 2: Initialize population and evaluate objectives in parallel
         let mut population = self.initialize_population()?;
+
+        // Runtime objective-count guard
+        if let Some(first) = population.first() {
+            let got = first.chromosome.fitness_values().len();
+            if got != self.spea2_config.num_objectives {
+                return Err(GaError::InvalidSpea2Configuration(format!(
+                    "Expected {} objectives from fitness_values(), got {}",
+                    self.spea2_config.num_objectives, got
+                )));
+            }
+        }
 
         // Step 3: Initialize empty archive
         let mut archive: Vec<ParetoIndividual<U>> = Vec::with_capacity(archive_size);
@@ -614,20 +608,21 @@ where
             0,
         );
 
-        let objective_fns = &self.objective_fns;
         #[cfg(not(target_arch = "wasm32"))]
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_par_iter()
-            .map(|chrom| {
-                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
+            .map(|mut chrom| {
+                chrom.calculate_fitness();
+                let objectives = chrom.fitness_values().to_vec();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
         #[cfg(target_arch = "wasm32")]
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_iter()
-            .map(|chrom| {
-                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
+            .map(|mut chrom| {
+                chrom.calculate_fitness();
+                let objectives = chrom.fitness_values().to_vec();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
@@ -648,7 +643,7 @@ where
         let population: Vec<ParetoIndividual<U>> = Vec::new();
 
         let crossover_config = self.ga_config.crossover_configuration;
-        let mutation_config = self.ga_config.mutation_configuration;
+        let mutation_config = self.ga_config.mutation_configuration.clone();
         let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
         let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
 
@@ -673,12 +668,7 @@ where
             for mut child in children {
                 let mp: f64 = rng.random();
                 if mp <= mut_prob {
-                    mutation::factory_with_params(
-                        mutation_config.method,
-                        &mut child,
-                        mutation_config.step,
-                        mutation_config.sigma,
-                    )?;
+                    mutation_config.method.mutate(&mut child, &mutation_config.method)?;
                 }
                 offspring.push(child);
                 if offspring.len() >= pop_size {
@@ -688,20 +678,21 @@ where
         }
 
         // Evaluate objectives for all offspring
-        let objective_fns = &self.objective_fns;
         #[cfg(not(target_arch = "wasm32"))]
         let evaluated: Vec<ParetoIndividual<U>> = offspring
             .into_par_iter()
-            .map(|chrom| {
-                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
+            .map(|mut chrom| {
+                chrom.calculate_fitness();
+                let objectives = chrom.fitness_values().to_vec();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
         #[cfg(target_arch = "wasm32")]
         let evaluated: Vec<ParetoIndividual<U>> = offspring
             .into_iter()
-            .map(|chrom| {
-                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
+            .map(|mut chrom| {
+                chrom.calculate_fitness();
+                let objectives = chrom.fitness_values().to_vec();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();

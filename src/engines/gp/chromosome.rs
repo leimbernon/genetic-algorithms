@@ -7,7 +7,7 @@
 //! slice representation.
 
 use super::node::{GpNode, Node};
-use crate::traits::{ChromosomeT, GeneT, LinearChromosome};
+use crate::traits::{ChromosomeT, GeneT, LinearChromosome, VectorFitness};
 use std::borrow::Cow;
 use std::fmt;
 use std::sync::Arc;
@@ -99,6 +99,8 @@ pub struct GpChromosome<N: GpNode> {
     pub root: Box<Node<N>>,
     fitness: f64,
     age: usize,
+    #[cfg_attr(feature = "serde", serde(default))]
+    fitness_values: Vec<f64>,
     /// Tree fitness function. Skipped during serde — the engine re-installs it
     /// after deserialization via `GpGa::run`.
     #[cfg_attr(feature = "serde", serde(skip, default = "default_fitness_fn"))]
@@ -128,6 +130,7 @@ impl<N: GpNode> Clone for GpChromosome<N> {
             root: self.root.clone(),
             fitness: self.fitness,
             age: self.age,
+            fitness_values: self.fitness_values.clone(),
             fitness_fn: self.fitness_fn.clone(),
         }
     }
@@ -143,6 +146,7 @@ impl<N: GpNode + Default> Default for GpChromosome<N> {
             root: Box::new(Node::Terminal(N::default())),
             fitness: 0.0,
             age: 0,
+            fitness_values: Vec::new(),
             fitness_fn: None,
         }
     }
@@ -155,6 +159,7 @@ impl<N: GpNode> GpChromosome<N> {
             root,
             fitness: 0.0,
             age: 0,
+            fitness_values: Vec::new(),
             fitness_fn: None,
         }
     }
@@ -217,6 +222,16 @@ impl<N: GpNode + Default> TreeChromosome for GpChromosome<N> {
 
     fn node_count(&self) -> usize {
         self.root.node_count()
+    }
+}
+
+impl<N: GpNode + Default> VectorFitness for GpChromosome<N> {
+    fn fitness_values(&self) -> &[f64] {
+        &self.fitness_values
+    }
+
+    fn set_fitness_values(&mut self, values: Vec<f64>) {
+        self.fitness_values = values;
     }
 }
 

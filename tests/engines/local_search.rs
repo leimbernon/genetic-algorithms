@@ -27,7 +27,7 @@ fn make_ga() -> Ga<genetic_algorithms::chromosomes::Range<f64>> {
         .with_problem_solving(ProblemSolving::Minimization)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
-        .with_mutation_method(Mutation::Gaussian)
+        .with_mutation_method(Mutation::Gaussian { sigma: None })
         .with_survivor_method(Survivor::Fitness)
         .with_alleles(alleles)
         .with_initialization_fn(

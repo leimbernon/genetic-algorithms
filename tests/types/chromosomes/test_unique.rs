@@ -70,7 +70,7 @@ fn pmx_crossover_accepted_at_build() {
 /// Ga::build() with Mutation::Gaussian + UniqueChromosome<i32> returns ConfigurationError.
 #[test]
 fn gaussian_mutation_rejected_at_build() {
-    let result = make_ga(Crossover::Pmx, Mutation::Gaussian);
+    let result = make_ga(Crossover::Pmx, Mutation::Gaussian { sigma: None });
     assert!(
         matches!(result, Err(GaError::ConfigurationError(_))),
         "Expected ConfigurationError for Gaussian mutation with UniqueChromosome"
@@ -159,6 +159,6 @@ fn valid_mutations_is_restricted() {
     assert!(v.contains(&Mutation::Insertion));
     assert!(v.contains(&Mutation::Swap));
     assert!(v.contains(&Mutation::Inversion));
-    assert!(!v.contains(&Mutation::Gaussian));
+    assert!(!v.contains(&Mutation::Gaussian { sigma: None }));
     assert!(!v.contains(&Mutation::Value));
 }

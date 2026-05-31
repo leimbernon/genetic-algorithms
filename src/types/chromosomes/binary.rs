@@ -8,7 +8,7 @@ use crate::error::GaError;
 use crate::fitness::FitnessFnWrapper;
 use crate::genotypes::Binary as BinaryGenotype;
 use crate::operations::mutation::ValueMutable;
-use crate::traits::{ChromosomeT, LinearChromosome, OperatorCompat};
+use crate::traits::{ChromosomeT, LinearChromosome, OperatorCompat, VectorFitness};
 use std::borrow::Cow;
 use std::fmt;
 
@@ -25,6 +25,8 @@ pub struct Binary {
     pub dna: Vec<BinaryGenotype>,
     pub fitness: f64,
     pub age: usize,
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub fitness_values: Vec<f64>,
     #[cfg_attr(feature = "serde", serde(skip, default))]
     pub fitness_fn: FitnessFnWrapper<BinaryGenotype>,
 }
@@ -52,6 +54,16 @@ impl ChromosomeT for Binary {
 
     fn age(&self) -> usize {
         self.age
+    }
+}
+
+impl VectorFitness for Binary {
+    fn fitness_values(&self) -> &[f64] {
+        &self.fitness_values
+    }
+
+    fn set_fitness_values(&mut self, values: Vec<f64>) {
+        self.fitness_values = values;
     }
 }
 
@@ -96,6 +108,7 @@ impl Default for Binary {
             dna: Vec::new(),
             fitness: f64::NAN,
             age: 0,
+            fitness_values: Vec::new(),
             fitness_fn: FitnessFnWrapper::default(),
         }
     }
@@ -112,6 +125,7 @@ impl Binary {
             dna: Vec::new(),
             fitness: f64::NAN,
             age: 0,
+            fitness_values: Vec::new(),
             fitness_fn: FitnessFnWrapper::default(),
         }
     }

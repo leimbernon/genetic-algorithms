@@ -27,23 +27,71 @@ contribution to the hypervolume of the worst non-dominated front is removed.
 ## Run
 
 ```sh
-cargo run --example sms_emoa_zdt1 --features benchmarks
+cargo run --example sms_emoa_zdt1
 ```
 */
 
-use genetic_algorithms::benchmarks::BenchmarkFn;
-use genetic_algorithms::benchmarks::ZDT1;
-use genetic_algorithms::chromosomes::Range as RangeChromosome;
+use std::borrow::Cow;
+use std::sync::Arc;
+
 use genetic_algorithms::configuration::GaConfiguration;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::initializers::range_random_initialization;
 use genetic_algorithms::sms_emoa::configuration::{ObjectiveDirection, SmsEmoaConfiguration};
 use genetic_algorithms::sms_emoa::SmsEmoaGa;
+use genetic_algorithms::traits::{ChromosomeT, LinearChromosome, VectorFitness};
 use genetic_algorithms::{LogObserver, SmsEmoaObserver};
-use std::sync::Arc;
+
+const N_VARS: usize = 30;
+
+// ZDT1 chromosome: f1 = x_0, f2 = g * (1 - sqrt(x_0/g)), g = 1 + 9/(n-1) * sum(x_1..x_n)
+#[derive(Debug, Clone, Default)]
+struct Zdt1Chromosome {
+    dna: Vec<RangeGenotype<f64>>,
+    fitness: f64,
+    fitness_values: Vec<f64>,
+}
+
+impl ChromosomeT for Zdt1Chromosome {
+    type Gene = RangeGenotype<f64>;
+    fn fitness(&self) -> f64 { self.fitness }
+    fn set_fitness(&mut self, v: f64) -> &mut Self { self.fitness = v; self }
+    fn set_age(&mut self, _: usize) -> &mut Self { self }
+    fn age(&self) -> usize { 0 }
+    fn calculate_fitness(&mut self) {
+        if self.dna.is_empty() {
+            self.fitness_values = vec![0.0, 0.0];
+            return;
+        }
+        let n = self.dna.len();
+        let x0 = self.dna[0].value;
+        let g = 1.0 + (9.0 / (n - 1) as f64) * self.dna[1..].iter().map(|g| g.value).sum::<f64>();
+        let f1 = x0;
+        let f2 = g * (1.0 - (x0 / g).sqrt());
+        self.fitness_values = vec![f1, f2];
+        self.fitness = f1;
+    }
+}
+
+impl LinearChromosome for Zdt1Chromosome {
+    fn dna(&self) -> &[Self::Gene] { &self.dna }
+    fn dna_mut(&mut self) -> &mut [Self::Gene] { &mut self.dna }
+    fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
+        self.dna = dna.into_owned(); self
+    }
+    fn set_fitness_fn<F>(&mut self, _: F) -> &mut Self
+    where F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static { self }
+}
+
+impl VectorFitness for Zdt1Chromosome {
+    fn fitness_values(&self) -> &[f64] { &self.fitness_values }
+    fn set_fitness_values(&mut self, values: Vec<f64>) { self.fitness_values = values; }
+}
+
+impl genetic_algorithms::operations::mutation::ValueMutable for Zdt1Chromosome {}
+impl genetic_algorithms::traits::OperatorCompat for Zdt1Chromosome {}
 
 fn main() {
-    const N_VARS: usize = 30;
     const POP_SIZE: usize = 100;
     const MAX_GENERATIONS: usize = 250;
 
@@ -63,25 +111,13 @@ fn main() {
     let alleles = vec![RangeGenotype::new(0, vec![(0.0_f64, 1.0_f64)], 0.0_f64)];
     let alleles_clone = alleles.clone();
 
-    let zdt1 = ZDT1::new(N_VARS);
-    let zdt1_clone = zdt1.clone();
-    let obj_f1 = move |dna: &[RangeGenotype<f64>]| -> f64 {
-        let x: Vec<f64> = dna.iter().map(|g| g.value).collect();
-        zdt1.evaluate(&x)[0]
-    };
-    let obj_f2 = move |dna: &[RangeGenotype<f64>]| -> f64 {
-        let x: Vec<f64> = dna.iter().map(|g| g.value).collect();
-        zdt1_clone.evaluate(&x)[1]
-    };
-
-    let mut sms = SmsEmoaGa::<RangeChromosome<f64>>::new(sms_config, ga_config)
+    let mut sms = SmsEmoaGa::<Zdt1Chromosome>::new(sms_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |n, _, _| {
-            range_random_initialization(n, Some(&alleles_clone), Some(true))
+        .with_initialization_fn(move |n, _| {
+            range_random_initialization(n, Some(&alleles_clone))
         })
-        .with_objective_fns(vec![Box::new(obj_f1), Box::new(obj_f2)])
         .with_observer(
-            Arc::new(LogObserver) as Arc<dyn SmsEmoaObserver<RangeChromosome<f64>> + Send + Sync>
+            Arc::new(LogObserver) as Arc<dyn SmsEmoaObserver<Zdt1Chromosome> + Send + Sync>
         )
         .build()
         .expect("Failed to build SMS-EMOA");

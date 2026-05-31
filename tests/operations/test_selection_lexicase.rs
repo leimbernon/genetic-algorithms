@@ -7,24 +7,24 @@ use genetic_algorithms::{
     configuration::SelectionConfiguration,
     fitness::FitnessFnWrapper,
     operations::Selection,
-    traits::{ChromosomeT, MultiCaseFitness},
+    traits::{ChromosomeT, VectorFitness},
 };
 
 #[allow(dead_code)]
-fn make_multi_case_chromosome(case_scores: Vec<f64>, dna: Vec<Gene>) -> MultiCaseChromosome {
-    let mean = if case_scores.is_empty() {
+fn make_multi_case_chromosome(fitness_values: Vec<f64>, dna: Vec<Gene>) -> MultiCaseChromosome {
+    let mean = if fitness_values.is_empty() {
         0.0
     } else {
-        case_scores.iter().sum::<f64>() / case_scores.len() as f64
+        fitness_values.iter().sum::<f64>() / fitness_values.len() as f64
     };
     let mut c = MultiCaseChromosome {
         dna,
         fitness: mean,
         age: 0,
-        case_scores: vec![],
+        fitness_values: vec![],
         fitness_fn: FitnessFnWrapper::default(),
     };
-    c.set_case_fitness(case_scores);
+    c.set_fitness_values(fitness_values);
     c
 }
 
@@ -39,8 +39,8 @@ fn pop_with_cases(case_score_matrix: &[Vec<f64>]) -> Vec<MultiCaseChromosome> {
 #[test]
 fn test_multi_case_fitness_trait_roundtrip() {
     let mut c = MultiCaseChromosome::default();
-    c.set_case_fitness(vec![1.0, 2.0, 3.0]);
-    assert_eq!(c.case_fitness(), &[1.0, 2.0, 3.0]);
+    c.set_fitness_values(vec![1.0, 2.0, 3.0]);
+    assert_eq!(c.fitness_values(), &[1.0, 2.0, 3.0]);
 }
 
 #[test]
@@ -55,11 +55,11 @@ fn test_lexicase_returns_correct_couple_count() {
         vec![0.0, 0.5, 0.5],
         vec![0.5, 0.0, 0.5],
     ]);
-    let result = lexicase_selection(&pop, 4);
+    let result = lexicase_selection(&pop, 4, 2);
     assert_eq!(result.len(), 4, "Expected exactly 4 couples");
-    for (a, b) in &result {
-        assert!(*a < pop.len(), "Index {} out of bounds", a);
-        assert!(*b < pop.len(), "Index {} out of bounds", b);
+    for group in &result {
+        assert!(group[0] < pop.len(), "Index {} out of bounds", group[0]);
+        assert!(group[1] < pop.len(), "Index {} out of bounds", group[1]);
     }
 }
 
@@ -75,10 +75,10 @@ fn test_lexicase_case_order_is_shuffled() {
         vec![0.0, 1.0], // specialist on case 1
     ]);
 
-    let pairs = lexicase_selection(&pop, 200);
+    let pairs = lexicase_selection(&pop, 200, 2);
     let all_selected: Vec<usize> = pairs
         .iter()
-        .flat_map(|&(a, b)| [a, b])
+        .flat_map(|group| [group[0], group[1]])
         .collect();
 
     let saw_0 = all_selected.contains(&0);
@@ -125,7 +125,7 @@ fn test_factory_rejects_lexicase() {
         method: Selection::Lexicase,
         ..Default::default()
     };
-    let result = selection::factory(&pop, config, 1);
+    let result = selection::factory(&pop, config, 1, 2);
     assert!(
         matches!(result, Err(GaError::ConfigurationError(_))),
         "Expected ConfigurationError, got: {:?}",
@@ -149,7 +149,7 @@ fn test_factory_rejects_epsilon_lexicase() {
         method: Selection::EpsilonLexicase,
         ..Default::default()
     };
-    let result = selection::factory(&pop, config, 1);
+    let result = selection::factory(&pop, config, 1, 2);
     assert!(
         matches!(result, Err(GaError::ConfigurationError(_))),
         "Expected ConfigurationError, got: {:?}",
@@ -178,8 +178,8 @@ fn test_epsilon_lexicase_fixed_tolerance() {
         vec![0.97], // index 2
         vec![0.50], // index 3 — excluded
     ]);
-    let pairs = epsilon_lexicase_selection(&pop, 100, Some(0.05));
-    let all_selected: Vec<usize> = pairs.iter().flat_map(|&(a, b)| [a, b]).collect();
+    let pairs = epsilon_lexicase_selection(&pop, 100, Some(0.05), 2);
+    let all_selected: Vec<usize> = pairs.iter().flat_map(|group| [group[0], group[1]]).collect();
 
     assert!(
         !all_selected.contains(&3),
@@ -210,15 +210,15 @@ fn test_epsilon_lexicase_dynamic_mad() {
         vec![0.1, 0.9],
         vec![0.0, 1.0],
     ]);
-    let pairs = epsilon_lexicase_selection(&pop, 50, None);
+    let pairs = epsilon_lexicase_selection(&pop, 50, None, 2);
     assert_eq!(pairs.len(), 50, "Expected 50 pairs from dynamic MAD epsilon-lexicase");
-    for (a, b) in &pairs {
-        assert!(*a < pop.len(), "Index {} out of bounds", a);
-        assert!(*b < pop.len(), "Index {} out of bounds", b);
+    for group in &pairs {
+        assert!(group[0] < pop.len(), "Index {} out of bounds", group[0]);
+        assert!(group[1] < pop.len(), "Index {} out of bounds", group[1]);
     }
     // Confirm that both extreme specialists (index 0 and 4) can be selected,
     // as they are each best on at least one case.
-    let all: Vec<usize> = pairs.iter().flat_map(|&(a, b)| [a, b]).collect();
+    let all: Vec<usize> = pairs.iter().flat_map(|group| [group[0], group[1]]).collect();
     assert!(
         all.contains(&0) || all.contains(&4),
         "At least one extreme specialist should appear in 50 pairs"
@@ -231,7 +231,7 @@ fn test_ga_engine_runs_with_lexicase_dispatch() {
         ga::Ga,
         operations::Selection,
         population::Population,
-        traits::{ConfigurationT, MultiCaseFitness, SelectionConfig, StoppingConfig},
+        traits::{ConfigurationT, VectorFitness, SelectionConfig, StoppingConfig},
         ChromosomeLength,
     };
     use crate::structures::{Gene, MultiCaseChromosome};
@@ -243,10 +243,10 @@ fn test_ga_engine_runs_with_lexicase_dispatch() {
             dna: vec![Gene { id: 1 }],
             fitness: mean,
             age: 0,
-            case_scores: scores.clone(),
+            fitness_values: scores.clone(),
             fitness_fn: Default::default(),
         };
-        c.set_case_fitness(scores);
+        c.set_fitness_values(scores);
         c
     };
 
@@ -273,8 +273,8 @@ fn test_ga_engine_runs_with_lexicase_dispatch() {
     assert!(result.is_ok(), "select_parents_lexicase failed: {:?}", result);
     let pairs = result.unwrap();
     assert_eq!(pairs.len(), 3, "Expected 3 parent pairs");
-    for (a, b) in &pairs {
-        assert!(*a < 6, "Index {} out of bounds", a);
-        assert!(*b < 6, "Index {} out of bounds", b);
+    for group in &pairs {
+        assert!(group[0] < 6, "Index {} out of bounds", group[0]);
+        assert!(group[1] < 6, "Index {} out of bounds", group[1]);
     }
 }

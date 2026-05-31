@@ -259,7 +259,7 @@ where
             } else {
                 None
             };
-            let pairs = selection::factory(&pop, sel_cfg, 1)?;
+            let pairs = selection::factory(&pop, sel_cfg, 1, 2)?;
             if let Some(t) = t_sel {
                 self.notify(|obs| obs.on_selection_complete(gen, t.elapsed(), pairs.len()));
             }
@@ -282,13 +282,14 @@ where
             let max_depth = self.config.max_depth;
             let max_node_count = self.config.max_node_count;
 
-            for (i, j) in &pairs {
+            for group in &pairs {
+                let (i, j) = (group[0], group[1]);
                 // Crossover with bloat retry — T-53-08: hard cap of 3 retries.
                 let mut crossover_result = None;
                 for _ in 0..3 {
                     match self.config.crossover.apply(
-                        &pop[*i],
-                        &pop[*j],
+                        &pop[i],
+                        &pop[j],
                         max_depth,
                         max_node_count,
                         &mut rng,
@@ -310,10 +311,10 @@ where
 
                 // Fall back to the better parent copy on all-retry failure.
                 let (mut c1, mut c2) = crossover_result.unwrap_or_else(|| {
-                    let better = if self.is_better(pop[*i].fitness(), pop[*j].fitness()) {
-                        pop[*i].clone()
+                    let better = if self.is_better(pop[i].fitness(), pop[j].fitness()) {
+                        pop[i].clone()
                     } else {
-                        pop[*j].clone()
+                        pop[j].clone()
                     };
                     (better.clone(), better)
                 });

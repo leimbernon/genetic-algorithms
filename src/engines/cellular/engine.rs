@@ -21,10 +21,9 @@ use std::sync::Arc;
 
 use crate::configuration::{CrossoverConfiguration, ProblemSolving};
 use crate::operations::mutation::ValueMutable;
-use crate::operations::{crossover, mutation};
+use crate::operations::crossover;
 use crate::rng::make_rng;
-use crate::traits::SelectionOperator;
-use crate::traits::{FitnessFn, LinearChromosome};
+use crate::traits::{FitnessFn, LinearChromosome, MutationOperator, SelectionOperator};
 use rand::Rng;
 
 use super::configuration::{CellularConfiguration, Neighborhood, UpdateMode};
@@ -168,10 +167,12 @@ where
                     }
 
                     // Select a mate from the neighborhood using the configured operator.
-                    // We ask for 1 couple; take the second element of the pair as the
-                    // mate so we don't just pick the cell itself.
-                    let pairs = self.config.selection.select(&local, 1, 1);
-                    let mate_local_idx = if let Some(&(a, b)) = pairs.first() {
+                    // We ask for 1 couple with num_parents=2; take the second element of the
+                    // group as the mate so we don't just pick the cell itself.
+                    let pairs = self.config.selection.select(&local, 1, 1, 2);
+                    let mate_local_idx = if let Some(group) = pairs.first() {
+                        let a = group[0];
+                        let b = group[1];
                         // Prefer the non-self member of the pair; fall back to `b`.
                         if a != 0 {
                             a
@@ -197,12 +198,7 @@ where
                         };
 
                     // Mutate offspring
-                    let _ = mutation::factory_with_params(
-                        self.config.mutation,
-                        &mut offspring,
-                        self.config.mutation_step,
-                        self.config.mutation_sigma,
-                    );
+                    let _ = self.config.mutation.mutate(&mut offspring, &self.config.mutation);
 
                     // Evaluate
                     let offspring_fitness = (self.fitness_fn)(offspring.dna());

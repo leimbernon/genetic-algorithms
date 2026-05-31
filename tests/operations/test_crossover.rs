@@ -29,12 +29,14 @@ fn test_cycle_crossover() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: dna_2,
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     //Getting the offspring
@@ -87,12 +89,14 @@ fn test_multipoint_crossover_2_points() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: dna_2.clone(),
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     //Getting the offspring
@@ -184,12 +188,14 @@ fn test_multipoint_crossover_4_points() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: dna_2.clone(),
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     //Getting the offspring
@@ -277,12 +283,14 @@ fn test_uniform_crossover() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: dna_2,
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     //Getting the offspring
@@ -305,12 +313,14 @@ fn test_xover_aga_probability_over_avg() {
         fitness: 25.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: Vec::<Gene>::new(),
         fitness: 100.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let f_max = 150.0;
     let f_avg = 50.0;
@@ -338,12 +348,14 @@ fn test_xover_aga_probability_under_avg() {
         fitness: 25.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: Vec::<Gene>::new(),
         fitness: 49.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let f_max = 150.0;
     let f_avg = 50.0;
@@ -393,6 +405,7 @@ fn test_cycle_crossover_three_cycles() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![
@@ -406,6 +419,7 @@ fn test_cycle_crossover_three_cycles() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     let mut offspring = cycle::cycle(&parent_1, &parent_2).unwrap();
@@ -444,6 +458,7 @@ fn test_cycle_crossover_preserves_all_gene_ids() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![
@@ -455,6 +470,7 @@ fn test_cycle_crossover_preserves_all_gene_ids() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     let mut offspring = cycle::cycle(&parent_1, &parent_2).unwrap();
@@ -480,12 +496,14 @@ fn test_multipoint_crossover_1_point() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: dna_2.clone(),
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     let mut offspring = multipoint(&parent_1, &parent_2, 1).unwrap();
@@ -527,12 +545,14 @@ fn test_multipoint_crossover_children_complementary() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: dna_2.clone(),
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     for _ in 0..20 {
@@ -568,12 +588,14 @@ fn test_xover_aga_probability_equal_fitness_returns_max() {
         fitness: 50.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: Vec::<Gene>::new(),
         fitness: 50.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let f_max = 50.0;
     let f_avg = 50.0;
@@ -602,12 +624,14 @@ fn test_xover_aga_probability_all_same_high_fitness() {
         fitness: 100.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: Vec::<Gene>::new(),
         fitness: 100.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let prob = aga_probability(&parent_1, &parent_2, 100.0, 100.0, 0.8, 0.2);
     assert_eq!(prob, 0.8);
@@ -624,12 +648,14 @@ fn test_multipoint_crossover_missing_number_of_points() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 4 }, Gene { id: 5 }, Gene { id: 6 }],
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     let config = CrossoverConfiguration {
@@ -662,12 +688,14 @@ fn test_multipoint_crossover_empty_parents() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![],
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     // Empty parents: dna_len == 0, dna_len - 1 would underflow.
     // The lengths are equal so it doesn't return the length-mismatch error.
@@ -688,12 +716,14 @@ fn test_multipoint_crossover_single_gene() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 2 }],
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     // Single gene: n = min(points, dna_len-1) = 0, so no crossover points.
     // Empty candidates vec means no crossover, children = clones of parents.
@@ -711,12 +741,14 @@ fn test_multipoint_crossover_two_genes() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 3 }, Gene { id: 4 }],
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     // Two genes: max 1 crossover point
     let result = multipoint(&parent_1, &parent_2, 5);
@@ -739,6 +771,7 @@ fn test_multipoint_crossover_identical_parents() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let result = multipoint(&parent, &parent, 2).unwrap();
     // With identical parents, children should be identical to parents
@@ -756,12 +789,14 @@ fn test_multipoint_crossover_different_lengths() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 1 }, Gene { id: 2 }, Gene { id: 3 }],
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let result = multipoint(&parent_1, &parent_2, 1);
     assert!(result.is_err(), "Different lengths should return Err");
@@ -774,12 +809,14 @@ fn test_multipoint_crossover_zero_points() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 4 }, Gene { id: 5 }, Gene { id: 6 }],
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let result = multipoint(&parent_1, &parent_2, 0).unwrap();
     // 0 crossover points: children should be clones of parents
@@ -801,12 +838,14 @@ fn test_cycle_crossover_mismatched_gene_ids() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 3 }, Gene { id: 4 }],
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let result = cycle::cycle(&parent_1, &parent_2);
     assert!(
@@ -823,6 +862,7 @@ fn test_cycle_crossover_identical_parents() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let result = cycle::cycle(&parent, &parent).unwrap();
     // Identical parents -> children identical to parents
@@ -840,12 +880,14 @@ fn test_cycle_crossover_two_genes() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 2 }, Gene { id: 1 }],
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let result = cycle::cycle(&parent_1, &parent_2).unwrap();
     assert_eq!(result.len(), 2);
@@ -859,12 +901,14 @@ fn test_cycle_crossover_different_lengths() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 1 }, Gene { id: 2 }],
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let result = cycle::cycle(&parent_1, &parent_2);
     assert!(result.is_err());
@@ -880,6 +924,7 @@ fn test_uniform_crossover_identical_parents() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let result = uniform_crossover::uniform(&parent, &parent).unwrap();
     for child in &result {
@@ -899,12 +944,14 @@ fn test_uniform_crossover_single_gene() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 2 }],
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let result = uniform_crossover::uniform(&parent_1, &parent_2).unwrap();
     assert_eq!(result.len(), 2);
@@ -920,12 +967,14 @@ fn test_uniform_crossover_different_lengths() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 1 }],
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let result = uniform_crossover::uniform(&parent_1, &parent_2);
     assert!(result.is_err());
@@ -941,12 +990,14 @@ fn test_crossover_enum_multipoint_returns_error() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 3 }, Gene { id: 4 }],
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let result = Crossover::MultiPoint.crossover(&parent_1, &parent_2);
     assert!(
@@ -963,12 +1014,14 @@ fn test_crossover_enum_sbx_returns_error() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 2 }],
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let result = Crossover::Sbx.crossover(&parent_1, &parent_2);
     assert!(
@@ -985,12 +1038,14 @@ fn test_crossover_enum_blend_alpha_returns_error() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 2 }],
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let result = Crossover::BlendAlpha.crossover(&parent_1, &parent_2);
     assert!(
@@ -1127,12 +1182,14 @@ fn test_xover_aga_probability_at_avg() {
         fitness: 50.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![],
         fitness: 50.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let prob = aga_probability(&parent_1, &parent_2, 50.0, 50.0, 0.9, 0.1);
     // larger_f >= f_avg => true, f_max - f_avg ~= 0 => returns probability_max
@@ -1146,6 +1203,7 @@ fn test_xover_aga_probability_equal_parents() {
         fitness: 75.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let prob = aga_probability(&parent, &parent, 100.0, 50.0, 0.8, 0.2);
     // larger_f = 75 >= f_avg = 50, so: 0.8 * (100-75)/(100-50) = 0.8 * 0.5 = 0.4
