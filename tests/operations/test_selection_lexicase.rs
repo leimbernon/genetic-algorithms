@@ -37,7 +37,7 @@ fn pop_with_cases(case_score_matrix: &[Vec<f64>]) -> Vec<MultiCaseChromosome> {
 }
 
 #[test]
-fn test_multi_case_fitness_trait_roundtrip() {
+fn test_vector_fitness_trait_roundtrip() {
     let mut c = MultiCaseChromosome::default();
     c.set_fitness_values(vec![1.0, 2.0, 3.0]);
     assert_eq!(c.fitness_values(), &[1.0, 2.0, 3.0]);

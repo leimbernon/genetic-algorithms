@@ -281,3 +281,31 @@ fn test_spea2_log_observer() {
     let front = result.unwrap();
     assert!(!front.is_empty(), "front should be non-empty under LogObserver");
 }
+
+#[test]
+fn test_spea2_run_rejects_mismatched_objective_count() {
+    use genetic_algorithms::initializers::range_random_initialization;
+    use genetic_algorithms::ChromosomeLength;
+
+    let config = Spea2Configuration::new()
+        .with_num_objectives(3) // expects 3, chromosome provides 2
+        .with_population_size(8)
+        .with_archive_size(4)
+        .with_max_generations(1);
+    let ga_config = GaConfiguration::default()
+        .with_chromosome_length(ChromosomeLength::Fixed(2));
+
+    let alleles = vec![RangeGenotype::new(0, vec![(0.0_f64, 1.0_f64)], 0.0_f64)];
+    let alleles_clone = alleles.clone();
+
+    let mut spea2 = Spea2Ga::<TwoObjRangeChromosome>::new(config, ga_config)
+        .with_alleles(alleles)
+        .with_initialization_fn(move |n, _| range_random_initialization(n, Some(&alleles_clone)));
+
+    let result = spea2.run();
+    assert!(
+        matches!(result, Err(GaError::InvalidSpea2Configuration(_))),
+        "Expected InvalidSpea2Configuration for mismatched objective count, got: {:?}",
+        result
+    );
+}
