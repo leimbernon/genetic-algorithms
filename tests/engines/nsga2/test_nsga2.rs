@@ -9,6 +9,7 @@ use genetic_algorithms::traits::VectorFitness;
 
 use std::borrow::Cow;
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Default)]
 struct MoTestChromosome {
     dna: Vec<genetic_algorithms::genotypes::Binary>,

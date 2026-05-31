@@ -41,6 +41,7 @@ pub mod configuration;
 pub mod gene;
 pub mod group_aware;
 pub mod linear_chromosome;
+pub mod multi_case_fitness;
 pub mod vector_fitness;
 pub mod operator_compat;
 pub mod operators;
@@ -60,6 +61,7 @@ pub use configuration::{
     MutationConfig, NichingConfig, SelectionConfig, StoppingConfig, SurvivorConfig,
 };
 pub use gene::GeneT;
+pub use multi_case_fitness::MultiCaseFitness;
 pub use group_aware::GroupAware;
 pub use operator_compat::OperatorCompat;
 pub use operators::{

@@ -4,7 +4,6 @@
 //! the JSON round-trip for core GA types.
 #![cfg(feature = "serde")]
 
-use genetic_algorithms::aos::AosStrategy;
 use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::{GaConfiguration, ProblemSolving};
