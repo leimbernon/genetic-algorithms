@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v3.0.0
 milestone_name: — Advanced Representations, Alternative Strategies & Architecture Simplification
 status: in_progress
-stopped_at: Phase 55 complete — feat/51-merge-test ready for PR to milestone/v3.0.0
+stopped_at: Phases 47-55 shipped — PR #272 open against milestone/v3.0.0
 last_updated: "2026-05-31T00:00:00.000Z"
-last_activity: 2026-05-31 -- Phases 47-55 complete; compiler warnings fixed; awaiting PR merge
+last_activity: 2026-05-31 -- Phases 47-55 shipped — PR #272
 progress:
   total_phases: 19
   completed_phases: 9
@@ -58,7 +58,7 @@ Progress bar: [████░░░░░░░░░░░░░░░] 9/19 p
 
 ### Blockers/Concerns
 
-- feat/51-merge-test needs PR review + merge to milestone/v3.0.0 before any new phase branch opens
+- PR #272 (feat/51-merge-test → milestone/v3.0.0) needs review + merge before any new phase branch opens
 - Phases 56–65 (CMA-ES, PSO, EDA, restart strategies, batch fitness, perf, surrogate, visualization, test/doc quality, migration guide) are not yet planned
 
 ## Session Continuity
