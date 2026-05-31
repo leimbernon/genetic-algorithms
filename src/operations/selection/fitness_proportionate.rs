@@ -151,6 +151,6 @@ pub fn stochastic_universal_sampling<U: ChromosomeT>(
         }
     }
 
-    debug!(target="mutation_events", method="stochastic_universal_sampling"; "Stochastic universal sampling finished");
+    debug!(target="selection_events", method="stochastic_universal_sampling"; "Stochastic universal sampling finished");
     mating
 }
