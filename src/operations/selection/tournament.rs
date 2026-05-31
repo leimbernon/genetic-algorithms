@@ -7,6 +7,7 @@
 use crate::traits::ChromosomeT;
 use log::{debug, trace};
 use rand::Rng;
+#[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
 
 /// Tournament selection: for each parent slot, two individuals are chosen at
@@ -51,8 +52,25 @@ where
 
     // Use rayon to run tournaments in parallel — each iteration picks 2 random contestants
     // and the winner goes to a results vector. We collect num_parents*couples winners and group them.
+    #[cfg(not(target_arch = "wasm32"))]
     let winners: Vec<usize> = (0..total_contestants)
         .into_par_iter()
+        .map(|_| {
+            let mut rng = crate::rng::make_rng();
+            let index_1 = rng.random_range(0..chromosomes.len());
+            let index_2 = rng.random_range(0..chromosomes.len());
+
+            trace!(target="selection_events", method="tournament"; "Tournament between {} and {}", index_1, index_2);
+
+            if chromosomes[index_1].fitness() >= chromosomes[index_2].fitness() {
+                index_1
+            } else {
+                index_2
+            }
+        })
+        .collect();
+    #[cfg(target_arch = "wasm32")]
+    let winners: Vec<usize> = (0..total_contestants)
         .map(|_| {
             let mut rng = crate::rng::make_rng();
             let index_1 = rng.random_range(0..chromosomes.len());
