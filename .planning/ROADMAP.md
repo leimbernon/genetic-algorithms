@@ -119,21 +119,9 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 - [ ] **Phase 48: New Genotype Types** — `UniqueChromosome<T>` for permutation problems, `MultiRangeChromosome<T>` for per-gene bounds, `MultiUniqueChromosome<T>` for multiple independent permutation groups; migrate `job_scheduling` example
 - [x] **Phase 49: Unified Strategy Trait + Alternative Strategy Engines** — `Strategy<U>` trait; `HillClimbEngine` (Stochastic + SteepestAscent); `PermutateEngine` with safety gate; observer hooks throughout
 - [x] **Phase 50: Lexicase Selection** — `MultiCaseFitness: ChromosomeT` trait; `LexicaseSelection`; epsilon-lexicase variant; behavioral diversity CI test (completed 2026-05-23)
-- [x] **Phase 51: Multi-Parent Crossover + Self-Adaptive Mutation** — UNDX, SPX, PCX operators with `RealValued` marker trait; `SelfAdaptive: ChromosomeT` trait; `Mutation::SelfAdaptiveGaussian` with log-normal sigma update (completed 2026-05-23)
+- [ ] **Phase 51: Multi-Parent Crossover + Self-Adaptive Mutation** — UNDX, SPX, PCX operators with `RealValued` marker trait; `SelfAdaptive: ChromosomeT` trait; `Mutation::SelfAdaptiveGaussian` with log-normal sigma update
 - [x] **Phase 52: Variable-Length Chromosomes** — `ChromosomeLength::Variable { min, max }`; `Mutation::Insertion` / `Mutation::Deletion`; `Crossover::VariableLength(AlignmentStrategy)`; parsimony pressure survivor config (completed 2026-05-24)
 - [x] **Phase 53: Tree Chromosome + GpGa Engine** — `TreeChromosome: ChromosomeT` supertrait; `GpGa<U>` engine; ramped half-and-half init; subtree crossover + mutation; bloat control; serde with `serde_stacker`; `Display` as expression string (completed 2026-05-25)
-- [x] **Phase 54: N-ary Selection + Per-Operator Mutation Params** — Generalize `SelectionOperator::select` to return `Vec<Vec<usize>>` (N-ary groups, #248); replace `mutate(step, sigma)` overloaded signature with typed per-operator params (#249); update all built-in operators and GA loop
-- [ ] **Phase 55: RFC Multi-Valued Fitness** — Design and implement `MultiCaseFitness` → first-class `fitness() -> &[f64]` decision (#251); coordinate with MO engines (nsga2/nsga3/moead/spea2/sms_emoa/ibea); document migration impact
-- [ ] **Phase 56: CMA-ES Engine** — `CmaEsEngine` under `src/engines/`; covariance matrix adaptation; configurable strategy params; observer hooks; WASM-compatible (#252)
-- [ ] **Phase 57: PSO Engine** — `PsoEngine` under `src/engines/`; velocity/position update; gbest/lbest topologies; inertia, cognitive, social coefficients; WASM-compatible (#253)
-- [ ] **Phase 58: EDA / UMDA Engine** — `EdaEngine` with UMDA for binary/continuous; probabilistic model build + sample loop; observer hooks; WASM-compatible (#254)
-- [ ] **Phase 59: Restart Strategies (IPOP/BIPOP)** — Restart triggers (stagnation, convergence threshold); increasing- and bi-population variants; primarily for CMA-ES; configurable (#255)
-- [ ] **Phase 60: Batch Fitness + Fitness Cache Extension** — Optional `fn(&[&[Gene]]) -> Vec<f64>` batch API (#257); extend `src/fitness/cache.rs` to all engines (#260)
-- [ ] **Phase 61: Performance — Clone Reduction + Parallel Survivor** — Reusable offspring buffers across generations (#258); rayon-parallel survivor selection and non-dominated sorting with WASM cfg-gates (#259)
-- [ ] **Phase 62: Surrogate-Assisted Evaluation** — Pluggable surrogate model (regression/kriging-lite) for expensive fitness; opt-in; overlaps with batch-fitness API (#256)
-- [ ] **Phase 63: Visualization — Pareto-Front Plotting + Example Images** — 2D/3D Pareto-front plot behind `visualization` feature (#261); generate rendered example images from real runs (#262); embed images in README and docs (#264)
-- [ ] **Phase 64: Test + Doc Quality** — Move remaining inline `#[cfg(test)]` modules to `tests/` (#266); audit and fix `rust,ignore` doctests (#265); add missing criterion benchmarks for nsga3/moead/spea2/sms_emoa/ibea/constraints/niching/memetic (#267)
-- [ ] **Phase 65: v3.0.0 Migration Guide** — Complete MIGRATION.md with every breaking change (ConfigurationT decomposition, operator dispatch, N-ary selection, mutation params, Reporter removal, multi-valued fitness); before/after code snippets (#263)
 
 ## Phase Details
 
@@ -448,142 +436,6 @@ Plans:
 **Wave 4 — Coverage + Verification**
 - [x] 46-06-PLAN.md — Rustdoc /// on all public items, module //! docs, example inline comments, phase verification gate (D-08, D-09, D-10, D-11)
 
-### Phase 54: N-ary Selection + Per-Operator Mutation Params
-
-**Goal:** Users can drive both standard 2-parent and N-parent (UNDX/SPX/PCX) crossover from a single unified selection API returning `Vec<Vec<usize>>`, and configure mutation parameters inline on each `Mutation` enum variant instead of through global `MutationConfiguration` fields — a v3.0.0 breaking-change cleanup of the operator layer.
-**Requirements**: SEL-NARY-01, MUT-PARAM-01
-**Depends on:** Phase 53
-**Plans:** 2 plans
-
-Plans:
-**Wave 1**
-- [x] 54-01-PLAN.md — N-ary selection: SelectionOperator/factory return Vec<Vec<usize>> + group.len() crossover dispatch + island/GP/cellular call sites (SEL-NARY-01)
-
-**Wave 2** *(blocked on Wave 1 — shares ga.rs and traits/operators.rs)*
-- [x] 54-02-PLAN.md — Per-operator mutation params: parameterized non-Copy Mutation enum + &Mutation trait + slimmed MutationConfiguration + collapsed GA dispatch (MUT-PARAM-01)
-
-### Phase 55: RFC Multi-Valued Fitness
-
-**Goal:** Users implement `VectorFitness` (renamed from `MultiCaseFitness`) on their chromosomes to drive both lexicase selection and every multi-objective engine (NSGA-II, NSGA-III, MOEA/D, SPEA2, SMS-EMOA, IBEA, Island NSGA-II), with objective evaluation co-located inside `calculate_fitness()` instead of via external `.with_objective_fns(...)` closures — a v3.0.0 breaking change cleanup of the multi-valued fitness API.
-**Requirements**: TRAITS-01, SEL-02, SEL-03
-**Depends on:** Phase 54
-**Plans:** 3/6 plans executed
-
-Plans:
-**Wave 1**
-- [x] 55-01-PLAN.md — VectorFitness trait rename + lib.rs re-export + baseline tests (TRAITS-01)
-
-**Wave 2** *(blocked on Wave 1)*
-- [x] 55-02-PLAN.md — VectorFitness impl on all 7 built-in chromosomes (Binary, Range, List, Unique, MultiRange, MultiUnique, GpChromosome) (TRAITS-01)
-
-**Wave 3** *(parallel — disjoint files; all depend on Waves 1-2)*
-- [x] 55-03-PLAN.md — Lexicase callers migration: selection.rs, lexicase.rs, ga.rs (TRAITS-01, SEL-02, SEL-03)
-- [ ] 55-04-PLAN.md — MO engine migration: NSGA-II + NSGA-III + MOEA/D (TRAITS-01)
-- [x] 55-05-PLAN.md — MO engine migration: SPEA2 + SMS-EMOA + IBEA + Island NSGA-II (TRAITS-01)
-
-**Wave 4** *(blocked on Waves 1-3)*
-- [ ] 55-06-PLAN.md — Tests + examples migration + phase verification gate (TRAITS-01, SEL-02, SEL-03)
-
-### Phase 56: CMA-ES Engine
-
-**Goal:** [To be planned]
-**Requirements**: TBD
-**Depends on:** Phase 55
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (run /gsd-plan-phase 56 to break down)
-
-### Phase 57: PSO Engine
-
-**Goal:** [To be planned]
-**Requirements**: TBD
-**Depends on:** Phase 56
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (run /gsd-plan-phase 57 to break down)
-
-### Phase 58: EDA / UMDA Engine
-
-**Goal:** [To be planned]
-**Requirements**: TBD
-**Depends on:** Phase 57
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (run /gsd-plan-phase 58 to break down)
-
-### Phase 59: Restart Strategies (IPOP/BIPOP)
-
-**Goal:** [To be planned]
-**Requirements**: TBD
-**Depends on:** Phase 58
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (run /gsd-plan-phase 59 to break down)
-
-### Phase 60: Batch Fitness + Fitness Cache Extension
-
-**Goal:** [To be planned]
-**Requirements**: TBD
-**Depends on:** Phase 59
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (run /gsd-plan-phase 60 to break down)
-
-### Phase 61: Performance Clone Reduction + Parallel Survivor
-
-**Goal:** [To be planned]
-**Requirements**: TBD
-**Depends on:** Phase 60
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (run /gsd-plan-phase 61 to break down)
-
-### Phase 62: Surrogate-Assisted Evaluation
-
-**Goal:** [To be planned]
-**Requirements**: TBD
-**Depends on:** Phase 61
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (run /gsd-plan-phase 62 to break down)
-
-### Phase 63: Visualization Pareto-Front Plotting + Example Images
-
-**Goal:** [To be planned]
-**Requirements**: TBD
-**Depends on:** Phase 62
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (run /gsd-plan-phase 63 to break down)
-
-### Phase 64: Test + Doc Quality
-
-**Goal:** [To be planned]
-**Requirements**: TBD
-**Depends on:** Phase 63
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (run /gsd-plan-phase 64 to break down)
-
-### Phase 65: v3.0.0 Migration Guide
-
-**Goal:** [To be planned]
-**Requirements**: TBD
-**Depends on:** Phase 64
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (run /gsd-plan-phase 65 to break down)
-
 ---
 
 ### Phase 47: Architecture Audit & ChromosomeT Split
@@ -682,19 +534,8 @@ Plans:
   2. User can configure `Mutation::SelfAdaptiveGaussian` on any chromosome implementing `SelfAdaptive: ChromosomeT`; per-chromosome sigma vectors update via the log-normal rule each generation; sigma values never fall below `sigma_min`
   3. After crossover of two `SelfAdaptive` chromosomes initialized with sigma=0.1 and sigma=0.9, the offspring sigma distribution spans the intermediate range — confirming that intermediate recombination is applied to strategy parameters, not copied from one parent
   4. `cargo check --target wasm32-unknown-unknown` passes for all new operators and traits without any conditional compilation errors
-**Plans:** 4/4 plans complete
+**Plans**: TBD
 **UI hint**: no
-
-Plans:
-**Wave 1**
-- [x] 51-01-PLAN.md — Wave 0 test stubs + RealValued/SelfAdaptive traits + enum variants + MutationConfiguration fields + RangeChromosome RealValued/SelfAdaptive impls + MultiRangeChromosome RealValued stub (TRAITS-02, CRS-02, CRS-03, CRS-04, MUT-05)
-
-**Wave 2** *(parallel — disjoint files; both depend on Wave 1)*
-- [x] 51-02-PLAN.md — UNDX, SPX, PCX operator implementations + factory_multi_parent dispatcher (CRS-02, CRS-03, CRS-04)
-- [x] 51-03-PLAN.md — SelfAdaptiveGaussian operator + mutation.rs Mutation::SelfAdaptiveGaussian dispatch (MUT-05, TRAITS-02)
-
-**Wave 3** *(blocked on Waves 1-2)*
-- [x] 51-04-PLAN.md — ga.rs multi-parent dispatch branch + 1-vs-2 offspring handling + integration tests + phase verification gate + human checkpoint (CRS-02, CRS-03, CRS-04, MUT-05)
 
 ### Phase 52: Variable-Length Chromosomes
 **Goal**: Users can evolve populations where chromosome length varies between individuals, with explicit length-aware crossover, insertion/deletion mutation, and optional parsimony pressure to prevent unbounded growth
@@ -714,19 +555,6 @@ Plans:
 - [x] 52-04-PLAN.md — Wave 3: Variable init, extension regrowth, parsimony pressure (all 13 tests enabled)
 
 **UI hint**: no
-
-Plans:
-**Wave 0**
-- [ ] 52-01-PLAN.md — Wave 0 test stubs for MUT-06, CHR-01, CHR-02
-
-**Wave 1** *(blocked on Wave 0)*
-- [ ] 52-02-PLAN.md — Mutation enum rename (PermutationInsert) + Insertion/Deletion operators + factory_variable_length (MUT-06)
-
-**Wave 2** *(blocked on Wave 1)*
-- [ ] 52-03-PLAN.md — AlignmentStrategy enum + Crossover::VariableLength + check_compatible_length guard on all fixed operators (CHR-01)
-
-**Wave 3** *(blocked on Wave 2)*
-- [ ] 52-04-PLAN.md — length_penalty field + survivor parsimony + ga.rs Variable init/regrowth unlock + validator (CHR-01, CHR-02)
 
 ### Phase 53: Tree Chromosome + GpGa Engine
 **Goal**: Users can evolve tree-structured programs using a dedicated `GpGa<U>` engine with ramped half-and-half initialization, subtree crossover and mutation, enforced bloat limits, and full checkpoint support
@@ -805,6 +633,6 @@ Plans:
 | 48. New Genotype Types | v3.0.0 | 4 | In Progress | — |
 | 49. Unified Strategy Trait + Alternative Strategy Engines | v3.0.0 | 0 | Not started | — |
 | 50. Lexicase Selection | v3.0.0 | 2/2 | Complete   | 2026-05-23 |
-| 51. Multi-Parent Crossover + Self-Adaptive Mutation | v3.0.0 | 4/4 | Complete   | 2026-05-23 |
-| 52. Variable-Length Chromosomes | v3.0.0 | 4/4 | Complete   | 2026-05-24 |
+| 51. Multi-Parent Crossover + Self-Adaptive Mutation | v3.0.0 | 0 | Not started | — |
+| 52. Variable-Length Chromosomes | v3.0.0 | 0 | Not started | — |
 | 53. Tree Chromosome + GpGa Engine | v3.0.0 | 4/4 | Complete   | 2026-05-25 |
