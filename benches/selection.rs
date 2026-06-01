@@ -11,7 +11,7 @@ use genetic_algorithms::operations::selection::fitness_proportionate::stochastic
 use genetic_algorithms::operations::selection::random::random;
 use genetic_algorithms::operations::selection::rank::rank_selection;
 use genetic_algorithms::operations::selection::tournament::tournament;
-use genetic_algorithms::traits::{ChromosomeT, GeneT};
+use genetic_algorithms::traits::{ChromosomeT, GeneT, LinearChromosome};
 
 #[derive(Debug, Copy, Clone, Default, PartialEq)]
 pub struct Gene {
@@ -36,12 +36,6 @@ struct SimpleChromosome {
 }
 impl ChromosomeT for SimpleChromosome {
     type Gene = Gene;
-    fn dna(&self) -> &[Self::Gene] {
-        &self.dna
-    }
-    fn dna_mut(&mut self) -> &mut [Self::Gene] {
-        &mut self.dna
-    }
     fn fitness(&self) -> f64 {
         self.fitness
     }
@@ -56,6 +50,17 @@ impl ChromosomeT for SimpleChromosome {
     fn age(&self) -> usize {
         self.age
     }
+    fn calculate_fitness(&mut self) {
+        self.fitness = 0.0;
+    }
+}
+impl LinearChromosome for SimpleChromosome {
+    fn dna(&self) -> &[Self::Gene] {
+        &self.dna
+    }
+    fn dna_mut(&mut self) -> &mut [Self::Gene] {
+        &mut self.dna
+    }
     fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
         self.dna = match dna {
             Cow::Borrowed(slice) => slice.to_vec(),
@@ -69,9 +74,6 @@ impl ChromosomeT for SimpleChromosome {
     {
         self.fitness_fn = FitnessFnWrapper::new(fitness_fn);
         self
-    }
-    fn calculate_fitness(&mut self) {
-        self.fitness = 0.0;
     }
 }
 
@@ -118,7 +120,7 @@ fn benchmark_selection_methods(c: &mut Criterion) {
                 &chromosomes,
                 |b, chromosomes| {
                     b.iter(|| {
-                        let _ = random(chromosomes);
+                        let _ = random(chromosomes, 2);
                     });
                 },
             );
@@ -132,7 +134,7 @@ fn benchmark_selection_methods(c: &mut Criterion) {
                 &chromosomes,
                 |b, chromosomes| {
                     b.iter(|| {
-                        let _ = roulette_wheel_selection(chromosomes);
+                        let _ = roulette_wheel_selection(chromosomes, couples, 2);
                     });
                 },
             );
@@ -146,7 +148,7 @@ fn benchmark_selection_methods(c: &mut Criterion) {
                 &chromosomes,
                 |b, chromosomes| {
                     b.iter(|| {
-                        let _ = stochastic_universal_sampling(chromosomes, couples);
+                        let _ = stochastic_universal_sampling(chromosomes, couples, 2);
                     });
                 },
             );
@@ -160,7 +162,7 @@ fn benchmark_selection_methods(c: &mut Criterion) {
                 &chromosomes,
                 |b, chromosomes| {
                     b.iter(|| {
-                        let _ = rank_selection(chromosomes, couples);
+                        let _ = rank_selection(chromosomes, couples, 2);
                     });
                 },
             );
@@ -174,7 +176,7 @@ fn benchmark_selection_methods(c: &mut Criterion) {
                 &chromosomes,
                 |b, chromosomes| {
                     b.iter(|| {
-                        let _ = tournament(chromosomes, couples, 1);
+                        let _ = tournament(chromosomes, couples, 1, 2);
                     });
                 },
             );

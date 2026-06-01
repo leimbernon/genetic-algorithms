@@ -82,7 +82,7 @@ where
     let idx = rng.random_range(0..len);
 
     // Defensive fallback: if strategy_params is shorter than dna (user set a short vector)
-    let sigma = individual.strategy_params.get(idx).copied().unwrap_or(1.0);
+    let sigma = individual.strategy_params().get(idx).copied().unwrap_or(1.0);
 
     // Clone the gene — `Range<T>` gene has concrete `ranges` and `value` fields
     let mut gene = individual.dna[idx].clone();

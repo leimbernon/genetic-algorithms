@@ -91,7 +91,7 @@ pub trait CrossoverOperator {
 /// Trait for mutation operators.
 ///
 /// Implement this trait to define a custom mutation strategy. Built-in
-/// implementations are provided for the [`Mutation`](crate::operations::Mutation)
+/// implementations are provided for the [`Mutation`]
 /// enum variants.
 ///
 /// # Example

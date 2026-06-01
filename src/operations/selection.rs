@@ -44,7 +44,7 @@ impl SelectionOperator for Selection {
     {
         match self {
             Selection::Random => random(chromosomes, num_parents),
-            Selection::RouletteWheel => roulette_wheel_selection(chromosomes, num_parents),
+            Selection::RouletteWheel => roulette_wheel_selection(chromosomes, number_of_couples, num_parents),
             Selection::StochasticUniversalSampling => {
                 stochastic_universal_sampling(chromosomes, number_of_couples, num_parents)
             }

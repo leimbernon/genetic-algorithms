@@ -432,11 +432,14 @@ where
         let n = pool.len();
         let i = rng.random_range(0..n);
         let j = rng.random_range(0..n);
-        // Lower SPEA2 fitness is better -- use rank as a proxy (0 = non-dominated)
-        // In the archive, all individuals are sorted by fitness; tournament picks by rank
-        if pool[i].rank < pool[j].rank {
+        // Compare by SPEA2 fitness stored in crowding_distance (lower is better).
+        // `rank` is always 0 during the generation loop (assigned only in post-hoc sort).
+        // `crowding_distance` is set to the SPEA2 fitness value just before create_offspring.
+        let fi = pool[i].crowding_distance;
+        let fj = pool[j].crowding_distance;
+        if fi < fj {
             i
-        } else if pool[j].rank < pool[i].rank {
+        } else if fj < fi {
             j
         } else if rng.random::<bool>() {
             i
@@ -553,6 +556,15 @@ where
 
             // 4d: Observer -- on_archive_updated
             self.notify(|obs| obs.on_archive_updated(gen, archive.len(), nd_count));
+
+            // Tag each archive member with its SPEA2 fitness so binary_tournament_from_archive
+            // can compare by fitness (lower = better) instead of rank which is always 0 here.
+            // We use `crowding_distance` as a scratch field since the SPEA2 loop does not use it.
+            let archive_fitness =
+                Self::assign_spea2_fitness(&archive, &[], &directions);
+            for (i, ind) in archive.iter_mut().enumerate() {
+                ind.crowding_distance = archive_fitness[i];
+            }
 
             // 4e: Binary tournament from archive -> produce new population
             population = self.create_offspring(&archive)?;

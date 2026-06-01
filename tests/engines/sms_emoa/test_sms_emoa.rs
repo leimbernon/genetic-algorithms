@@ -184,3 +184,30 @@ fn test_sms_emoa_run_invokes_observer_hooks() {
     let result = sms.run();
     assert!(result.is_ok(), "SMS-EMOA observer test run failed: {:?}", result.err());
 }
+
+#[test]
+fn test_sms_emoa_run_rejects_mismatched_objective_count() {
+    use genetic_algorithms::initializers::range_random_initialization;
+    use genetic_algorithms::ChromosomeLength;
+
+    let config = SmsEmoaConfiguration::new()
+        .with_num_objectives(3) // expects 3, chromosome provides 2
+        .with_population_size(8)
+        .with_max_generations(1);
+    let ga_config = GaConfiguration::default()
+        .with_chromosome_length(ChromosomeLength::Fixed(2));
+
+    let alleles = vec![RangeGenotype::new(0, vec![(0.0_f64, 1.0_f64)], 0.0_f64)];
+    let alleles_clone = alleles.clone();
+
+    let mut sms = SmsEmoaGa::<TwoObjRangeChromosome>::new(config, ga_config)
+        .with_alleles(alleles)
+        .with_initialization_fn(move |n, _| range_random_initialization(n, Some(&alleles_clone)));
+
+    let result = sms.run();
+    assert!(
+        matches!(result, Err(GaError::InvalidSmsEmoaConfiguration(_))),
+        "Expected InvalidSmsEmoaConfiguration for mismatched objective count, got: {:?}",
+        result
+    );
+}

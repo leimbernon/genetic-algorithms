@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v3.0.0
 milestone_name: — Advanced Representations, Alternative Strategies & Architecture Simplification
-status: completed
-stopped_at: Phase 50 context gathered
-last_updated: "2026-05-23T00:03:51.039Z"
-last_activity: 2026-05-23 -- Phase 50 marked complete
+status: in_progress
+stopped_at: Phases 47-55 shipped — PR #272 open against milestone/v3.0.0
+last_updated: "2026-05-31T00:00:00.000Z"
+last_activity: 2026-05-31 -- Phases 47-55 shipped — PR #272
 progress:
-  total_phases: 24
-  completed_phases: 4
-  total_plans: 18
+  total_phases: 19
+  completed_phases: 9
+  total_plans: 58
   completed_plans: 58
-  percent: 17
+  percent: 47
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-18)
 
 **Core value:** Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library
-**Current focus:** Phase 50 — lexicase-selection
+**Current focus:** Phase 55 complete — feat/51-merge-test awaiting merge to milestone/v3.0.0
 
 ## Current Position
 
-Phase: 50 — COMPLETE
-Plan: 2 of 2
-Status: Phase 50 complete
-Last activity: 2026-05-23 -- Phase 50 marked complete
+Phase: 55 — COMPLETE
+Plan: 6 of 6
+Status: All phases 47–55 complete; 1144 tests passing; compiler warnings resolved
+Last activity: 2026-05-31 -- Phases 47-55 squashed and verified; PR pending to milestone/v3.0.0
 
-Progress bar: [░░░░░░░] 0/7 phases complete
+Progress bar: [████░░░░░░░░░░░░░░░] 9/19 phases complete
 
 ## Accumulated Context
 
@@ -54,12 +54,12 @@ Progress bar: [░░░░░░░] 0/7 phases complete
 ### Roadmap Evolution
 
 - 2026-05-19: Roadmap created — Phases 47-53 defined for v3.0.0
+- 2026-05-31: Phases 54 (N-ary selection) and 55 (VectorFitness) completed; phases 56-65 added to roadmap directory but not yet planned
 
 ### Blockers/Concerns
 
-- Phase 47 is the highest-risk change (~30 files touched mechanically) — it must merge and pass CI before any feature branch touching `ChromosomeT` opens a PR
-- `serde_stacker` wasm32 compatibility is unverified — must be checked in Phase 53 before committing to it; if it fails, an iterative serde approach is needed
-- Fitness function removal from chromosomes (Phase 47 decision) may break users calling `chromosome.calculate_fitness()` directly — scope must be validated and a migration path documented in MIGRATION.md
+- PR #272 (feat/51-merge-test → milestone/v3.0.0) needs review + merge before any new phase branch opens
+- Phases 56–65 (CMA-ES, PSO, EDA, restart strategies, batch fitness, perf, surrogate, visualization, test/doc quality, migration guide) are not yet planned
 
 ## Session Continuity
 

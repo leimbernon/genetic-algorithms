@@ -629,10 +629,12 @@ Plans:
 | 44. Standard Benchmark Functions Suite | v2.4.0 | 3/3 | Complete    | 2026-05-14 |
 | 45. Memetic Algorithm Framework | v2.4.0 | 3 | Pending | — |
 | 46. Documentation Refactor | v2.4.0 | 7/7 | Complete    | 2026-05-15 |
-| 47. Architecture Audit & ChromosomeT Split | v3.0.0 | 6/8 | In Progress|  |
-| 48. New Genotype Types | v3.0.0 | 4 | In Progress | — |
-| 49. Unified Strategy Trait + Alternative Strategy Engines | v3.0.0 | 0 | Not started | — |
-| 50. Lexicase Selection | v3.0.0 | 2/2 | Complete   | 2026-05-23 |
-| 51. Multi-Parent Crossover + Self-Adaptive Mutation | v3.0.0 | 0 | Not started | — |
-| 52. Variable-Length Chromosomes | v3.0.0 | 0 | Not started | — |
-| 53. Tree Chromosome + GpGa Engine | v3.0.0 | 4/4 | Complete   | 2026-05-25 |
+| 47. Architecture Audit & ChromosomeT Split | v3.0.0 | 8/8 | Complete | 2026-05-31 |
+| 48. New Genotype Types | v3.0.0 | 4/4 | Complete | 2026-05-31 |
+| 49. Unified Strategy Trait + Alternative Strategy Engines | v3.0.0 | 4/4 | Complete | 2026-05-31 |
+| 50. Lexicase Selection | v3.0.0 | 2/2 | Complete | 2026-05-23 |
+| 51. Multi-Parent Crossover + Self-Adaptive Mutation | v3.0.0 | 4/4 | Complete | 2026-05-31 |
+| 52. Variable-Length Chromosomes | v3.0.0 | 4/4 | Complete | 2026-05-24 |
+| 53. Tree Chromosome + GpGa Engine | v3.0.0 | 4/4 | Complete | 2026-05-25 |
+| 54. N-ary Selection / Per-Operator Mutation Params | v3.0.0 | 2/2 | Complete | 2026-05-31 |
+| 55. RFC Multi-Valued Fitness (VectorFitness) | v3.0.0 | 6/6 | Complete | 2026-05-31 |

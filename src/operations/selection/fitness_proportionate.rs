@@ -25,8 +25,9 @@ use rand::Rng;
 /// # Arguments
 ///
 /// * `chromosomes` - Population to select from.
+/// * `couples` - Number of parent groups to produce.
 /// * `num_parents` - Number of parents per group (must be >= 2).
-pub fn roulette_wheel_selection<U: ChromosomeT>(chromosomes: &[U], num_parents: usize) -> Vec<Vec<usize>> {
+pub fn roulette_wheel_selection<U: ChromosomeT>(chromosomes: &[U], couples: usize, num_parents: usize) -> Vec<Vec<usize>> {
     let num_parents = num_parents.max(2);
     let mut mating = Vec::new();
 
@@ -52,8 +53,8 @@ pub fn roulette_wheel_selection<U: ChromosomeT>(chromosomes: &[U], num_parents: 
         cumulative_fitness.push(running_sum);
     }
 
-    //3- Select chromosomes.len() parents using the roulette wheel
-    let num_selections = (chromosomes.len() / num_parents) * num_parents;
+    //3- Select couples * num_parents parents using the roulette wheel
+    let num_selections = couples * num_parents;
     let mut selected = Vec::with_capacity(num_selections);
 
     for _ in 0..num_selections {
@@ -150,6 +151,6 @@ pub fn stochastic_universal_sampling<U: ChromosomeT>(
         }
     }
 
-    debug!(target="mutation_events", method="stochastic_universal_sampling"; "Stochastic universal sampling finished");
+    debug!(target="selection_events", method="stochastic_universal_sampling"; "Stochastic universal sampling finished");
     mating
 }

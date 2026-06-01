@@ -186,7 +186,7 @@ fn test_roulette_wheel_selection() {
         chromosome_4,
         chromosome_5,
     ];
-    let mating_population = fitness_proportionate::roulette_wheel_selection(&population, 2);
+    let mating_population = fitness_proportionate::roulette_wheel_selection(&population, 2, 2);
     assert_ne!(mating_population.len(), 0);
 }
 
@@ -419,7 +419,7 @@ fn test_roulette_wheel_favours_higher_fitness() {
     let mut high_fitness_count = 0;
     let runs = 100;
     for _ in 0..runs {
-        let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes, 2);
+        let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes, 2, 2);
         for group in &pairs {
             if group[0] == 4 {
                 high_fitness_count += 1;
@@ -451,10 +451,10 @@ fn test_roulette_wheel_returns_correct_pair_count() {
             fitness_values: vec![],
         })
         .collect();
-    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes, 2);
+    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes, 3, 2);
     assert_eq!(pairs.len(), 3);
 
-    // 5 chromosomes => 5 selections => 2 pairs (odd, last dropped)
+    // 5 chromosomes, couples=2 => 2 pairs
     let chromosomes: Vec<Chromosome> = (0..5)
         .map(|i| Chromosome {
             dna: vec![Gene { id: i }],
@@ -464,7 +464,7 @@ fn test_roulette_wheel_returns_correct_pair_count() {
             fitness_values: vec![],
         })
         .collect();
-    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes, 2);
+    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes, 2, 2);
     assert_eq!(pairs.len(), 2);
 }
 
@@ -480,7 +480,7 @@ fn test_roulette_wheel_zero_total_fitness() {
             fitness_values: vec![],
         })
         .collect();
-    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes, 2);
+    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes, 2, 2);
     assert!(
         pairs.is_empty(),
         "Roulette wheel should return empty for zero total fitness"
@@ -499,7 +499,7 @@ fn test_roulette_wheel_negative_fitness() {
             fitness_values: vec![],
         })
         .collect();
-    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes, 2);
+    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes, 2, 2);
     assert!(
         pairs.is_empty(),
         "Roulette wheel should return empty for negative total fitness"
@@ -518,7 +518,7 @@ fn test_roulette_wheel_all_equal_fitness() {
             fitness_values: vec![],
         })
         .collect();
-    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes, 2);
+    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes, 3, 2);
     assert_eq!(pairs.len(), 3);
     for group in &pairs {
         assert!(group[0] < 6);
@@ -1017,12 +1017,9 @@ fn test_roulette_wheel_single_chromosome() {
         fitness_fn: FitnessFnWrapper::default(),
         fitness_values: vec![],
     }];
-    // 1 chromosome => 1 selection => 0 pairs (odd count, last dropped)
-    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes, 2);
-    assert!(
-        pairs.is_empty(),
-        "Roulette wheel with 1 chromosome should return 0 pairs"
-    );
+    // 1 chromosome, couples=2 => 2 pairs (both selecting index 0)
+    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes, 2, 2);
+    assert_eq!(pairs.len(), 2, "Roulette wheel with 1 chromosome should return couples pairs");
 }
 
 #[test]
@@ -1036,8 +1033,8 @@ fn test_roulette_wheel_two_chromosomes() {
             fitness_values: vec![],
         })
         .collect();
-    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes, 2);
-    assert_eq!(pairs.len(), 1);
+    let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes, 2, 2);
+    assert_eq!(pairs.len(), 2);
 }
 
 // --- SUS edge cases ---
