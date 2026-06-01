@@ -7,7 +7,7 @@ use std::borrow::Cow;
 fn range_chromosome_lazy_init_strategy_params_to_ones() {
     let mut c = RangeChromosome::<f64>::new();
     let dna: Vec<_> = (0..5)
-        .map(|i| RangeGenotype::new(i as i32, vec![(0.0, 1.0)], 0.5))
+        .map(|i| RangeGenotype::new(i, vec![(0.0, 1.0)], 0.5))
         .collect();
     c.set_dna(Cow::Owned(dna));
     let params = c.strategy_params();
@@ -23,7 +23,7 @@ fn range_chromosome_lazy_init_strategy_params_to_ones() {
 fn range_chromosome_set_strategy_params_round_trip() {
     let mut c = RangeChromosome::<f64>::new();
     let dna: Vec<_> = (0..3)
-        .map(|i| RangeGenotype::new(i as i32, vec![(0.0, 1.0)], 0.5))
+        .map(|i| RangeGenotype::new(i, vec![(0.0, 1.0)], 0.5))
         .collect();
     c.set_dna(Cow::Owned(dna));
     c.set_strategy_params(vec![0.3, 0.4, 0.5]);
@@ -38,7 +38,7 @@ fn range_chromosome_set_strategy_params_round_trip() {
 fn range_chromosome_adapt_strategy_params_changes_values() {
     let mut c = RangeChromosome::<f64>::new();
     let dna: Vec<_> = (0..4)
-        .map(|i| RangeGenotype::new(i as i32, vec![(0.0, 1.0)], 0.5))
+        .map(|i| RangeGenotype::new(i, vec![(0.0, 1.0)], 0.5))
         .collect();
     c.set_dna(Cow::Owned(dna));
     c.set_strategy_params(vec![1.0; 4]);
