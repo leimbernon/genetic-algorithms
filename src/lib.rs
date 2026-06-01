@@ -356,4 +356,4 @@ pub use genotypes::{MultiRangeGenotype, UniqueGenotype};
 pub use hill_climb::{HillClimbConfiguration, HillClimbEngine, HillClimbMode};
 pub use initializers::{multi_range_random_initialization, unique_random_initialization};
 pub use permutate::{PermutateConfiguration, PermutateEngine};
-pub use traits::{LinearChromosome, OperatorCompat, Strategy, VectorFitness};
+pub use traits::{LinearChromosome, OperatorCompat, RealGene, Strategy, VectorFitness};

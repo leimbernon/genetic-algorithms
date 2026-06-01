@@ -1,7 +1,7 @@
 //! DE mutation strategies and adaptive parameter generation.
 
 use super::configuration::DeMutationStrategy;
-use super::gene::DeGene;
+use crate::traits::RealGene;
 use crate::traits::LinearChromosome;
 use rand::Rng;
 
@@ -60,7 +60,7 @@ pub fn mutate<U>(
 ) -> Vec<U::Gene>
 where
     U: LinearChromosome,
-    U::Gene: DeGene,
+    U::Gene: RealGene,
 {
     let dim = pop[i].dna().len();
     match strategy {
@@ -119,17 +119,17 @@ where
 }
 
 /// `base + F * (a - b)`
-fn mutant_from_base<G: DeGene>(base: &[G], a: &[G], b: &[G], f: f64, dim: usize) -> Vec<G> {
+fn mutant_from_base<G: RealGene>(base: &[G], a: &[G], b: &[G], f: f64, dim: usize) -> Vec<G> {
     (0..dim)
         .map(|j| {
-            base[j].with_de_value(base[j].de_value() + f * (a[j].de_value() - b[j].de_value()))
+            base[j].with_real_value(base[j].real_value() + f * (a[j].real_value() - b[j].real_value()))
         })
         .collect()
 }
 
 /// `current + F*(best-current) + F*(r1-r2)`  (DE/current-to-best/1 or DE/current-to-pbest/1)
 #[allow(clippy::too_many_arguments)]
-fn current_to_best<G: DeGene>(
+fn current_to_best<G: RealGene>(
     current: &[G],
     best: &[G],
     r1: &[G],
@@ -153,16 +153,16 @@ fn current_to_best<G: DeGene>(
 
     (0..dim)
         .map(|j| {
-            let v = current[j].de_value()
-                + f * (best[j].de_value() - current[j].de_value())
-                + f * (r1[j].de_value() - r2_dna[j].de_value());
-            current[j].with_de_value(v)
+            let v = current[j].real_value()
+                + f * (best[j].real_value() - current[j].real_value())
+                + f * (r1[j].real_value() - r2_dna[j].real_value());
+            current[j].with_real_value(v)
         })
         .collect()
 }
 
 /// `base + F*(a-b) + F*(c-d)`  (DE/rand/2 or DE/best/2)
-fn two_diff_base<G: DeGene>(
+fn two_diff_base<G: RealGene>(
     base: &[G],
     a: &[G],
     b: &[G],
@@ -173,10 +173,10 @@ fn two_diff_base<G: DeGene>(
 ) -> Vec<G> {
     (0..dim)
         .map(|j| {
-            let v = base[j].de_value()
-                + f * (a[j].de_value() - b[j].de_value())
-                + f * (c[j].de_value() - d[j].de_value());
-            base[j].with_de_value(v)
+            let v = base[j].real_value()
+                + f * (a[j].real_value() - b[j].real_value())
+                + f * (c[j].real_value() - d[j].real_value());
+            base[j].with_real_value(v)
         })
         .collect()
 }
