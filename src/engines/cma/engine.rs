@@ -563,8 +563,8 @@ where
             let old_mean = state.mean.clone();
             let mut new_mean = vec![0.0_f64; n];
             for (k, &idx) in selected_indices.iter().enumerate() {
-                for j in 0..n {
-                    new_mean[j] += state.weights[k] * pop[idx].dna()[j].real_value();
+                for (j, nm) in new_mean.iter_mut().enumerate() {
+                    *nm += state.weights[k] * pop[idx].dna()[j].real_value();
                 }
             }
 
@@ -668,7 +668,7 @@ where
             state.sigma *=
                 ((state.cs / state.ds) * (ps_norm / state.chi_n - 1.0)).exp();
             // Clamp to prevent NaN/Inf (T-56-03-04)
-            state.sigma = state.sigma.max(1e-20).min(1e20);
+            state.sigma = state.sigma.clamp(1e-20, 1e20);
 
             // ── Update mean ───────────────────────────────────────────────────
             state.mean = new_mean;
