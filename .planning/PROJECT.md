@@ -206,4 +206,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-23 after Phase 50 — LexicaseSelection + EpsilonLexicaseSelection shipped; MultiCaseFitness trait established for GP reuse in Phase 53.*
+*Last updated: 2026-06-01 after Phase 56 — CmaEngine shipped: RealGene trait, CMA-ES run loop (Hansen arXiv:1604.00772), Jacobi eigendecomposition, GaObserver hooks, and cma_es_rastrigin example. 14/14 must-haves verified, 1154 tests pass, WASM clean.*
