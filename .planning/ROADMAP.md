@@ -583,6 +583,33 @@ Plans:
 
 **UI hint**: no
 
+### Phase 56: CMA-ES Engine
+**Goal**: Users can run Covariance Matrix Adaptation Evolution Strategy (CMA-ES) on real-valued black-box optimization problems via a new `CmaEngine<U>` — with `GaObserver` hooks from day 1, Hansen's default parameter formulas, and WASM-compatible execution. As part of this phase, the shared `DeGene` trait is hard-renamed to `RealGene` (v3.0.0 breaking change) and relocated to `src/traits/real_gene.rs`.
+**Depends on**: Phase 55
+**Requirements**: None (issue-driven phase — see issue #252; IPOP/BIPOP deferred per issue #255)
+**Success Criteria** (what must be TRUE):
+  1. User can call `CmaEngine::new(config, init_fn, fitness_fn).run()` and receive a `CmaResult<U>` containing population, best, best_fitness, and generations — for any chromosome implementing `LinearChromosome` where `U::Gene: RealGene`
+  2. User can attach a `GaObserver<U>` via `.with_observer(...)` and receive `on_run_start`, `on_generation_start`, `on_generation_end`, `on_new_best`, and `on_run_end` calls
+  3. User can configure tuning via `CmaConfiguration` builder methods: `.with_sigma0()`, `.with_population_size()`, `.with_max_generations()`, `.with_problem_solving()`, `.with_fitness_target()`, `.with_cc()`, `.with_cs()`, `.with_c1()`, `.with_cmu()` — leaving cc/cs/c1/cmu as None defaults to Hansen's auto formulas
+  4. `cargo check --target wasm32-unknown-unknown` passes; `cargo run --example cma_es_rastrigin` converges; `cargo test`, `cargo test --features serde`, `cargo clippy --all-targets -- -D warnings`, and `cargo doc --no-deps` all pass with zero warnings
+  5. After the `DeGene → RealGene` cascade, all existing `DeEngine` and `ScatterEngine` tests continue to pass — the rename is purely identifier-level with no behavioral change
+**Plans:** 4/4 plans complete
+
+Plans:
+**Wave 1**
+- [x] 56-01-PLAN.md — DeGene → RealGene rename cascade across DE, Scatter, lib re-exports; add `RealGene` impl for `MultiRangeGenotype<f64>`
+
+**Wave 2** *(blocked on Wave 1)*
+- [x] 56-02-PLAN.md — `CmaConfiguration` (Default, `default_for_dim`, 9 builder methods) + `src/engines/cma/mod.rs` skeleton + Nyquist test scaffold with 11 `#[ignore]`-gated stubs
+
+**Wave 3** *(blocked on Wave 2)*
+- [x] 56-03-PLAN.md — `CmaEngine` core: private `CmaState`, Jacobi eigendecomposition, Box-Muller sampling, full run() loop with observer hooks (D-06), and un-ignoring of the 7 engine-dependent tests
+
+**Wave 4** *(blocked on Wave 3)*
+- [x] 56-04-PLAN.md — `examples/cma_es_rastrigin.rs` + phase verification gate (cargo test + serde + clippy + rustdoc + WASM target)
+
+**UI hint**: no
+
 ## Progress
 
 | Phase | Milestone | Plans | Status | Completed |
@@ -638,3 +665,4 @@ Plans:
 | 53. Tree Chromosome + GpGa Engine | v3.0.0 | 4/4 | Complete | 2026-05-25 |
 | 54. N-ary Selection / Per-Operator Mutation Params | v3.0.0 | 2/2 | Complete | 2026-05-31 |
 | 55. RFC Multi-Valued Fitness (VectorFitness) | v3.0.0 | 6/6 | Complete | 2026-05-31 |
+| 56. CMA-ES Engine | v3.0.0 | 4/4 | Complete    | 2026-06-01 |
