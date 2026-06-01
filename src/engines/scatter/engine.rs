@@ -10,7 +10,7 @@ use std::sync::Arc;
 
 use super::configuration::ScatterConfiguration;
 use crate::configuration::ProblemSolving;
-use crate::de::gene::DeGene;
+use crate::traits::RealGene;
 use crate::rng::make_rng;
 use crate::traits::{LinearChromosome, FitnessFn};
 use rand::Rng;
@@ -29,7 +29,7 @@ pub struct ScatterResult<U: LinearChromosome> {
 
 /// Scatter Search engine.
 ///
-/// Generic over the chromosome type `U`; `U::Gene` must implement [`DeGene`]
+/// Generic over the chromosome type `U`; `U::Gene` must implement [`RealGene`]
 /// so that linear combination of solutions can be computed.
 ///
 /// # Algorithm
@@ -47,7 +47,7 @@ pub struct ScatterResult<U: LinearChromosome> {
 /// 4. Stop when `max_iterations` is reached or `fitness_target` is met.
 pub struct ScatterEngine<U: LinearChromosome>
 where
-    U::Gene: DeGene,
+    U::Gene: RealGene,
 {
     config: ScatterConfiguration,
     init_fn: Arc<dyn Fn(usize) -> Vec<U> + Send + Sync>,
@@ -56,7 +56,7 @@ where
 
 impl<U: LinearChromosome + Clone> ScatterEngine<U>
 where
-    U::Gene: DeGene,
+    U::Gene: RealGene,
 {
     /// Construct a new engine.
     pub fn new(
@@ -180,14 +180,14 @@ where
 
         let dna_a: Vec<U::Gene> = (0..dim)
             .map(|j| {
-                let v = alpha * x1.dna()[j].de_value() + beta * x2.dna()[j].de_value();
-                x1.dna()[j].with_de_value(v)
+                let v = alpha * x1.dna()[j].real_value() + beta * x2.dna()[j].real_value();
+                x1.dna()[j].with_real_value(v)
             })
             .collect();
         let dna_b: Vec<U::Gene> = (0..dim)
             .map(|j| {
-                let v = beta * x1.dna()[j].de_value() + alpha * x2.dna()[j].de_value();
-                x1.dna()[j].with_de_value(v)
+                let v = beta * x1.dna()[j].real_value() + alpha * x2.dna()[j].real_value();
+                x1.dna()[j].with_real_value(v)
             })
             .collect();
 
@@ -207,8 +207,8 @@ where
         for _ in 0..self.config.local_search_steps {
             let j = rng.random_range(0..dim);
             let delta: f64 = (rng.random::<f64>() * 2.0 - 1.0) * step;
-            let old_val = ind.dna()[j].de_value();
-            let new_gene = ind.dna()[j].with_de_value(old_val + delta);
+            let old_val = ind.dna()[j].real_value();
+            let new_gene = ind.dna()[j].with_real_value(old_val + delta);
             ind.set_gene(j, new_gene);
             let new_fitness = (self.fitness_fn)(ind.dna());
             if self.is_better(new_fitness, current_fitness) {
@@ -216,7 +216,7 @@ where
                 ind.set_fitness(new_fitness);
             } else {
                 // Revert
-                let revert = ind.dna()[j].with_de_value(old_val);
+                let revert = ind.dna()[j].with_real_value(old_val);
                 ind.set_gene(j, revert);
             }
         }
@@ -293,11 +293,11 @@ where
     }
 }
 
-fn euclidean_distance<G: DeGene>(a: &[G], b: &[G]) -> f64 {
+fn euclidean_distance<G: RealGene>(a: &[G], b: &[G]) -> f64 {
     let len = a.len().min(b.len());
     (0..len)
         .map(|i| {
-            let d = a[i].de_value() - b[i].de_value();
+            let d = a[i].real_value() - b[i].real_value();
             d * d
         })
         .sum::<f64>()

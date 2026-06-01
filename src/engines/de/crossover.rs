@@ -1,7 +1,7 @@
 //! Binomial and exponential crossover for Differential Evolution.
 
 use super::configuration::DeCrossoverMode;
-use super::gene::DeGene;
+use crate::traits::RealGene;
 use rand::Rng;
 
 /// Apply crossover between the `target` (current individual) and `mutant`,
@@ -9,7 +9,7 @@ use rand::Rng;
 ///
 /// At least one gene is always taken from the `mutant` (via the mandatory
 /// `j_rand` in binomial, or the starting index in exponential).
-pub fn crossover<G: DeGene>(
+pub fn crossover<G: RealGene>(
     mode: &DeCrossoverMode,
     target: &[G],
     mutant: &[G],
@@ -25,7 +25,7 @@ pub fn crossover<G: DeGene>(
 
 /// Binomial crossover: each gene independently comes from the mutant with
 /// probability `cr`; the mandatory `j_rand` gene always comes from mutant.
-fn binomial<G: DeGene>(
+fn binomial<G: RealGene>(
     target: &[G],
     mutant: &[G],
     cr: f64,
@@ -46,7 +46,7 @@ fn binomial<G: DeGene>(
 
 /// Exponential crossover: copy a contiguous block from mutant starting at a
 /// random index `l`, continuing while `rand() < cr`, wrapping around if needed.
-fn exponential<G: DeGene>(
+fn exponential<G: RealGene>(
     target: &[G],
     mutant: &[G],
     cr: f64,
