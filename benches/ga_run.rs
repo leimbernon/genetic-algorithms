@@ -10,8 +10,8 @@ use genetic_algorithms::operations::mutation::ValueMutable;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::population::Population;
 use genetic_algorithms::traits::{
-    ChromosomeT, ConfigurationT, CrossoverConfig, GeneT, MutationConfig, SelectionConfig,
-    StoppingConfig,
+    ChromosomeT, ConfigurationT, CrossoverConfig, GeneT, LinearChromosome, MutationConfig,
+    OperatorCompat, SelectionConfig, StoppingConfig,
 };
 use rand::Rng;
 use std::borrow::Cow;
@@ -46,12 +46,6 @@ struct SimpleChromosome {
 }
 impl ChromosomeT for SimpleChromosome {
     type Gene = Gene;
-    fn dna(&self) -> &[Self::Gene] {
-        &self.dna
-    }
-    fn dna_mut(&mut self) -> &mut [Self::Gene] {
-        &mut self.dna
-    }
     fn fitness(&self) -> f64 {
         self.fitness
     }
@@ -65,6 +59,20 @@ impl ChromosomeT for SimpleChromosome {
     }
     fn age(&self) -> usize {
         self.age
+    }
+    fn calculate_fitness(&mut self) {
+        self.fitness = 0.0;
+        for (i, gene) in self.dna.iter().enumerate() {
+            self.fitness += f64::from(gene.id() * i as i32);
+        }
+    }
+}
+impl LinearChromosome for SimpleChromosome {
+    fn dna(&self) -> &[Self::Gene] {
+        &self.dna
+    }
+    fn dna_mut(&mut self) -> &mut [Self::Gene] {
+        &mut self.dna
     }
     fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
         self.dna = match dna {
@@ -80,14 +88,9 @@ impl ChromosomeT for SimpleChromosome {
         self.fitness_fn = FitnessFnWrapper::new(fitness_fn);
         self
     }
-    fn calculate_fitness(&mut self) {
-        self.fitness = 0.0;
-        for (i, gene) in self.dna.iter().enumerate() {
-            self.fitness += f64::from(gene.id() * i as i32);
-        }
-    }
 }
 impl ValueMutable for SimpleChromosome {}
+impl OperatorCompat for SimpleChromosome {}
 
 // ---------------------------------------------------------------------------
 // Setup helpers
