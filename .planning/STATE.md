@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v3.0.0
 milestone_name: — Advanced Representations, Alternative Strategies & Architecture Simplification
-status: milestone_complete
-stopped_at: Milestone complete (Phase 56 was final phase)
-last_updated: 2026-06-01T20:03:21.316Z
-last_activity: 2026-06-01 -- Phase 56 execution started
+status: in_progress
+stopped_at: Phase 56 (CMA-ES) complete — PR #273 open against milestone/v3.0.0; phases 57-65 added to roadmap
+last_updated: "2026-06-01T20:15:00.000Z"
+last_activity: 2026-06-01 -- PR #272 merged (phases 47-55); PR #273 created (phase 56 CMA-ES); ROADMAP updated with phases 57-65
 progress:
-  total_phases: 26
-  completed_phases: 13
-  total_plans: 58
-  completed_plans: 87
-  percent: 50
+  total_phases: 19
+  completed_phases: 10
+  total_plans: 62
+  completed_plans: 62
+  percent: 15
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-18)
 
 **Core value:** Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library
-**Current focus:** Milestone complete
+**Current focus:** Phase 56 (CMA-ES) in PR review; phases 57–65 pending planning
 
 ## Current Position
 
-Phase: 56
-Plan: Not started
-Status: Milestone complete
-Last activity: 2026-06-01
+Phase: 56 — COMPLETE (PR #273 pending merge)
+Plan: 4 of 4
+Status: Phases 47–56 complete; PR #273 open for phase 56 CMA-ES; phases 57–65 added to ROADMAP (not yet planned)
+Last activity: 2026-06-01 -- PR #272 merged (phases 47-55); PR #273 created (phase 56); ROADMAP updated
 
-Progress bar: [████░░░░░░░░░░░░░░░] 9/19 phases complete
+Progress bar: [███░░░░░░░░░░░░░░░░] phases 47-56 complete of 47-65
 
 ## Accumulated Context
 
@@ -54,15 +54,21 @@ Progress bar: [████░░░░░░░░░░░░░░░] 9/19 p
 ### Roadmap Evolution
 
 - 2026-05-19: Roadmap created — Phases 47-53 defined for v3.0.0
-- 2026-05-31: Phases 54 (N-ary selection) and 55 (VectorFitness) completed; phases 56-65 added to roadmap directory but not yet planned
+- 2026-05-31: Phases 54 (N-ary selection) and 55 (VectorFitness) completed
+- 2026-06-01: Phase 56 (CMA-ES) complete; phases 57-65 added to ROADMAP with goals and success criteria; `DeGene` renamed to `RealGene`
+
+### Decisions (phase 56)
+
+- v3.0.0: `DeGene` hard-renamed to `RealGene` in phase 56 — relocated to `src/traits/real_gene.rs`; `CmaEngine` and future real-valued engines use `U::Gene: RealGene` bound
+- v3.0.0: `CmaEngine` uses Jacobi eigendecomposition (no lapack) + Box-Muller sampling; WASM-compatible (no par_iter, no Instant)
 
 ### Blockers/Concerns
 
-- PR #272 (feat/51-merge-test → milestone/v3.0.0) needs review + merge before any new phase branch opens
-- Phases 56–65 (CMA-ES, PSO, EDA, restart strategies, batch fitness, perf, surrogate, visualization, test/doc quality, migration guide) are not yet planned
+- PR #273 (feat/252-cma-es-engine → milestone/v3.0.0) awaiting CI + merge
+- Phases 57–65 have ROADMAP entries but no plans yet — next step is plan-phase for whichever comes first
 
 ## Session Continuity
 
-Last session: 2026-06-01T12:34:46.982Z
-Stopped at: Phase 56 context gathered
-Resume file: .planning/phases/56-cma-es-engine/56-CONTEXT.md
+Last session: 2026-06-01T20:15:00Z
+Stopped at: PR #273 created; ROADMAP updated with phases 57-65
+Resume file: None
