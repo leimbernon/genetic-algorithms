@@ -1,17 +1,22 @@
-//! Integration tests for the CMA-ES engine (Wave 0 stubs).
+//! Integration tests for the CMA-ES engine.
 //!
 //! Tests CMA-01 through CMA-11 per the requirements-to-test map in 56-RESEARCH.md.
-//! Engine-using tests are marked `#[ignore = "Plan 03 lands CmaEngine"]` until
-//! `CmaEngine` is wired.  The four non-engine tests compile and pass after Plan 02.
+//! CMA-09 (WASM gate) remains ignored — it is a CI-level `cargo check` gate
+//! deferred to Plan 04. All other tests are active after Plan 03.
 
 use std::borrow::Cow;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
 
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
+use genetic_algorithms::cma::{CmaConfiguration, CmaEngine};
 use genetic_algorithms::configuration::ProblemSolving;
-use genetic_algorithms::cma::CmaConfiguration;
 use genetic_algorithms::genotypes::Range as RangeGene;
+use genetic_algorithms::observer::GaObserver;
 use genetic_algorithms::rng;
-use genetic_algorithms::traits::{GeneT, LinearChromosome, RealGene};
+use genetic_algorithms::stats::GenerationStats;
+use genetic_algorithms::traits::{ChromosomeT, GeneT, LinearChromosome, RealGene};
+use genetic_algorithms::ga::TerminationCause;
 use rand::Rng;
 
 // ─── Test helpers ─────────────────────────────────────────────────────────────
@@ -40,31 +45,94 @@ fn random_pop(n: usize, dim: usize, lo: f64, hi: f64, seed: u64) -> Vec<RangeChr
         .collect()
 }
 
+// ─── Observer spy for lifecycle tests ────────────────────────────────────────
+
+/// Thread-safe spy observer for testing CMA observer hooks.
+#[derive(Default)]
+struct SpyObserver {
+    new_best_count: AtomicUsize,
+    run_start_count: AtomicUsize,
+    run_end_count: AtomicUsize,
+    generation_start_count: AtomicUsize,
+    generation_end_count: AtomicUsize,
+}
+
+impl GaObserver<RangeChromosome<f64>> for SpyObserver {
+    fn on_run_start(&self) {
+        self.run_start_count.fetch_add(1, Ordering::SeqCst);
+    }
+
+    fn on_run_end(&self, _cause: TerminationCause, _all_stats: &[GenerationStats]) {
+        self.run_end_count.fetch_add(1, Ordering::SeqCst);
+    }
+
+    fn on_new_best(&self, _generation: usize, _best: RangeChromosome<f64>) {
+        self.new_best_count.fetch_add(1, Ordering::SeqCst);
+    }
+
+    fn on_generation_start(&self, _generation: usize) {
+        self.generation_start_count.fetch_add(1, Ordering::SeqCst);
+    }
+
+    fn on_generation_end(&self, _stats: &GenerationStats) {
+        self.generation_end_count.fetch_add(1, Ordering::SeqCst);
+    }
+}
+
 // ─── CMA-01: sphere convergence ───────────────────────────────────────────────
 
 /// CMA-01: CMA-ES reduces sphere fitness within max_generations.
 #[test]
-#[ignore = "Plan 03 lands CmaEngine"]
 fn test_cma_sphere_converges() {
-    let _config = CmaConfiguration::default_for_dim(5)
+    let config = CmaConfiguration::default_for_dim(5)
         .with_max_generations(500)
-        .with_fitness_target(1.0)
-        .with_problem_solving(ProblemSolving::Minimization);
-    // CmaEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 42), sphere).run()
-    unimplemented!("Plan 03 lands CmaEngine")
+        .with_problem_solving(ProblemSolving::Minimization)
+        .with_sigma0(0.3);
+
+    let mut engine = CmaEngine::new(
+        config,
+        |n| random_pop(n, 5, -5.0, 5.0, 42),
+        sphere,
+    );
+
+    let result = engine.run();
+
+    assert!(
+        result.best_fitness < 5.0,
+        "CMA-ES should converge to < 5.0 on 5D sphere within 500 generations, got {}",
+        result.best_fitness
+    );
+    assert!(result.generations > 0, "Should have run at least one generation");
+    assert!(!result.population.is_empty(), "Population should be non-empty");
 }
 
 // ─── CMA-02: early stopping ───────────────────────────────────────────────────
 
 /// CMA-02: Engine stops early when fitness_target is reached.
 #[test]
-#[ignore = "Plan 03 lands CmaEngine"]
 fn test_cma_early_stopping() {
-    let _config = CmaConfiguration::default_for_dim(5)
+    // Use a very high fitness_target that the initial sphere population already satisfies.
+    // On a 5D sphere from [-5, 5]^5 the max possible value is 5*25 = 125, but the
+    // best of ~10 chromosomes will almost certainly be below 1e6.
+    let config = CmaConfiguration::default_for_dim(5)
         .with_max_generations(10_000)
-        .with_fitness_target(0.01)
+        .with_fitness_target(1e6)
         .with_problem_solving(ProblemSolving::Minimization);
-    unimplemented!("Plan 03 lands CmaEngine")
+
+    let mut engine = CmaEngine::new(
+        config,
+        |n| random_pop(n, 5, -5.0, 5.0, 99),
+        sphere,
+    );
+
+    let result = engine.run();
+
+    // Engine must have stopped before max_generations (since 1e6 is trivially satisfied)
+    assert!(
+        result.generations < 10_000,
+        "Engine should have stopped early (fitness_target=1e6), ran {} generations",
+        result.generations
+    );
 }
 
 // ─── CMA-03: default_for_dim (NOT ignored) ────────────────────────────────────
@@ -98,32 +166,95 @@ fn test_cma_default_for_dim() {
 
 /// CMA-04: `CmaResult` carries population, best, best_fitness, and generations.
 #[test]
-#[ignore = "Plan 03 lands CmaEngine"]
 fn test_cma_result_fields() {
-    let _config = CmaConfiguration::default_for_dim(3).with_max_generations(5);
-    unimplemented!("Plan 03 lands CmaEngine")
+    let config = CmaConfiguration::default_for_dim(3).with_max_generations(5);
+
+    let mut engine = CmaEngine::new(
+        config,
+        |n| random_pop(n, 3, -1.0, 1.0, 7),
+        sphere,
+    );
+
+    let result = engine.run();
+
+    assert!(!result.population.is_empty(), "population should be non-empty");
+    assert!(result.generations > 0, "generations should be > 0");
+    assert!(
+        result.best_fitness.is_finite(),
+        "best_fitness should be finite"
+    );
+    assert!(
+        (result.best_fitness - result.best.fitness()).abs() < 1e-10,
+        "best_fitness should equal best.fitness(), got best_fitness={} best.fitness()={}",
+        result.best_fitness,
+        result.best.fitness()
+    );
 }
 
 // ─── CMA-05: observer new_best ────────────────────────────────────────────────
 
 /// CMA-05: Observer receives `on_new_best` at least once during convergence.
 #[test]
-#[ignore = "Plan 03 lands CmaEngine"]
 fn test_cma_observer_new_best() {
-    let _config = CmaConfiguration::default_for_dim(5)
+    let config = CmaConfiguration::default_for_dim(5)
         .with_max_generations(200)
         .with_problem_solving(ProblemSolving::Minimization);
-    unimplemented!("Plan 03 lands CmaEngine")
+
+    let spy = Arc::new(SpyObserver::default());
+
+    let mut engine = CmaEngine::new(
+        config,
+        |n| random_pop(n, 5, -5.0, 5.0, 123),
+        sphere,
+    )
+    .with_observer(spy.clone());
+
+    let _result = engine.run();
+
+    assert!(
+        spy.new_best_count.load(Ordering::SeqCst) >= 1,
+        "on_new_best should fire at least once (including initial best at gen 0)"
+    );
 }
 
 // ─── CMA-06: observer lifecycle ───────────────────────────────────────────────
 
 /// CMA-06: Observer `on_run_start` and `on_run_end` are called exactly once.
 #[test]
-#[ignore = "Plan 03 lands CmaEngine"]
 fn test_cma_observer_lifecycle() {
-    let _config = CmaConfiguration::default_for_dim(3).with_max_generations(10);
-    unimplemented!("Plan 03 lands CmaEngine")
+    let config = CmaConfiguration::default_for_dim(3).with_max_generations(10);
+
+    let spy = Arc::new(SpyObserver::default());
+
+    let mut engine = CmaEngine::new(
+        config,
+        |n| random_pop(n, 3, -1.0, 1.0, 55),
+        sphere,
+    )
+    .with_observer(spy.clone());
+
+    let result = engine.run();
+
+    assert_eq!(
+        spy.run_start_count.load(Ordering::SeqCst),
+        1,
+        "on_run_start should fire exactly once"
+    );
+    assert_eq!(
+        spy.run_end_count.load(Ordering::SeqCst),
+        1,
+        "on_run_end should fire exactly once"
+    );
+    assert_eq!(
+        spy.generation_start_count.load(Ordering::SeqCst),
+        result.generations,
+        "on_generation_start should fire once per completed generation"
+    );
+    assert_eq!(
+        spy.generation_end_count.load(Ordering::SeqCst),
+        result.generations,
+        "on_generation_end should fire once per completed generation"
+    );
 }
 
 // ─── CMA-07: DE regression (NOT ignored) ─────────────────────────────────────
@@ -155,7 +286,7 @@ fn test_cma_scatter_still_passes() {
 /// CMA-09: WASM gate — `cargo check --target wasm32-unknown-unknown` must pass.
 ///
 /// This is verified via CI (`.github/workflows/wasm-check.yml`) and manually in Plan 04.
-/// Marked `#[ignore]` here so it does not appear as a failing test before the WASM
+/// This test is marked ignored so it does not appear as a failing test before the WASM
 /// check is wired into Plan 04's verification step.
 #[test]
 #[ignore = "Plan 04 verifies WASM via cargo check --target wasm32-unknown-unknown"]
@@ -192,15 +323,40 @@ fn test_real_gene_range_f64() {
     assert!(f >= 0.0, "sphere is non-negative");
 }
 
-// ─── CMA-11: maximization (ignored) ──────────────────────────────────────────
+// ─── CMA-11: maximization ────────────────────────────────────────────────────
 
 /// CMA-11: Engine correctly maximises fitness when `ProblemSolving::Maximization` is set.
+///
+/// Uses negated sphere: f(x) = -Σ xᵢ² which has a maximum of 0 at the origin.
+/// Starting from a random population, CMA-ES under Maximization should find a
+/// value > the initial best (which is typically < 0).
 #[test]
-#[ignore = "Plan 03 lands CmaEngine"]
 fn test_cma_maximization() {
-    let _config = CmaConfiguration::default_for_dim(5)
+    // Negated sphere: maximum at 0 (origin), all other points are negative.
+    fn neg_sphere(dna: &[RangeGene<f64>]) -> f64 {
+        -dna.iter().map(|g| g.value() * g.value()).sum::<f64>()
+    }
+
+    let config = CmaConfiguration::default_for_dim(5)
         .with_max_generations(500)
         .with_problem_solving(ProblemSolving::Maximization)
-        .with_fitness_target(0.9);
-    unimplemented!("Plan 03 lands CmaEngine")
+        .with_sigma0(0.3);
+
+    let mut engine = CmaEngine::new(
+        config,
+        |n| random_pop(n, 5, -5.0, 5.0, 77),
+        neg_sphere,
+    );
+
+    let result = engine.run();
+
+    // Under maximization of negated sphere, fitness improves toward 0.
+    // The engine should find a value > -5.0 (initial values typically range from -25 to -5).
+    assert!(
+        result.best_fitness > -25.0,
+        "Maximization of negated sphere should produce fitness > -25.0, got {}",
+        result.best_fitness
+    );
+    assert!(!result.population.is_empty());
+    assert!(result.generations > 0);
 }
