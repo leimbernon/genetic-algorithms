@@ -15,6 +15,9 @@ mod engines {
     mod scatter {
         mod test_scatter;
     }
+    mod cma {
+        mod test_cma;
+    }
     mod island {
         mod test_island;
         mod test_island_configuration;
