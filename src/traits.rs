@@ -45,6 +45,7 @@ pub mod multi_case_fitness;
 pub mod vector_fitness;
 pub mod operator_compat;
 pub mod operators;
+pub mod real_gene;
 pub mod real_valued;
 pub mod self_adaptive;
 pub mod strategy;
@@ -54,6 +55,7 @@ pub use chromosome::ChromosomeT;
 pub use common::{initialize_chromosomes, initialize_chromosomes_par, FitnessFn, InitializationFn};
 pub use linear_chromosome::LinearChromosome;
 pub use vector_fitness::VectorFitness;
+pub use real_gene::RealGene;
 pub use real_valued::RealValued;
 pub use self_adaptive::SelfAdaptive;
 pub use configuration::{

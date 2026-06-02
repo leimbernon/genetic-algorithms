@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use super::configuration::{DeAdaptive, DeConfiguration, DeMutationStrategy};
 use super::crossover::crossover;
-use super::gene::DeGene;
+use crate::traits::RealGene;
 use super::mutation::{mutate, JadeState, LShadeState};
 use crate::configuration::ProblemSolving;
 use crate::rng::make_rng;
@@ -26,7 +26,7 @@ pub struct DeResult<U: LinearChromosome> {
 
 /// Differential Evolution engine.
 ///
-/// Generic over the chromosome type `U`; `U::Gene` must implement [`DeGene`]
+/// Generic over the chromosome type `U`; `U::Gene` must implement [`RealGene`]
 /// so that mutation arithmetic can be performed on gene values.
 ///
 /// # Example
@@ -43,13 +43,13 @@ pub struct DeResult<U: LinearChromosome> {
 /// let mut engine = DeEngine::new(
 ///     config,
 ///     |n| (0..n).map(|_| /* initialise chromosome */ todo!()).collect(),
-///     |dna| dna.iter().map(|g| g.de_value().powi(2)).sum(),
+///     |dna| dna.iter().map(|g| g.real_value().powi(2)).sum(),
 /// );
 /// let result = engine.run();
 /// ```
 pub struct DeEngine<U: LinearChromosome>
 where
-    U::Gene: DeGene,
+    U::Gene: RealGene,
 {
     config: DeConfiguration,
     init_fn: Arc<dyn Fn(usize) -> Vec<U> + Send + Sync>,
@@ -58,7 +58,7 @@ where
 
 impl<U: LinearChromosome + Clone> DeEngine<U>
 where
-    U::Gene: DeGene,
+    U::Gene: RealGene,
 {
     /// Construct a new engine.
     ///

@@ -9,7 +9,7 @@
 - ✅ **v2.2.1 — Performance Optimizations** — Phases 19-24 (shipped 2026-04-23)
 - ✅ **v2.3.0 — Alternative Metaheuristics & Population Models** — Phases 25-29 (shipped 2026-04-27)
 - ✅ **v2.4.0 — Observer Integration & New Operators + Advanced Multi-Objective** — Phases 30-46 (shipped 2026-05-18)
-- 🚧 **v3.0.0 — Advanced Representations, Alternative Strategies & Architecture Simplification** — Phases 47-53 (in progress)
+- 🚧 **v3.0.0 — Advanced Representations, Alternative Strategies & Architecture Simplification** — Phases 47-65 (in progress)
 
 ## Phases
 
@@ -583,6 +583,140 @@ Plans:
 
 **UI hint**: no
 
+### Phase 56: CMA-ES Engine
+**Goal**: Users can run Covariance Matrix Adaptation Evolution Strategy (CMA-ES) on real-valued black-box optimization problems via a new `CmaEngine<U>` — with `GaObserver` hooks from day 1, Hansen's default parameter formulas, and WASM-compatible execution. As part of this phase, the shared `DeGene` trait is hard-renamed to `RealGene` (v3.0.0 breaking change) and relocated to `src/traits/real_gene.rs`.
+**Depends on**: Phase 55
+**Requirements**: None (issue-driven phase — see issue #252; IPOP/BIPOP deferred per issue #255)
+**Success Criteria** (what must be TRUE):
+  1. User can call `CmaEngine::new(config, init_fn, fitness_fn).run()` and receive a `CmaResult<U>` containing population, best, best_fitness, and generations — for any chromosome implementing `LinearChromosome` where `U::Gene: RealGene`
+  2. User can attach a `GaObserver<U>` via `.with_observer(...)` and receive `on_run_start`, `on_generation_start`, `on_generation_end`, `on_new_best`, and `on_run_end` calls
+  3. User can configure tuning via `CmaConfiguration` builder methods: `.with_sigma0()`, `.with_population_size()`, `.with_max_generations()`, `.with_problem_solving()`, `.with_fitness_target()`, `.with_cc()`, `.with_cs()`, `.with_c1()`, `.with_cmu()` — leaving cc/cs/c1/cmu as None defaults to Hansen's auto formulas
+  4. `cargo check --target wasm32-unknown-unknown` passes; `cargo run --example cma_es_rastrigin` converges; `cargo test`, `cargo test --features serde`, `cargo clippy --all-targets -- -D warnings`, and `cargo doc --no-deps` all pass with zero warnings
+  5. After the `DeGene → RealGene` cascade, all existing `DeEngine` and `ScatterEngine` tests continue to pass — the rename is purely identifier-level with no behavioral change
+**Plans:** 4/4 plans complete
+
+Plans:
+**Wave 1**
+- [x] 56-01-PLAN.md — DeGene → RealGene rename cascade across DE, Scatter, lib re-exports; add `RealGene` impl for `MultiRangeGenotype<f64>`
+
+**Wave 2** *(blocked on Wave 1)*
+- [x] 56-02-PLAN.md — `CmaConfiguration` (Default, `default_for_dim`, 9 builder methods) + `src/engines/cma/mod.rs` skeleton + Nyquist test scaffold with 11 `#[ignore]`-gated stubs
+
+**Wave 3** *(blocked on Wave 2)*
+- [x] 56-03-PLAN.md — `CmaEngine` core: private `CmaState`, Jacobi eigendecomposition, Box-Muller sampling, full run() loop with observer hooks (D-06), and un-ignoring of the 7 engine-dependent tests
+
+**Wave 4** *(blocked on Wave 3)*
+- [x] 56-04-PLAN.md — `examples/cma_es_rastrigin.rs` + phase verification gate (cargo test + serde + clippy + rustdoc + WASM target)
+
+**UI hint**: no
+
+### Phase 57: PSO Engine
+**Goal**: Users can run Particle Swarm Optimization on real-valued black-box optimization problems via a new `PsoEngine<U>` — with `GaObserver` hooks, configurable inertia/cognitive/social coefficients, and WASM-compatible execution
+**Depends on**: Phase 56
+**Requirements**: None (issue-driven; see issue #255 PSO track)
+**Success Criteria** (what must be TRUE):
+  1. User can call `PsoEngine::new(config, init_fn, fitness_fn).run()` and receive a `PsoResult<U>` for any chromosome implementing `LinearChromosome` where `U::Gene: RealGene`
+  2. User can attach a `GaObserver<U>` and receive `on_run_start`, `on_generation_start`, `on_generation_end`, `on_new_best`, and `on_run_end` calls
+  3. User can configure inertia weight, cognitive coefficient (`c1`), and social coefficient (`c2`) via `PsoConfiguration` builder methods
+  4. `cargo check --target wasm32-unknown-unknown` passes; `cargo run --example pso_rastrigin` converges; all CI gates pass with zero warnings
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 58: EDA / UMDA Engine
+**Goal**: Users can run Estimation of Distribution Algorithm (UMDA variant) on binary or categorical optimization problems via a new `EdaEngine<U>` that learns and samples a probabilistic model over the population
+**Depends on**: Phase 56
+**Requirements**: None
+**Success Criteria** (what must be TRUE):
+  1. User can call `EdaEngine::new(config, init_fn, fitness_fn).run()` and receive an `EdaResult<U>` for any chromosome implementing `LinearChromosome`
+  2. The engine estimates a univariate marginal distribution from selected parents and samples offspring from it each generation
+  3. User can attach a `GaObserver<U>` and receive all standard lifecycle hooks
+  4. `cargo check --target wasm32-unknown-unknown` passes; `cargo run --example eda_onemax` converges; all CI gates pass
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 59: Restart Strategies — IPOP / BIPOP
+**Goal**: Users can configure automatic restart strategies (IPOP: increasing population, BIPOP: bi-population alternating) for CmaEngine to escape local optima on multimodal problems
+**Depends on**: Phase 56
+**Requirements**: None (deferred from Phase 56 per issue #255)
+**Success Criteria** (what must be TRUE):
+  1. User can configure `RestartStrategy::Ipop { population_scale }` on `CmaConfiguration`; after stagnation, engine restarts with scaled population and fresh covariance
+  2. User can configure `RestartStrategy::Bipop`; engine alternates between large and small restarts as in Hansen 2009
+  3. `GaObserver::on_restart` hook fires on each restart event (new hook)
+  4. `cargo check --target wasm32-unknown-unknown` passes; all CI gates pass
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 60: Batch Fitness / Fitness Cache Extension
+**Goal**: Users can evaluate fitness for a batch of chromosomes in a single call (enabling GPU/API-based evaluators) and optionally cache results to avoid redundant re-evaluation of unchanged chromosomes across generations
+**Depends on**: Phase 56
+**Requirements**: None
+**Success Criteria** (what must be TRUE):
+  1. User can implement `BatchFitnessEvaluator::evaluate_batch(&[U]) -> Vec<f64>` and wire it into `Ga` / `CmaEngine` via a builder method; individual-level `calculate_fitness` is not called when batch evaluator is configured
+  2. User can enable `FitnessCache` via a builder flag; chromosomes with unchanged DNA are returned cached fitness without re-evaluation; cache hit rate is exposed in `GenerationStats`
+  3. WASM-compatible: no threads or `std::time` required in the cache path
+  4. All CI gates pass with zero warnings
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 61: Performance — Clone Reduction & Parallel Survivor
+**Goal**: Systematically reduce unnecessary chromosome clones in the GA hot path and enable parallel survivor selection where the algorithm permits, measurably improving throughput on large populations
+**Depends on**: Phase 56
+**Requirements**: None
+**Success Criteria** (what must be TRUE):
+  1. Profiling (cargo bench before/after) shows ≥10% wall-time reduction on the `rastrigin` benchmark at population size 500
+  2. `SurvivorOperator` implementations that are order-independent use `rayon::par_iter` for ranking/scoring (gated behind `#[cfg(not(target_arch = "wasm32"))]`)
+  3. No behavioral regression: all existing tests pass with identical outputs (modulo floating-point ordering ties broken deterministically)
+  4. `cargo check --target wasm32-unknown-unknown` passes; all CI gates pass
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 62: Surrogate-Assisted Evaluation
+**Goal**: Users can attach a surrogate model (e.g. Gaussian Process or polynomial regression) to pre-screen candidates before expensive fitness evaluation, reducing the number of true fitness calls on costly black-box problems
+**Depends on**: Phase 60
+**Requirements**: None
+**Success Criteria** (what must be TRUE):
+  1. User can implement `SurrogateModel::predict(&U) -> f64` and attach it via `.with_surrogate(model, prescreening_fraction)`; only the top fraction of surrogate-ranked offspring proceed to true fitness evaluation
+  2. True fitness call count is exposed in `GenerationStats` and observable via `GaObserver`
+  3. WASM-compatible; all CI gates pass
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 63: Visualization — Pareto Front Plotting & Example Images
+**Goal**: Users can generate Pareto front plots and fitness-progress charts as PNG/SVG files from multi-objective runs, and all major examples have rendered output images committed to `docs/`
+**Depends on**: Phase 56
+**Requirements**: None
+**Success Criteria** (what must be TRUE):
+  1. A `visualization` feature flag exposes `plot_pareto_front(population, path)` for 2- and 3-objective problems using `plotters`
+  2. `cargo run --example nsga2_zdt1 -- --plot` produces a `docs/nsga2_zdt1.png` Pareto front image
+  3. All example images are committed to `docs/images/` and linked from `README.md`
+  4. Feature compiles and links on WASM (plotters supports wasm32); all CI gates pass
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 64: Test & Doc Quality
+**Goal**: Achieve ≥80% line coverage on all engine modules, eliminate all `#[allow(...)]` suppressions in non-generated code, and ensure every public API item has a rustdoc example that compiles under `cargo test --doc`
+**Depends on**: Phase 56
+**Requirements**: None
+**Success Criteria** (what must be TRUE):
+  1. `cargo llvm-cov --all-features` reports ≥80% line coverage for `src/engines/` and `src/operations/`
+  2. Zero `#[allow(dead_code)]`, `#[allow(unused_imports)]`, or `#[allow(clippy::...)]` attributes remain in non-generated source files
+  3. Every `pub` item in `src/` has a rustdoc `# Examples` block that compiles via `cargo test --doc`
+  4. All CI gates pass with zero warnings
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 65: v3.0.0 Migration Guide
+**Goal**: Users upgrading from v2.x to v3.0.0 can follow a single authoritative `MIGRATION_V3.md` guide that covers every breaking change with before/after code snippets, compiler error messages, and automated migration hints
+**Depends on**: Phase 64
+**Requirements**: None
+**Success Criteria** (what must be TRUE):
+  1. `MIGRATION_V3.md` covers all breaking changes: `ChromosomeT` split, `LinearChromosome` bound requirement, `DeGene → RealGene` rename, `SelectionOperator::select` return-type change, `Mutation` enum variant parameter changes, `StoppingCriteria` flattening, `Reporter` removal
+  2. Every breaking change entry includes: the old API, the new API, the compiler error a user will see, and the fix
+  3. `README.md` links to `MIGRATION_V3.md` in the "Upgrading" section
+  4. All CI gates pass
+**Plans**: TBD
+**UI hint**: no
+
 ## Progress
 
 | Phase | Milestone | Plans | Status | Completed |
@@ -638,3 +772,13 @@ Plans:
 | 53. Tree Chromosome + GpGa Engine | v3.0.0 | 4/4 | Complete | 2026-05-25 |
 | 54. N-ary Selection / Per-Operator Mutation Params | v3.0.0 | 2/2 | Complete | 2026-05-31 |
 | 55. RFC Multi-Valued Fitness (VectorFitness) | v3.0.0 | 6/6 | Complete | 2026-05-31 |
+| 56. CMA-ES Engine | v3.0.0 | 4/4 | Complete | 2026-06-01 |
+| 57. PSO Engine | v3.0.0 | TBD | Pending | — |
+| 58. EDA / UMDA Engine | v3.0.0 | TBD | Pending | — |
+| 59. Restart Strategies — IPOP / BIPOP | v3.0.0 | TBD | Pending | — |
+| 60. Batch Fitness / Fitness Cache Extension | v3.0.0 | TBD | Pending | — |
+| 61. Performance — Clone Reduction & Parallel Survivor | v3.0.0 | TBD | Pending | — |
+| 62. Surrogate-Assisted Evaluation | v3.0.0 | TBD | Pending | — |
+| 63. Visualization — Pareto Front Plotting & Example Images | v3.0.0 | TBD | Pending | — |
+| 64. Test & Doc Quality | v3.0.0 | TBD | Pending | — |
+| 65. v3.0.0 Migration Guide | v3.0.0 | TBD | Pending | — |

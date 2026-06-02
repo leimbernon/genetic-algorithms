@@ -278,7 +278,7 @@ fn test_variable_length_initialization_samples_lengths_in_range() {
     for (i, c) in ga.population.chromosomes.iter().enumerate() {
         let len = c.dna().len();
         assert!(
-            len >= 2 && len <= 8,
+            (2..=8).contains(&len),
             "Chromosome {} has length {} which is outside [2, 8]",
             i,
             len
@@ -347,7 +347,7 @@ fn test_variable_length_extension_regrowth_samples_from_population() {
     for (i, c) in ga.population.chromosomes.iter().enumerate() {
         let len = c.dna().len();
         assert!(
-            len >= 2 && len <= 8,
+            (2..=8).contains(&len),
             "Regrowth chromosome {} has length {} outside Variable bounds [2, 8]",
             i,
             len

@@ -118,3 +118,6 @@ required-features = ["observer-metrics"]
 
 [[example]]
 name = "memetic_rastrigin"
+
+[[example]]
+name = "cma_es_rastrigin"

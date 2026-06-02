@@ -18,11 +18,12 @@ use std::fmt;
 // ---------------------------------------------------------------------------
 
 /// A minimal 4-variant GpNode used for type-level tests in this file.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 enum TestNode {
     Add,
     Mul,
+    #[default]
     X,
     Const(i32),
 }
@@ -35,12 +36,6 @@ impl fmt::Display for TestNode {
             TestNode::X => write!(f, "x"),
             TestNode::Const(n) => write!(f, "{}", n),
         }
-    }
-}
-
-impl Default for TestNode {
-    fn default() -> Self {
-        TestNode::X
     }
 }
 

@@ -1,7 +1,7 @@
 //! # genetic_algorithms
 //!
 //! A modular, performant Rust library for evolutionary computation and metaheuristic optimization.
-//! Provides 12 optimization engines, 50+ composable operators, a full lifecycle observer system,
+//! Provides 13 optimization engines, 50+ composable operators, a full lifecycle observer system,
 //! and framework extensions — all generic over chromosome and gene types via traits.
 //!
 //! Published on [crates.io](https://crates.io/crates/genetic_algorithms) as `genetic_algorithms`.
@@ -327,6 +327,9 @@ pub mod ibea;
 #[path = "engines/gp/mod.rs"]
 pub mod gp;
 
+#[path = "engines/cma/mod.rs"]
+pub mod cma;
+
 pub use aos::{AosState, AosStrategy};
 pub use constraints::ConstraintHandling;
 pub use constraints::PenaltyStrategy;
@@ -356,4 +359,4 @@ pub use genotypes::{MultiRangeGenotype, UniqueGenotype};
 pub use hill_climb::{HillClimbConfiguration, HillClimbEngine, HillClimbMode};
 pub use initializers::{multi_range_random_initialization, unique_random_initialization};
 pub use permutate::{PermutateConfiguration, PermutateEngine};
-pub use traits::{LinearChromosome, OperatorCompat, Strategy, VectorFitness};
+pub use traits::{LinearChromosome, OperatorCompat, RealGene, Strategy, VectorFitness};
