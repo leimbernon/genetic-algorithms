@@ -46,12 +46,13 @@ pub enum PsoTopology {
     /// Slower convergence than gbest but better exploration on multimodal problems.
     /// Common values: 3 (tight ring) or 5 (moderate neighborhood).
     Ring {
-        /// Number of neighbors on each side to include.
+        /// Number of neighbors (excluding self) to include in each particle's neighborhood.
         ///
-        /// The neighborhood of particle `i` is
-        /// `{ i-k, ..., i-1, i, i+1, ..., i+k }` (mod n_particles), giving
-        /// `2*k+1` particles total. Clamped to `n_particles - 1` at runtime
-        /// if larger than the swarm.
+        /// The neighborhood of particle `i` is `floor(k/2)` left neighbors and
+        /// `ceil(k/2)` right neighbors (ring-wrapped), giving `k+1` particles total
+        /// including `i` itself. For example, `neighborhood_size = 2` gives a
+        /// 3-particle neighborhood: `{ i-1, i, i+1 }`.
+        /// Common values: 2 (tight ring) or 4 (moderate neighborhood).
         neighborhood_size: usize,
     },
 }
@@ -194,7 +195,7 @@ impl PsoConfiguration {
 ///   `w_start` at generation 0 to `w_end` at generation `max_generations - 1`.
 ///   When `max_generations <= 1` the function returns `w_end` to guard against
 ///   division by zero (Pitfall #5 from 57-RESEARCH.md).
-pub fn inertia_weight(inertia: &PsoInertia, gen: usize, max_generations: usize) -> f64 {
+pub(crate) fn inertia_weight(inertia: &PsoInertia, gen: usize, max_generations: usize) -> f64 {
     match inertia {
         PsoInertia::Constant(w) => *w,
         PsoInertia::LinearDecay { w_start, w_end } => {
