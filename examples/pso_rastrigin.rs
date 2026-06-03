@@ -51,7 +51,7 @@ fn rastrigin(dna: &[RangeGene<f64>]) -> f64 {
 /// Build an initial population of `n` chromosomes, each with `DIMENSIONS`
 /// genes sampled uniformly from `[SEARCH_LO, SEARCH_HI]`.
 fn init_population(n: usize) -> Vec<RangeChromosome<f64>> {
-    rng::set_seed(Some(42));
+    rng::set_seed(Some(99));
     let mut r = rng::make_rng();
     (0..n)
         .map(|_| {
@@ -70,7 +70,7 @@ fn init_population(n: usize) -> Vec<RangeChromosome<f64>> {
 
 fn main() {
     let config = PsoConfiguration {
-        population_size: 30,
+        population_size: 200,
         max_generations: 1000,
         problem_solving: ProblemSolving::Minimization,
         fitness_target: Some(1e-3),
@@ -87,7 +87,7 @@ fn main() {
         .with_observer(Arc::new(LogObserver));
 
     println!("== PSO: {DIMENSIONS}D Rastrigin Minimization ==");
-    println!("particles=30, max_generations=1000, target=1e-3");
+    println!("particles=200, max_generations=1000, target=1e-3");
     println!("inertia=LinearDecay(0.9→0.4), c1=2.0, c2=2.0, topology=Global");
     println!("--------------------------------------------------");
 
