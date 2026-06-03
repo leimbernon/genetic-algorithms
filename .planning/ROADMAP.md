@@ -619,7 +619,7 @@ Plans:
   2. User can attach a `GaObserver<U>` and receive `on_run_start`, `on_generation_start`, `on_generation_end`, `on_new_best`, and `on_run_end` calls
   3. User can configure inertia weight, cognitive coefficient (`c1`), and social coefficient (`c2`) via `PsoConfiguration` builder methods
   4. `cargo check --target wasm32-unknown-unknown` passes; `cargo run --example pso_rastrigin` converges; all CI gates pass with zero warnings
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 **UI hint**: no
 
 Plans:
@@ -630,7 +630,7 @@ Plans:
 **Wave 3** *(blocked on Wave 2)*
 - [x] 57-03-PLAN.md — PsoEngine::run() full PSO loop (PsoState, velocity update, topology dispatch, absorbing boundary, observer hooks) + 9 engine-runtime tests
 **Wave 4** *(blocked on Wave 3)*
-- [ ] 57-04-PLAN.md — pso_rastrigin example + phase verification gate (cargo test + serde + clippy + rustdoc + WASM)
+- [x] 57-04-PLAN.md — pso_rastrigin example + phase verification gate (cargo test + serde + clippy + rustdoc + WASM)
 
 ### Phase 58: EDA / UMDA Engine
 **Goal**: Users can run Estimation of Distribution Algorithm (UMDA variant) on binary or categorical optimization problems via a new `EdaEngine<U>` that learns and samples a probabilistic model over the population
@@ -783,7 +783,7 @@ Plans:
 | 54. N-ary Selection / Per-Operator Mutation Params | v3.0.0 | 2/2 | Complete | 2026-05-31 |
 | 55. RFC Multi-Valued Fitness (VectorFitness) | v3.0.0 | 6/6 | Complete | 2026-05-31 |
 | 56. CMA-ES Engine | v3.0.0 | 4/4 | Complete | 2026-06-01 |
-| 57. PSO Engine | v3.0.0 | 3/4 | In Progress|  |
+| 57. PSO Engine | v3.0.0 | 4/4 | Complete   | 2026-06-03 |
 | 58. EDA / UMDA Engine | v3.0.0 | TBD | Pending | — |
 | 59. Restart Strategies — IPOP / BIPOP | v3.0.0 | TBD | Pending | — |
 | 60. Batch Fitness / Fitness Cache Extension | v3.0.0 | TBD | Pending | — |
