@@ -26,6 +26,15 @@ pub trait RealGene: GeneT {
 
     /// Returns a new gene with the same metadata but a different value.
     fn with_real_value(&self, value: f64) -> Self;
+
+    /// Returns the `(lo, hi)` bounds for this gene if available.
+    ///
+    /// Used by the PSO engine for velocity initialization and boundary enforcement.
+    /// The default implementation returns `None`; gene types backed by an explicit
+    /// range table should override this method to expose those bounds.
+    fn bounds(&self) -> Option<(f64, f64)> {
+        None
+    }
 }
 
 /// `Range<f64>` genes work with real-valued engines out of the box.
@@ -41,6 +50,11 @@ impl RealGene for Range<f64> {
         g.value = value;
         g
     }
+
+    #[inline]
+    fn bounds(&self) -> Option<(f64, f64)> {
+        self.ranges.first().copied()
+    }
 }
 
 /// `MultiRangeGenotype<f64>` genes work with real-valued engines out of the box.
@@ -55,5 +69,10 @@ impl RealGene for MultiRangeGenotype<f64> {
         let mut g = self.clone();
         g.value = value;
         g
+    }
+
+    #[inline]
+    fn bounds(&self) -> Option<(f64, f64)> {
+        Some((self.lo, self.hi))
     }
 }
