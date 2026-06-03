@@ -51,7 +51,6 @@ fn rastrigin(dna: &[RangeGene<f64>]) -> f64 {
 /// Build an initial population of `n` chromosomes, each with `DIMENSIONS`
 /// genes sampled uniformly from `[SEARCH_LO, SEARCH_HI]`.
 fn init_population(n: usize) -> Vec<RangeChromosome<f64>> {
-    rng::set_seed(Some(99));
     let mut r = rng::make_rng();
     (0..n)
         .map(|_| {
@@ -69,6 +68,7 @@ fn init_population(n: usize) -> Vec<RangeChromosome<f64>> {
 }
 
 fn main() {
+    rng::set_seed(Some(99));
     let config = PsoConfiguration {
         population_size: 200,
         max_generations: 1000,
