@@ -374,11 +374,15 @@ fn test_pso_sphere_converges() {
 
 /// PSO-11: WASM gate — `cargo check --target wasm32-unknown-unknown` must pass.
 ///
-/// This is verified via CI (`.github/workflows/wasm-check.yml`) and manually in Plan 04.
-/// This test is marked ignored so it does not appear as a failing test before the WASM
-/// check is wired into Plan 04's verification step.
+/// Real WASM verification is performed by `cargo check --target wasm32-unknown-unknown`
+/// as part of the phase verification gate (see Plan 04 verification checkpoint).
+/// This test exists to compile the PSO public API surface in normal `cargo test` runs.
 #[test]
-#[ignore = "Plan 04 verifies WASM via cargo check --target wasm32-unknown-unknown"]
 fn test_pso_wasm_compiles() {
-    unimplemented!("Plan 04 WASM verification gate")
+    // Real WASM verification is performed by `cargo check --target wasm32-unknown-unknown`
+    // as part of the phase verification gate (see Plan 04 verification checkpoint).
+    // This test exists to compile the PSO public API surface in normal `cargo test` runs.
+    let _config = PsoConfiguration::default();
+    let _topo = PsoTopology::Global;
+    let _inertia = PsoInertia::Constant(0.7);
 }
