@@ -40,7 +40,7 @@ use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::initializers::range_random_initialization;
 use genetic_algorithms::sms_emoa::configuration::{ObjectiveDirection, SmsEmoaConfiguration};
 use genetic_algorithms::sms_emoa::SmsEmoaGa;
-use genetic_algorithms::traits::{ChromosomeT, LinearChromosome, VectorFitness};
+use genetic_algorithms::traits::{ChromosomeT, ConfigurationT, LinearChromosome, VectorFitness};
 use genetic_algorithms::{LogObserver, SmsEmoaObserver};
 
 const N_VARS: usize = 30;
