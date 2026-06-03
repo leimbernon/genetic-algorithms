@@ -5,8 +5,12 @@
 //! the engine implementation lands. PSO-11 (WASM gate) remains ignored and is verified
 //! via CI (`cargo check --target wasm32-unknown-unknown`) in Plan 04.
 
-// TODO(plan-02): re-add `use genetic_algorithms::pso::{PsoConfiguration, PsoEngine, PsoInertia, PsoTopology};`
-// once src/engines/pso lands.
+// Imports needed by Plan 03 ignored tests — suppress unused-import warnings.
+#![allow(unused_imports)]
+
+use genetic_algorithms::pso::{
+    inertia_weight, PsoConfiguration, PsoEngine, PsoInertia, PsoTopology,
+};
 
 use std::borrow::Cow;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -161,9 +165,50 @@ fn test_pso_absorbing_boundary() {
 
 /// PSO-09: LinearDecay inertia produces w_start at gen 0 and w_end at max_generations.
 #[test]
-#[ignore = "Plan 02 will implement PsoInertia; un-ignore once available"]
 fn test_pso_linear_decay() {
-    unimplemented!("Plan 02: LinearDecay inertia produces w_start at gen 0 and w_end at max");
+    let inertia = PsoInertia::LinearDecay {
+        w_start: 0.9,
+        w_end: 0.4,
+    };
+
+    // At generation 0, w should equal w_start = 0.9
+    let w0 = inertia_weight(&inertia, 0, 100);
+    assert!(
+        (w0 - 0.9).abs() < 1e-12,
+        "expected w=0.9 at gen=0, got {w0}"
+    );
+
+    // At generation 99 (= max_generations - 1), w should equal w_end = 0.4
+    let w_end = inertia_weight(&inertia, 99, 100);
+    assert!(
+        (w_end - 0.4).abs() < 1e-12,
+        "expected w=0.4 at gen=99, got {w_end}"
+    );
+
+    // Guard: max_generations <= 1 should return w_end (no div-by-zero)
+    let w_guard = inertia_weight(&inertia, 0, 1);
+    assert!(
+        (w_guard - 0.4).abs() < 1e-12,
+        "expected w_end=0.4 for max_generations=1, got {w_guard}"
+    );
+
+    // Constant inertia should return its value unchanged
+    let w_const = inertia_weight(&PsoInertia::Constant(0.7), 50, 100);
+    assert!(
+        (w_const - 0.7).abs() < 1e-12,
+        "expected w=0.7 for Constant(0.7), got {w_const}"
+    );
+
+    // Verify PsoEngine::new compiles with PSO types (suppresses unused import warnings)
+    let _config = PsoConfiguration::default()
+        .with_topology(PsoTopology::Ring { neighborhood_size: 3 });
+    let mut eng = PsoEngine::new(
+        PsoConfiguration::default().with_max_generations(1),
+        |n: usize| random_pop(n, 2, -1.0, 1.0, 99),
+        sphere,
+    );
+    let result = eng.run();
+    assert_eq!(result.generations, 0, "stub run() should return generations=0");
 }
 
 // ─── PSO-10: sphere convergence ──────────────────────────────────────────────
