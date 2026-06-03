@@ -34,6 +34,7 @@ cargo run --example sms_emoa_zdt1
 use std::borrow::Cow;
 use std::sync::Arc;
 
+use genetic_algorithms::chromosomes::ChromosomeLength;
 use genetic_algorithms::configuration::GaConfiguration;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::initializers::range_random_initialization;
@@ -104,9 +105,8 @@ fn main() {
             ObjectiveDirection::Minimize,
         ]);
 
-    let mut ga_config = GaConfiguration::default();
-    ga_config.limit_configuration.genes_per_chromosome = N_VARS;
-    ga_config.limit_configuration.alleles_can_be_repeated = true;
+    let ga_config = GaConfiguration::default()
+        .with_chromosome_length(ChromosomeLength::Fixed(N_VARS));
 
     let alleles = vec![RangeGenotype::new(0, vec![(0.0_f64, 1.0_f64)], 0.0_f64)];
     let alleles_clone = alleles.clone();
