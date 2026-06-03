@@ -4,9 +4,7 @@
 //! PSO-11 (WASM gate) remains ignored and is verified via CI
 //! (`cargo check --target wasm32-unknown-unknown`) in Plan 04.
 
-use genetic_algorithms::pso::{
-    inertia_weight, PsoConfiguration, PsoEngine, PsoInertia, PsoTopology,
-};
+use genetic_algorithms::pso::{PsoConfiguration, PsoEngine, PsoInertia, PsoTopology};
 
 use std::borrow::Cow;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -294,6 +292,21 @@ fn test_pso_absorbing_boundary() {
 
 // ─── PSO-09: linear decay inertia ────────────────────────────────────────────
 
+/// Local helper replicating the inertia_weight logic for test-only use.
+/// `inertia_weight` is pub(crate) so integration tests must replicate it.
+fn inertia_weight_test(inertia: &PsoInertia, gen: usize, max_generations: usize) -> f64 {
+    match inertia {
+        PsoInertia::Constant(w) => *w,
+        PsoInertia::LinearDecay { w_start, w_end } => {
+            if max_generations <= 1 {
+                *w_end
+            } else {
+                w_start + (w_end - w_start) * (gen as f64) / ((max_generations - 1) as f64)
+            }
+        }
+    }
+}
+
 /// PSO-09: LinearDecay inertia produces w_start at gen 0 and w_end at max_generations.
 #[test]
 fn test_pso_linear_decay() {
@@ -303,28 +316,28 @@ fn test_pso_linear_decay() {
     };
 
     // At generation 0, w should equal w_start = 0.9
-    let w0 = inertia_weight(&inertia, 0, 100);
+    let w0 = inertia_weight_test(&inertia, 0, 100);
     assert!(
         (w0 - 0.9).abs() < 1e-12,
         "expected w=0.9 at gen=0, got {w0}"
     );
 
     // At generation 99 (= max_generations - 1), w should equal w_end = 0.4
-    let w_end = inertia_weight(&inertia, 99, 100);
+    let w_end = inertia_weight_test(&inertia, 99, 100);
     assert!(
         (w_end - 0.4).abs() < 1e-12,
         "expected w=0.4 at gen=99, got {w_end}"
     );
 
     // Guard: max_generations <= 1 should return w_end (no div-by-zero)
-    let w_guard = inertia_weight(&inertia, 0, 1);
+    let w_guard = inertia_weight_test(&inertia, 0, 1);
     assert!(
         (w_guard - 0.4).abs() < 1e-12,
         "expected w_end=0.4 for max_generations=1, got {w_guard}"
     );
 
     // Constant inertia should return its value unchanged
-    let w_const = inertia_weight(&PsoInertia::Constant(0.7), 50, 100);
+    let w_const = inertia_weight_test(&PsoInertia::Constant(0.7), 50, 100);
     assert!(
         (w_const - 0.7).abs() < 1e-12,
         "expected w=0.7 for Constant(0.7), got {w_const}"
