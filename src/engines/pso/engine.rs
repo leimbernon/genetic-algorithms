@@ -60,6 +60,8 @@ struct PsoState {
     gbest_position: Vec<f64>,
     /// Global best fitness.
     gbest_fitness: f64,
+    /// Index of the particle whose personal-best last updated `gbest`.
+    gbest_owner: usize,
     /// Maximum allowed velocity per gene `v_max[gene] = hi - lo`.
     v_max: Vec<f64>,
 }
@@ -120,6 +122,7 @@ impl PsoState {
             pbest_fitness,
             gbest_position,
             gbest_fitness,
+            gbest_owner: best_idx,
             v_max,
         }
     }
@@ -299,13 +302,6 @@ where
 
         // Guard: empty population from user's init_fn
         if pop.is_empty() {
-            log::warn!(
-                target: "pso_events",
-                "PsoEngine: init_fn returned an empty population; returning empty result"
-            );
-            self.notify(|obs| {
-                obs.on_run_end(TerminationCause::GenerationLimitReached, &[])
-            });
             panic!("PsoEngine: init_fn returned an empty population");
         }
 
@@ -408,15 +404,25 @@ where
                 if self.is_better(state.pbest_fitness[j], state.gbest_fitness) {
                     state.gbest_fitness = state.pbest_fitness[j];
                     state.gbest_position = state.pbest_positions[j].clone();
+                    state.gbest_owner = j;
                 }
             }
 
             // Track engine-level best and notify observer when it improves.
             if self.is_better(state.gbest_fitness, best_fitness) {
                 best_fitness = state.gbest_fitness;
-                // Find the population member whose pbest matches the new gbest.
-                let (bi, _) = self.find_best(&pop);
-                best = pop[bi].clone();
+                // Reconstruct best from the gbest owner's pbest position so that
+                // `result.best` matches `result.best_fitness` exactly (CR-01).
+                let owner = state.gbest_owner;
+                let new_dna: Vec<U::Gene> = pop[owner]
+                    .dna()
+                    .iter()
+                    .enumerate()
+                    .map(|(d, g)| g.with_real_value(state.gbest_position[d]))
+                    .collect();
+                best = pop[owner].clone();
+                best.set_dna(Cow::Owned(new_dna));
+                best.set_fitness(state.gbest_fitness);
                 let best_clone = best.clone();
                 self.notify(|obs| obs.on_new_best(gen, best_clone));
             }
