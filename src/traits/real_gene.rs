@@ -51,6 +51,11 @@ impl RealGene for Range<f64> {
         g
     }
 
+    /// Returns the first `(lo, hi)` range entry for this gene.
+    ///
+    /// For genes constructed with multiple range entries, only the first entry is used.
+    /// The caller is responsible for constructing such genes with a representative
+    /// range in position 0.
     #[inline]
     fn bounds(&self) -> Option<(f64, f64)> {
         self.ranges.first().copied()
