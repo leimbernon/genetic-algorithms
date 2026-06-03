@@ -63,6 +63,9 @@ mod engines {
     mod aos {
         mod test_aos;
     }
+    mod pso {
+        mod test_pso;
+    }
     mod test_strategy_trait;
     mod hill_climb {
         mod test_hill_climb;
