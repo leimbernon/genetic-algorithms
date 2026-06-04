@@ -15,6 +15,9 @@ mod engines {
     mod scatter {
         mod test_scatter;
     }
+    mod cma {
+        mod test_cma;
+    }
     mod island {
         mod test_island;
         mod test_island_configuration;
@@ -59,5 +62,15 @@ mod engines {
     }
     mod aos {
         mod test_aos;
+    }
+    mod pso {
+        mod test_pso;
+    }
+    mod test_strategy_trait;
+    mod hill_climb {
+        mod test_hill_climb;
+    }
+    mod permutate {
+        mod test_permutate;
     }
 }

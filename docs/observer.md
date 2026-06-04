@@ -53,6 +53,18 @@ Each multi-objective engine defines its own observer sub-trait for engine-specif
 - `IbeaObserver<U>` — Engine-specific hooks
 - `IslandGaObserver<U>` — `on_migration_complete`
 
+### GP Engine Observers
+
+`GpGa<N>` reuses the core `GaObserver<GpChromosome<N>>` trait — no GP-specific sub-trait exists. All standard hooks fire (`on_run_start`, `on_generation_end`, `on_new_best`, `on_stagnation`, etc.). The `GenerationStats` struct passed to `on_generation_end` includes the `avg_node_count` field which is populated by `GpGa` for bloat monitoring (set to `0.0` by all other engines).
+
+```rust
+use std::sync::Arc;
+use genetic_algorithms::LogObserver;
+
+let mut engine = GpGa::<MathNode>::with_ramped_half_and_half(config, fitness_fn)
+    .with_observer(Arc::new(LogObserver));
+```
+
 ### AllObserver
 
 `AllObserver<U>` is a blanket impl: any type implementing all three core observer traits (GaObserver + IslandGaObserver + Nsga2Observer) automatically gets the `AllObserver` trait, enabling a single observer to be used across all engine types.

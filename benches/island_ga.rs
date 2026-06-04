@@ -3,6 +3,7 @@ use criterion::{
     PlotConfiguration,
 };
 
+use genetic_algorithms::chromosomes::ChromosomeLength;
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::fitness::FitnessFnWrapper;
 use genetic_algorithms::island::configuration::IslandConfiguration;
@@ -11,8 +12,8 @@ use genetic_algorithms::island::IslandGa;
 use genetic_algorithms::operations::mutation::ValueMutable;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::traits::{
-    ChromosomeT, ConfigurationT, CrossoverConfig, GeneT, MutationConfig, SelectionConfig,
-    StoppingConfig,
+    ChromosomeT, ConfigurationT, CrossoverConfig, GeneT, LinearChromosome, MutationConfig,
+    OperatorCompat, SelectionConfig, StoppingConfig,
 };
 use rand::Rng;
 use std::borrow::Cow;
@@ -49,12 +50,6 @@ struct SimpleChromosome {
 }
 impl ChromosomeT for SimpleChromosome {
     type Gene = Gene;
-    fn dna(&self) -> &[Self::Gene] {
-        &self.dna
-    }
-    fn dna_mut(&mut self) -> &mut [Self::Gene] {
-        &mut self.dna
-    }
     fn fitness(&self) -> f64 {
         self.fitness
     }
@@ -68,6 +63,20 @@ impl ChromosomeT for SimpleChromosome {
     }
     fn age(&self) -> usize {
         self.age
+    }
+    fn calculate_fitness(&mut self) {
+        self.fitness = 0.0;
+        for (i, gene) in self.dna.iter().enumerate() {
+            self.fitness += f64::from(gene.id() * i as i32);
+        }
+    }
+}
+impl LinearChromosome for SimpleChromosome {
+    fn dna(&self) -> &[Self::Gene] {
+        &self.dna
+    }
+    fn dna_mut(&mut self) -> &mut [Self::Gene] {
+        &mut self.dna
     }
     fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
         self.dna = match dna {
@@ -83,14 +92,9 @@ impl ChromosomeT for SimpleChromosome {
         self.fitness_fn = FitnessFnWrapper::new(fitness_fn);
         self
     }
-    fn calculate_fitness(&mut self) {
-        self.fitness = 0.0;
-        for (i, gene) in self.dna.iter().enumerate() {
-            self.fitness += f64::from(gene.id() * i as i32);
-        }
-    }
 }
 impl ValueMutable for SimpleChromosome {}
+impl OperatorCompat for SimpleChromosome {}
 
 // ---------------------------------------------------------------------------
 // Setup helper
@@ -115,7 +119,7 @@ fn build_island_ga(
 
     let ga_config = GaConfiguration::new()
         .with_population_size(population_per_island)
-        .with_genes_per_chromosome(gene_length)
+        .with_chromosome_length(ChromosomeLength::Fixed(gene_length))
         .with_max_generations(max_generations)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
@@ -125,7 +129,7 @@ fn build_island_ga(
 
     IslandGa::<SimpleChromosome>::new(island_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |genes_per_chrom, _alleles, _repeat| {
+        .with_initialization_fn(move |genes_per_chrom, _alleles| {
             let mut rng = rand::rng();
             (0..genes_per_chrom)
                 .map(|_| alleles_for_init[rng.random_range(0..alleles_for_init.len())])

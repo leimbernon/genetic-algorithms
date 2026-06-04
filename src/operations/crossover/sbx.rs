@@ -2,7 +2,7 @@
 
 use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
-use crate::traits::ChromosomeT;
+use crate::traits::LinearChromosome;
 use log::debug;
 use rand::Rng;
 use std::borrow::Cow;

@@ -21,16 +21,15 @@ use std::sync::Arc;
 
 use crate::configuration::{CrossoverConfiguration, ProblemSolving};
 use crate::operations::mutation::ValueMutable;
-use crate::operations::{crossover, mutation};
-use crate::traits::SelectionOperator;
+use crate::operations::crossover;
 use crate::rng::make_rng;
-use crate::traits::{ChromosomeT, FitnessFn};
+use crate::traits::{FitnessFn, LinearChromosome, MutationOperator, SelectionOperator};
 use rand::Rng;
 
 use super::configuration::{CellularConfiguration, Neighborhood, UpdateMode};
 
 /// Result returned by [`CellularEngine::run`].
-pub struct CellularResult<U: ChromosomeT> {
+pub struct CellularResult<U: LinearChromosome> {
     /// Final grid population (row-major, length = `rows × cols`).
     pub population: Vec<U>,
     /// The best individual found during the run.
@@ -71,7 +70,7 @@ pub struct CellularResult<U: ChromosomeT> {
 /// );
 /// let result = engine.run();
 /// ```
-pub struct CellularEngine<U: ChromosomeT> {
+pub struct CellularEngine<U: LinearChromosome> {
     config: CellularConfiguration,
     init_fn: Arc<dyn Fn(usize) -> Vec<U> + Send + Sync>,
     fitness_fn: Arc<FitnessFn<U::Gene>>,
@@ -79,7 +78,7 @@ pub struct CellularEngine<U: ChromosomeT> {
 
 impl<U> CellularEngine<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// Construct a new engine.
     ///
@@ -102,7 +101,7 @@ where
 
 impl<U> CellularEngine<U>
 where
-    U: ChromosomeT + Clone + ValueMutable + 'static,
+    U: LinearChromosome + Clone + ValueMutable + 'static,
 {
     /// Run the Cellular GA and return the result.
     pub fn run(&mut self) -> CellularResult<U> {
@@ -118,6 +117,9 @@ where
         }
 
         // ── Best tracking ─────────────────────────────────────────────────────
+        if pop.is_empty() {
+            panic!("CellularEngine: grid must have at least 1 cell (rows > 0 && cols > 0)");
+        }
         let mut best_fitness = pop[0].fitness();
         let mut best = pop[0].clone();
         for ind in &pop {
@@ -168,12 +170,18 @@ where
                     }
 
                     // Select a mate from the neighborhood using the configured operator.
-                    // We ask for 1 couple; take the second element of the pair as the
-                    // mate so we don't just pick the cell itself.
-                    let pairs = self.config.selection.select(&local, 1, 1);
-                    let mate_local_idx = if let Some(&(a, b)) = pairs.first() {
+                    // We ask for 1 couple with num_parents=2; take the second element of the
+                    // group as the mate so we don't just pick the cell itself.
+                    let pairs = self.config.selection.select(&local, 1, 1, 2);
+                    let mate_local_idx = if let Some(group) = pairs.first() {
+                        let a = group[0];
+                        let b = group[1];
                         // Prefer the non-self member of the pair; fall back to `b`.
-                        if a != 0 { a } else if b != 0 { b } else {
+                        if a != 0 {
+                            a
+                        } else if b != 0 {
+                            b
+                        } else {
                             rng.random_range(1..local.len())
                         }
                     } else {
@@ -184,18 +192,16 @@ where
                     // Crossover cell with selected mate
                     let parent_cell = &src_pop[cell_idx];
                     let parent_mate = &local[mate_local_idx];
-                    let mut offspring = match crossover::factory(parent_cell, parent_mate, crossover_cfg) {
-                        Ok(children) if !children.is_empty() => children.into_iter().next().unwrap(),
-                        _ => parent_cell.clone(),
-                    };
+                    let mut offspring =
+                        match crossover::factory(parent_cell, parent_mate, crossover_cfg) {
+                            Ok(children) if !children.is_empty() => {
+                                children.into_iter().next().unwrap()
+                            }
+                            _ => parent_cell.clone(),
+                        };
 
                     // Mutate offspring
-                    let _ = mutation::factory_with_params(
-                        self.config.mutation,
-                        &mut offspring,
-                        self.config.mutation_step,
-                        self.config.mutation_sigma,
-                    );
+                    let _ = self.config.mutation.mutate(&mut offspring, &self.config.mutation);
 
                     // Evaluate
                     let offspring_fitness = (self.fitness_fn)(offspring.dna());
@@ -233,7 +239,12 @@ where
             }
         }
 
-        CellularResult { population: pop, best, best_fitness, generations }
+        CellularResult {
+            population: pop,
+            best,
+            best_fitness,
+            generations,
+        }
     }
 
     // ── Grid helpers ──────────────────────────────────────────────────────────

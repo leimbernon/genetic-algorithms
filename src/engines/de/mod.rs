@@ -6,9 +6,7 @@
 pub mod configuration;
 pub mod crossover;
 pub mod engine;
-pub mod gene;
 pub mod mutation;
 
 pub use configuration::{DeAdaptive, DeConfiguration, DeCrossoverMode, DeMutationStrategy};
 pub use engine::{DeEngine, DeResult};
-pub use gene::DeGene;

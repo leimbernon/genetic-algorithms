@@ -4,7 +4,7 @@ use genetic_algorithms::island::configuration::IslandConfiguration;
 use genetic_algorithms::island::nsga2::{binary_tournament, IslandNsga2Ga};
 use genetic_algorithms::nsga2::configuration::Nsga2Configuration;
 use genetic_algorithms::nsga2::pareto::ParetoIndividual;
-use genetic_algorithms::traits::ChromosomeT;
+use genetic_algorithms::traits::{ChromosomeT, LinearChromosome};
 use std::borrow::Cow;
 
 #[test]
@@ -13,8 +13,7 @@ fn test_island_nsga2_validate_zero_islands() {
     let nsga2_config = Nsga2Configuration::new().with_num_objectives(2);
     let ga_config = GaConfiguration::default();
     let ga = IslandNsga2Ga::<Binary>::new(island_config, nsga2_config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
-        .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0)]);
+        .with_initialization_fn(|_, _| vec![]);
 
     assert!(ga.validate().is_err());
 }
@@ -25,7 +24,7 @@ fn test_island_nsga2_validate_zero_objectives() {
     let nsga2_config = Nsga2Configuration::new().with_num_objectives(0);
     let ga_config = GaConfiguration::default();
     let ga = IslandNsga2Ga::<Binary>::new(island_config, nsga2_config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![]);
+        .with_initialization_fn(|_, _| vec![]);
 
     assert!(ga.validate().is_err());
 }
@@ -35,20 +34,7 @@ fn test_island_nsga2_validate_no_init_fn() {
     let island_config = IslandConfiguration::new().with_num_islands(2);
     let nsga2_config = Nsga2Configuration::new().with_num_objectives(2);
     let ga_config = GaConfiguration::default();
-    let ga = IslandNsga2Ga::<Binary>::new(island_config, nsga2_config, ga_config)
-        .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0)]);
-
-    assert!(ga.validate().is_err());
-}
-
-#[test]
-fn test_island_nsga2_validate_mismatched_objectives() {
-    let island_config = IslandConfiguration::new().with_num_islands(2);
-    let nsga2_config = Nsga2Configuration::new().with_num_objectives(2);
-    let ga_config = GaConfiguration::default();
-    let ga = IslandNsga2Ga::<Binary>::new(island_config, nsga2_config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
-        .with_objective_fns(vec![Box::new(|_| 0.0)]); // only 1, need 2
+    let ga = IslandNsga2Ga::<Binary>::new(island_config, nsga2_config, ga_config);
 
     assert!(ga.validate().is_err());
 }
@@ -63,8 +49,7 @@ fn test_island_nsga2_validate_migration_count_exceeds_pop() {
         .with_population_size(100);
     let ga_config = GaConfiguration::default();
     let ga = IslandNsga2Ga::<Binary>::new(island_config, nsga2_config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
-        .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0)]);
+        .with_initialization_fn(|_, _| vec![]);
 
     assert!(ga.validate().is_err());
 }
@@ -79,8 +64,7 @@ fn test_island_nsga2_validate_ok() {
         .with_population_size(20);
     let ga_config = GaConfiguration::default();
     let ga = IslandNsga2Ga::<Binary>::new(island_config, nsga2_config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
-        .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0)]);
+        .with_initialization_fn(|_, _| vec![]);
 
     assert!(ga.validate().is_ok());
 }
@@ -95,8 +79,7 @@ fn test_island_nsga2_build_ok() {
         .with_population_size(20);
     let ga_config = GaConfiguration::default();
     let result = IslandNsga2Ga::<Binary>::new(island_config, nsga2_config, ga_config)
-        .with_initialization_fn(|_, _, _| vec![])
-        .with_objective_fns(vec![Box::new(|_| 0.0), Box::new(|_| 0.0)])
+        .with_initialization_fn(|_, _| vec![])
         .build();
 
     assert!(result.is_ok());
@@ -121,6 +104,22 @@ fn test_binary_tournament_prefers_lower_rank() {
 
     impl ChromosomeT for SimpleChrom {
         type Gene = genetic_algorithms::genotypes::Binary;
+        fn calculate_fitness(&mut self) {}
+        fn fitness(&self) -> f64 {
+            0.0
+        }
+        fn set_fitness(&mut self, _: f64) -> &mut Self {
+            self
+        }
+        fn set_age(&mut self, _: usize) -> &mut Self {
+            self
+        }
+        fn age(&self) -> usize {
+            0
+        }
+    }
+
+    impl LinearChromosome for SimpleChrom {
         fn dna(&self) -> &[Self::Gene] {
             &self.dna
         }
@@ -136,19 +135,6 @@ fn test_binary_tournament_prefers_lower_rank() {
             F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static,
         {
             self
-        }
-        fn calculate_fitness(&mut self) {}
-        fn fitness(&self) -> f64 {
-            0.0
-        }
-        fn set_fitness(&mut self, _: f64) -> &mut Self {
-            self
-        }
-        fn set_age(&mut self, _: usize) -> &mut Self {
-            self
-        }
-        fn age(&self) -> usize {
-            0
         }
     }
 

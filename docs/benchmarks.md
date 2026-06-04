@@ -9,7 +9,7 @@ This module provides implementations of well-known single-objective, bi-objectiv
 **Feature flag:** Add `benchmarks` to your `Cargo.toml`:
 
 ```toml
-genetic_algorithms = { version = "2.4", features = ["benchmarks"] }
+genetic_algorithms = { version = "3.0", features = ["benchmarks"] }
 ```
 
 ## Key Concepts

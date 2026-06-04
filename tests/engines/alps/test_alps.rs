@@ -8,7 +8,7 @@ use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::genotypes::Range as RangeGene;
 use genetic_algorithms::operations::{Crossover, Mutation};
 use genetic_algorithms::rng;
-use genetic_algorithms::traits::ChromosomeT;
+use genetic_algorithms::traits::{ChromosomeT, LinearChromosome};
 use rand::Rng;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -44,8 +44,7 @@ fn make_engine(scheme: AlpsAgeScheme) -> AlpsEngine<RangeChromosome<f64>> {
         .with_injection_interval(10)
         .with_max_generations(100)
         .with_crossover(Crossover::Uniform)
-        .with_mutation(Mutation::Gaussian)
-        .with_mutation_sigma(0.5)
+        .with_mutation(Mutation::Gaussian { sigma: Some(0.5) })
         .with_problem_solving(ProblemSolving::Minimization)
         .with_fitness_target(50.0);
 

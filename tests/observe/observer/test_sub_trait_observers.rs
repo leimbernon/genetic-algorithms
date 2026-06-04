@@ -1,5 +1,6 @@
 /// Integration tests for SUB-01 (IslandGaObserver), SUB-02 (Nsga2Observer),
 /// and SUB-03 (LogObserver implements all three traits).
+use std::borrow::Cow;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
@@ -8,6 +9,40 @@ use genetic_algorithms::configuration::GaConfiguration;
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::genotypes::Binary as BinaryGene;
 use genetic_algorithms::initializers::binary_random_initialization;
+use genetic_algorithms::traits::{LinearChromosome, VectorFitness};
+
+// Custom 2-objective binary chromosome for NSGA-II observer tests
+#[derive(Debug, Clone, Default)]
+struct MoBinaryChromosome {
+    dna: Vec<BinaryGene>,
+    fitness: f64,
+    fitness_values: Vec<f64>,
+}
+
+impl genetic_algorithms::traits::ChromosomeT for MoBinaryChromosome {
+    type Gene = BinaryGene;
+    fn fitness(&self) -> f64 { self.fitness }
+    fn set_fitness(&mut self, v: f64) -> &mut Self { self.fitness = v; self }
+    fn set_age(&mut self, _: usize) -> &mut Self { self }
+    fn age(&self) -> usize { 0 }
+    fn calculate_fitness(&mut self) {
+        let t = self.dna.iter().filter(|g| g.value).count() as f64;
+        self.fitness_values = vec![t, self.dna.len() as f64 - t];
+        self.fitness = t;
+    }
+}
+impl LinearChromosome for MoBinaryChromosome {
+    fn dna(&self) -> &[Self::Gene] { &self.dna }
+    fn dna_mut(&mut self) -> &mut [Self::Gene] { &mut self.dna }
+    fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self { self.dna = dna.into_owned(); self }
+    fn set_fitness_fn<F>(&mut self, _: F) -> &mut Self where F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static { self }
+}
+impl VectorFitness for MoBinaryChromosome {
+    fn fitness_values(&self) -> &[f64] { &self.fitness_values }
+    fn set_fitness_values(&mut self, v: Vec<f64>) { self.fitness_values = v; }
+}
+impl genetic_algorithms::operations::mutation::ValueMutable for MoBinaryChromosome {}
+impl genetic_algorithms::traits::OperatorCompat for MoBinaryChromosome {}
 use genetic_algorithms::island::configuration::IslandConfiguration;
 use genetic_algorithms::island::IslandGa;
 use genetic_algorithms::nsga2::configuration::Nsga2Configuration;
@@ -72,7 +107,7 @@ fn test_island_observer_hooks_fire() {
 
     let ga_config = GaConfiguration::new()
         .with_population_size(10)
-        .with_genes_per_chromosome(8)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(8))
         .with_max_generations(5)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
@@ -123,7 +158,7 @@ struct CountingNsga2Observer {
     counters: Arc<Nsga2Counters>,
 }
 
-impl Nsga2Observer<BinaryChromosome> for CountingNsga2Observer {
+impl Nsga2Observer<MoBinaryChromosome> for CountingNsga2Observer {
     fn on_pareto_front_assigned(
         &self,
         _generation: usize,
@@ -159,13 +194,9 @@ fn test_nsga2_observer_hooks_fire() {
         .with_crossover_method(Crossover::Uniform)
         .with_mutation_method(Mutation::BitFlip);
 
-    let mut nsga2 = Nsga2Ga::<BinaryChromosome>::new(nsga2_config, ga_config)
+    let mut nsga2 = Nsga2Ga::<MoBinaryChromosome>::new(nsga2_config, ga_config)
         .with_initialization_fn(binary_random_initialization)
-        .with_objective_fns(vec![
-            Box::new(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64),
-            Box::new(|dna: &[BinaryGene]| dna.iter().filter(|g| !g.value).count() as f64),
-        ])
-        .with_observer(observer as Arc<dyn Nsga2Observer<BinaryChromosome> + Send + Sync>);
+        .with_observer(observer as Arc<dyn Nsga2Observer<MoBinaryChromosome> + Send + Sync>);
 
     nsga2.run().expect("Nsga2Ga run should succeed");
 

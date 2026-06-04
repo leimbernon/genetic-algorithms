@@ -17,20 +17,23 @@ use crate::traits::ChromosomeT;
 use log::{debug, trace};
 
 /// Clearing selection: builds an eligible pool by removing niche-dominated
-/// individuals, then pairs eligible individuals randomly.
+/// individuals, then groups eligible individuals randomly into N-ary parent groups.
 ///
 /// # Arguments
 ///
 /// * `chromosomes` - Population slice to select from.
 /// * `niche_radius` - Fitness-space radius; individuals within this distance of
 ///   a niche winner are ineligible for reproduction.
-/// * `number_of_couples` - Target number of parent pairs to produce. Pairs are
+/// * `number_of_couples` - Target number of parent groups to produce. Groups are
 ///   drawn with replacement when the eligible pool is smaller than required.
+/// * `num_parents` - Number of parents per group (must be >= 2).
 pub fn clearing_selection<U: ChromosomeT>(
     chromosomes: &[U],
     niche_radius: f64,
     number_of_couples: usize,
-) -> Vec<(usize, usize)> {
+    num_parents: usize,
+) -> Vec<Vec<usize>> {
+    let num_parents = num_parents.max(2);
     debug!(target="selection_events", method="clearing"; "Starting clearing selection with niche_radius={} number_of_couples={}", niche_radius, number_of_couples);
 
     let n = chromosomes.len();
@@ -59,8 +62,7 @@ pub fn clearing_selection<U: ChromosomeT>(
         // (ranked below it, not yet winners) within niche_radius.
         trace!(target="selection_events", method="clearing"; "Niche winner: index={} fitness={}", winner_idx, winner_fitness);
         for &(candidate_idx, candidate_fitness) in &sorted[(rank + 1)..] {
-            if !cleared[candidate_idx]
-                && (winner_fitness - candidate_fitness).abs() <= niche_radius
+            if !cleared[candidate_idx] && (winner_fitness - candidate_fitness).abs() <= niche_radius
             {
                 cleared[candidate_idx] = true;
                 trace!(target="selection_events", method="clearing"; "Cleared: index={} fitness={}", candidate_idx, candidate_fitness);
@@ -73,16 +75,17 @@ pub fn clearing_selection<U: ChromosomeT>(
 
     trace!(target="selection_events", method="clearing"; "Eligible pool size: {}", eligible.len());
 
-    // Need at least 2 eligible individuals to form any pair.
+    // Need at least 2 eligible individuals to form any group.
     if eligible.len() < 2 {
-        debug!(target="selection_events", method="clearing"; "Clearing selection finished: 0 pairs (eligible pool too small)");
+        debug!(target="selection_events", method="clearing"; "Clearing selection finished: 0 groups (eligible pool too small)");
         return Vec::new();
     }
 
-    // Draw exactly `number_of_couples` pairs from the eligible pool.
-    // Pairs are sampled with replacement so that the full requested count is
+    // Draw exactly `number_of_couples` groups from the eligible pool.
+    // Groups are sampled with replacement so that the full requested count is
     // always produced even when the eligible pool is smaller than
-    // 2 * number_of_couples. Each pair consists of two distinct indices.
+    // num_parents * number_of_couples. Each group has at least 2 distinct indices
+    // (first two are guaranteed distinct; additional parents may repeat).
     let mut rng = crate::rng::make_rng();
     let mut mating = Vec::with_capacity(number_of_couples);
 
@@ -94,10 +97,16 @@ pub fn clearing_selection<U: ChromosomeT>(
         let i2 = if i2_raw >= i1 { i2_raw + 1 } else { i2_raw };
         let idx1 = eligible[i1];
         let idx2 = eligible[i2];
-        mating.push((idx1, idx2));
-        trace!(target="selection_events", method="clearing"; "Mating index {} with index {}", idx1, idx2);
+        let mut group = vec![idx1, idx2];
+        // Add extra parents if num_parents > 2
+        for _ in 2..num_parents {
+            let extra_i = rng.random_range(0..eligible.len());
+            group.push(eligible[extra_i]);
+        }
+        trace!(target="selection_events", method="clearing"; "Mating group: {:?}", group);
+        mating.push(group);
     }
 
-    debug!(target="selection_events", method="clearing"; "Clearing selection finished: {} pairs", mating.len());
+    debug!(target="selection_events", method="clearing"; "Clearing selection finished: {} groups", mating.len());
     mating
 }

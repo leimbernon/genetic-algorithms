@@ -29,8 +29,8 @@ use genetic_algorithms::operations::{Crossover, Extension, Mutation, Selection, 
 use genetic_algorithms::population::Population;
 use genetic_algorithms::stats::GenerationStats;
 use genetic_algorithms::traits::{
-    ChromosomeT, ConfigurationT, CrossoverConfig, ExtensionConfig, MutationConfig, SelectionConfig,
-    StoppingConfig,
+    ConfigurationT, CrossoverConfig, ExtensionConfig, LinearChromosome, MutationConfig,
+    SelectionConfig, StoppingConfig,
 };
 use genetic_algorithms::LogObserver;
 use std::sync::Arc;
@@ -47,7 +47,7 @@ fn main() {
 
     // --- Build the GA with extension strategy ---
     let mut ga = Ga::new()
-        .with_genes_per_chromosome(N_BITS)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(N_BITS))
         .with_population_size(POP_SIZE)
         .with_initialization_fn(binary_random_initialization)
         .with_fitness_fn(fitness_fn)

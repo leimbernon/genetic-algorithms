@@ -6,10 +6,8 @@
 
 use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
-use genetic_algorithms::configuration::{
-    CrossoverConfiguration, GaConfiguration, LimitConfiguration, LogLevel, MutationConfiguration,
-    ProblemSolving, SaveProgressConfiguration, SelectionConfiguration, StoppingCriteria,
-};
+use genetic_algorithms::configuration::{GaConfiguration, ProblemSolving};
+use genetic_algorithms::ChromosomeLength;
 use genetic_algorithms::error::GaError;
 use genetic_algorithms::ga::TerminationCause;
 use genetic_algorithms::genotypes::Binary as BinaryGene;
@@ -18,8 +16,7 @@ use genetic_algorithms::island::configuration::{IslandConfiguration, MigrationPo
 use genetic_algorithms::island::topology::MigrationTopology;
 use genetic_algorithms::niching::configuration::NichingConfiguration;
 use genetic_algorithms::nsga2::configuration::{Nsga2Configuration, ObjectiveDirection};
-use genetic_algorithms::aos::AosStrategy;
-use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+use genetic_algorithms::operations::{AlignmentStrategy, Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::population::Population;
 use genetic_algorithms::stats::GenerationStats;
 
@@ -63,6 +60,8 @@ fn serde_crossover_enum() {
         Crossover::Clone,
         Crossover::Rejuvenate,
         Crossover::EdgeRecombination,
+        Crossover::VariableLength(AlignmentStrategy::Trim),
+        Crossover::VariableLength(AlignmentStrategy::Pad),
     ];
     for v in &variants {
         assert_eq!(&round_trip(v), v);
@@ -70,25 +69,58 @@ fn serde_crossover_enum() {
 }
 
 #[test]
+fn serde_alignment_strategy_enum() {
+    assert_eq!(
+        &round_trip(&AlignmentStrategy::Trim),
+        &AlignmentStrategy::Trim
+    );
+    assert_eq!(
+        &round_trip(&AlignmentStrategy::Pad),
+        &AlignmentStrategy::Pad
+    );
+}
+
+#[test]
 fn serde_mutation_enum() {
-    let variants = [
+    let variants = vec![
         Mutation::Swap,
         Mutation::Inversion,
         Mutation::Scramble,
         Mutation::Value,
         Mutation::BitFlip,
-        Mutation::Creep,
-        Mutation::Gaussian,
-        Mutation::Polynomial,
-        Mutation::NonUniform,
+        Mutation::Creep { step: None },
+        Mutation::Creep { step: Some(0.05) },
+        Mutation::Gaussian { sigma: None },
+        Mutation::Gaussian { sigma: Some(0.2) },
+        Mutation::Polynomial { eta: None },
+        Mutation::Polynomial { eta: Some(20.0) },
+        Mutation::NonUniform { b: None },
+        Mutation::NonUniform { b: Some(2.0) },
+        Mutation::PermutationInsert,
         Mutation::Insertion,
-        Mutation::Differential,
-        Mutation::Cauchy,
-        Mutation::LevyFlight,
+        Mutation::Deletion,
+        Mutation::Differential { f: None },
+        Mutation::Differential { f: Some(0.5) },
+        Mutation::Cauchy { scale: None },
+        Mutation::Cauchy { scale: Some(1.0) },
+        Mutation::LevyFlight { alpha: None },
+        Mutation::LevyFlight { alpha: Some(1.5) },
         Mutation::Uniform,
+        Mutation::SelfAdaptiveGaussian {
+            tau: None,
+            tau_prime: None,
+            sigma_min: None,
+            sigma_max: None,
+        },
+        Mutation::SelfAdaptiveGaussian {
+            tau: Some(0.3),
+            tau_prime: Some(0.2),
+            sigma_min: Some(1e-5),
+            sigma_max: Some(1.0),
+        },
     ];
     for v in &variants {
-        assert_eq!(&round_trip(v), v);
+        assert_eq!(&round_trip(v), v, "Round-trip failed for {:?}", v);
     }
 }
 
@@ -117,94 +149,62 @@ fn serde_ga_configuration_round_trip() {
 
 #[test]
 fn serde_ga_configuration_with_values() {
-    let config = GaConfiguration {
-        adaptive_ga: true,
-        number_of_threads: 4,
-        limit_configuration: LimitConfiguration {
-            problem_solving: ProblemSolving::Maximization,
-            max_generations: 500,
-            fitness_target: Some(99.0),
-            population_size: 200,
-            genes_per_chromosome: 16,
-            needs_unique_ids: true,
-            alleles_can_be_repeated: false,
-        },
-        selection_configuration: SelectionConfiguration {
-            number_of_couples: 50,
-            method: Selection::Boltzmann,
-            boltzmann_temperature: 2.5,
-            niche_radius: 0.1,
-        },
-        crossover_configuration: CrossoverConfiguration {
-            number_of_points: Some(3),
-            probability_max: Some(0.9),
-            probability_min: Some(0.1),
-            method: Crossover::Sbx,
-            sbx_eta: Some(5.0),
-            blend_alpha: Some(0.3),
-            arithmetic_alpha: Some(0.7),
-        },
-        mutation_configuration: MutationConfiguration {
-            probability_max: Some(0.05),
-            probability_min: Some(0.01),
-            method: Mutation::Polynomial,
-            step: Some(0.5),
-            sigma: Some(1.5),
-            polynomial_eta: Some(30.0),
-            non_uniform_b: Some(3.0),
-            differential_f: None,
-            cauchy_scale: None,
-            levy_alpha: None,
-            dynamic_mutation: false,
-            target_cardinality: None,
-            probability_step: None,
-        },
-        survivor: Survivor::MuPlusLambda,
-        log_level: LogLevel::Debug,
-        save_progress_configuration: SaveProgressConfiguration {
-            save_progress: true,
-            save_progress_interval: 10,
-            save_progress_path: "/tmp/checkpoint.json".to_string(),
-        },
-        elitism_count: 5,
-        stopping_criteria: StoppingCriteria {
-            stagnation_generations: Some(50),
-            convergence_threshold: Some(0.001),
-            max_duration_secs: Some(60.0),
-        },
-        niching_configuration: Some(NichingConfiguration {
-            enabled: true,
-            sigma_share: 2.0,
-            alpha: 1.5,
-        }),
-        extension_configuration: Some(
-            genetic_algorithms::extension::configuration::ExtensionConfiguration {
-                method: genetic_algorithms::operations::Extension::MassExtinction,
-                diversity_threshold: 0.05,
-                survival_rate: 0.2,
-                mutation_rounds: 3,
-                elite_count: 2,
-            },
-        ),
-        rng_seed: Some(42),
-        crossover_portfolio: None,
-        mutation_portfolio: None,
-        aos_strategy: AosStrategy::pm_default(),
-        aos_reward_window: 50,
-        local_search_configuration: None,
+    use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
+    use genetic_algorithms::ga::Ga;
+    use genetic_algorithms::initializers::binary_initializer::binary_random_initialization;
+    use genetic_algorithms::traits::{
+        ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
     };
+
+    // Build a GA with specific operator settings via the public builder API,
+    // then extract and round-trip its configuration.
+    let ga: Ga<BinaryChromosome> = Ga::new()
+        .with_population_size(200)
+        .with_chromosome_length(ChromosomeLength::Fixed(16))
+        .with_selection_method(Selection::Boltzmann)
+        .with_crossover_method(Crossover::Sbx)
+        .with_mutation_method(Mutation::Polynomial { eta: None })
+        .with_survivor_method(Survivor::MuPlusLambda)
+        .with_problem_solving(ProblemSolving::Maximization)
+        .with_max_generations(500)
+        .with_stagnation_limit(50)
+        .with_convergence_threshold(0.001)
+        .with_max_duration_secs(60.0)
+        .with_initialization_fn(|n, _| binary_random_initialization(n, None))
+        .with_fitness_fn(|_: &[_]| 0.0);
+
+    let config = ga.configuration.clone();
     let rt = round_trip(&config);
     assert_eq!(rt, config);
+    // Spot-check a few values
+    assert_eq!(rt.selection().method, Selection::Boltzmann);
+    assert_eq!(rt.limit().population_size, 200);
+    assert_eq!(rt.stagnation_generations(), Some(50));
+    assert_eq!(rt.convergence_threshold(), Some(0.001));
 }
 
 #[test]
-fn serde_stopping_criteria() {
-    let criteria = StoppingCriteria {
-        stagnation_generations: Some(100),
-        convergence_threshold: Some(0.01),
-        max_duration_secs: Some(300.0),
-    };
-    assert_eq!(round_trip(&criteria), criteria);
+fn serde_stopping_criteria_flat() {
+    // StoppingCriteria struct was removed in v3.0.0. Test the flat fields on GaConfiguration.
+    use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
+    use genetic_algorithms::ga::Ga;
+    use genetic_algorithms::initializers::binary_initializer::binary_random_initialization;
+    use genetic_algorithms::traits::{ConfigurationT, StoppingConfig};
+
+    let ga: Ga<BinaryChromosome> = Ga::new()
+        .with_population_size(10)
+        .with_chromosome_length(ChromosomeLength::Fixed(4))
+        .with_stagnation_limit(100)
+        .with_convergence_threshold(0.01)
+        .with_max_duration_secs(300.0)
+        .with_initialization_fn(|n, _| binary_random_initialization(n, None))
+        .with_fitness_fn(|_: &[_]| 0.0);
+
+    let config = ga.configuration.clone();
+    let rt = round_trip(&config);
+    assert_eq!(rt.stagnation_generations(), Some(100));
+    assert!((rt.convergence_threshold().unwrap() - 0.01).abs() < f64::EPSILON);
+    assert!((rt.max_duration_secs().unwrap() - 300.0).abs() < f64::EPSILON);
 }
 
 // ---- Error type ----
@@ -442,7 +442,7 @@ use genetic_algorithms::checkpoint::{load_checkpoint, save_checkpoint, Checkpoin
 use genetic_algorithms::ga::Ga;
 use genetic_algorithms::initializers::binary_initializer::binary_random_initialization;
 use genetic_algorithms::traits::{
-    ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+    ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig, SelectionConfig, StoppingConfig,
 };
 use std::path::Path;
 
@@ -505,7 +505,7 @@ fn ga_run_with_save_progress_creates_checkpoint_files() {
 
     let mut ga: Ga<BinaryChromosome> = Ga::new()
         .with_population_size(10)
-        .with_genes_per_chromosome(4)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(4))
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Cycle)
         .with_mutation_method(Mutation::Swap)
@@ -515,8 +515,8 @@ fn ga_run_with_save_progress_creates_checkpoint_files() {
         .with_save_progress(true)
         .with_save_progress_interval(5)
         .with_save_progress_path(ckpt_dir.to_str().unwrap().to_string())
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            binary_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |genes_per_chromosome, _| {
+            binary_random_initialization(genes_per_chromosome, Some(&alleles_clone))
         })
         .with_fitness_fn(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64)
         .build()

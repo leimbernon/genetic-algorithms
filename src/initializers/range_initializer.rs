@@ -14,7 +14,6 @@ use std::fmt::Debug;
 ///
 /// * `genes_per_chromosome` - The number of genes per chromosome.
 /// * `alleles` - An optional slice of `RangeGenotype` to use as a source of alleles.
-/// * `_needs_unique_ids` - An optional boolean indicating if unique IDs are needed (not used in this function).
 ///
 /// # Returns
 ///
@@ -31,13 +30,12 @@ use std::fmt::Debug;
 /// use genetic_algorithms::initializers::range_random_initialization;
 ///
 /// let alleles = vec![Range::new(0, vec![(0.0, 1.0)], 0.0)];
-/// let genes = range_random_initialization(10, Some(&alleles), Some(false));
+/// let genes = range_random_initialization(10, Some(&alleles));
 /// assert_eq!(genes.len(), 10);
 /// ```
 pub fn range_random_initialization<T>(
     genes_per_chromosome: usize,
     alleles: Option<&[RangeGenotype<T>]>,
-    _needs_unique_ids: Option<bool>,
 ) -> Vec<RangeGenotype<T>>
 where
     T: Sync + Send + Clone + Default + Debug + 'static + PartialOrd + SampleUniform + Copy,

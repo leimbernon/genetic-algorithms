@@ -10,12 +10,12 @@ use log::{debug, trace};
 use rand::Rng;
 
 /// Truncation selection: only the top portion of the population is eligible
-/// for reproduction, and parents are randomly paired from that elite subset.
+/// for reproduction, and parents are randomly grouped from that elite subset.
 ///
 /// Algorithm:
 /// 1. Sort individuals by fitness in descending order (best first).
 /// 2. Truncate to the top 50% of the population (at least 2 individuals).
-/// 3. Randomly pair individuals from the truncated pool to form parent pairs.
+/// 3. Randomly group individuals from the truncated pool into N-ary parent groups.
 ///
 /// This is a high-pressure selection strategy — weak individuals are
 /// completely excluded from reproduction, which can accelerate convergence
@@ -24,17 +24,20 @@ use rand::Rng;
 /// # Arguments
 ///
 /// * `chromosomes` - Population to select from.
-/// * `couples` - Number of parent pairs to produce.
+/// * `couples` - Number of parent groups to produce.
+/// * `num_parents` - Number of parents per group (must be >= 2).
 ///
 /// # Returns
 ///
-/// A vector of `(usize, usize)` parent index pairs drawn exclusively from
+/// A vector of `Vec<usize>` parent index groups drawn exclusively from
 /// the top half of the population. Returns an empty vector if fewer than 2
 /// chromosomes are provided.
 pub fn truncation_selection<U: ChromosomeT>(
     chromosomes: &[U],
     couples: usize,
-) -> Vec<(usize, usize)> {
+    num_parents: usize,
+) -> Vec<Vec<usize>> {
+    let num_parents = num_parents.max(2);
     debug!(target="selection_events", method="truncation"; "Starting truncation selection");
 
     let n = chromosomes.len();
@@ -69,23 +72,25 @@ pub fn truncation_selection<U: ChromosomeT>(
         );
     }
 
-    // Randomly pair individuals from the elite pool
+    // Randomly group individuals from the elite pool into N-ary parent groups
     let mut rng = crate::rng::make_rng();
     let mut mating = Vec::with_capacity(couples);
 
     for _ in 0..couples {
-        let a = elite[rng.random_range(0..truncation_size)].0;
-        let b = elite[rng.random_range(0..truncation_size)].0;
-        mating.push((a, b));
+        let mut group = Vec::with_capacity(num_parents);
+        for _ in 0..num_parents {
+            group.push(elite[rng.random_range(0..truncation_size)].0);
+        }
         trace!(
             target="selection_events", method="truncation";
-            "Mating pair: {} - {}", a, b
+            "Mating group: {:?}", group
         );
+        mating.push(group);
     }
 
     debug!(
         target="selection_events", method="truncation";
-        "Truncation selection finished with {} pairs", mating.len()
+        "Truncation selection finished with {} groups", mating.len()
     );
     mating
 }

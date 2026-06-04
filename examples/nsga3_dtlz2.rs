@@ -28,23 +28,71 @@ Reference points are generated automatically via the Das-Dennis simplex lattice
 - LogObserver attached as Nsga3Observer
 */
 
-use genetic_algorithms::chromosomes::Range as RangeChromosome;
+use std::borrow::Cow;
+use std::f64::consts::FRAC_PI_2;
+use std::sync::Arc;
+
 use genetic_algorithms::configuration::GaConfiguration;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::initializers::range_random_initialization;
 use genetic_algorithms::nsga3::configuration::{Nsga3Configuration, ObjectiveDirection};
 use genetic_algorithms::nsga3::Nsga3Ga;
+use genetic_algorithms::traits::{ChromosomeT, LinearChromosome, VectorFitness};
 use genetic_algorithms::{LogObserver, Nsga3Observer};
-use std::f64::consts::FRAC_PI_2;
-use std::sync::Arc;
 
 const N_VARS: usize = 12;
 const POP_SIZE: usize = 100;
 const MAX_GENERATIONS: usize = 200;
-const DAS_DENNIS_P: usize = 12; // C(14, 2) = 91 reference points
+const DAS_DENNIS_P: usize = 12;
+
+// DTLZ2 chromosome: 3 objectives on the unit sphere surface
+#[derive(Debug, Clone, Default)]
+struct Dtlz2Chromosome {
+    dna: Vec<RangeGenotype<f64>>,
+    fitness: f64,
+    fitness_values: Vec<f64>,
+}
+
+impl ChromosomeT for Dtlz2Chromosome {
+    type Gene = RangeGenotype<f64>;
+    fn fitness(&self) -> f64 { self.fitness }
+    fn set_fitness(&mut self, v: f64) -> &mut Self { self.fitness = v; self }
+    fn set_age(&mut self, _: usize) -> &mut Self { self }
+    fn age(&self) -> usize { 0 }
+    fn calculate_fitness(&mut self) {
+        if self.dna.len() < 3 {
+            self.fitness_values = vec![0.0, 0.0, 0.0];
+            self.fitness = 0.0;
+            return;
+        }
+        let g: f64 = self.dna[2..].iter().map(|gene| (gene.value - 0.5).powi(2)).sum();
+        let f1 = (self.dna[0].value * FRAC_PI_2).cos() * (self.dna[1].value * FRAC_PI_2).cos() * (1.0 + g);
+        let f2 = (self.dna[0].value * FRAC_PI_2).cos() * (self.dna[1].value * FRAC_PI_2).sin() * (1.0 + g);
+        let f3 = (self.dna[0].value * FRAC_PI_2).sin() * (1.0 + g);
+        self.fitness_values = vec![f1, f2, f3];
+        self.fitness = f1 + f2 + f3;
+    }
+}
+
+impl LinearChromosome for Dtlz2Chromosome {
+    fn dna(&self) -> &[Self::Gene] { &self.dna }
+    fn dna_mut(&mut self) -> &mut [Self::Gene] { &mut self.dna }
+    fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
+        self.dna = dna.into_owned(); self
+    }
+    fn set_fitness_fn<F>(&mut self, _: F) -> &mut Self
+    where F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static { self }
+}
+
+impl VectorFitness for Dtlz2Chromosome {
+    fn fitness_values(&self) -> &[f64] { &self.fitness_values }
+    fn set_fitness_values(&mut self, values: Vec<f64>) { self.fitness_values = values; }
+}
+
+impl genetic_algorithms::operations::mutation::ValueMutable for Dtlz2Chromosome {}
+impl genetic_algorithms::traits::OperatorCompat for Dtlz2Chromosome {}
 
 fn main() {
-    // --- NSGA-III configuration ---
     let nsga3_config = Nsga3Configuration::new()
         .with_num_objectives(3)
         .with_population_size(POP_SIZE)
@@ -56,42 +104,21 @@ fn main() {
         ])
         .with_reference_points_auto(DAS_DENNIS_P);
 
-    // --- Base GA configuration ---
-    let mut ga_config = GaConfiguration::default();
-    ga_config.limit_configuration.genes_per_chromosome = N_VARS;
-    ga_config.limit_configuration.alleles_can_be_repeated = true;
+    use genetic_algorithms::ChromosomeLength;
+    use genetic_algorithms::traits::ConfigurationT;
+    let ga_config = GaConfiguration::default()
+        .with_chromosome_length(ChromosomeLength::Fixed(N_VARS));
 
-    // --- Allele definition: each of the 12 variables lives in [0.0, 1.0] ---
     let alleles = vec![RangeGenotype::new(0, vec![(0.0_f64, 1.0_f64)], 0.0_f64)];
     let alleles_clone = alleles.clone();
 
-    // --- Objective functions (DTLZ2, M=3) ---
-    let g_fn = |dna: &[RangeGenotype<f64>]| -> f64 {
-        dna[2..].iter().map(|gene| (gene.value - 0.5).powi(2)).sum()
-    };
-
-    let f1 = move |dna: &[RangeGenotype<f64>]| -> f64 {
-        let g = g_fn(dna);
-        (dna[0].value * FRAC_PI_2).cos() * (dna[1].value * FRAC_PI_2).cos() * (1.0 + g)
-    };
-    let f2 = move |dna: &[RangeGenotype<f64>]| -> f64 {
-        let g = g_fn(dna);
-        (dna[0].value * FRAC_PI_2).cos() * (dna[1].value * FRAC_PI_2).sin() * (1.0 + g)
-    };
-    let f3 = move |dna: &[RangeGenotype<f64>]| -> f64 {
-        let g = g_fn(dna);
-        (dna[0].value * FRAC_PI_2).sin() * (1.0 + g)
-    };
-
-    // --- Build the NSGA-III optimizer ---
-    let mut nsga3 = Nsga3Ga::<RangeChromosome<f64>>::new(nsga3_config, ga_config)
+    let mut nsga3 = Nsga3Ga::<Dtlz2Chromosome>::new(nsga3_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |n, _, _| {
-            range_random_initialization(n, Some(&alleles_clone), Some(true))
+        .with_initialization_fn(move |n, _| {
+            range_random_initialization(n, Some(&alleles_clone))
         })
-        .with_objective_fns(vec![Box::new(f1), Box::new(f2), Box::new(f3)])
         .with_observer(
-            Arc::new(LogObserver) as Arc<dyn Nsga3Observer<RangeChromosome<f64>> + Send + Sync>
+            Arc::new(LogObserver) as Arc<dyn Nsga3Observer<Dtlz2Chromosome> + Send + Sync>
         )
         .build()
         .expect("Failed to build NSGA-III");
@@ -103,7 +130,6 @@ fn main() {
         POP_SIZE,
         MAX_GENERATIONS,
         DAS_DENNIS_P,
-        // Compute C(p+M-1, M-1) for M=3 -> C(p+2, 2) = (p+2)(p+1)/2
         (DAS_DENNIS_P + 2) * (DAS_DENNIS_P + 1) / 2
     );
 
@@ -113,7 +139,6 @@ fn main() {
                 "\nPareto front: {} non-dominated solutions",
                 front.individuals.len()
             );
-            // Sort individuals by f_1 ascending for readable output.
             front.individuals.sort_by(|a, b| {
                 a.objectives[0]
                     .partial_cmp(&b.objectives[0])

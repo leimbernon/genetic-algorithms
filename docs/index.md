@@ -3,7 +3,7 @@
 > Comprehensive guides for every algorithm, operator, and feature.
 > Use this index to navigate the per-engine guides, operator documentation, core concepts, and framework extensions.
 
-This directory contains 30+ guide files that document all 11 optimization engines, all 45+ operators (selection, crossover, mutation, survivor, extension), core abstractions (traits, chromosomes, genotypes, configuration, population), and framework extensions (constraints, hall of fame, AOS, benchmarks, memetic algorithms, niching, error handling, initializers, observer system).
+This directory contains 30+ guide files that document all 12 optimization engines, all 50+ operators (selection, crossover, mutation, survivor, extension), core abstractions (traits, chromosomes, genotypes, configuration, population), and framework extensions (constraints, hall of fame, AOS, benchmarks, memetic algorithms, niching, error handling, initializers, observer system).
 
 All guides are written following the Single Source of Truth (SSOT) principle, where `src/lib.rs` provides the crate-level overview, this `docs/` directory provides per-topic deep dives, and the README provides the complete feature catalog.
 
@@ -12,7 +12,7 @@ All guides are written following the Single Source of Truth (SSOT) principle, wh
 ### Getting Started
 - [Getting Started](getting-started.md) — Installation, quickstart, and basic concepts for new users
 
-### Engines (11 total)
+### Engines (12 total)
 
 Each engine has a dedicated guide covering algorithm description, when-to-use guidance, parameter tables, and complete examples:
 
@@ -23,6 +23,7 @@ Each engine has a dedicated guide covering algorithm description, when-to-use gu
 - [Cellular GA](engines.md#cellularengineu--cellular-genetic-algorithm) — Neighborhood-based evolution on a 2D toroidal grid
 - [ALPS](engines.md#alpsengineu--age-layered-population-structure) — Age-layered diversity with 3 age schemes (Linear, Fibonacci, Polynomial)
 - [Island Model](engines.md#islandgau--island-model) — Parallel sub-populations with configurable migration topologies
+- [Genetic Programming](gp.md) — Tree chromosome evolution with `GpGa<N>`, subtree/point/hoist mutation, bloat control, and built-in primitive sets
 - [NSGA-II](engines.md#nsga2gau--nsga-ii) — Pareto-ranking multi-objective optimization (2 objectives)
 - [NSGA-III](nsga3.md) — Reference-point based many-objective optimization (3+ objectives)
 - [MOEA/D](moead.md) — Decomposition-based multi-objective optimization
@@ -33,19 +34,19 @@ Each engine has a dedicated guide covering algorithm description, when-to-use gu
 
 ### Operators
 
-Five operator categories provide 45+ strategies, dispatched via enum + factory functions:
+Five operator categories provide 50+ strategies, dispatched via enum + factory functions:
 
 - [Selection](operators/selection.md) — Tournament, RouletteWheel, SUS, Rank, Boltzmann, Truncation, Random, Clearing
-- [Crossover](operators/crossover.md) — Uniform, SinglePoint, MultiPoint, Order (OX), PMX, SBX, BlendAlpha, Arithmetic, Cycle, Edge Recombination, Clone, Rejuvenate
-- [Mutation](operators/mutation.md) — Swap, Inversion, Scramble, Value, BitFlip, Creep, Gaussian, Polynomial, NonUniform, Insertion, Cauchy, LevyFlight, Uniform, ListValue
-- [Survivor](operators/survivor.md) — Fitness, Age, MuPlusLambda, MuCommaLambda, DeterministicCrowding
+- [Crossover](operators/crossover.md) — Uniform, SinglePoint, MultiPoint, Order (OX), PMX, SBX, BlendAlpha, Arithmetic, Cycle, Edge Recombination, Clone, Rejuvenate, VariableLength
+- [Mutation](operators/mutation.md) — Swap, Inversion, Scramble, Value, BitFlip, Creep, Gaussian, Polynomial, NonUniform, PermutationInsert, Insertion (variable-length grow), Deletion (variable-length shrink), Cauchy, LevyFlight, Uniform, ListValue, Differential
+- [Survivor](operators/survivor.md) — Fitness, Age, MuPlusLambda, MuCommaLambda, DeterministicCrowding; parsimony pressure via `with_length_penalty`
 - [Extension](operators/extension.md) — Noop, MassExtinction, MassGenesis, MassDegeneration, MassDeduplication
 
 ### Core Concepts
 
 - [Configuration](configuration.md) — Builder-based configuration for all engines and operators
-- [Traits](traits.md) — GeneT, ChromosomeT, ConfigurationT, and operator trait definitions
-- [Chromosomes & Genotypes](chromosomes.md) — Built-in types: Binary, Range, List, ListChromosome
+- [Traits](traits.md) — GeneT, ChromosomeT, TreeChromosome, ConfigurationT, and operator trait definitions
+- [Chromosomes & Genotypes](chromosomes.md) — Built-in types: Binary, Range, List, ListChromosome, ChromosomeLength, GpChromosome
 - [Fitness](fitness.md) — Fitness function wrapper and distance computation
 - [Population](population.md) — Population container, best tracking, and management
 - [Validators](validators.md) — Configuration validation across all engines

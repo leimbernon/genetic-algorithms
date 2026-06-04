@@ -15,12 +15,14 @@ fn test_rejuvenate_resets_age_to_zero() {
         fitness: 10.0,
         age: 5,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 4 }, Gene { id: 5 }, Gene { id: 6 }],
         fitness: 20.0,
         age: 10,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     let offspring = rejuvenate(&parent_1, &parent_2).unwrap();
@@ -37,12 +39,14 @@ fn test_rejuvenate_preserves_dna() {
         fitness: 10.0,
         age: 5,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 4 }, Gene { id: 5 }, Gene { id: 6 }],
         fitness: 20.0,
         age: 10,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     let offspring = rejuvenate(&parent_1, &parent_2).unwrap();
@@ -62,12 +66,14 @@ fn test_rejuvenate_different_lengths_returns_error() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 3 }],
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     let result = rejuvenate(&parent_1, &parent_2);
@@ -81,12 +87,14 @@ fn test_rejuvenate_returns_two_children() {
         fitness: 0.0,
         age: 3,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 3 }, Gene { id: 4 }],
         fitness: 0.0,
         age: 7,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     let offspring = rejuvenate(&parent_1, &parent_2).unwrap();
@@ -100,12 +108,14 @@ fn test_rejuvenate_parents_with_age_zero_remain_zero() {
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 2 }],
         fitness: 0.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     let offspring = rejuvenate(&parent_1, &parent_2).unwrap();
@@ -120,12 +130,14 @@ fn test_rejuvenate_via_enum_dispatch() {
         fitness: 0.0,
         age: 8,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 3 }, Gene { id: 4 }],
         fitness: 0.0,
         age: 12,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     let offspring = Crossover::Rejuvenate
@@ -145,12 +157,14 @@ fn test_rejuvenate_via_configuration() {
         fitness: 0.0,
         age: 5,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let parent_2 = Chromosome {
         dna: vec![Gene { id: 3 }, Gene { id: 4 }],
         fitness: 0.0,
         age: 9,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     let config = CrossoverConfiguration {

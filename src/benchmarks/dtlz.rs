@@ -66,16 +66,25 @@ impl BenchmarkFn for DTLZ1 {
     }
 
     fn evaluate(&self, x: &[f64]) -> Vec<f64> {
-        assert_eq!(x.len(), self.n_vars,
+        assert_eq!(
+            x.len(),
+            self.n_vars,
             "DTLZ1::evaluate called with {} variables, expected {}",
-            x.len(), self.n_vars);
+            x.len(),
+            self.n_vars
+        );
         let k = self.n_vars - self.n_obj + 1;
         let x_m = &x[self.n_obj - 1..]; // distance variables
 
         // g(x) = 100 * (k + sum((xi - 0.5)^2 - cos(20*pi*(xi - 0.5))))
-        let g: f64 = 100.0 * (k as f64 + x_m.iter().map(|&xi| {
-            (xi - 0.5).powi(2) - (20.0 * std::f64::consts::PI * (xi - 0.5)).cos()
-        }).sum::<f64>());
+        let g: f64 = 100.0
+            * (k as f64
+                + x_m
+                    .iter()
+                    .map(|&xi| {
+                        (xi - 0.5).powi(2) - (20.0 * std::f64::consts::PI * (xi - 0.5)).cos()
+                    })
+                    .sum::<f64>());
 
         let mut f = vec![0.0; self.n_obj];
 
@@ -138,9 +147,13 @@ impl BenchmarkFn for DTLZ2 {
     }
 
     fn evaluate(&self, x: &[f64]) -> Vec<f64> {
-        assert_eq!(x.len(), self.n_vars,
+        assert_eq!(
+            x.len(),
+            self.n_vars,
             "DTLZ2::evaluate called with {} variables, expected {}",
-            x.len(), self.n_vars);
+            x.len(),
+            self.n_vars
+        );
         self.evaluate_dtlz2_like(x)
     }
 }
@@ -231,16 +244,25 @@ impl BenchmarkFn for DTLZ3 {
     }
 
     fn evaluate(&self, x: &[f64]) -> Vec<f64> {
-        assert_eq!(x.len(), self.n_vars,
+        assert_eq!(
+            x.len(),
+            self.n_vars,
             "DTLZ3::evaluate called with {} variables, expected {}",
-            x.len(), self.n_vars);
+            x.len(),
+            self.n_vars
+        );
         let k = self.n_vars - self.n_obj + 1;
         let x_m = &x[self.n_obj - 1..];
 
         // DTLZ1's g function
-        let g: f64 = 100.0 * (k as f64 + x_m.iter().map(|&xi| {
-            (xi - 0.5).powi(2) - (20.0 * std::f64::consts::PI * (xi - 0.5)).cos()
-        }).sum::<f64>());
+        let g: f64 = 100.0
+            * (k as f64
+                + x_m
+                    .iter()
+                    .map(|&xi| {
+                        (xi - 0.5).powi(2) - (20.0 * std::f64::consts::PI * (xi - 0.5)).cos()
+                    })
+                    .sum::<f64>());
 
         let x_pos: Vec<f64> = x[0..self.n_obj - 1]
             .iter()
@@ -300,9 +322,13 @@ impl BenchmarkFn for DTLZ4 {
     }
 
     fn evaluate(&self, x: &[f64]) -> Vec<f64> {
-        assert_eq!(x.len(), self.n_vars,
+        assert_eq!(
+            x.len(),
+            self.n_vars,
             "DTLZ4::evaluate called with {} variables, expected {}",
-            x.len(), self.n_vars);
+            x.len(),
+            self.n_vars
+        );
         let _k = self.n_vars - self.n_obj + 1;
         let x_m = &x[self.n_obj - 1..];
 
@@ -357,9 +383,13 @@ impl BenchmarkFn for DTLZ5 {
     }
 
     fn evaluate(&self, x: &[f64]) -> Vec<f64> {
-        assert_eq!(x.len(), self.n_vars,
+        assert_eq!(
+            x.len(),
+            self.n_vars,
             "DTLZ5::evaluate called with {} variables, expected {}",
-            x.len(), self.n_vars);
+            x.len(),
+            self.n_vars
+        );
         let _k = self.n_vars - self.n_obj + 1;
         let x_m = &x[self.n_obj - 1..];
 
@@ -422,9 +452,13 @@ impl BenchmarkFn for DTLZ6 {
     }
 
     fn evaluate(&self, x: &[f64]) -> Vec<f64> {
-        assert_eq!(x.len(), self.n_vars,
+        assert_eq!(
+            x.len(),
+            self.n_vars,
             "DTLZ6::evaluate called with {} variables, expected {}",
-            x.len(), self.n_vars);
+            x.len(),
+            self.n_vars
+        );
         let _k = self.n_vars - self.n_obj + 1;
         let x_m = &x[self.n_obj - 1..];
 
@@ -489,9 +523,13 @@ impl BenchmarkFn for DTLZ7 {
     }
 
     fn evaluate(&self, x: &[f64]) -> Vec<f64> {
-        assert_eq!(x.len(), self.n_vars,
+        assert_eq!(
+            x.len(),
+            self.n_vars,
             "DTLZ7::evaluate called with {} variables, expected {}",
-            x.len(), self.n_vars);
+            x.len(),
+            self.n_vars
+        );
         let k = self.n_vars - self.n_obj + 1;
         let x_m = &x[self.n_obj - 1..];
 
@@ -547,9 +585,21 @@ mod tests {
         // f3 = 0.5 * (1-0.5) = 0.25
         let dtlz1 = DTLZ1::new(7, 3);
         let result = dtlz1.evaluate(&[0.5; 7]);
-        assert!((result[0] - 0.125).abs() < EPSILON, "DTLZ1 f1 expected 0.125, got {}", result[0]);
-        assert!((result[1] - 0.125).abs() < EPSILON, "DTLZ1 f2 expected 0.125, got {}", result[1]);
-        assert!((result[2] - 0.25).abs() < EPSILON, "DTLZ1 f3 expected 0.25, got {}", result[2]);
+        assert!(
+            (result[0] - 0.125).abs() < EPSILON,
+            "DTLZ1 f1 expected 0.125, got {}",
+            result[0]
+        );
+        assert!(
+            (result[1] - 0.125).abs() < EPSILON,
+            "DTLZ1 f2 expected 0.125, got {}",
+            result[1]
+        );
+        assert!(
+            (result[2] - 0.25).abs() < EPSILON,
+            "DTLZ1 f3 expected 0.25, got {}",
+            result[2]
+        );
     }
 
     // ── DTLZ2 ────────────────────────────────────────────────────
@@ -564,8 +614,11 @@ mod tests {
         let dtlz2 = DTLZ2::new(12, 3);
         let result = dtlz2.evaluate(&[0.5; 12]);
         let sum_sq: f64 = result.iter().map(|&fi| fi * fi).sum();
-        assert!((sum_sq - 1.0).abs() < 1e-10,
-            "DTLZ2 sum of squares expected 1.0, got {}", sum_sq);
+        assert!(
+            (sum_sq - 1.0).abs() < 1e-10,
+            "DTLZ2 sum of squares expected 1.0, got {}",
+            sum_sq
+        );
     }
 
     // ── DTLZ3 ────────────────────────────────────────────────────
@@ -577,8 +630,11 @@ mod tests {
         let dtlz3 = DTLZ3::new(12, 3);
         let result = dtlz3.evaluate(&[0.5; 12]);
         let sum_sq: f64 = result.iter().map(|&fi| fi * fi).sum();
-        assert!((sum_sq - 1.0).abs() < 1e-10,
-            "DTLZ3 sum of squares expected 1.0, got {}", sum_sq);
+        assert!(
+            (sum_sq - 1.0).abs() < 1e-10,
+            "DTLZ3 sum of squares expected 1.0, got {}",
+            sum_sq
+        );
     }
 
     // ── DTLZ4 ────────────────────────────────────────────────────
@@ -592,8 +648,11 @@ mod tests {
         // cos(x[0]^100 * pi/2) ≈ cos(0) = 1
         // sin(x[0]^100 * pi/2) ≈ sin(0) = 0
         // So f3 ≈ 0, meaning the solution is on the f1-f2 plane
-        assert!(result[2].abs() < 1e-10,
-            "DTLZ4 f3 should be near 0 with alpha=100, got {}", result[2]);
+        assert!(
+            result[2].abs() < 1e-10,
+            "DTLZ4 f3 should be near 0 with alpha=100, got {}",
+            result[2]
+        );
     }
 
     #[test]
@@ -604,8 +663,13 @@ mod tests {
         let result4 = dtlz4.evaluate(&[0.3; 12]);
         let result2 = dtlz2.evaluate(&[0.3; 12]);
         for i in 0..3 {
-            assert!((result4[i] - result2[i]).abs() < EPSILON,
-                "DTLZ4(alpha=1) and DTLZ2 differ at f{}: {} vs {}", i, result4[i], result2[i]);
+            assert!(
+                (result4[i] - result2[i]).abs() < EPSILON,
+                "DTLZ4(alpha=1) and DTLZ2 differ at f{}: {} vs {}",
+                i,
+                result4[i],
+                result2[i]
+            );
         }
     }
 
@@ -623,7 +687,10 @@ mod tests {
         assert_eq!(result.len(), 3);
         // Just verify the expected output length and structure
         assert!(result[0] > 0.0, "DTLZ5 f1 should be positive");
-        assert!(result[2] > result[1], "DTLZ5 f3 should be > f2 with uniform input");
+        assert!(
+            result[2] > result[1],
+            "DTLZ5 f3 should be > f2 with uniform input"
+        );
     }
 
     // ── DTLZ6 ────────────────────────────────────────────────────
@@ -636,7 +703,10 @@ mod tests {
         let result = dtlz6.evaluate(&[0.5; 12]);
         assert_eq!(result.len(), 3);
         // With non-zero g, theta values change
-        assert!(result.iter().all(|&v| v >= 0.0), "DTLZ6 all values should be non-negative");
+        assert!(
+            result.iter().all(|&v| v >= 0.0),
+            "DTLZ6 all values should be non-negative"
+        );
     }
 
     // ── DTLZ7 ────────────────────────────────────────────────────
@@ -652,12 +722,21 @@ mod tests {
     fn test_dtlz7_first_two_linear() {
         // f[0] = x[0], f[1] = x[1]
         let dtlz7 = DTLZ7::new(22, 3);
-        let x = [0.2_f64, 0.7, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
-                 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
-                 0.5, 0.5];
+        let x = [
+            0.2_f64, 0.7, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+            0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+        ];
         let result = dtlz7.evaluate(&x);
-        assert!((result[0] - 0.2).abs() < EPSILON, "DTLZ7 f1 expected 0.2, got {}", result[0]);
-        assert!((result[1] - 0.7).abs() < EPSILON, "DTLZ7 f2 expected 0.7, got {}", result[1]);
+        assert!(
+            (result[0] - 0.2).abs() < EPSILON,
+            "DTLZ7 f1 expected 0.2, got {}",
+            result[0]
+        );
+        assert!(
+            (result[1] - 0.7).abs() < EPSILON,
+            "DTLZ7 f2 expected 0.7, got {}",
+            result[1]
+        );
     }
 
     // ── Dimension validation ─────────────────────────────────────
@@ -677,7 +756,9 @@ mod tests {
 
     #[test]
     fn test_all_dtlz_bound_01() {
-        for name in &["DTLZ1", "DTLZ2", "DTLZ3", "DTLZ4", "DTLZ5", "DTLZ6", "DTLZ7"] {
+        for name in &[
+            "DTLZ1", "DTLZ2", "DTLZ3", "DTLZ4", "DTLZ5", "DTLZ6", "DTLZ7",
+        ] {
             let d: Box<dyn BenchmarkFn> = match *name {
                 "DTLZ1" => Box::new(DTLZ1::new(10, 3)),
                 "DTLZ2" => Box::new(DTLZ2::new(10, 3)),
@@ -689,10 +770,20 @@ mod tests {
                 _ => unreachable!(),
             };
             for (j, &(low, high)) in d.bounds().iter().enumerate() {
-                assert!((low - 0.0).abs() < EPSILON,
-                    "{} bound[{}].0 expected 0, got {}", name, j, low);
-                assert!((high - 1.0).abs() < EPSILON,
-                    "{} bound[{}].1 expected 1, got {}", name, j, high);
+                assert!(
+                    (low - 0.0).abs() < EPSILON,
+                    "{} bound[{}].0 expected 0, got {}",
+                    name,
+                    j,
+                    low
+                );
+                assert!(
+                    (high - 1.0).abs() < EPSILON,
+                    "{} bound[{}].1 expected 1, got {}",
+                    name,
+                    j,
+                    high
+                );
             }
         }
     }

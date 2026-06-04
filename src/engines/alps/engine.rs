@@ -23,15 +23,16 @@ use std::sync::Arc;
 
 use crate::configuration::{CrossoverConfiguration, ProblemSolving};
 use crate::operations::mutation::ValueMutable;
-use crate::operations::{crossover, mutation};
+use crate::operations::crossover;
+use crate::traits::MutationOperator;
 use crate::rng::make_rng;
-use crate::traits::{ChromosomeT, FitnessFn};
+use crate::traits::{LinearChromosome, FitnessFn};
 use rand::Rng;
 
 use super::configuration::AlpsConfiguration;
 
 /// Result returned by [`AlpsEngine::run`].
-pub struct AlpsResult<U: ChromosomeT> {
+pub struct AlpsResult<U: LinearChromosome> {
     /// Final layer populations (index 0 = youngest).
     pub layers: Vec<Vec<U>>,
     /// The best individual found across all layers during the run.
@@ -73,13 +74,13 @@ pub struct AlpsResult<U: ChromosomeT> {
 /// );
 /// let result = engine.run();
 /// ```
-pub struct AlpsEngine<U: ChromosomeT> {
+pub struct AlpsEngine<U: LinearChromosome> {
     config: AlpsConfiguration,
     init_fn: Arc<dyn Fn(usize) -> Vec<U> + Send + Sync>,
     fitness_fn: Arc<FitnessFn<U::Gene>>,
 }
 
-impl<U: ChromosomeT> AlpsEngine<U> {
+impl<U: LinearChromosome> AlpsEngine<U> {
     /// Construct a new engine.
     ///
     /// * `config` — layer count, age scheme, operators, and stopping criteria.
@@ -101,10 +102,16 @@ impl<U: ChromosomeT> AlpsEngine<U> {
 
 impl<U> AlpsEngine<U>
 where
-    U: ChromosomeT + Clone + ValueMutable + 'static,
+    U: LinearChromosome + Clone + ValueMutable + 'static,
 {
     /// Run the ALPS algorithm and return the result.
     pub fn run(&mut self) -> AlpsResult<U> {
+        if self.config.layer_size == 0 {
+            panic!("AlpsEngine: layer_size must be > 0");
+        }
+        if self.config.n_layers == 0 {
+            panic!("AlpsEngine: n_layers must be > 0");
+        }
         let max_ages = self.config.max_ages();
         let crossover_cfg = CrossoverConfiguration {
             method: self.config.crossover,
@@ -119,7 +126,10 @@ where
         let mut best_fitness = layers[0]
             .iter()
             .map(|u| u.fitness())
-            .fold(f64::NAN, |acc, f| if self.is_better(f, acc) { f } else { acc });
+            .fold(
+                f64::NAN,
+                |acc, f| if self.is_better(f, acc) { f } else { acc },
+            );
         let mut best = layers[0]
             .iter()
             .max_by(|a, b| {
@@ -146,7 +156,8 @@ where
                 // Optionally bring in the best individual from the adjacent
                 // older layer as an extra parent (cross-layer mating).
                 let elder_best: Option<U> = if layer_idx + 1 < self.config.n_layers {
-                    self.find_best(&layers[layer_idx + 1]).map(|i| layers[layer_idx + 1][i].clone())
+                    self.find_best(&layers[layer_idx + 1])
+                        .map(|i| layers[layer_idx + 1][i].clone())
                 } else {
                     None
                 };
@@ -177,21 +188,15 @@ where
                         layers[layer_idx][b].clone()
                     };
 
-                    let mut offspring = match crossover::factory(
-                        &layers[layer_idx][a],
-                        &parent_2,
-                        crossover_cfg,
-                    ) {
-                        Ok(children) if !children.is_empty() => children.into_iter().next().unwrap(),
-                        _ => layers[layer_idx][a].clone(),
-                    };
+                    let mut offspring =
+                        match crossover::factory(&layers[layer_idx][a], &parent_2, crossover_cfg) {
+                            Ok(children) if !children.is_empty() => {
+                                children.into_iter().next().unwrap()
+                            }
+                            _ => layers[layer_idx][a].clone(),
+                        };
 
-                    let _ = mutation::factory_with_params(
-                        self.config.mutation,
-                        &mut offspring,
-                        self.config.mutation_step,
-                        self.config.mutation_sigma,
-                    );
+                    let _ = self.config.mutation.mutate(&mut offspring, &self.config.mutation);
 
                     let f = (self.fitness_fn)(offspring.dna());
                     offspring.set_fitness(f);
@@ -272,7 +277,12 @@ where
             }
         }
 
-        AlpsResult { layers, best, best_fitness, generations }
+        AlpsResult {
+            layers,
+            best,
+            best_fitness,
+            generations,
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -313,12 +323,16 @@ where
         match self.config.problem_solving {
             ProblemSolving::Minimization => {
                 pop.sort_unstable_by(|a, b| {
-                    a.fitness().partial_cmp(&b.fitness()).unwrap_or(std::cmp::Ordering::Equal)
+                    a.fitness()
+                        .partial_cmp(&b.fitness())
+                        .unwrap_or(std::cmp::Ordering::Equal)
                 });
             }
             _ => {
                 pop.sort_unstable_by(|a, b| {
-                    b.fitness().partial_cmp(&a.fitness()).unwrap_or(std::cmp::Ordering::Equal)
+                    b.fitness()
+                        .partial_cmp(&a.fitness())
+                        .unwrap_or(std::cmp::Ordering::Equal)
                 });
             }
         }

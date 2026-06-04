@@ -17,7 +17,7 @@ use genetic_algorithms::operations::mutation::inversion::inversion;
 use genetic_algorithms::operations::mutation::scramble::scramble;
 use genetic_algorithms::operations::mutation::swap::swap;
 use genetic_algorithms::operations::mutation::value::value_mutation;
-use genetic_algorithms::traits::{ChromosomeT, GeneT};
+use genetic_algorithms::traits::{ChromosomeT, GeneT, LinearChromosome};
 
 // ---------------------------------------------------------------------------
 // Generic chromosome for swap/inversion/scramble (gene-id based)
@@ -47,12 +47,6 @@ struct SimpleChromosome {
 impl ChromosomeT for SimpleChromosome {
     type Gene = Gene;
 
-    fn dna(&self) -> &[Self::Gene] {
-        &self.dna
-    }
-    fn dna_mut(&mut self) -> &mut [Self::Gene] {
-        &mut self.dna
-    }
     fn fitness(&self) -> f64 {
         self.fitness
     }
@@ -67,6 +61,17 @@ impl ChromosomeT for SimpleChromosome {
     fn age(&self) -> usize {
         self.age
     }
+    fn calculate_fitness(&mut self) {
+        self.fitness = 0.0;
+    }
+}
+impl LinearChromosome for SimpleChromosome {
+    fn dna(&self) -> &[Self::Gene] {
+        &self.dna
+    }
+    fn dna_mut(&mut self) -> &mut [Self::Gene] {
+        &mut self.dna
+    }
     fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
         self.dna = match dna {
             Cow::Borrowed(slice) => slice.to_vec(),
@@ -80,9 +85,6 @@ impl ChromosomeT for SimpleChromosome {
     {
         self.fitness_fn = FitnessFnWrapper::new(fitness_fn);
         self
-    }
-    fn calculate_fitness(&mut self) {
-        self.fitness = 0.0;
     }
 }
 
@@ -99,12 +101,6 @@ struct BinaryChromosome {
 }
 impl ChromosomeT for BinaryChromosome {
     type Gene = BinaryGene;
-    fn dna(&self) -> &[Self::Gene] {
-        &self.dna
-    }
-    fn dna_mut(&mut self) -> &mut [Self::Gene] {
-        &mut self.dna
-    }
     fn fitness(&self) -> f64 {
         self.fitness
     }
@@ -119,6 +115,17 @@ impl ChromosomeT for BinaryChromosome {
     fn age(&self) -> usize {
         self.age
     }
+    fn calculate_fitness(&mut self) {
+        self.fitness = 0.0;
+    }
+}
+impl LinearChromosome for BinaryChromosome {
+    fn dna(&self) -> &[Self::Gene] {
+        &self.dna
+    }
+    fn dna_mut(&mut self) -> &mut [Self::Gene] {
+        &mut self.dna
+    }
     fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
         self.dna = match dna {
             Cow::Borrowed(slice) => slice.to_vec(),
@@ -132,9 +139,6 @@ impl ChromosomeT for BinaryChromosome {
     {
         self.fitness_fn = FitnessFnWrapper::new(fitness_fn);
         self
-    }
-    fn calculate_fitness(&mut self) {
-        self.fitness = 0.0;
     }
 }
 

@@ -45,7 +45,6 @@
 //! | `population_size` | `usize` | `100` | Population size (≥ 2). |
 //! | `max_generations` | `usize` | `200` | Maximum number of generations. |
 //! | `init_fn` | `Fn` | — | Chromosome initialization function. |
-//! | `objective_fns` | `Vec<ObjectiveFn>` | — | One per objective. |
 //!
 //! ### Optional Parameters
 //!
@@ -71,10 +70,6 @@
 //! let ga_config = GaConfiguration::default();
 //! let mut nsga2 = Nsga2Ga::<MyChromosome>::new(nsga2_config, ga_config)
 //!     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
-//!     .with_objective_fns(vec![
-//!         Box::new(|dna| { /* ZDT1 f1 */ 0.0 }),
-//!         Box::new(|dna| { /* ZDT1 f2 */ 0.0 }),
-//!     ])
 //!     .build()?;
 //!
 //! let pareto_front = nsga2.run()?;
@@ -115,15 +110,15 @@ pub mod pareto;
 
 use crate::configuration::GaConfiguration;
 use crate::error::GaError;
-use crate::nsga2::configuration::{Nsga2Configuration, ObjectiveDirection};
-use crate::nsga2::crowding_distance::assign_crowding_distance;
 use crate::multi_objective::non_dominated_sort::{
     assign_ranks, non_dominated_sort_constrained, non_dominated_sort_with_directions,
 };
 use crate::multi_objective::pareto::{ParetoFront, ParetoIndividual};
+use crate::nsga2::configuration::{Nsga2Configuration, ObjectiveDirection};
+use crate::nsga2::crowding_distance::assign_crowding_distance;
 use crate::observer::Nsga2Observer;
 use crate::operations::mutation;
-use crate::traits::{ChromosomeT, InitializationFn};
+use crate::traits::{InitializationFn, LinearChromosome, MutationOperator, VectorFitness};
 use rand::Rng;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
@@ -140,7 +135,7 @@ pub use crate::multi_objective::ObjectiveFn;
 /// * `U` - Chromosome type implementing `ChromosomeT`.
 pub struct Nsga2Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome + VectorFitness,
 {
     /// NSGA-II specific configuration.
     pub nsga2_config: Nsga2Configuration,
@@ -150,8 +145,6 @@ where
     pub alleles: Vec<U::Gene>,
     /// Initialization function.
     pub initialization_fn: Option<Arc<InitializationFn<U::Gene>>>,
-    /// Objective functions (one per objective).
-    pub objective_fns: Vec<Arc<ObjectiveFn<U::Gene>>>,
     /// Optional constraint functions. Each returns a violation amount (> 0 means violated).
     /// The total constraint violation is the sum of all individual violations.
     pub constraint_fns: Vec<Arc<ObjectiveFn<U::Gene>>>,
@@ -161,7 +154,7 @@ where
 
 impl<U> Nsga2Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome + VectorFitness,
 {
     /// Creates a new `Nsga2Ga` with the given configurations.
     pub fn new(nsga2_config: Nsga2Configuration, ga_config: GaConfiguration) -> Self {
@@ -170,7 +163,6 @@ where
             ga_config,
             alleles: Vec::new(),
             initialization_fn: None,
-            objective_fns: Vec::new(),
             constraint_fns: Vec::new(),
             observer: None,
         }
@@ -204,17 +196,9 @@ where
     /// Sets the initialization function.
     pub fn with_initialization_fn<F>(mut self, f: F) -> Self
     where
-        F: Fn(usize, Option<&[U::Gene]>, Option<bool>) -> Vec<U::Gene> + Send + Sync + 'static,
+        F: Fn(usize, Option<&[U::Gene]>) -> Vec<U::Gene> + Send + Sync + 'static,
     {
         self.initialization_fn = Some(Arc::new(f));
-        self
-    }
-
-    /// Sets the objective functions.
-    ///
-    /// Each function evaluates one objective given the chromosome's DNA.
-    pub fn with_objective_fns(mut self, fns: Vec<Box<ObjectiveFn<U::Gene>>>) -> Self {
-        self.objective_fns = fns.into_iter().map(Arc::from).collect();
         self
     }
 
@@ -263,13 +247,6 @@ where
                 "initialization_fn is required".to_string(),
             ));
         }
-        if self.objective_fns.len() != self.nsga2_config.num_objectives {
-            return Err(GaError::InvalidNsga2Configuration(format!(
-                "Expected {} objective functions, got {}",
-                self.nsga2_config.num_objectives,
-                self.objective_fns.len()
-            )));
-        }
         if !self.nsga2_config.objective_directions.is_empty()
             && self.nsga2_config.objective_directions.len() != self.nsga2_config.num_objectives
         {
@@ -285,7 +262,7 @@ where
 
 impl<U> Nsga2Ga<U>
 where
-    U: ChromosomeT + mutation::ValueMutable,
+    U: LinearChromosome + VectorFitness + mutation::ValueMutable,
 {
     /// Runs the NSGA-II algorithm and returns the first Pareto front.
     ///
@@ -310,13 +287,28 @@ where
         // Initialize population
         let mut population = self.initialize_population()?;
 
+        // Runtime check: verify chromosome's fitness_values() matches num_objectives.
+        if let Some(first) = population.first() {
+            let got = first.chromosome.fitness_values().len();
+            if got != self.nsga2_config.num_objectives {
+                return Err(GaError::InvalidNsga2Configuration(format!(
+                    "Expected {} objectives from fitness_values(), got {}",
+                    self.nsga2_config.num_objectives, got
+                )));
+            }
+        }
+
         for gen in 0..max_gens {
             // Non-dominated sorting (direction-aware, optionally constrained)
             let t_sort: Option<Instant> = if self.observer.is_some() {
                 #[cfg(not(target_arch = "wasm32"))]
-                { Some(Instant::now()) }
+                {
+                    Some(Instant::now())
+                }
                 #[cfg(target_arch = "wasm32")]
-                { None }
+                {
+                    None
+                }
             } else {
                 None
             };
@@ -337,9 +329,13 @@ where
             // Assign crowding distance per front
             let t_crowd: Option<Instant> = if self.observer.is_some() {
                 #[cfg(not(target_arch = "wasm32"))]
-                { Some(Instant::now()) }
+                {
+                    Some(Instant::now())
+                }
                 #[cfg(target_arch = "wasm32")]
-                { None }
+                {
+                    None
+                }
             } else {
                 None
             };
@@ -440,8 +436,14 @@ where
         })?;
 
         let pop_size = self.nsga2_config.population_size;
-        let genes_per_chrom = self.ga_config.limit_configuration.genes_per_chromosome;
-        let alleles_can_repeat = self.ga_config.limit_configuration.alleles_can_be_repeated;
+        let genes_per_chrom = match self.ga_config.limit_configuration.chromosome_length {
+            crate::chromosomes::ChromosomeLength::Fixed(n) => n,
+            crate::chromosomes::ChromosomeLength::Variable { .. } => {
+                return Err(GaError::InvalidNsga2Configuration(
+                    "ChromosomeLength::Variable is not yet supported (Phase 52). Use ChromosomeLength::Fixed.".into(),
+                ));
+            }
+        };
 
         let alleles = if self.alleles.is_empty() {
             None
@@ -454,20 +456,19 @@ where
             pop_size,
             genes_per_chrom,
             alleles,
-            Some(alleles_can_repeat),
             init_fn,
             None,
             0,
         );
 
         // Wrap each chromosome in a ParetoIndividual with evaluated objectives
-        let objective_fns = &self.objective_fns;
         let constraint_fns = &self.constraint_fns;
         #[cfg(not(target_arch = "wasm32"))]
         let population = chromosomes
             .into_par_iter()
-            .map(|chrom| {
-                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
+            .map(|mut chrom| {
+                chrom.calculate_fitness();
+                let objectives = chrom.fitness_values().to_vec();
                 let constraint_violation = evaluate_constraints(chrom.dna(), constraint_fns);
                 let mut ind = ParetoIndividual::new(chrom, objectives);
                 ind.constraint_violation = constraint_violation;
@@ -477,8 +478,9 @@ where
         #[cfg(target_arch = "wasm32")]
         let population = chromosomes
             .into_iter()
-            .map(|chrom| {
-                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
+            .map(|mut chrom| {
+                chrom.calculate_fitness();
+                let objectives = chrom.fitness_values().to_vec();
                 let constraint_violation = evaluate_constraints(chrom.dna(), constraint_fns);
                 let mut ind = ParetoIndividual::new(chrom, objectives);
                 ind.constraint_violation = constraint_violation;
@@ -494,11 +496,11 @@ where
         &self,
         population: &[ParetoIndividual<U>],
     ) -> Result<Vec<ParetoIndividual<U>>, GaError> {
-        use crate::operations::{crossover, mutation};
+        use crate::operations::crossover;
 
         let pop_size = self.nsga2_config.population_size;
         let crossover_config = self.ga_config.crossover_configuration;
-        let mutation_config = self.ga_config.mutation_configuration;
+        let mutation_config = self.ga_config.mutation_configuration.clone();
         let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
         let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
 
@@ -528,42 +530,14 @@ where
             for child in children.iter_mut() {
                 let mp: f64 = rng.random();
                 if mp <= mut_prob {
-                    if mutation_config.method == crate::operations::Mutation::Differential {
+                    if matches!(mutation_config.method, crate::operations::Mutation::Differential { .. }) {
                         return Err(GaError::MutationError(
                             "Differential mutation is not supported in NSGA-II; \
                              use Cauchy, LevyFlight, Polynomial, or a standard mutation method instead."
                                 .to_string(),
                         ));
-                    } else if mutation_config.method == crate::operations::Mutation::Cauchy {
-                        mutation::factory_with_params(
-                            mutation_config.method,
-                            child,
-                            mutation_config.cauchy_scale,
-                            None,
-                        )?;
-                    } else if mutation_config.method == crate::operations::Mutation::LevyFlight {
-                        mutation::factory_with_params(
-                            mutation_config.method,
-                            child,
-                            None,
-                            mutation_config.levy_alpha,
-                        )?;
-                    } else if mutation_config.method == crate::operations::Mutation::Polynomial {
-                        let eta = mutation_config.polynomial_eta.or(mutation_config.step);
-                        mutation::factory_with_params(
-                            mutation_config.method,
-                            child,
-                            eta,
-                            None,
-                        )?;
-                    } else {
-                        mutation::factory_with_params(
-                            mutation_config.method,
-                            child,
-                            mutation_config.step,
-                            mutation_config.sigma,
-                        )?;
                     }
+                    mutation_config.method.mutate(child, &mutation_config.method)?;
                 }
             }
 
@@ -576,13 +550,13 @@ where
         }
 
         // Evaluate objectives in parallel
-        let objective_fns = &self.objective_fns;
         let constraint_fns = &self.constraint_fns;
         #[cfg(not(target_arch = "wasm32"))]
         let offspring = raw_offspring
             .into_par_iter()
-            .map(|chrom| {
-                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
+            .map(|mut chrom| {
+                chrom.calculate_fitness();
+                let objectives = chrom.fitness_values().to_vec();
                 let constraint_violation = evaluate_constraints(chrom.dna(), constraint_fns);
                 let mut ind = ParetoIndividual::new(chrom, objectives);
                 ind.constraint_violation = constraint_violation;
@@ -592,8 +566,9 @@ where
         #[cfg(target_arch = "wasm32")]
         let offspring = raw_offspring
             .into_iter()
-            .map(|chrom| {
-                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
+            .map(|mut chrom| {
+                chrom.calculate_fitness();
+                let objectives = chrom.fitness_values().to_vec();
                 let constraint_violation = evaluate_constraints(chrom.dna(), constraint_fns);
                 let mut ind = ParetoIndividual::new(chrom, objectives);
                 ind.constraint_violation = constraint_violation;

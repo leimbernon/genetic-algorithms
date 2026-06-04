@@ -5,8 +5,9 @@
 //! stopping, niching, elitism), and [`ConfigurationT`] combines them all into a
 //! single supertrait.
 
-use crate::configuration::{LogLevel, ProblemSolving, StoppingCriteria};
+use crate::chromosomes::ChromosomeLength;
 use crate::configuration::LocalSearchConfiguration;
+use crate::configuration::{LogLevel, ProblemSolving};
 use crate::operations::{Crossover, Extension, Mutation, Selection, Survivor};
 
 /// Configuration for parent selection.
@@ -20,6 +21,8 @@ pub trait SelectionConfig {
     /// Individuals within `niche_radius` of a niche winner are cleared from
     /// the mating pool each generation. Default is `0.1`.
     fn with_niche_radius(self, niche_radius: f64) -> Self;
+    /// Sets the epsilon tolerance for [`Selection::EpsilonLexicase`].
+    fn with_epsilon_lexicase(self, epsilon: f64) -> Self;
 }
 
 /// Configuration for crossover operators.
@@ -36,6 +39,16 @@ pub trait CrossoverConfig {
     fn with_sbx_eta(self, eta: f64) -> Self;
     /// Sets the alpha parameter for BLX-α crossover.
     fn with_blend_alpha(self, alpha: f64) -> Self;
+    /// Overrides the UNDX orthogonal noise scale (σ_xi).
+    /// Default: `0.35 / sqrt(n_parents - 1)`.
+    fn with_undx_sigma_xi(self, value: f64) -> Self;
+    /// Overrides the UNDX primary-direction noise scale (σ_eta).
+    /// Default: `0.35 / sqrt(n_parents)`.
+    fn with_undx_sigma_eta(self, value: f64) -> Self;
+    /// Overrides the PCX directional noise scale (σ_eta). Default: `0.1`.
+    fn with_pcx_sigma_eta(self, value: f64) -> Self;
+    /// Overrides the PCX orthogonal noise scale (σ_zeta). Default: `0.1`.
+    fn with_pcx_sigma_zeta(self, value: f64) -> Self;
 }
 
 /// Configuration for mutation operators.
@@ -44,31 +57,35 @@ pub trait MutationConfig {
     fn with_mutation_probability_max(self, probability_max: f64) -> Self;
     /// Sets the minimum mutation probability (used only by adaptive GA).
     fn with_mutation_probability_min(self, probability_min: f64) -> Self;
-    /// Sets the mutation method (e.g., swap, inversion, Gaussian).
+    /// Sets the mutation method (e.g., `Mutation::Swap`, `Mutation::Gaussian { sigma: Some(0.1) }`).
+    ///
+    /// Operator-specific parameters are now embedded directly in the variant:
+    /// ```rust,ignore
+    /// use genetic_algorithms::operations::Mutation;
+    /// // v3.0.0 — pass params inside the variant:
+    /// ga.with_mutation_method(Mutation::Gaussian { sigma: Some(0.05) });
+    /// ga.with_mutation_method(Mutation::Creep { step: Some(0.1) });
+    /// ```
     fn with_mutation_method(self, method: Mutation) -> Self;
-    /// Sets the step size for Creep mutation.
-    fn with_mutation_step(self, step: f64) -> Self;
-    /// Sets the sigma for Gaussian mutation.
-    fn with_mutation_sigma(self, sigma: f64) -> Self;
     /// Enables or disables dynamic mutation probability adjustment based on population cardinality.
     fn with_dynamic_mutation(self, enabled: bool) -> Self;
     /// Sets the target cardinality ratio for dynamic mutation (0.0..1.0).
     fn with_mutation_target_cardinality(self, target: f64) -> Self;
     /// Sets the probability step size for dynamic mutation adjustment.
     fn with_mutation_probability_step(self, step: f64) -> Self;
-    /// Sets the F scale factor for Differential mutation (DE-style).
-    /// Typical range: 0.4–1.0. Default is 0.5 when not set.
-    fn with_differential_f(self, f: f64) -> Self;
-    /// Sets the distribution index (η_m) for Polynomial mutation.
-    /// Higher values produce smaller perturbations. Typical range: 20–100. Default is 20.0.
-    /// Only used when the mutation method is `Mutation::Polynomial`.
-    fn with_polynomial_eta(self, eta: f64) -> Self;
-    /// Sets the scale parameter (γ) for Cauchy mutation. Default is 1.0.
-    /// Only used when the mutation method is `Mutation::Cauchy`.
-    fn with_cauchy_scale(self, scale: f64) -> Self;
-    /// Sets the stability index (α) for Lévy Flight mutation. Valid range: (0.0, 2.0). Default is 1.5.
-    /// Only used when the mutation method is `Mutation::LevyFlight`.
-    fn with_levy_alpha(self, alpha: f64) -> Self;
+}
+
+/// Configuration for survivor selection.
+pub trait SurvivorConfig {
+    /// Sets the parsimony pressure penalty coefficient for survivor selection.
+    ///
+    /// When non-zero, each chromosome's effective fitness during survivor selection
+    /// is adjusted by `±(length_penalty × dna_length)` according to the
+    /// `ProblemSolving` mode. The stored `fitness()` value is not mutated —
+    /// only the comparison value is adjusted.
+    ///
+    /// Use `None` (or don't call this method) to disable parsimony pressure.
+    fn with_length_penalty(self, penalty: f64) -> Self;
 }
 
 /// Configuration for stopping / termination criteria.
@@ -77,9 +94,16 @@ pub trait StoppingConfig {
     fn with_max_generations(self, max_generations: usize) -> Self;
     /// Sets the target fitness value (used with [`ProblemSolving::FixedFitness`]).
     fn with_fitness_target(self, fitness_target: f64) -> Self;
-    /// Sets compound stopping criteria. These are checked in addition to
-    /// max_generations and fitness_target.
-    fn with_stopping_criteria(self, criteria: StoppingCriteria) -> Self;
+    /// Stop after N consecutive generations without fitness improvement.
+    fn with_stagnation_limit(self, n: usize) -> Self;
+    /// Stop when the fitness standard deviation drops below `threshold`.
+    fn with_convergence_threshold(self, threshold: f64) -> Self;
+    /// Stop after `secs` elapsed wall-clock seconds.
+    ///
+    /// The field and builder are available on all targets. Only the call site in ga.rs is
+    /// `#[cfg(not(target_arch = "wasm32"))]`-gated — on wasm32 the field is silently ignored
+    /// (a warning is emitted at run start instead).
+    fn with_max_duration_secs(self, secs: f64) -> Self;
 }
 
 /// Configuration for fitness sharing / niching.
@@ -137,6 +161,7 @@ pub trait ConfigurationT:
     + ElitismConfig
     + ExtensionConfig
     + LocalSearchConfig
+    + SurvivorConfig
 {
     /// Creates a new instance with default configuration values.
     fn new() -> Self;
@@ -155,12 +180,13 @@ pub trait ConfigurationT:
     fn with_problem_solving(self, problem_solving: ProblemSolving) -> Self;
     /// Sets the population size (number of individuals per generation).
     fn with_population_size(self, population_size: usize) -> Self;
-    /// Sets the number of genes in each chromosome.
-    fn with_genes_per_chromosome(self, genes_per_chromosome: usize) -> Self;
-    /// If `true`, each chromosome is assigned a unique ID during initialization.
-    fn with_needs_unique_ids(self, needs_unique_ids: bool) -> Self;
-    /// If `true`, the same allele value may appear more than once in a chromosome.
-    fn with_alleles_can_be_repeated(self, alleles_can_be_repeated: bool) -> Self;
+    /// Sets the chromosome length policy.
+    ///
+    /// Use [`ChromosomeLength::Fixed(n)`](ChromosomeLength::Fixed) for a fixed-size
+    /// chromosome with `n` genes, or
+    /// [`ChromosomeLength::Variable { min, max }`](ChromosomeLength::Variable) for
+    /// variable-length chromosomes (introduced in Phase 52).
+    fn with_chromosome_length(self, length: ChromosomeLength) -> Self;
 
     // --- Save progress configuration ---
 

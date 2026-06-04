@@ -35,17 +35,22 @@ The following table summarizes the core modules and their primary types:
 |-------------------|------------------------------------------------------------------|
 | `GeneT`           | Abstraction for a gene; provides methods for mutation and value access. |
 | `ChromosomeT`     | Abstraction for a chromosome; provides DNA access, fitness, age, and mutation. |
+| `TreeChromosome`  | Supertrait of `ChromosomeT` for tree chromosomes; provides `tree()`, `depth()`, `node_count()`. Implemented by `GpChromosome<N>`. |
+| `GpNode`          | User-implemented trait defining the GP function and terminal set. |
 | `ConfigurationT`  | Trait for configuring genetic algorithm parameters.              |
 
 ### Operator Enums
 
-| Enum        | Variants (examples)                    | Description                        |
-|-------------|----------------------------------------|------------------------------------|
-| `Selection` | `Tournament`, `Roulette`, `Random`     | Parent selection strategies        |
-| `Crossover` | `Uniform`, `Multipoint`, `Cycle`       | DNA recombination strategies       |
-| `Mutation`  | `Swap`, `Scramble`, `Inversion`, `Value` | DNA mutation strategies            |
-| `Survivor`  | `Age`, `Fitness`                       | Survivor selection strategies      |
+| Enum        | Variants (examples) | Description |
+|-------------|---------------------|-------------|
+| `Selection` | `Tournament`, `RouletteWheel`, `StochasticUniversalSampling`, `Rank`, `Boltzmann`, `Truncation`, `Clearing`, `Random` | Parent selection strategies |
+| `Crossover` | `Uniform`, `SinglePoint`, `MultiPoint`, `Order`, `Pmx`, `Cycle`, `Sbx`, `BlendAlpha`, `Arithmetic`, `EdgeRecombination`, `Clone`, `Rejuvenate`, `VariableLength(AlignmentStrategy)` | DNA recombination strategies |
+| `Mutation`  | `Swap`, `Scramble`, `Inversion`, `Value`, `BitFlip`, `Creep`, `Gaussian`, `Polynomial`, `NonUniform`, `PermutationInsert`, `Insertion`, `Deletion`, `Cauchy`, `LevyFlight`, `Uniform`, `ListValue`, `Differential` | DNA mutation strategies |
+| `Survivor`  | `Fitness`, `Age`, `MuPlusLambda`, `MuCommaLambda`, `DeterministicCrowding` | Survivor selection strategies |
 | `Extension` | `Noop`, `MassExtinction`, `MassGenesis`, `MassDegeneration`, `MassDeduplication` | Population diversity control strategies |
+| `AlignmentStrategy` | `Trim`, `Pad` | Variable-length parent alignment used by `Crossover::VariableLength` |
+| `GpCrossover` | `SubtreeCrossover` | GP-specific crossover (used by `GpGa<N>`) |
+| `GpMutation` | `SubtreeMutation { mutation_max_depth }`, `PointMutation { p_per_node }`, `HoistMutation` | GP-specific mutation strategies |
 
 ### Configuration Options
 
@@ -62,6 +67,8 @@ The following table summarizes the core modules and their primary types:
 | `problem_solving`      | `ProblemSolving`| Minimization or maximization mode           |
 | `max_generations`      | `usize`         | Maximum number of generations               |
 | `fitness_target`       | `f64`           | Target fitness value to terminate           |
+| `chromosome_length`    | `Option<ChromosomeLength>` | `Fixed(usize)` or `Variable { min, max }` — required for `Mutation::Insertion`/`Deletion` |
+| `length_penalty`       | `Option<f64>`   | Parsimony pressure coefficient applied during survivor selection |
 
 ## Usage
 
@@ -142,27 +149,42 @@ let _population = ga
 
 | Module              | Description                                                      |
 |---------------------|------------------------------------------------------------------|
-| `chromosomes`       | Concrete chromosome types (`Binary`, `Range`)                    |
+| `chromosomes`       | Concrete chromosome types (`Binary`, `Range<T>`, `ListChromosome<T>`) plus `ChromosomeLength` |
 | `configuration`     | Configuration options and builder API                            |
-| `error`             | Error types for GA operations                                    |
+| `error`             | Error types for GA operations (`GaError`)                        |
 | `fitness`           | Fitness evaluation helpers                                       |
-| `ga`                | Single-population GA orchestrator (`Ga`)                         |
-| `engines::alps`     | Age-Layered Population Structure engine (`AlpsEngine`)           |
-| `engines::cellular` | Cellular GA engine on 2D toroidal grid (`CellularEngine`)        |
-| `engines::de`       | Differential Evolution engine (`DeEngine`)                       |
-| `engines::island`   | Island model multi-population engine (`IslandGa`)                |
-| `engines::nsga2`    | NSGA-II multi-objective engine (`Nsga2Ga`)                       |
-| `engines::scatter`  | Scatter Search engine with reference set (`ScatterEngine`)       |
-| `genotypes`         | Concrete gene types (`Binary`, `Range`)                          |
+| `ga`                | Single-population GA orchestrator (`Ga<U>`)                      |
+| `alps`              | Age-Layered Population Structure engine (`AlpsEngine`)           |
+| `cellular`          | Cellular GA engine on 2D toroidal grid (`CellularEngine`)        |
+| `de`                | Differential Evolution engine (`DeEngine`)                       |
+| `island`            | Island model multi-population engine (`IslandGa`)                |
+| `gp`                | Genetic Programming engine (`GpGa<N>`, `GpChromosome<N>`, `GpNode`, `Node<N>`, `MathNode`, `BoolNode`) |
+| `nsga2`             | NSGA-II multi-objective engine (`Nsga2Ga`)                       |
+| `nsga3`             | NSGA-III many-objective engine (`Nsga3Ga`)                       |
+| `moead`             | MOEA/D decomposition-based engine (`MoeaDGa`)                    |
+| `spea2`             | SPEA2 strength-Pareto engine (`Spea2Ga`)                         |
+| `sms_emoa`          | SMS-EMOA hypervolume-based engine (`SmsEmoaGa`)                  |
+| `ibea`              | IBEA indicator-based engine (`IbeaGa`)                           |
+| `multi_objective`   | Shared Pareto dominance, quality indicators, reference points    |
+| `scatter`           | Scatter Search engine with reference set (`ScatterEngine`)       |
+| `genotypes`         | Concrete gene types (`Binary`, `Range<T>`, `List<T>`)            |
 | `initializers`      | Population initialization utilities                              |
 | `extension`         | Extension strategy configuration for diversity control           |
-| `observe::observer` | `GaObserver` trait and built-in observers                        |
-| `observe::reporter` | Legacy `Reporter` trait                                          |
-| `observe::visualization` | Visualization utilities for GA runs                         |
-| `operations`        | Selection, crossover, mutation, survivor, extension operators    |
+| `niching`           | Fitness sharing for multimodal optimization                      |
+| `observer`          | `GaObserver` trait and built-in observers (`LogObserver`, `CompositeObserver`, `AllObserver`, `NoopObserver`) |
+| `reporter`          | Legacy `Reporter` trait                                          |
+| `visualization`     | Visualization utilities for GA runs (feature `visualization`)    |
+| `operations`        | Selection, crossover, mutation, survivor, extension operators plus `AlignmentStrategy` |
 | `population`        | Population management and best tracking                          |
-| `stats`             | Statistics tracking for GA runs                                  |
+| `stats`             | Statistics tracking for GA runs (`GenerationStats`)              |
+| `aos`               | Adaptive Operator Selection (`AosStrategy`, `AosState`)          |
+| `constraints`       | Constraint handling (`ConstraintHandling`, `PenaltyStrategy`)    |
+| `hall_of_fame`      | Elite solution archive (`HallOfFame`, `DistanceMetric`)          |
 | `traits`            | Core traits for genes, chromosomes, and configuration            |
+| `validators`        | Configuration validation                                         |
+| `rng`               | RNG with optional seeding                                        |
+| `checkpoint`        | Serialization for checkpoint save/load (feature `serde`)         |
+| `benchmarks`        | Standard benchmark functions and quality indicators (feature `benchmarks`) |
 
 ---
 
@@ -273,41 +295,83 @@ Enum for problem-solving mode.
 
 Enum for selection operators.
 
-| Variant         | Description                          |
-|-----------------|--------------------------------------|
-| `Tournament`    | Tournament selection                 |
-| `Roulette`      | Roulette wheel selection             |
-| `Random`        | Random selection                     |
+| Variant | Description |
+|---------|-------------|
+| `Random` | Equal probability for every individual |
+| `RouletteWheel` | Fitness-proportionate selection |
+| `StochasticUniversalSampling` | Roulette with evenly-spaced pointers |
+| `Tournament` | Pairwise tournament competition |
+| `Rank` | Probability proportional to rank |
+| `Boltzmann` | Temperature-controlled selection pressure |
+| `Truncation` | Only top portion eligible |
+| `Clearing` | Niche winners — promotes diversity |
+
+### `operations::AlignmentStrategy`
+
+Alignment strategy used by `Crossover::VariableLength(strategy)` to reconcile parents with different DNA lengths.
+
+| Variant | Description |
+|---------|-------------|
+| `Trim` | Truncate both parents to `min(len_a, len_b)` |
+| `Pad` | Pad the shorter parent (from its own alleles) to `max(len_a, len_b)` |
 
 ### `operations::Crossover`
 
 Enum for crossover operators.
 
-| Variant         | Description                          |
-|-----------------|--------------------------------------|
-| `Uniform`       | Uniform crossover                    |
-| `Multipoint`    | Multipoint crossover                 |
-| `Cycle`         | Cycle crossover                      |
+| Variant | Description |
+|---------|-------------|
+| `Uniform` | Each gene chosen from either parent |
+| `SinglePoint` | One cut point, halves swapped |
+| `MultiPoint` | N cut points, alternating segments swapped |
+| `Order` | Permutation-preserving order crossover (OX) |
+| `Pmx` | Partially Mapped Crossover for permutations |
+| `Cycle` | Position-preserving cycle crossover |
+| `Sbx` | Simulated Binary Crossover for `Range<T>` |
+| `BlendAlpha` | BLX-α blending for `Range<T>` |
+| `Arithmetic` | Weighted average for `Range<T>` |
+| `EdgeRecombination` | Adjacency-preserving for TSP / permutations |
+| `Clone` | Direct parent copy (mutation-only strategies) |
+| `Rejuvenate` | Clone + age reset to zero |
+| `VariableLength(AlignmentStrategy)` | Crossover for variable-length parents |
 
 ### `operations::Mutation`
 
 Enum for mutation operators.
 
-| Variant         | Description                          |
-|-----------------|--------------------------------------|
-| `Swap`          | Swap mutation                        |
-| `Scramble`      | Scramble mutation                    |
-| `Inversion`     | Inversion mutation                   |
-| `Value`         | Value mutation                       |
+| Variant | Description |
+|---------|-------------|
+| `Swap` | Swap two random genes |
+| `Scramble` | Shuffle a random subsequence |
+| `Inversion` | Reverse a random subsequence |
+| `Value` | Replace a gene with a random allele |
+| `BitFlip` | Flip random bits (binary) |
+| `Creep` | Small uniform perturbation (`Range<T>`) |
+| `Gaussian` | Normal-distribution perturbation (`Range<T>`) |
+| `Polynomial` | Polynomial mutation, NSGA-II style (`Range<T>`) |
+| `NonUniform` | Magnitude decreases over generations (`Range<T>`) |
+| `PermutationInsert` | Move a gene to a different position (permutation) |
+| `Insertion` | Grow chromosome by 1 gene (variable-length) |
+| `Deletion` | Shrink chromosome by 1 gene (variable-length) |
+| `Cauchy` | Heavy-tailed Cauchy perturbation (`Range<T>`) |
+| `LevyFlight` | Lévy-stable distribution perturbation (`Range<T>`) |
+| `Uniform` | Random gene reset to uniform value (`Range<T>`) |
+| `ListValue` | Replace gene from finite allele set (`List<T>`) |
+| `Differential` | DE-style difference-vector mutation (`Range<T>`) |
 
 ### `operations::Survivor`
 
 Enum for survivor selection operators.
 
-| Variant         | Description                          |
-|-----------------|--------------------------------------|
-| `Age`           | Age-based survivor selection         |
-| `Fitness`       | Fitness-based survivor selection     |
+| Variant | Description |
+|---------|-------------|
+| `Fitness` | Keep top N by fitness |
+| `Age` | Keep youngest N individuals |
+| `MuPlusLambda` | (µ+λ): parents and offspring compete together |
+| `MuCommaLambda` | (µ,λ): only offspring eligible |
+| `DeterministicCrowding` | Replace genetically similar individuals |
+
+> Parsimony pressure is applied via `.with_length_penalty(coefficient)` and wraps any of the variants above.
 
 ### `operations::Extension`
 
@@ -445,6 +509,27 @@ optional local search refinement.
 | `ScatterEngine`        | Engine entry point. Call `.run()` to execute.                        |
 | `ScatterResult`        | Return type containing the final reference set and best chromosome.  |
 | `ScatterConfiguration` | Builder for reference-set size, diversification rate, and local search. |
+
+#### `engines::gp::GpGa`
+
+Genetic Programming. Evolves tree-structured programs (`GpChromosome<N>`) using subtree crossover, subtree/point/hoist mutation, ramped half-and-half initialization, and built-in bloat control (hard depth and node-count limits).
+
+| Type | Description |
+|------|-------------|
+| `GpGa<N>` | Engine entry point. Generic over `N: GpNode` (user-defined primitive set). |
+| `GpResult<N>` | Return type containing the best individual, best fitness, and final population. |
+| `GpConfiguration` | Builder for population size, depth limits, operators, selection, survivor strategy. |
+| `GpChromosome<N>` | Tree chromosome wrapping a `Node<N>` expression tree. Implements `ChromosomeT` + `TreeChromosome`. |
+| `Node<N>` | Recursive expression-tree enum: `Function { value, children }` or `Terminal(N)`. |
+| `GpNode` | Trait the user implements on a primitive-set enum (defines arity, evaluation, terminal sampling, function enumeration). |
+| `TreeChromosome` | Supertrait of `ChromosomeT` exposing `tree()`, `depth()`, `node_count()`. |
+| `GpCrossover` | `SubtreeCrossover` — swap random subtrees between parents with bloat retry. |
+| `GpMutation` | `SubtreeMutation { mutation_max_depth }`, `PointMutation { p_per_node }`, `HoistMutation`. |
+| `MathNode` | Built-in primitive set for symbolic regression (`Add`, `Sub`, `Mul`, `ProtectedDiv`, `Const`, `Var`). |
+| `BoolNode` | Built-in primitive set for classification trees (`And`, `Or`, `Not`, `Gt`, `Lt`). |
+| `ramped_half_and_half` | Standard GP population initializer combining the `full` and `grow` methods across multiple depths. |
+
+See [Genetic Programming](gp.md) for the complete guide.
 
 ---
 

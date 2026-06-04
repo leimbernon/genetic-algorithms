@@ -19,7 +19,9 @@ The following `Mutation` enum variants are available:
 | `Swap` | Permutation | Swaps two randomly chosen genes |
 | `Scramble` | Permutation | Randomly shuffles a subsequence of genes |
 | `Inversion` | Permutation | Reverses the order of a subsequence of genes |
-| `Insertion` | Permutation | Removes a gene and reinserts it at a different position |
+| `PermutationInsert` | Permutation | Removes a gene and reinserts it at a different position (permutation-preserving) |
+| `Insertion` | Variable-length | Inserts a new gene at a random position, growing chromosome length by 1 |
+| `Deletion` | Variable-length | Removes a gene at a random position, shrinking chromosome length by 1 |
 | `Value` | Range | Assigns a new random value to a gene within its range |
 | `BitFlip` | Binary | Flips a random bit in the chromosome |
 | `Creep` | Range | Small uniform perturbation to a gene |
@@ -102,11 +104,45 @@ Reverses the order of a subsequence of genes in a permutation chromosome.
 
 ---
 
-### Insertion
+### PermutationInsert
 
-Removes a gene and reinserts it at a different position in a permutation chromosome.
+Removes a gene and reinserts it at a different position in a permutation chromosome. All alleles are preserved and chromosome length remains constant. This is the permutation-safe insertion move (formerly `Mutation::Insertion` in versions < 3.0.0).
+
+**Variant:** `Mutation::PermutationInsert`
+
+**When to use:** Permutation chromosomes (TSP, scheduling) when you need a small structural change without changing the allele set.
+
+---
+
+### Insertion (variable-length)
+
+Inserts a new gene into the chromosome at a random position, growing its length by 1. The new gene is sampled by cloning a randomly selected gene from the existing DNA (preserving allele distribution). If the chromosome is already at its configured maximum length, this is a no-op.
 
 **Variant:** `Mutation::Insertion`
+
+**Requires:** `ChromosomeLength::Variable { min, max }` configured via `with_chromosome_length()`. Returns `GaError::MutationError` when `ChromosomeLength::Fixed` is active.
+
+| Builder Method | Description |
+|---------------|-------------|
+| `with_chromosome_length(ChromosomeLength::Variable { min, max })` | Required — enables length-changing mutations |
+
+**Added in:** v3.0.0
+
+---
+
+### Deletion (variable-length)
+
+Removes a randomly selected gene from the chromosome, shrinking its length by 1. If the chromosome is already at its configured minimum length, this is a no-op.
+
+**Variant:** `Mutation::Deletion`
+
+**Requires:** `ChromosomeLength::Variable { min, max }` configured via `with_chromosome_length()`. Returns `GaError::MutationError` when `ChromosomeLength::Fixed` is active.
+
+| Builder Method | Description |
+|---------------|-------------|
+| `with_chromosome_length(ChromosomeLength::Variable { min, max })` | Required — enables length-changing mutations |
+
+**Added in:** v3.0.0
 
 ---
 

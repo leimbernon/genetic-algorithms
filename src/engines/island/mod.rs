@@ -129,7 +129,7 @@ use crate::observer::IslandGaObserver;
 use crate::operations::mutation;
 use crate::population::Population;
 use crate::stats::GenerationStats;
-use crate::traits::{ChromosomeT, FitnessFn, InitializationFn};
+use crate::traits::{FitnessFn, InitializationFn, LinearChromosome, MutationOperator};
 use std::sync::Arc;
 
 /// Island Model Genetic Algorithm orchestrator.
@@ -145,7 +145,7 @@ use std::sync::Arc;
 /// * `U` - Chromosome type implementing `ChromosomeT`.
 pub struct IslandGa<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// Island model configuration.
     pub island_config: IslandConfiguration,
@@ -166,7 +166,7 @@ where
 
 impl<U> IslandGa<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// Creates a new `IslandGa` with a single shared GA configuration for all islands.
     ///
@@ -242,7 +242,7 @@ where
     /// Sets the initialization function.
     pub fn with_initialization_fn<F>(mut self, f: F) -> Self
     where
-        F: Fn(usize, Option<&[U::Gene]>, Option<bool>) -> Vec<U::Gene> + Send + Sync + 'static,
+        F: Fn(usize, Option<&[U::Gene]>) -> Vec<U::Gene> + Send + Sync + 'static,
     {
         self.initialization_fn = Some(Arc::new(f));
         self
@@ -372,14 +372,19 @@ where
         for island_idx in 0..num_islands {
             let cfg = self.config_for_island(island_idx);
             let pop_size = cfg.limit_configuration.population_size;
-            let genes_per_chrom = cfg.limit_configuration.genes_per_chromosome;
-            let alleles_can_repeat = cfg.limit_configuration.alleles_can_be_repeated;
+            let genes_per_chrom = match cfg.limit_configuration.chromosome_length {
+                crate::chromosomes::ChromosomeLength::Fixed(n) => n,
+                crate::chromosomes::ChromosomeLength::Variable { .. } => {
+                    return Err(GaError::InvalidIslandConfiguration(
+                        "ChromosomeLength::Variable is not yet supported (Phase 52). Use ChromosomeLength::Fixed.".into(),
+                    ));
+                }
+            };
 
             let chromosomes = crate::traits::initialize_chromosomes::<U>(
                 pop_size,
                 genes_per_chrom,
                 alleles,
-                Some(alleles_can_repeat),
                 init_fn,
                 Some(fitness_fn),
                 0,
@@ -420,7 +425,7 @@ where
 
 impl<U> IslandGa<U>
 where
-    U: ChromosomeT + mutation::ValueMutable,
+    U: LinearChromosome + mutation::ValueMutable,
 {
     /// Runs the island model GA and returns the best chromosome found across all islands.
     ///
@@ -508,7 +513,7 @@ where
                 (
                     cfg.selection_configuration,
                     cfg.crossover_configuration,
-                    cfg.mutation_configuration,
+                    cfg.mutation_configuration.clone(),
                     cfg.survivor,
                     cfg.limit_configuration,
                     cfg.number_of_threads,
@@ -527,19 +532,21 @@ where
                     survivor_method,
                     limit_config,
                     num_threads,
-                ) = island_configs[idx];
+                ) = island_configs[idx].clone();
                 let pop_size = limit_config.population_size;
 
-                // Selection: returns Vec<(usize, usize)> parent index pairs
+                // Selection: returns Vec<Vec<usize>> parent index groups (island uses 2-parent crossover)
                 let parent_pairs =
-                    selection::factory(&island.chromosomes, selection_config, num_threads)?;
+                    selection::factory(&island.chromosomes, selection_config, num_threads, 2)?;
 
-                // Crossover: iterate over parent pairs
+                // Crossover: iterate over parent groups
                 let mut rng = crate::rng::make_rng();
                 let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
 
                 let mut offspring: Vec<U> = Vec::new();
-                for &(idx_a, idx_b) in &parent_pairs {
+                for group in &parent_pairs {
+                    let idx_a = group[0];
+                    let idx_b = group[1];
                     let p: f64 = rng.random();
                     if p <= crossover_prob {
                         let children = crossover::factory(
@@ -559,35 +566,20 @@ where
                 for child in offspring.iter_mut() {
                     let p: f64 = rng.random();
                     if p <= mut_prob {
-                        if mutation_config.method == crate::operations::Mutation::Cauchy {
-                            mutation::factory_with_params(
-                                mutation_config.method,
-                                child,
-                                mutation_config.cauchy_scale,
-                                None,
-                            )?;
-                        } else if mutation_config.method == crate::operations::Mutation::LevyFlight {
-                            mutation::factory_with_params(
-                                mutation_config.method,
-                                child,
-                                None,
-                                mutation_config.levy_alpha,
-                            )?;
-                        } else if mutation_config.method == crate::operations::Mutation::Polynomial {
-                            let eta = mutation_config.polynomial_eta.or(mutation_config.step);
-                            mutation::factory_with_params(
-                                mutation_config.method,
-                                child,
-                                eta,
-                                None,
-                            )?;
-                        } else {
-                            mutation::factory_with_params(
-                                mutation_config.method,
-                                child,
-                                mutation_config.step,
-                                mutation_config.sigma,
-                            )?;
+                        match &mutation_config.method {
+                            crate::operations::Mutation::Insertion
+                            | crate::operations::Mutation::Deletion => {
+                                mutation::factory_with_chromosome_length(
+                                    mutation_config.method.clone(),
+                                    child,
+                                    None,
+                                    None,
+                                    None,
+                                )?;
+                            }
+                            other => {
+                                other.mutate(child, other)?;
+                            }
                         }
                     }
                 }

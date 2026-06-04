@@ -42,23 +42,71 @@ cargo run --example spea2_zdt1
 ```
 */
 
-use genetic_algorithms::chromosomes::Range as RangeChromosome;
+use std::borrow::Cow;
+use std::sync::Arc;
+
 use genetic_algorithms::configuration::GaConfiguration;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::initializers::range_random_initialization;
 use genetic_algorithms::spea2::configuration::{Spea2Configuration, ObjectiveDirection};
 use genetic_algorithms::spea2::Spea2Ga;
+use genetic_algorithms::traits::{ChromosomeT, LinearChromosome, VectorFitness};
 use genetic_algorithms::{LogObserver, Spea2Observer};
-use std::sync::Arc;
+
+const N_VARS: usize = 30;
+
+// ZDT1 chromosome: f1 = x_0, f2 = g * (1 - sqrt(x_0/g)), g = 1 + 9/(n-1) * sum(x_1..x_n)
+#[derive(Debug, Clone, Default)]
+struct Zdt1Chromosome {
+    dna: Vec<RangeGenotype<f64>>,
+    fitness: f64,
+    fitness_values: Vec<f64>,
+}
+
+impl ChromosomeT for Zdt1Chromosome {
+    type Gene = RangeGenotype<f64>;
+    fn fitness(&self) -> f64 { self.fitness }
+    fn set_fitness(&mut self, v: f64) -> &mut Self { self.fitness = v; self }
+    fn set_age(&mut self, _: usize) -> &mut Self { self }
+    fn age(&self) -> usize { 0 }
+    fn calculate_fitness(&mut self) {
+        if self.dna.is_empty() {
+            self.fitness_values = vec![0.0, 0.0];
+            return;
+        }
+        let n = self.dna.len();
+        let x0 = self.dna[0].value;
+        let g = 1.0 + (9.0 / (n - 1) as f64) * self.dna[1..].iter().map(|g| g.value).sum::<f64>();
+        let f1 = x0;
+        let f2 = g * (1.0 - (x0 / g).sqrt());
+        self.fitness_values = vec![f1, f2];
+        self.fitness = f1;
+    }
+}
+
+impl LinearChromosome for Zdt1Chromosome {
+    fn dna(&self) -> &[Self::Gene] { &self.dna }
+    fn dna_mut(&mut self) -> &mut [Self::Gene] { &mut self.dna }
+    fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
+        self.dna = dna.into_owned(); self
+    }
+    fn set_fitness_fn<F>(&mut self, _: F) -> &mut Self
+    where F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static { self }
+}
+
+impl VectorFitness for Zdt1Chromosome {
+    fn fitness_values(&self) -> &[f64] { &self.fitness_values }
+    fn set_fitness_values(&mut self, values: Vec<f64>) { self.fitness_values = values; }
+}
+
+impl genetic_algorithms::operations::mutation::ValueMutable for Zdt1Chromosome {}
+impl genetic_algorithms::traits::OperatorCompat for Zdt1Chromosome {}
 
 fn main() {
-    // --- Problem parameters ---
-    const N_VARS: usize = 30;
     const POP_SIZE: usize = 100;
-    const ARCHIVE_SIZE: usize = 100;  // canonical SPEA2: archive equals population
+    const ARCHIVE_SIZE: usize = 100;
     const MAX_GENERATIONS: usize = 250;
 
-    // --- SPEA2 configuration ---
     let spea2_config = Spea2Configuration::new()
         .with_num_objectives(2)
         .with_population_size(POP_SIZE)
@@ -69,37 +117,21 @@ fn main() {
             ObjectiveDirection::Minimize,
         ]);
 
-    // --- Base GA configuration ---
-    let mut ga_config = GaConfiguration::default();
-    ga_config.limit_configuration.genes_per_chromosome = N_VARS;
-    ga_config.limit_configuration.alleles_can_be_repeated = true;
+    use genetic_algorithms::ChromosomeLength;
+    use genetic_algorithms::traits::ConfigurationT;
+    let ga_config = GaConfiguration::default()
+        .with_chromosome_length(ChromosomeLength::Fixed(N_VARS));
 
-    // --- Allele definition: each of the 30 variables lives in [0.0, 1.0] ---
     let alleles = vec![RangeGenotype::new(0, vec![(0.0_f64, 1.0_f64)], 0.0_f64)];
     let alleles_clone = alleles.clone();
 
-    // --- Objective functions (ZDT1) ---
-    // f1 = x_1  (first variable)
-    let obj_f1 = |dna: &[RangeGenotype<f64>]| -> f64 { dna[0].value };
-
-    // f2 = g(x) * (1 - sqrt(x_1 / g(x)))
-    //   where g(x) = 1 + (9 / (n-1)) * sum(x_2..x_n)
-    let obj_f2 = |dna: &[RangeGenotype<f64>]| -> f64 {
-        let n = dna.len();
-        let g = 1.0 + (9.0 / (n - 1) as f64) * dna[1..].iter().map(|gene| gene.value).sum::<f64>();
-        g * (1.0 - (dna[0].value / g).sqrt())
-    };
-
-    // --- Build the SPEA2 optimizer ---
-    // LogObserver implements Spea2Observer — logs fitness and archive events
-    let mut spea2 = Spea2Ga::<RangeChromosome<f64>>::new(spea2_config, ga_config)
+    let mut spea2 = Spea2Ga::<Zdt1Chromosome>::new(spea2_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |n, _, _| {
-            range_random_initialization(n, Some(&alleles_clone), Some(true))
+        .with_initialization_fn(move |n, _| {
+            range_random_initialization(n, Some(&alleles_clone))
         })
-        .with_objective_fns(vec![Box::new(obj_f1), Box::new(obj_f2)])
         .with_observer(
-            Arc::new(LogObserver) as Arc<dyn Spea2Observer<RangeChromosome<f64>> + Send + Sync>
+            Arc::new(LogObserver) as Arc<dyn Spea2Observer<Zdt1Chromosome> + Send + Sync>
         )
         .build()
         .expect("Failed to build SPEA2");
@@ -113,7 +145,6 @@ fn main() {
     println!("Running SPEA2 (this may take a moment)...");
     println!("------------------------------------------------");
 
-    // --- Run SPEA2 ---
     match spea2.run() {
         Ok(mut front) => {
             println!(
@@ -121,7 +152,6 @@ fn main() {
                 front.len()
             );
 
-            // Sort by f1 ascending to visualise the Pareto trade-off curve
             front
                 .individuals
                 .sort_by(|a, b| a.objectives[0].partial_cmp(&b.objectives[0]).unwrap());

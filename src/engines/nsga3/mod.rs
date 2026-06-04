@@ -55,7 +55,6 @@
 //! | `population_size` | `usize` | `100` | Population size (≥ 2). |
 //! | `max_generations` | `usize` | `200` | Maximum generations. |
 //! | `init_fn` | `Fn` | — | Chromosome initialisation. |
-//! | `objective_fns` | `Vec<ObjectiveFn>` | — | One per objective. |
 //! | `reference_points` | `auto` or `custom` | — | See §Reference Points. |
 //!
 //! ### Optional Parameters
@@ -90,11 +89,6 @@
 //! let ga_config = GaConfiguration::default();
 //! let mut nsga3 = Nsga3Ga::<MyChromosome>::new(nsga3_config, ga_config)
 //!     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
-//!     .with_objective_fns(vec![
-//!         Box::new(|dna| { /* DTLZ2 f1 */ 0.0 }),
-//!         Box::new(|dna| { /* DTLZ2 f2 */ 0.0 }),
-//!         Box::new(|dna| { /* DTLZ2 f3 */ 0.0 }),
-//!     ])
 //!     .build()?;
 //!
 //! let pareto_front = nsga3.run()?;
@@ -137,12 +131,11 @@ use crate::multi_objective::non_dominated_sort::{
     assign_ranks, non_dominated_sort_with_directions,
 };
 use crate::multi_objective::pareto::{ParetoFront, ParetoIndividual};
-use crate::multi_objective::ObjectiveFn;
 use crate::nsga2::configuration::ObjectiveDirection;
 use crate::nsga3::configuration::Nsga3Configuration;
 use crate::observer::Nsga3Observer;
 use crate::operations::mutation;
-use crate::traits::{ChromosomeT, InitializationFn};
+use crate::traits::{InitializationFn, LinearChromosome, MutationOperator, VectorFitness};
 use rand::Rng;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
@@ -156,7 +149,7 @@ use std::time::Instant;
 /// * `U` - Chromosome type implementing `ChromosomeT`.
 pub struct Nsga3Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome + VectorFitness,
 {
     /// NSGA-III specific configuration.
     pub nsga3_config: Nsga3Configuration,
@@ -166,15 +159,13 @@ where
     pub alleles: Vec<U::Gene>,
     /// Initialization function.
     pub initialization_fn: Option<Arc<InitializationFn<U::Gene>>>,
-    /// Objective functions (one per objective).
-    pub objective_fns: Vec<Arc<ObjectiveFn<U::Gene>>>,
     /// Optional structured lifecycle observer for NSGA-III-specific events.
     pub observer: Option<Arc<dyn Nsga3Observer<U> + Send + Sync>>,
 }
 
 impl<U> Nsga3Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome + VectorFitness,
 {
     /// Creates a new `Nsga3Ga` with the given configurations.
     pub fn new(nsga3_config: Nsga3Configuration, ga_config: GaConfiguration) -> Self {
@@ -183,7 +174,6 @@ where
             ga_config,
             alleles: Vec::new(),
             initialization_fn: None,
-            objective_fns: Vec::new(),
             observer: None,
         }
     }
@@ -211,15 +201,9 @@ where
     /// Sets the initialization function.
     pub fn with_initialization_fn<F>(mut self, f: F) -> Self
     where
-        F: Fn(usize, Option<&[U::Gene]>, Option<bool>) -> Vec<U::Gene> + Send + Sync + 'static,
+        F: Fn(usize, Option<&[U::Gene]>) -> Vec<U::Gene> + Send + Sync + 'static,
     {
         self.initialization_fn = Some(Arc::new(f));
-        self
-    }
-
-    /// Sets the objective functions.
-    pub fn with_objective_fns(mut self, fns: Vec<Box<ObjectiveFn<U::Gene>>>) -> Self {
-        self.objective_fns = fns.into_iter().map(Arc::from).collect();
         self
     }
 
@@ -249,13 +233,6 @@ where
             return Err(GaError::InvalidNsga3Configuration(
                 "initialization_fn is required".to_string(),
             ));
-        }
-        if self.objective_fns.len() != self.nsga3_config.num_objectives {
-            return Err(GaError::InvalidNsga3Configuration(format!(
-                "Expected {} objective functions, got {}",
-                self.nsga3_config.num_objectives,
-                self.objective_fns.len()
-            )));
         }
         if !self.nsga3_config.objective_directions.is_empty()
             && self.nsga3_config.objective_directions.len() != self.nsga3_config.num_objectives
@@ -325,13 +302,6 @@ where
                 "initialization_fn is required".to_string(),
             ));
         }
-        if self.objective_fns.len() != self.nsga3_config.num_objectives {
-            return Err(GaError::InvalidNsga3Configuration(format!(
-                "Expected {} objective functions, got {}",
-                self.nsga3_config.num_objectives,
-                self.objective_fns.len()
-            )));
-        }
         if !self.nsga3_config.objective_directions.is_empty()
             && self.nsga3_config.objective_directions.len() != self.nsga3_config.num_objectives
         {
@@ -378,7 +348,7 @@ where
 
 impl<U> Nsga3Ga<U>
 where
-    U: ChromosomeT + mutation::ValueMutable,
+    U: LinearChromosome + VectorFitness + mutation::ValueMutable,
 {
     /// Runs the NSGA-III algorithm and returns the first Pareto front.
     ///
@@ -409,6 +379,17 @@ where
         let directions = self.nsga3_config.effective_directions();
 
         let mut population = self.initialize_population()?;
+
+        // Runtime check: verify chromosome's fitness_values() matches num_objectives.
+        if let Some(first) = population.first() {
+            let got = first.chromosome.fitness_values().len();
+            if got != self.nsga3_config.num_objectives {
+                return Err(GaError::InvalidNsga3Configuration(format!(
+                    "Expected {} objectives from fitness_values(), got {}",
+                    self.nsga3_config.num_objectives, got
+                )));
+            }
+        }
 
         for gen in 0..max_gens {
             // Step 1: non-dominated sorting on the parent population (for tournament selection rank).
@@ -487,8 +468,14 @@ where
         })?;
 
         let pop_size = self.nsga3_config.population_size;
-        let genes_per_chrom = self.ga_config.limit_configuration.genes_per_chromosome;
-        let alleles_can_repeat = self.ga_config.limit_configuration.alleles_can_be_repeated;
+        let genes_per_chrom = match self.ga_config.limit_configuration.chromosome_length {
+            crate::chromosomes::ChromosomeLength::Fixed(n) => n,
+            crate::chromosomes::ChromosomeLength::Variable { .. } => {
+                return Err(GaError::InvalidNsga3Configuration(
+                    "ChromosomeLength::Variable is not yet supported (Phase 52). Use ChromosomeLength::Fixed.".into(),
+                ));
+            }
+        };
 
         let alleles = if self.alleles.is_empty() {
             None
@@ -500,26 +487,26 @@ where
             pop_size,
             genes_per_chrom,
             alleles,
-            Some(alleles_can_repeat),
             init_fn,
             None,
             0,
         );
 
-        let objective_fns = &self.objective_fns;
         #[cfg(not(target_arch = "wasm32"))]
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_par_iter()
-            .map(|chrom| {
-                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
+            .map(|mut chrom| {
+                chrom.calculate_fitness();
+                let objectives = chrom.fitness_values().to_vec();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
         #[cfg(target_arch = "wasm32")]
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_iter()
-            .map(|chrom| {
-                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
+            .map(|mut chrom| {
+                chrom.calculate_fitness();
+                let objectives = chrom.fitness_values().to_vec();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
@@ -532,11 +519,11 @@ where
         &self,
         population: &[ParetoIndividual<U>],
     ) -> Result<Vec<ParetoIndividual<U>>, GaError> {
-        use crate::operations::{crossover, mutation};
+        use crate::operations::crossover;
 
         let pop_size = self.nsga3_config.population_size;
         let crossover_config = self.ga_config.crossover_configuration;
-        let mutation_config = self.ga_config.mutation_configuration;
+        let mutation_config = self.ga_config.mutation_configuration.clone();
         let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
         let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
 
@@ -564,37 +551,14 @@ where
             for child in children.iter_mut() {
                 let mp: f64 = rng.random();
                 if mp <= mut_prob {
-                    if mutation_config.method == crate::operations::Mutation::Differential {
+                    if matches!(mutation_config.method, crate::operations::Mutation::Differential { .. }) {
                         return Err(GaError::MutationError(
                             "Differential mutation is not supported in NSGA-III; \
                              use Cauchy, LevyFlight, Polynomial, or a standard mutation method instead."
                                 .to_string(),
                         ));
-                    } else if mutation_config.method == crate::operations::Mutation::Cauchy {
-                        mutation::factory_with_params(
-                            mutation_config.method,
-                            child,
-                            mutation_config.cauchy_scale,
-                            None,
-                        )?;
-                    } else if mutation_config.method == crate::operations::Mutation::LevyFlight {
-                        mutation::factory_with_params(
-                            mutation_config.method,
-                            child,
-                            None,
-                            mutation_config.levy_alpha,
-                        )?;
-                    } else if mutation_config.method == crate::operations::Mutation::Polynomial {
-                        let eta = mutation_config.polynomial_eta.or(mutation_config.step);
-                        mutation::factory_with_params(mutation_config.method, child, eta, None)?;
-                    } else {
-                        mutation::factory_with_params(
-                            mutation_config.method,
-                            child,
-                            mutation_config.step,
-                            mutation_config.sigma,
-                        )?;
                     }
+                    mutation_config.method.mutate(child, &mutation_config.method)?;
                 }
             }
 
@@ -606,20 +570,21 @@ where
             }
         }
 
-        let objective_fns = &self.objective_fns;
         #[cfg(not(target_arch = "wasm32"))]
         let offspring: Vec<ParetoIndividual<U>> = raw_offspring
             .into_par_iter()
-            .map(|chrom| {
-                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
+            .map(|mut chrom| {
+                chrom.calculate_fitness();
+                let objectives = chrom.fitness_values().to_vec();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
         #[cfg(target_arch = "wasm32")]
         let offspring: Vec<ParetoIndividual<U>> = raw_offspring
             .into_iter()
-            .map(|chrom| {
-                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
+            .map(|mut chrom| {
+                chrom.calculate_fitness();
+                let objectives = chrom.fitness_values().to_vec();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
@@ -654,7 +619,7 @@ where
 ///      - associate each individual to its nearest reference point (perpendicular distance),
 ///      - count niche occupancy among already-selected individuals,
 ///      - repeatedly pick from the under-populated niches.
-fn nsga3_environmental_selection<U: ChromosomeT>(
+fn nsga3_environmental_selection<U: LinearChromosome>(
     combined: Vec<ParetoIndividual<U>>,
     fronts: Vec<Vec<usize>>,
     pop_size: usize,
@@ -778,7 +743,7 @@ fn nsga3_environmental_selection<U: ChromosomeT>(
 ///
 /// For Maximize objectives, signs are flipped before normalization so all dimensions
 /// behave as minimization (smaller is better in the normalized frame).
-fn normalize_st<U: ChromosomeT>(
+fn normalize_st<U: LinearChromosome>(
     combined: &[ParetoIndividual<U>],
     st_indices: &[usize],
     directions: &[ObjectiveDirection],

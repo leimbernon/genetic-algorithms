@@ -41,8 +41,8 @@ use std::time::Duration;
 /// ga.with_observer(Arc::new(LogObserver));
 /// ```
 ///
-/// **Note:** Attaching `LogObserver` alongside [`SimpleReporter`](crate::reporter::SimpleReporter)
-/// produces redundant per-generation output.
+/// **Note:** Attaching `LogObserver` alongside another observer that prints per-generation output
+/// may produce redundant output.
 pub struct LogObserver;
 
 impl<U: ChromosomeT> GaObserver<U> for LogObserver {
@@ -275,11 +275,7 @@ impl<U: ChromosomeT> SmsEmoaObserver<U> for LogObserver {
             "Hypervolume contribution assigned at generation {} ({:.2}ms) — pop={}",
             generation, duration_ms, population_size);
     }
-    fn on_steady_state_removal(
-        &self,
-        generation: usize,
-        population_size: usize,
-    ) {
+    fn on_steady_state_removal(&self, generation: usize, population_size: usize) {
         log::debug!(target: "sms_emoa_events",
             "Steady-state removal at generation {} — pop={}",
             generation, population_size);

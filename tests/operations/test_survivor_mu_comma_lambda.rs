@@ -13,6 +13,7 @@ fn make_chromosome(fitness: f64, age: usize) -> Chromosome {
         fitness,
         age,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     }
 }
 

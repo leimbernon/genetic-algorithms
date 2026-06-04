@@ -1,10 +1,8 @@
 use genetic_algorithms::chromosomes::{Binary as BinaryChromosome, Range as RangeChromosome};
-use genetic_algorithms::configuration::GaConfiguration;
-use genetic_algorithms::ga::Ga;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::operations::mutation;
 use genetic_algorithms::operations::Mutation;
-use genetic_algorithms::traits::{ChromosomeT, MutationConfig};
+use genetic_algorithms::traits::{LinearChromosome, MutationOperator};
 use std::borrow::Cow;
 
 fn build_f64_chromosome(n: usize) -> RangeChromosome<f64> {
@@ -33,7 +31,7 @@ fn cauchy_mutation_via_factory_changes_value() {
     let mut changed = false;
     for _ in 0..200 {
         let before: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
-        mutation::factory_with_params(Mutation::Cauchy, &mut c, Some(1.0), None).unwrap();
+        mutation::factory(Mutation::Cauchy { scale: Some(1.0) }, &mut c).unwrap();
         let after: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
         if before.iter().zip(after.iter()).any(|(b, a)| b != a) {
             changed = true;
@@ -47,7 +45,7 @@ fn cauchy_mutation_via_factory_changes_value() {
 fn cauchy_mutation_via_factory_stays_in_range() {
     let mut c = build_f64_chromosome(8);
     for _ in 0..200 {
-        mutation::factory_with_params(Mutation::Cauchy, &mut c, Some(50.0), None).unwrap();
+        mutation::factory(Mutation::Cauchy { scale: Some(50.0) }, &mut c).unwrap();
         for gene in c.dna().iter() {
             let (lo, hi) = gene.ranges[0];
             assert!(
@@ -66,7 +64,7 @@ fn cauchy_mutation_changes_at_most_one_gene() {
     let mut c = build_f64_chromosome(10);
     for _ in 0..50 {
         let before: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
-        mutation::factory_with_params(Mutation::Cauchy, &mut c, Some(1.0), None).unwrap();
+        mutation::factory(Mutation::Cauchy { scale: Some(1.0) }, &mut c).unwrap();
         let after: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
         let changed_count = before.iter().zip(after.iter()).filter(|(b, a)| b != a).count();
         assert!(
@@ -81,7 +79,7 @@ fn cauchy_mutation_changes_at_most_one_gene() {
 fn cauchy_mutation_works_on_i32() {
     let mut c = build_i32_chromosome(6);
     for _ in 0..200 {
-        mutation::factory_with_params(Mutation::Cauchy, &mut c, Some(10.0), None).unwrap();
+        mutation::factory(Mutation::Cauchy { scale: Some(10.0) }, &mut c).unwrap();
         for gene in c.dna().iter() {
             let (lo, hi) = gene.ranges[0];
             assert!(gene.value >= lo && gene.value <= hi);
@@ -90,11 +88,12 @@ fn cauchy_mutation_works_on_i32() {
 }
 
 #[test]
-fn cauchy_mutation_default_scale_when_step_none() {
+fn cauchy_mutation_default_scale_when_none() {
     let mut c = build_f64_chromosome(4);
+    // scale=None must default to 1.0 inside the Cauchy variant
+    let m = Mutation::Cauchy { scale: None };
     for _ in 0..50 {
-        // step = None must default to 1.0 inside the Cauchy match arm
-        mutation::factory_with_params(Mutation::Cauchy, &mut c, None, None).unwrap();
+        m.mutate(&mut c, &m).unwrap();
         for gene in c.dna().iter() {
             let (lo, hi) = gene.ranges[0];
             assert!(gene.value >= lo && gene.value <= hi);
@@ -106,7 +105,7 @@ fn cauchy_mutation_default_scale_when_step_none() {
 fn cauchy_mutation_errors_on_binary_chromosome() {
     let mut c = BinaryChromosome::new();
     // BinaryChromosome doesn't take Range genes; call factory and assert error.
-    let result = mutation::factory_with_params(Mutation::Cauchy, &mut c, Some(1.0), None);
+    let result = mutation::factory(Mutation::Cauchy { scale: Some(1.0) }, &mut c);
     assert!(
         result.is_err(),
         "Cauchy mutation must error on Binary chromosomes (got {:?})",
@@ -114,20 +113,18 @@ fn cauchy_mutation_errors_on_binary_chromosome() {
     );
 }
 
+/// Cauchy { scale: Some(2.0) } applies scale 2.0 — variant carries its own params.
 #[test]
-fn cauchy_scale_builder_sets_field() {
-    let ga = Ga::<RangeChromosome<f64>>::default().with_cauchy_scale(2.5);
-    assert_eq!(ga.configuration.mutation_configuration.cauchy_scale, Some(2.5));
-    let cfg = GaConfiguration::default().with_cauchy_scale(3.5);
-    assert_eq!(cfg.mutation_configuration.cauchy_scale, Some(3.5));
-}
-
-#[test]
-fn levy_alpha_builder_sets_field() {
-    let ga = Ga::<RangeChromosome<f64>>::default().with_levy_alpha(1.7);
-    assert_eq!(ga.configuration.mutation_configuration.levy_alpha, Some(1.7));
-    let cfg = GaConfiguration::default().with_levy_alpha(1.2);
-    assert_eq!(cfg.mutation_configuration.levy_alpha, Some(1.2));
+fn cauchy_inline_scale_applies() {
+    let mut c = build_f64_chromosome(4);
+    let m = Mutation::Cauchy { scale: Some(2.0) };
+    for _ in 0..50 {
+        m.mutate(&mut c, &m).unwrap();
+        for gene in c.dna().iter() {
+            let (lo, hi) = gene.ranges[0];
+            assert!(gene.value >= lo && gene.value <= hi);
+        }
+    }
 }
 
 // ---- LevyFlight active tests ----
@@ -138,8 +135,7 @@ fn levy_flight_mutation_via_factory_changes_value() {
     let mut changed = false;
     for _ in 0..200 {
         let before: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
-        // alpha = 1.5 routed via the `sigma` slot (engine routing convention)
-        mutation::factory_with_params(Mutation::LevyFlight, &mut c, None, Some(1.5)).unwrap();
+        mutation::factory(Mutation::LevyFlight { alpha: Some(1.5) }, &mut c).unwrap();
         let after: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
         if before.iter().zip(after.iter()).any(|(b, a)| b != a) {
             changed = true;
@@ -153,7 +149,7 @@ fn levy_flight_mutation_via_factory_changes_value() {
 fn levy_flight_mutation_via_factory_stays_in_range() {
     let mut c = build_f64_chromosome(8);
     for _ in 0..200 {
-        mutation::factory_with_params(Mutation::LevyFlight, &mut c, None, Some(1.5)).unwrap();
+        mutation::factory(Mutation::LevyFlight { alpha: Some(1.5) }, &mut c).unwrap();
         for gene in c.dna().iter() {
             let (lo, hi) = gene.ranges[0];
             assert!(
@@ -170,7 +166,7 @@ fn levy_flight_mutation_changes_at_most_one_gene() {
     let mut c = build_f64_chromosome(10);
     for _ in 0..50 {
         let before: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
-        mutation::factory_with_params(Mutation::LevyFlight, &mut c, None, Some(1.5)).unwrap();
+        mutation::factory(Mutation::LevyFlight { alpha: Some(1.5) }, &mut c).unwrap();
         let after: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
         let changed_count = before.iter().zip(after.iter()).filter(|(b, a)| b != a).count();
         assert!(
@@ -185,7 +181,7 @@ fn levy_flight_mutation_changes_at_most_one_gene() {
 fn levy_flight_mutation_works_on_i32() {
     let mut c = build_i32_chromosome(6);
     for _ in 0..200 {
-        mutation::factory_with_params(Mutation::LevyFlight, &mut c, None, Some(1.5)).unwrap();
+        mutation::factory(Mutation::LevyFlight { alpha: Some(1.5) }, &mut c).unwrap();
         for gene in c.dna().iter() {
             let (lo, hi) = gene.ranges[0];
             assert!(gene.value >= lo && gene.value <= hi);
@@ -196,7 +192,7 @@ fn levy_flight_mutation_works_on_i32() {
 #[test]
 fn levy_flight_mutation_errors_on_binary_chromosome() {
     let mut c = BinaryChromosome::new();
-    let result = mutation::factory_with_params(Mutation::LevyFlight, &mut c, None, Some(1.5));
+    let result = mutation::factory(Mutation::LevyFlight { alpha: Some(1.5) }, &mut c);
     assert!(
         result.is_err(),
         "LevyFlight mutation must error on Binary chromosomes (got {:?})",
@@ -205,11 +201,12 @@ fn levy_flight_mutation_errors_on_binary_chromosome() {
 }
 
 #[test]
-fn levy_flight_default_alpha_when_sigma_none() {
+fn levy_flight_default_alpha_when_none() {
     let mut c = build_f64_chromosome(4);
+    // alpha=None must default to 1.5 inside the LevyFlight variant
+    let m = Mutation::LevyFlight { alpha: None };
     for _ in 0..50 {
-        // sigma = None must default to alpha = 1.5 inside the LevyFlight match arm
-        mutation::factory_with_params(Mutation::LevyFlight, &mut c, None, None).unwrap();
+        m.mutate(&mut c, &m).unwrap();
         for gene in c.dna().iter() {
             let (lo, hi) = gene.ranges[0];
             assert!(gene.value >= lo && gene.value <= hi);
@@ -225,8 +222,8 @@ fn uniform_mutation_via_factory_changes_value() {
     let mut changed = false;
     for _ in 0..200 {
         let before: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
-        // Uniform takes no parameter — pass None for both step and sigma.
-        mutation::factory_with_params(Mutation::Uniform, &mut c, None, None).unwrap();
+        // Uniform takes no parameter.
+        mutation::factory(Mutation::Uniform, &mut c).unwrap();
         let after: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
         if before.iter().zip(after.iter()).any(|(b, a)| b != a) {
             changed = true;
@@ -240,7 +237,7 @@ fn uniform_mutation_via_factory_changes_value() {
 fn uniform_mutation_via_factory_stays_in_range() {
     let mut c = build_f64_chromosome(8);
     for _ in 0..200 {
-        mutation::factory_with_params(Mutation::Uniform, &mut c, None, None).unwrap();
+        mutation::factory(Mutation::Uniform, &mut c).unwrap();
         for gene in c.dna().iter() {
             let (lo, hi) = gene.ranges[0];
             assert!(
@@ -257,7 +254,7 @@ fn uniform_mutation_changes_at_most_one_gene() {
     let mut c = build_f64_chromosome(10);
     for _ in 0..50 {
         let before: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
-        mutation::factory_with_params(Mutation::Uniform, &mut c, None, None).unwrap();
+        mutation::factory(Mutation::Uniform, &mut c).unwrap();
         let after: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
         let changed_count = before.iter().zip(after.iter()).filter(|(b, a)| b != a).count();
         assert!(
@@ -272,7 +269,7 @@ fn uniform_mutation_changes_at_most_one_gene() {
 fn uniform_mutation_works_on_i32() {
     let mut c = build_i32_chromosome(6);
     for _ in 0..200 {
-        mutation::factory_with_params(Mutation::Uniform, &mut c, None, None).unwrap();
+        mutation::factory(Mutation::Uniform, &mut c).unwrap();
         for gene in c.dna().iter() {
             let (lo, hi) = gene.ranges[0];
             assert!(gene.value >= lo && gene.value <= hi);
@@ -283,7 +280,7 @@ fn uniform_mutation_works_on_i32() {
 #[test]
 fn uniform_mutation_errors_on_binary_chromosome() {
     let mut c = BinaryChromosome::new();
-    let result = mutation::factory_with_params(Mutation::Uniform, &mut c, None, None);
+    let result = mutation::factory(Mutation::Uniform, &mut c);
     assert!(
         result.is_err(),
         "Uniform mutation must error on Binary chromosomes (got {:?})",

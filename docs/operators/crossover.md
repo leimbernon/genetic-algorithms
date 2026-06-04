@@ -28,6 +28,7 @@ The following `Crossover` enum variants are available:
 | `Clone` | Any | Copies parents directly as offspring |
 | `Rejuvenate` | Any | Clones parents as offspring and resets their ages to zero |
 | `EdgeRecombination` | Permutation | Preserves adjacency relationships from both parents for TSP/scheduling |
+| `VariableLength(AlignmentStrategy)` | Variable-length | Single-point crossover after aligning parents of different lengths |
 
 ### Common Parameters
 
@@ -234,6 +235,33 @@ Preserves parental adjacency relationships by building an edge map (adjacency li
 **When to use:** Permutation problems, TSP, scheduling, any problem where adjacency matters.
 
 **Added in:** v2.4.0
+
+---
+
+### VariableLength
+
+Applies single-point crossover to two chromosomes that may have different DNA lengths. Before recombination the parents are aligned according to the `AlignmentStrategy`:
+
+- `AlignmentStrategy::Trim` — both parents are truncated to `min(len_a, len_b)`. Offspring length = `min(len_a, len_b)`.
+- `AlignmentStrategy::Pad` — the shorter parent is padded with genes sampled from its own DNA until both reach `max(len_a, len_b)`. Offspring length = `max(len_a, len_b)`.
+
+**Variant:** `Crossover::VariableLength(AlignmentStrategy)`
+
+```rust
+use genetic_algorithms::operations::{Crossover, AlignmentStrategy};
+
+// Trim both parents to the shorter length before crossover.
+.with_crossover_method(Crossover::VariableLength(AlignmentStrategy::Trim))
+
+// Pad the shorter parent (from its own alleles) before crossover.
+.with_crossover_method(Crossover::VariableLength(AlignmentStrategy::Pad))
+```
+
+**Returns:** `GaError::CrossoverError` if both parents are empty after alignment.
+
+**When to use:** Whenever your population contains chromosomes with different DNA lengths (i.e., `ChromosomeLength::Variable` is enabled). Fixed-length operators (`SinglePoint`, `Uniform`, etc.) return an error when parent lengths differ.
+
+**Added in:** v3.0.0
 
 ---
 

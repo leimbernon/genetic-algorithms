@@ -1,34 +1,36 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.4.0
-milestone_name: — Observer Integration, New Operators, Advanced Multi-Objective & Framework Extensions
-status: milestone_complete
-stopped_at: context exhaustion at 78% (2026-05-14)
-last_updated: "2026-05-14T18:43:57.339Z"
+milestone: v3.0.0
+milestone_name: — Advanced Representations, Alternative Strategies & Architecture Simplification
+status: "Phase 57 shipped — PR #274"
+stopped_at: "PR #273 created; ROADMAP updated with phases 57-65"
+last_updated: "2026-06-03T20:28:22.043Z"
+last_activity: 2026-06-03
 progress:
-  total_phases: 17
-  completed_phases: 18
-  total_plans: 55
-  completed_plans: 55
-  percent: 106
+  total_phases: 35
+  completed_phases: 14
+  total_plans: 62
+  completed_plans: 74
+  percent: 40
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-27)
+See: .planning/PROJECT.md (updated 2026-05-18)
 
 **Core value:** Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library
-**Current focus:** Phase 46 — Documentation refactor (in progress)
+**Current focus:** Phase 57 — pso-engine
 
 ## Current Position
 
-Phase: 46
-Plan: Not started
-Status: Milestone complete
+Phase: 57 (pso-engine) — EXECUTING
+Plan: 1 of 4
+Status: Phase 57 shipped — PR #274
+Last activity: 2026-06-03
 
-Progress: [██████████] 96%
+Progress bar: [███░░░░░░░░░░░░░░░░] phases 47-56 complete of 47-65
 
 ## Accumulated Context
 
@@ -39,30 +41,34 @@ Progress: [██████████] 96%
 - v2.3.0: New engines land in `src/engines/` with their own subdirectory; `src/lib.rs` adds the re-export
 - v2.3.0: `DeGene` trait extension pattern for engines requiring type-specific arithmetic (f64)
 - v2.4.0: Observer wiring uses same `Option<Arc<dyn GaObserver<U>>>` pattern as `ga.rs` — zero overhead when None, no per-engine sub-traits
-- v2.4.0: Phases 31-33 are independent of each other after Phase 30; operator work does not require observer wiring to complete
 - v2.4.0: Observer import path is `use crate::observer::GaObserver` (not `crate::observe::observer::GaObserver`) — lib.rs re-exports via `#[path]` alias
-- v2.4.0: CellularEngine on_new_best snapshot must be taken at generation start (before inner evolution loop), not just before tracking block — inner loop updates best_fitness too
-- v2.4.0: Ga benchmark uses `with_population()` not `with_initialization_fn()` — avoids borrow error from `ga.run()` returning `&Population` tied to local `ga`
-- [Phase ?]: D-12 (on_new_best on Nsga3Ga) deferred per CONTEXT.md — run() fires only Nsga3Observer hooks
-- [Phase ?]: normalize_st uses ASF-based intercepts with degenerate-nadir fallback + epsilon clamp for DTLZ2 and sparse-population safety
-- v2.4.0 Phase 38: SMS-EMOA uses steady-state (mu+1) with hypervolume contribution removal; IBEA uses pairwise I_eps+ indicator with exponential scaling
-- v2.4.0 Phase 38: Both engines follow the established observer pattern (SmsEmoaObserver, IbeaObserver) — NOT added to AllObserver
-- v2.4.0 Phases 40-45: Framework Extensions integrated into v2.4.0 milestone — no separate v2.5.0; phases 40-45 continue the same version
+- v2.4.0: normalize_st uses ASF-based intercepts with degenerate-nadir fallback + epsilon clamp for DTLZ2 and sparse-population safety
+- v2.4.0: SMS-EMOA uses steady-state (mu+1) with hypervolume contribution removal; IBEA uses pairwise I_eps+ indicator with exponential scaling
+- v3.0.0: Architecture audit goes first — its decisions shape how new types (Strategy trait, advanced genotypes, variable-length chromosomes) are designed
+- v3.0.0: `ChromosomeT` splits into `ChromosomeT` (minimal core) and `LinearChromosome: ChromosomeT` (flat-slice contract) — `TreeChromosome: ChromosomeT` is a parallel branch, never a subtrait of `LinearChromosome`
+- v3.0.0: `MultiCaseFitness: ChromosomeT` locked in Phase 50 before Phase 53 — reused by `GpChromosome` for GP program synthesis
+- v3.0.0: No new external crates required except conditional `serde_stacker` (gated behind existing `serde` feature flag) — verify wasm32 compatibility before committing
+- v3.0.0: `GpGa<U: TreeChromosome>` is a separate engine from `Ga<U: LinearChromosome>` — GP loop differences (ramped init, bloat control, depth limits) do not belong in the standard GA hot path
+- v3.0.0: `Box<N>` recursive enum for tree nodes (rejected arena crates) — subtree clone is O(subtree), not O(arena); arena index-remapping across arenas is too complex
 
 ### Roadmap Evolution
 
-- Phase 34 added: WASM support — fix time-based panics for wasm32-unknown-unknown targets (issue #236)
-- Phases 35-39 added to v2.4.0: NSGA-III, MOEA/D, SPEA2, SMS-EMOA/IBEA, quality indicators (GitHub milestone 8, issues #203-#207)
-- Cargo.toml reverted to 2.4.0 — phases 35-39 remain within v2.4.0 milestone
-- Phases 40-45 added to v2.4.0: Framework Extensions — constraint handling, Hall of Fame, warm starting, AOS, benchmarks, memetic algorithm
-- Phase 46 added: Update the documentation to explain in more details the different algorithms. A refactor of the documentation can happen if needed
+- 2026-05-19: Roadmap created — Phases 47-53 defined for v3.0.0
+- 2026-05-31: Phases 54 (N-ary selection) and 55 (VectorFitness) completed
+- 2026-06-01: Phase 56 (CMA-ES) complete; phases 57-65 added to ROADMAP with goals and success criteria; `DeGene` renamed to `RealGene`
+
+### Decisions (phase 56)
+
+- v3.0.0: `DeGene` hard-renamed to `RealGene` in phase 56 — relocated to `src/traits/real_gene.rs`; `CmaEngine` and future real-valued engines use `U::Gene: RealGene` bound
+- v3.0.0: `CmaEngine` uses Jacobi eigendecomposition (no lapack) + Box-Muller sampling; WASM-compatible (no par_iter, no Instant)
 
 ### Blockers/Concerns
 
-(none)
+- PR #273 (feat/252-cma-es-engine → milestone/v3.0.0) awaiting CI + merge
+- Phases 57–65 have ROADMAP entries but no plans yet — next step is plan-phase for whichever comes first
 
 ## Session Continuity
 
-Last session: 2026-05-14T18:43:57.329Z
-Stopped at: context exhaustion at 78% (2026-05-14)
+Last session: 2026-06-01T20:15:00Z
+Stopped at: PR #273 created; ROADMAP updated with phases 57-65
 Resume file: None

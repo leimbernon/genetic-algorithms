@@ -137,10 +137,8 @@ use crate::constraints::{ConstraintHandling, PenaltyStrategy};
 use crate::error::GaError;
 use crate::hall_of_fame::{HallOfFame, HallOfFameConfig};
 use crate::observer::{ExtensionEvent, GaObserver};
-#[allow(deprecated)]
-use crate::reporter::Reporter;
 use crate::stats::GenerationStats;
-use crate::traits::{FitnessFn, InitializationFn};
+use crate::traits::{FitnessFn, InitializationFn, MutationOperator};
 use crate::validators::validator_factory as ValidatorFactory;
 use crate::{
     configuration::{LimitConfiguration, LocalSearchConfiguration, LogLevel, ProblemSolving},
@@ -150,9 +148,9 @@ use crate::{
     },
     population::Population,
     traits::{
-        ChromosomeT, ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, GeneT,
-        LocalSearchConfig, LocalSearchOperator, MutationConfig, NichingConfig, SelectionConfig,
-        StoppingConfig,
+        ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, GeneT, LinearChromosome,
+        LocalSearchConfig, LocalSearchOperator, MutationConfig, NichingConfig, VectorFitness,
+        OperatorCompat, SelectionConfig, StoppingConfig, Strategy, SurvivorConfig,
     },
 };
 use rand::Rng;
@@ -248,7 +246,7 @@ pub enum TerminationCause {
 #[allow(deprecated, clippy::type_complexity)]
 pub struct Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// Tunable GA configuration (limits, operators, logging, etc.).
     pub configuration: GaConfiguration,
@@ -274,10 +272,6 @@ where
     /// Optional LRU fitness cache size. When set, fitness evaluations are
     /// cached to avoid re-evaluating chromosomes with identical DNA.
     fitness_cache_size: Option<usize>,
-
-    /// Optional lifecycle reporter. When `None` (the default), no hook
-    /// calls are made and there is zero overhead.
-    reporter: Option<Box<dyn Reporter<U> + Send>>,
 
     /// Optional structured lifecycle observer. When `None` (the default),
     /// no hook calls or timing measurements are performed (zero overhead).
@@ -335,10 +329,19 @@ where
     aos_mutation: Option<Mutex<AosState>>,
 }
 
-#[allow(deprecated)]
+impl<U> Ga<U>
+where
+    U: LinearChromosome,
+{
+    /// Returns a read-only reference to the current configuration.
+    pub fn configuration(&self) -> &GaConfiguration {
+        &self.configuration
+    }
+}
+
 impl<U> Default for Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     fn default() -> Self {
         Ga {
@@ -353,7 +356,6 @@ where
             stats: Vec::new(),
             dynamic_mutation_probability: 1.0,
             fitness_cache_size: None,
-            reporter: None,
             observer: None,
             constraint_fns: None,
             penalty_strategy: PenaltyStrategy::None,
@@ -372,7 +374,7 @@ where
 
 impl<U> SelectionConfig for Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     fn with_number_of_couples(mut self, number_of_couples: usize) -> Self {
         self.configuration.selection_configuration.number_of_couples = number_of_couples;
@@ -386,11 +388,15 @@ where
         self.configuration.selection_configuration.niche_radius = niche_radius;
         self
     }
+    fn with_epsilon_lexicase(mut self, epsilon: f64) -> Self {
+        self.configuration.selection_configuration.epsilon = epsilon;
+        self
+    }
 }
 
 impl<U> CrossoverConfig for Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     fn with_crossover_number_of_points(mut self, number_of_points: usize) -> Self {
         self.configuration.crossover_configuration.number_of_points = Some(number_of_points);
@@ -416,11 +422,27 @@ where
         self.configuration.crossover_configuration.blend_alpha = Some(alpha);
         self
     }
+    fn with_undx_sigma_xi(mut self, value: f64) -> Self {
+        self.configuration.crossover_configuration.undx_sigma_xi = Some(value);
+        self
+    }
+    fn with_undx_sigma_eta(mut self, value: f64) -> Self {
+        self.configuration.crossover_configuration.undx_sigma_eta = Some(value);
+        self
+    }
+    fn with_pcx_sigma_eta(mut self, value: f64) -> Self {
+        self.configuration.crossover_configuration.pcx_sigma_eta = Some(value);
+        self
+    }
+    fn with_pcx_sigma_zeta(mut self, value: f64) -> Self {
+        self.configuration.crossover_configuration.pcx_sigma_zeta = Some(value);
+        self
+    }
 }
 
 impl<U> MutationConfig for Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     fn with_mutation_probability_max(mut self, probability_max: f64) -> Self {
         self.configuration.mutation_configuration.probability_max = Some(probability_max);
@@ -432,14 +454,6 @@ where
     }
     fn with_mutation_method(mut self, method: crate::operations::Mutation) -> Self {
         self.configuration.mutation_configuration.method = method;
-        self
-    }
-    fn with_mutation_step(mut self, step: f64) -> Self {
-        self.configuration.mutation_configuration.step = Some(step);
-        self
-    }
-    fn with_mutation_sigma(mut self, sigma: f64) -> Self {
-        self.configuration.mutation_configuration.sigma = Some(sigma);
         self
     }
     fn with_dynamic_mutation(mut self, enabled: bool) -> Self {
@@ -454,27 +468,11 @@ where
         self.configuration.mutation_configuration.probability_step = Some(step);
         self
     }
-    fn with_differential_f(mut self, f: f64) -> Self {
-        self.configuration.mutation_configuration.differential_f = Some(f);
-        self
-    }
-    fn with_polynomial_eta(mut self, eta: f64) -> Self {
-        self.configuration.mutation_configuration.polynomial_eta = Some(eta);
-        self
-    }
-    fn with_cauchy_scale(mut self, scale: f64) -> Self {
-        self.configuration.mutation_configuration.cauchy_scale = Some(scale);
-        self
-    }
-    fn with_levy_alpha(mut self, alpha: f64) -> Self {
-        self.configuration.mutation_configuration.levy_alpha = Some(alpha);
-        self
-    }
 }
 
 impl<U> StoppingConfig for Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     fn with_max_generations(mut self, max_generations: usize) -> Self {
         self.configuration.limit_configuration.max_generations = max_generations;
@@ -484,15 +482,23 @@ where
         self.configuration.limit_configuration.fitness_target = Some(fitness_target);
         self
     }
-    fn with_stopping_criteria(mut self, criteria: crate::configuration::StoppingCriteria) -> Self {
-        self.configuration.stopping_criteria = criteria;
+    fn with_stagnation_limit(mut self, n: usize) -> Self {
+        self.configuration.stagnation_generations = Some(n);
+        self
+    }
+    fn with_convergence_threshold(mut self, threshold: f64) -> Self {
+        self.configuration.convergence_threshold = Some(threshold);
+        self
+    }
+    fn with_max_duration_secs(mut self, secs: f64) -> Self {
+        self.configuration.max_duration_secs = Some(secs);
         self
     }
 }
 
 impl<U> NichingConfig for Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     fn with_niching_enabled(mut self, enabled: bool) -> Self {
         self.configuration
@@ -519,7 +525,7 @@ where
 
 impl<U> ElitismConfig for Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     fn with_elitism(mut self, elitism_count: usize) -> Self {
         self.configuration.elitism_count = elitism_count;
@@ -527,9 +533,19 @@ where
     }
 }
 
+impl<U> SurvivorConfig for Ga<U>
+where
+    U: LinearChromosome,
+{
+    fn with_length_penalty(mut self, penalty: f64) -> Self {
+        self.configuration.length_penalty = Some(penalty);
+        self
+    }
+}
+
 impl<U> ExtensionConfig for Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     fn with_extension_method(mut self, method: crate::operations::Extension) -> Self {
         self.configuration
@@ -570,7 +586,7 @@ where
 
 impl<U> LocalSearchConfig for Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     fn with_local_search_configuration(mut self, config: LocalSearchConfiguration) -> Self {
         self.configuration.local_search_configuration = Some(config);
@@ -580,7 +596,7 @@ where
 
 impl<U> ConfigurationT for Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     fn new() -> Self {
         Self::default()
@@ -620,18 +636,8 @@ where
 
         self
     }
-    fn with_genes_per_chromosome(mut self, genes_per_chromosome: usize) -> Self {
-        self.configuration.limit_configuration.genes_per_chromosome = genes_per_chromosome;
-        self
-    }
-    fn with_needs_unique_ids(mut self, needs_unique_ids: bool) -> Self {
-        self.configuration.limit_configuration.needs_unique_ids = needs_unique_ids;
-        self
-    }
-    fn with_alleles_can_be_repeated(mut self, alleles_can_be_repeated: bool) -> Self {
-        self.configuration
-            .limit_configuration
-            .alleles_can_be_repeated = alleles_can_be_repeated;
+    fn with_chromosome_length(mut self, length: crate::chromosomes::ChromosomeLength) -> Self {
+        self.configuration.limit_configuration.chromosome_length = length;
         self
     }
 
@@ -678,7 +684,7 @@ where
 
 impl<U> Ga<U>
 where
-    U: ChromosomeT
+    U: LinearChromosome
         + Send
         + Sync
         + 'static
@@ -686,7 +692,8 @@ where
         + Debug
         + mutation::ValueMutable
         + MaybeSerialize
-        + MaybeDeserialize,
+        + MaybeDeserialize
+        + OperatorCompat,
     U::Gene: 'static + Debug,
 {
     /// Validates configuration and adjusts defaults, returning a ready-to-run instance.
@@ -732,6 +739,24 @@ where
                 Some(&self.alleles)
             },
         )?;
+
+        // Check operator compatibility for this chromosome type (OperatorCompat trait)
+        crate::validators::generic_validator::operator_compat_check::<U>(&self.configuration)?;
+
+        // Validate num_parents >= 3 for multi-parent crossover operators
+        match self.configuration.crossover_configuration.method {
+            crate::operations::Crossover::Undx { num_parents }
+            | crate::operations::Crossover::Spx { num_parents }
+            | crate::operations::Crossover::Pcx { num_parents }
+                if num_parents < 3 =>
+            {
+                return Err(GaError::ConfigurationError(format!(
+                    "Multi-parent crossover requires num_parents >= 3, got {}",
+                    num_parents
+                )));
+            }
+            _ => {}
+        }
 
         // Wrap fitness function with LRU cache if configured
         if let Some(cache_size) = self.fitness_cache_size {
@@ -845,19 +870,6 @@ where
         self
     }
 
-    /// Attaches a lifecycle reporter that receives hooks during execution.
-    ///
-    /// See [`Reporter`] for the hook contract.
-    #[allow(deprecated)]
-    #[deprecated(
-        since = "2.2.0",
-        note = "use with_observer() instead. Reporter will be removed in v3.0.0."
-    )]
-    pub fn with_reporter(mut self, reporter: Box<dyn Reporter<U> + Send>) -> Self {
-        self.reporter = Some(reporter);
-        self
-    }
-
     /// Attaches a structured lifecycle observer that receives hooks during execution.
     ///
     /// The observer is stored as an `Arc` for thread-safe sharing (required by the
@@ -960,8 +972,8 @@ where
     /// and must return a `Vec` of genes for one chromosome.
     pub fn with_initialization_fn<F>(mut self, initialization_fn: F) -> Self
     where
-        U: ChromosomeT + Send + Sync + 'static + Clone,
-        F: Fn(usize, Option<&[U::Gene]>, Option<bool>) -> Vec<U::Gene> + Send + Sync + 'static,
+        U: LinearChromosome + Send + Sync + 'static + Clone,
+        F: Fn(usize, Option<&[U::Gene]>) -> Vec<U::Gene> + Send + Sync + 'static,
     {
         self.initialization_fn = Some(Arc::new(initialization_fn));
         self
@@ -1060,7 +1072,7 @@ where
     /// - Sets the internal `population` with the collected chromosomes.
     pub fn initialization(&mut self) -> Result<&mut Self, GaError>
     where
-        U: ChromosomeT + Send + Sync + 'static + Clone,
+        U: LinearChromosome + Send + Sync + 'static + Clone,
     {
         // Before starting initialization, verify that initializer is set
         if self.initialization_fn.is_none() {
@@ -1093,27 +1105,78 @@ where
     /// Creates a random initial population (no seeds).
     fn initialize_random(&mut self) -> Result<(), GaError>
     where
-        U: ChromosomeT + Send + Sync + 'static + Clone,
+        U: LinearChromosome + Send + Sync + 'static + Clone,
     {
         let population_size = self.configuration.limit_configuration.population_size;
-        let genes_per_chromosome = self.configuration.limit_configuration.genes_per_chromosome;
-        let needs_unique_ids = self.configuration.limit_configuration.needs_unique_ids;
+        let chromosome_length = self.configuration.limit_configuration.chromosome_length;
         let init_fn = self.initialization_fn.as_ref().unwrap();
         let fitness_fn = self.fitness_fn.as_ref().unwrap();
 
-        let chromosomes = crate::traits::initialize_chromosomes_par::<U>(
-            population_size,
-            genes_per_chromosome,
-            if self.alleles.is_empty() {
-                None
-            } else {
-                Some(&self.alleles)
-            },
-            Some(needs_unique_ids),
-            init_fn,
-            Some(fitness_fn),
-            0,
-        );
+        let chromosomes = match chromosome_length {
+            crate::chromosomes::ChromosomeLength::Fixed(length) => {
+                crate::traits::initialize_chromosomes_par::<U>(
+                    population_size,
+                    length,
+                    if self.alleles.is_empty() {
+                        None
+                    } else {
+                        Some(&self.alleles)
+                    },
+                    init_fn,
+                    Some(fitness_fn),
+                    0,
+                )
+            }
+            crate::chromosomes::ChromosomeLength::Variable { min, max } => {
+                // For variable-length chromosomes, each individual gets a random
+                // length sampled uniformly from [min, max].
+                // Decision: pass sampled length as genes_per_chromosome to init_fn
+                // (per Phase 52 discussion log — zero changes to init_fn signature).
+                let alleles_ref: Option<&[U::Gene]> = if self.alleles.is_empty() {
+                    None
+                } else {
+                    Some(self.alleles.as_slice())
+                };
+                let ff = std::sync::Arc::clone(fitness_fn);
+
+                #[cfg(not(target_arch = "wasm32"))]
+                let result: Vec<U> = (0..population_size)
+                    .into_par_iter()
+                    .map(|_| {
+                        let len = {
+                            let mut rng = crate::rng::make_rng();
+                            rng.random_range(min..=max)
+                        };
+                        let genes = init_fn(len, alleles_ref);
+                        let mut c = U::new();
+                        c.set_dna(std::borrow::Cow::Owned(genes));
+                        let ff_clone = std::sync::Arc::clone(&ff);
+                        c.set_fitness_fn(move |dna| ff_clone(dna));
+                        c.calculate_fitness();
+                        c.set_age(0);
+                        c
+                    })
+                    .collect();
+                #[cfg(target_arch = "wasm32")]
+                let result: Vec<U> = (0..population_size)
+                    .map(|_| {
+                        let len = {
+                            let mut rng = crate::rng::make_rng();
+                            rng.random_range(min..=max)
+                        };
+                        let genes = init_fn(len, alleles_ref);
+                        let mut c = U::new();
+                        c.set_dna(std::borrow::Cow::Owned(genes));
+                        let ff_clone = std::sync::Arc::clone(&ff);
+                        c.set_fitness_fn(move |dna| ff_clone(dna));
+                        c.calculate_fitness();
+                        c.set_age(0);
+                        c
+                    })
+                    .collect();
+                result
+            }
+        };
 
         // Set population directly (with_population is consuming, so we assign inline)
         let new_population = Population::new(chromosomes);
@@ -1139,7 +1202,7 @@ where
     /// WASM compatible: seed placement and dedup are pure data operations.
     fn initialize_with_seeds(&mut self) -> Result<(), GaError>
     where
-        U: ChromosomeT + Send + Sync + 'static + Clone,
+        U: LinearChromosome + Send + Sync + 'static + Clone,
     {
         if self.initialization_fn.is_none() {
             return Err(GaError::InitializationError(
@@ -1150,8 +1213,14 @@ where
         let seeds = self.seeds.take().unwrap();
         let population_size = self.configuration.limit_configuration.population_size;
         let fill_count = population_size - seeds.len();
-        let genes_per_chromosome = self.configuration.limit_configuration.genes_per_chromosome;
-        let needs_unique_ids = self.configuration.limit_configuration.needs_unique_ids;
+        let length = match self.configuration.limit_configuration.chromosome_length {
+            crate::chromosomes::ChromosomeLength::Fixed(n) => n,
+            crate::chromosomes::ChromosomeLength::Variable { .. } => {
+                return Err(GaError::ConfigurationError(
+                    "ChromosomeLength::Variable is not yet supported (Phase 52). Use ChromosomeLength::Fixed.".into(),
+                ));
+            }
+        };
         let init_fn = self.initialization_fn.as_ref().unwrap();
         let fitness_fn = self.fitness_fn.as_ref().unwrap();
 
@@ -1170,13 +1239,12 @@ where
 
             // Generate one random chromosome using the initialization function
             let genes = init_fn(
-                genes_per_chromosome,
+                length,
                 if self.alleles.is_empty() {
                     None
                 } else {
                     Some(&self.alleles)
                 },
-                Some(needs_unique_ids),
             );
             let mut new_chromosome = U::new();
             new_chromosome.set_dna(std::borrow::Cow::Owned(genes));
@@ -1286,7 +1354,7 @@ where
         generations_to_callback: usize,
     ) -> Result<&Population<U>, GaError>
     where
-        U: ChromosomeT + Send + Sync + 'static + Clone + MaybeDeserialize,
+        U: LinearChromosome + Send + Sync + 'static + Clone + MaybeDeserialize,
         F: Fn(&usize, &Population<U>, &GenerationStats, &TerminationCause) -> ControlFlow<()>,
     {
         //Before starting the run, we will check the conditions
@@ -1314,7 +1382,7 @@ where
                 // 1. Save builder's operator settings
                 let builder_selection = self.configuration.selection_configuration.method;
                 let builder_crossover = self.configuration.crossover_configuration.method;
-                let builder_mutation = self.configuration.mutation_configuration.method;
+                let builder_mutation = self.configuration.mutation_configuration.method.clone();
                 let builder_survivor = self.configuration.survivor;
                 let builder_problem_solving =
                     self.configuration.limit_configuration.problem_solving;
@@ -1433,20 +1501,12 @@ where
         #[cfg(not(target_arch = "wasm32"))]
         let start_time = Instant::now();
         #[cfg(target_arch = "wasm32")]
-        if self
-            .configuration
-            .stopping_criteria
-            .max_duration_secs
-            .is_some()
-        {
+        if self.configuration.max_duration_secs.is_some() {
             log::warn!(target: "ga_events", "max_duration_secs is not supported on wasm32 — time limit will be ignored");
         }
         let mut best_fitness_so_far = self.population.best_chromosome.fitness();
         let mut stagnation_count: usize = 0;
 
-        if let Some(ref mut r) = self.reporter {
-            r.on_start();
-        }
         self.notify(|obs| obs.on_run_start());
 
         //We start the cycles
@@ -1478,10 +1538,19 @@ where
             } else {
                 None
             };
+            // Derive num_parents from crossover method: UNDX/SPX/PCX carry their own
+            // num_parents field; all other variants use standard 2-parent crossover.
+            let num_parents = match self.configuration.crossover_configuration.method {
+                crate::operations::Crossover::Undx { num_parents }
+                | crate::operations::Crossover::Spx { num_parents }
+                | crate::operations::Crossover::Pcx { num_parents } => num_parents,
+                _ => 2,
+            };
             let parents = selection::factory(
                 &self.population.chromosomes,
                 self.configuration.selection_configuration,
                 self.configuration.number_of_threads,
+                num_parents,
             )?;
             if let Some(t) = t_sel {
                 self.notify(|obs| obs.on_selection_complete(i, t.elapsed(), parents.len()));
@@ -1545,10 +1614,7 @@ where
             if let Some(ref constraint_fns) = self.constraint_fns {
                 for c in offspring.iter_mut() {
                     let dna = c.dna();
-                    let total_viol: f64 = constraint_fns
-                        .iter()
-                        .map(|f| f(dna))
-                        .sum();
+                    let total_viol: f64 = constraint_fns.iter().map(|f| f(dna)).sum();
                     if total_viol > 0.0 {
                         match self.penalty_strategy {
                             PenaltyStrategy::None => {}
@@ -1718,12 +1784,22 @@ where
             } else {
                 None
             };
-            survivor::factory(
-                self.configuration.survivor,
-                &mut self.population.chromosomes,
-                initial_population_size,
-                self.configuration.limit_configuration,
-            )?;
+            if let Some(penalty) = self.configuration.length_penalty {
+                survivor::apply_parsimony_pressure(
+                    self.configuration.survivor,
+                    &mut self.population.chromosomes,
+                    initial_population_size,
+                    self.configuration.limit_configuration,
+                    penalty,
+                )?;
+            } else {
+                survivor::factory(
+                    self.configuration.survivor,
+                    &mut self.population.chromosomes,
+                    initial_population_size,
+                    self.configuration.limit_configuration,
+                )?;
+            }
             if let Some(t) = t_surv {
                 let pop_size = self.population.chromosomes.len();
                 self.notify(|obs| obs.on_survivor_selection_complete(i, t.elapsed(), pop_size));
@@ -1905,12 +1981,8 @@ where
                         if let Some(ref init_fn) = self.initialization_fn {
                             let deficit =
                                 initial_population_size - self.population.chromosomes.len();
-                            let genes_per_chromosome =
-                                self.configuration.limit_configuration.genes_per_chromosome;
-                            let alleles_can_be_repeated = self
-                                .configuration
-                                .limit_configuration
-                                .alleles_can_be_repeated;
+                            let chromosome_length =
+                                self.configuration.limit_configuration.chromosome_length;
                             let alleles_ref: Option<&[U::Gene]> = if self.alleles.is_empty() {
                                 None
                             } else {
@@ -1918,15 +1990,42 @@ where
                             };
                             let ff = self.fitness_fn.as_ref().map(Arc::clone);
 
+                            // For variable-length chromosomes, sample regrowth lengths from
+                            // [min_observed, max_observed] of the surviving population.
+                            // Decision: Phase 52 discussion log — adaptive range from survivors.
+                            let (min_obs, max_obs): (usize, usize) = match chromosome_length {
+                                crate::chromosomes::ChromosomeLength::Variable { min, max } => {
+                                    let observed_min = self
+                                        .population
+                                        .chromosomes
+                                        .iter()
+                                        .map(|c| c.dna().len())
+                                        .min()
+                                        .unwrap_or(min);
+                                    let observed_max = self
+                                        .population
+                                        .chromosomes
+                                        .iter()
+                                        .map(|c| c.dna().len())
+                                        .max()
+                                        .unwrap_or(max);
+                                    // Clamp to configured bounds
+                                    (observed_min.max(min), observed_max.min(max))
+                                }
+                                crate::chromosomes::ChromosomeLength::Fixed(n) => (n, n),
+                            };
+
                             #[cfg(not(target_arch = "wasm32"))]
                             let new_chromosomes: Vec<U> = (0..deficit)
                                 .into_par_iter()
                                 .map(|_| {
-                                    let genes = init_fn(
-                                        genes_per_chromosome,
-                                        alleles_ref,
-                                        Some(alleles_can_be_repeated),
-                                    );
+                                    let len = if min_obs == max_obs {
+                                        min_obs
+                                    } else {
+                                        let mut rng = crate::rng::make_rng();
+                                        rng.random_range(min_obs..=max_obs)
+                                    };
+                                    let genes = init_fn(len, alleles_ref);
                                     let mut new_chromosome = U::new();
                                     new_chromosome.set_dna(std::borrow::Cow::Owned(genes));
                                     if let Some(ref ff) = ff {
@@ -1941,11 +2040,13 @@ where
                             #[cfg(target_arch = "wasm32")]
                             let new_chromosomes: Vec<U> = (0..deficit)
                                 .map(|_| {
-                                    let genes = init_fn(
-                                        genes_per_chromosome,
-                                        alleles_ref,
-                                        Some(alleles_can_be_repeated),
-                                    );
+                                    let len = if min_obs == max_obs {
+                                        min_obs
+                                    } else {
+                                        let mut rng = crate::rng::make_rng();
+                                        rng.random_range(min_obs..=max_obs)
+                                    };
+                                    let genes = init_fn(len, alleles_ref);
                                     let mut new_chromosome = U::new();
                                     new_chromosome.set_dna(std::borrow::Cow::Owned(genes));
                                     if let Some(ref ff) = ff {
@@ -1969,11 +2070,6 @@ where
                         }
                     }
                 }
-            }
-
-            // Reporter (legacy) — fires after extension, matching pre-v2.2.0 order
-            if let Some(ref mut r) = self.reporter {
-                r.on_generation_complete(&gen_stats);
             }
 
             // Move gen_stats into the history vec (no clone)
@@ -2057,9 +2153,6 @@ where
             if improved {
                 best_fitness_so_far = current_best;
                 stagnation_count = 0;
-                if let Some(ref mut r) = self.reporter {
-                    r.on_new_best(i, self.population.best_chromosome.clone());
-                }
                 self.notify(|obs| obs.on_new_best(i, self.population.best_chromosome.clone()));
             } else {
                 stagnation_count += 1;
@@ -2067,7 +2160,7 @@ where
             }
 
             if let Some(max_stagnation) =
-                self.configuration.stopping_criteria.stagnation_generations
+                self.configuration.stagnation_generations
             {
                 if stagnation_count >= max_stagnation {
                     self.termination_cause = TerminationCause::StagnationReached;
@@ -2084,7 +2177,7 @@ where
             }
 
             // Convergence check (fitness std dev below threshold)
-            if let Some(threshold) = self.configuration.stopping_criteria.convergence_threshold {
+            if let Some(threshold) = self.configuration.convergence_threshold {
                 if self.stats.last().unwrap().fitness_std_dev < threshold {
                     self.termination_cause = TerminationCause::ConvergenceReached;
                     if let Some(func) = &callback {
@@ -2101,7 +2194,7 @@ where
 
             // Time limit check (not available on wasm32 — see warning emitted at run start)
             #[cfg(not(target_arch = "wasm32"))]
-            if let Some(max_secs) = self.configuration.stopping_criteria.max_duration_secs {
+            if let Some(max_secs) = self.configuration.max_duration_secs {
                 if start_time.elapsed().as_secs_f64() >= max_secs {
                     self.termination_cause = TerminationCause::TimeLimitReached;
                     if let Some(func) = &callback {
@@ -2122,9 +2215,6 @@ where
             self.termination_cause = TerminationCause::GenerationLimitReached;
         }
 
-        if let Some(ref mut r) = self.reporter {
-            r.on_finish(self.termination_cause, &self.stats);
-        }
         self.notify(|obs| obs.on_run_end(self.termination_cause, &self.stats));
 
         // If we want to perform a callback and the generation limit was just reached
@@ -2355,7 +2445,7 @@ where
 /// - For FixedFitness: stops when any chromosome has fitness exactly `fitness_target`.
 fn limit_reached<U>(limit: LimitConfiguration, chromosomes: &[U]) -> bool
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     let mut result = false;
 
@@ -2390,7 +2480,7 @@ where
 /// - Produces children, mutates them, computes their fitness, and returns the offspring.
 #[allow(clippy::too_many_arguments)]
 fn parent_crossover<U>(
-    parents: &[(usize, usize)],
+    parents: &[Vec<usize>],
     chromosomes: &[U],
     configuration: &GaConfiguration,
     age: usize,
@@ -2408,7 +2498,7 @@ fn parent_crossover<U>(
     is_maximization: bool,
 ) -> Result<Vec<U>, GaError>
 where
-    U: ChromosomeT + Send + Sync + 'static + Clone + mutation::ValueMutable,
+    U: LinearChromosome + Send + Sync + 'static + Clone + mutation::ValueMutable,
 {
     /*
         Gets the static crossover probability config and the static mutation probability config
@@ -2455,20 +2545,30 @@ where
         None
     };
 
-    // Shared per-pair closure: produces two children from one (key, value) parent pair.
+    // Shared per-group closure: produces children from one N-ary parent group.
     // cfg-gated only for the iterator kind (par_iter on native, iter on wasm32).
-    let process_pair = |(key, value): &(usize, usize)| -> Result<Vec<U>, GaError> {
+    let process_pair = |group: &Vec<usize>| -> Result<Vec<U>, GaError> {
         let mut rng = crate::rng::make_rng();
 
+        // T-54-01: guard against out-of-bounds or too-small group (minimum 2 parents)
+        if group.len() < 2 {
+            return Err(GaError::SelectionError(format!(
+                "Selection group has fewer than 2 parents (got {})",
+                group.len()
+            )));
+        }
+        let key = group[0];
+        let value = group[1];
+
         // Getting the parent 1 and 2 for crossover
-        let parent_1 = chromosomes.get(*key).ok_or_else(|| {
+        let parent_1 = chromosomes.get(key).ok_or_else(|| {
             GaError::SelectionError(format!(
                 "Selection returned out-of-bounds index {} (population size {})",
                 key,
                 chromosomes.len()
             ))
         })?;
-        let parent_2 = chromosomes.get(*value).ok_or_else(|| {
+        let parent_2 = chromosomes.get(value).ok_or_else(|| {
             GaError::SelectionError(format!(
                 "Selection returned out-of-bounds index {} (population size {})",
                 value,
@@ -2495,7 +2595,7 @@ where
             if let (Some(portfolio), Some(aos_state)) = (mutation_portfolio, aos_mutation_state) {
                 let mut state = aos_state.lock().unwrap();
                 let op_idx = state.select_operator(&mut rng, generation);
-                Some((op_idx, portfolio[op_idx]))
+                Some((op_idx, portfolio[op_idx].clone()))
             } else {
                 None
             };
@@ -2545,115 +2645,105 @@ where
         let mut child_2: U;
 
         if crossover_probability <= effective_crossover_prob {
-            let mut children = if let Some((_op_idx, cx_op)) = selected_crossover {
-                // Use AOS-selected operator (Phase 43)
+            // Determine the effective crossover method (AOS-selected or user-configured)
+            let effective_method = selected_crossover
+                .map(|(_, op)| op)
+                .unwrap_or(configuration.crossover_configuration.method);
+
+            // Dispatch crossover by group size: groups of 2 use the standard 2-parent path;
+            // larger groups use the multi-parent dispatch (UNDX/SPX/PCX via group.len() > 2).
+            let mut children = if group.len() > 2 {
+                // Multi-parent crossover path: collect all parents from the group
+                let mut parent_refs: Vec<&U> = Vec::with_capacity(group.len());
+                for &idx in group.iter() {
+                    let p = chromosomes.get(idx).ok_or_else(|| {
+                        GaError::SelectionError(format!(
+                            "Selection returned out-of-bounds index {} (population size {})",
+                            idx,
+                            chromosomes.len()
+                        ))
+                    })?;
+                    parent_refs.push(p);
+                }
                 let mut cx_config = configuration.crossover_configuration;
-                cx_config.method = cx_op;
-                crossover::factory(parent_1, parent_2, cx_config)?
+                cx_config.method = effective_method;
+                // Returns 1 offspring per D-04 (single-offspring contract)
+                crossover::factory_multi_parent_dispatch(&parent_refs, cx_config)?
             } else {
-                // Standard single-operator dispatch
-                crossover::factory(parent_1, parent_2, configuration.crossover_configuration)?
+                // Standard 2-parent crossover path — all variants with group.len() == 2
+                let mut cx_config = configuration.crossover_configuration;
+                cx_config.method = effective_method;
+                crossover::factory(parent_1, parent_2, cx_config)?
             };
-            child_2 = children.pop().ok_or_else(|| {
-                GaError::CrossoverError("Crossover returned fewer than 2 children".to_string())
-            })?;
+
+            // factory_multi_parent_dispatch returns 1 child; factory returns 2.
+            // For the 1-child path, child_1 gets the actual offspring; child_2 falls back to
+            // parent_1.clone() (D-04 / Pitfall 1). For the 2-child path, both pops succeed.
             child_1 = children.pop().ok_or_else(|| {
-                GaError::CrossoverError("Crossover returned fewer than 2 children".to_string())
+                GaError::CrossoverError("Crossover returned no children".to_string())
             })?;
+            child_2 = children.pop().unwrap_or_else(|| parent_1.clone());
         } else {
             child_1 = parent_1.clone();
             child_2 = parent_2.clone();
         }
 
         // Determine mutation method: AOS-selected or configured single operator
+        let selected_mutation_idx = selected_mutation.as_ref().map(|(idx, _)| *idx);
         let mutation_method = selected_mutation
             .map(|(_, op)| op)
-            .unwrap_or(configuration.mutation_configuration.method);
+            .unwrap_or_else(|| configuration.mutation_configuration.method.clone());
 
         if mutation_probability <= effective_mutation_prob {
-            if mutation_method == crate::operations::Mutation::Differential {
-                let f = configuration
-                    .mutation_configuration
-                    .differential_f
-                    .unwrap_or(0.5);
-                crate::operations::mutation::differential::differential_mutation(
-                    &mut child_1,
-                    chromosomes,
-                    *key,
-                    f,
-                )?;
-            } else if mutation_method == crate::operations::Mutation::Cauchy {
-                mutation::factory_with_params(
-                    mutation_method,
-                    &mut child_1,
-                    configuration.mutation_configuration.cauchy_scale,
-                    None,
-                )?;
-            } else if mutation_method == crate::operations::Mutation::LevyFlight {
-                mutation::factory_with_params(
-                    mutation_method,
-                    &mut child_1,
-                    None,
-                    configuration.mutation_configuration.levy_alpha,
-                )?;
-            } else if mutation_method == crate::operations::Mutation::Polynomial {
-                // Use dedicated `polynomial_eta` field if set; fall back to `step` for
-                // backward compatibility with callers that used `with_mutation_step` for eta.
-                let eta = configuration
-                    .mutation_configuration
-                    .polynomial_eta
-                    .or(configuration.mutation_configuration.step);
-                mutation::factory_with_params(mutation_method, &mut child_1, eta, None)?;
-            } else {
-                mutation::factory_with_params(
-                    mutation_method,
-                    &mut child_1,
-                    configuration.mutation_configuration.step,
-                    configuration.mutation_configuration.sigma,
-                )?;
+            match &mutation_method {
+                Mutation::Differential { f } => {
+                    let f_val = f.unwrap_or(0.5);
+                    crate::operations::mutation::differential::differential_mutation(
+                        &mut child_1,
+                        chromosomes,
+                        key,
+                        f_val,
+                    )?;
+                }
+                Mutation::Insertion | Mutation::Deletion => {
+                    mutation::factory_with_chromosome_length(
+                        mutation_method.clone(),
+                        &mut child_1,
+                        Some(configuration.limit_configuration.chromosome_length),
+                        None,
+                        None,
+                    )?;
+                }
+                _ => {
+                    mutation_method.mutate(&mut child_1, &mutation_method)?;
+                }
             }
         }
 
         mutation_probability = rng.random_range(0.0..1.0);
         if mutation_probability <= effective_mutation_prob {
-            if mutation_method == crate::operations::Mutation::Differential {
-                let f = configuration
-                    .mutation_configuration
-                    .differential_f
-                    .unwrap_or(0.5);
-                crate::operations::mutation::differential::differential_mutation(
-                    &mut child_2,
-                    chromosomes,
-                    *value,
-                    f,
-                )?;
-            } else if mutation_method == crate::operations::Mutation::Cauchy {
-                mutation::factory_with_params(
-                    mutation_method,
-                    &mut child_2,
-                    configuration.mutation_configuration.cauchy_scale,
-                    None,
-                )?;
-            } else if mutation_method == crate::operations::Mutation::LevyFlight {
-                mutation::factory_with_params(
-                    mutation_method,
-                    &mut child_2,
-                    None,
-                    configuration.mutation_configuration.levy_alpha,
-                )?;
-            } else if mutation_method == crate::operations::Mutation::Polynomial {
-                let eta = configuration
-                    .mutation_configuration
-                    .polynomial_eta
-                    .or(configuration.mutation_configuration.step);
-                mutation::factory_with_params(mutation_method, &mut child_2, eta, None)?;
-            } else {
-                mutation::factory_with_params(
-                    mutation_method,
-                    &mut child_2,
-                    configuration.mutation_configuration.step,
-                    configuration.mutation_configuration.sigma,
-                )?;
+            match &mutation_method {
+                Mutation::Differential { f } => {
+                    let f_val = f.unwrap_or(0.5);
+                    crate::operations::mutation::differential::differential_mutation(
+                        &mut child_2,
+                        chromosomes,
+                        value,
+                        f_val,
+                    )?;
+                }
+                Mutation::Insertion | Mutation::Deletion => {
+                    mutation::factory_with_chromosome_length(
+                        mutation_method.clone(),
+                        &mut child_2,
+                        Some(configuration.limit_configuration.chromosome_length),
+                        None,
+                        None,
+                    )?;
+                }
+                _ => {
+                    mutation_method.mutate(&mut child_2, &mutation_method)?;
+                }
             }
         }
 
@@ -2689,7 +2779,7 @@ where
         }
         // Mutation reward: compare parent vs child fitness
         if let Some(ref acc) = mutation_reward_acc {
-            if let Some((m_op_idx, _)) = selected_mutation {
+            if let Some(m_op_idx) = selected_mutation_idx {
                 let (p, c) = if is_maximization {
                     (child_1.fitness(), parent_1.fitness())
                 } else {
@@ -2743,7 +2833,7 @@ where
 /// Extracts the top `count` individuals from the population by fitness.
 ///
 /// Only clones the selected elite individuals instead of the whole population.
-fn extract_elite<U: ChromosomeT>(
+fn extract_elite<U: LinearChromosome>(
     chromosomes: &[U],
     count: usize,
     problem_solving: ProblemSolving,
@@ -2773,7 +2863,7 @@ fn extract_elite<U: ChromosomeT>(
 }
 
 /// Reinserts elite individuals into the population, replacing the worst if already at capacity.
-fn reinsert_elite<U: ChromosomeT>(
+fn reinsert_elite<U: LinearChromosome>(
     chromosomes: &mut [U],
     elite: Vec<U>,
     problem_solving: ProblemSolving,
@@ -2801,5 +2891,77 @@ fn reinsert_elite<U: ChromosomeT>(
     // Overwrite the k worst slots with the elite individuals.
     for (i, elite_individual) in elite.into_iter().take(k).enumerate() {
         chromosomes[i] = elite_individual;
+    }
+}
+
+impl<U> Strategy<U> for Ga<U>
+where
+    U: LinearChromosome
+        + Send
+        + Sync
+        + 'static
+        + Clone
+        + Debug
+        + mutation::ValueMutable
+        + MaybeSerialize
+        + MaybeDeserialize
+        + OperatorCompat,
+    U::Gene: 'static + Debug,
+{
+    fn run(&mut self) -> Result<(), GaError> {
+        Ga::run(self).map(|_| ())
+    }
+
+    fn best(&self) -> Option<&U> {
+        if self.population.best_chromosome_is_set {
+            Some(&self.population.best_chromosome)
+        } else {
+            None
+        }
+    }
+}
+
+impl<U> Ga<U>
+where
+    U: LinearChromosome
+        + VectorFitness
+        + Send
+        + Sync
+        + 'static
+        + Clone
+        + Debug
+        + mutation::ValueMutable
+        + MaybeSerialize
+        + MaybeDeserialize
+        + OperatorCompat,
+    U::Gene: 'static + Debug,
+{
+    /// Selects parents using lexicase or epsilon-lexicase selection.
+    ///
+    /// Call this instead of the standard `run()` selection step when `U:` [`VectorFitness`]
+    /// and `Selection::Lexicase` or `Selection::EpsilonLexicase` is configured.
+    /// Also syncs each chromosome's scalar fitness to the mean of its case scores (D-04).
+    ///
+    /// # Errors
+    ///
+    /// Returns `GaError::SelectionError` if the population is too small,
+    /// case fitness is unset, or any NaN case scores are found.
+    /// Returns `GaError::ConfigurationError` if the configured selection method is
+    /// not `Lexicase` or `EpsilonLexicase`.
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// // Selection::Lexicase / EpsilonLexicase reach run() only when U does not implement
+    /// // VectorFitness; factory() returns GaError::ConfigurationError for those variants per D-06.
+    /// // Users with VectorFitness chromosomes call select_parents_lexicase() directly.
+    /// let pairs = ga.select_parents_lexicase()?;
+    /// ```
+    pub fn select_parents_lexicase(&mut self) -> Result<Vec<Vec<usize>>, GaError> {
+        crate::operations::selection::factory_lexicase(
+            &mut self.population.chromosomes,
+            self.configuration.selection_configuration,
+            self.configuration.number_of_threads,
+        )
     }
 }

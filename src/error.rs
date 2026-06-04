@@ -65,6 +65,10 @@ pub enum GaError {
     CheckpointError(String),
     /// A local search operation failed.
     LocalSearchError(String),
+    /// A tree exceeded the configured maximum depth limit.
+    TreeDepthExceeded(String),
+    /// A tree exceeded the configured maximum node count limit.
+    TreeSizeExceeded(String),
 }
 
 impl fmt::Display for GaError {
@@ -109,6 +113,8 @@ impl fmt::Display for GaError {
             GaError::MigrationError(msg) => write!(f, "Migration error: {}", msg),
             GaError::CheckpointError(msg) => write!(f, "Checkpoint error: {}", msg),
             GaError::LocalSearchError(msg) => write!(f, "Local search error: {}", msg),
+            GaError::TreeDepthExceeded(msg) => write!(f, "Tree depth exceeded: {}", msg),
+            GaError::TreeSizeExceeded(msg) => write!(f, "Tree size exceeded: {}", msg),
         }
     }
 }

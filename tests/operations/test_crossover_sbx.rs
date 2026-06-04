@@ -1,7 +1,7 @@
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::operations::crossover::sbx::sbx;
-use genetic_algorithms::traits::ChromosomeT;
+use genetic_algorithms::traits::LinearChromosome;
 use std::borrow::Cow;
 
 fn build_parents() -> (RangeChromosome<f64>, RangeChromosome<f64>) {

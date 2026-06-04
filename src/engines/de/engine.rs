@@ -3,17 +3,17 @@
 use std::borrow::Cow;
 use std::sync::Arc;
 
-use crate::configuration::ProblemSolving;
 use super::configuration::{DeAdaptive, DeConfiguration, DeMutationStrategy};
 use super::crossover::crossover;
-use super::gene::DeGene;
+use crate::traits::RealGene;
 use super::mutation::{mutate, JadeState, LShadeState};
-use rand::Rng;
+use crate::configuration::ProblemSolving;
 use crate::rng::make_rng;
-use crate::traits::{ChromosomeT, FitnessFn};
+use crate::traits::{FitnessFn, LinearChromosome};
+use rand::Rng;
 
 /// Result returned by [`DeEngine::run`].
-pub struct DeResult<U: ChromosomeT> {
+pub struct DeResult<U: LinearChromosome> {
     /// Final population (all individuals evaluated).
     pub population: Vec<U>,
     /// The best individual found during the run.
@@ -26,7 +26,7 @@ pub struct DeResult<U: ChromosomeT> {
 
 /// Differential Evolution engine.
 ///
-/// Generic over the chromosome type `U`; `U::Gene` must implement [`DeGene`]
+/// Generic over the chromosome type `U`; `U::Gene` must implement [`RealGene`]
 /// so that mutation arithmetic can be performed on gene values.
 ///
 /// # Example
@@ -43,22 +43,22 @@ pub struct DeResult<U: ChromosomeT> {
 /// let mut engine = DeEngine::new(
 ///     config,
 ///     |n| (0..n).map(|_| /* initialise chromosome */ todo!()).collect(),
-///     |dna| dna.iter().map(|g| g.de_value().powi(2)).sum(),
+///     |dna| dna.iter().map(|g| g.real_value().powi(2)).sum(),
 /// );
 /// let result = engine.run();
 /// ```
-pub struct DeEngine<U: ChromosomeT>
+pub struct DeEngine<U: LinearChromosome>
 where
-    U::Gene: DeGene,
+    U::Gene: RealGene,
 {
     config: DeConfiguration,
     init_fn: Arc<dyn Fn(usize) -> Vec<U> + Send + Sync>,
     fitness_fn: Arc<FitnessFn<U::Gene>>,
 }
 
-impl<U: ChromosomeT + Clone> DeEngine<U>
+impl<U: LinearChromosome + Clone> DeEngine<U>
 where
-    U::Gene: DeGene,
+    U::Gene: RealGene,
 {
     /// Construct a new engine.
     ///
@@ -120,9 +120,7 @@ where
             for i in 0..pop_size {
                 // Draw F and CR (adaptive or static)
                 let (f, cr) = match &self.config.adaptive {
-                    DeAdaptive::None => {
-                        (self.config.mutation_factor, self.config.crossover_rate)
-                    }
+                    DeAdaptive::None => (self.config.mutation_factor, self.config.crossover_rate),
                     DeAdaptive::Jade { .. } => (jade.draw_f(&mut rng), jade.draw_cr(&mut rng)),
                     DeAdaptive::LShade { .. } => {
                         let ls = lshade.as_ref().unwrap();
@@ -147,7 +145,13 @@ where
                 let mutant = mutate(&eff_strategy, &pop, i, eff_best, f, &mut rng, arc_ref);
 
                 // Crossover
-                let trial_dna = crossover(&self.config.crossover_mode, pop[i].dna(), &mutant, cr, &mut rng);
+                let trial_dna = crossover(
+                    &self.config.crossover_mode,
+                    pop[i].dna(),
+                    &mutant,
+                    cr,
+                    &mut rng,
+                );
                 let trial_fitness = (self.fitness_fn)(&trial_dna);
 
                 // Greedy selection
@@ -204,7 +208,12 @@ where
             }
         }
 
-        DeResult { population: pop, best, best_fitness, generations }
+        DeResult {
+            population: pop,
+            best,
+            best_fitness,
+            generations,
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -223,11 +232,19 @@ where
 
     /// Select a random index from the top `p_count` individuals (pbest for JADE).
     fn select_pbest(&self, pop: &[U], p_count: usize, rng: &mut impl rand::Rng) -> usize {
-        let mut indexed: Vec<(usize, f64)> = pop.iter().enumerate().map(|(i, u)| (i, u.fitness())).collect();
+        let mut indexed: Vec<(usize, f64)> = pop
+            .iter()
+            .enumerate()
+            .map(|(i, u)| (i, u.fitness()))
+            .collect();
         if matches!(self.config.problem_solving, ProblemSolving::Minimization) {
-            indexed.sort_unstable_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
+            indexed.sort_unstable_by(|a, b| {
+                a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal)
+            });
         } else {
-            indexed.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+            indexed.sort_unstable_by(|a, b| {
+                b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal)
+            });
         }
         let top = indexed[..p_count.min(indexed.len())].to_vec();
         let pick = rng.random_range(0..top.len());

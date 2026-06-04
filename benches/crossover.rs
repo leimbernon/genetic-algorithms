@@ -12,7 +12,7 @@ use genetic_algorithms::operations::crossover::multipoint;
 use genetic_algorithms::operations::crossover::order;
 use genetic_algorithms::operations::crossover::single_point;
 use genetic_algorithms::operations::crossover::uniform;
-use genetic_algorithms::traits::{ChromosomeT, GeneT};
+use genetic_algorithms::traits::{ChromosomeT, GeneT, LinearChromosome};
 
 #[derive(Debug, Copy, Clone, Default, PartialEq)]
 pub struct Gene {
@@ -38,12 +38,6 @@ struct SimpleChromosome {
 impl ChromosomeT for SimpleChromosome {
     type Gene = Gene;
 
-    fn dna(&self) -> &[Self::Gene] {
-        &self.dna
-    }
-    fn dna_mut(&mut self) -> &mut [Self::Gene] {
-        &mut self.dna
-    }
     fn fitness(&self) -> f64 {
         self.fitness
     }
@@ -58,6 +52,17 @@ impl ChromosomeT for SimpleChromosome {
     fn age(&self) -> usize {
         self.age
     }
+    fn calculate_fitness(&mut self) {
+        self.fitness = 0.0;
+    }
+}
+impl LinearChromosome for SimpleChromosome {
+    fn dna(&self) -> &[Self::Gene] {
+        &self.dna
+    }
+    fn dna_mut(&mut self) -> &mut [Self::Gene] {
+        &mut self.dna
+    }
     fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
         self.dna = match dna {
             Cow::Borrowed(slice) => slice.to_vec(),
@@ -71,9 +76,6 @@ impl ChromosomeT for SimpleChromosome {
     {
         self.fitness_fn = FitnessFnWrapper::new(fitness_fn);
         self
-    }
-    fn calculate_fitness(&mut self) {
-        self.fitness = 0.0;
     }
 }
 

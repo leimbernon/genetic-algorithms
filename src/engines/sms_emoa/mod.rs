@@ -116,11 +116,10 @@ use crate::configuration::GaConfiguration;
 use crate::error::GaError;
 use crate::multi_objective::indicators::hypervolume;
 use crate::multi_objective::pareto::{ParetoFront, ParetoIndividual};
-use crate::multi_objective::ObjectiveFn;
 use crate::observer::SmsEmoaObserver;
 use crate::operations::{crossover, mutation};
 use crate::sms_emoa::configuration::SmsEmoaConfiguration;
-use crate::traits::{ChromosomeT, InitializationFn};
+use crate::traits::{InitializationFn, LinearChromosome, MutationOperator, VectorFitness};
 use rand::Rng;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
@@ -134,7 +133,7 @@ use std::time::Instant;
 /// * `U` - Chromosome type implementing `ChromosomeT`.
 pub struct SmsEmoaGa<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// SMS-EMOA-specific configuration.
     pub sms_config: SmsEmoaConfiguration,
@@ -144,8 +143,6 @@ where
     pub alleles: Vec<U::Gene>,
     /// Initialization function.
     pub initialization_fn: Option<Arc<InitializationFn<U::Gene>>>,
-    /// Objective functions (one per objective).
-    pub objective_fns: Vec<Arc<ObjectiveFn<U::Gene>>>,
     /// Optional structured lifecycle observer for SMS-EMOA-specific events.
     pub observer: Option<Arc<dyn SmsEmoaObserver<U> + Send + Sync>>,
 }
@@ -153,7 +150,7 @@ where
 #[allow(dead_code)]
 impl<U> SmsEmoaGa<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// Creates a new `SmsEmoaGa` with the given configurations.
     pub fn new(sms_config: SmsEmoaConfiguration, ga_config: GaConfiguration) -> Self {
@@ -162,7 +159,6 @@ where
             ga_config,
             alleles: Vec::new(),
             initialization_fn: None,
-            objective_fns: Vec::new(),
             observer: None,
         }
     }
@@ -190,15 +186,9 @@ where
     /// Sets the initialization function.
     pub fn with_initialization_fn<F>(mut self, f: F) -> Self
     where
-        F: Fn(usize, Option<&[U::Gene]>, Option<bool>) -> Vec<U::Gene> + Send + Sync + 'static,
+        F: Fn(usize, Option<&[U::Gene]>) -> Vec<U::Gene> + Send + Sync + 'static,
     {
         self.initialization_fn = Some(Arc::new(f));
-        self
-    }
-
-    /// Sets the objective functions.
-    pub fn with_objective_fns(mut self, fns: Vec<Box<ObjectiveFn<U::Gene>>>) -> Self {
-        self.objective_fns = fns.into_iter().map(Arc::from).collect();
         self
     }
 
@@ -224,13 +214,6 @@ where
             return Err(GaError::InvalidSmsEmoaConfiguration(
                 "initialization_fn is required".to_string(),
             ));
-        }
-        if self.objective_fns.len() != self.sms_config.num_objectives {
-            return Err(GaError::InvalidSmsEmoaConfiguration(format!(
-                "Expected {} objective functions, got {}",
-                self.sms_config.num_objectives,
-                self.objective_fns.len()
-            )));
         }
         if !self.sms_config.objective_directions.is_empty()
             && self.sms_config.objective_directions.len() != self.sms_config.num_objectives
@@ -279,6 +262,12 @@ where
         Ok(contributions)
     }
 
+}
+
+impl<U> SmsEmoaGa<U>
+where
+    U: LinearChromosome + mutation::ValueMutable + VectorFitness,
+{
     /// Initializes the population with random chromosomes and evaluates objectives in parallel.
     fn initialize_population(&self) -> Result<Vec<ParetoIndividual<U>>, GaError> {
         let init_fn = self.initialization_fn.as_ref().ok_or_else(|| {
@@ -286,8 +275,14 @@ where
         })?;
 
         let pop_size = self.sms_config.population_size;
-        let genes_per_chrom = self.ga_config.limit_configuration.genes_per_chromosome;
-        let alleles_can_repeat = self.ga_config.limit_configuration.alleles_can_be_repeated;
+        let genes_per_chrom = match self.ga_config.limit_configuration.chromosome_length {
+            crate::chromosomes::ChromosomeLength::Fixed(n) => n,
+            crate::chromosomes::ChromosomeLength::Variable { .. } => {
+                return Err(GaError::InvalidSmsEmoaConfiguration(
+                    "ChromosomeLength::Variable is not yet supported (Phase 52). Use ChromosomeLength::Fixed.".into(),
+                ));
+            }
+        };
 
         let alleles = if self.alleles.is_empty() {
             None
@@ -299,38 +294,34 @@ where
             pop_size,
             genes_per_chrom,
             alleles,
-            Some(alleles_can_repeat),
             init_fn,
             None,
             0,
         );
 
-        let objective_fns = &self.objective_fns;
         #[cfg(not(target_arch = "wasm32"))]
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_par_iter()
-            .map(|chrom| {
-                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
+            .map(|mut chrom| {
+                chrom.calculate_fitness();
+                let objectives = chrom.fitness_values().to_vec();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
         #[cfg(target_arch = "wasm32")]
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_iter()
-            .map(|chrom| {
-                let objectives: Vec<f64> = objective_fns.iter().map(|f| f(chrom.dna())).collect();
+            .map(|mut chrom| {
+                chrom.calculate_fitness();
+                let objectives = chrom.fitness_values().to_vec();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
 
         Ok(population)
     }
-}
 
-impl<U> SmsEmoaGa<U>
-where
-    U: ChromosomeT + mutation::ValueMutable,
-{
+
     /// Creates one offspring via binary tournament selection, crossover, and mutation.
     fn create_one_offspring(&self, population: &[ParetoIndividual<U>]) -> Result<U, GaError> {
         let mut rng = crate::rng::make_rng();
@@ -350,17 +341,12 @@ where
             vec![parent_a.clone()]
         };
 
-        let mutation_config = self.ga_config.mutation_configuration;
+        let mutation_config = &self.ga_config.mutation_configuration;
         let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
         for child in children.iter_mut() {
             let mp: f64 = rng.random();
             if mp <= mut_prob {
-                mutation::factory_with_params(
-                    mutation_config.method,
-                    child,
-                    mutation_config.step,
-                    mutation_config.sigma,
-                )?;
+                mutation_config.method.mutate(child, &mutation_config.method)?;
             }
         }
 
@@ -395,6 +381,17 @@ where
         // Initialize population
         let mut population = self.initialize_population()?;
 
+        // Runtime objective-count guard
+        if let Some(first) = population.first() {
+            let got = first.chromosome.fitness_values().len();
+            if got != self.sms_config.num_objectives {
+                return Err(GaError::InvalidSmsEmoaConfiguration(format!(
+                    "Expected {} objectives from fitness_values(), got {}",
+                    self.sms_config.num_objectives, got
+                )));
+            }
+        }
+
         // Auto-compute reference point if not provided
         // Use max of each objective across the initial population + 1.0 margin
         let reference_point: Vec<f64> =
@@ -422,11 +419,9 @@ where
             let offspring_chrom = self.create_one_offspring(&population)?;
 
             // (b) Evaluate offspring objectives
-            let offspring_obj: Vec<f64> = self
-                .objective_fns
-                .iter()
-                .map(|f| f(offspring_chrom.dna()))
-                .collect();
+            let mut offspring_chrom = offspring_chrom;
+            offspring_chrom.calculate_fitness();
+            let offspring_obj = offspring_chrom.fitness_values().to_vec();
             let offspring = ParetoIndividual::new(offspring_chrom, offspring_obj);
 
             // (c) Merge offspring into population (mu+1)

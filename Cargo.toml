@@ -2,7 +2,7 @@
 name = "genetic_algorithms"
 description = "Library for solving genetic algorithm problems"
 authors = ["Luis Eduardo Imbernón <imbernon@gmail.com>"]
-version = "2.4.0"
+version = "3.0.0"
 edition = "2021"
 rust-version = "1.81.0"
 readme = "README.md"
@@ -13,18 +13,25 @@ documentation = "https://docs.rs/genetic_algorithms/latest/genetic_algorithms"
 keywords = ["genetics", "algorithm", "ai", "artificial", "intelligence"]
 categories = ["emulators","development-tools", "science", "simulation"]
 
-exclude = [
-    ".planning/**",
-    ".github/**",
-    ".claire/**",
-    ".devcontainer/**",
-    "*.log",
-    "DEVELOPMENT.md",
+include = [
+    "/src",
+    "/examples",
+    "/tests",
+    "/benches",
+    "/docs",
+    "/build.rs",
+    "/Cargo.toml",
+    "/README.md",
+    "/CHANGELOG.md",
+    "/CONTRIBUTING.md",
+    "/LICENSE",
+    "/SECURITY.md",
+    "MIGRATION.md",
 ]
 
 [features]
 default = []
-serde = ["dep:serde", "dep:serde_json"]
+serde = ["dep:serde", "dep:serde_json", "dep:serde_stacker"]
 visualization = ["dep:plotters"]
 observer-tracing = ["dep:tracing"]
 observer-metrics = ["dep:metrics"]
@@ -39,6 +46,7 @@ metrics = { version = "0.24", optional = true }
 env_logger = "0.11.5"
 serde = { version = "1", features = ["derive", "rc"], optional = true }
 serde_json = { version = "1", optional = true }
+serde_stacker = { version = "0.1", optional = true }
 plotters = { version = "0.3.7", default-features = false, features = ["bitmap_backend", "bitmap_encoder", "svg_backend", "line_series", "histogram", "ab_glyph"], optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
@@ -46,7 +54,7 @@ getrandom = { version = "0.3", features = ["wasm_js"] }
 
 [dev-dependencies]
 criterion = "0.8.2"
-serde_json = "1"
+serde_json = { version = "1", features = ["unbounded_depth"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-log = "0.2"
 
@@ -110,3 +118,9 @@ required-features = ["observer-metrics"]
 
 [[example]]
 name = "memetic_rastrigin"
+
+[[example]]
+name = "cma_es_rastrigin"
+
+[[example]]
+name = "pso_rastrigin"

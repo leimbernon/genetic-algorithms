@@ -12,18 +12,21 @@ fn test_add_chromosomes_aga() {
         fitness: 20.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_2 = Chromosome {
         dna: Vec::<Gene>::new(),
         fitness: 40.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_3 = Chromosome {
         dna: Vec::<Gene>::new(),
         fitness: 120.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let mut chromosomes = vec![chromosome_1, chromosome_2, chromosome_3];
     let mut population = Population::new_empty();
@@ -46,18 +49,21 @@ fn test_add_chromosomes() {
         fitness: 20.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_2 = Chromosome {
         dna: Vec::<Gene>::new(),
         fitness: 40.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let chromosome_3 = Chromosome {
         dna: Vec::<Gene>::new(),
         fitness: 120.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
     let mut chromosomes = vec![chromosome_1, chromosome_2, chromosome_3];
     let mut population = Population::new_empty();
@@ -84,6 +90,7 @@ fn test_fitness_zero_is_preserved() {
         fitness: 0.0, // Explicitly 0.0 — this is a valid fitness
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     // If we call calculate_fitness, it would compute 0*0 + 10*1 = 10.0
@@ -108,6 +115,7 @@ fn test_nan_fitness_triggers_recalculation() {
         fitness: f64::NAN,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     let mut population = Population::new(vec![chromosome]);
@@ -130,18 +138,21 @@ fn test_fmax_all_negative_fitness() {
             fitness: -100.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: Vec::<Gene>::new(),
             fitness: -50.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: Vec::<Gene>::new(),
             fitness: -200.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
     ];
     let mut population = Population::new_empty();
@@ -168,18 +179,21 @@ fn test_fmax_mixed_negative_and_positive() {
             fitness: -10.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: Vec::<Gene>::new(),
             fitness: 5.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: Vec::<Gene>::new(),
             fitness: -30.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
     ];
     let mut population = Population::new_empty();
@@ -197,6 +211,7 @@ fn test_fmax_single_chromosome() {
         fitness: 42.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     }];
     let mut population = Population::new_empty();
     population.add_chromosomes(&mut chromosomes);

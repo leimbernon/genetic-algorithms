@@ -1,6 +1,6 @@
 use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
 use genetic_algorithms::genotypes::Binary as BinaryGenotype;
-use genetic_algorithms::traits::{ChromosomeT, GeneT};
+use genetic_algorithms::traits::{GeneT, LinearChromosome};
 
 #[cfg(test)]
 #[test]

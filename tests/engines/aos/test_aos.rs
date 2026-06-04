@@ -301,10 +301,10 @@ fn aos_ga_xover() -> Ga<RangeChromosome<i32>> {
     let alleles_clone = alleles.clone();
 
     Ga::new()
-        .with_genes_per_chromosome(n as usize)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n as usize))
         .with_population_size(30)
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |genes_per_chromosome, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
         })
         .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
         .with_selection_method(Selection::Tournament)
@@ -328,10 +328,10 @@ fn aos_ga_both() -> Ga<RangeChromosome<i32>> {
     let alleles_clone = alleles.clone();
 
     Ga::new()
-        .with_genes_per_chromosome(n as usize)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n as usize))
         .with_population_size(30)
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |genes_per_chromosome, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
         })
         .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
         .with_selection_method(Selection::Tournament)
@@ -376,10 +376,10 @@ fn test_aos_ga_mab_strategy_runs() {
     let alleles_clone = alleles.clone();
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_genes_per_chromosome(n as usize)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n as usize))
         .with_population_size(30)
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |genes_per_chromosome, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
         })
         .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
         .with_selection_method(Selection::Tournament)
@@ -407,10 +407,10 @@ fn test_aos_ga_adaptive_pursuit_runs() {
     let alleles_clone = alleles.clone();
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_genes_per_chromosome(n as usize)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n as usize))
         .with_population_size(30)
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |genes_per_chromosome, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
         })
         .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
         .with_selection_method(Selection::Tournament)
@@ -438,10 +438,10 @@ fn test_aos_ga_with_adaptive_ga_coexists() {
     let alleles_clone = alleles.clone();
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_genes_per_chromosome(n as usize)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n as usize))
         .with_population_size(30)
-        .with_initialization_fn(move |genes_per_chromosome, _, _| {
-            range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |genes_per_chromosome, _| {
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
         })
         .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
         .with_selection_method(Selection::Tournament)

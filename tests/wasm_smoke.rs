@@ -7,13 +7,14 @@
 //! wasm32-unknown-unknown` in CI (`.github/workflows/wasm-check.yml`).
 
 use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
-use genetic_algorithms::configuration::{ProblemSolving, StoppingCriteria};
+use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::Ga;
 use genetic_algorithms::initializers::binary_random_initialization;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::traits::{
     ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
 };
+use genetic_algorithms::ChromosomeLength;
 
 fn count_ones(genes: &[genetic_algorithms::genotypes::Binary]) -> f64 {
     genes.iter().filter(|g| g.value).count() as f64
@@ -26,7 +27,7 @@ fn ga_runs_with_max_duration_secs() {
     // generation limit terminates first.
     let mut ga: Ga<BinaryChromosome> = Ga::new()
         .with_population_size(8)
-        .with_genes_per_chromosome(8)
+        .with_chromosome_length(ChromosomeLength::Fixed(8))
         .with_initialization_fn(binary_random_initialization)
         .with_fitness_fn(count_ones)
         .with_selection_method(Selection::Random)
@@ -35,10 +36,7 @@ fn ga_runs_with_max_duration_secs() {
         .with_survivor_method(Survivor::Fitness)
         .with_problem_solving(ProblemSolving::Maximization)
         .with_max_generations(5)
-        .with_stopping_criteria(StoppingCriteria {
-            max_duration_secs: Some(60.0),
-            ..Default::default()
-        })
+        .with_max_duration_secs(60.0)
         .build()
         .expect("valid configuration");
 

@@ -1,7 +1,7 @@
 //! Order crossover (OX) implementation.
 
 use crate::error::GaError;
-use crate::traits::ChromosomeT;
+use crate::traits::LinearChromosome;
 use log::debug;
 use rand::Rng;
 use std::borrow::Cow;
@@ -16,7 +16,7 @@ use std::collections::HashSet;
 /// 2. Copy the segment between the points from parent 1 to child 1.
 /// 3. Fill the remaining positions with genes from parent 2, in order, skipping duplicates.
 /// 4. Repeat symmetrically for child 2.
-pub fn order<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
+pub fn order<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
     let len = parent_1.dna().len();
     if len != parent_2.dna().len() {
         return Err(GaError::CrossoverError(format!(
@@ -55,7 +55,7 @@ pub fn order<U: ChromosomeT>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaErr
     Ok(vec![child_1, child_2])
 }
 
-fn ox_build_child<G: crate::traits::GeneT>(
+pub(crate) fn ox_build_child<G: crate::traits::GeneT>(
     donor: &[G],
     filler: &[G],
     p1: usize,

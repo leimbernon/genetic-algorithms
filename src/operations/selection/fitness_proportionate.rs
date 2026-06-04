@@ -21,7 +21,14 @@ use rand::Rng;
 ///
 /// Returns an empty vector when the total fitness is zero or negative
 /// (all individuals must have positive fitness for meaningful selection).
-pub fn roulette_wheel_selection<U: ChromosomeT>(chromosomes: &[U]) -> Vec<(usize, usize)> {
+///
+/// # Arguments
+///
+/// * `chromosomes` - Population to select from.
+/// * `couples` - Number of parent groups to produce.
+/// * `num_parents` - Number of parents per group (must be >= 2).
+pub fn roulette_wheel_selection<U: ChromosomeT>(chromosomes: &[U], couples: usize, num_parents: usize) -> Vec<Vec<usize>> {
+    let num_parents = num_parents.max(2);
     let mut mating = Vec::new();
 
     //1- Calculate the sum of all fitnesses
@@ -46,8 +53,8 @@ pub fn roulette_wheel_selection<U: ChromosomeT>(chromosomes: &[U]) -> Vec<(usize
         cumulative_fitness.push(running_sum);
     }
 
-    //3- Select chromosomes.len() parents using the roulette wheel
-    let num_selections = chromosomes.len();
+    //3- Select couples * num_parents parents using the roulette wheel
+    let num_selections = couples * num_parents;
     let mut selected = Vec::with_capacity(num_selections);
 
     for _ in 0..num_selections {
@@ -60,9 +67,9 @@ pub fn roulette_wheel_selection<U: ChromosomeT>(chromosomes: &[U]) -> Vec<(usize
         trace!(target="selection_events", method="roulette_wheel_selection"; "Selected chromosome {} with spin {}", chosen, spin);
     }
 
-    //4- Pair selected parents into couples
-    for pair in selected.chunks_exact(2) {
-        mating.push((pair[0], pair[1]));
+    //4- Group selected parents into N-ary groups
+    for group in selected.chunks_exact(num_parents) {
+        mating.push(group.to_vec());
     }
 
     debug!(target="selection_events", method="roulette_wheel_selection"; "Roulette wheel selection finished");
@@ -73,7 +80,7 @@ pub fn roulette_wheel_selection<U: ChromosomeT>(chromosomes: &[U]) -> Vec<(usize
 ///
 /// A low-variance alternative to roulette-wheel selection. A single random
 /// starting point is chosen, then equally spaced pointers are placed along
-/// the cumulative fitness distribution to select `couples * 2` parents.
+/// the cumulative fitness distribution to select `couples * num_parents` parents.
 ///
 /// SUS guarantees that individuals with very high fitness are selected
 /// roughly the expected number of times, reducing the sampling noise
@@ -82,11 +89,14 @@ pub fn roulette_wheel_selection<U: ChromosomeT>(chromosomes: &[U]) -> Vec<(usize
 /// # Arguments
 ///
 /// * `chromosomes` - Population to select from.
-/// * `couples` - Number of parent pairs to produce.
+/// * `couples` - Number of parent groups to produce.
+/// * `num_parents` - Number of parents per group (must be >= 2).
 pub fn stochastic_universal_sampling<U: ChromosomeT>(
     chromosomes: &[U],
     couples: usize,
-) -> Vec<(usize, usize)> {
+    num_parents: usize,
+) -> Vec<Vec<usize>> {
+    let num_parents = num_parents.max(2);
     debug!(target="selection_events", method="stochastic_universal_sampling"; "Starting the stochastic universal sampling selection");
     let mut mating = Vec::new();
 
@@ -94,8 +104,8 @@ pub fn stochastic_universal_sampling<U: ChromosomeT>(
         return mating;
     }
 
-    let num_selections = couples * 2;
-    trace!(target="selection_events", method="stochastic_universal_sampling"; "Chromosome couples: {}", num_selections);
+    let num_selections = couples * num_parents;
+    trace!(target="selection_events", method="stochastic_universal_sampling"; "Chromosome selections: {}", num_selections);
 
     //1- Calculate total fitness and build cumulative fitness array
     let total: f64 = chromosomes.iter().map(|gen| gen.fitness()).sum();
@@ -134,13 +144,13 @@ pub fn stochastic_universal_sampling<U: ChromosomeT>(
         selected.push(cumulative_idx);
     }
 
-    //4- Pair the selected indices into couples
-    for pair in selected.chunks(2) {
-        if pair.len() == 2 {
-            mating.push((pair[0], pair[1]));
+    //4- Group the selected indices into N-ary parent groups
+    for group in selected.chunks(num_parents) {
+        if group.len() == num_parents {
+            mating.push(group.to_vec());
         }
     }
 
-    debug!(target="mutation_events", method="stochastic_universal_sampling"; "Stochastic universal sampling finished");
+    debug!(target="selection_events", method="stochastic_universal_sampling"; "Stochastic universal sampling finished");
     mating
 }

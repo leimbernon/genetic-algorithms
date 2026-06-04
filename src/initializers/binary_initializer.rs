@@ -12,7 +12,6 @@ use rand::Rng;
 ///
 /// * `genes_per_chromosome` - The number of genes per chromosome.
 /// * `_alleles` - An optional slice of `Binary` to use as a source of alleles (not used in this function).
-/// * `_needs_unique_ids` - An optional boolean indicating if unique IDs are needed (not used in this function).
 ///
 /// # Returns
 ///
@@ -24,13 +23,12 @@ use rand::Rng;
 /// use genetic_algorithms::chromosomes::Binary;
 /// use genetic_algorithms::initializers::binary_random_initialization;
 ///
-/// let genes = binary_random_initialization(100, None, None);
+/// let genes = binary_random_initialization(100, None);
 /// assert_eq!(genes.len(), 100);
 /// ```
 pub fn binary_random_initialization(
     genes_per_chromosome: usize,
     _alleles: Option<&[BinaryGenotype]>,
-    _needs_unique_ids: Option<bool>,
 ) -> Vec<BinaryGenotype> {
     let mut genes = Vec::new();
     let mut rng = crate::rng::make_rng();

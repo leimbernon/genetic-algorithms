@@ -1,7 +1,7 @@
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::operations::mutation::non_uniform::non_uniform_mutation;
-use genetic_algorithms::traits::ChromosomeT;
+use genetic_algorithms::traits::LinearChromosome;
 use std::borrow::Cow;
 
 fn build_f64_chromosome(n: usize) -> RangeChromosome<f64> {

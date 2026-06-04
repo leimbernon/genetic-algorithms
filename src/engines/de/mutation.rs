@@ -1,8 +1,8 @@
 //! DE mutation strategies and adaptive parameter generation.
 
-use super::gene::DeGene;
 use super::configuration::DeMutationStrategy;
-use crate::traits::ChromosomeT;
+use crate::traits::RealGene;
+use crate::traits::LinearChromosome;
 use rand::Rng;
 
 // ─── Utility distributions ───────────────────────────────────────────────────
@@ -59,8 +59,8 @@ pub fn mutate<U>(
     archive: Option<&[U]>,
 ) -> Vec<U::Gene>
 where
-    U: ChromosomeT,
-    U::Gene: DeGene,
+    U: LinearChromosome,
+    U::Gene: RealGene,
 {
     let dim = pop[i].dna().len();
     match strategy {
@@ -70,46 +70,73 @@ where
         }
         DeMutationStrategy::Best1 => {
             let rs = pick_distinct(rng, pop.len(), i, 2);
-            mutant_from_base(pop[best_idx].dna(), pop[rs[0]].dna(), pop[rs[1]].dna(), f, dim)
+            mutant_from_base(
+                pop[best_idx].dna(),
+                pop[rs[0]].dna(),
+                pop[rs[1]].dna(),
+                f,
+                dim,
+            )
         }
         DeMutationStrategy::CurrentToBest1 => {
             let rs = pick_distinct(rng, pop.len(), i, 2);
-            current_to_best(pop[i].dna(), pop[best_idx].dna(), pop[rs[0]].dna(), pop[rs[1]].dna(), f, dim, archive, rng)
+            current_to_best(
+                pop[i].dna(),
+                pop[best_idx].dna(),
+                pop[rs[0]].dna(),
+                pop[rs[1]].dna(),
+                f,
+                dim,
+                archive,
+                rng,
+            )
         }
         DeMutationStrategy::Rand2 => {
             let rs = pick_distinct(rng, pop.len(), i, 5);
-            two_diff_base(pop[rs[0]].dna(), pop[rs[1]].dna(), pop[rs[2]].dna(), pop[rs[3]].dna(), pop[rs[4]].dna(), f, dim)
+            two_diff_base(
+                pop[rs[0]].dna(),
+                pop[rs[1]].dna(),
+                pop[rs[2]].dna(),
+                pop[rs[3]].dna(),
+                pop[rs[4]].dna(),
+                f,
+                dim,
+            )
         }
         DeMutationStrategy::Best2 => {
             let rs = pick_distinct(rng, pop.len(), i, 4);
-            two_diff_base(pop[best_idx].dna(), pop[rs[0]].dna(), pop[rs[1]].dna(), pop[rs[2]].dna(), pop[rs[3]].dna(), f, dim)
+            two_diff_base(
+                pop[best_idx].dna(),
+                pop[rs[0]].dna(),
+                pop[rs[1]].dna(),
+                pop[rs[2]].dna(),
+                pop[rs[3]].dna(),
+                f,
+                dim,
+            )
         }
     }
 }
 
 /// `base + F * (a - b)`
-fn mutant_from_base<G: DeGene>(
-    base: &[G],
-    a: &[G],
-    b: &[G],
-    f: f64,
-    dim: usize,
-) -> Vec<G> {
+fn mutant_from_base<G: RealGene>(base: &[G], a: &[G], b: &[G], f: f64, dim: usize) -> Vec<G> {
     (0..dim)
-        .map(|j| base[j].with_de_value(base[j].de_value() + f * (a[j].de_value() - b[j].de_value())))
+        .map(|j| {
+            base[j].with_real_value(base[j].real_value() + f * (a[j].real_value() - b[j].real_value()))
+        })
         .collect()
 }
 
 /// `current + F*(best-current) + F*(r1-r2)`  (DE/current-to-best/1 or DE/current-to-pbest/1)
 #[allow(clippy::too_many_arguments)]
-fn current_to_best<G: DeGene>(
+fn current_to_best<G: RealGene>(
     current: &[G],
     best: &[G],
     r1: &[G],
     r2_pop: &[G],
     f: f64,
     dim: usize,
-    archive: Option<&[impl ChromosomeT<Gene = G>]>,
+    archive: Option<&[impl LinearChromosome<Gene = G>]>,
     rng: &mut impl Rng,
 ) -> Vec<G> {
     // r2 is drawn from population ∪ archive when archive is present (JADE)
@@ -126,16 +153,16 @@ fn current_to_best<G: DeGene>(
 
     (0..dim)
         .map(|j| {
-            let v = current[j].de_value()
-                + f * (best[j].de_value() - current[j].de_value())
-                + f * (r1[j].de_value() - r2_dna[j].de_value());
-            current[j].with_de_value(v)
+            let v = current[j].real_value()
+                + f * (best[j].real_value() - current[j].real_value())
+                + f * (r1[j].real_value() - r2_dna[j].real_value());
+            current[j].with_real_value(v)
         })
         .collect()
 }
 
 /// `base + F*(a-b) + F*(c-d)`  (DE/rand/2 or DE/best/2)
-fn two_diff_base<G: DeGene>(
+fn two_diff_base<G: RealGene>(
     base: &[G],
     a: &[G],
     b: &[G],
@@ -146,10 +173,10 @@ fn two_diff_base<G: DeGene>(
 ) -> Vec<G> {
     (0..dim)
         .map(|j| {
-            let v = base[j].de_value()
-                + f * (a[j].de_value() - b[j].de_value())
-                + f * (c[j].de_value() - d[j].de_value());
-            base[j].with_de_value(v)
+            let v = base[j].real_value()
+                + f * (a[j].real_value() - b[j].real_value())
+                + f * (c[j].real_value() - d[j].real_value());
+            base[j].with_real_value(v)
         })
         .collect()
 }
@@ -177,7 +204,12 @@ impl Default for JadeState {
 
 impl JadeState {
     pub fn new() -> Self {
-        Self { mu_f: 0.5, mu_cr: 0.5, s_f: Vec::new(), s_cr: Vec::new() }
+        Self {
+            mu_f: 0.5,
+            mu_cr: 0.5,
+            s_f: Vec::new(),
+            s_cr: Vec::new(),
+        }
     }
 
     /// Draw F from Cauchy(μ_F, 0.1), clipped to (0, 1].
@@ -281,11 +313,17 @@ impl LShadeState {
 fn lehmer_mean(xs: &[f64]) -> f64 {
     let num: f64 = xs.iter().map(|x| x * x).sum();
     let den: f64 = xs.iter().sum();
-    if den == 0.0 { 0.5 } else { num / den }
+    if den == 0.0 {
+        0.5
+    } else {
+        num / den
+    }
 }
 
 /// Arithmetic mean.
 fn arithmetic_mean(xs: &[f64]) -> f64 {
-    if xs.is_empty() { return 0.5; }
+    if xs.is_empty() {
+        return 0.5;
+    }
     xs.iter().sum::<f64>() / xs.len() as f64
 }

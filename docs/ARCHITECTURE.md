@@ -91,12 +91,18 @@ The concrete operator structs live in `src/operations/<type>/` subdirectories. C
 |--------|--------|-------------|
 | `Ga<U>` | `src/engines/ga.rs` | Single-population single-objective GA. The primary entry point. |
 | `Nsga2Ga<U>` | `src/engines/nsga2/` | NSGA-II for multi-objective optimization. Uses `ParetoIndividual<U>` wrapper, non-dominated sorting, and crowding-distance survivor selection. |
+| `Nsga3Ga<U>` | `src/engines/nsga3/` | NSGA-III: reference-point based selection for many-objective (3+) problems with Das-Dennis weights and ASF normalization. |
+| `MoeaDGa<U>` | `src/engines/moead/` | MOEA/D: decomposes the multi-objective problem into scalar sub-problems via Tchebycheff, PBI, or weighted-sum aggregation. |
+| `Spea2Ga<U>` | `src/engines/spea2/` | SPEA2: strength-Pareto approach with an external archive and k-nearest neighbour density estimation. |
+| `SmsEmoaGa<U>` | `src/engines/sms_emoa/` | SMS-EMOA: steady-state (µ+1) MOEA that selects the individual with the smallest hypervolume contribution for removal. |
+| `IbeaGa<U>` | `src/engines/ibea/` | IBEA: indicator-based MOEA using the I_eps+ binary indicator with exponential fitness scaling. |
 | `IslandGa<U>` | `src/engines/island/` | Island model: N independent `Ga` populations evolve in parallel via rayon with periodic migration. Topology is configurable (ring, fully connected, etc.). |
 | `IslandNsga2Ga<U>` | `src/engines/island/nsga2.rs` | Island Model + NSGA-II: N independent NSGA-II populations with periodic Pareto-aware migration. Returns the global Pareto front. |
 | `DeEngine<U>` | `src/engines/de/` | Differential Evolution with 5 mutation strategies (`DE/rand/1`, etc.), 2 crossover modes (binomial/exponential), and JADE/L-SHADE adaptive parameter control. |
 | `CellularEngine<U>` | `src/engines/cellular/` | Cellular GA: individuals placed on a 2-D toroidal grid; evolution occurs through local neighbourhood interactions. |
 | `AlpsEngine<U>` | `src/engines/alps/` | Age-Layered Population Structure: population stratified into age layers with 3 age schemes, cross-layer mating, and periodic injection of fresh individuals into the youngest layer. |
 | `ScatterEngine<U>` | `src/engines/scatter/` | Scatter Search: maintains a small reference set of high-quality and diverse solutions; generates candidates by linear combination and optional local search. |
+| `GpGa<N>` | `src/engines/gp/` | Genetic Programming: evolves tree-structured `GpChromosome<N>` programs over a user-defined `GpNode` primitive set. Subtree crossover, subtree/point/hoist mutation, ramped half-and-half initialization, hard depth/node-count bloat limits. |
 
 ## Observer System
 
@@ -138,17 +144,27 @@ src/
 ├── engines/           # GA engine orchestrators
 │   ├── ga.rs          # Single-objective GA (Ga<U>)
 │   ├── nsga2/         # NSGA-II multi-objective engine
+│   ├── nsga3/         # NSGA-III many-objective engine
+│   ├── moead/         # MOEA/D decomposition-based engine
+│   ├── spea2/         # SPEA2 strength-Pareto engine
+│   ├── sms_emoa/      # SMS-EMOA hypervolume-based engine
+│   ├── ibea/          # IBEA indicator-based engine
+│   ├── multi_objective/ # Shared MO utilities (dominance, indicators, reference points)
 │   ├── island/        # Island model (multi-population + migration)
 │   │   └── nsga2.rs   # Island + NSGA-II engine (IslandNsga2Ga<U>)
 │   ├── de/            # Differential Evolution engine
 │   ├── cellular/      # Cellular GA engine
 │   ├── alps/          # Age-Layered Population Structure engine
-│   └── scatter/       # Scatter Search engine
+│   ├── scatter/       # Scatter Search engine
+│   └── gp/            # Genetic Programming engine (GpGa<N>, GpChromosome<N>, GpNode, Node<N>, MathNode, BoolNode)
 ├── operations/        # Operator implementations and dispatch factories
 │   ├── selection/     # Selection operator implementations
 │   ├── crossover/     # Crossover operator implementations
+│   │   └── variable_length.rs  # VariableLength(AlignmentStrategy) crossover
 │   ├── mutation/      # Mutation operator implementations
+│   │   └── length_mutation.rs  # Insertion / Deletion variable-length mutations
 │   ├── survivor/      # Survivor selection implementations
+│   │   └── parsimony.rs        # Parsimony pressure fitness adjustment
 │   └── extension/     # Extension strategy implementations
 ├── traits/            # Core trait definitions
 │   ├── chromosome.rs  # ChromosomeT
@@ -156,7 +172,7 @@ src/
 │   ├── operators.rs   # Operator traits
 │   └── configuration.rs # ConfigurationT and sub-traits
 ├── types/             # Concrete chromosome and gene types
-│   ├── chromosomes/   # Binary, Range<T>, List<T> chromosomes
+│   ├── chromosomes/   # Binary, Range<T>, List<T> chromosomes; ChromosomeLength enum
 │   └── genotypes/     # Binary, Range<T>, List<T> genes
 ├── observe/           # Observability subsystem
 │   ├── observer/      # GaObserver trait + implementations

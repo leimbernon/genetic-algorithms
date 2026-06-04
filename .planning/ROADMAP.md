@@ -8,7 +8,8 @@
 - ✅ **v2.2.0 — Observability & Traceability** — Phases 13-18 (shipped 2026-03-28)
 - ✅ **v2.2.1 — Performance Optimizations** — Phases 19-24 (shipped 2026-04-23)
 - ✅ **v2.3.0 — Alternative Metaheuristics & Population Models** — Phases 25-29 (shipped 2026-04-27)
-- 🚧 **v2.4.0 — Observer Integration & New Operators + Advanced Multi-Objective** — Phases 30-46 (in progress)
+- ✅ **v2.4.0 — Observer Integration & New Operators + Advanced Multi-Objective** — Phases 30-46 (shipped 2026-05-18)
+- 🚧 **v3.0.0 — Advanced Representations, Alternative Strategies & Architecture Simplification** — Phases 47-65 (in progress)
 
 ## Phases
 
@@ -87,9 +88,8 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 
 </details>
 
-### v2.4.0 — Observer Integration, New Operators, Advanced Multi-Objective & Framework Extensions (In Progress)
-
-**Milestone Goal:** Wire GaObserver lifecycle hooks into all 4 new engines, close v2.3.0 deferred tech debt, expand the operator library with 7 new strategies, extend multi-objective optimization with NSGA-III, MOEA/D, SPEA2, SMS-EMOA/IBEA, and shared quality indicators, extend the core GA framework with constraint handling, Hall of Fame, warm starting, adaptive operator selection, benchmarks, and memetic algorithms, and produce comprehensive documentation covering every algorithm, operator, and framework extension.
+<details>
+<summary>✅ v2.4.0 — Observer Integration, New Operators, Advanced Multi-Objective & Framework Extensions (Phases 30-46) — SHIPPED 2026-05-18</summary>
 
 - [x] **Phase 30: Observer Wiring & DE Benchmark** — Wire GaObserver into all 4 new engines and add DE-vs-GA convergence benchmark (completed 2026-05-02)
 - [x] **Phase 31: Selection & Survivor Diversity Operators** — Clearing selection and Deterministic Crowding survivor strategy (completed 2026-05-04)
@@ -106,7 +106,22 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 - [x] **Phase 42: Warm Starting & Population Seeding** — Initial population, seeded population, checkpoint resumption (#216) (completed 2026-05-13)
 - [x] **Phase 43: Adaptive Operator Selection (AOS)** — Operator portfolio with Probability Matching, Adaptive Pursuit, MAB (#218)
 - [x] **Phase 44: Standard Benchmark Functions Suite** — Unimodal, multimodal, ZDT, DTLZ behind `benchmarks` feature flag (#219) (completed 2026-05-14)
-- [ ] **Phase 45: Memetic Algorithm Framework** — LocalSearchOperator with Lamarckian/Baldwinian modes (#215)
+- [x] **Phase 45: Memetic Algorithm Framework** — LocalSearchOperator with Lamarckian/Baldwinian modes (#215)
+- [x] **Phase 46: Documentation Refactor** — Comprehensive rustdoc, docs/ guides, README expansion (completed 2026-05-15)
+
+</details>
+
+### v3.0.0 — Advanced Representations, Alternative Strategies & Architecture Simplification (In Progress)
+
+**Milestone Goal:** Use the major semver break to simplify library architecture, introduce three new genotype types, add two alternative strategy engines, and implement advanced chromosome representations (lexicase selection, multi-parent crossover, self-adaptive mutation, variable-length chromosomes, tree chromosome for GP).
+
+- [ ] **Phase 47: Architecture Audit & ChromosomeT Split** — Reduce `ChromosomeT` to a minimal core; introduce `LinearChromosome` supertrait; remove `Reporter<U>`; apply 6 API simplifications; validate all 10 examples compile and run in CI
+- [ ] **Phase 48: New Genotype Types** — `UniqueChromosome<T>` for permutation problems, `MultiRangeChromosome<T>` for per-gene bounds, `MultiUniqueChromosome<T>` for multiple independent permutation groups; migrate `job_scheduling` example
+- [x] **Phase 49: Unified Strategy Trait + Alternative Strategy Engines** — `Strategy<U>` trait; `HillClimbEngine` (Stochastic + SteepestAscent); `PermutateEngine` with safety gate; observer hooks throughout
+- [x] **Phase 50: Lexicase Selection** — `MultiCaseFitness: ChromosomeT` trait; `LexicaseSelection`; epsilon-lexicase variant; behavioral diversity CI test (completed 2026-05-23)
+- [ ] **Phase 51: Multi-Parent Crossover + Self-Adaptive Mutation** — UNDX, SPX, PCX operators with `RealValued` marker trait; `SelfAdaptive: ChromosomeT` trait; `Mutation::SelfAdaptiveGaussian` with log-normal sigma update
+- [x] **Phase 52: Variable-Length Chromosomes** — `ChromosomeLength::Variable { min, max }`; `Mutation::Insertion` / `Mutation::Deletion`; `Crossover::VariableLength(AlignmentStrategy)`; parsimony pressure survivor config (completed 2026-05-24)
+- [x] **Phase 53: Tree Chromosome + GpGa Engine** — `TreeChromosome: ChromosomeT` supertrait; `GpGa<U>` engine; ramped half-and-half init; subtree crossover + mutation; bloat control; serde with `serde_stacker`; `Display` as expression string (completed 2026-05-25)
 
 ## Phase Details
 
@@ -190,53 +205,6 @@ Plans:
 
 **Wave 3** *(blocked on Waves 1-2)*
 - [x] 33-03-PLAN.md — Uniform operator + activate Uniform tests + serde coverage + phase verification gate (MUT-03)
-
-## Progress
-
-| Phase | Milestone | Plans | Status | Completed |
-|-------|-----------|-------|--------|-----------|
-| 1-5. Usability (partial) | v2.1 | -- | Complete | 2026-03-20 |
-| 6. Diversity Estimation | v2.2 | 2/2 | Complete | 2026-03-20 |
-| 7. List Genotype | v2.2 | 2/2 | Complete | 2026-03-21 |
-| 8. Reporter Trait | v2.2 | 2/2 | Complete | 2026-03-21 |
-| 9. Visualization | v2.2 | 2/2 | Complete | 2026-03-21 |
-| 10. Single-population Examples | v2.1.0 | 3/3 | Complete | 2026-03-22 |
-| 11. Advanced Mode Examples | v2.1.0 | 3/3 | Complete | 2026-03-22 |
-| 12. Documentation | v2.1.0 | 1/1 | Complete | 2026-03-22 |
-| 13. GaObserver Base Trait | v2.2.0 | 2/2 | Complete | 2026-03-25 |
-| 14. LogObserver + Log Migration | v2.2.0 | 2/2 | Complete | 2026-03-25 |
-| 15. TracingObserver | v2.2.0 | 2/2 | Complete | 2026-03-26 |
-| 16. Sub-Traits | v2.2.0 | 3/3 | Complete | 2026-03-27 |
-| 17. CompositeObserver + MetricsObserver | v2.2.0 | 3/3 | Complete | 2026-03-27 |
-| 18. Observer API Polish | v2.2.0 | 2/2 | Complete | 2026-03-28 |
-| 19. Clone Elimination | v2.2.1 | 3/3 | Complete | 2026-03-30 |
-| 20. Crossover Algorithm Optimization | v2.2.1 | 1/1 | Complete | 2026-03-30 |
-| 21. Selection + Allocation Reduction | v2.2.1 | 3/3 | Complete | 2026-03-31 |
-| 22. Survivor & Extension Optimization | v2.2.1 | 2/2 | Complete | 2026-03-31 |
-| 23. Memory Layout | v2.2.1 | 2/2 | Complete | 2026-04-04 |
-| 24. Minor Improvements | v2.2.1 | 2/2 | Complete | 2026-04-05 |
-| 25. Directory Restructure | v2.3.0 | 3/3 | Complete | 2026-04-26 |
-| 26. Differential Evolution Engine | v2.3.0 | 2/2 | Complete | 2026-04-26 |
-| 27. Scatter Search Engine | v2.3.0 | 1/1 | Complete | 2026-04-26 |
-| 28. Cellular GA Engine | v2.3.0 | 1/1 | Complete | 2026-04-27 |
-| 29. ALPS Engine | v2.3.0 | 1/1 | Complete | 2026-04-27 |
-| 30. Observer Wiring & DE Benchmark | v2.4.0 | 3/3 | Complete | 2026-05-02 |
-| 31. Selection & Survivor Diversity Operators | v2.4.0 | 2/2 | Complete | 2026-05-04 |
-| 32. Crossover & Differential Mutation | v2.4.0 | 3/3 | Complete | 2026-05-06 |
-| 33. Scalar Mutation Operators | v2.4.0 | 3/3 | Complete | 2026-05-07 |
-| 34. WASM support — wasm32-unknown-unknown compatibility | v2.4.0 | 4/4 | Complete | 2026-05-07 |
-| 35. NSGA-III for many-objective optimization | v2.4.0 | 3/3 | Complete    | 2026-05-09 |
-| 36. MOEA/D decomposition-based multi-objective | v2.4.0 | 3/3 | Complete    | 2026-05-10 |
-| 37. SPEA2 strength pareto evolutionary algorithm | v2.4.0 | 3/3 | Complete    | 2026-05-10 |
-| 38. Indicator-based MOEAs — SMS-EMOA and IBEA | v2.4.0 | 3/3 | Complete | 2026-05-11 |
-| 39. Multi-objective quality indicators | v2.4.0 | 3/3 | Complete | 2026-05-11 |
-| 40. Constraint Handling | v2.4.0 | 3/3 | Complete    | 2026-05-11 |
-| 41. Hall of Fame / Solution Archive | v2.4.0 | 3/3 | Complete | 2026-05-12 |
-| 42. Warm Starting & Population Seeding | v2.4.0 | 3/3 | Complete    | 2026-05-13 |
-| 43. Adaptive Operator Selection (AOS) | v2.4.0 | 3/3 | Complete | 2026-05-14 |
-| 44. Standard Benchmark Functions Suite | v2.4.0 | 3/3 | Complete    | 2026-05-14 |
-| 45. Memetic Algorithm Framework | v2.4.0 | 3 | Pending | — |
-| 46. Documentation Refactor | v2.4.0 | 7/7 | Complete    | 2026-05-15 |
 
 ### Phase 34: WASM support — fix time-based panics for wasm32-unknown-unknown targets (issue #236)
 
@@ -467,3 +435,360 @@ Plans:
 
 **Wave 4 — Coverage + Verification**
 - [x] 46-06-PLAN.md — Rustdoc /// on all public items, module //! docs, example inline comments, phase verification gate (D-08, D-09, D-10, D-11)
+
+---
+
+### Phase 47: Architecture Audit & ChromosomeT Split
+**Goal**: Users can implement custom chromosomes using a clean, minimal `ChromosomeT` core and opt into flat-slice operator compatibility via `LinearChromosome`, without boilerplate from the old all-in-one trait
+**Depends on**: Phase 46
+**Requirements**: ARCH-01, ARCH-02, ARCH-03, ARCH-04, ARCH-05, ARCH-06, ARCH-07
+**Success Criteria** (what must be TRUE):
+  1. User can implement `ChromosomeT` with only `fitness()`, `set_fitness()`, `age()`, `set_age()`, and `calculate_fitness()` — no flat-slice methods required for types that are not linear
+  2. User can implement `LinearChromosome: ChromosomeT` to gain full compatibility with all existing selection, crossover, mutation, and survivor operators — all operator bounds updated from `U: ChromosomeT` to `U: LinearChromosome`
+  3. User who previously used `Reporter<U>` sees a compiler error with a clear message pointing to `GaObserver<U>` as the replacement; `MIGRATION.md` documents the upgrade path
+  4. User can configure chromosome length as `ChromosomeLength::Fixed(n)` or `ChromosomeLength::Variable { min, max }` via the builder — existing code using the old `genes_per_chromosome` field does not compile, making the change auditable
+  5. User can configure all stopping criteria via flat builder methods (`.with_stagnation_limit(50)`) without constructing a `StoppingCriteria` struct; `LocalSearch` is configured via an enum, not `Arc<dyn ...>`
+  6. All 10 existing runnable examples (`cargo run --example <name>`) compile and pass their short-generation CI smoke tests on the milestone branch after every PR
+**Plans:** 6/8 plans executed
+
+Plans:
+**PR 1 — ChromosomeT split (ARCH-01, ARCH-02)**
+- [x] 47-01-PLAN.md — Wave 0 tests + split ChromosomeT into minimal core + LinearChromosome supertrait
+- [x] 47-02-PLAN.md — Implementor updates (Binary, Range, List) + mechanical bound change across operator layer + ValueMutable supertrait upgrade
+- [x] 47-03-PLAN.md — Engine orchestrators (Ga, DE, Scatter, Cellular, ALPS, NSGA-II/III, MOEA/D, SPEA2, SMS-EMOA, IBEA, Island) bound upgrade + PR 1 gate
+
+**PR 2 — Config cleanup (ARCH-04, ARCH-05, ARCH-06)**
+- [ ] 47-04-PLAN.md — ChromosomeLength enum + LimitConfiguration field removals + initializer signature cleanup
+- [x] 47-05-PLAN.md — StoppingCriteria flattening into GaConfiguration + sub-struct accessor pattern + ga.rs path updates (WASM gate preserved)
+- [x] 47-06-PLAN.md — Multi-obj engine + example + test caller migration + PR 2 gate
+
+**PR 3 — Reporter removal + CI (ARCH-03, ARCH-07)**
+- [ ] 47-07-PLAN.md — Reporter trait + impls + fire points removal + MIGRATION.md publication + README link + Cargo.toml include
+- [x] 47-08-PLAN.md — examples-smoke.yml CI workflow + final Phase 47 verification gate
+
+**UI hint**: no
+
+### Phase 48: New Genotype Types
+**Goal**: Users can model permutation problems, heterogeneous real-valued spaces, and multi-group permutation problems using three new semantically correct chromosome types — replacing ad-hoc hacks with purpose-built types
+**Depends on**: Phase 47
+**Requirements**: GEN-01, GEN-02, GEN-03, GEN-04
+**Success Criteria** (what must be TRUE):
+  1. User can create a `UniqueChromosome<T>` that initializes with no duplicate genes, all elements present from the given alphabet; attempting to apply `Crossover::SinglePoint` or `Crossover::Uniform` returns `GaError` at runtime
+  2. User can run the `job_scheduling` example using `UniqueChromosome<i32>` in place of the old `RangeChromosome<i32>` unique-id hack — example produces valid job sequences
+  3. User can create a `MultiRangeChromosome<T>` where each gene has its own `(lo_i, hi_i)` bounds; Gaussian mutation clamps each gene to its own per-gene range independently
+  4. User can create a `MultiUniqueChromosome<T>` with multiple independent permutation groups; PMX/OX crossover applies within each group boundary and never corrupts group membership across the boundary
+**Plans:** 4 plans
+**UI hint**: no
+
+Plans:
+**Wave 1**
+- [ ] 48-01-PLAN.md — OperatorCompat trait foundation + Crossover enum MultiGroup variants + build_child visibility + per-type empty impls + Wave 0 tests (GEN-01, GEN-04 foundation)
+
+**Wave 2** *(blocked on Wave 1)*
+- [ ] 48-02-PLAN.md — UniqueGenotype + UniqueChromosome + unique_random_initialization + job_scheduling example migration (GEN-01, GEN-02)
+
+**Wave 3** *(blocked on Wave 2)*
+- [ ] 48-03-PLAN.md — MultiRangeGenotype + MultiRangeChromosome + multi_range_random_initialization + per-gene Gaussian mutation (GEN-03)
+
+**Wave 4** *(blocked on Wave 3)*
+- [ ] 48-04-PLAN.md — MultiUniqueChromosome + group_ranges + multi_group_pmx + multi_group_ox dispatch + Phase 48 verification gate (GEN-04)
+
+### Phase 49: Unified Strategy Trait + Alternative Strategy Engines
+**Goal**: Users can swap between GA, hill-climbing, and exhaustive permutation search at runtime through a single `Strategy<U>` trait, and can use `Box<dyn Strategy<U>>` to select algorithms without rewriting application code
+**Depends on**: Phase 47
+**Requirements**: STR-01, STR-02, STR-03, STR-04
+**Success Criteria** (what must be TRUE):
+  1. User can write `let strategy: Box<dyn Strategy<U>> = Box::new(ga)` and call `.run()` / `.best()` identically regardless of whether the concrete type is `Ga<U>`, `HillClimbEngine<U>`, or `PermutateEngine<U>`
+  2. User can run stochastic hill climbing by providing a `neighbor_fn` and an iteration limit; the engine accepts any neighbor with higher fitness and stops when no improvement is found within the limit; `GaObserver` hooks fire per iteration
+  3. User can run steepest-ascent hill climbing with the same `neighbor_fn`; all returned neighbors are evaluated and only the single best is accepted per step; `GaObserver` hooks fire per iteration
+  4. User can run `PermutateEngine` over a small search space; if the total permutation count exceeds the configurable safety gate, the engine emits a warning and returns the best candidate found so far rather than panicking; `GaObserver` hooks fire per candidate evaluated
+**Plans**: 49-01, 49-02, 49-03, 49-04 — COMPLETE ✓
+**UI hint**: no
+
+### Phase 50: Lexicase Selection
+**Goal**: Users can configure lexicase selection for any chromosome type implementing multi-case fitness evaluation, achieving specialist-preserving selection behavior that scalar fitness methods cannot produce
+**Depends on**: Phase 47
+**Requirements**: SEL-02, SEL-03, TRAITS-01
+**Success Criteria** (what must be TRUE):
+  1. User can implement `MultiCaseFitness: ChromosomeT` on a custom chromosome by adding `case_fitness() -> &[f64]` and `set_case_fitness(Vec<f64>)` — no changes to existing `ChromosomeT` methods required
+  2. User can configure `Selection::Lexicase` and observe that test cases are shuffled randomly per selection event; the scalar `fitness()` is set to the mean case score for survivor and stopping-criteria compatibility
+  3. User can configure `Selection::EpsilonLexicase { epsilon }` for continuous-valued case scores; individuals within epsilon of the best on each case are retained through that case's filter
+  4. A CI behavioral diversity test confirms that a population evolved under `LexicaseSelection` produces measurably more specialists (individuals excelling on distinct case subsets) than `TournamentSelection` under matched effort
+**Plans:** 2/2 plans complete
+
+Plans:
+**Wave 1**
+- [x] 50-01-PLAN.md — MultiCaseFitness trait + Selection enum variants + SelectionConfiguration.epsilon + Wave 0 test stubs (TRAITS-01)
+
+**Wave 2** *(blocked on Wave 1)*
+- [x] 50-02-PLAN.md — lexicase + epsilon-lexicase operators + factory_lexicase + ga.rs dispatch + behavioral diversity test + phase verification gate (SEL-02, SEL-03)
+
+**UI hint**: no
+
+### Phase 51: Multi-Parent Crossover + Self-Adaptive Mutation
+**Goal**: Users can evolve real-valued chromosomes using multi-parent crossover operators (UNDX, SPX, PCX) and self-adaptive mutation where per-chromosome sigma vectors co-evolve alongside the solution
+**Depends on**: Phase 47
+**Requirements**: CRS-02, CRS-03, CRS-04, MUT-05, TRAITS-02
+**Success Criteria** (what must be TRUE):
+  1. User can configure `Crossover::Undx { num_parents }`, `Crossover::Spx { num_parents }`, or `Crossover::Pcx { num_parents }` on any chromosome implementing the `RealValued` marker trait; binary and permutation chromosomes return `GaError` at build time
+  2. User can configure `Mutation::SelfAdaptiveGaussian` on any chromosome implementing `SelfAdaptive: ChromosomeT`; per-chromosome sigma vectors update via the log-normal rule each generation; sigma values never fall below `sigma_min`
+  3. After crossover of two `SelfAdaptive` chromosomes initialized with sigma=0.1 and sigma=0.9, the offspring sigma distribution spans the intermediate range — confirming that intermediate recombination is applied to strategy parameters, not copied from one parent
+  4. `cargo check --target wasm32-unknown-unknown` passes for all new operators and traits without any conditional compilation errors
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 52: Variable-Length Chromosomes
+**Goal**: Users can evolve populations where chromosome length varies between individuals, with explicit length-aware crossover, insertion/deletion mutation, and optional parsimony pressure to prevent unbounded growth
+**Depends on**: Phase 47
+**Requirements**: MUT-06, CHR-01, CHR-02
+**Success Criteria** (what must be TRUE):
+  1. User can configure `ChromosomeLength::Variable { min, max }` and observe that `Mutation::Insertion` adds a gene at a random position (clamped to `max`) and `Mutation::Deletion` removes a gene at a random position (clamped to `min`)
+  2. User can configure `Crossover::VariableLength(AlignmentStrategy)` to handle parents of different lengths; all 9 existing fixed-length crossover operators return `GaError::IncompatibleChromosomeLength` when applied to unequal-length parents instead of silently truncating
+  3. The `ExtensionOperator` samples length from the current population distribution during regrowth rather than using a fixed length — new individuals have lengths drawn from the observed population range
+  4. User can configure `length_penalty: f64` in the survivor configuration; longer chromosomes receive a proportional fitness penalty, preventing unbounded length growth across generations
+**Plans**: 4 plans (4 complete — PHASE COMPLETE 2026-05-24)
+
+Plans:
+- [x] 52-01-PLAN.md — Wave 0: Test stubs (Nyquist compliance)
+- [x] 52-02-PLAN.md — Wave 1: ChromosomeLength enum + MUT-06 length operators
+- [x] 52-03-PLAN.md — Wave 2: Crossover::VariableLength + AlignmentStrategy + fixed-operator guard
+- [x] 52-04-PLAN.md — Wave 3: Variable init, extension regrowth, parsimony pressure (all 13 tests enabled)
+
+**UI hint**: no
+
+### Phase 53: Tree Chromosome + GpGa Engine
+**Goal**: Users can evolve tree-structured programs using a dedicated `GpGa<U>` engine with ramped half-and-half initialization, subtree crossover and mutation, enforced bloat limits, and full checkpoint support
+**Depends on**: Phase 50
+**Requirements**: CHR-03, CHR-04, CHR-05, CHR-06, CHR-07
+**Success Criteria** (what must be TRUE):
+  1. User can define a GP node enum implementing `GpNode` and create a `GpChromosome<G>` that satisfies `TreeChromosome: ChromosomeT` — the type does not implement `LinearChromosome`, so attempting to use it with linear operators produces a compile error, not a runtime panic
+  2. User can run `GpGa<GpChromosome<G>>` with a `PrimitiveSet` containing user-defined functions and terminals (including ephemeral random constants); the engine uses ramped half-and-half initialization and produces valid trees each generation
+  3. User can set `max_depth` and `max_node_count` in `GpConfiguration`; any subtree crossover or mutation that would produce a tree exceeding either limit returns `GaError::TreeDepthExceeded` or `GaError::TreeSizeExceeded` rather than silently accepting the oversized tree; `GenerationStats` includes average node count
+  4. User can enable the `serde` feature flag and checkpoint/restore a GP run containing trees of depth >= 64 without stack overflow; CI runs this serialization test in the `serde` test suite
+  5. User can call `.to_string()` on a `GpChromosome` and read the evolved program as a human-readable infix or prefix expression
+**Plans**: 4 plans
+
+Plans:
+**Wave 0** (API contract)
+- [x] 53-01-PLAN.md — Core types: GpNode trait, Node<N>, GpChromosome, TreeChromosome, GaError variants, GenerationStats.avg_node_count, tests/gp.rs stubs (CHR-03, CHR-07)
+
+**Wave 1** *(blocked on Wave 0)*
+- [x] 53-02-PLAN.md — GP operators: SubtreeCrossover + SubtreeMutation/PointMutation/HoistMutation with bloat enforcement (CHR-05)
+
+**Wave 2** *(blocked on Wave 1)*
+- [x] 53-03-PLAN.md — GpGa engine loop: ramped half-and-half init + full run() loop + observer hooks + avg_node_count (CHR-04, CHR-05)
+
+**Wave 3** *(blocked on Wave 2)*
+- [x] 53-04-PLAN.md — Serde checkpoint: serde_stacker dep + stack-safe Node<N> serde + depth-64 CI test (CHR-06)
+
+**UI hint**: no
+
+### Phase 56: CMA-ES Engine
+**Goal**: Users can run Covariance Matrix Adaptation Evolution Strategy (CMA-ES) on real-valued black-box optimization problems via a new `CmaEngine<U>` — with `GaObserver` hooks from day 1, Hansen's default parameter formulas, and WASM-compatible execution. As part of this phase, the shared `DeGene` trait is hard-renamed to `RealGene` (v3.0.0 breaking change) and relocated to `src/traits/real_gene.rs`.
+**Depends on**: Phase 55
+**Requirements**: None (issue-driven phase — see issue #252; IPOP/BIPOP deferred per issue #255)
+**Success Criteria** (what must be TRUE):
+  1. User can call `CmaEngine::new(config, init_fn, fitness_fn).run()` and receive a `CmaResult<U>` containing population, best, best_fitness, and generations — for any chromosome implementing `LinearChromosome` where `U::Gene: RealGene`
+  2. User can attach a `GaObserver<U>` via `.with_observer(...)` and receive `on_run_start`, `on_generation_start`, `on_generation_end`, `on_new_best`, and `on_run_end` calls
+  3. User can configure tuning via `CmaConfiguration` builder methods: `.with_sigma0()`, `.with_population_size()`, `.with_max_generations()`, `.with_problem_solving()`, `.with_fitness_target()`, `.with_cc()`, `.with_cs()`, `.with_c1()`, `.with_cmu()` — leaving cc/cs/c1/cmu as None defaults to Hansen's auto formulas
+  4. `cargo check --target wasm32-unknown-unknown` passes; `cargo run --example cma_es_rastrigin` converges; `cargo test`, `cargo test --features serde`, `cargo clippy --all-targets -- -D warnings`, and `cargo doc --no-deps` all pass with zero warnings
+  5. After the `DeGene → RealGene` cascade, all existing `DeEngine` and `ScatterEngine` tests continue to pass — the rename is purely identifier-level with no behavioral change
+**Plans:** 4/4 plans complete
+
+Plans:
+**Wave 1**
+- [x] 56-01-PLAN.md — DeGene → RealGene rename cascade across DE, Scatter, lib re-exports; add `RealGene` impl for `MultiRangeGenotype<f64>`
+
+**Wave 2** *(blocked on Wave 1)*
+- [x] 56-02-PLAN.md — `CmaConfiguration` (Default, `default_for_dim`, 9 builder methods) + `src/engines/cma/mod.rs` skeleton + Nyquist test scaffold with 11 `#[ignore]`-gated stubs
+
+**Wave 3** *(blocked on Wave 2)*
+- [x] 56-03-PLAN.md — `CmaEngine` core: private `CmaState`, Jacobi eigendecomposition, Box-Muller sampling, full run() loop with observer hooks (D-06), and un-ignoring of the 7 engine-dependent tests
+
+**Wave 4** *(blocked on Wave 3)*
+- [x] 56-04-PLAN.md — `examples/cma_es_rastrigin.rs` + phase verification gate (cargo test + serde + clippy + rustdoc + WASM target)
+
+**UI hint**: no
+
+### Phase 57: PSO Engine
+**Goal**: Users can run Particle Swarm Optimization on real-valued black-box optimization problems via a new `PsoEngine<U>` — with `GaObserver` hooks, configurable inertia/cognitive/social coefficients, and WASM-compatible execution
+**Depends on**: Phase 56
+**Requirements**: None (issue-driven; see issue #255 PSO track)
+**Success Criteria** (what must be TRUE):
+  1. User can call `PsoEngine::new(config, init_fn, fitness_fn).run()` and receive a `PsoResult<U>` for any chromosome implementing `LinearChromosome` where `U::Gene: RealGene`
+  2. User can attach a `GaObserver<U>` and receive `on_run_start`, `on_generation_start`, `on_generation_end`, `on_new_best`, and `on_run_end` calls
+  3. User can configure inertia weight, cognitive coefficient (`c1`), and social coefficient (`c2`) via `PsoConfiguration` builder methods
+  4. `cargo check --target wasm32-unknown-unknown` passes; `cargo run --example pso_rastrigin` converges; all CI gates pass with zero warnings
+**Plans:** 4/4 plans complete
+**UI hint**: no
+
+Plans:
+**Wave 1**
+- [x] 57-01-PLAN.md — RealGene::bounds() trait extension + impls + Nyquist test scaffold
+**Wave 2** *(blocked on Wave 1)*
+- [x] 57-02-PLAN.md — PsoConfiguration + PsoInertia + PsoTopology + PsoEngine skeleton + lib.rs re-exports + LinearDecay test
+**Wave 3** *(blocked on Wave 2)*
+- [x] 57-03-PLAN.md — PsoEngine::run() full PSO loop (PsoState, velocity update, topology dispatch, absorbing boundary, observer hooks) + 9 engine-runtime tests
+**Wave 4** *(blocked on Wave 3)*
+- [x] 57-04-PLAN.md — pso_rastrigin example + phase verification gate (cargo test + serde + clippy + rustdoc + WASM)
+
+### Phase 58: EDA / UMDA Engine
+**Goal**: Users can run Estimation of Distribution Algorithm (UMDA variant) on binary or categorical optimization problems via a new `EdaEngine<U>` that learns and samples a probabilistic model over the population
+**Depends on**: Phase 56
+**Requirements**: None
+**Success Criteria** (what must be TRUE):
+  1. User can call `EdaEngine::new(config, init_fn, fitness_fn).run()` and receive an `EdaResult<U>` for any chromosome implementing `LinearChromosome`
+  2. The engine estimates a univariate marginal distribution from selected parents and samples offspring from it each generation
+  3. User can attach a `GaObserver<U>` and receive all standard lifecycle hooks
+  4. `cargo check --target wasm32-unknown-unknown` passes; `cargo run --example eda_onemax` converges; all CI gates pass
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 59: Restart Strategies — IPOP / BIPOP
+**Goal**: Users can configure automatic restart strategies (IPOP: increasing population, BIPOP: bi-population alternating) for CmaEngine to escape local optima on multimodal problems
+**Depends on**: Phase 56
+**Requirements**: None (deferred from Phase 56 per issue #255)
+**Success Criteria** (what must be TRUE):
+  1. User can configure `RestartStrategy::Ipop { population_scale }` on `CmaConfiguration`; after stagnation, engine restarts with scaled population and fresh covariance
+  2. User can configure `RestartStrategy::Bipop`; engine alternates between large and small restarts as in Hansen 2009
+  3. `GaObserver::on_restart` hook fires on each restart event (new hook)
+  4. `cargo check --target wasm32-unknown-unknown` passes; all CI gates pass
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 60: Batch Fitness / Fitness Cache Extension
+**Goal**: Users can evaluate fitness for a batch of chromosomes in a single call (enabling GPU/API-based evaluators) and optionally cache results to avoid redundant re-evaluation of unchanged chromosomes across generations
+**Depends on**: Phase 56
+**Requirements**: None
+**Success Criteria** (what must be TRUE):
+  1. User can implement `BatchFitnessEvaluator::evaluate_batch(&[U]) -> Vec<f64>` and wire it into `Ga` / `CmaEngine` via a builder method; individual-level `calculate_fitness` is not called when batch evaluator is configured
+  2. User can enable `FitnessCache` via a builder flag; chromosomes with unchanged DNA are returned cached fitness without re-evaluation; cache hit rate is exposed in `GenerationStats`
+  3. WASM-compatible: no threads or `std::time` required in the cache path
+  4. All CI gates pass with zero warnings
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 61: Performance — Clone Reduction & Parallel Survivor
+**Goal**: Systematically reduce unnecessary chromosome clones in the GA hot path and enable parallel survivor selection where the algorithm permits, measurably improving throughput on large populations
+**Depends on**: Phase 56
+**Requirements**: None
+**Success Criteria** (what must be TRUE):
+  1. Profiling (cargo bench before/after) shows ≥10% wall-time reduction on the `rastrigin` benchmark at population size 500
+  2. `SurvivorOperator` implementations that are order-independent use `rayon::par_iter` for ranking/scoring (gated behind `#[cfg(not(target_arch = "wasm32"))]`)
+  3. No behavioral regression: all existing tests pass with identical outputs (modulo floating-point ordering ties broken deterministically)
+  4. `cargo check --target wasm32-unknown-unknown` passes; all CI gates pass
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 62: Surrogate-Assisted Evaluation
+**Goal**: Users can attach a surrogate model (e.g. Gaussian Process or polynomial regression) to pre-screen candidates before expensive fitness evaluation, reducing the number of true fitness calls on costly black-box problems
+**Depends on**: Phase 60
+**Requirements**: None
+**Success Criteria** (what must be TRUE):
+  1. User can implement `SurrogateModel::predict(&U) -> f64` and attach it via `.with_surrogate(model, prescreening_fraction)`; only the top fraction of surrogate-ranked offspring proceed to true fitness evaluation
+  2. True fitness call count is exposed in `GenerationStats` and observable via `GaObserver`
+  3. WASM-compatible; all CI gates pass
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 63: Visualization — Pareto Front Plotting & Example Images
+**Goal**: Users can generate Pareto front plots and fitness-progress charts as PNG/SVG files from multi-objective runs, and all major examples have rendered output images committed to `docs/`
+**Depends on**: Phase 56
+**Requirements**: None
+**Success Criteria** (what must be TRUE):
+  1. A `visualization` feature flag exposes `plot_pareto_front(population, path)` for 2- and 3-objective problems using `plotters`
+  2. `cargo run --example nsga2_zdt1 -- --plot` produces a `docs/nsga2_zdt1.png` Pareto front image
+  3. All example images are committed to `docs/images/` and linked from `README.md`
+  4. Feature compiles and links on WASM (plotters supports wasm32); all CI gates pass
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 64: Test & Doc Quality
+**Goal**: Achieve ≥80% line coverage on all engine modules, eliminate all `#[allow(...)]` suppressions in non-generated code, and ensure every public API item has a rustdoc example that compiles under `cargo test --doc`
+**Depends on**: Phase 56
+**Requirements**: None
+**Success Criteria** (what must be TRUE):
+  1. `cargo llvm-cov --all-features` reports ≥80% line coverage for `src/engines/` and `src/operations/`
+  2. Zero `#[allow(dead_code)]`, `#[allow(unused_imports)]`, or `#[allow(clippy::...)]` attributes remain in non-generated source files
+  3. Every `pub` item in `src/` has a rustdoc `# Examples` block that compiles via `cargo test --doc`
+  4. All CI gates pass with zero warnings
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 65: v3.0.0 Migration Guide
+**Goal**: Users upgrading from v2.x to v3.0.0 can follow a single authoritative `MIGRATION_V3.md` guide that covers every breaking change with before/after code snippets, compiler error messages, and automated migration hints
+**Depends on**: Phase 64
+**Requirements**: None
+**Success Criteria** (what must be TRUE):
+  1. `MIGRATION_V3.md` covers all breaking changes: `ChromosomeT` split, `LinearChromosome` bound requirement, `DeGene → RealGene` rename, `SelectionOperator::select` return-type change, `Mutation` enum variant parameter changes, `StoppingCriteria` flattening, `Reporter` removal
+  2. Every breaking change entry includes: the old API, the new API, the compiler error a user will see, and the fix
+  3. `README.md` links to `MIGRATION_V3.md` in the "Upgrading" section
+  4. All CI gates pass
+**Plans**: TBD
+**UI hint**: no
+
+## Progress
+
+| Phase | Milestone | Plans | Status | Completed |
+|-------|-----------|-------|--------|-----------|
+| 1-5. Usability (partial) | v2.1 | -- | Complete | 2026-03-20 |
+| 6. Diversity Estimation | v2.2 | 2/2 | Complete | 2026-03-20 |
+| 7. List Genotype | v2.2 | 2/2 | Complete | 2026-03-21 |
+| 8. Reporter Trait | v2.2 | 2/2 | Complete | 2026-03-21 |
+| 9. Visualization | v2.2 | 2/2 | Complete | 2026-03-21 |
+| 10. Single-population Examples | v2.1.0 | 3/3 | Complete | 2026-03-22 |
+| 11. Advanced Mode Examples | v2.1.0 | 3/3 | Complete | 2026-03-22 |
+| 12. Documentation | v2.1.0 | 1/1 | Complete | 2026-03-22 |
+| 13. GaObserver Base Trait | v2.2.0 | 2/2 | Complete | 2026-03-25 |
+| 14. LogObserver + Log Migration | v2.2.0 | 2/2 | Complete | 2026-03-25 |
+| 15. TracingObserver | v2.2.0 | 2/2 | Complete | 2026-03-26 |
+| 16. Sub-Traits | v2.2.0 | 3/3 | Complete | 2026-03-27 |
+| 17. CompositeObserver + MetricsObserver | v2.2.0 | 3/3 | Complete | 2026-03-27 |
+| 18. Observer API Polish | v2.2.0 | 2/2 | Complete | 2026-03-28 |
+| 19. Clone Elimination | v2.2.1 | 3/3 | Complete | 2026-03-30 |
+| 20. Crossover Algorithm Optimization | v2.2.1 | 1/1 | Complete | 2026-03-30 |
+| 21. Selection + Allocation Reduction | v2.2.1 | 3/3 | Complete | 2026-03-31 |
+| 22. Survivor & Extension Optimization | v2.2.1 | 2/2 | Complete | 2026-03-31 |
+| 23. Memory Layout | v2.2.1 | 2/2 | Complete | 2026-04-04 |
+| 24. Minor Improvements | v2.2.1 | 2/2 | Complete | 2026-04-05 |
+| 25. Directory Restructure | v2.3.0 | 3/3 | Complete | 2026-04-26 |
+| 26. Differential Evolution Engine | v2.3.0 | 2/2 | Complete | 2026-04-26 |
+| 27. Scatter Search Engine | v2.3.0 | 1/1 | Complete | 2026-04-26 |
+| 28. Cellular GA Engine | v2.3.0 | 1/1 | Complete | 2026-04-27 |
+| 29. ALPS Engine | v2.3.0 | 1/1 | Complete | 2026-04-27 |
+| 30. Observer Wiring & DE Benchmark | v2.4.0 | 3/3 | Complete | 2026-05-02 |
+| 31. Selection & Survivor Diversity Operators | v2.4.0 | 2/2 | Complete | 2026-05-04 |
+| 32. Crossover & Differential Mutation | v2.4.0 | 3/3 | Complete | 2026-05-06 |
+| 33. Scalar Mutation Operators | v2.4.0 | 3/3 | Complete | 2026-05-07 |
+| 34. WASM support — wasm32-unknown-unknown compatibility | v2.4.0 | 4/4 | Complete | 2026-05-07 |
+| 35. NSGA-III for many-objective optimization | v2.4.0 | 3/3 | Complete    | 2026-05-09 |
+| 36. MOEA/D decomposition-based multi-objective | v2.4.0 | 3/3 | Complete    | 2026-05-10 |
+| 37. SPEA2 strength pareto evolutionary algorithm | v2.4.0 | 3/3 | Complete    | 2026-05-10 |
+| 38. Indicator-based MOEAs — SMS-EMOA and IBEA | v2.4.0 | 3/3 | Complete | 2026-05-11 |
+| 39. Multi-objective quality indicators | v2.4.0 | 3/3 | Complete | 2026-05-11 |
+| 40. Constraint Handling | v2.4.0 | 3/3 | Complete    | 2026-05-11 |
+| 41. Hall of Fame / Solution Archive | v2.4.0 | 3/3 | Complete | 2026-05-12 |
+| 42. Warm Starting & Population Seeding | v2.4.0 | 3/3 | Complete    | 2026-05-13 |
+| 43. Adaptive Operator Selection (AOS) | v2.4.0 | 3/3 | Complete | 2026-05-14 |
+| 44. Standard Benchmark Functions Suite | v2.4.0 | 3/3 | Complete    | 2026-05-14 |
+| 45. Memetic Algorithm Framework | v2.4.0 | 3 | Pending | — |
+| 46. Documentation Refactor | v2.4.0 | 7/7 | Complete    | 2026-05-15 |
+| 47. Architecture Audit & ChromosomeT Split | v3.0.0 | 8/8 | Complete | 2026-05-31 |
+| 48. New Genotype Types | v3.0.0 | 4/4 | Complete | 2026-05-31 |
+| 49. Unified Strategy Trait + Alternative Strategy Engines | v3.0.0 | 4/4 | Complete | 2026-05-31 |
+| 50. Lexicase Selection | v3.0.0 | 2/2 | Complete | 2026-05-23 |
+| 51. Multi-Parent Crossover + Self-Adaptive Mutation | v3.0.0 | 4/4 | Complete | 2026-05-31 |
+| 52. Variable-Length Chromosomes | v3.0.0 | 4/4 | Complete | 2026-05-24 |
+| 53. Tree Chromosome + GpGa Engine | v3.0.0 | 4/4 | Complete | 2026-05-25 |
+| 54. N-ary Selection / Per-Operator Mutation Params | v3.0.0 | 2/2 | Complete | 2026-05-31 |
+| 55. RFC Multi-Valued Fitness (VectorFitness) | v3.0.0 | 6/6 | Complete | 2026-05-31 |
+| 56. CMA-ES Engine | v3.0.0 | 4/4 | Complete | 2026-06-01 |
+| 57. PSO Engine | v3.0.0 | 4/4 | Complete   | 2026-06-03 |
+| 58. EDA / UMDA Engine | v3.0.0 | TBD | Pending | — |
+| 59. Restart Strategies — IPOP / BIPOP | v3.0.0 | TBD | Pending | — |
+| 60. Batch Fitness / Fitness Cache Extension | v3.0.0 | TBD | Pending | — |
+| 61. Performance — Clone Reduction & Parallel Survivor | v3.0.0 | TBD | Pending | — |
+| 62. Surrogate-Assisted Evaluation | v3.0.0 | TBD | Pending | — |
+| 63. Visualization — Pareto Front Plotting & Example Images | v3.0.0 | TBD | Pending | — |
+| 64. Test & Doc Quality | v3.0.0 | TBD | Pending | — |
+| 65. v3.0.0 Migration Guide | v3.0.0 | TBD | Pending | — |

@@ -115,15 +115,14 @@ pub mod configuration;
 use crate::configuration::GaConfiguration;
 use crate::error::GaError;
 use crate::multi_objective::pareto::{ParetoFront, ParetoIndividual};
-use crate::multi_objective::ObjectiveFn;
 use crate::nsga2::configuration::ObjectiveDirection;
 use crate::observer::Spea2Observer;
 use crate::operations::{crossover, mutation};
 use crate::spea2::configuration::Spea2Configuration;
-use crate::traits::{ChromosomeT, InitializationFn};
+use crate::traits::{InitializationFn, LinearChromosome, MutationOperator, VectorFitness};
+use rand::Rng;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
-use rand::Rng;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -134,7 +133,7 @@ use std::time::Instant;
 /// * `U` - Chromosome type implementing `ChromosomeT`.
 pub struct Spea2Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// SPEA2-specific configuration.
     pub spea2_config: Spea2Configuration,
@@ -144,8 +143,6 @@ where
     pub alleles: Vec<U::Gene>,
     /// Initialization function.
     pub initialization_fn: Option<Arc<InitializationFn<U::Gene>>>,
-    /// Objective functions (one per objective).
-    pub objective_fns: Vec<Arc<ObjectiveFn<U::Gene>>>,
     /// Optional structured lifecycle observer for SPEA2-specific events.
     pub observer: Option<Arc<dyn Spea2Observer<U> + Send + Sync>>,
 }
@@ -153,7 +150,7 @@ where
 #[allow(dead_code)]
 impl<U> Spea2Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// Creates a new `Spea2Ga` with the given configurations.
     pub fn new(spea2_config: Spea2Configuration, ga_config: GaConfiguration) -> Self {
@@ -162,7 +159,6 @@ where
             ga_config,
             alleles: Vec::new(),
             initialization_fn: None,
-            objective_fns: Vec::new(),
             observer: None,
         }
     }
@@ -190,15 +186,9 @@ where
     /// Sets the initialization function.
     pub fn with_initialization_fn<F>(mut self, f: F) -> Self
     where
-        F: Fn(usize, Option<&[U::Gene]>, Option<bool>) -> Vec<U::Gene> + Send + Sync + 'static,
+        F: Fn(usize, Option<&[U::Gene]>) -> Vec<U::Gene> + Send + Sync + 'static,
     {
         self.initialization_fn = Some(Arc::new(f));
-        self
-    }
-
-    /// Sets the objective functions.
-    pub fn with_objective_fns(mut self, fns: Vec<Box<ObjectiveFn<U::Gene>>>) -> Self {
-        self.objective_fns = fns.into_iter().map(Arc::from).collect();
         self
     }
 
@@ -229,13 +219,6 @@ where
                 "initialization_fn is required".to_string(),
             ));
         }
-        if self.objective_fns.len() != self.spea2_config.num_objectives {
-            return Err(GaError::InvalidSpea2Configuration(format!(
-                "Expected {} objective functions, got {}",
-                self.spea2_config.num_objectives,
-                self.objective_fns.len()
-            )));
-        }
         if !self.spea2_config.objective_directions.is_empty()
             && self.spea2_config.objective_directions.len() != self.spea2_config.num_objectives
         {
@@ -254,8 +237,7 @@ where
         if self.spea2_config.archive_size > self.spea2_config.population_size {
             return Err(GaError::InvalidSpea2Configuration(format!(
                 "archive_size ({}) must not exceed population_size ({})",
-                self.spea2_config.archive_size,
-                self.spea2_config.population_size
+                self.spea2_config.archive_size, self.spea2_config.population_size
             )));
         }
         Ok(())
@@ -263,7 +245,11 @@ where
 
     /// Euclidean distance between two objective vectors.
     fn euclidean_distance(a: &[f64], b: &[f64]) -> f64 {
-        a.iter().zip(b.iter()).map(|(x, y)| (x - y).powi(2)).sum::<f64>().sqrt()
+        a.iter()
+            .zip(b.iter())
+            .map(|(x, y)| (x - y).powi(2))
+            .sum::<f64>()
+            .sqrt()
     }
 
     /// Computes SPEA2 fitness (strength + density) for the combined population + archive set.
@@ -276,8 +262,7 @@ where
         archive: &[ParetoIndividual<U>],
         directions: &[ObjectiveDirection],
     ) -> Vec<f64> {
-        let union: Vec<&ParetoIndividual<U>> =
-            population.iter().chain(archive.iter()).collect();
+        let union: Vec<&ParetoIndividual<U>> = population.iter().chain(archive.iter()).collect();
         let n = union.len();
         // D-02: k = floor(sqrt(N_pop + N_archive))
         let k = (n as f64).sqrt().floor() as usize;
@@ -286,11 +271,13 @@ where
         let mut strength = vec![0.0f64; n];
         for i in 0..n {
             for j in 0..n {
-                if i != j && crate::multi_objective::pareto::dominates_with_directions(
-                    &union[i].objectives,
-                    &union[j].objectives,
-                    directions,
-                ) {
+                if i != j
+                    && crate::multi_objective::pareto::dominates_with_directions(
+                        &union[i].objectives,
+                        &union[j].objectives,
+                        directions,
+                    )
+                {
                     strength[i] += 1.0;
                 }
             }
@@ -300,11 +287,13 @@ where
         let mut raw_fitness = vec![0.0f64; n];
         for i in 0..n {
             for j in 0..n {
-                if i != j && crate::multi_objective::pareto::dominates_with_directions(
-                    &union[j].objectives,
-                    &union[i].objectives,
-                    directions,
-                ) {
+                if i != j
+                    && crate::multi_objective::pareto::dominates_with_directions(
+                        &union[j].objectives,
+                        &union[i].objectives,
+                        directions,
+                    )
+                {
                     raw_fitness[i] += strength[j];
                 }
             }
@@ -336,10 +325,7 @@ where
     /// Implements Zitzler, Laumanns & Thiele 2001 Algorithm 1, Step 3 (truncation).
     /// Repeatedly removes the individual with the smallest nearest-neighbour distance,
     /// recomputing distances after each removal.
-    fn truncate_archive(
-        archive: &mut Vec<ParetoIndividual<U>>,
-        target_size: usize,
-    ) {
+    fn truncate_archive(archive: &mut Vec<ParetoIndividual<U>>, target_size: usize) {
         while archive.len() > target_size {
             let n = archive.len();
             let mut remove_idx = 0usize;
@@ -350,7 +336,9 @@ where
             for i in 0..n {
                 let mut dists: Vec<f64> = (0..n)
                     .filter(|&j| j != i)
-                    .map(|j| Self::euclidean_distance(&archive[i].objectives, &archive[j].objectives))
+                    .map(|j| {
+                        Self::euclidean_distance(&archive[i].objectives, &archive[j].objectives)
+                    })
                     .collect();
                 dists.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
 
@@ -393,8 +381,7 @@ where
         fitness: &[f64],
         target_archive_size: usize,
     ) -> Vec<ParetoIndividual<U>> {
-        let union: Vec<&ParetoIndividual<U>> =
-            population.iter().chain(archive.iter()).collect();
+        let union: Vec<&ParetoIndividual<U>> = population.iter().chain(archive.iter()).collect();
 
         // Step 1: Collect all non-dominated individuals (R(i) < 1.0 means non-dominated)
         let mut new_archive: Vec<ParetoIndividual<U>> = union
@@ -445,11 +432,14 @@ where
         let n = pool.len();
         let i = rng.random_range(0..n);
         let j = rng.random_range(0..n);
-        // Lower SPEA2 fitness is better -- use rank as a proxy (0 = non-dominated)
-        // In the archive, all individuals are sorted by fitness; tournament picks by rank
-        if pool[i].rank < pool[j].rank {
+        // Compare by SPEA2 fitness stored in crowding_distance (lower is better).
+        // `rank` is always 0 during the generation loop (assigned only in post-hoc sort).
+        // `crowding_distance` is set to the SPEA2 fitness value just before create_offspring.
+        let fi = pool[i].crowding_distance;
+        let fj = pool[j].crowding_distance;
+        if fi < fj {
             i
-        } else if pool[j].rank < pool[i].rank {
+        } else if fj < fi {
             j
         } else if rng.random::<bool>() {
             i
@@ -461,7 +451,7 @@ where
 
 impl<U> Spea2Ga<U>
 where
-    U: ChromosomeT + mutation::ValueMutable,
+    U: LinearChromosome + mutation::ValueMutable + VectorFitness,
 {
     /// Runs the SPEA2 algorithm and returns the Pareto front from the final archive.
     ///
@@ -491,6 +481,17 @@ where
 
         // Step 2: Initialize population and evaluate objectives in parallel
         let mut population = self.initialize_population()?;
+
+        // Runtime objective-count guard
+        if let Some(first) = population.first() {
+            let got = first.chromosome.fitness_values().len();
+            if got != self.spea2_config.num_objectives {
+                return Err(GaError::InvalidSpea2Configuration(format!(
+                    "Expected {} objectives from fitness_values(), got {}",
+                    self.spea2_config.num_objectives, got
+                )));
+            }
+        }
 
         // Step 3: Initialize empty archive
         let mut archive: Vec<ParetoIndividual<U>> = Vec::with_capacity(archive_size);
@@ -527,12 +528,7 @@ where
             }
 
             // 4c: Environmental selection -- build new archive
-            archive = Self::environmental_selection(
-                &population,
-                &archive,
-                &fitness,
-                archive_size,
-            );
+            archive = Self::environmental_selection(&population, &archive, &fitness, archive_size);
 
             // Compute non-dominated count for observer
             let nd_count = {
@@ -540,11 +536,13 @@ where
                 for i in 0..archive.len() {
                     let mut dominated = false;
                     for j in 0..archive.len() {
-                        if j != i && crate::multi_objective::pareto::dominates_with_directions(
-                            &archive[j].objectives,
-                            &archive[i].objectives,
-                            &directions,
-                        ) {
+                        if j != i
+                            && crate::multi_objective::pareto::dominates_with_directions(
+                                &archive[j].objectives,
+                                &archive[i].objectives,
+                                &directions,
+                            )
+                        {
                             dominated = true;
                             break;
                         }
@@ -557,16 +555,26 @@ where
             };
 
             // 4d: Observer -- on_archive_updated
-            self.notify(|obs| {
-                obs.on_archive_updated(gen, archive.len(), nd_count)
-            });
+            self.notify(|obs| obs.on_archive_updated(gen, archive.len(), nd_count));
+
+            // Tag each archive member with its SPEA2 fitness so binary_tournament_from_archive
+            // can compare by fitness (lower = better) instead of rank which is always 0 here.
+            // We use `crowding_distance` as a scratch field since the SPEA2 loop does not use it.
+            let archive_fitness =
+                Self::assign_spea2_fitness(&archive, &[], &directions);
+            for (i, ind) in archive.iter_mut().enumerate() {
+                ind.crowding_distance = archive_fitness[i];
+            }
 
             // 4e: Binary tournament from archive -> produce new population
             population = self.create_offspring(&archive)?;
         }
 
         // Step 5: Post-hoc non-dominated sort on final archive -> ParetoFront
-        let obj_slices: Vec<&[f64]> = archive.iter().map(|ind| ind.objectives.as_slice()).collect();
+        let obj_slices: Vec<&[f64]> = archive
+            .iter()
+            .map(|ind| ind.objectives.as_slice())
+            .collect();
         let fronts = crate::multi_objective::non_dominated_sort::non_dominated_sort_with_directions(
             &obj_slices,
             &directions,
@@ -588,8 +596,14 @@ where
         })?;
 
         let pop_size = self.spea2_config.population_size;
-        let genes_per_chrom = self.ga_config.limit_configuration.genes_per_chromosome;
-        let alleles_can_repeat = self.ga_config.limit_configuration.alleles_can_be_repeated;
+        let genes_per_chrom = match self.ga_config.limit_configuration.chromosome_length {
+            crate::chromosomes::ChromosomeLength::Fixed(n) => n,
+            crate::chromosomes::ChromosomeLength::Variable { .. } => {
+                return Err(GaError::InvalidSpea2Configuration(
+                    "ChromosomeLength::Variable is not yet supported (Phase 52). Use ChromosomeLength::Fixed.".into(),
+                ));
+            }
+        };
 
         let alleles = if self.alleles.is_empty() {
             None
@@ -601,28 +615,26 @@ where
             pop_size,
             genes_per_chrom,
             alleles,
-            Some(alleles_can_repeat),
             init_fn,
             None,
             0,
         );
 
-        let objective_fns = &self.objective_fns;
         #[cfg(not(target_arch = "wasm32"))]
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_par_iter()
-            .map(|chrom| {
-                let objectives: Vec<f64> =
-                    objective_fns.iter().map(|f| f(chrom.dna())).collect();
+            .map(|mut chrom| {
+                chrom.calculate_fitness();
+                let objectives = chrom.fitness_values().to_vec();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
         #[cfg(target_arch = "wasm32")]
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_iter()
-            .map(|chrom| {
-                let objectives: Vec<f64> =
-                    objective_fns.iter().map(|f| f(chrom.dna())).collect();
+            .map(|mut chrom| {
+                chrom.calculate_fitness();
+                let objectives = chrom.fitness_values().to_vec();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
@@ -643,7 +655,7 @@ where
         let population: Vec<ParetoIndividual<U>> = Vec::new();
 
         let crossover_config = self.ga_config.crossover_configuration;
-        let mutation_config = self.ga_config.mutation_configuration;
+        let mutation_config = self.ga_config.mutation_configuration.clone();
         let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
         let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
 
@@ -668,12 +680,7 @@ where
             for mut child in children {
                 let mp: f64 = rng.random();
                 if mp <= mut_prob {
-                    mutation::factory_with_params(
-                        mutation_config.method,
-                        &mut child,
-                        mutation_config.step,
-                        mutation_config.sigma,
-                    )?;
+                    mutation_config.method.mutate(&mut child, &mutation_config.method)?;
                 }
                 offspring.push(child);
                 if offspring.len() >= pop_size {
@@ -683,22 +690,21 @@ where
         }
 
         // Evaluate objectives for all offspring
-        let objective_fns = &self.objective_fns;
         #[cfg(not(target_arch = "wasm32"))]
         let evaluated: Vec<ParetoIndividual<U>> = offspring
             .into_par_iter()
-            .map(|chrom| {
-                let objectives: Vec<f64> =
-                    objective_fns.iter().map(|f| f(chrom.dna())).collect();
+            .map(|mut chrom| {
+                chrom.calculate_fitness();
+                let objectives = chrom.fitness_values().to_vec();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
         #[cfg(target_arch = "wasm32")]
         let evaluated: Vec<ParetoIndividual<U>> = offspring
             .into_iter()
-            .map(|chrom| {
-                let objectives: Vec<f64> =
-                    objective_fns.iter().map(|f| f(chrom.dna())).collect();
+            .map(|mut chrom| {
+                chrom.calculate_fitness();
+                let objectives = chrom.fitness_values().to_vec();
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();

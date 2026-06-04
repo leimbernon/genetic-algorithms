@@ -185,13 +185,70 @@ A chromosome using a range genotype. Generic over `T`.
 
 - Methods do not return errors directly; DNA manipulation and fitness calculation are assumed to be infallible unless custom fitness functions introduce errors.
 
+## ChromosomeLength
+
+`ChromosomeLength` controls whether a chromosome's DNA length is fixed or allowed to vary during evolution. It is used by `Mutation::Insertion` and `Mutation::Deletion` to enforce length bounds, and by `Crossover::VariableLength` to describe alignment intent.
+
+```rust
+use genetic_algorithms::chromosomes::ChromosomeLength;
+
+// Fixed: length-changing mutations return GaError::MutationError.
+let fixed = ChromosomeLength::Fixed(10);
+
+// Variable: Insertion grows up to max, Deletion shrinks down to min.
+let variable = ChromosomeLength::Variable { min: 2, max: 20 };
+```
+
+**Variants:**
+
+| Variant | Description |
+|---------|-------------|
+| `Fixed(usize)` | Chromosome length is constant. `Insertion` and `Deletion` return `GaError::MutationError`. |
+| `Variable { min, max }` | Chromosome length may vary between `min` and `max` (inclusive). |
+
+**Builder integration:**
+
+```rust
+use genetic_algorithms::chromosomes::ChromosomeLength;
+use genetic_algorithms::operations::Mutation;
+use genetic_algorithms::traits::MutationConfig;
+
+let mut ga = Ga::new()
+    .with_mutation_method(Mutation::Insertion)
+    .with_chromosome_length(ChromosomeLength::Variable { min: 2, max: 20 })
+    .with_length_penalty(0.005)   // optional parsimony pressure
+    // ...
+    .build()
+    .unwrap();
+```
+
+**Added in:** v3.0.0
+
+## GpChromosome
+
+`GpChromosome<N>` is the library-provided tree chromosome for Genetic Programming. It implements `ChromosomeT` but **not** `LinearChromosome` — `dna()`, `dna_mut()`, and `set_dna()` all panic. Use `GpGa<N>`, not `Ga<U>`, for tree chromosomes.
+
+See [Genetic Programming guide](gp.md) for complete documentation.
+
+**Key types in `gp` module:**
+
+| Type | Description |
+|------|-------------|
+| `GpChromosome<N>` | Concrete tree chromosome wrapping a `Node<N>` |
+| `GpGene` | Marker gene type (zero-sized; satisfies `ChromosomeT::Gene` bound) |
+| `TreeChromosome` | Supertrait of `ChromosomeT` for tree chromosomes — provides `tree()`, `tree_mut()`, `depth()`, `node_count()` |
+| `Node<N>` | Recursive expression tree (`Function { value, children }` or `Terminal(N)`) |
+| `GpNode` | Trait to implement on your primitive-set enum |
+
+**Added in:** v3.0.0
+
 ## Related
 
 - [Genotypes Documentation](genotypes.md)
 - [Traits Documentation](traits.md)
+- [Genetic Programming](gp.md)
 - [Mutation Operators](operators/mutation.md)
 - [Selection Operators](operators/selection.md)
-- [Source: `src/chromosomes.rs`](../src/chromosomes.rs)
-- [Source: `src/chromosomes/binary.rs`](../src/chromosomes/binary.rs)
-- [Source: `src/chromosomes/range.rs`](../src/chromosomes/range.rs)
+- [Source: `src/types/chromosomes/mod.rs`](../src/types/chromosomes/mod.rs)
+- [Source: `src/engines/gp/chromosome.rs`](../src/engines/gp/chromosome.rs)
 - [Examples](examples.md)

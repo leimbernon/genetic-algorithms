@@ -1,6 +1,11 @@
-on: 
+on:
   pull_request:
 name: Rust Clippy Check
+
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
   clippy_check:    
     runs-on: ubuntu-latest

@@ -49,7 +49,7 @@ fn main() {
     // --- Build the GA configuration ---
     let mut ga = Ga::new()
         // Chromosome: Binary (bool) with N_BITS genes
-        .with_genes_per_chromosome(N_BITS)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(N_BITS))
         .with_population_size(POP_SIZE)
         // Random initialization for Binary chromosomes
         .with_initialization_fn(binary_random_initialization)

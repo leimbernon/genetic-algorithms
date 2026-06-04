@@ -50,7 +50,22 @@ cargo test selection
 
 # Run a single named test
 cargo test test_tournament_selection
+
+# Run all GP tests
+cargo test --test gp
+
+# Run all variable-length tests
+cargo test --test test_variable_length
 ```
+
+### Notable integration test suites
+
+Two integration suites at the top level of `tests/` cover the v3.0.0 features end-to-end and double as runnable usage references (no standalone `examples/` for these yet):
+
+| Test file | Coverage |
+|---|---|
+| [`tests/gp.rs`](../tests/gp.rs) | Genetic Programming engine — custom `GpNode` impls, ramped half-and-half initialization, subtree/point/hoist mutation, subtree crossover with bloat retry, `GpGa` end-to-end runs, `MathNode` / `BoolNode` built-ins, serde checkpointing of tree chromosomes |
+| [`tests/test_variable_length.rs`](../tests/test_variable_length.rs) | Variable-length chromosomes — `ChromosomeLength::{Fixed, Variable}` enforcement, `Mutation::Insertion` / `Mutation::Deletion` operators, `Crossover::VariableLength(Trim/Pad)` alignment, parsimony pressure via `with_length_penalty`, variable-length-aware extension regrowth |
 
 **Run benchmarks (Criterion):**
 

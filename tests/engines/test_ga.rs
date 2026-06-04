@@ -1,6 +1,6 @@
 
 use crate::structures::{Chromosome, Gene};
-use genetic_algorithms::configuration::StoppingCriteria;
+use genetic_algorithms::ChromosomeLength;
 use genetic_algorithms::ga::Ga;
 use genetic_algorithms::ga::TerminationCause;
 use genetic_algorithms::stats::GenerationStats;
@@ -10,8 +10,8 @@ use genetic_algorithms::{
     operations::{Crossover, Mutation, Selection, Survivor},
     population::Population,
     traits::{
-        ChromosomeT, ConfigurationT, CrossoverConfig, ElitismConfig, MutationConfig, NichingConfig,
-        SelectionConfig, StoppingConfig,
+        ChromosomeT, ConfigurationT, CrossoverConfig, ElitismConfig, LinearChromosome,
+        MutationConfig, NichingConfig, SelectionConfig, StoppingConfig,
     },
 };
 
@@ -89,60 +89,70 @@ fn test_ga_start_maximize() {
             fitness: 1.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_2,
             fitness: 2.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_3,
             fitness: 3.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_4,
             fitness: 4.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_5,
             fitness: 5.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_6,
             fitness: 6.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_7,
             fitness: 7.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_8,
             fitness: 8.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_9,
             fitness: 9.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_10,
             fitness: 10.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
     ];
 
@@ -230,60 +240,70 @@ fn test_ga_run_minimize() {
             fitness: 1.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_2,
             fitness: 2.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_3,
             fitness: 3.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_4,
             fitness: 4.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_5,
             fitness: 5.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_6,
             fitness: 6.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_7,
             fitness: 7.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_8,
             fitness: 8.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_9,
             fitness: 9.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_10,
             fitness: 10.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
     ];
 
@@ -372,60 +392,70 @@ fn test_ga_run() {
             fitness: 1.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_2,
             fitness: 2.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_3,
             fitness: 3.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_4,
             fitness: 4.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_5,
             fitness: 5.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_6,
             fitness: 6.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_7,
             fitness: 7.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_8,
             fitness: 8.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_9,
             fitness: 9.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_10,
             fitness: 10.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
     ];
 
@@ -460,17 +490,13 @@ fn test_parent_crossover_repeating_alleles() {
     let alleles = binding.as_slice();
     static GENES_PER_CHROMOSOME: usize = 6;
     static POPULATION_SIZE: usize = 100;
-    static NEEDS_UNIQUE_IDS: bool = false;
-    static ALLELES_CAN_BE_REPEATED: bool = true;
     static NUMBER_OF_THREADS: usize = 8;
 
     let mut ga: Ga<Chromosome> = Ga::new()
         .with_threads(NUMBER_OF_THREADS)
         .with_fitness_fn(fitness_fn)
         .with_population_size(POPULATION_SIZE)
-        .with_genes_per_chromosome(GENES_PER_CHROMOSOME)
-        .with_needs_unique_ids(NEEDS_UNIQUE_IDS)
-        .with_alleles_can_be_repeated(ALLELES_CAN_BE_REPEATED)
+        .with_chromosome_length(ChromosomeLength::Fixed(GENES_PER_CHROMOSOME))
         .with_alleles(alleles.to_vec())
         .with_initialization_fn(
             genetic_algorithms::initializers::generic_random_initialization::<Chromosome>,
@@ -499,17 +525,13 @@ fn test_parent_crossover_without_repeating_alleles() {
     let alleles = binding.as_slice();
     static GENES_PER_CHROMOSOME: usize = 6;
     static POPULATION_SIZE: usize = 100;
-    static NEEDS_UNIQUE_IDS: bool = false;
-    static ALLELES_CAN_BE_REPEATED: bool = false;
     static NUMBER_OF_THREADS: usize = 8;
 
     let mut ga: Ga<Chromosome> = Ga::new()
         .with_threads(NUMBER_OF_THREADS)
         .with_fitness_fn(fitness_fn)
         .with_population_size(POPULATION_SIZE)
-        .with_genes_per_chromosome(GENES_PER_CHROMOSOME)
-        .with_needs_unique_ids(NEEDS_UNIQUE_IDS)
-        .with_alleles_can_be_repeated(ALLELES_CAN_BE_REPEATED)
+        .with_chromosome_length(ChromosomeLength::Fixed(GENES_PER_CHROMOSOME))
         .with_alleles(alleles.to_vec())
         .with_initialization_fn(
             genetic_algorithms::initializers::generic_random_initialization_without_repetitions::<
@@ -616,60 +638,70 @@ fn test_callback_function() {
             fitness: 1.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_2,
             fitness: 2.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_3,
             fitness: 3.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_4,
             fitness: 4.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_5,
             fitness: 5.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_6,
             fitness: 6.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_7,
             fitness: 7.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_8,
             fitness: 8.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_9,
             fitness: 9.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: dna_10,
             fitness: 10.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
     ];
 
@@ -705,6 +737,7 @@ fn test_elitism_preserves_best_individual() {
             fitness: 0.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         };
         chromosome.set_fitness_fn(|genes: &[Gene]| genes.iter().map(|g| g.id as f64).sum::<f64>());
         chromosome.calculate_fitness();
@@ -754,6 +787,7 @@ fn test_stagnation_stopping_criterion() {
             fitness: 0.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         };
         chromosome.set_fitness_fn(|_genes: &[Gene]| 42.0); // constant fitness
         chromosome.calculate_fitness();
@@ -769,11 +803,7 @@ fn test_stagnation_stopping_criterion() {
         .with_survivor_method(Survivor::Fitness)
         .with_population(population)
         .with_max_generations(1000)
-        .with_stopping_criteria(StoppingCriteria {
-            stagnation_generations: Some(5),
-            convergence_threshold: None,
-            max_duration_secs: None,
-        });
+        .with_stagnation_limit(5);
     ga.run().unwrap();
 
     assert_eq!(
@@ -794,6 +824,7 @@ fn test_convergence_stopping_criterion() {
             fitness: 0.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         };
         chromosome.set_fitness_fn(|_genes: &[Gene]| 100.0); // constant fitness
         chromosome.calculate_fitness();
@@ -809,11 +840,7 @@ fn test_convergence_stopping_criterion() {
         .with_survivor_method(Survivor::Fitness)
         .with_population(population)
         .with_max_generations(1000)
-        .with_stopping_criteria(StoppingCriteria {
-            stagnation_generations: None,
-            convergence_threshold: Some(0.01),
-            max_duration_secs: None,
-        });
+        .with_convergence_threshold(0.01);
     ga.run().unwrap();
 
     assert_eq!(
@@ -836,6 +863,7 @@ fn test_time_limit_stopping_criterion() {
             fitness: 0.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         };
         chromosome.set_fitness_fn(|genes: &[Gene]| genes.iter().map(|g| g.id as f64).sum::<f64>());
         chromosome.calculate_fitness();
@@ -851,11 +879,7 @@ fn test_time_limit_stopping_criterion() {
         .with_survivor_method(Survivor::Fitness)
         .with_population(population)
         .with_max_generations(1_000_000) // Very high to ensure time limit triggers first
-        .with_stopping_criteria(StoppingCriteria {
-            stagnation_generations: None,
-            convergence_threshold: None,
-            max_duration_secs: Some(0.1), // 100 ms — reliable on slow CI
-        });
+        .with_max_duration_secs(0.1); // 100 ms — reliable on slow CI
     ga.run().unwrap();
 
     assert_eq!(
@@ -880,6 +904,7 @@ fn test_rank_selection_in_ga() {
             fitness: 0.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         };
         chromosome.set_fitness_fn(|genes: &[Gene]| genes.iter().map(|g| g.id as f64).sum::<f64>());
         chromosome.calculate_fitness();
@@ -935,6 +960,7 @@ fn test_ga_with_niching_enabled() {
             fitness: 10.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         });
     }
     // 2 different chromosomes
@@ -944,6 +970,7 @@ fn test_ga_with_niching_enabled() {
             fitness: 10.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         });
     }
 
@@ -981,6 +1008,7 @@ fn test_ga_with_niching_disabled() {
             fitness: (i + 1) as f64,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         })
         .collect();
 
@@ -1010,6 +1038,7 @@ fn test_set_gene_out_of_bounds_is_noop() {
         fitness: 5.0,
         age: 0,
         fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
     };
 
     // Out-of-bounds set_gene should not panic and should leave DNA unchanged
@@ -1046,6 +1075,7 @@ fn test_termination_cause_set_without_callback() {
                 fitness: (i + 1) as f64,
                 age: 0,
                 fitness_fn: FitnessFnWrapper::default(),
+                fitness_values: vec![],
             }
         })
         .collect();
@@ -1086,6 +1116,7 @@ fn test_elitism_count_exceeding_population_does_not_panic() {
                 fitness: (i + 1) as f64,
                 age: 0,
                 fitness_fn: FitnessFnWrapper::default(),
+                fitness_values: vec![],
             }
         })
         .collect();
@@ -1128,9 +1159,7 @@ fn test_validator_accepts_builtin_chromosome_type() {
     let mut ga: Ga<Chromosome> = Ga::new()
         .with_fitness_fn(fitness_fn)
         .with_population_size(10)
-        .with_genes_per_chromosome(4)
-        .with_needs_unique_ids(false)
-        .with_alleles_can_be_repeated(true)
+        .with_chromosome_length(ChromosomeLength::Fixed(4))
         .with_alleles(alleles)
         .with_initialization_fn(
             genetic_algorithms::initializers::generic_random_initialization::<Chromosome>,
@@ -1183,7 +1212,7 @@ fn test_island_nsga2_run_returns_pareto_front() {
 
     let mut ga = IslandNsga2Ga::<Chromosome>::new(island_config, nsga2_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |genes_per_chrom, _alleles, _repeat| {
+        .with_initialization_fn(move |genes_per_chrom, _alleles| {
             // Simple random initialization: assign random IDs from alleles
             use rand::Rng;
             let mut rng = rand::rng();
@@ -1194,12 +1223,6 @@ fn test_island_nsga2_run_returns_pareto_front() {
                 })
                 .collect()
         })
-        .with_objective_fns(vec![
-            // Objective 1: sum of gene IDs (minimize)
-            Box::new(|dna: &[Gene]| dna.iter().map(|g| g.id as f64).sum()),
-            // Objective 2: negative sum (conflicting with obj 1)
-            Box::new(|dna: &[Gene]| -(dna.iter().map(|g| g.id as f64).sum::<f64>())),
-        ])
         .build()
         .expect("Configuration should be valid");
 
@@ -1236,7 +1259,6 @@ fn test_island_nsga2_build_validates() {
     let ga_config = GaConfiguration::default();
 
     let result = IslandNsga2Ga::<Chromosome>::new(island_config, nsga2_config, ga_config)
-        .with_objective_fns(vec![Box::new(|_: &[Gene]| 0.0), Box::new(|_: &[Gene]| 0.0)])
         .build();
 
     assert!(
@@ -1275,7 +1297,7 @@ fn test_island_nsga2_migration_improves_diversity() {
 
     let mut ga = IslandNsga2Ga::<Chromosome>::new(island_config, nsga2_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |genes_per_chrom, _alleles, _repeat| {
+        .with_initialization_fn(move |genes_per_chrom, _alleles| {
             use rand::Rng;
             let mut rng = rand::rng();
             (0..genes_per_chrom)
@@ -1285,10 +1307,6 @@ fn test_island_nsga2_migration_improves_diversity() {
                 })
                 .collect()
         })
-        .with_objective_fns(vec![
-            Box::new(|dna: &[Gene]| dna.iter().map(|g| g.id as f64).sum()),
-            Box::new(|dna: &[Gene]| dna.iter().map(|g| (g.id as f64 - 1.5).powi(2)).sum::<f64>()),
-        ])
         .build()
         .expect("Configuration should be valid");
 
@@ -1334,7 +1352,7 @@ fn test_nsga2_run_returns_pareto_front() {
 
     let mut nsga2 = Nsga2Ga::<Chromosome>::new(nsga2_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |genes_per_chrom, _alleles, _repeat| {
+        .with_initialization_fn(move |genes_per_chrom, _alleles| {
             use rand::Rng;
             let mut rng = rand::rng();
             (0..genes_per_chrom)
@@ -1343,13 +1361,7 @@ fn test_nsga2_run_returns_pareto_front() {
                     alleles_clone[idx]
                 })
                 .collect()
-        })
-        .with_objective_fns(vec![
-            // Objective 1: sum of gene IDs
-            Box::new(|dna: &[Gene]| dna.iter().map(|g| g.id as f64).sum()),
-            // Objective 2: negative sum (conflicting)
-            Box::new(|dna: &[Gene]| -(dna.iter().map(|g| g.id as f64).sum::<f64>())),
-        ]);
+        });
 
     let result = nsga2.run();
     assert!(result.is_ok(), "NSGA-II run should succeed");
@@ -1404,27 +1416,20 @@ fn test_nsga2_three_objectives() {
 
     let mut nsga2 = Nsga2Ga::<Chromosome>::new(nsga2_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |genes_per_chrom, _alleles, _repeat| {
+        .with_initialization_fn(move |genes_per_chrom, _alleles| {
             use rand::Rng;
             let mut rng = rand::rng();
             (0..genes_per_chrom)
                 .map(|_| alleles_clone[rng.random_range(0..alleles_clone.len())])
                 .collect()
-        })
-        .with_objective_fns(vec![
-            Box::new(|dna: &[Gene]| dna.iter().map(|g| g.id as f64).sum()),
-            Box::new(|dna: &[Gene]| -(dna.iter().map(|g| g.id as f64).sum::<f64>())),
-            Box::new(|dna: &[Gene]| dna.iter().map(|g| (g.id as f64 - 2.0).powi(2)).sum::<f64>()),
-        ]);
+        });
 
+    // Chromosome.calculate_fitness() produces 2 fitness_values; num_objectives=3 causes runtime error
     let result = nsga2.run();
-    assert!(result.is_ok(), "NSGA-II with 3 objectives should succeed");
-
-    let front = result.unwrap();
-    assert!(!front.is_empty());
-    for ind in &front.individuals {
-        assert_eq!(ind.objectives.len(), 3);
-    }
+    assert!(
+        result.is_err(),
+        "NSGA-II should reject chromosome with 2 objectives when 3 expected"
+    );
 }
 
 // ============================================================================
@@ -1460,7 +1465,7 @@ fn test_island_ga_run_returns_best_chromosome() {
 
     let ga_config = GaConfiguration::new()
         .with_population_size(20)
-        .with_genes_per_chromosome(4)
+        .with_chromosome_length(ChromosomeLength::Fixed(4))
         .with_max_generations(15)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
@@ -1470,7 +1475,7 @@ fn test_island_ga_run_returns_best_chromosome() {
 
     let mut ga = IslandGa::<Chromosome>::new(island_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |genes_per_chrom, _alleles, _repeat| {
+        .with_initialization_fn(move |genes_per_chrom, _alleles| {
             use rand::Rng;
             let mut rng = rand::rng();
             (0..genes_per_chrom)
@@ -1519,7 +1524,7 @@ fn test_island_ga_minimization() {
 
     let ga_config = GaConfiguration::new()
         .with_population_size(15)
-        .with_genes_per_chromosome(3)
+        .with_chromosome_length(ChromosomeLength::Fixed(3))
         .with_max_generations(10)
         .with_selection_method(Selection::Random)
         .with_crossover_method(Crossover::Uniform)
@@ -1529,7 +1534,7 @@ fn test_island_ga_minimization() {
 
     let mut ga = IslandGa::<Chromosome>::new(island_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |genes_per_chrom, _alleles, _repeat| {
+        .with_initialization_fn(move |genes_per_chrom, _alleles| {
             use rand::Rng;
             let mut rng = rand::rng();
             (0..genes_per_chrom)
@@ -1570,7 +1575,7 @@ fn test_ga_run_with_range_chromosome_f64() {
 
     let mut ga: Ga<RangeChromosome<f64>> = Ga::new()
         .with_population_size(20)
-        .with_genes_per_chromosome(3)
+        .with_chromosome_length(ChromosomeLength::Fixed(3))
         .with_max_generations(20)
         .with_problem_solving(ProblemSolving::Minimization)
         .with_selection_method(Selection::Tournament)
@@ -1616,7 +1621,7 @@ fn test_ga_run_with_range_chromosome_i32() {
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
         .with_population_size(15)
-        .with_genes_per_chromosome(4)
+        .with_chromosome_length(ChromosomeLength::Fixed(4))
         .with_max_generations(10)
         .with_problem_solving(ProblemSolving::Maximization)
         .with_selection_method(Selection::Random)
@@ -1705,6 +1710,7 @@ fn test_niching_promotes_diversity() {
                 fitness: 10.0,
                 age: 0,
                 fitness_fn: FitnessFnWrapper::default(),
+                fitness_values: vec![],
             });
         }
         for _ in 0..2 {
@@ -1713,6 +1719,7 @@ fn test_niching_promotes_diversity() {
                 fitness: 10.0,
                 age: 0,
                 fitness_fn: FitnessFnWrapper::default(),
+                fitness_values: vec![],
             });
         }
         Population::new(chromosomes)
@@ -1787,6 +1794,7 @@ fn test_adaptive_ga_runs_without_error() {
             fitness: 0.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         };
         chromosome.set_fitness_fn(|genes: &[Gene]| genes.iter().map(|g| g.id as f64).sum::<f64>());
         chromosome.calculate_fitness();
@@ -1844,6 +1852,7 @@ fn test_adaptive_ga_minimization() {
             fitness: 0.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         };
         chromosome.set_fitness_fn(|genes: &[Gene]| genes.iter().map(|g| g.id as f64).sum::<f64>());
         chromosome.calculate_fitness();
@@ -1893,6 +1902,7 @@ fn test_fitness_target_reached_minimization() {
             fitness: 0.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         });
     }
 
@@ -1962,10 +1972,10 @@ fn test_rng_seed_produces_reproducible_results() {
         let alleles_clone = alleles.clone();
 
         let mut ga: Ga<RangeChromosome<f64>> = Ga::new()
-            .with_genes_per_chromosome(4)
+            .with_chromosome_length(ChromosomeLength::Fixed(4))
             .with_population_size(20)
-            .with_initialization_fn(move |genes_per_chromosome, _, _| {
-                range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+            .with_initialization_fn(move |genes_per_chromosome, _| {
+                range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
             })
             .with_fitness_fn(|dna: &[RangeGene<f64>]| dna.iter().map(|g| g.value).sum::<f64>())
             .with_selection_method(Selection::Tournament)
@@ -2022,9 +2032,8 @@ fn test_ga_with_dynamic_mutation() {
 
     let mut ga: Ga<Chromosome> = Ga::new()
         .with_population_size(20)
-        .with_genes_per_chromosome(10)
-        .with_alleles_can_be_repeated(true)
-        .with_initialization_fn(|genes, alleles, _unique| {
+        .with_chromosome_length(ChromosomeLength::Fixed(10))
+        .with_initialization_fn(|genes, alleles| {
             let mut rng = genetic_algorithms::rng::make_rng();
             let alleles: &[Gene] = alleles.unwrap();
             (0..genes)
@@ -2056,10 +2065,10 @@ fn test_ga_with_dynamic_mutation() {
     );
 
     // Verify configuration was stored correctly
-    assert!(ga.configuration.mutation_configuration.dynamic_mutation);
+    assert!(ga.configuration().mutation().dynamic_mutation);
     assert!(
-        (ga.configuration
-            .mutation_configuration
+        (ga.configuration()
+            .mutation()
             .target_cardinality
             .unwrap()
             - 0.5)
@@ -2067,8 +2076,8 @@ fn test_ga_with_dynamic_mutation() {
             < f64::EPSILON
     );
     assert!(
-        (ga.configuration
-            .mutation_configuration
+        (ga.configuration()
+            .mutation()
             .probability_step
             .unwrap()
             - 0.02)
@@ -2091,6 +2100,7 @@ fn test_ga_stats_diversity_populated() {
             fitness: 1.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: vec![
@@ -2102,6 +2112,7 @@ fn test_ga_stats_diversity_populated() {
             fitness: 2.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: vec![
@@ -2113,6 +2124,7 @@ fn test_ga_stats_diversity_populated() {
             fitness: 3.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: vec![
@@ -2124,6 +2136,7 @@ fn test_ga_stats_diversity_populated() {
             fitness: 4.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: vec![
@@ -2135,6 +2148,7 @@ fn test_ga_stats_diversity_populated() {
             fitness: 5.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: vec![
@@ -2146,6 +2160,7 @@ fn test_ga_stats_diversity_populated() {
             fitness: 6.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: vec![
@@ -2157,6 +2172,7 @@ fn test_ga_stats_diversity_populated() {
             fitness: 7.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: vec![
@@ -2168,6 +2184,7 @@ fn test_ga_stats_diversity_populated() {
             fitness: 8.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: vec![
@@ -2179,6 +2196,7 @@ fn test_ga_stats_diversity_populated() {
             fitness: 9.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
         Chromosome {
             dna: vec![
@@ -2190,6 +2208,7 @@ fn test_ga_stats_diversity_populated() {
             fitness: 10.0,
             age: 0,
             fitness_fn: FitnessFnWrapper::default(),
+            fitness_values: vec![],
         },
     ];
 

@@ -51,16 +51,15 @@ fn run_ga(name: &str, use_local_search: bool) -> f64 {
 
     // Build the GA with common configuration
     let mut builder = Ga::<RangeChromosome<f64>>::new()
-        .with_genes_per_chromosome(DIMENSIONS)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(DIMENSIONS))
         .with_population_size(POP_SIZE)
-        .with_initialization_fn(move |genes, _, _| {
-            range_random_initialization(genes, Some(&alleles_clone), Some(false))
+        .with_initialization_fn(move |genes, _| {
+            range_random_initialization(genes, Some(&alleles_clone))
         })
         .with_fitness_fn(rastrigin_fitness)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
-        .with_mutation_method(Mutation::Gaussian)
-        .with_mutation_step(0.5)
+        .with_mutation_method(Mutation::Gaussian { sigma: None })
         .with_problem_solving(ProblemSolving::Minimization)
         .with_survivor_method(Survivor::Fitness)
         .with_max_generations(MAX_GENERATIONS)

@@ -51,9 +51,8 @@ use crate::nsga2::configuration::Nsga2Configuration;
 use crate::nsga2::crowding_distance::assign_crowding_distance;
 use crate::nsga2::non_dominated_sort::{assign_ranks, non_dominated_sort};
 use crate::nsga2::pareto::{ParetoFront, ParetoIndividual};
-use crate::nsga2::ObjectiveFn;
 use crate::operations::mutation;
-use crate::traits::{ChromosomeT, InitializationFn};
+use crate::traits::{InitializationFn, LinearChromosome, MutationOperator, VectorFitness};
 use log::{debug, info};
 use rand::Rng;
 use rayon::prelude::*;
@@ -69,7 +68,7 @@ use std::sync::Arc;
 /// * `U` - Chromosome type implementing `ChromosomeT`.
 pub struct IslandNsga2Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     /// Island model configuration (num_islands, migration interval, count, topology).
     pub island_config: IslandConfiguration,
@@ -83,13 +82,11 @@ where
     pub alleles: Vec<U::Gene>,
     /// Initialization function.
     pub initialization_fn: Option<Arc<InitializationFn<U::Gene>>>,
-    /// Objective functions (one per objective).
-    pub objective_fns: Vec<Arc<ObjectiveFn<U::Gene>>>,
 }
 
 impl<U> IslandNsga2Ga<U>
 where
-    U: ChromosomeT,
+    U: LinearChromosome + VectorFitness,
 {
     /// Creates a new `IslandNsga2Ga` with the given configurations.
     pub fn new(
@@ -104,7 +101,6 @@ where
             islands: Vec::new(),
             alleles: Vec::new(),
             initialization_fn: None,
-            objective_fns: Vec::new(),
         }
     }
 
@@ -117,17 +113,9 @@ where
     /// Sets the initialization function.
     pub fn with_initialization_fn<F>(mut self, f: F) -> Self
     where
-        F: Fn(usize, Option<&[U::Gene]>, Option<bool>) -> Vec<U::Gene> + Send + Sync + 'static,
+        F: Fn(usize, Option<&[U::Gene]>) -> Vec<U::Gene> + Send + Sync + 'static,
     {
         self.initialization_fn = Some(Arc::new(f));
-        self
-    }
-
-    /// Sets the objective functions.
-    ///
-    /// Each function evaluates one objective given the chromosome's DNA.
-    pub fn with_objective_fns(mut self, fns: Vec<Box<ObjectiveFn<U::Gene>>>) -> Self {
-        self.objective_fns = fns.into_iter().map(Arc::from).collect();
         self
     }
 
@@ -192,14 +180,6 @@ where
                 "initialization_fn is required".to_string(),
             ));
         }
-        if self.objective_fns.len() != self.nsga2_config.num_objectives {
-            return Err(GaError::InvalidNsga2Configuration(format!(
-                "Expected {} objective functions, got {}",
-                self.nsga2_config.num_objectives,
-                self.objective_fns.len()
-            )));
-        }
-
         Ok(())
     }
 
@@ -211,8 +191,14 @@ where
 
         let num_islands = self.island_config.num_islands;
         let pop_size = self.nsga2_config.population_size;
-        let genes_per_chrom = self.ga_config.limit_configuration.genes_per_chromosome;
-        let alleles_can_repeat = self.ga_config.limit_configuration.alleles_can_be_repeated;
+        let genes_per_chrom = match self.ga_config.limit_configuration.chromosome_length {
+            crate::chromosomes::ChromosomeLength::Fixed(n) => n,
+            crate::chromosomes::ChromosomeLength::Variable { .. } => {
+                return Err(GaError::InvalidIslandConfiguration(
+                    "ChromosomeLength::Variable is not yet supported (Phase 52). Use ChromosomeLength::Fixed.".into(),
+                ));
+            }
+        };
 
         let alleles = if self.alleles.is_empty() {
             None
@@ -228,19 +214,17 @@ where
                 pop_size,
                 genes_per_chrom,
                 alleles,
-                Some(alleles_can_repeat),
                 init_fn,
                 None,
                 0,
             );
 
-            // Wrap in ParetoIndividual and evaluate objectives in parallel
-            let objective_fns = &self.objective_fns;
+            // Wrap in ParetoIndividual and evaluate objectives via VectorFitness
             let population: Vec<ParetoIndividual<U>> = chromosomes
                 .into_par_iter()
-                .map(|chrom| {
-                    let objectives: Vec<f64> =
-                        objective_fns.iter().map(|f| f(chrom.dna())).collect();
+                .map(|mut chrom| {
+                    chrom.calculate_fitness();
+                    let objectives = chrom.fitness_values().to_vec();
                     ParetoIndividual::new(chrom, objectives)
                 })
                 .collect();
@@ -285,7 +269,7 @@ where
 
 impl<U> IslandNsga2Ga<U>
 where
-    U: ChromosomeT + mutation::ValueMutable,
+    U: LinearChromosome + mutation::ValueMutable + VectorFitness,
 {
     /// Runs the Island-NSGA-II algorithm and returns the global Pareto front.
     ///
@@ -307,6 +291,19 @@ where
     pub fn run(&mut self) -> Result<ParetoFront<U>, GaError> {
         self.validate()?;
         self.initialize_islands()?;
+
+        // Runtime objective-count guard
+        if let Some(island) = self.islands.first() {
+            if let Some(first) = island.first() {
+                let got = first.chromosome.fitness_values().len();
+                if got != self.nsga2_config.num_objectives {
+                    return Err(GaError::InvalidNsga2Configuration(format!(
+                        "Expected {} objectives from fitness_values(), got {}",
+                        self.nsga2_config.num_objectives, got
+                    )));
+                }
+            }
+        }
 
         // Apply RNG seed if configured
         crate::rng::set_seed(self.ga_config.rng_seed);
@@ -360,14 +357,13 @@ where
     /// 3. Non-dominated sort + crowding distance on combined.
     /// 4. Environmental selection: sort by (rank asc, crowding desc), truncate to `pop_size`.
     fn evolve_islands_one_generation(&mut self, pop_size: usize) -> Result<(), GaError> {
-        use crate::operations::{crossover, mutation};
+        use crate::operations::crossover;
         use rayon::prelude::*;
 
         let crossover_config = self.ga_config.crossover_configuration;
-        let mutation_config = self.ga_config.mutation_configuration;
+        let mutation_config = self.ga_config.mutation_configuration.clone();
         let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
         let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
-        let objective_fns = &self.objective_fns;
 
         self.islands.par_iter_mut().try_for_each(|island| {
             let mut rng = crate::rng::make_rng();
@@ -396,35 +392,14 @@ where
                 for child in children.iter_mut() {
                     let mp: f64 = rng.random();
                     if mp <= mut_prob {
-                        if mutation_config.method == crate::operations::Mutation::Cauchy {
-                            mutation::factory_with_params(
-                                mutation_config.method,
-                                child,
-                                mutation_config.cauchy_scale,
-                                None,
-                            )?;
-                        } else if mutation_config.method == crate::operations::Mutation::LevyFlight {
-                            mutation::factory_with_params(
-                                mutation_config.method,
-                                child,
-                                None,
-                                mutation_config.levy_alpha,
-                            )?;
-                        } else {
-                            mutation::factory_with_params(
-                                mutation_config.method,
-                                child,
-                                mutation_config.step,
-                                mutation_config.sigma,
-                            )?;
-                        }
+                        mutation_config.method.mutate(child, &mutation_config.method)?;
                     }
                 }
 
-                // Evaluate objectives and wrap in ParetoIndividual
-                for child in children {
-                    let objectives: Vec<f64> =
-                        objective_fns.iter().map(|f| f(child.dna())).collect();
+                // Evaluate objectives via VectorFitness and wrap in ParetoIndividual
+                for mut child in children {
+                    child.calculate_fitness();
+                    let objectives = child.fitness_values().to_vec();
                     offspring.push(ParetoIndividual::new(child, objectives));
                     if offspring.len() >= pop_size {
                         break;
@@ -483,7 +458,7 @@ where
 /// (lower rank, or higher crowding distance if tied).
 pub fn binary_tournament<U>(population: &[ParetoIndividual<U>], rng: &mut impl Rng) -> usize
 where
-    U: ChromosomeT,
+    U: LinearChromosome,
 {
     let n = population.len();
     let i = rng.random_range(0..n);

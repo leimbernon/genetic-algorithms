@@ -31,6 +31,7 @@
 
 use std::fmt;
 
+use crate::chromosomes::ChromosomeLength;
 use crate::extension::configuration::ExtensionConfiguration;
 use crate::niching::configuration::NichingConfiguration;
 use crate::operations::local_search::{
@@ -40,7 +41,7 @@ use crate::{
     operations::{Crossover, Extension, Mutation, Selection, Survivor},
     traits::{
         ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, LocalSearchConfig,
-        MutationConfig, NichingConfig, SelectionConfig, StoppingConfig,
+        MutationConfig, NichingConfig, SelectionConfig, StoppingConfig, SurvivorConfig,
     },
 };
 
@@ -106,6 +107,10 @@ pub struct SelectionConfiguration {
     /// individuals are cleared from the selection pool. Default is `0.1`.
     /// Only used when `method` is `Selection::Clearing`.
     pub niche_radius: f64,
+    /// Epsilon tolerance for [`Selection::EpsilonLexicase`].
+    /// Default `0.0` = use dynamic per-case MAD as tolerance.
+    /// Any value `> 0.0` is treated as a fixed epsilon threshold.
+    pub epsilon: f64,
 }
 impl Default for SelectionConfiguration {
     fn default() -> Self {
@@ -114,6 +119,7 @@ impl Default for SelectionConfiguration {
             method: Selection::Tournament,
             boltzmann_temperature: 1.0,
             niche_radius: 0.1,
+            epsilon: 0.0,
         }
     }
 }
@@ -138,6 +144,22 @@ pub struct CrossoverConfiguration {
     /// Alpha parameter for Arithmetic crossover. Controls weighting between parents.
     /// α=0.5 gives uniform arithmetic crossover (midpoint). Default is 0.5.
     pub arithmetic_alpha: Option<f64>,
+    /// Override for the UNDX orthogonal noise scale (σ_xi).
+    /// Default (when `None`): `0.35 / sqrt(n_parents - 1)`.
+    /// Only consulted when `method == Crossover::Undx`.
+    pub undx_sigma_xi: Option<f64>,
+    /// Override for the UNDX primary-direction noise scale (σ_eta).
+    /// Default (when `None`): `0.35 / sqrt(n_parents)`.
+    /// Only consulted when `method == Crossover::Undx`.
+    pub undx_sigma_eta: Option<f64>,
+    /// Override for the PCX directional noise scale (σ_eta).
+    /// Default (when `None`): `0.1`.
+    /// Only consulted when `method == Crossover::Pcx`.
+    pub pcx_sigma_eta: Option<f64>,
+    /// Override for the PCX orthogonal noise scale (σ_zeta).
+    /// Default (when `None`): `0.1`.
+    /// Only consulted when `method == Crossover::Pcx`.
+    pub pcx_sigma_zeta: Option<f64>,
 }
 impl Default for CrossoverConfiguration {
     fn default() -> Self {
@@ -149,42 +171,31 @@ impl Default for CrossoverConfiguration {
             sbx_eta: None,
             blend_alpha: None,
             arithmetic_alpha: None,
+            undx_sigma_xi: None,
+            undx_sigma_eta: None,
+            pcx_sigma_eta: None,
+            pcx_sigma_zeta: None,
         }
     }
 }
 
 /// Configuration for the mutation operator.
 ///
-/// Specifies the mutation method, probability bounds (for adaptive GA),
-/// and method-specific parameters like step size, sigma, or polynomial eta.
-#[derive(Copy, Clone, Debug, PartialEq)]
+/// Specifies the mutation method and probability bounds (for adaptive GA).
+/// Operator-specific parameters (step size, sigma, eta, etc.) are now carried
+/// directly by the [`Mutation`] variant — see the variant documentation for defaults.
+///
+/// **v3.0.0 breaking change:** The fields `step`, `sigma`, `polynomial_eta`,
+/// `non_uniform_b`, `differential_f`, `cauchy_scale`, `levy_alpha`,
+/// `self_adaptive_tau`, `self_adaptive_tau_prime`, `sigma_min`, and `sigma_max`
+/// have been removed. Embed parameters in the variant directly, e.g.:
+/// `Mutation::Gaussian { sigma: Some(0.05) }`.
+#[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MutationConfiguration {
     pub probability_max: Option<f64>,
     pub probability_min: Option<f64>,
     pub method: Mutation,
-    /// Step size for Creep mutation. Only used when method is `Mutation::Creep`.
-    /// Default is 1.0.
-    pub step: Option<f64>,
-    /// Standard deviation for Gaussian mutation. Only used when method is `Mutation::Gaussian`.
-    /// Default is 1.0.
-    pub sigma: Option<f64>,
-    /// Distribution index for Polynomial mutation. Higher values produce smaller
-    /// perturbations. Typical range: 20–100. Default is 20.0.
-    pub polynomial_eta: Option<f64>,
-    /// Decay parameter for NonUniform mutation. Controls how fast mutation
-    /// magnitude decreases over generations. Typical range: 2–5. Default is 2.0.
-    pub non_uniform_b: Option<f64>,
-    /// F scale factor for Differential mutation. Controls perturbation magnitude.
-    /// Typical range: 0.4–1.0. Default is 0.5 when `None`.
-    /// Only used when `method` is `Mutation::Differential`.
-    pub differential_f: Option<f64>,
-    /// Scale parameter (γ) for `Mutation::Cauchy`. Default is `1.0` when `None`.
-    /// Only consulted when `method == Mutation::Cauchy`.
-    pub cauchy_scale: Option<f64>,
-    /// Stability index (α) for `Mutation::LevyFlight`. Valid range: (0.0, 2.0). Default is `1.5` when `None`.
-    /// Only consulted when `method == Mutation::LevyFlight`.
-    pub levy_alpha: Option<f64>,
     /// Enable dynamic mutation probability adjustment based on population cardinality.
     /// When enabled, mutation probability is adjusted each generation: increased when
     /// diversity is low and decreased when diversity is high.
@@ -201,13 +212,6 @@ impl Default for MutationConfiguration {
             probability_max: None,
             probability_min: None,
             method: Mutation::Swap,
-            step: None,
-            sigma: None,
-            polynomial_eta: None,
-            non_uniform_b: None,
-            differential_f: None,
-            cauchy_scale: None,
-            levy_alpha: None,
             dynamic_mutation: false,
             target_cardinality: None,
             probability_step: None,
@@ -218,7 +222,8 @@ impl Default for MutationConfiguration {
 /// Core limits and problem parameters for the GA.
 ///
 /// Defines population size, chromosome length, optimization direction,
-/// generation cap, and whether alleles can repeat or require unique IDs.
+/// and generation cap. The `chromosome_length` field describes whether
+/// chromosomes have a fixed or variable number of genes.
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LimitConfiguration {
@@ -226,9 +231,7 @@ pub struct LimitConfiguration {
     pub max_generations: usize,
     pub fitness_target: Option<f64>,
     pub population_size: usize,
-    pub genes_per_chromosome: usize,
-    pub needs_unique_ids: bool,
-    pub alleles_can_be_repeated: bool,
+    pub chromosome_length: ChromosomeLength,
 }
 impl Default for LimitConfiguration {
     fn default() -> Self {
@@ -237,9 +240,7 @@ impl Default for LimitConfiguration {
             max_generations: 100,
             fitness_target: None,
             population_size: 0,
-            genes_per_chromosome: 0,
-            needs_unique_ids: false,
-            alleles_can_be_repeated: false,
+            chromosome_length: ChromosomeLength::default(),
         }
     }
 }
@@ -255,23 +256,6 @@ pub struct SaveProgressConfiguration {
     pub save_progress: bool,
     pub save_progress_interval: usize,
     pub save_progress_path: String,
-}
-
-/// Compound stopping criteria for the GA.
-///
-/// Multiple criteria can be enabled simultaneously. The GA stops when **any** of them is met.
-#[derive(Clone, Debug, Default, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct StoppingCriteria {
-    /// Stop after N generations without fitness improvement.
-    /// `None` means this criterion is disabled.
-    pub stagnation_generations: Option<usize>,
-    /// Stop when the fitness standard deviation drops below this threshold.
-    /// `None` means this criterion is disabled.
-    pub convergence_threshold: Option<f64>,
-    /// Stop after the specified elapsed time (in seconds).
-    /// `None` means this criterion is disabled.
-    pub max_duration_secs: Option<f64>,
 }
 
 /// Configuration for local search refinement in memetic algorithms.
@@ -309,46 +293,67 @@ impl Default for LocalSearchConfiguration {
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct GaConfiguration {
-    pub adaptive_ga: bool,
-    pub number_of_threads: usize,
-    pub limit_configuration: LimitConfiguration,
-    pub selection_configuration: SelectionConfiguration,
-    pub crossover_configuration: CrossoverConfiguration,
-    pub mutation_configuration: MutationConfiguration,
-    pub survivor: Survivor,
-    pub log_level: LogLevel,
-    pub save_progress_configuration: SaveProgressConfiguration,
+    pub(crate) adaptive_ga: bool,
+    pub(crate) number_of_threads: usize,
+    pub(crate) limit_configuration: LimitConfiguration,
+    pub(crate) selection_configuration: SelectionConfiguration,
+    pub(crate) crossover_configuration: CrossoverConfiguration,
+    pub(crate) mutation_configuration: MutationConfiguration,
+    pub(crate) survivor: Survivor,
+    pub(crate) log_level: LogLevel,
+    pub(crate) save_progress_configuration: SaveProgressConfiguration,
     /// Number of best individuals to preserve unchanged between generations (elitism).
     /// Default is 0 (no elitism).
-    pub elitism_count: usize,
-    /// Compound stopping criteria. These are checked in addition to
-    /// max_generations and fitness_target.
-    pub stopping_criteria: StoppingCriteria,
+    pub(crate) elitism_count: usize,
+    /// Stop after N generations without fitness improvement.
+    /// `None` means this criterion is disabled.
+    pub(crate) stagnation_generations: Option<usize>,
+    /// Stop when the fitness standard deviation drops below this threshold.
+    /// `None` means this criterion is disabled.
+    pub(crate) convergence_threshold: Option<f64>,
+    /// Stop after the specified elapsed time (in seconds).
+    /// `None` means this criterion is disabled.
+    /// The field itself is un-gated; only the call site in ga.rs is `#[cfg(not(target_arch = "wasm32"))]`-gated.
+    pub(crate) max_duration_secs: Option<f64>,
     /// Optional niching / fitness sharing configuration.
-    pub niching_configuration: Option<NichingConfiguration>,
+    pub(crate) niching_configuration: Option<NichingConfiguration>,
     /// Optional extension configuration for population diversity control.
-    pub extension_configuration: Option<ExtensionConfiguration>,
+    pub(crate) extension_configuration: Option<ExtensionConfiguration>,
     /// Optional RNG seed for reproducible runs.
     ///
     /// When set, all random number generators in operators are seeded
     /// deterministically from this value. Two runs with the same seed
     /// (and the same thread count) will produce identical results.
-    pub rng_seed: Option<u64>,
+    pub(crate) rng_seed: Option<u64>,
     /// Optional crossover operator portfolio for AOS.
     /// When `Some(Vec<Crossover>)`, AOS selects among these operators dynamically.
     /// Default: None (uses single crossover method).
-    pub crossover_portfolio: Option<Vec<Crossover>>,
+    pub(crate) crossover_portfolio: Option<Vec<Crossover>>,
     /// Optional mutation operator portfolio for AOS.
-    pub mutation_portfolio: Option<Vec<Mutation>>,
+    pub(crate) mutation_portfolio: Option<Vec<Mutation>>,
     /// The AOS strategy for portfolio selection.
     /// Default: AosStrategy::ProbabilityMatching.
-    pub aos_strategy: crate::aos::AosStrategy,
+    pub(crate) aos_strategy: crate::aos::AosStrategy,
     /// Sliding window size for AOS reward history.
     /// Default: 50. Exploration phase = window / 2 generations.
-    pub aos_reward_window: usize,
+    pub(crate) aos_reward_window: usize,
     /// Optional local search configuration for memetic algorithms.
     /// When `None`, no local search is performed (zero overhead).
-    pub local_search_configuration: Option<LocalSearchConfiguration>,
+    pub(crate) local_search_configuration: Option<LocalSearchConfiguration>,
+    /// Parsimony pressure penalty coefficient.
+    ///
+    /// When set, each chromosome's effective fitness during survivor selection is adjusted
+    /// by `±(length_penalty × chromosome_dna_length)`. The stored `fitness()` value is
+    /// **never** mutated — only the comparison value is adjusted.
+    ///
+    /// Sign convention (auto-adjusted per `ProblemSolving` mode):
+    /// - **Maximization** — adjusted = fitness - (length_penalty × length)
+    ///   (longer chromosomes appear worse)
+    /// - **Minimization** — adjusted = fitness + (length_penalty × length)
+    ///   (longer chromosomes appear worse)
+    ///
+    /// Set to `None` (default) to disable parsimony pressure.
+    pub(crate) length_penalty: Option<f64>,
 }
 impl Default for GaConfiguration {
     fn default() -> Self {
@@ -373,7 +378,9 @@ impl Default for GaConfiguration {
                 ..Default::default()
             },
             elitism_count: 0,
-            stopping_criteria: StoppingCriteria::default(),
+            stagnation_generations: None,
+            convergence_threshold: None,
+            max_duration_secs: None,
             niching_configuration: None,
             extension_configuration: None,
             rng_seed: None,
@@ -382,7 +389,72 @@ impl Default for GaConfiguration {
             aos_strategy: crate::aos::AosStrategy::pm_default(),
             aos_reward_window: 50,
             local_search_configuration: None,
+            length_penalty: None,
         }
+    }
+}
+
+impl GaConfiguration {
+    // --- Sub-struct read-only accessors (D-09) ---
+
+    /// Returns the limit configuration (population size, max generations, etc.).
+    pub fn limit(&self) -> &LimitConfiguration {
+        &self.limit_configuration
+    }
+    /// Returns the selection operator configuration.
+    pub fn selection(&self) -> &SelectionConfiguration {
+        &self.selection_configuration
+    }
+    /// Returns the crossover operator configuration.
+    pub fn crossover(&self) -> &CrossoverConfiguration {
+        &self.crossover_configuration
+    }
+    /// Returns the mutation operator configuration.
+    pub fn mutation(&self) -> &MutationConfiguration {
+        &self.mutation_configuration
+    }
+    /// Returns the survivor selection method.
+    pub fn survivor(&self) -> Survivor {
+        self.survivor
+    }
+    /// Returns the log level.
+    pub fn log(&self) -> LogLevel {
+        self.log_level
+    }
+    /// Returns the save-progress configuration.
+    pub fn save_progress(&self) -> &SaveProgressConfiguration {
+        &self.save_progress_configuration
+    }
+    /// Returns the optional extension configuration.
+    pub fn extension(&self) -> Option<&ExtensionConfiguration> {
+        self.extension_configuration.as_ref()
+    }
+    /// Returns whether adaptive GA is enabled.
+    pub fn adaptive_ga(&self) -> bool {
+        self.adaptive_ga
+    }
+    /// Returns the number of threads.
+    pub fn number_of_threads(&self) -> usize {
+        self.number_of_threads
+    }
+    /// Returns the elitism count.
+    pub fn elitism_count(&self) -> usize {
+        self.elitism_count
+    }
+
+    // --- Flat stopping-criteria accessors (D-08) ---
+
+    /// Returns the stagnation-limit criterion: stop after N generations without improvement.
+    pub fn stagnation_generations(&self) -> Option<usize> {
+        self.stagnation_generations
+    }
+    /// Returns the convergence-threshold criterion: stop when fitness std dev drops below this.
+    pub fn convergence_threshold(&self) -> Option<f64> {
+        self.convergence_threshold
+    }
+    /// Returns the time-limit criterion (seconds). Un-gated; usage site in ga.rs is wasm-gated.
+    pub fn max_duration_secs(&self) -> Option<f64> {
+        self.max_duration_secs
     }
 }
 
@@ -397,6 +469,10 @@ impl SelectionConfig for GaConfiguration {
     }
     fn with_niche_radius(mut self, niche_radius: f64) -> Self {
         self.selection_configuration.niche_radius = niche_radius;
+        self
+    }
+    fn with_epsilon_lexicase(mut self, epsilon: f64) -> Self {
+        self.selection_configuration.epsilon = epsilon;
         self
     }
 }
@@ -426,6 +502,22 @@ impl CrossoverConfig for GaConfiguration {
         self.crossover_configuration.blend_alpha = Some(alpha);
         self
     }
+    fn with_undx_sigma_xi(mut self, value: f64) -> Self {
+        self.crossover_configuration.undx_sigma_xi = Some(value);
+        self
+    }
+    fn with_undx_sigma_eta(mut self, value: f64) -> Self {
+        self.crossover_configuration.undx_sigma_eta = Some(value);
+        self
+    }
+    fn with_pcx_sigma_eta(mut self, value: f64) -> Self {
+        self.crossover_configuration.pcx_sigma_eta = Some(value);
+        self
+    }
+    fn with_pcx_sigma_zeta(mut self, value: f64) -> Self {
+        self.crossover_configuration.pcx_sigma_zeta = Some(value);
+        self
+    }
 }
 
 impl MutationConfig for GaConfiguration {
@@ -441,14 +533,6 @@ impl MutationConfig for GaConfiguration {
         self.mutation_configuration.method = method;
         self
     }
-    fn with_mutation_step(mut self, step: f64) -> Self {
-        self.mutation_configuration.step = Some(step);
-        self
-    }
-    fn with_mutation_sigma(mut self, sigma: f64) -> Self {
-        self.mutation_configuration.sigma = Some(sigma);
-        self
-    }
     fn with_dynamic_mutation(mut self, enabled: bool) -> Self {
         self.mutation_configuration.dynamic_mutation = enabled;
         self
@@ -461,30 +545,8 @@ impl MutationConfig for GaConfiguration {
         self.mutation_configuration.probability_step = Some(step);
         self
     }
-    fn with_differential_f(mut self, f: f64) -> Self {
-        self.mutation_configuration.differential_f = Some(f);
-        self
-    }
-    fn with_polynomial_eta(mut self, eta: f64) -> Self {
-        self.mutation_configuration.polynomial_eta = Some(eta);
-        self
-    }
-    fn with_cauchy_scale(mut self, scale: f64) -> Self {
-        // A scale of 0 or negative makes the perturbation a no-op or invalid.
-        debug_assert!(scale > 0.0, "cauchy_scale must be positive; got {}", scale);
-        self.mutation_configuration.cauchy_scale = Some(scale);
-        self
-    }
-    fn with_levy_alpha(mut self, alpha: f64) -> Self {
-        debug_assert!(
-            alpha > 0.0 && alpha < 2.0,
-            "levy_alpha must be in (0.0, 2.0); got {}. Values outside this range are clamped.",
-            alpha
-        );
-        self.mutation_configuration.levy_alpha = Some(alpha);
-        self
-    }
 }
+
 
 impl StoppingConfig for GaConfiguration {
     fn with_max_generations(mut self, max_generations: usize) -> Self {
@@ -495,8 +557,16 @@ impl StoppingConfig for GaConfiguration {
         self.limit_configuration.fitness_target = Some(fitness_target);
         self
     }
-    fn with_stopping_criteria(mut self, criteria: StoppingCriteria) -> Self {
-        self.stopping_criteria = criteria;
+    fn with_stagnation_limit(mut self, n: usize) -> Self {
+        self.stagnation_generations = Some(n);
+        self
+    }
+    fn with_convergence_threshold(mut self, threshold: f64) -> Self {
+        self.convergence_threshold = Some(threshold);
+        self
+    }
+    fn with_max_duration_secs(mut self, secs: f64) -> Self {
+        self.max_duration_secs = Some(secs);
         self
     }
 }
@@ -525,6 +595,13 @@ impl NichingConfig for GaConfiguration {
 impl ElitismConfig for GaConfiguration {
     fn with_elitism(mut self, elitism_count: usize) -> Self {
         self.elitism_count = elitism_count;
+        self
+    }
+}
+
+impl SurvivorConfig for GaConfiguration {
+    fn with_length_penalty(mut self, penalty: f64) -> Self {
+        self.length_penalty = Some(penalty);
         self
     }
 }
@@ -599,16 +676,8 @@ impl ConfigurationT for GaConfiguration {
         self.limit_configuration.population_size = population_size;
         self
     }
-    fn with_genes_per_chromosome(mut self, genes_per_chromosome: usize) -> Self {
-        self.limit_configuration.genes_per_chromosome = genes_per_chromosome;
-        self
-    }
-    fn with_needs_unique_ids(mut self, needs_unique_ids: bool) -> Self {
-        self.limit_configuration.needs_unique_ids = needs_unique_ids;
-        self
-    }
-    fn with_alleles_can_be_repeated(mut self, alleles_can_be_repeated: bool) -> Self {
-        self.limit_configuration.alleles_can_be_repeated = alleles_can_be_repeated;
+    fn with_chromosome_length(mut self, length: ChromosomeLength) -> Self {
+        self.limit_configuration.chromosome_length = length;
         self
     }
 

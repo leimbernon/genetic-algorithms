@@ -10,9 +10,10 @@ pub use self::deterministic_crowding::deterministic_crowding;
 pub use self::fitness::fitness_based;
 pub use self::mu_comma_lambda::mu_comma_lambda;
 pub use self::mu_plus_lambda::mu_plus_lambda;
+pub use self::parsimony::apply_parsimony_pressure;
 pub(crate) use crate::configuration::LimitConfiguration;
 use crate::error::GaError;
-use crate::traits::{ChromosomeT, SurvivorOperator};
+use crate::traits::{LinearChromosome, SurvivorOperator};
 
 use super::Survivor;
 pub mod age;
@@ -20,9 +21,10 @@ pub mod deterministic_crowding;
 pub mod fitness;
 pub mod mu_comma_lambda;
 pub mod mu_plus_lambda;
+pub mod parsimony;
 
 impl SurvivorOperator for Survivor {
-    fn select_survivors<U: ChromosomeT>(
+    fn select_survivors<U: LinearChromosome>(
         &self,
         chromosomes: &mut Vec<U>,
         population_size: usize,
@@ -48,7 +50,7 @@ impl SurvivorOperator for Survivor {
 /// # Returns
 ///
 /// `Ok(())` after trimming the population, or `Err(GaError)` on failure.
-pub fn factory<U: ChromosomeT>(
+pub fn factory<U: LinearChromosome>(
     survivor: Survivor,
     chromosomes: &mut Vec<U>,
     population_size: usize,

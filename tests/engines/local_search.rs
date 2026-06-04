@@ -22,12 +22,12 @@ fn make_ga() -> Ga<genetic_algorithms::chromosomes::Range<f64>> {
     let alleles = vec![RangeGene::new(0, vec![(-5.12_f64, 5.12_f64)], 0.0)];
     Ga::new()
         .with_population_size(30)
-        .with_genes_per_chromosome(10)
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(10))
         .with_max_generations(10)
         .with_problem_solving(ProblemSolving::Minimization)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
-        .with_mutation_method(Mutation::Gaussian)
+        .with_mutation_method(Mutation::Gaussian { sigma: None })
         .with_survivor_method(Survivor::Fitness)
         .with_alleles(alleles)
         .with_initialization_fn(
