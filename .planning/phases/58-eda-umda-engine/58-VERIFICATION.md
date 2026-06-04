@@ -7,7 +7,7 @@ overrides_applied: 0
 human_verification:
   - test: "Run `cargo run --release --example eda_trap` and observe convergence output"
     expected: "Runs to completion, prints == EDA (UMDA): Deceptive Trap Function == header, shows learned Bernoulli probabilities"
-    result: "PENDING — awaiting human approval at Wave 3 checkpoint"
+    result: "PASSED — eda_trap runs and demonstrates EDA convergence (approved 2026-06-04)"
 ---
 
 # Phase 58: EDA / UMDA Engine Verification Report
