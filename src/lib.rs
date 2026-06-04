@@ -55,9 +55,9 @@
 //! println!("Best fitness: {:.4}", population.best_chromosome.fitness);
 //! ```
 //!
-//! ## Engines (12 total)
+//! ## Engines (13 total)
 //!
-//! This crate offers 12 optimization engines, each designed for specific problem types:
+//! This crate offers 13 optimization engines, each designed for specific problem types:
 //!
 //! | Engine | Module | Objectives | Problem Type | Key Strength |
 //! |--------|--------|------------|--------------|--------------|
@@ -68,6 +68,7 @@
 //! | [`AlpsEngine<U>`](crate::alps::AlpsEngine) | `alps` | Single | Continuous / Combinatorial | Age-layered population structure for sustained diversity |
 //! | [`IslandGa<U>`](crate::island::IslandGa) | `island` | Single | Any | Parallel sub-populations with configurable migration topologies |
 //! | [`GpGa<N>`](crate::gp::GpGa) | `gp` | Single | Symbolic / Tree-structured | Genetic Programming with tree chromosomes, bloat control, and standard GP operators |
+//! | [`EdaEngine<U>`](crate::eda::EdaEngine) / [`EdaRealEngine<U>`](crate::eda::EdaRealEngine) | `eda` | Single | Binary / Continuous | UMDA probabilistic model — no crossover/mutation, learns distribution from selected parents |
 //! | [`Nsga2Ga<U>`](crate::nsga2::Nsga2Ga) | `nsga2` | 2 | Continuous / Combinatorial | Fast Pareto ranking with crowding distance |
 //! | [`Nsga3Ga<U>`](crate::nsga3::Nsga3Ga) | `nsga3` | 3+ | Continuous | Reference-point based niching for many-objective problems |
 //! | [`MoeaDGa<U>`](crate::moead::MoeaDGa) | `moead` | 2+ | Continuous | Decomposition-based scalarization (Tchebycheff, PBI, weighted sum) |
@@ -234,6 +235,8 @@
 //! | Single-objective, sustained exploration needed | [`AlpsEngine<U>`](crate::alps::AlpsEngine) | Age layers prevent premature convergence |
 //! | Parallel / distributed single-objective | [`IslandGa<U>`](crate::island::IslandGa) | Independent sub-populations with periodic migration |
 //! | Symbolic regression / program synthesis | [`GpGa<N>`](crate::gp::GpGa) | Tree chromosomes, standard GP operators, built-in bloat control |
+//! | Binary / discrete, distribution estimation | [`EdaEngine<U>`](crate::eda::EdaEngine) | UMDA Bernoulli model; no crossover/mutation; effective on deceptive problems |
+//! | Continuous, distribution estimation | [`EdaRealEngine<U>`](crate::eda::EdaRealEngine) | UMDA Gaussian model; estimates mean/std per gene; good for unimodal landscapes |
 //! | Exactly 2 objectives | [`Nsga2Ga<U>`](crate::nsga2::Nsga2Ga) | Fast O(MN²) ranking, well-established baseline |
 //! | 3+ objectives (many-objective) | [`Nsga3Ga<U>`](crate::nsga3::Nsga3Ga) | Reference points scale beyond crowding distance |
 //! | 2+ objectives, continuous | [`MoeaDGa<U>`](crate::moead::MoeaDGa) | Decomposition is efficient and interpretable |
