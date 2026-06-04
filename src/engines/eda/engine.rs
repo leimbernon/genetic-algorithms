@@ -183,6 +183,7 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
 
     /// Returns the index and fitness of the best individual in `pop`.
     fn find_best(&self, pop: &[U]) -> (usize, f64) {
+        assert!(!pop.is_empty(), "EdaEngine::find_best called with empty population");
         let mut best_idx = 0;
         let mut best_fit = pop[0].fitness();
         for (i, ind) in pop.iter().enumerate().skip(1) {
@@ -233,6 +234,23 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
         let is_maximization =
             matches!(self.config.problem_solving, ProblemSolving::Maximization);
 
+        // Three-way sort comparator that mirrors `is_better` for all ProblemSolving variants.
+        // This ensures FixedFitness selects parents closest to the target, not lowest raw fitness.
+        let cmp = |a_fit: f64, b_fit: f64| -> std::cmp::Ordering {
+            match self.config.problem_solving {
+                ProblemSolving::Maximization =>
+                    b_fit.partial_cmp(&a_fit).unwrap_or(std::cmp::Ordering::Equal),
+                ProblemSolving::Minimization =>
+                    a_fit.partial_cmp(&b_fit).unwrap_or(std::cmp::Ordering::Equal),
+                ProblemSolving::FixedFitness => {
+                    let t = self.config.fitness_target.unwrap_or(0.0);
+                    let da = (a_fit - t).abs();
+                    let db = (b_fit - t).abs();
+                    da.partial_cmp(&db).unwrap_or(std::cmp::Ordering::Equal)
+                }
+            }
+        };
+
         // Observer: run start
         self.notify(|obs| obs.on_run_start());
 
@@ -267,6 +285,7 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
         let mut all_stats: Vec<GenerationStats> =
             Vec::with_capacity(self.config.max_generations);
         let mut learned_model = EdaModel::Bernoulli(vec![0.5; dim]);
+        let mut best_model = learned_model.clone();
 
         // Main loop
         for gen in 0..self.config.max_generations {
@@ -277,24 +296,11 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
                 .max(1)
                 .min(pop.len());
 
-            // Sort population to find top n_selected
-            // Use partial_sort via select_nth_unstable_by for efficiency
+            // Sort population to find top n_selected using three-way comparator
             let mut indices: Vec<usize> = (0..pop.len()).collect();
-            if is_maximization {
-                indices.select_nth_unstable_by(n_selected - 1, |&a, &b| {
-                    pop[b]
-                        .fitness()
-                        .partial_cmp(&pop[a].fitness())
-                        .unwrap_or(std::cmp::Ordering::Equal)
-                });
-            } else {
-                indices.select_nth_unstable_by(n_selected - 1, |&a, &b| {
-                    pop[a]
-                        .fitness()
-                        .partial_cmp(&pop[b].fitness())
-                        .unwrap_or(std::cmp::Ordering::Equal)
-                });
-            }
+            indices.select_nth_unstable_by(n_selected - 1, |&a, &b| {
+                cmp(pop[a].fitness(), pop[b].fitness())
+            });
             let selected: Vec<&U> = indices[..n_selected].iter().map(|&i| &pop[i]).collect();
 
             // Estimate Bernoulli model from selected parents
@@ -335,6 +341,7 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
             if self.is_better(gen_best_fit, best_fitness) {
                 best_fitness = gen_best_fit;
                 best = pop[gen_best_idx].clone();
+                best_model = learned_model.clone();
                 let best_clone = best.clone();
                 self.notify(|obs| obs.on_new_best(gen, best_clone));
             }
@@ -365,7 +372,7 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
             best,
             best_fitness,
             generations,
-            learned_model,
+            learned_model: best_model,
         }
     }
 
@@ -476,6 +483,7 @@ where
     }
 
     fn find_best(&self, pop: &[U]) -> (usize, f64) {
+        assert!(!pop.is_empty(), "EdaRealEngine::find_best called with empty population");
         let mut best_idx = 0;
         let mut best_fit = pop[0].fitness();
         for (i, ind) in pop.iter().enumerate().skip(1) {
@@ -502,7 +510,11 @@ where
                 .filter_map(|ind| ind.dna().get(i).map(|g| g.real_value()))
                 .collect();
             let mean = vals.iter().sum::<f64>() / n;
-            let variance = vals.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / n;
+            let variance = if n > 1.0 {
+                vals.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / (n - 1.0)
+            } else {
+                0.0
+            };
             let std = variance.sqrt().max(1e-6);
             means.push(mean);
             stds.push(std);
@@ -551,6 +563,22 @@ where
         let is_maximization =
             matches!(self.config.problem_solving, ProblemSolving::Maximization);
 
+        // Three-way sort comparator that mirrors `is_better` for all ProblemSolving variants.
+        let cmp = |a_fit: f64, b_fit: f64| -> std::cmp::Ordering {
+            match self.config.problem_solving {
+                ProblemSolving::Maximization =>
+                    b_fit.partial_cmp(&a_fit).unwrap_or(std::cmp::Ordering::Equal),
+                ProblemSolving::Minimization =>
+                    a_fit.partial_cmp(&b_fit).unwrap_or(std::cmp::Ordering::Equal),
+                ProblemSolving::FixedFitness => {
+                    let t = self.config.fitness_target.unwrap_or(0.0);
+                    let da = (a_fit - t).abs();
+                    let db = (b_fit - t).abs();
+                    da.partial_cmp(&db).unwrap_or(std::cmp::Ordering::Equal)
+                }
+            }
+        };
+
         self.notify(|obs| obs.on_run_start());
 
         let pop_size = if self.config.population_size == 0 {
@@ -583,6 +611,7 @@ where
             means: vec![0.0; dim],
             stds: vec![1.0; dim],
         };
+        let mut best_model = learned_model.clone();
 
         for gen in 0..self.config.max_generations {
             self.notify(|obs| obs.on_generation_start(gen));
@@ -592,21 +621,9 @@ where
                 .min(pop.len());
 
             let mut indices: Vec<usize> = (0..pop.len()).collect();
-            if is_maximization {
-                indices.select_nth_unstable_by(n_selected - 1, |&a, &b| {
-                    pop[b]
-                        .fitness()
-                        .partial_cmp(&pop[a].fitness())
-                        .unwrap_or(std::cmp::Ordering::Equal)
-                });
-            } else {
-                indices.select_nth_unstable_by(n_selected - 1, |&a, &b| {
-                    pop[a]
-                        .fitness()
-                        .partial_cmp(&pop[b].fitness())
-                        .unwrap_or(std::cmp::Ordering::Equal)
-                });
-            }
+            indices.select_nth_unstable_by(n_selected - 1, |&a, &b| {
+                cmp(pop[a].fitness(), pop[b].fitness())
+            });
             let selected: Vec<&U> = indices[..n_selected].iter().map(|&i| &pop[i]).collect();
 
             // Estimate Gaussian model
@@ -649,6 +666,7 @@ where
             if self.is_better(gen_best_fit, best_fitness) {
                 best_fitness = gen_best_fit;
                 best = pop[gen_best_idx].clone();
+                best_model = learned_model.clone();
                 let best_clone = best.clone();
                 self.notify(|obs| obs.on_new_best(gen, best_clone));
             }
@@ -676,7 +694,7 @@ where
             best,
             best_fitness,
             generations,
-            learned_model,
+            learned_model: best_model,
         }
     }
 }
