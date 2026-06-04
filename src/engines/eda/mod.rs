@@ -4,7 +4,7 @@
 //! (binary Bernoulli) and continuous (Gaussian univariate) optimization.
 //!
 //! Use [`EdaEngine`] for binary/discrete chromosomes and [`EdaRealEngine`] for
-//! real-valued chromosomes whose gene implements [`RealGene`].
+//! real-valued chromosomes whose gene implements [`crate::traits::RealGene`].
 
 pub mod configuration;
 pub mod engine;
