@@ -333,6 +333,9 @@ pub mod cma;
 #[path = "engines/pso/mod.rs"]
 pub mod pso;
 
+#[path = "engines/eda/mod.rs"]
+pub mod eda;
+
 pub use aos::{AosState, AosStrategy};
 pub use constraints::ConstraintHandling;
 pub use constraints::PenaltyStrategy;
@@ -364,3 +367,4 @@ pub use initializers::{multi_range_random_initialization, unique_random_initiali
 pub use permutate::{PermutateConfiguration, PermutateEngine};
 pub use traits::{LinearChromosome, OperatorCompat, RealGene, Strategy, VectorFitness};
 pub use pso::{PsoConfiguration, PsoEngine, PsoInertia, PsoResult, PsoTopology};
+pub use eda::{EdaConfiguration, EdaEngine, EdaModel, EdaRealEngine, EdaResult};
