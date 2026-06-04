@@ -641,7 +641,18 @@ Plans:
   2. The engine estimates a univariate marginal distribution from selected parents and samples offspring from it each generation
   3. User can attach a `GaObserver<U>` and receive all standard lifecycle hooks
   4. `cargo check --target wasm32-unknown-unknown` passes; `cargo run --example eda_onemax` converges; all CI gates pass
-**Plans**: TBD
+**Plans:** 2/3 plans executed
+
+Plans:
+**Wave 1**
+- [x] 58-01-PLAN.md — EdaConfiguration + module skeleton + lib.rs registration + Nyquist test scaffold
+
+**Wave 2** *(blocked on Wave 1)*
+- [x] 58-02-PLAN.md — EdaEngine UMDA run() loops (Bernoulli + Gaussian dispatch) + observer wiring + un-ignore engine runtime tests
+
+**Wave 3** *(blocked on Wave 2)*
+- [ ] 58-03-PLAN.md — examples/eda_trap.rs + Cargo.toml registration + phase verification gate
+
 **UI hint**: no
 
 ### Phase 59: Restart Strategies — IPOP / BIPOP
@@ -784,7 +795,7 @@ Plans:
 | 55. RFC Multi-Valued Fitness (VectorFitness) | v3.0.0 | 6/6 | Complete | 2026-05-31 |
 | 56. CMA-ES Engine | v3.0.0 | 4/4 | Complete | 2026-06-01 |
 | 57. PSO Engine | v3.0.0 | 4/4 | Complete   | 2026-06-03 |
-| 58. EDA / UMDA Engine | v3.0.0 | TBD | Pending | — |
+| 58. EDA / UMDA Engine | v3.0.0 | 2/3 | In Progress|  |
 | 59. Restart Strategies — IPOP / BIPOP | v3.0.0 | TBD | Pending | — |
 | 60. Batch Fitness / Fitness Cache Extension | v3.0.0 | TBD | Pending | — |
 | 61. Performance — Clone Reduction & Parallel Survivor | v3.0.0 | TBD | Pending | — |
