@@ -124,3 +124,6 @@ name = "cma_es_rastrigin"
 
 [[example]]
 name = "pso_rastrigin"
+
+[[example]]
+name = "eda_trap"
