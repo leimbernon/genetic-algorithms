@@ -86,9 +86,9 @@ fn init_population(n: usize) -> Vec<BinaryChromosome> {
     (0..n)
         .map(|_| {
             let dna: Vec<BinaryGene> = (0..CHROMOSOME_LEN)
-                .map(|_| BinaryGene {
-                    id: if rng.random::<bool>() { 1 } else { 0 },
-                    value: rng.random::<bool>(),
+                .map(|_| {
+                    let v = rng.random::<bool>();
+                    BinaryGene { id: if v { 1 } else { 0 }, value: v }
                 })
                 .collect();
             let mut c = BinaryChromosome::default();
@@ -109,10 +109,10 @@ fn main() {
         selection_ratio: SELECTION_RATIO,
     };
 
-    let mut engine = EdaEngine::new(config, init_population, trap_fitness)
+    let mut engine = EdaEngine::bernoulli(config, init_population, trap_fitness)
         .with_observer(Arc::new(LogObserver));
 
-    println!("== EDA UMDA: Deceptive Trap Function ==");
+    println!("== EDA (UMDA): Deceptive Trap Function ==");
     println!(
         "chromosome_len={}, block_size={}, blocks={}",
         CHROMOSOME_LEN,
@@ -146,7 +146,7 @@ fn main() {
             let probs_str: Vec<String> = probs.iter().map(|p| format!("{:.2}", p)).collect();
             println!("Learned probs: [{}]", probs_str.join(", "));
 
-            let converged = probs.iter().filter(|&&p| p > 0.9 || p < 0.1).count();
+            let converged = probs.iter().filter(|&&p| !(0.1..=0.9).contains(&p)).count();
             println!("Converged positions (p > 0.9 or p < 0.1): {}/{}", converged, probs.len());
         }
         _ => unreachable!("Binary chromosomes always use Bernoulli model"),

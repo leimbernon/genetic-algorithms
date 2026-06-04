@@ -130,6 +130,18 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
         }
     }
 
+    /// Alias for [`new`](Self::new) — explicit Bernoulli constructor for clarity.
+    ///
+    /// Call [`run`](Self::run) after construction to execute the Bernoulli UMDA loop.
+    /// For Gaussian (continuous) optimization, use [`EdaRealEngine::new`].
+    pub fn bernoulli(
+        config: EdaConfiguration,
+        init_fn: impl Fn(usize) -> Vec<U> + Send + Sync + 'static,
+        fitness_fn: impl Fn(&[U::Gene]) -> f64 + Send + Sync + 'static,
+    ) -> Self {
+        Self::new(config, init_fn, fitness_fn)
+    }
+
     /// Attach a lifecycle observer (see [`GaObserver`] for available hooks).
     pub fn with_observer(mut self, obs: Arc<dyn GaObserver<U> + Send + Sync>) -> Self {
         self.observer = Some(obs);

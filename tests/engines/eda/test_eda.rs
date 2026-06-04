@@ -20,7 +20,7 @@ use std::sync::Arc;
 use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
-use genetic_algorithms::eda::{EdaConfiguration, EdaEngine, EdaModel, EdaRealEngine, EdaResult};
+use genetic_algorithms::eda::{EdaConfiguration, EdaEngine, EdaModel, EdaRealEngine};
 use genetic_algorithms::ga::TerminationCause;
 use genetic_algorithms::genotypes::Binary as BinaryGene;
 use genetic_algorithms::genotypes::Range as RangeGene;
