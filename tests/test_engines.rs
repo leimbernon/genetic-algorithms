@@ -66,6 +66,9 @@ mod engines {
     mod pso {
         mod test_pso;
     }
+    mod eda {
+        mod test_eda;
+    }
     mod test_strategy_trait;
     mod hill_climb {
         mod test_hill_climb;
