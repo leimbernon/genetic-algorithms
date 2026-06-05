@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v3.0.0
 milestone_name: — Advanced Representations, Alternative Strategies & Architecture Simplification
-status: executing
-stopped_at: Phase 59 context gathered
-last_updated: "2026-06-05T09:43:41.883Z"
-last_activity: 2026-06-05 -- Phase 59 planning complete
+status: verifying
+stopped_at: Phase 59 complete — all 3 plans done
+last_updated: "2026-06-05T19:45:00.000Z"
+last_activity: 2026-06-05
 progress:
   total_phases: 35
-  completed_phases: 16
+  completed_phases: 17
   total_plans: 68
-  completed_plans: 81
-  percent: 46
+  completed_plans: 84
+  percent: 49
 ---
 
 # Project State
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-05-18)
 
 ## Current Position
 
-Phase: 58 (eda-umda-engine) — EXECUTING
-Plan: 1 of 3
-Status: Ready to execute
-Last activity: 2026-06-05 -- Phase 59 planning complete
+Phase: 59 (restart-strategies-ipop-bipop) — COMPLETE
+Plan: 3 of 3
+Status: Phase complete — all 3 plans executed; ready for PR merge
+Last activity: 2026-06-05
 
 Progress bar: [███░░░░░░░░░░░░░░░░] phases 47-56 complete of 47-65
 
@@ -51,6 +51,10 @@ Progress bar: [███░░░░░░░░░░░░░░░░] phases
 - v3.0.0: `GpGa<U: TreeChromosome>` is a separate engine from `Ga<U: LinearChromosome>` — GP loop differences (ramped init, bloat control, depth limits) do not belong in the standard GA hot path
 - v3.0.0: `Box<N>` recursive enum for tree nodes (rejected arena crates) — subtree clone is O(subtree), not O(arena); arena index-remapping across arenas is too complex
 
+### Decisions (phase 59)
+
+- v3.0.0: IPOP-CMA-ES example uses DIMENSIONS=10, stagnation_threshold=50, max_restarts=3 — bounds example to at most 800 generations while demonstrating restart benefit on multimodal Rastrigin landscape
+
 ### Roadmap Evolution
 
 - 2026-05-19: Roadmap created — Phases 47-53 defined for v3.0.0
@@ -69,6 +73,6 @@ Progress bar: [███░░░░░░░░░░░░░░░░] phases
 
 ## Session Continuity
 
-Last session: 2026-06-05T09:07:02.582Z
-Stopped at: Phase 59 context gathered
-Resume file: .planning/phases/59-restart-strategies-ipop-bipop/59-CONTEXT.md
+Last session: 2026-06-05T19:45:00.000Z
+Stopped at: Phase 59 complete — all 3 plans done (59-01 types, 59-02 restart loop, 59-03 example + CI gate)
+Resume file: None

@@ -670,13 +670,13 @@ Plans:
 Plans:
 
 **Wave 1**
-- [ ] 59-01-PLAN.md — Nyquist test stubs + RestartStrategy/RestartEvent/RestartKind types + observer on_restart hook + CmaConfiguration field + CmaResult field + lib.rs re-exports
+- [x] 59-01-PLAN.md — Nyquist test stubs + RestartStrategy/RestartEvent/RestartKind types + observer on_restart hook + CmaConfiguration field + CmaResult field + lib.rs re-exports
 
 **Wave 2** *(blocked on Wave 1)*
-- [ ] 59-02-PLAN.md — CmaEngine outer restart loop (IPOP/BIPOP) + compute_next_lambda + restart_kind helpers + un-ignore CMA-12 through CMA-17
+- [x] 59-02-PLAN.md — CmaEngine outer restart loop (IPOP/BIPOP) + compute_next_lambda + restart_kind helpers + un-ignore CMA-12 through CMA-17
 
 **Wave 3** *(blocked on Wave 2)*
-- [ ] 59-03-PLAN.md — ipop_rastrigin example + phase verification gate (cargo test + serde + clippy + rustdoc + WASM)
+- [x] 59-03-PLAN.md — ipop_rastrigin example + phase verification gate (cargo test + serde + clippy + rustdoc + WASM)
 
 ### Phase 60: Batch Fitness / Fitness Cache Extension
 **Goal**: Users can evaluate fitness for a batch of chromosomes in a single call (enabling GPU/API-based evaluators) and optionally cache results to avoid redundant re-evaluation of unchanged chromosomes across generations
@@ -807,7 +807,7 @@ Plans:
 | 56. CMA-ES Engine | v3.0.0 | 4/4 | Complete | 2026-06-01 |
 | 57. PSO Engine | v3.0.0 | 4/4 | Complete   | 2026-06-03 |
 | 58. EDA / UMDA Engine | v3.0.0 | 3/3 | Complete   | 2026-06-04 |
-| 59. Restart Strategies — IPOP / BIPOP | v3.0.0 | 3 plans | Pending | — |
+| 59. Restart Strategies — IPOP / BIPOP | v3.0.0 | 3/3 | Complete   | 2026-06-05 |
 | 60. Batch Fitness / Fitness Cache Extension | v3.0.0 | TBD | Pending | — |
 | 61. Performance — Clone Reduction & Parallel Survivor | v3.0.0 | TBD | Pending | — |
 | 62. Surrogate-Assisted Evaluation | v3.0.0 | TBD | Pending | — |
