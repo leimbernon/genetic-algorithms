@@ -2,6 +2,8 @@
 
 pub mod configuration;
 pub mod engine;
+pub mod restart;
 
 pub use configuration::CmaConfiguration;
 pub use engine::{CmaEngine, CmaResult};
+pub use restart::{RestartEvent, RestartKind, RestartStrategy};

@@ -1,6 +1,7 @@
 //! Configuration for the CMA-ES engine.
 
 use crate::configuration::ProblemSolving;
+use super::restart::RestartStrategy;
 
 /// Configuration for a [`CmaEngine`](super::engine::CmaEngine) run.
 #[derive(Debug, Clone)]
@@ -66,6 +67,13 @@ pub struct CmaConfiguration {
     /// Learning rate for the rank-μ covariance matrix update. Must be
     /// in `(0, 1]` if set explicitly, and `c1 + cmu <= 1`.
     pub cmu: Option<f64>,
+
+    /// Optional restart strategy (IPOP or BIPOP).
+    ///
+    /// `None` means no automatic restarts — the engine runs for `max_generations`
+    /// and returns the best result found. When `Some(strategy)`, the engine monitors
+    /// stagnation and triggers restarts according to the chosen strategy.
+    pub restart_strategy: Option<RestartStrategy>,
 }
 
 impl Default for CmaConfiguration {
@@ -80,6 +88,7 @@ impl Default for CmaConfiguration {
             cs: None,
             c1: None,
             cmu: None,
+            restart_strategy: None,
         }
     }
 }
@@ -171,6 +180,19 @@ impl CmaConfiguration {
     /// (auto-formula).
     pub fn with_cmu(mut self, v: f64) -> Self {
         self.cmu = Some(v);
+        self
+    }
+
+    /// Builder: enable automatic restarts using an IPOP or BIPOP strategy.
+    ///
+    /// The engine will monitor stagnation (no fitness improvement for
+    /// `stagnation_threshold` generations) and restart the CMA-ES run with a
+    /// modified population size when stagnation is detected.
+    ///
+    /// Set to `RestartStrategy::Ipop` for simple population-doubling restarts or
+    /// `RestartStrategy::Bipop` for alternating large/small restart phases.
+    pub fn with_restart_strategy(mut self, strategy: RestartStrategy) -> Self {
+        self.restart_strategy = Some(strategy);
         self
     }
 }

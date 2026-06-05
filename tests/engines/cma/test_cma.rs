@@ -6,10 +6,10 @@
 
 use std::borrow::Cow;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
-use genetic_algorithms::cma::{CmaConfiguration, CmaEngine};
+use genetic_algorithms::cma::{CmaConfiguration, CmaEngine, RestartStrategy};
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::genotypes::Range as RangeGene;
 use genetic_algorithms::observer::GaObserver;
@@ -17,6 +17,7 @@ use genetic_algorithms::rng;
 use genetic_algorithms::stats::GenerationStats;
 use genetic_algorithms::traits::{ChromosomeT, GeneT, LinearChromosome, RealGene};
 use genetic_algorithms::ga::TerminationCause;
+use genetic_algorithms::{RestartEvent, RestartKind};
 use rand::Rng;
 
 // ─── Test helpers ─────────────────────────────────────────────────────────────
@@ -48,13 +49,33 @@ fn random_pop(n: usize, dim: usize, lo: f64, hi: f64, seed: u64) -> Vec<RangeChr
 // ─── Observer spy for lifecycle tests ────────────────────────────────────────
 
 /// Thread-safe spy observer for testing CMA observer hooks.
-#[derive(Default)]
 struct SpyObserver {
     new_best_count: AtomicUsize,
     run_start_count: AtomicUsize,
     run_end_count: AtomicUsize,
     generation_start_count: AtomicUsize,
     generation_end_count: AtomicUsize,
+    /// Incremented each time `on_restart` fires (CMA-12 through CMA-16).
+    restart_count: AtomicUsize,
+    /// The kind of the most recent restart event; `None` before any restart fires.
+    last_restart_kind: Mutex<Option<RestartKind>>,
+    /// All restart kinds recorded in order; used by CMA-13 to assert alternation.
+    restart_kinds: Mutex<Vec<RestartKind>>,
+}
+
+impl Default for SpyObserver {
+    fn default() -> Self {
+        Self {
+            new_best_count: AtomicUsize::new(0),
+            run_start_count: AtomicUsize::new(0),
+            run_end_count: AtomicUsize::new(0),
+            generation_start_count: AtomicUsize::new(0),
+            generation_end_count: AtomicUsize::new(0),
+            restart_count: AtomicUsize::new(0),
+            last_restart_kind: Mutex::new(None),
+            restart_kinds: Mutex::new(Vec::new()),
+        }
+    }
 }
 
 impl GaObserver<RangeChromosome<f64>> for SpyObserver {
@@ -76,6 +97,12 @@ impl GaObserver<RangeChromosome<f64>> for SpyObserver {
 
     fn on_generation_end(&self, _stats: &GenerationStats) {
         self.generation_end_count.fetch_add(1, Ordering::SeqCst);
+    }
+
+    fn on_restart(&self, event: &RestartEvent) {
+        self.restart_count.fetch_add(1, Ordering::SeqCst);
+        *self.last_restart_kind.lock().unwrap() = Some(event.kind);
+        self.restart_kinds.lock().unwrap().push(event.kind);
     }
 }
 
@@ -359,4 +386,275 @@ fn test_cma_maximization() {
     );
     assert!(!result.population.is_empty());
     assert!(result.generations > 0);
+}
+
+// ─── CMA-12: IPOP restarts with scaled population ────────────────────────────
+
+/// CMA-12 (SC-1): IPOP restarts after stagnation; `on_restart` fires and `total_restarts >= 1`.
+///
+/// Uses a very low `stagnation_threshold` (5 generations) and `max_restarts = 2` to
+/// guarantee at least one restart fires within `max_generations = 50`.
+#[test]
+#[ignore = "Plan 02 implements engine restart loop"]
+fn test_cma_ipop_restarts() {
+    let config = CmaConfiguration::default_for_dim(5)
+        .with_max_generations(50)
+        .with_problem_solving(ProblemSolving::Minimization)
+        .with_sigma0(0.3)
+        .with_restart_strategy(RestartStrategy::Ipop {
+            population_scale: 2.0,
+            stagnation_threshold: 5,
+            max_restarts: 2,
+        });
+
+    let spy = Arc::new(SpyObserver::default());
+
+    let mut engine = CmaEngine::new(
+        config,
+        |n| random_pop(n, 5, -5.0, 5.0, 42),
+        sphere,
+    )
+    .with_observer(spy.clone());
+
+    let result = engine.run();
+
+    assert!(
+        spy.restart_count.load(Ordering::SeqCst) >= 1,
+        "on_restart should fire at least once with stagnation_threshold=5 and max_restarts=2"
+    );
+    assert!(
+        result.total_restarts >= 1,
+        "total_restarts should be >= 1 after IPOP restart, got {}",
+        result.total_restarts
+    );
+    assert!(
+        result.total_restarts <= 2,
+        "total_restarts should not exceed max_restarts=2, got {}",
+        result.total_restarts
+    );
+}
+
+// ─── CMA-13: BIPOP alternates large/small restarts ───────────────────────────
+
+/// CMA-13 (SC-2): BIPOP alternates BipopLarge and BipopSmall across successive restarts.
+///
+/// After 4 restarts, the sequence of `RestartKind`s collected by the spy observer
+/// must be `[BipopLarge, BipopSmall, BipopLarge, BipopSmall]`.
+#[test]
+#[ignore = "Plan 02 implements engine restart loop"]
+fn test_cma_bipop_alternation() {
+    let config = CmaConfiguration::default_for_dim(5)
+        .with_max_generations(200)
+        .with_problem_solving(ProblemSolving::Minimization)
+        .with_sigma0(0.3)
+        .with_restart_strategy(RestartStrategy::Bipop {
+            population_scale: 2.0,
+            small_population_size: 0, // auto-compute
+            stagnation_threshold: 5,
+            max_restarts: 4,
+        });
+
+    let spy = Arc::new(SpyObserver::default());
+
+    let mut engine = CmaEngine::new(
+        config,
+        |n| random_pop(n, 5, -5.0, 5.0, 43),
+        sphere,
+    )
+    .with_observer(spy.clone());
+
+    let _result = engine.run();
+
+    let kinds = spy.restart_kinds.lock().unwrap();
+    assert_eq!(
+        kinds.len(),
+        4,
+        "Expected exactly 4 restart events (max_restarts=4), got {}",
+        kinds.len()
+    );
+    // Odd-numbered restarts (1st, 3rd) → BipopLarge; even-numbered (2nd, 4th) → BipopSmall
+    assert_eq!(kinds[0], RestartKind::BipopLarge, "restart 1 should be BipopLarge");
+    assert_eq!(kinds[1], RestartKind::BipopSmall, "restart 2 should be BipopSmall");
+    assert_eq!(kinds[2], RestartKind::BipopLarge, "restart 3 should be BipopLarge");
+    assert_eq!(kinds[3], RestartKind::BipopSmall, "restart 4 should be BipopSmall");
+}
+
+// ─── CMA-14: on_restart fires with correct RestartEvent fields ────────────────
+
+/// CMA-14 (SC-3): `on_restart` receives a `RestartEvent` with correct field values.
+///
+/// Verifies that `restart_number` is 1-based, `population_size_after` reflects the
+/// IPOP scaling, and `kind` matches the restart type.
+#[test]
+#[ignore = "Plan 02 implements engine restart loop"]
+fn test_cma_restart_observer() {
+    // Use a 3D sphere with a tiny stagnation_threshold to force a restart quickly.
+    let initial_lambda = CmaConfiguration::default_for_dim(3).population_size;
+    let scale = 2.0_f64;
+
+    let config = CmaConfiguration::default_for_dim(3)
+        .with_max_generations(30)
+        .with_problem_solving(ProblemSolving::Minimization)
+        .with_sigma0(0.3)
+        .with_restart_strategy(RestartStrategy::Ipop {
+            population_scale: scale,
+            stagnation_threshold: 3,
+            max_restarts: 1,
+        });
+
+    let spy = Arc::new(SpyObserver::default());
+
+    let mut engine = CmaEngine::new(
+        config,
+        |n| random_pop(n, 3, -2.0, 2.0, 77),
+        sphere,
+    )
+    .with_observer(spy.clone());
+
+    let _result = engine.run();
+
+    let restart_count = spy.restart_count.load(Ordering::SeqCst);
+    assert!(restart_count >= 1, "at least one restart should have fired");
+
+    // The first restart event should have restart_number == 1
+    // and population_size_after == ceil(initial_lambda * scale)
+    let last_kind = spy.last_restart_kind.lock().unwrap();
+    assert_eq!(
+        *last_kind,
+        Some(RestartKind::Ipop),
+        "restart kind should be Ipop for RestartStrategy::Ipop"
+    );
+    drop(last_kind);
+
+    // population_size_after should be >= initial_lambda (scaling up)
+    // The exact ratio check (≈ population_scale) is verified via RestartEvent in a
+    // more detailed observer that captures the full event — this stub verifies kind only.
+    // Full event field verification is wired by Plan 02 when RestartEvent is populated.
+    let _ = initial_lambda;
+    let _ = scale;
+}
+
+// ─── CMA-15: no restart when strategy is None ────────────────────────────────
+
+/// CMA-15 (SC-5): No restarts fire when `restart_strategy` is `None` (default).
+///
+/// Ensures the engine does not call `on_restart` or increment `total_restarts`
+/// when no restart strategy is configured.
+#[test]
+#[ignore = "Plan 02 implements engine restart loop"]
+fn test_cma_no_restart_when_none() {
+    // Default configuration has restart_strategy = None
+    let config = CmaConfiguration::default_for_dim(5)
+        .with_max_generations(50)
+        .with_problem_solving(ProblemSolving::Minimization);
+
+    let spy = Arc::new(SpyObserver::default());
+
+    let mut engine = CmaEngine::new(
+        config,
+        |n| random_pop(n, 5, -5.0, 5.0, 99),
+        sphere,
+    )
+    .with_observer(spy.clone());
+
+    let result = engine.run();
+
+    assert_eq!(
+        spy.restart_count.load(Ordering::SeqCst),
+        0,
+        "on_restart should never fire when restart_strategy is None"
+    );
+    assert_eq!(
+        result.total_restarts,
+        0,
+        "total_restarts should be 0 when restart_strategy is None"
+    );
+}
+
+// ─── CMA-16: total_restarts counts correctly ─────────────────────────────────
+
+/// CMA-16 (SC-6): `result.total_restarts` is bounded by `max_restarts`.
+///
+/// With `max_restarts = 3` and a low stagnation threshold, at most 3 restarts
+/// can fire. The spy's `restart_count` must match `result.total_restarts`.
+#[test]
+#[ignore = "Plan 02 implements engine restart loop"]
+fn test_cma_total_restarts_count() {
+    let max_restarts = 3;
+
+    let config = CmaConfiguration::default_for_dim(5)
+        .with_max_generations(100)
+        .with_problem_solving(ProblemSolving::Minimization)
+        .with_sigma0(0.3)
+        .with_restart_strategy(RestartStrategy::Ipop {
+            population_scale: 2.0,
+            stagnation_threshold: 5,
+            max_restarts,
+        });
+
+    let spy = Arc::new(SpyObserver::default());
+
+    let mut engine = CmaEngine::new(
+        config,
+        |n| random_pop(n, 5, -5.0, 5.0, 101),
+        sphere,
+    )
+    .with_observer(spy.clone());
+
+    let result = engine.run();
+
+    assert!(
+        result.total_restarts <= max_restarts,
+        "total_restarts ({}) must not exceed max_restarts ({})",
+        result.total_restarts,
+        max_restarts
+    );
+    assert_eq!(
+        spy.restart_count.load(Ordering::SeqCst),
+        result.total_restarts,
+        "spy.restart_count must equal result.total_restarts"
+    );
+}
+
+// ─── CMA-17: global best preserved across restarts ───────────────────────────
+
+/// CMA-17 (SC-7): `result.best_fitness` is finite and `result.total_restarts >= 0`
+/// after a run with restart strategy enabled.
+///
+/// Structural test: verifies that the engine returns a valid result even after
+/// one or more restarts. Deep best-tracking assertions (global best ≤ initial best)
+/// are wired by Plan 02 once the global-best tracking logic is implemented.
+#[test]
+#[ignore = "Plan 02 implements engine restart loop"]
+fn test_cma_global_best_across_restarts() {
+    let config = CmaConfiguration::default_for_dim(5)
+        .with_max_generations(60)
+        .with_problem_solving(ProblemSolving::Minimization)
+        .with_sigma0(0.3)
+        .with_restart_strategy(RestartStrategy::Ipop {
+            population_scale: 2.0,
+            stagnation_threshold: 5,
+            max_restarts: 2,
+        });
+
+    let mut engine = CmaEngine::new(
+        config,
+        |n| random_pop(n, 5, -5.0, 5.0, 13),
+        sphere,
+    );
+
+    let result = engine.run();
+
+    assert!(
+        result.best_fitness.is_finite(),
+        "best_fitness must be finite after a run with restarts, got {}",
+        result.best_fitness
+    );
+    assert!(
+        result.total_restarts <= 2,
+        "total_restarts must not exceed max_restarts=2, got {}",
+        result.total_restarts
+    );
+    // Plan 02: additionally assert result.best_fitness <= initial_run_best
+    // (global-best tracking across restarts is enforced by the engine loop)
 }

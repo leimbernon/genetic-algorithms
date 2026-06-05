@@ -5,7 +5,7 @@
 //!
 //! - Are stored as `Arc<dyn GaObserver + Send + Sync>` (sharable across island threads)
 //! - Receive `&self` (not `&mut self`), enabling interior mutability patterns
-//! - Cover 12 lifecycle, operator-timing, and special-event hooks
+//! - Cover 13 lifecycle, operator-timing, and special-event hooks
 //! - Require `Send + Sync` for safe use in rayon parallel regions
 //!
 //! # Hooks
@@ -24,7 +24,9 @@
 //! | `on_extension_triggered` | When an extension strategy fires |
 //! | `on_generation_end` | End of each generation, after statistics collected |
 //! | `on_run_end` | Once after the GA loop exits |
+//! | `on_restart` | When the CMA-ES engine triggers an automatic restart |
 
+use crate::cma::restart::RestartEvent;
 use crate::ga::TerminationCause;
 use crate::stats::GenerationStats;
 use crate::traits::ChromosomeT;
@@ -57,7 +59,7 @@ pub struct ExtensionEvent {
 /// |--------|------------------------|------------|
 /// | Storage | `Box<dyn Reporter + Send>` | `Arc<dyn GaObserver + Send + Sync>` |
 /// | Mutability | `&mut self` | `&self` |
-/// | Hooks | 4 lifecycle | 12 (lifecycle + operator + special) |
+/// | Hooks | 4 lifecycle | 13 (lifecycle + operator + special) |
 /// | Thread safety | `Send` only | `Send + Sync` |
 ///
 /// See [`MIGRATION.md`](https://docs.rs/genetic_algorithms) for migration recipes.
@@ -112,6 +114,12 @@ pub trait GaObserver<U: ChromosomeT>: Send + Sync {
     fn on_stagnation(&self, _generation: usize, _stagnation_count: usize) {}
     /// Called when an extension strategy fires due to low diversity.
     fn on_extension_triggered(&self, _event: ExtensionEvent) {}
+    /// Called when the CMA-ES engine triggers an automatic restart.
+    ///
+    /// Fires once per restart event, after state has been reset and before the next
+    /// restart's generation loop begins. Only relevant when a [`RestartStrategy`](crate::cma::RestartStrategy)
+    /// is configured on [`CmaConfiguration`](crate::cma::CmaConfiguration).
+    fn on_restart(&self, _event: &RestartEvent) {}
     /// Called at the end of each generation, after statistics are collected.
     fn on_generation_end(&self, _stats: &GenerationStats) {}
     /// Called once after the GA loop exits.

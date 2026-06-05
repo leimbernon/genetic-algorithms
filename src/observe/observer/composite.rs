@@ -1,4 +1,4 @@
-//! Fan-out observer that dispatches all 19 lifecycle hooks to every inner observer in insertion order.
+//! Fan-out observer that dispatches all 20 lifecycle hooks to every inner observer in insertion order.
 //!
 //! [`CompositeObserver<U>`] lets you combine multiple observers — for example,
 //! `LogObserver` and a custom `MetricsObserver` — without writing manual dispatch
@@ -26,6 +26,7 @@
 //! corresponding hook on each inner observer. Errors in one observer do not
 //! affect the others (all hooks return `()`).
 
+use crate::cma::restart::RestartEvent;
 use crate::ga::TerminationCause;
 use crate::observer::{AllObserver, ExtensionEvent, GaObserver, IslandGaObserver, Nsga2Observer};
 use crate::stats::GenerationStats;
@@ -89,7 +90,7 @@ impl<U: ChromosomeT> Clone for CompositeObserver<U> {
 }
 
 // ---------------------------------------------------------------------------
-// GaObserver — 12 hooks
+// GaObserver — 13 hooks
 // ---------------------------------------------------------------------------
 
 impl<U: ChromosomeT> GaObserver<U> for CompositeObserver<U> {
@@ -160,6 +161,12 @@ impl<U: ChromosomeT> GaObserver<U> for CompositeObserver<U> {
     fn on_extension_triggered(&self, event: ExtensionEvent) {
         for obs in &self.observers {
             obs.on_extension_triggered(event);
+        }
+    }
+
+    fn on_restart(&self, event: &RestartEvent) {
+        for obs in &self.observers {
+            obs.on_restart(event);
         }
     }
 
