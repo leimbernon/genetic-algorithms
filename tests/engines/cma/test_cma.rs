@@ -61,6 +61,10 @@ struct SpyObserver {
     last_restart_kind: Mutex<Option<RestartKind>>,
     /// All restart kinds recorded in order; used by CMA-13 to assert alternation.
     restart_kinds: Mutex<Vec<RestartKind>>,
+    /// The `restart_number` from the most recent restart event.
+    last_restart_number: AtomicUsize,
+    /// The `population_size_after` from the most recent restart event.
+    last_population_size_after: AtomicUsize,
 }
 
 impl Default for SpyObserver {
@@ -74,6 +78,8 @@ impl Default for SpyObserver {
             restart_count: AtomicUsize::new(0),
             last_restart_kind: Mutex::new(None),
             restart_kinds: Mutex::new(Vec::new()),
+            last_restart_number: AtomicUsize::new(0),
+            last_population_size_after: AtomicUsize::new(0),
         }
     }
 }
@@ -103,6 +109,8 @@ impl GaObserver<RangeChromosome<f64>> for SpyObserver {
         self.restart_count.fetch_add(1, Ordering::SeqCst);
         *self.last_restart_kind.lock().unwrap() = Some(event.kind);
         self.restart_kinds.lock().unwrap().push(event.kind);
+        self.last_restart_number.store(event.restart_number, Ordering::SeqCst);
+        self.last_population_size_after.store(event.population_size_after, Ordering::SeqCst);
     }
 }
 
@@ -513,22 +521,27 @@ fn test_cma_restart_observer() {
     let restart_count = spy.restart_count.load(Ordering::SeqCst);
     assert!(restart_count >= 1, "at least one restart should have fired");
 
-    // The first restart event should have restart_number == 1
-    // and population_size_after == ceil(initial_lambda * scale)
-    let last_kind = spy.last_restart_kind.lock().unwrap();
+    // SC-3: restart_number must be 1-based (first restart == 1).
     assert_eq!(
-        *last_kind,
+        spy.last_restart_number.load(Ordering::SeqCst),
+        1,
+        "restart_number should be 1 for the first restart"
+    );
+
+    // SC-3: population_size_after must equal ceil(initial_lambda * scale).
+    let expected_pop_size = (initial_lambda as f64 * scale).ceil() as usize;
+    assert_eq!(
+        spy.last_population_size_after.load(Ordering::SeqCst),
+        expected_pop_size,
+        "population_size_after should be ceil(initial_lambda * scale)"
+    );
+
+    // SC-3: kind must be Ipop.
+    assert_eq!(
+        *spy.last_restart_kind.lock().unwrap(),
         Some(RestartKind::Ipop),
         "restart kind should be Ipop for RestartStrategy::Ipop"
     );
-    drop(last_kind);
-
-    // population_size_after should be >= initial_lambda (scaling up)
-    // The exact ratio check (≈ population_scale) is verified via RestartEvent in a
-    // more detailed observer that captures the full event — this stub verifies kind only.
-    // Full event field verification is wired by Plan 02 when RestartEvent is populated.
-    let _ = initial_lambda;
-    let _ = scale;
 }
 
 // ─── CMA-15: no restart when strategy is None ────────────────────────────────
