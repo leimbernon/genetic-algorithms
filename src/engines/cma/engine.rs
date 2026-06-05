@@ -303,6 +303,11 @@ pub struct CmaResult<U: LinearChromosome> {
     pub best_fitness: f64,
     /// Number of generations completed.
     pub generations: usize,
+    /// Total number of restarts that fired during the run.
+    ///
+    /// Always `0` when no `restart_strategy` is configured on [`CmaConfiguration`](super::configuration::CmaConfiguration).
+    /// Plan 02 will wire this to the live restart counter inside the engine loop.
+    pub total_restarts: usize,
 }
 
 // ─── CmaEngine ───────────────────────────────────────────────────────────────
@@ -716,6 +721,7 @@ where
             best,
             best_fitness,
             generations,
+            total_restarts: 0, // Plan 02 replaces this with the live restart counter
         }
     }
 }

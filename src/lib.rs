@@ -371,3 +371,4 @@ pub use permutate::{PermutateConfiguration, PermutateEngine};
 pub use traits::{LinearChromosome, OperatorCompat, RealGene, Strategy, VectorFitness};
 pub use pso::{PsoConfiguration, PsoEngine, PsoInertia, PsoResult, PsoTopology};
 pub use eda::{EdaConfiguration, EdaEngine, EdaModel, EdaRealEngine, EdaResult};
+pub use cma::{RestartEvent, RestartKind, RestartStrategy};
