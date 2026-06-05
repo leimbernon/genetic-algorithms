@@ -123,6 +123,9 @@ name = "memetic_rastrigin"
 name = "cma_es_rastrigin"
 
 [[example]]
+name = "ipop_rastrigin"
+
+[[example]]
 name = "pso_rastrigin"
 
 [[example]]
