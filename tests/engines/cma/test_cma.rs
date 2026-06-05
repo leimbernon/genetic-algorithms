@@ -395,7 +395,6 @@ fn test_cma_maximization() {
 /// Uses a very low `stagnation_threshold` (5 generations) and `max_restarts = 2` to
 /// guarantee at least one restart fires within `max_generations = 50`.
 #[test]
-#[ignore = "Plan 02 implements engine restart loop"]
 fn test_cma_ipop_restarts() {
     let config = CmaConfiguration::default_for_dim(5)
         .with_max_generations(50)
@@ -441,7 +440,6 @@ fn test_cma_ipop_restarts() {
 /// After 4 restarts, the sequence of `RestartKind`s collected by the spy observer
 /// must be `[BipopLarge, BipopSmall, BipopLarge, BipopSmall]`.
 #[test]
-#[ignore = "Plan 02 implements engine restart loop"]
 fn test_cma_bipop_alternation() {
     let config = CmaConfiguration::default_for_dim(5)
         .with_max_generations(200)
@@ -486,7 +484,6 @@ fn test_cma_bipop_alternation() {
 /// Verifies that `restart_number` is 1-based, `population_size_after` reflects the
 /// IPOP scaling, and `kind` matches the restart type.
 #[test]
-#[ignore = "Plan 02 implements engine restart loop"]
 fn test_cma_restart_observer() {
     // Use a 3D sphere with a tiny stagnation_threshold to force a restart quickly.
     let initial_lambda = CmaConfiguration::default_for_dim(3).population_size;
@@ -541,7 +538,6 @@ fn test_cma_restart_observer() {
 /// Ensures the engine does not call `on_restart` or increment `total_restarts`
 /// when no restart strategy is configured.
 #[test]
-#[ignore = "Plan 02 implements engine restart loop"]
 fn test_cma_no_restart_when_none() {
     // Default configuration has restart_strategy = None
     let config = CmaConfiguration::default_for_dim(5)
@@ -578,7 +574,6 @@ fn test_cma_no_restart_when_none() {
 /// With `max_restarts = 3` and a low stagnation threshold, at most 3 restarts
 /// can fire. The spy's `restart_count` must match `result.total_restarts`.
 #[test]
-#[ignore = "Plan 02 implements engine restart loop"]
 fn test_cma_total_restarts_count() {
     let max_restarts = 3;
 
@@ -625,7 +620,6 @@ fn test_cma_total_restarts_count() {
 /// one or more restarts. Deep best-tracking assertions (global best ≤ initial best)
 /// are wired by Plan 02 once the global-best tracking logic is implemented.
 #[test]
-#[ignore = "Plan 02 implements engine restart loop"]
 fn test_cma_global_best_across_restarts() {
     let config = CmaConfiguration::default_for_dim(5)
         .with_max_generations(60)
