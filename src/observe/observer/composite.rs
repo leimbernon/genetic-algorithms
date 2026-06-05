@@ -34,7 +34,7 @@ use crate::traits::ChromosomeT;
 use std::sync::Arc;
 use std::time::Duration;
 
-/// Fan-out observer that dispatches all 19 lifecycle hooks to every inner
+/// Fan-out observer that dispatches all 20 lifecycle hooks to every inner
 /// observer in insertion order.
 ///
 /// Build with [`CompositeObserver::new()`] and chain [`CompositeObserver::add()`]
