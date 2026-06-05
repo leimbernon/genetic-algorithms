@@ -43,7 +43,7 @@ created: 2026-06-05
 | 59-02-01 | 02 | 1 | SC-1,SC-2 | — | N/A | integration | `cargo test --test test_engines engines::cma` | ✅ | ⬜ pending |
 | 59-02-02 | 02 | 1 | SC-2 | — | N/A | integration | `cargo test --test test_engines engines::cma` | ✅ | ⬜ pending |
 | 59-03-01 | 03 | 2 | SC-3 | — | N/A | integration | `cargo test --test test_engines engines::cma` | ✅ | ⬜ pending |
-| 59-04-01 | 04 | 3 | SC-4 | — | N/A | integration | `cargo run --example ipop_rastrigin` | ✅ | ⬜ pending |
+| 59-03-03 | 03 | 3 | SC-4 | — | N/A | integration | `cargo run --example ipop_rastrigin` | ✅ | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
