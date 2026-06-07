@@ -280,6 +280,14 @@ where
     /// reporting. Reserved here to avoid a second struct-churn in Wave 2.
     fitness_cache: Option<std::sync::Arc<std::sync::Mutex<crate::fitness::cache::FitnessCache>>>,
 
+    /// Optional batch fitness evaluator (D-03).
+    ///
+    /// When set, the engine evaluates an entire population slice in a single
+    /// `evaluate_batch` call rather than calling `calculate_fitness` per
+    /// chromosome. Mutually exclusive with `fitness_fn` (enforced in `build()`).
+    /// Zero overhead when `None`.
+    batch_evaluator: Option<Arc<dyn crate::fitness::BatchFitnessEvaluator<U> + Send + Sync>>,
+
     /// Optional structured lifecycle observer. When `None` (the default),
     /// no hook calls or timing measurements are performed (zero overhead).
     observer: Option<Arc<dyn GaObserver<U> + Send + Sync>>,
@@ -364,6 +372,7 @@ where
             dynamic_mutation_probability: 1.0,
             fitness_cache_size: None,
             fitness_cache: None,
+            batch_evaluator: None,
             observer: None,
             constraint_fns: None,
             penalty_strategy: PenaltyStrategy::None,
@@ -766,6 +775,14 @@ where
             _ => {}
         }
 
+        // Enforce mutual exclusivity: fitness_fn and batch_evaluator cannot both be set (D-03)
+        if self.fitness_fn.is_some() && self.batch_evaluator.is_some() {
+            return Err(GaError::ConfigurationError(
+                "Cannot use both fitness_fn and with_batch_evaluator() — they are mutually exclusive"
+                    .to_string(),
+            ));
+        }
+
         // Wrap fitness function with LRU cache if configured
         if let Some(cache_size) = self.fitness_cache_size {
             if let Some(fitness_fn) = self.fitness_fn.take() {
@@ -773,7 +790,7 @@ where
                     fitness_fn, cache_size,
                 );
                 self.fitness_fn = Some(wrapped);
-                self.fitness_cache = Some(cache_handle); // Wave 2 wires stats delta reporting
+                self.fitness_cache = Some(cache_handle);
             }
         }
 
@@ -914,6 +931,27 @@ where
     ///   is 2-10x the population size.
     pub fn with_fitness_cache_size(mut self, size: usize) -> Self {
         self.fitness_cache_size = Some(size);
+        self
+    }
+
+    /// Sets a batch fitness evaluator as an alternative to `with_fitness_fn`.
+    ///
+    /// When configured, the engine evaluates an entire population slice in a
+    /// single `evaluate_batch` call rather than calling `calculate_fitness` on
+    /// each chromosome individually. This is useful for vectorised computation
+    /// (e.g. GPU shaders, external simulators that amortise setup cost).
+    ///
+    /// **Mutually exclusive with `with_fitness_fn`.** Calling `build()` with
+    /// both set returns `GaError::ConfigurationError` (D-03).
+    ///
+    /// # Arguments
+    ///
+    /// * `evaluator` - An `Arc`-wrapped implementation of `BatchFitnessEvaluator<U>`.
+    pub fn with_batch_evaluator(
+        mut self,
+        evaluator: Arc<dyn crate::fitness::BatchFitnessEvaluator<U> + Send + Sync>,
+    ) -> Self {
+        self.batch_evaluator = Some(evaluator);
         self
     }
 
@@ -1074,6 +1112,31 @@ where
         self
     }
 
+    /// Evaluates the fitness of all chromosomes in `pop` using the batch evaluator.
+    ///
+    /// # Behaviour
+    ///
+    /// - **No evaluator configured** (`self.batch_evaluator` is `None`): returns `Ok(())` immediately (no-op).
+    /// - **Evaluator set, no cache**: calls `evaluate_batch(pop)`, assigns `pop[i].set_fitness(values[i])` for every `i`.
+    /// - **Evaluator + cache set** (D-06 partition): splits the population into cache-hit and cache-miss sets,
+    ///   calls `evaluate_batch` only for misses, writes results back, and stores miss results into the cache.
+    ///   The cache `Mutex` is released before calling `evaluate_batch` to avoid holding the lock during
+    ///   potentially expensive external calls (Pitfall 2 from the research notes).
+    ///
+    /// # Panics (debug only)
+    ///
+    /// Asserts that the returned `Vec<f64>` length matches the input slice length (T-60-01 threat mitigation).
+    #[allow(dead_code)]
+    fn batch_evaluate_pop(&mut self, pop: &mut [U]) -> Result<(), GaError> {
+        let evaluator = match self.batch_evaluator.as_ref() {
+            Some(e) => Arc::clone(e),
+            None => return Ok(()),
+        };
+        let cache_opt = self.fitness_cache.as_ref().map(Arc::clone);
+
+        batch_evaluate(evaluator, cache_opt, pop)
+    }
+
     /// Randomly initializes the population using the provided initialization function.
     ///
     /// Behavior:
@@ -1120,7 +1183,10 @@ where
         let population_size = self.configuration.limit_configuration.population_size;
         let chromosome_length = self.configuration.limit_configuration.chromosome_length;
         let init_fn = self.initialization_fn.as_ref().unwrap();
-        let fitness_fn = self.fitness_fn.as_ref().unwrap();
+        // In batch mode `fitness_fn` is None; pass None to initialize_chromosomes_par
+        // so chromosomes start with default 0.0 fitness — batch_evaluate_pop will assign
+        // correct values after initialization() returns.
+        let fitness_fn = self.fitness_fn.as_ref();
 
         let chromosomes = match chromosome_length {
             crate::chromosomes::ChromosomeLength::Fixed(length) => {
@@ -1133,7 +1199,7 @@ where
                         Some(&self.alleles)
                     },
                     init_fn,
-                    Some(fitness_fn),
+                    fitness_fn,
                     0,
                 )
             }
@@ -1147,7 +1213,8 @@ where
                 } else {
                     Some(self.alleles.as_slice())
                 };
-                let ff = std::sync::Arc::clone(fitness_fn);
+                // In batch mode fitness_fn is None; ff_opt carries the optional reference
+                let ff = fitness_fn.cloned();
 
                 #[cfg(not(target_arch = "wasm32"))]
                 let result: Vec<U> = (0..population_size)
@@ -1160,8 +1227,10 @@ where
                         let genes = init_fn(len, alleles_ref);
                         let mut c = U::new();
                         c.set_dna(std::borrow::Cow::Owned(genes));
-                        let ff_clone = std::sync::Arc::clone(&ff);
-                        c.set_fitness_fn(move |dna| ff_clone(dna));
+                        if let Some(ref ff_arc) = ff {
+                            let ff_clone = std::sync::Arc::clone(ff_arc);
+                            c.set_fitness_fn(move |dna| ff_clone(dna));
+                        }
                         c.calculate_fitness();
                         c.set_age(0);
                         c
@@ -1177,8 +1246,10 @@ where
                         let genes = init_fn(len, alleles_ref);
                         let mut c = U::new();
                         c.set_dna(std::borrow::Cow::Owned(genes));
-                        let ff_clone = std::sync::Arc::clone(&ff);
-                        c.set_fitness_fn(move |dna| ff_clone(dna));
+                        if let Some(ref ff_arc) = ff {
+                            let ff_clone = std::sync::Arc::clone(ff_arc);
+                            c.set_fitness_fn(move |dna| ff_clone(dna));
+                        }
                         c.calculate_fitness();
                         c.set_age(0);
                         c
@@ -1232,7 +1303,9 @@ where
             }
         };
         let init_fn = self.initialization_fn.as_ref().unwrap();
-        let fitness_fn = self.fitness_fn.as_ref().unwrap();
+        // In batch mode `fitness_fn` is None — chromosomes start with default fitness;
+        // batch_evaluate_pop will assign correct values after initialization() returns.
+        let fitness_fn = self.fitness_fn.as_ref();
 
         // Step 1: Collect seed DNA for dedup comparison
         let seed_dnas: Vec<&[U::Gene]> = seeds.iter().map(|s| s.dna()).collect();
@@ -1295,9 +1368,11 @@ where
                 continue; // Discard and retry
             }
 
-            // Set fitness function and evaluate
-            let ff_clone = Arc::clone(fitness_fn);
-            new_chromosome.set_fitness_fn(move |genes| ff_clone(genes));
+            // Set fitness function and evaluate (skipped in batch mode — fitness_fn is None)
+            if let Some(ff) = fitness_fn {
+                let ff_clone = Arc::clone(ff);
+                new_chromosome.set_fitness_fn(move |genes| ff_clone(genes));
+            }
             new_chromosome.calculate_fitness();
             new_chromosome.set_age(0);
 
@@ -1429,6 +1504,11 @@ where
         } else if self.population.size() == 0 && self.initialization_fn.is_some() {
             // Standard initialization (no checkpoint, no population)
             self.initialization()?;
+            // D-02 / Pitfall 4: batch-evaluate initial population when batch mode is active
+            if let Some(eval) = self.batch_evaluator.as_ref().map(Arc::clone) {
+                let cache = self.fitness_cache.as_ref().map(Arc::clone);
+                batch_evaluate(eval, cache, &mut self.population.chromosomes)?;
+            }
         } else if self.population.size() == 0 && self.initialization_fn.is_none() {
             return Err(GaError::InitializationError(
                 "No initialization function set".to_string(),
@@ -1583,6 +1663,14 @@ where
             } else {
                 None
             };
+            // D-02: In batch mode, pass None for fitness_fn so parent_crossover does not
+            // call calculate_fitness per-child; batch_evaluate_pop runs on the returned
+            // offspring slice instead.
+            let crossover_fitness_fn = if self.batch_evaluator.is_some() {
+                None
+            } else {
+                self.fitness_fn.clone()
+            };
             let mut offspring = parent_crossover(
                 &parents,
                 &self.population.chromosomes,
@@ -1591,7 +1679,7 @@ where
                 self.population.f_max,
                 self.population.f_avg,
                 dynamic_prob,
-                self.fitness_fn.clone(),
+                crossover_fitness_fn,
                 // AOS parameters (Phase 43)
                 self.configuration.crossover_portfolio.as_ref(),
                 self.configuration.mutation_portfolio.as_ref(),
@@ -1601,6 +1689,11 @@ where
                 best_fitness_so_far,
                 is_maximization,
             )?;
+            // D-02: batch-evaluate offspring before merge (replaces calculate_fitness per child)
+            if let Some(eval) = self.batch_evaluator.as_ref().map(Arc::clone) {
+                let cache = self.fitness_cache.as_ref().map(Arc::clone);
+                batch_evaluate(eval, cache, &mut offspring)?;
+            }
             if let Some(t) = t_cx {
                 let elapsed = t.elapsed();
                 let offspring_count = offspring.len();
@@ -2447,6 +2540,106 @@ where
             }
         }
     }
+}
+
+/// Evaluates `pop` using a batch evaluator, with optional LRU cache partitioning.
+///
+/// This free function contains the core logic of `Ga::batch_evaluate_pop`, extracted to
+/// avoid Rust's borrow checker conflict when `pop` is a field of the same struct that
+/// also owns `batch_evaluator` and `fitness_cache`.
+///
+/// # Cases
+///
+/// - `cache_opt = None`: evaluates every chromosome via `evaluator.evaluate_batch(pop)`.
+/// - `cache_opt = Some(cache)`: performs the D-06 hit/miss partition — only cache misses
+///   are sent to `evaluate_batch`; hits are returned from the cache directly. The cache
+///   `Mutex` is released before the `evaluate_batch` call (Pitfall 2 / T-60-05).
+fn batch_evaluate<U>(
+    evaluator: Arc<dyn crate::fitness::BatchFitnessEvaluator<U> + Send + Sync>,
+    cache_opt: Option<Arc<std::sync::Mutex<crate::fitness::cache::FitnessCache>>>,
+    pop: &mut [U],
+) -> Result<(), GaError>
+where
+    U: LinearChromosome + Clone,
+    U::Gene: Debug,
+{
+    if pop.is_empty() {
+        return Ok(());
+    }
+
+    match cache_opt {
+        None => {
+            // Case B: evaluator set, no cache — batch-evaluate everything
+            let values = evaluator.evaluate_batch(pop);
+            debug_assert_eq!(
+                values.len(),
+                pop.len(),
+                "evaluate_batch returned {} values for {} chromosomes (T-60-01)",
+                values.len(),
+                pop.len()
+            );
+            for (i, chromosome) in pop.iter_mut().enumerate() {
+                chromosome.set_fitness(values[i]);
+            }
+        }
+        Some(cache_handle) => {
+            // Case C: evaluator + cache — D-06 partition algorithm
+            let mut fitness_values: Vec<f64> = vec![0.0; pop.len()];
+            let mut miss_indices: Vec<usize> = Vec::new();
+
+            // Step 1: check cache for each chromosome; collect misses
+            {
+                let mut cache = cache_handle
+                    .lock()
+                    .expect("fitness cache lock poisoned");
+                for (i, chromosome) in pop.iter().enumerate() {
+                    let key = crate::fitness::cache::hash_dna(chromosome.dna());
+                    match cache.get(key) {
+                        Some(f) => fitness_values[i] = f,
+                        None => miss_indices.push(i),
+                    }
+                }
+            } // Lock released here (Pitfall 2 — never hold lock across evaluate_batch)
+
+            if !miss_indices.is_empty() {
+                // Step 2: clone only the miss chromosomes (D-01: evaluate_batch takes &[U])
+                let miss_chromosomes: Vec<U> = miss_indices
+                    .iter()
+                    .map(|&orig_i| pop[orig_i].clone())
+                    .collect();
+
+                // Step 3: batch-evaluate misses
+                let miss_values = evaluator.evaluate_batch(&miss_chromosomes);
+                debug_assert_eq!(
+                    miss_values.len(),
+                    miss_indices.len(),
+                    "evaluate_batch returned {} values for {} miss chromosomes (T-60-01)",
+                    miss_values.len(),
+                    miss_indices.len()
+                );
+
+                // Step 4: re-acquire cache and store miss results
+                {
+                    let mut cache = cache_handle
+                        .lock()
+                        .expect("fitness cache lock poisoned");
+                    for (pos, &orig_i) in miss_indices.iter().enumerate() {
+                        let f = miss_values[pos];
+                        fitness_values[orig_i] = f;
+                        let key = crate::fitness::cache::hash_dna(pop[orig_i].dna());
+                        cache.put(key, f);
+                    }
+                } // Lock released
+            }
+
+            // Step 5: write all fitness values (hits + misses) back into the population
+            for (i, chromosome) in pop.iter_mut().enumerate() {
+                chromosome.set_fitness(fitness_values[i]);
+            }
+        }
+    }
+
+    Ok(())
 }
 
 /// Checks termination limits according to `LimitConfiguration`.

@@ -272,6 +272,7 @@ fn wrap_with_cache_returns_handle() {
     let call_count = Arc::new(std::sync::atomic::AtomicU64::new(0));
     let call_count_clone = Arc::clone(&call_count);
 
+    #[allow(clippy::type_complexity)]
     let base_fn: Arc<dyn Fn(&[BinaryGene]) -> f64 + Send + Sync> = Arc::new(move |dna: &[BinaryGene]| {
         call_count_clone.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         dna.len() as f64
