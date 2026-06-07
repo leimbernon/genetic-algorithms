@@ -687,7 +687,18 @@ Plans:
   2. User can enable `FitnessCache` via a builder flag; chromosomes with unchanged DNA are returned cached fitness without re-evaluation; cache hit rate is exposed in `GenerationStats`
   3. WASM-compatible: no threads or `std::time` required in the cache path
   4. All CI gates pass with zero warnings
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+**Wave 1**
+- [ ] 60-01-PLAN.md — BatchFitnessEvaluator trait + wrap_with_cache tuple refactor + GenerationStats cache fields + Wave 0 test stubs
+
+**Wave 2** *(blocked on Wave 1)*
+- [ ] 60-02-PLAN.md — Ga batch + cache integration: field, builder, mutual-exclusivity check, batch_evaluate_pop helper, run() wiring (initial pop + offspring + delta stats), activate 8 Ga tests
+
+**Wave 3** *(blocked on Wave 2)*
+- [ ] 60-03-PLAN.md — CMA batch + cache integration (both eval sites + delta stats) + activate 5 CMA tests + phase verification gate (full CI matrix + SUMMARY)
+
 **UI hint**: no
 
 ### Phase 61: Performance — Clone Reduction & Parallel Survivor
@@ -807,8 +818,8 @@ Plans:
 | 56. CMA-ES Engine | v3.0.0 | 4/4 | Complete | 2026-06-01 |
 | 57. PSO Engine | v3.0.0 | 4/4 | Complete   | 2026-06-03 |
 | 58. EDA / UMDA Engine | v3.0.0 | 3/3 | Complete   | 2026-06-04 |
-| 59. Restart Strategies — IPOP / BIPOP | v3.0.0 | 3/3 | Complete   | 2026-06-05 |
-| 60. Batch Fitness / Fitness Cache Extension | v3.0.0 | TBD | Pending | — |
+| 59. Restart Strategies — IPOP / BIPOP | v3.0.0 | 3/3 | Complete    | 2026-06-06 |
+| 60. Batch Fitness / Fitness Cache Extension | v3.0.0 | 3 | Pending | — |
 | 61. Performance — Clone Reduction & Parallel Survivor | v3.0.0 | TBD | Pending | — |
 | 62. Surrogate-Assisted Evaluation | v3.0.0 | TBD | Pending | — |
 | 63. Visualization — Pareto Front Plotting & Example Images | v3.0.0 | TBD | Pending | — |
