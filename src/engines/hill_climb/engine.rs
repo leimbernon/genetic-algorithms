@@ -136,6 +136,8 @@ impl<U: LinearChromosome + Clone> HillClimbEngine<U> {
                 diversity: 0.0,
                 dynamic_mutation_probability: None,
                 avg_node_count: 0.0,
+                cache_hits: None,
+                cache_misses: None,
             };
             self.notify(|obs| obs.on_generation_end(&stats));
             all_stats.push(stats);
