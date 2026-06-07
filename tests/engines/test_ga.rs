@@ -2276,3 +2276,55 @@ fn test_local_search_configuration_serde_roundtrip() -> Result<(), Box<dyn std::
 
     Ok(())
 }
+
+// ─── Phase 60 Wave 0 test stubs (Nyquist gate) ───────────────────────────────
+
+mod batch_evaluator_tests {
+    #[test]
+    #[ignore = "Wave 0 stub — implemented in Phase 60 Wave 2/3"]
+    fn ga_with_batch_evaluator_runs_to_completion() {
+        unimplemented!("Wave 2/3 — Phase 60");
+    }
+
+    #[test]
+    #[ignore = "Wave 0 stub — implemented in Phase 60 Wave 2/3"]
+    fn ga_batch_evaluator_called_once_per_generation() {
+        unimplemented!("Wave 2/3 — Phase 60");
+    }
+
+    #[test]
+    #[ignore = "Wave 0 stub — implemented in Phase 60 Wave 2/3"]
+    fn ga_batch_evaluator_replaces_calculate_fitness() {
+        unimplemented!("Wave 2/3 — Phase 60");
+    }
+
+    #[test]
+    #[ignore = "Wave 0 stub — implemented in Phase 60 Wave 2/3"]
+    fn ga_batch_evaluator_initial_population_evaluated() {
+        unimplemented!("Wave 2/3 — Phase 60");
+    }
+
+    #[test]
+    #[ignore = "Wave 0 stub — implemented in Phase 60 Wave 2/3"]
+    fn ga_batch_and_fitness_fn_mutually_exclusive_returns_configuration_error() {
+        unimplemented!("Wave 2/3 — Phase 60");
+    }
+
+    #[test]
+    #[ignore = "Wave 0 stub — implemented in Phase 60 Wave 2/3"]
+    fn ga_cache_stats_populated_in_generation_stats() {
+        unimplemented!("Wave 2/3 — Phase 60");
+    }
+
+    #[test]
+    #[ignore = "Wave 0 stub — implemented in Phase 60 Wave 2/3"]
+    fn ga_cache_stats_none_when_no_cache() {
+        unimplemented!("Wave 2/3 — Phase 60");
+    }
+
+    #[test]
+    #[ignore = "Wave 0 stub — implemented in Phase 60 Wave 2/3"]
+    fn ga_batch_plus_cache_only_misses_evaluated() {
+        unimplemented!("Wave 2/3 — Phase 60");
+    }
+}

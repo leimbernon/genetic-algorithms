@@ -51,6 +51,18 @@ pub struct GenerationStats {
     /// deserialization of checkpoints created before this field was added.
     #[cfg_attr(feature = "serde", serde(default))]
     pub avg_node_count: f64,
+    /// Number of LRU fitness cache hits in this generation.
+    ///
+    /// `None` when no fitness cache is configured. When set, represents the
+    /// delta hits accumulated during this generation's fitness evaluations.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub cache_hits: Option<u64>,
+    /// Number of LRU fitness cache misses in this generation.
+    ///
+    /// `None` when no fitness cache is configured. When set, represents the
+    /// delta misses accumulated during this generation's fitness evaluations.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub cache_misses: Option<u64>,
 }
 
 impl GenerationStats {
@@ -74,6 +86,8 @@ impl GenerationStats {
                 diversity: 0.0,
                 dynamic_mutation_probability: None,
                 avg_node_count: 0.0,
+                cache_hits: None,
+                cache_misses: None,
             };
         }
 
@@ -114,6 +128,8 @@ impl GenerationStats {
             diversity: std_dev,
             dynamic_mutation_probability: None,
             avg_node_count: 0.0,
+            cache_hits: None,
+            cache_misses: None,
         }
     }
 }

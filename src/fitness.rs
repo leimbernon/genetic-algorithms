@@ -17,10 +17,12 @@
 //! [`FitnessFnWrapper`] when you need to store a fitness function alongside
 //! a chromosome for deferred or batched evaluation.
 
+pub mod batch;
 pub mod cache;
 pub mod count_true;
 pub mod fitness_fn_wrapper;
 
+pub use batch::BatchFitnessEvaluator;
 pub use cache::FitnessCache;
 pub use count_true::count_true;
 pub use fitness_fn_wrapper::FitnessFnWrapper;

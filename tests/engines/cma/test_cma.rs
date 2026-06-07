@@ -665,3 +665,37 @@ fn test_cma_global_best_across_restarts() {
     // Plan 02: additionally assert result.best_fitness <= initial_run_best
     // (global-best tracking across restarts is enforced by the engine loop)
 }
+
+// ─── Phase 60 Wave 0 test stubs (Nyquist gate) ───────────────────────────────
+
+mod batch_and_cache_tests {
+    #[test]
+    #[ignore = "Wave 0 stub — implemented in Phase 60 Wave 2/3"]
+    fn cma_with_fitness_cache_accepted() {
+        unimplemented!("Wave 2/3 — Phase 60");
+    }
+
+    #[test]
+    #[ignore = "Wave 0 stub — implemented in Phase 60 Wave 2/3"]
+    fn cma_with_batch_evaluator_accepted() {
+        unimplemented!("Wave 2/3 — Phase 60");
+    }
+
+    #[test]
+    #[ignore = "Wave 0 stub — implemented in Phase 60 Wave 2/3"]
+    fn cma_batch_evaluator_initial_population() {
+        unimplemented!("Wave 2/3 — Phase 60");
+    }
+
+    #[test]
+    #[ignore = "Wave 0 stub — implemented in Phase 60 Wave 2/3"]
+    fn cma_batch_evaluator_offspring_loop() {
+        unimplemented!("Wave 2/3 — Phase 60");
+    }
+
+    #[test]
+    #[ignore = "Wave 0 stub — implemented in Phase 60 Wave 2/3"]
+    fn cma_cache_stats_in_generation_stats() {
+        unimplemented!("Wave 2/3 — Phase 60");
+    }
+}

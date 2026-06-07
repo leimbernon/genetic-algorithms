@@ -1,5 +1,30 @@
 use genetic_algorithms::stats::GenerationStats;
 
+// ─── Phase 60 foundation tests ────────────────────────────────────────────────
+
+/// Verifies that from_fitness_values yields None for cache_hits and cache_misses
+/// (no cache wired at construction time).
+#[test]
+fn cache_stats_default_none() {
+    let stats = GenerationStats::from_fitness_values(0, &[1.0, 2.0, 3.0], false);
+    assert_eq!(stats.cache_hits, None);
+    assert_eq!(stats.cache_misses, None);
+
+    // Also check the empty-population path
+    let empty_stats = GenerationStats::from_fitness_values(0, &[], false);
+    assert_eq!(empty_stats.cache_hits, None);
+    assert_eq!(empty_stats.cache_misses, None);
+}
+
+/// Verifies that a JSON checkpoint without cache_hits/cache_misses deserializes
+/// successfully (serde(default) backward-compat).
+#[cfg(feature = "serde")]
+#[test]
+#[ignore = "Wave 0 stub — implemented in Phase 60 Wave 2/3"]
+fn cache_stats_serde_compat_old_checkpoint() {
+    unimplemented!("Wave 2/3 — Phase 60");
+}
+
 #[test]
 fn test_stats_from_empty() {
     let stats = GenerationStats::from_fitness_values(0, &[], false);
