@@ -339,6 +339,7 @@ pub mod pso;
 #[path = "engines/eda/mod.rs"]
 pub mod eda;
 
+pub use fitness::BatchFitnessEvaluator;
 pub use aos::{AosState, AosStrategy};
 pub use constraints::ConstraintHandling;
 pub use constraints::PenaltyStrategy;

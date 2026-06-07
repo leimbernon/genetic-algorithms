@@ -761,9 +761,10 @@ where
         // Wrap fitness function with LRU cache if configured
         if let Some(cache_size) = self.fitness_cache_size {
             if let Some(fitness_fn) = self.fitness_fn.take() {
-                self.fitness_fn = Some(crate::fitness::cache::wrap_with_cache(
+                let (wrapped, _cache_handle) = crate::fitness::cache::wrap_with_cache(
                     fitness_fn, cache_size,
-                ));
+                );
+                self.fitness_fn = Some(wrapped);
             }
         }
 
