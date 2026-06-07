@@ -273,6 +273,13 @@ where
     /// cached to avoid re-evaluating chromosomes with identical DNA.
     fitness_cache_size: Option<usize>,
 
+    /// Shared handle to the active LRU fitness cache.
+    ///
+    /// Set during `build()` when `fitness_cache_size` is configured. `None`
+    /// when no cache is in use. Wave 2 wires this to `GenerationStats` delta
+    /// reporting. Reserved here to avoid a second struct-churn in Wave 2.
+    fitness_cache: Option<std::sync::Arc<std::sync::Mutex<crate::fitness::cache::FitnessCache>>>,
+
     /// Optional structured lifecycle observer. When `None` (the default),
     /// no hook calls or timing measurements are performed (zero overhead).
     observer: Option<Arc<dyn GaObserver<U> + Send + Sync>>,
@@ -356,6 +363,7 @@ where
             stats: Vec::new(),
             dynamic_mutation_probability: 1.0,
             fitness_cache_size: None,
+            fitness_cache: None,
             observer: None,
             constraint_fns: None,
             penalty_strategy: PenaltyStrategy::None,
@@ -761,10 +769,11 @@ where
         // Wrap fitness function with LRU cache if configured
         if let Some(cache_size) = self.fitness_cache_size {
             if let Some(fitness_fn) = self.fitness_fn.take() {
-                let (wrapped, _cache_handle) = crate::fitness::cache::wrap_with_cache(
+                let (wrapped, cache_handle) = crate::fitness::cache::wrap_with_cache(
                     fitness_fn, cache_size,
                 );
                 self.fitness_fn = Some(wrapped);
+                self.fitness_cache = Some(cache_handle); // Wave 2 wires stats delta reporting
             }
         }
 
