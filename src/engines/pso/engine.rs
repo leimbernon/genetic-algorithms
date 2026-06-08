@@ -319,7 +319,7 @@ where
         let mut state = PsoState::new(&pop, best_idx, &mut rng);
 
         // ── Observer: initial best ────────────────────────────────────────────
-        self.notify(|obs| obs.on_new_best(0, best.clone()));
+        self.notify(|obs| obs.on_new_best(0, &best));
 
         let mut termination_cause = TerminationCause::GenerationLimitReached;
         let mut all_stats: Vec<GenerationStats> =
@@ -423,8 +423,7 @@ where
                 best = pop[owner].clone();
                 best.set_dna(Cow::Owned(new_dna));
                 best.set_fitness(state.gbest_fitness);
-                let best_clone = best.clone();
-                self.notify(|obs| obs.on_new_best(gen, best_clone));
+                self.notify(|obs| obs.on_new_best(gen, &best));
             }
 
             // ── Generation stats ──────────────────────────────────────────────

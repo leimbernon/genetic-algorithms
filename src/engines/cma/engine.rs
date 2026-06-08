@@ -497,7 +497,7 @@ where
         let (mut best_idx, mut best_fitness) = self.find_best(&pop);
         let mut best = pop[best_idx].clone();
         // Fire on_new_best for the initial best
-        self.notify(|obs| obs.on_new_best(0, best.clone()));
+        self.notify(|obs| obs.on_new_best(0, &best));
 
         let mut termination_cause = TerminationCause::GenerationLimitReached;
         let mut all_stats: Vec<GenerationStats> =
@@ -688,8 +688,7 @@ where
                 best_fitness = bf;
                 best_idx = bi;
                 best = pop[best_idx].clone();
-                let best_clone = best.clone();
-                self.notify(|obs| obs.on_new_best(gen, best_clone));
+                self.notify(|obs| obs.on_new_best(gen, &best));
             }
 
             // ── Statistics ────────────────────────────────────────────────────
