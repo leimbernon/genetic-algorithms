@@ -103,6 +103,10 @@ harness = false
 name = "cellular"
 harness = false
 
+[[bench]]
+name = "rastrigin"
+harness = false
+
 [[example]]
 name = "sms_emoa_zdt1"
 required-features = ["benchmarks"]
