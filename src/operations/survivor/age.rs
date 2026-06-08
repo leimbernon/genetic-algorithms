@@ -6,6 +6,8 @@
 
 pub(crate) use crate::traits::ChromosomeT;
 use log::{debug, trace};
+#[cfg(not(target_arch = "wasm32"))]
+use rayon::prelude::*;
 
 /// Age-based survivor selection: sorts individuals by age (youngest first)
 /// and keeps the top `population_size`.
@@ -17,7 +19,10 @@ use log::{debug, trace};
 pub fn age_based<U: ChromosomeT>(chromosomes: &mut Vec<U>, population_size: usize) {
     //We first sort the chromosomes by their fitness
     debug!(target="survivor_events", method="age_based"; "Starting age based survivor method");
-    chromosomes.sort_by_key(|a| std::cmp::Reverse(a.age()));
+    #[cfg(not(target_arch = "wasm32"))]
+    chromosomes.par_sort_unstable_by(|a, b| b.age().cmp(&a.age()));
+    #[cfg(target_arch = "wasm32")]
+    chromosomes.sort_unstable_by(|a, b| b.age().cmp(&a.age()));
 
     // Drop surplus individuals from the tail in O(1) instead of
     // loop of Vec::remove (O(N) per removal).

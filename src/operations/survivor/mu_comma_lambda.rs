@@ -10,6 +10,8 @@ pub(crate) use crate::{
     traits::ChromosomeT,
 };
 use log::{debug, trace};
+#[cfg(not(target_arch = "wasm32"))]
+use rayon::prelude::*;
 
 /// Select survivors using the (mu,lambda) strategy.
 ///
@@ -39,14 +41,28 @@ pub fn mu_comma_lambda<U: ChromosomeT>(
 
     // Rank offspring by fitness and truncate.
     if limit_configuration.problem_solving != ProblemSolving::FixedFitness {
-        chromosomes.sort_by(|a, b| {
+        #[cfg(not(target_arch = "wasm32"))]
+        chromosomes.par_sort_unstable_by(|a, b| {
+            b.fitness()
+                .partial_cmp(&a.fitness())
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+        #[cfg(target_arch = "wasm32")]
+        chromosomes.sort_unstable_by(|a, b| {
             b.fitness()
                 .partial_cmp(&a.fitness())
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
     } else {
         let target = limit_configuration.fitness_target.unwrap_or(0.0);
-        chromosomes.sort_by(|a, b| {
+        #[cfg(not(target_arch = "wasm32"))]
+        chromosomes.par_sort_unstable_by(|a, b| {
+            b.fitness_distance(&target)
+                .partial_cmp(&a.fitness_distance(&target))
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+        #[cfg(target_arch = "wasm32")]
+        chromosomes.sort_unstable_by(|a, b| {
             b.fitness_distance(&target)
                 .partial_cmp(&a.fitness_distance(&target))
                 .unwrap_or(std::cmp::Ordering::Equal)

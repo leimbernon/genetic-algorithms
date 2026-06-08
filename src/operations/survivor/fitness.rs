@@ -10,6 +10,8 @@ pub(crate) use crate::{
     traits::ChromosomeT,
 };
 use log::{debug, trace};
+#[cfg(not(target_arch = "wasm32"))]
+use rayon::prelude::*;
 
 /// Fitness-based survivor selection: sorts the combined population by fitness
 /// and truncates to `population_size`.
@@ -31,7 +33,14 @@ pub fn fitness_based<U: ChromosomeT>(
     debug!(target="survivor_events", method="fitness_based"; "Starting fitness based survivor method");
     if limit_configuration.problem_solving != ProblemSolving::FixedFitness {
         //We sort the chromosomes by their fitness if there is not a fixed fitness problem
-        chromosomes.sort_by(|a, b| {
+        #[cfg(not(target_arch = "wasm32"))]
+        chromosomes.par_sort_unstable_by(|a, b| {
+            b.fitness()
+                .partial_cmp(&a.fitness())
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+        #[cfg(target_arch = "wasm32")]
+        chromosomes.sort_unstable_by(|a, b| {
             b.fitness()
                 .partial_cmp(&a.fitness())
                 .unwrap_or(std::cmp::Ordering::Equal)
@@ -39,7 +48,14 @@ pub fn fitness_based<U: ChromosomeT>(
     } else {
         //We sort the chromosomes by their distance with the fitness target in a fixed fitness problem
         let target = limit_configuration.fitness_target.unwrap_or(0.0);
-        chromosomes.sort_by(|a, b| {
+        #[cfg(not(target_arch = "wasm32"))]
+        chromosomes.par_sort_unstable_by(|a, b| {
+            b.fitness_distance(&target)
+                .partial_cmp(&a.fitness_distance(&target))
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+        #[cfg(target_arch = "wasm32")]
+        chromosomes.sort_unstable_by(|a, b| {
             b.fitness_distance(&target)
                 .partial_cmp(&a.fitness_distance(&target))
                 .unwrap_or(std::cmp::Ordering::Equal)
