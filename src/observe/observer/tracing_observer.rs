@@ -208,7 +208,7 @@ impl<U: ChromosomeT> GaObserver<U> for TracingObserver {
     }
 
     /// Emits an INFO event with the new best fitness inside the current generation span.
-    fn on_new_best(&self, generation: usize, best: U) {
+    fn on_new_best(&self, generation: usize, best: &U) {
         let guard = self.gen_span.lock().ok();
         let _entered = guard
             .as_deref()

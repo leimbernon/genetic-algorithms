@@ -107,7 +107,7 @@ pub trait GaObserver<U: ChromosomeT>: Send + Sync {
     ) {
     }
     /// Called when the population's best fitness improves.
-    fn on_new_best(&self, _generation: usize, _best: U) {}
+    fn on_new_best(&self, _generation: usize, _best: &U) {}
     /// Called each time the stagnation counter increments.
     fn on_stagnation(&self, _generation: usize, _stagnation_count: usize) {}
     /// Called when an extension strategy fires due to low diversity.
