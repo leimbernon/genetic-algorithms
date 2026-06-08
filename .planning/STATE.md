@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v3.0.0
 milestone_name: — Advanced Representations, Alternative Strategies & Architecture Simplification
 status: executing
-stopped_at: Phase 60 context gathered
-last_updated: "2026-06-07T16:47:49.371Z"
-last_activity: 2026-06-07 -- Phase 60 execution started
+stopped_at: ~
+last_updated: "2026-06-08"
+last_activity: 2026-06-08 -- Phase 60 complete (all 3 plans done, CI gates green)
 progress:
-  total_phases: 35
-  completed_phases: 17
-  total_plans: 71
-  completed_plans: 84
-  percent: 49
+  total_phases: 34
+  completed_phases: 18
+  total_plans: 74
+  completed_plans: 88
+  percent: 53
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-18)
 
 **Core value:** Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library
-**Current focus:** Phase 60 — batch-fitness-fitness-cache-extension
+**Current focus:** Phase 61 — performance-clone-reduction-parallel-survivor (next)
 
 ## Current Position
 
-Phase: 60 (batch-fitness-fitness-cache-extension) — EXECUTING
-Plan: 1 of 3
-Status: Executing Phase 60
-Last activity: 2026-06-07 -- Phase 60 execution started
+Phase: 60 (batch-fitness-fitness-cache-extension) — COMPLETE
+Phase: 61 (performance-clone-reduction-parallel-survivor) — NEXT
+Status: Phase 60 complete; ready to plan Phase 61
+Last activity: 2026-06-08 -- Phase 60 complete (plans 01-03, 15 active tests, all CI gates green)
 
-Progress bar: [███░░░░░░░░░░░░░░░░] phases 47-56 complete of 47-65
+Progress bar: [████░░░░░░░░░░░░░░░] phases 47-60 complete of 47-65
 
 ## Accumulated Context
 
@@ -66,13 +66,19 @@ Progress bar: [███░░░░░░░░░░░░░░░░] phases
 - v3.0.0: `DeGene` hard-renamed to `RealGene` in phase 56 — relocated to `src/traits/real_gene.rs`; `CmaEngine` and future real-valued engines use `U::Gene: RealGene` bound
 - v3.0.0: `CmaEngine` uses Jacobi eigendecomposition (no lapack) + Box-Muller sampling; WASM-compatible (no par_iter, no Instant)
 
+### Decisions (phase 60)
+
+- v3.0.0: `BatchFitnessEvaluator<U>` placed in `src/fitness/batch.rs`, re-exported via `src/lib.rs`
+- v3.0.0: CMA mutual-exclusivity for batch vs scalar is last-writer-wins (batch silently overrides scalar) — Ga uses stricter ConfigurationError because its `fitness_fn` is Optional
+- v3.0.0: `batch_evaluate_pop` structurally replicated on CmaEngine (not shared utility) — bounded footprint; extraction deferred to refactor phase
+- v3.0.0: batch+cache partition (D-06) releases Mutex before `evaluate_batch` call to avoid blocking during expensive GPU/remote evaluations (Pitfall 2 / T-60-05)
+
 ### Blockers/Concerns
 
-- PR #273 (feat/252-cma-es-engine → milestone/v3.0.0) awaiting CI + merge
-- Phases 57–65 have ROADMAP entries but no plans yet — next step is plan-phase for whichever comes first
+- Phases 61–65 have ROADMAP entries but no plans yet — next step is plan-phase for Phase 61
 
 ## Session Continuity
 
-Last session: 2026-06-07T16:13:42.082Z
-Stopped at: Phase 60 context gathered
-Resume file: .planning/phases/60-batch-fitness-fitness-cache-extension/60-CONTEXT.md
+Last session: 2026-06-08
+Stopped at: Phase 60 complete
+Resume file: None
