@@ -1558,6 +1558,17 @@ where
                 .unwrap_or(1.0);
         }
 
+        // D-06: bootstrap cache for batch-only-with-cache case (fitness_fn is absent,
+        // so build() never called wrap_with_cache; create the cache handle here).
+        if self.batch_evaluator.is_some()
+            && self.fitness_cache_size.is_some()
+            && self.fitness_cache.is_none()
+        {
+            self.fitness_cache = Some(Arc::new(Mutex::new(
+                crate::fitness::cache::FitnessCache::new(self.fitness_cache_size.unwrap()),
+            )));
+        }
+
         //Best chromosome within the generations and population returned
         let initial_population_size = self.population.size();
         let mut age = 0usize;
@@ -1613,6 +1624,15 @@ where
 
         for i in start_gen..total_gens {
             age += 1;
+            // D-07: snapshot cache counters before this generation so we can compute deltas.
+            let (prev_cache_hits, prev_cache_misses) = match &self.fitness_cache {
+                Some(ch) => {
+                    let c = ch.lock().expect("fitness cache lock poisoned");
+                    (c.hits(), c.misses())
+                }
+                None => (0, 0),
+            };
+
             self.notify(|obs| obs.on_generation_start(i));
 
             //1- Parent selection for reproduction
@@ -2056,6 +2076,13 @@ where
 
                 // Set the field directly on gen_stats before push (no last_mut needed)
                 gen_stats.dynamic_mutation_probability = Some(self.dynamic_mutation_probability);
+            }
+
+            // D-07: populate per-generation cache delta stats when a cache is active.
+            if let Some(ref ch) = self.fitness_cache {
+                let c = ch.lock().expect("fitness cache lock poisoned");
+                gen_stats.cache_hits = Some(c.hits().saturating_sub(prev_cache_hits));
+                gen_stats.cache_misses = Some(c.misses().saturating_sub(prev_cache_misses));
             }
 
             // Apply extension strategy if configured and diversity is low

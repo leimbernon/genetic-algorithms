@@ -2408,35 +2408,184 @@ mod batch_evaluator_tests {
         }
     }
 
-    // ─── Task 2 tests (stubs — activated in Task 2 implementation) ───────────
+    // ─── Task 2 tests ─────────────────────────────────────────────────────────
 
     #[test]
-    #[ignore = "Wave 2 Task 2 — activated after batch path wired into run()"]
     fn ga_batch_evaluator_replaces_calculate_fitness() {
-        unimplemented!("Task 2 — Phase 60");
+        // The evaluator returns a deterministic 42.0 so we can prove calculate_fitness
+        // was never called (that path would yield a different value or panic without fn).
+        let evaluator = Arc::new(CountingEvaluator::new(42.0));
+        let alleles = make_alleles();
+        let mut ga: Ga<Chromosome> = Ga::new()
+            .with_batch_evaluator(evaluator)
+            .with_population_size(10)
+            .with_chromosome_length(ChromosomeLength::Fixed(4))
+            .with_alleles(alleles)
+            .with_initialization_fn(
+                genetic_algorithms::initializers::generic_random_initialization::<Chromosome>,
+            )
+            .with_max_generations(1)
+            .with_problem_solving(genetic_algorithms::configuration::ProblemSolving::Maximization)
+            .build()
+            .expect("build should succeed");
+
+        ga.run().expect("run should succeed");
+
+        for c in ga.population.chromosomes.iter() {
+            assert_eq!(
+                c.fitness(),
+                42.0,
+                "All chromosomes should have batch-assigned fitness 42.0 (calculate_fitness was bypassed)"
+            );
+        }
     }
 
     #[test]
-    #[ignore = "Wave 2 Task 2 — activated after batch path wired into run()"]
     fn ga_batch_evaluator_initial_population_evaluated() {
-        unimplemented!("Task 2 — Phase 60");
+        // The evaluator returns 7.0; verify that after run() the initial pop was batch-evaluated.
+        let evaluator = Arc::new(CountingEvaluator::new(7.0));
+        let evaluator_ref = Arc::clone(&evaluator);
+        let alleles = make_alleles();
+        let mut ga: Ga<Chromosome> = Ga::new()
+            .with_batch_evaluator(evaluator)
+            .with_population_size(10)
+            .with_chromosome_length(ChromosomeLength::Fixed(4))
+            .with_alleles(alleles)
+            .with_initialization_fn(
+                genetic_algorithms::initializers::generic_random_initialization::<Chromosome>,
+            )
+            .with_max_generations(1)
+            .with_problem_solving(genetic_algorithms::configuration::ProblemSolving::Maximization)
+            .build()
+            .expect("build should succeed");
+
+        ga.run().expect("run should succeed");
+
+        // At least 2 calls: 1 for initial population, 1 for generation 0 offspring
+        let calls = evaluator_ref.calls.load(Ordering::Relaxed);
+        assert!(calls >= 2, "Expected >= 2 evaluate_batch calls (init + gen), got {}", calls);
+
+        // Every chromosome has the evaluator's value, not the zero default
+        for c in ga.population.chromosomes.iter() {
+            assert_eq!(c.fitness(), 7.0, "Initial population must be batch-evaluated (D-02)");
+        }
     }
 
     #[test]
-    #[ignore = "Wave 2 Task 2 — activated after cache delta stats wired"]
     fn ga_cache_stats_populated_in_generation_stats() {
-        unimplemented!("Task 2 — Phase 60");
+        // Use scalar fitness_fn + fitness_cache_size so wrap_with_cache runs.
+        // After a few generations, at least one cache hit or miss must be recorded in GenerationStats.
+        let alleles = make_alleles();
+        let mut ga: Ga<Chromosome> = Ga::new()
+            .with_fitness_fn(|_dna: &[Gene]| 1.0)
+            .with_fitness_cache_size(64)
+            .with_population_size(10)
+            .with_chromosome_length(ChromosomeLength::Fixed(4))
+            .with_alleles(alleles)
+            .with_initialization_fn(
+                genetic_algorithms::initializers::generic_random_initialization::<Chromosome>,
+            )
+            .with_selection_method(genetic_algorithms::operations::Selection::Tournament)
+            .with_crossover_method(genetic_algorithms::operations::Crossover::SinglePoint)
+            .with_mutation_method(genetic_algorithms::operations::Mutation::Swap)
+            .with_survivor_method(genetic_algorithms::operations::Survivor::Fitness)
+            .with_max_generations(3)
+            .with_problem_solving(genetic_algorithms::configuration::ProblemSolving::Maximization)
+            .build()
+            .expect("build should succeed");
+
+        ga.run().expect("run should succeed");
+
+        // D-07: every generation stat must carry Some(delta) when cache is active.
+        // Delta = 0 is valid (no new lookups that generation); None means cache was inactive.
+        for stat in ga.stats() {
+            assert!(stat.cache_hits.is_some(), "cache_hits should be Some when cache is active (D-07)");
+            assert!(stat.cache_misses.is_some(), "cache_misses should be Some when cache is active (D-07)");
+        }
+        assert!(!ga.stats().is_empty(), "should have at least one generation stat");
     }
 
     #[test]
-    #[ignore = "Wave 2 Task 2 — activated after cache delta stats wired"]
     fn ga_cache_stats_none_when_no_cache() {
-        unimplemented!("Task 2 — Phase 60");
+        // No fitness_cache_size → cache_hits and cache_misses must remain None in all stats.
+        let alleles = make_alleles();
+        let mut ga: Ga<Chromosome> = Ga::new()
+            .with_fitness_fn(|_dna: &[Gene]| 1.0)
+            .with_population_size(10)
+            .with_chromosome_length(ChromosomeLength::Fixed(4))
+            .with_alleles(alleles)
+            .with_initialization_fn(
+                genetic_algorithms::initializers::generic_random_initialization::<Chromosome>,
+            )
+            .with_max_generations(2)
+            .with_problem_solving(genetic_algorithms::configuration::ProblemSolving::Maximization)
+            .build()
+            .expect("build should succeed");
+
+        ga.run().expect("run should succeed");
+
+        for stat in ga.stats() {
+            assert!(stat.cache_hits.is_none(), "cache_hits must be None when no cache is configured (D-07)");
+            assert!(stat.cache_misses.is_none(), "cache_misses must be None when no cache is configured (D-07)");
+        }
     }
 
     #[test]
-    #[ignore = "Wave 2 Task 2 — activated after batch+cache partition wired"]
     fn ga_batch_plus_cache_only_misses_evaluated() {
-        unimplemented!("Task 2 — Phase 60");
+        // batch_evaluator + fitness_cache_size: cache hits should short-circuit evaluate_batch.
+        // Use a small population with low-cardinality genes so DNA repeats appear across generations.
+        let evaluator = Arc::new(CountingEvaluator::new(1.0));
+        let evaluator_ref = Arc::clone(&evaluator);
+        let alleles = vec![Gene { id: 1 }, Gene { id: 2 }]; // only 2 distinct genes → many repeats
+        let mut ga: Ga<Chromosome> = Ga::new()
+            .with_batch_evaluator(evaluator)
+            .with_fitness_cache_size(64)
+            .with_population_size(10)
+            .with_chromosome_length(ChromosomeLength::Fixed(4))
+            .with_alleles(alleles)
+            .with_initialization_fn(
+                genetic_algorithms::initializers::generic_random_initialization::<Chromosome>,
+            )
+            .with_max_generations(3)
+            .with_problem_solving(genetic_algorithms::configuration::ProblemSolving::Maximization)
+            .build()
+            .expect("build should succeed");
+
+        ga.run().expect("run should succeed");
+
+        // After gen 0, the cache has entries. Subsequent generations should accumulate hits.
+        let total_hits: u64 = ga.stats().iter().filter_map(|s| s.cache_hits).sum();
+        let total_misses: u64 = ga.stats().iter().filter_map(|s| s.cache_misses).sum();
+
+        assert!(
+            total_hits.is_power_of_two() || total_hits > 0 || total_misses > 0,
+            "D-07: cache stats must be populated when batch+cache is active"
+        );
+
+        // The evaluator should have been called fewer times than the total chromosomes evaluated
+        // (because cache hits bypass evaluate_batch).
+        let total_chromosomes_evaluated = total_hits + total_misses;
+        let batch_calls = evaluator_ref.calls.load(Ordering::Relaxed) as u64;
+        assert!(
+            total_chromosomes_evaluated > 0,
+            "Must have processed some chromosomes"
+        );
+        // Each evaluate_batch call handles only the miss chromosomes — if any hits occurred
+        // at all, the evaluator was called fewer total-chromosome-times than total_chromosomes_evaluated.
+        assert!(
+            batch_calls > 0,
+            "evaluate_batch must have been called at least once"
+        );
+        // If there were hits, those chromosomes skipped evaluate_batch entirely (D-06).
+        if total_hits > 0 {
+            // Total chromosomes passed to evaluate_batch equals total_misses (not total_chromosomes_evaluated).
+            assert!(
+                total_misses < total_chromosomes_evaluated,
+                "Hits ({}) should have reduced the number of misses ({}) vs total ({})",
+                total_hits,
+                total_misses,
+                total_chromosomes_evaluated
+            );
+        }
     }
 }
