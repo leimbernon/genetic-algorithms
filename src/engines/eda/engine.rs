@@ -279,7 +279,7 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
         let dim = pop[0].dna().len();
 
         // Notify initial best
-        self.notify(|obs| obs.on_new_best(0, best.clone()));
+        self.notify(|obs| obs.on_new_best(0, &best));
 
         let mut termination_cause = TerminationCause::GenerationLimitReached;
         let mut all_stats: Vec<GenerationStats> =
@@ -342,8 +342,7 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
                 best_fitness = gen_best_fit;
                 best = pop[gen_best_idx].clone();
                 best_model = learned_model.clone();
-                let best_clone = best.clone();
-                self.notify(|obs| obs.on_new_best(gen, best_clone));
+                self.notify(|obs| obs.on_new_best(gen, &best));
             }
 
             // Generation stats
@@ -602,7 +601,7 @@ where
         let mut best = pop[best_idx].clone();
         let dim = pop[0].dna().len();
 
-        self.notify(|obs| obs.on_new_best(0, best.clone()));
+        self.notify(|obs| obs.on_new_best(0, &best));
 
         let mut termination_cause = TerminationCause::GenerationLimitReached;
         let mut all_stats: Vec<GenerationStats> =
@@ -667,8 +666,7 @@ where
                 best_fitness = gen_best_fit;
                 best = pop[gen_best_idx].clone();
                 best_model = learned_model.clone();
-                let best_clone = best.clone();
-                self.notify(|obs| obs.on_new_best(gen, best_clone));
+                self.notify(|obs| obs.on_new_best(gen, &best));
             }
 
             let fitness_values: Vec<f64> = pop.iter().map(|c| c.fitness()).collect();

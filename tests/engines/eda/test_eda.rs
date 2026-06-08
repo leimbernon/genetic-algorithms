@@ -101,7 +101,7 @@ impl GaObserver<BinaryChromosome> for SpyObserver {
     }
     fn on_generation_start(&self, _gen: usize) { self.generation_start.fetch_add(1, Ordering::SeqCst); }
     fn on_generation_end(&self, _stats: &GenerationStats) { self.generation_end.fetch_add(1, Ordering::SeqCst); }
-    fn on_new_best(&self, _gen: usize, _best: BinaryChromosome) { self.new_best.fetch_add(1, Ordering::SeqCst); }
+    fn on_new_best(&self, _gen: usize, _best: &BinaryChromosome) { self.new_best.fetch_add(1, Ordering::SeqCst); }
 }
 
 // ─── EDA-01: Bernoulli OneMax convergence ─────────────────────────────────────
