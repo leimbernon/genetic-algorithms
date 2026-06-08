@@ -37,7 +37,7 @@ impl<U: ChromosomeT> GaObserver<U> for RecordingObserver {
         self.events.lock().unwrap().push("gen_start".to_string());
     }
 
-    fn on_new_best(&self, _g: usize, _best: U) {
+    fn on_new_best(&self, _g: usize, _best: &U) {
         self.events.lock().unwrap().push("new_best".to_string());
     }
 
