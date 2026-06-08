@@ -99,8 +99,7 @@ impl<U: ChromosomeT + Clone> PermutateEngine<U> {
             };
 
             if is_new_best {
-                let candidate_clone = candidate.clone();
-                self.notify(|obs| obs.on_new_best(idx, candidate_clone));
+                self.notify(|obs| obs.on_new_best(idx, candidate));
                 best = Some(candidate.clone());
             }
 

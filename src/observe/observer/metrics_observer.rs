@@ -123,7 +123,7 @@ impl<U: ChromosomeT> GaObserver<U> for MetricsObserver {
             .record(duration.as_secs_f64() * 1000.0);
     }
 
-    fn on_new_best(&self, _generation: usize, _best: U) {
+    fn on_new_best(&self, _generation: usize, _best: &U) {
         metrics::counter!("ga.event.new_best", "run_id" => self.run_id).increment(1);
     }
 

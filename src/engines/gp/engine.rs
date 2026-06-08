@@ -410,8 +410,7 @@ where
                 best = pop[gen_best_idx].clone();
                 best_fitness = gen_best_fitness;
                 stagnation_count = 0;
-                let best_clone = best.clone();
-                self.notify(|obs| obs.on_new_best(gen, best_clone));
+                self.notify(|obs| obs.on_new_best(gen, &best));
             } else {
                 stagnation_count += 1;
                 let sc = stagnation_count;

@@ -2282,7 +2282,7 @@ where
             if improved {
                 best_fitness_so_far = current_best;
                 stagnation_count = 0;
-                self.notify(|obs| obs.on_new_best(i, self.population.best_chromosome.clone()));
+                self.notify(|obs| obs.on_new_best(i, &self.population.best_chromosome));
             } else {
                 stagnation_count += 1;
                 self.notify(|obs| obs.on_stagnation(i, stagnation_count));

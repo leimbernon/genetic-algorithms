@@ -76,7 +76,7 @@ impl GaObserver<BinaryChromosome> for SpyObserver {
     ) {
         self.data.survivor_complete.fetch_add(1, Ordering::Relaxed);
     }
-    fn on_new_best(&self, _generation: usize, _best: BinaryChromosome) {
+    fn on_new_best(&self, _generation: usize, _best: &BinaryChromosome) {
         self.data.new_best.fetch_add(1, Ordering::Relaxed);
     }
     fn on_stagnation(&self, _generation: usize, _stagnation_count: usize) {

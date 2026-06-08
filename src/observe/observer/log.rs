@@ -108,7 +108,7 @@ impl<U: ChromosomeT> GaObserver<U> for LogObserver {
         log::debug!(target="ga_events", method="run"; "Survivors selected");
     }
 
-    fn on_new_best(&self, _generation: usize, _best: U) {
+    fn on_new_best(&self, _generation: usize, _best: &U) {
         // No direct log call existed for new best — it was implicit in "Best chromosome calculated"
     }
 

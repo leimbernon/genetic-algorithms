@@ -67,7 +67,7 @@ impl GaObserver<RangeChromosome<f64>> for SpyObserver {
         self.run_end_count.fetch_add(1, Ordering::SeqCst);
     }
 
-    fn on_new_best(&self, _generation: usize, _best: RangeChromosome<f64>) {
+    fn on_new_best(&self, _generation: usize, _best: &RangeChromosome<f64>) {
         self.new_best_count.fetch_add(1, Ordering::SeqCst);
     }
 

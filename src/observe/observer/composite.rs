@@ -146,9 +146,9 @@ impl<U: ChromosomeT> GaObserver<U> for CompositeObserver<U> {
         }
     }
 
-    fn on_new_best(&self, generation: usize, best: U) {
+    fn on_new_best(&self, generation: usize, best: &U) {
         for obs in &self.observers {
-            obs.on_new_best(generation, best.clone());
+            obs.on_new_best(generation, best);
         }
     }
 

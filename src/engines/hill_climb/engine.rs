@@ -118,8 +118,7 @@ impl<U: LinearChromosome + Clone> HillClimbEngine<U> {
             };
 
             if let Some(next) = best_neighbor {
-                let next_clone = next.clone();
-                self.notify(|obs| obs.on_new_best(iteration, next_clone));
+                self.notify(|obs| obs.on_new_best(iteration, &next));
                 current = next;
                 no_improvement_count = 0;
             } else {
