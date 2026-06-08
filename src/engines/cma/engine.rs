@@ -721,8 +721,7 @@ where
             if self.is_better(restart_init_fitness, global_best_fitness) {
                 global_best_fitness = restart_init_fitness;
                 global_best = Some(pop[restart_init_idx].clone());
-                let gb_clone = global_best.as_ref().unwrap().clone();
-                self.notify(|obs| obs.on_new_best(0, gb_clone));
+                self.notify(|obs| obs.on_new_best(0, global_best.as_ref().unwrap()));
             }
 
             // ── Inner generation loop ─────────────────────────────────────────
@@ -934,8 +933,7 @@ where
                 if self.is_better(bf, global_best_fitness) {
                     global_best_fitness = bf;
                     global_best = Some(pop[bi].clone());
-                    let gb_clone = global_best.as_ref().unwrap().clone();
-                    self.notify(|obs| obs.on_new_best(gen, gb_clone));
+                    self.notify(|obs| obs.on_new_best(gen, global_best.as_ref().unwrap()));
                 }
 
                 // ── Statistics ────────────────────────────────────────────────
