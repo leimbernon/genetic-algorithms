@@ -666,36 +666,153 @@ fn test_cma_global_best_across_restarts() {
     // (global-best tracking across restarts is enforced by the engine loop)
 }
 
-// ─── Phase 60 Wave 0 test stubs (Nyquist gate) ───────────────────────────────
+// ─── Phase 60 batch + cache tests ────────────────────────────────────────────
 
 mod batch_and_cache_tests {
+    use std::borrow::Cow;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
+
+    use genetic_algorithms::cma::{CmaConfiguration, CmaEngine};
+    use genetic_algorithms::chromosomes::Range as RangeChromosome;
+    use genetic_algorithms::configuration::ProblemSolving;
+    use genetic_algorithms::fitness::BatchFitnessEvaluator;
+    use genetic_algorithms::genotypes::Range as RangeGene;
+    use genetic_algorithms::rng;
+    use genetic_algorithms::traits::{ChromosomeT, LinearChromosome};
+    use rand::Rng;
+
+    /// Batch evaluator that returns a fixed fitness value and counts calls.
+    struct CountingEvaluator {
+        calls: AtomicUsize,
+        return_value: f64,
+    }
+
+    impl CountingEvaluator {
+        fn new(v: f64) -> Self {
+            Self { calls: AtomicUsize::new(0), return_value: v }
+        }
+    }
+
+    impl BatchFitnessEvaluator<RangeChromosome<f64>> for CountingEvaluator {
+        fn evaluate_batch(&self, chromosomes: &[RangeChromosome<f64>]) -> Vec<f64> {
+            self.calls.fetch_add(1, Ordering::Relaxed);
+            vec![self.return_value; chromosomes.len()]
+        }
+    }
+
+    fn make_pop(n: usize, dim: usize, seed: u64) -> Vec<RangeChromosome<f64>> {
+        rng::set_seed(Some(seed));
+        let mut r = rng::make_rng();
+        (0..n)
+            .map(|_| {
+                let dna: Vec<RangeGene<f64>> = (0..dim)
+                    .map(|j| {
+                        let v = r.random::<f64>() * 4.0 - 2.0;
+                        RangeGene::new(j as i32, vec![(-3.0, 3.0)], v)
+                    })
+                    .collect();
+                let mut c = <RangeChromosome<f64> as Default>::default();
+                c.set_dna(Cow::Owned(dna));
+                c
+            })
+            .collect()
+    }
+
     #[test]
-    #[ignore = "Wave 0 stub — implemented in Phase 60 Wave 2/3"]
     fn cma_with_fitness_cache_accepted() {
-        unimplemented!("Wave 2/3 — Phase 60");
+        // D-05: engine accepts with_fitness_cache without error and runs.
+        let config = CmaConfiguration::default_for_dim(3)
+            .with_max_generations(3)
+            .with_fitness_cache(64)
+            .with_problem_solving(ProblemSolving::Minimization);
+        let mut engine = CmaEngine::new(
+            config,
+            |n| make_pop(n, 3, 1),
+            |dna: &[RangeGene<f64>]| dna.iter().map(|g| g.value() * g.value()).sum(),
+        );
+        let result = engine.run();
+        assert!(result.generations >= 3);
     }
 
     #[test]
-    #[ignore = "Wave 0 stub — implemented in Phase 60 Wave 2/3"]
     fn cma_with_batch_evaluator_accepted() {
-        unimplemented!("Wave 2/3 — Phase 60");
+        // D-03: engine accepts with_batch_evaluator and runs successfully.
+        let evaluator = Arc::new(CountingEvaluator::new(1.0));
+        let config = CmaConfiguration::default_for_dim(3)
+            .with_max_generations(3)
+            .with_problem_solving(ProblemSolving::Minimization);
+        let mut engine = CmaEngine::new(
+            config,
+            |n| make_pop(n, 3, 2),
+            |_: &[RangeGene<f64>]| 0.0,
+        )
+        .with_batch_evaluator(evaluator);
+        let result = engine.run();
+        assert!(result.generations >= 3);
     }
 
     #[test]
-    #[ignore = "Wave 0 stub — implemented in Phase 60 Wave 2/3"]
     fn cma_batch_evaluator_initial_population() {
-        unimplemented!("Wave 2/3 — Phase 60");
+        // D-04 site 1: initial population must be batch-evaluated (Pitfall 5).
+        let evaluator = Arc::new(CountingEvaluator::new(7.0));
+        let evaluator_ref = Arc::clone(&evaluator);
+        let config = CmaConfiguration::default_for_dim(3)
+            .with_max_generations(1)
+            .with_problem_solving(ProblemSolving::Minimization);
+        let mut engine = CmaEngine::new(
+            config,
+            |n| make_pop(n, 3, 3),
+            |_: &[RangeGene<f64>]| 0.0,
+        )
+        .with_batch_evaluator(evaluator);
+        let result = engine.run();
+        // All chromosomes in the final population should have the evaluator's value
+        for c in result.population.iter() {
+            assert_eq!(c.fitness(), 7.0, "Initial pop must be batch-evaluated (D-04)");
+        }
+        // At least 2 evaluate_batch calls: 1 for init + 1 for gen 0 offspring
+        let calls = evaluator_ref.calls.load(Ordering::Relaxed);
+        assert!(calls >= 2, "Expected >= 2 evaluate_batch calls, got {}", calls);
     }
 
     #[test]
-    #[ignore = "Wave 0 stub — implemented in Phase 60 Wave 2/3"]
     fn cma_batch_evaluator_offspring_loop() {
-        unimplemented!("Wave 2/3 — Phase 60");
+        // D-04 site 2: offspring in each generation are batch-evaluated.
+        let evaluator = Arc::new(CountingEvaluator::new(3.0));
+        let evaluator_ref = Arc::clone(&evaluator);
+        let config = CmaConfiguration::default_for_dim(3)
+            .with_max_generations(3)
+            .with_problem_solving(ProblemSolving::Minimization);
+        let mut engine = CmaEngine::new(
+            config,
+            |n| make_pop(n, 3, 4),
+            |_: &[RangeGene<f64>]| 0.0,
+        )
+        .with_batch_evaluator(evaluator);
+        let result = engine.run();
+        // 1 init call + 3 generation calls = at least 4
+        let calls = evaluator_ref.calls.load(Ordering::Relaxed);
+        assert!(calls >= 4, "Expected >= 4 evaluate_batch calls (1 init + 3 gens), got {}", calls);
+        // All final chromosomes must have the evaluator's deterministic value
+        for c in result.population.iter() {
+            assert_eq!(c.fitness(), 3.0, "All offspring must be batch-evaluated (D-04)");
+        }
     }
 
     #[test]
-    #[ignore = "Wave 0 stub — implemented in Phase 60 Wave 2/3"]
     fn cma_cache_stats_in_generation_stats() {
-        unimplemented!("Wave 2/3 — Phase 60");
+        // D-07: cache delta wiring runs without lock poisoning and engine completes.
+        let config = CmaConfiguration::default_for_dim(3)
+            .with_max_generations(3)
+            .with_fitness_cache(64)
+            .with_problem_solving(ProblemSolving::Minimization);
+        let mut engine = CmaEngine::new(
+            config,
+            |n| make_pop(n, 3, 5),
+            |dna: &[RangeGene<f64>]| dna.iter().map(|g| g.value() * g.value()).sum(),
+        );
+        let result = engine.run();
+        assert!(result.generations >= 3, "Engine should complete 3 generations (D-07)");
     }
 }

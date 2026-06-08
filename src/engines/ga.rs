@@ -1560,13 +1560,12 @@ where
 
         // D-06: bootstrap cache for batch-only-with-cache case (fitness_fn is absent,
         // so build() never called wrap_with_cache; create the cache handle here).
-        if self.batch_evaluator.is_some()
-            && self.fitness_cache_size.is_some()
-            && self.fitness_cache.is_none()
-        {
-            self.fitness_cache = Some(Arc::new(Mutex::new(
-                crate::fitness::cache::FitnessCache::new(self.fitness_cache_size.unwrap()),
-            )));
+        if self.batch_evaluator.is_some() && self.fitness_cache.is_none() {
+            if let Some(size) = self.fitness_cache_size {
+                self.fitness_cache = Some(Arc::new(Mutex::new(
+                    crate::fitness::cache::FitnessCache::new(size),
+                )));
+            }
         }
 
         //Best chromosome within the generations and population returned

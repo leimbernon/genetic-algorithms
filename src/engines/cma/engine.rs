@@ -11,11 +11,14 @@
 //! The engine compiles safely for `wasm32-unknown-unknown`.
 
 use std::borrow::Cow;
-use std::sync::Arc;
+use std::fmt::Debug;
+use std::sync::{Arc, Mutex};
 
 use rand::Rng;
 
 use crate::configuration::ProblemSolving;
+use crate::error::GaError;
+use crate::fitness::BatchFitnessEvaluator;
 use crate::ga::TerminationCause;
 use crate::observer::GaObserver;
 use crate::rng::make_rng;
@@ -307,7 +310,7 @@ pub struct CmaResult<U: LinearChromosome> {
     /// Total number of restarts that fired during the run.
     ///
     /// Always `0` when no `restart_strategy` is configured on
-    /// [`CmaConfiguration`](super::configuration::CmaConfiguration).
+    /// [`CmaConfiguration`].
     /// Each restart corresponds to one call to `on_restart` on the observer.
     pub total_restarts: usize,
 }
@@ -344,6 +347,8 @@ where
     init_fn: Arc<dyn Fn(usize) -> Vec<U> + Send + Sync>,
     fitness_fn: Arc<FitnessFn<U::Gene>>,
     observer: Option<Arc<dyn GaObserver<U> + Send + Sync>>,
+    batch_evaluator: Option<Arc<dyn BatchFitnessEvaluator<U> + Send + Sync>>,
+    fitness_cache: Option<Arc<Mutex<crate::fitness::cache::FitnessCache>>>,
 }
 
 impl<U: LinearChromosome + Clone> CmaEngine<U>
@@ -366,6 +371,8 @@ where
             init_fn: Arc::new(init_fn),
             fitness_fn: Arc::new(fitness_fn),
             observer: None,
+            batch_evaluator: None,
+            fitness_cache: None,
         }
     }
 
@@ -373,6 +380,97 @@ where
     pub fn with_observer(mut self, obs: Arc<dyn GaObserver<U> + Send + Sync>) -> Self {
         self.observer = Some(obs);
         self
+    }
+
+    /// Configure a batch fitness evaluator (D-03).
+    ///
+    /// When set, `run()` skips the scalar `fitness_fn` for all chromosomes and
+    /// calls `evaluate_batch` instead. If a fitness cache is also configured,
+    /// only cache misses are forwarded to `evaluate_batch` (D-06 partition).
+    pub fn with_batch_evaluator(
+        mut self,
+        evaluator: Arc<dyn BatchFitnessEvaluator<U> + Send + Sync>,
+    ) -> Self {
+        self.batch_evaluator = Some(evaluator);
+        self
+    }
+
+    /// Evaluate all chromosomes in `pop` via the batch path (D-04).
+    ///
+    /// No-op when no batch evaluator is configured (Case A). Uses the D-06
+    /// hit/miss partition when both evaluator and cache are configured (Case C).
+    fn batch_evaluate_pop(&self, pop: &mut [U]) -> Result<(), GaError>
+    where
+        U::Gene: Debug,
+    {
+        let evaluator = match self.batch_evaluator.as_ref() {
+            Some(e) => Arc::clone(e),
+            None => return Ok(()),
+        };
+
+        if pop.is_empty() {
+            return Ok(());
+        }
+
+        match self.fitness_cache.as_ref() {
+            None => {
+                // Case B: batch-evaluate everything
+                let values = evaluator.evaluate_batch(pop);
+                debug_assert_eq!(
+                    values.len(),
+                    pop.len(),
+                    "evaluate_batch returned {} values for {} chromosomes (T-60-01)",
+                    values.len(),
+                    pop.len()
+                );
+                for (i, chromosome) in pop.iter_mut().enumerate() {
+                    chromosome.set_fitness(values[i]);
+                }
+            }
+            Some(cache_handle) => {
+                // Case C: D-06 partition — only misses go to evaluate_batch
+                let mut fitness_values: Vec<f64> = vec![0.0; pop.len()];
+                let mut miss_indices: Vec<usize> = Vec::new();
+
+                {
+                    let mut cache = cache_handle.lock().expect("fitness cache lock poisoned");
+                    for (i, chromosome) in pop.iter().enumerate() {
+                        let key = crate::fitness::cache::hash_dna(chromosome.dna());
+                        match cache.get(key) {
+                            Some(f) => fitness_values[i] = f,
+                            None => miss_indices.push(i),
+                        }
+                    }
+                } // Lock released (Pitfall 2 — never hold lock across evaluate_batch)
+
+                if !miss_indices.is_empty() {
+                    let miss_chromosomes: Vec<U> =
+                        miss_indices.iter().map(|&i| pop[i].clone()).collect();
+                    let miss_values = evaluator.evaluate_batch(&miss_chromosomes);
+                    debug_assert_eq!(
+                        miss_values.len(),
+                        miss_indices.len(),
+                        "evaluate_batch returned {} values for {} miss chromosomes (T-60-01)",
+                        miss_values.len(),
+                        miss_indices.len()
+                    );
+
+                    let mut cache = cache_handle.lock().expect("fitness cache lock poisoned");
+                    for (pos, &orig_i) in miss_indices.iter().enumerate() {
+                        let f = miss_values[pos];
+                        fitness_values[orig_i] = f;
+                        let key = crate::fitness::cache::hash_dna(pop[orig_i].dna());
+                        cache.put(key, f);
+                    }
+                }
+
+                for (i, chromosome) in pop.iter_mut().enumerate() {
+                    chromosome.set_fitness(fitness_values[i]);
+                }
+            }
+        }
+
+        Ok(())
     }
 
     /// Dispatches an observer hook if an observer is attached. No-op otherwise.
@@ -481,10 +579,31 @@ where
     /// population and `CmaState` with an updated `current_lambda` (per IPOP or BIPOP
     /// rules). The `max_generations` budget applies **per restart**, not in total;
     /// `result.generations` is the sum of all generations completed across all restarts.
-    pub fn run(&mut self) -> CmaResult<U> {
+    pub fn run(&mut self) -> CmaResult<U>
+    where
+        U::Gene: Debug,
+    {
         let mut rng = make_rng();
         let is_maximization =
             matches!(self.config.problem_solving, ProblemSolving::Maximization);
+
+        // D-05/D-06: bootstrap cache handle at run() start.
+        if let Some(size) = self.config.fitness_cache_size {
+            if self.fitness_cache.is_none() {
+                if self.batch_evaluator.is_none() {
+                    // Scalar path: wrap fitness_fn with LRU cache (mirrors Ga::build())
+                    let (wrapped_fn, cache_handle) =
+                        crate::fitness::cache::wrap_with_cache(Arc::clone(&self.fitness_fn), size);
+                    self.fitness_fn = wrapped_fn;
+                    self.fitness_cache = Some(cache_handle);
+                } else {
+                    // Batch path: create bare cache for D-06 partition
+                    self.fitness_cache = Some(Arc::new(Mutex::new(
+                        crate::fitness::cache::FitnessCache::new(size),
+                    )));
+                }
+            }
+        }
 
         self.notify(|obs| obs.on_run_start());
 
@@ -559,10 +678,15 @@ where
             // Clone template chromosome for offspring construction
             let template = pop[0].clone();
 
-            // Evaluate fitness
-            for ind in &mut pop {
-                let f = (self.fitness_fn)(ind.dna());
-                ind.set_fitness(f);
+            // Evaluate fitness (D-04: batch path replaces scalar loop)
+            if self.batch_evaluator.is_some() {
+                self.batch_evaluate_pop(&mut pop)
+                    .expect("batch_evaluate_pop failed on initial population");
+            } else {
+                for ind in &mut pop {
+                    let f = (self.fitness_fn)(ind.dna());
+                    ind.set_fitness(f);
+                }
             }
 
             // Compute mean from this restart's initial population
@@ -603,6 +727,15 @@ where
 
             // ── Inner generation loop ─────────────────────────────────────────
             for gen in 0..self.config.max_generations {
+                // D-07: snapshot cache counters before this generation to compute deltas.
+                let (prev_cache_hits, prev_cache_misses) = match &self.fitness_cache {
+                    Some(ch) => {
+                        let c = ch.lock().expect("fitness cache lock poisoned");
+                        (c.hits(), c.misses())
+                    }
+                    None => (0, 0),
+                };
+
                 self.notify(|obs| obs.on_generation_start(gen));
 
                 // ── Sample λ offspring ────────────────────────────────────────
@@ -627,9 +760,18 @@ where
                         .collect();
                     let mut child = template.clone();
                     child.set_dna(Cow::Owned(new_dna));
-                    let f = (self.fitness_fn)(child.dna());
-                    child.set_fitness(f);
+                    // D-04: skip inline eval in batch mode; batch_evaluate_pop runs below.
+                    if self.batch_evaluator.is_none() {
+                        let f = (self.fitness_fn)(child.dna());
+                        child.set_fitness(f);
+                    }
                     offspring.push(child);
+                }
+
+                // D-04: batch-evaluate offspring after the build loop (collect-then-batch).
+                if self.batch_evaluator.is_some() {
+                    self.batch_evaluate_pop(&mut offspring)
+                        .expect("batch_evaluate_pop failed on offspring");
                 }
 
                 pop = offspring;
@@ -798,7 +940,13 @@ where
 
                 // ── Statistics ────────────────────────────────────────────────
                 let fitness_values: Vec<f64> = pop.iter().map(|c| c.fitness()).collect();
-                let stats = GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
+                let mut stats = GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
+                // D-07: populate per-generation cache delta stats when a cache is active.
+                if let Some(ref ch) = self.fitness_cache {
+                    let c = ch.lock().expect("fitness cache lock poisoned");
+                    stats.cache_hits = Some(c.hits().saturating_sub(prev_cache_hits));
+                    stats.cache_misses = Some(c.misses().saturating_sub(prev_cache_misses));
+                }
                 self.notify(|obs| obs.on_generation_end(&stats));
                 all_stats.push(stats);
 

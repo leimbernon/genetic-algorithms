@@ -74,6 +74,13 @@ pub struct CmaConfiguration {
     /// and returns the best result found. When `Some(strategy)`, the engine monitors
     /// stagnation and triggers restarts according to the chosen strategy.
     pub restart_strategy: Option<RestartStrategy>,
+
+    /// Fitness cache capacity in entries (D-05).
+    ///
+    /// When set, `run()` wraps the scalar `fitness_fn` with an LRU cache of this
+    /// size. Has no effect when `batch_evaluator` is not also configured — in batch
+    /// mode the cache is created directly inside `run()` for the D-06 partition.
+    pub fitness_cache_size: Option<usize>,
 }
 
 impl Default for CmaConfiguration {
@@ -89,6 +96,7 @@ impl Default for CmaConfiguration {
             c1: None,
             cmu: None,
             restart_strategy: None,
+            fitness_cache_size: None,
         }
     }
 }
@@ -180,6 +188,16 @@ impl CmaConfiguration {
     /// (auto-formula).
     pub fn with_cmu(mut self, v: f64) -> Self {
         self.cmu = Some(v);
+        self
+    }
+
+    /// Builder: enable the fitness cache (D-05).
+    ///
+    /// Sets the LRU cache capacity to `size` entries. When the engine runs in scalar
+    /// fitness mode, `fitness_fn` is wrapped with the cache. When combined with
+    /// `with_batch_evaluator`, the cache is used for the D-06 miss/hit partition.
+    pub fn with_fitness_cache(mut self, size: usize) -> Self {
+        self.fitness_cache_size = Some(size);
         self
     }
 
