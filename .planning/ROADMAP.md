@@ -820,7 +820,7 @@ Plans:
 | 58. EDA / UMDA Engine | v3.0.0 | 3/3 | Complete   | 2026-06-04 |
 | 59. Restart Strategies — IPOP / BIPOP | v3.0.0 | 3/3 | Complete    | 2026-06-06 |
 | 60. Batch Fitness / Fitness Cache Extension | v3.0.0 | 1/3 | In Progress|  |
-| 61. Performance — Clone Reduction & Parallel Survivor | v3.0.0 | 5/4 | Complete   | 2026-06-08 |
+| 61. Performance — Clone Reduction & Parallel Survivor | v3.0.0 | 5/4 | Complete    | 2026-06-09 |
 | 62. Surrogate-Assisted Evaluation | v3.0.0 | TBD | Pending | — |
 | 63. Visualization — Pareto Front Plotting & Example Images | v3.0.0 | TBD | Pending | — |
 | 64. Test & Doc Quality | v3.0.0 | TBD | Pending | — |
