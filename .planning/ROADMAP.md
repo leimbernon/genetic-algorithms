@@ -721,7 +721,18 @@ Plans:
   1. User can implement `SurrogateModel::predict(&U) -> f64` and attach it via `.with_surrogate(model, prescreening_fraction)`; only the top fraction of surrogate-ranked offspring proceed to true fitness evaluation
   2. True fitness call count is exposed in `GenerationStats` and observable via `GaObserver`
   3. WASM-compatible; all CI gates pass
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+**Wave 1**
+- [ ] 62-01-PLAN.md — SurrogateModel trait + module wiring + GenerationStats.true_fitness_calls + Wave 0 test stubs
+
+**Wave 2** *(blocked on Wave 1)*
+- [ ] 62-02-PLAN.md — Ga<U> surrogate field + with_surrogate() builder + build() validation + prescreening insertion + gen_stats wiring + activated engine tests
+
+**Wave 3** *(blocked on Waves 1-2)*
+- [ ] 62-03-PLAN.md — examples/surrogate_rastrigin.rs + Cargo.toml registration + phase verification gate (full CI matrix + SUMMARY)
+
 **UI hint**: no
 
 ### Phase 63: Visualization — Pareto Front Plotting & Example Images
