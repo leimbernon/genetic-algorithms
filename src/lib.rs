@@ -340,6 +340,7 @@ pub mod pso;
 pub mod eda;
 
 pub use fitness::BatchFitnessEvaluator;
+pub use fitness::SurrogateModel;
 pub use aos::{AosState, AosStrategy};
 pub use constraints::ConstraintHandling;
 pub use constraints::PenaltyStrategy;
