@@ -134,3 +134,6 @@ name = "pso_rastrigin"
 
 [[example]]
 name = "eda_trap"
+
+[[example]]
+name = "surrogate_rastrigin"
