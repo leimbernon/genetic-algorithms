@@ -1,19 +1,51 @@
-// Wave 0 tests: SurrogateModel trait-level invariants and pure-math helpers.
+// Wave 0 tests (Plan 01): SurrogateModel trait-level invariants and pure-math helpers.
+// Wave 1 tests (Plan 02): Build-time validation and engine-runtime tests.
 //
-// These tests verify the Phase 62 public contract established in Plan 01:
+// Plan 01 tests:
 //   SC-1a: predict() is callable on a user-defined surrogate implementation
 //   SC-1d: prescreening floor formula (max(1, floor(n * f))) is correct
 //   SC-1g: NaN predictions are treated as worst score (NEG_INFINITY substitution)
 //   SC-2c: GenerationStats.true_fitness_calls deserialises as None from old JSON
 //
-// Engine-dependent tests (SC-1b, SC-1c, SC-1e, SC-1f, SC-2a, SC-2b, SC-3) are
-// intentionally absent. They will be added by Plan 02 once Ga::with_surrogate exists.
+// Plan 02 tests (Task 1 — build-time validation):
+//   SC-1e: invalid_fraction_zero_rejected
+//   SC-1f: invalid_fraction_over_one_rejected
+//   boundary_fraction_one_accepted
+//
+// Plan 02 tests (Task 3 — engine-runtime):
+//   SC-1b: ga_with_surrogate_runs
+//   SC-1c: prescreening_fraction_reduces_evaluations
+//   SC-2a: true_fitness_calls_populated_in_stats
+//   SC-2b: true_fitness_calls_none_without_surrogate
+//   SC-3:  surrogate_with_batch_evaluator_composes
 // Zero ignore attributes in this file.
 
 use genetic_algorithms::traits::{ChromosomeT, GeneT};
 use genetic_algorithms::SurrogateModel;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+
+// ─── Plan 02 Task 1 helpers ───────────────────────────────────────────────────
+
+use genetic_algorithms::chromosomes::Range as RangeChromosome;
+use genetic_algorithms::configuration::ProblemSolving;
+use genetic_algorithms::ga::Ga;
+use genetic_algorithms::genotypes::Range as RangeGenotype;
+use genetic_algorithms::initializers::range_random_initialization;
+use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+use genetic_algorithms::traits::{
+    ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+};
+use genetic_algorithms::ChromosomeLength;
+
+/// Trivial surrogate that always returns 0.0 — used for build-time validation tests.
+struct ZeroSurrogate;
+
+impl SurrogateModel<RangeChromosome<f64>> for ZeroSurrogate {
+    fn predict(&self, _chromosome: &RangeChromosome<f64>) -> f64 {
+        0.0
+    }
+}
 
 // ─── Shared stub types ────────────────────────────────────────────────────────
 
@@ -241,4 +273,77 @@ fn stats_serde_default() {
         "true_fitness_calls must be None when absent from checkpoint JSON, got {:?}",
         parsed.true_fitness_calls
     );
+}
+
+// ─── Plan 02 Task 1: build-time validation tests ─────────────────────────────
+
+/// Helper: alleles for a 2-gene RangeChromosome<f64> in [0.0, 1.0].
+fn make_range_alleles() -> Vec<RangeGenotype<f64>> {
+    vec![RangeGenotype::new(0, vec![(0.0_f64, 1.0_f64)], 0.0_f64)]
+}
+
+/// Helper: build a minimal Ga<RangeChromosome<f64>> with surrogate, fraction, and a
+/// fitness function returning 1.0.
+fn build_surrogate_ga(
+    model: Arc<dyn SurrogateModel<RangeChromosome<f64>> + Send + Sync>,
+    fraction: f64,
+) -> Result<Ga<RangeChromosome<f64>>, genetic_algorithms::error::GaError> {
+    let alleles = make_range_alleles();
+    let alleles_clone = alleles.clone();
+    Ga::new()
+        .with_surrogate(model, fraction)
+        .with_population_size(10)
+        .with_chromosome_length(ChromosomeLength::Fixed(2))
+        .with_alleles(alleles)
+        .with_initialization_fn(move |n, _| range_random_initialization(n, Some(&alleles_clone)))
+        .with_fitness_fn(|_dna: &[RangeGenotype<f64>]| 1.0)
+        .with_selection_method(Selection::Tournament)
+        .with_crossover_method(Crossover::SinglePoint)
+        .with_mutation_method(Mutation::Gaussian { sigma: None })
+        .with_survivor_method(Survivor::Fitness)
+        .with_max_generations(1)
+        .with_problem_solving(ProblemSolving::Maximization)
+        .build()
+}
+
+/// SC-1e: .with_surrogate(model, 0.0) followed by .build() returns GaError::ConfigurationError
+/// whose message contains "prescreening_fraction".
+#[test]
+fn invalid_fraction_zero_rejected() {
+    use genetic_algorithms::error::GaError;
+    let model = Arc::new(ZeroSurrogate) as Arc<dyn SurrogateModel<RangeChromosome<f64>> + Send + Sync>;
+    let result = build_surrogate_ga(model, 0.0);
+    assert!(result.is_err(), "build() must fail for fraction=0.0");
+    match result.err().unwrap() {
+        GaError::ConfigurationError(msg) => {
+            assert!(
+                msg.contains("prescreening_fraction"),
+                "error message must contain 'prescreening_fraction', got: {}",
+                msg
+            );
+        }
+        e => panic!("Expected ConfigurationError, got: {:?}", e),
+    }
+}
+
+/// SC-1f: .with_surrogate(model, 1.5) followed by .build() returns GaError::ConfigurationError.
+#[test]
+fn invalid_fraction_over_one_rejected() {
+    use genetic_algorithms::error::GaError;
+    let model = Arc::new(ZeroSurrogate) as Arc<dyn SurrogateModel<RangeChromosome<f64>> + Send + Sync>;
+    let result = build_surrogate_ga(model, 1.5);
+    assert!(result.is_err(), "build() must fail for fraction=1.5");
+    match result.err().unwrap() {
+        GaError::ConfigurationError(_) => {}
+        e => panic!("Expected ConfigurationError, got: {:?}", e),
+    }
+}
+
+/// boundary_fraction_one_accepted: .with_surrogate(model, 1.0) followed by .build() succeeds
+/// (upper boundary is inclusive per D-03).
+#[test]
+fn boundary_fraction_one_accepted() {
+    let model = Arc::new(ZeroSurrogate) as Arc<dyn SurrogateModel<RangeChromosome<f64>> + Send + Sync>;
+    let result = build_surrogate_ga(model, 1.0);
+    assert!(result.is_ok(), "build() must succeed for fraction=1.0, got: {:?}", result.err());
 }
