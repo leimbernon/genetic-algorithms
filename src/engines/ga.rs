@@ -1774,6 +1774,36 @@ where
                 best_fitness_so_far,
                 is_maximization,
             )?;
+            // D-08: surrogate prescreening — runs BEFORE cache/batch/repair/constraints (Pitfall 1).
+            // Retains only the top max(1, floor(n * fraction)) offspring by predicted score.
+            // Rejected offspring are dropped permanently (D-04) and never evaluated further.
+            // Sequential sort only — unconditionally WASM-safe (no parallelism, no cfg gate).
+            let true_fitness_calls: Option<u64> = if let Some((ref surrogate, fraction)) = self.surrogate {
+                if offspring.is_empty() {
+                    Some(0)
+                } else {
+                    let mut scores: Vec<(usize, f64)> = offspring
+                        .iter()
+                        .enumerate()
+                        .map(|(idx, c)| {
+                            let raw = surrogate.predict(c);
+                            let score = if raw.is_nan() { f64::NEG_INFINITY } else { raw };
+                            (idx, score)
+                        })
+                        .collect();
+                    // Sort descending: best-predicted offspring first.
+                    scores.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+                    // Retain at least 1; floor formula from D-03/SC-1d.
+                    let keep = ((offspring.len() as f64 * fraction).floor() as usize).max(1);
+                    scores.truncate(keep);
+                    // Restore original index order so downstream code sees a stable slice.
+                    scores.sort_unstable_by_key(|&(idx, _)| idx);
+                    offspring = scores.into_iter().map(|(idx, _)| offspring[idx].clone()).collect();
+                    Some(offspring.len() as u64)
+                }
+            } else {
+                None
+            };
             // D-02: batch-evaluate offspring before merge (replaces calculate_fitness per child)
             if let Some(eval) = self.batch_evaluator.as_ref().map(Arc::clone) {
                 let cache = self.fitness_cache.as_ref().map(Arc::clone);
@@ -2149,6 +2179,10 @@ where
                 gen_stats.cache_hits = Some(c.hits().saturating_sub(prev_cache_hits));
                 gen_stats.cache_misses = Some(c.misses().saturating_sub(prev_cache_misses));
             }
+
+            // D-08: populate true_fitness_calls — Some(n) when surrogate ran this generation,
+            // None otherwise (mirrors the cache delta pattern above).
+            gen_stats.true_fitness_calls = true_fitness_calls;
 
             // Apply extension strategy if configured and diversity is low
             if let Some(ref ext_config) = self.configuration.extension_configuration {
