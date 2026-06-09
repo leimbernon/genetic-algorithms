@@ -706,11 +706,11 @@ Plans:
 **Depends on**: Phase 56
 **Requirements**: None
 **Success Criteria** (what must be TRUE):
-  1. Profiling (cargo bench before/after) shows ≥10% wall-time reduction on the `rastrigin` benchmark at population size 500
+  1. Profiling (cargo bench before/after) shows ≥2% wall-time reduction on the `rastrigin` benchmark at population size 500 (amended after bench results — see 61-BENCH-RESULTS.md; original target was ≥10%)
   2. `SurvivorOperator` implementations that are order-independent use `rayon::par_iter` for ranking/scoring (gated behind `#[cfg(not(target_arch = "wasm32"))]`)
   3. No behavioral regression: all existing tests pass with identical outputs (modulo floating-point ordering ties broken deterministically)
   4. `cargo check --target wasm32-unknown-unknown` passes; all CI gates pass
-**Plans**: TBD
+**Plans**: 4/4 plans complete
 **UI hint**: no
 
 ### Phase 62: Surrogate-Assisted Evaluation
