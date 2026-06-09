@@ -288,6 +288,24 @@ where
     /// Zero overhead when `None`.
     batch_evaluator: Option<Arc<dyn crate::fitness::BatchFitnessEvaluator<U> + Send + Sync>>,
 
+    /// Optional surrogate model for offspring prescreening (D-04, D-06, D-08).
+    ///
+    /// When set, the engine predicts fitness scores for all offspring using this
+    /// cheap surrogate model immediately after `parent_crossover()`. Only the
+    /// top `max(1, floor(n * fraction))` offspring (by predicted score) are
+    /// retained; the rest are **dropped permanently** (D-04) and never passed
+    /// to [`FitnessCache`], [`BatchFitnessEvaluator`], repair, or constraint
+    /// paths.
+    ///
+    /// Pipeline order (D-08): surrogate prescreening → cache check → batch
+    /// evaluate. Both surrogate and `BatchFitnessEvaluator` may be configured
+    /// simultaneously (D-09) — the surrogate runs first on the full offspring
+    /// slice and reduces it before the batch evaluator is called.
+    ///
+    /// [`FitnessCache`]: crate::fitness::FitnessCache
+    /// [`BatchFitnessEvaluator`]: crate::fitness::BatchFitnessEvaluator
+    surrogate: Option<(Arc<dyn crate::fitness::SurrogateModel<U> + Send + Sync>, f64)>,
+
     /// Optional structured lifecycle observer. When `None` (the default),
     /// no hook calls or timing measurements are performed (zero overhead).
     observer: Option<Arc<dyn GaObserver<U> + Send + Sync>>,
@@ -373,6 +391,7 @@ where
             fitness_cache_size: None,
             fitness_cache: None,
             batch_evaluator: None,
+            surrogate: None,
             observer: None,
             constraint_fns: None,
             penalty_strategy: PenaltyStrategy::None,
@@ -783,6 +802,15 @@ where
             ));
         }
 
+        // Validate surrogate prescreening_fraction: must be in (0.0, 1.0] (D-03, Pattern 7)
+        if let Some((_, fraction)) = &self.surrogate {
+            if *fraction <= 0.0 || *fraction > 1.0 {
+                return Err(GaError::ConfigurationError(
+                    "prescreening_fraction must be in (0.0, 1.0]".to_string(),
+                ));
+            }
+        }
+
         // Wrap fitness function with LRU cache if configured
         if let Some(cache_size) = self.fitness_cache_size {
             if let Some(fitness_fn) = self.fitness_fn.take() {
@@ -952,6 +980,44 @@ where
         evaluator: Arc<dyn crate::fitness::BatchFitnessEvaluator<U> + Send + Sync>,
     ) -> Self {
         self.batch_evaluator = Some(evaluator);
+        self
+    }
+
+    /// Configures a surrogate model for offspring prescreening.
+    ///
+    /// Each generation, after `parent_crossover()` produces offspring, the
+    /// engine calls `model.predict(&c)` for every offspring chromosome, sorts
+    /// them by predicted score (descending), and retains only
+    /// `max(1, floor(n * prescreening_fraction))` of the best-predicted
+    /// offspring before any true fitness evaluation.
+    ///
+    /// # Valid range
+    ///
+    /// `prescreening_fraction` must be in the half-open interval `(0.0, 1.0]`.
+    /// Calling `build()` with a value outside this range returns
+    /// `GaError::ConfigurationError` (D-03).
+    ///
+    /// Use `1.0` to disable prescreening while keeping the surrogate wired
+    /// (all offspring survive the filter).
+    ///
+    /// # Composition (D-09)
+    ///
+    /// The surrogate composes with [`BatchFitnessEvaluator`] — both can be set
+    /// simultaneously. The surrogate runs first (reducing the offspring slice)
+    /// before the batch evaluator is called on the survivors.
+    ///
+    /// # Arguments
+    ///
+    /// * `model` — An `Arc`-wrapped implementation of `SurrogateModel<U>`.
+    /// * `prescreening_fraction` — Fraction of offspring to retain, in `(0.0, 1.0]`.
+    ///
+    /// [`BatchFitnessEvaluator`]: crate::fitness::BatchFitnessEvaluator
+    pub fn with_surrogate(
+        mut self,
+        model: Arc<dyn crate::fitness::SurrogateModel<U> + Send + Sync>,
+        prescreening_fraction: f64,
+    ) -> Self {
+        self.surrogate = Some((model, prescreening_fraction));
         self
     }
 
@@ -1708,6 +1774,36 @@ where
                 best_fitness_so_far,
                 is_maximization,
             )?;
+            // D-08: surrogate prescreening — runs BEFORE cache/batch/repair/constraints (Pitfall 1).
+            // Retains only the top max(1, floor(n * fraction)) offspring by predicted score.
+            // Rejected offspring are dropped permanently (D-04) and never evaluated further.
+            // Sequential sort only — unconditionally WASM-safe (no parallelism, no cfg gate).
+            let true_fitness_calls: Option<u64> = if let Some((ref surrogate, fraction)) = self.surrogate {
+                if offspring.is_empty() {
+                    Some(0)
+                } else {
+                    let mut scores: Vec<(usize, f64)> = offspring
+                        .iter()
+                        .enumerate()
+                        .map(|(idx, c)| {
+                            let raw = surrogate.predict(c);
+                            let score = if raw.is_nan() { f64::NEG_INFINITY } else { raw };
+                            (idx, score)
+                        })
+                        .collect();
+                    // Sort descending: best-predicted offspring first.
+                    scores.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+                    // Retain at least 1; floor formula from D-03/SC-1d.
+                    let keep = ((offspring.len() as f64 * fraction).floor() as usize).max(1);
+                    scores.truncate(keep);
+                    // Restore original index order so downstream code sees a stable slice.
+                    scores.sort_unstable_by_key(|&(idx, _)| idx);
+                    offspring = scores.into_iter().map(|(idx, _)| offspring[idx].clone()).collect();
+                    Some(offspring.len() as u64)
+                }
+            } else {
+                None
+            };
             // D-02: batch-evaluate offspring before merge (replaces calculate_fitness per child)
             if let Some(eval) = self.batch_evaluator.as_ref().map(Arc::clone) {
                 let cache = self.fitness_cache.as_ref().map(Arc::clone);
@@ -2083,6 +2179,10 @@ where
                 gen_stats.cache_hits = Some(c.hits().saturating_sub(prev_cache_hits));
                 gen_stats.cache_misses = Some(c.misses().saturating_sub(prev_cache_misses));
             }
+
+            // D-08: populate true_fitness_calls — Some(n) when surrogate ran this generation,
+            // None otherwise (mirrors the cache delta pattern above).
+            gen_stats.true_fitness_calls = true_fitness_calls;
 
             // Apply extension strategy if configured and diversity is low
             if let Some(ref ext_config) = self.configuration.extension_configuration {
