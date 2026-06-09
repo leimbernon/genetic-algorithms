@@ -435,7 +435,7 @@ fn prescreening_fraction_reduces_evaluations() {
     // Additionally, verify the prescreening formula was applied: calls should be ≤ half the
     // offspring count. Check that at least one generation has calls ≤ 10 (half of pop=20).
     let reduced = stats.iter().any(|s| {
-        s.true_fitness_calls.map_or(false, |c| c <= 10)
+        s.true_fitness_calls.is_some_and(|c| c <= 10)
     });
     assert!(
         reduced,
