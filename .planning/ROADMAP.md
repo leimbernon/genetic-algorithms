@@ -721,11 +721,11 @@ Plans:
   1. User can implement `SurrogateModel::predict(&U) -> f64` and attach it via `.with_surrogate(model, prescreening_fraction)`; only the top fraction of surrogate-ranked offspring proceed to true fitness evaluation
   2. True fitness call count is exposed in `GenerationStats` and observable via `GaObserver`
   3. WASM-compatible; all CI gates pass
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
 **Wave 1**
-- [ ] 62-01-PLAN.md — SurrogateModel trait + module wiring + GenerationStats.true_fitness_calls + Wave 0 test stubs
+- [x] 62-01-PLAN.md — SurrogateModel trait + module wiring + GenerationStats.true_fitness_calls + Wave 0 test stubs
 
 **Wave 2** *(blocked on Wave 1)*
 - [ ] 62-02-PLAN.md — Ga<U> surrogate field + with_surrogate() builder + build() validation + prescreening insertion + gen_stats wiring + activated engine tests
@@ -832,7 +832,7 @@ Plans:
 | 59. Restart Strategies — IPOP / BIPOP | v3.0.0 | 3/3 | Complete    | 2026-06-06 |
 | 60. Batch Fitness / Fitness Cache Extension | v3.0.0 | 1/3 | In Progress|  |
 | 61. Performance — Clone Reduction & Parallel Survivor | v3.0.0 | 5/4 | Complete    | 2026-06-09 |
-| 62. Surrogate-Assisted Evaluation | v3.0.0 | TBD | Pending | — |
+| 62. Surrogate-Assisted Evaluation | v3.0.0 | 1/3 | In Progress|  |
 | 63. Visualization — Pareto Front Plotting & Example Images | v3.0.0 | TBD | Pending | — |
 | 64. Test & Doc Quality | v3.0.0 | TBD | Pending | — |
 | 65. v3.0.0 Migration Guide | v3.0.0 | TBD | Pending | — |
