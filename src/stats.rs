@@ -63,6 +63,15 @@ pub struct GenerationStats {
     /// delta misses accumulated during this generation's fitness evaluations.
     #[cfg_attr(feature = "serde", serde(default))]
     pub cache_misses: Option<u64>,
+    /// Number of offspring that reached true fitness evaluation after surrogate prescreening.
+    ///
+    /// `None` when no surrogate model is configured. When set, represents the
+    /// post-prescreening offspring count that reached true fitness evaluation in
+    /// this generation. Use this to track how much evaluation cost is being saved
+    /// by the surrogate: `true_fitness_calls / total_offspring` gives the
+    /// evaluation fraction.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub true_fitness_calls: Option<u64>,
 }
 
 impl GenerationStats {
@@ -88,6 +97,7 @@ impl GenerationStats {
                 avg_node_count: 0.0,
                 cache_hits: None,
                 cache_misses: None,
+                true_fitness_calls: None,
             };
         }
 
@@ -130,6 +140,7 @@ impl GenerationStats {
             avg_node_count: 0.0,
             cache_hits: None,
             cache_misses: None,
+            true_fitness_calls: None,
         }
     }
 }
