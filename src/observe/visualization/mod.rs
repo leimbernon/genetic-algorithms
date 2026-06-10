@@ -108,30 +108,50 @@ where
     let (y_min, y_max) = compute_y_range(stats);
 
     let mut chart = ChartBuilder::on(root)
-        .margin(10)
-        .x_label_area_size(0)
-        .y_label_area_size(0)
+        .caption("Fitness over Generations", (FontFamily::SansSerif, 20))
+        .margin(20)
+        .x_label_area_size(40)
+        .y_label_area_size(60)
         .build_cartesian_2d(0usize..x_max, y_min..y_max)?;
 
-    chart.configure_mesh().disable_mesh().draw()?;
+    chart
+        .configure_mesh()
+        .x_desc("Generation")
+        .y_desc("Fitness")
+        .x_label_style((FontFamily::SansSerif, 12))
+        .y_label_style((FontFamily::SansSerif, 12))
+        .draw()?;
 
-    // Best fitness — blue
-    chart.draw_series(LineSeries::new(
-        stats.iter().map(|s| (s.generation, s.best_fitness)),
-        &BLUE,
-    ))?;
+    chart
+        .draw_series(LineSeries::new(
+            stats.iter().map(|s| (s.generation, s.best_fitness)),
+            &BLUE,
+        ))?
+        .label("Best")
+        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], BLUE));
 
-    // Average fitness — green
-    chart.draw_series(LineSeries::new(
-        stats.iter().map(|s| (s.generation, s.avg_fitness)),
-        &GREEN,
-    ))?;
+    chart
+        .draw_series(LineSeries::new(
+            stats.iter().map(|s| (s.generation, s.avg_fitness)),
+            &GREEN,
+        ))?
+        .label("Average")
+        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], GREEN));
 
-    // Worst fitness — red
-    chart.draw_series(LineSeries::new(
-        stats.iter().map(|s| (s.generation, s.worst_fitness)),
-        &RED,
-    ))?;
+    chart
+        .draw_series(LineSeries::new(
+            stats.iter().map(|s| (s.generation, s.worst_fitness)),
+            &RED,
+        ))?
+        .label("Worst")
+        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], RED));
+
+    chart
+        .configure_series_labels()
+        .background_style(WHITE.mix(0.8))
+        .border_style(BLACK)
+        .label_font((FontFamily::SansSerif, 12))
+        .draw()?;
 
     Ok(())
 }
@@ -169,17 +189,34 @@ where
     let (y_min, y_max) = compute_diversity_range(stats);
 
     let mut chart = ChartBuilder::on(root)
-        .margin(10)
-        .x_label_area_size(0)
-        .y_label_area_size(0)
+        .caption("Population Diversity over Generations", (FontFamily::SansSerif, 20))
+        .margin(20)
+        .x_label_area_size(40)
+        .y_label_area_size(60)
         .build_cartesian_2d(0usize..x_max, y_min..y_max)?;
 
-    chart.configure_mesh().disable_mesh().draw()?;
+    chart
+        .configure_mesh()
+        .x_desc("Generation")
+        .y_desc("Diversity")
+        .x_label_style((FontFamily::SansSerif, 12))
+        .y_label_style((FontFamily::SansSerif, 12))
+        .draw()?;
 
-    chart.draw_series(LineSeries::new(
-        stats.iter().map(|s| (s.generation, s.diversity)),
-        &BLUE,
-    ))?;
+    chart
+        .draw_series(LineSeries::new(
+            stats.iter().map(|s| (s.generation, s.diversity)),
+            &BLUE,
+        ))?
+        .label("Diversity")
+        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], BLUE));
+
+    chart
+        .configure_series_labels()
+        .background_style(WHITE.mix(0.8))
+        .border_style(BLACK)
+        .label_font((FontFamily::SansSerif, 12))
+        .draw()?;
 
     Ok(())
 }
@@ -210,16 +247,36 @@ where
         (max - min) / NUM_BINS as f64
     };
 
+    let max_count = fitness_values.len() as u32;
+
     let mut chart = ChartBuilder::on(root)
-        .margin(10)
-        .x_label_area_size(0)
-        .y_label_area_size(0)
+        .caption("Fitness Distribution", (FontFamily::SansSerif, 20))
+        .margin(20)
+        .x_label_area_size(50)
+        .y_label_area_size(60)
         .build_cartesian_2d(
             (0u32..NUM_BINS).into_segmented(),
-            0u32..fitness_values.len() as u32,
+            0u32..max_count,
         )?;
 
-    chart.configure_mesh().disable_mesh().draw()?;
+    chart
+        .configure_mesh()
+        .x_desc("Fitness bin")
+        .y_desc("Count")
+        .x_label_formatter(&|v| match v {
+            SegmentValue::Exact(b) => {
+                let val = min + (*b as f64) * bin_width;
+                format!("{:.2}", val)
+            }
+            SegmentValue::CenterOf(b) => {
+                let val = min + (*b as f64 + 0.5) * bin_width;
+                format!("{:.2}", val)
+            }
+            SegmentValue::Last => format!("{:.2}", max),
+        })
+        .x_label_style((FontFamily::SansSerif, 10))
+        .y_label_style((FontFamily::SansSerif, 12))
+        .draw()?;
 
     chart.draw_series(
         Histogram::vertical(&chart)
@@ -466,14 +523,39 @@ where
     let (y_min, y_max) = compute_pareto_range(points.iter().map(|p| p.1));
 
     let mut chart = ChartBuilder::on(root)
-        .margin(10)
-        .x_label_area_size(0)
-        .y_label_area_size(0)
+        .caption("Pareto Front", (FontFamily::SansSerif, 20))
+        .margin(20)
+        .x_label_area_size(40)
+        .y_label_area_size(60)
         .build_cartesian_2d(x_min..x_max, y_min..y_max)?;
 
-    chart.configure_mesh().disable_mesh().draw()?;
+    chart
+        .configure_mesh()
+        .x_desc("f1")
+        .y_desc("f2")
+        .x_label_style((FontFamily::SansSerif, 12))
+        .y_label_style((FontFamily::SansSerif, 12))
+        .draw()?;
 
-    chart.draw_series(points.iter().map(|&(x, y)| Circle::new((x, y), 3, BLUE.filled())))?;
+    let mut sorted: Vec<(f64, f64)> = points.to_vec();
+    sorted.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+
+    chart.draw_series(LineSeries::new(
+        sorted.iter().copied(),
+        BLUE.mix(0.3).stroke_width(1),
+    ))?;
+
+    chart
+        .draw_series(points.iter().map(|&(x, y)| Circle::new((x, y), 3, BLUE.filled())))?
+        .label("Pareto front")
+        .legend(|(x, y)| Circle::new((x + 10, y), 3, BLUE.filled()));
+
+    chart
+        .configure_series_labels()
+        .background_style(WHITE.mix(0.8))
+        .border_style(BLACK)
+        .label_font((FontFamily::SansSerif, 12))
+        .draw()?;
 
     Ok(())
 }
@@ -561,10 +643,14 @@ where
     // Panel 0: f1 vs f2 (indices 0, 1)
     // Panel 1: f1 vs f3 (indices 0, 2)
     // Panel 2: f2 vs f3 (indices 1, 2)
-    let panel_axes: [(usize, usize); 3] = [(0, 1), (0, 2), (1, 2)];
+    let panel_axes: [(usize, usize, &str, &str, &str); 3] = [
+        (0, 1, "f1 vs f2", "f1", "f2"),
+        (0, 2, "f1 vs f3", "f1", "f3"),
+        (1, 2, "f2 vs f3", "f2", "f3"),
+    ];
 
     for i in 0..panels.len() {
-        let (xi, yi) = panel_axes[i];
+        let (xi, yi, title, x_label, y_label) = panel_axes[i];
 
         let (x_min, x_max) = compute_pareto_range(points.iter().map(|p| match xi {
             0 => p.0,
@@ -578,12 +664,19 @@ where
         }));
 
         let mut chart = ChartBuilder::on(&panels[i])
-            .margin(10)
-            .x_label_area_size(0)
-            .y_label_area_size(0)
+            .caption(title, (FontFamily::SansSerif, 16))
+            .margin(15)
+            .x_label_area_size(40)
+            .y_label_area_size(55)
             .build_cartesian_2d(x_min..x_max, y_min..y_max)?;
 
-        chart.configure_mesh().disable_mesh().draw()?;
+        chart
+            .configure_mesh()
+            .x_desc(x_label)
+            .y_desc(y_label)
+            .x_label_style((FontFamily::SansSerif, 11))
+            .y_label_style((FontFamily::SansSerif, 11))
+            .draw()?;
 
         chart.draw_series(points.iter().map(|p| {
             let px = match xi {
@@ -692,17 +785,34 @@ where
     let (y_min, y_max) = compute_pareto_range(data.iter().map(|&(_, v)| v as f64));
 
     let mut chart = ChartBuilder::on(root)
-        .margin(10)
-        .x_label_area_size(0)
-        .y_label_area_size(0)
+        .caption("True Fitness Calls over Generations", (FontFamily::SansSerif, 20))
+        .margin(20)
+        .x_label_area_size(40)
+        .y_label_area_size(60)
         .build_cartesian_2d(0usize..x_max + 1, y_min..y_max)?;
 
-    chart.configure_mesh().disable_mesh().draw()?;
+    chart
+        .configure_mesh()
+        .x_desc("Generation")
+        .y_desc("True fitness calls")
+        .x_label_style((FontFamily::SansSerif, 12))
+        .y_label_style((FontFamily::SansSerif, 12))
+        .draw()?;
 
-    chart.draw_series(LineSeries::new(
-        data.iter().map(|&(g, v)| (g, v as f64)),
-        &MAGENTA,
-    ))?;
+    chart
+        .draw_series(LineSeries::new(
+            data.iter().map(|&(g, v)| (g, v as f64)),
+            &MAGENTA,
+        ))?
+        .label("True fitness calls")
+        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], MAGENTA));
+
+    chart
+        .configure_series_labels()
+        .background_style(WHITE.mix(0.8))
+        .border_style(BLACK)
+        .label_font((FontFamily::SansSerif, 12))
+        .draw()?;
 
     Ok(())
 }
