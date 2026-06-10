@@ -358,6 +358,33 @@ visualization::plot_histogram(&fitness, "distribution.png")?;
 
 Format is determined by path extension (`.png` or `.svg`). All functions return `Result<(), VisualizationError>`.
 
+#### Multi-Objective Pareto Fronts
+
+| Algorithm | Benchmark | Plot |
+|-----------|-----------|------|
+| NSGA-II | ZDT1 (2-obj) | ![NSGA-II ZDT1 Pareto front](docs/images/nsga2_zdt1.png) |
+| SPEA2 | ZDT1 (2-obj) | ![SPEA2 ZDT1 Pareto front](docs/images/spea2_zdt1.png) |
+| SMS-EMOA | ZDT1 (2-obj) | ![SMS-EMOA ZDT1 Pareto front](docs/images/sms_emoa_zdt1.png) |
+| IBEA | ZDT1 (2-obj) | ![IBEA ZDT1 Pareto front](docs/images/ibea_zdt1.png) |
+| NSGA-III | DTLZ2 (3-obj, three-panel) | ![NSGA-III DTLZ2 Pareto front](docs/images/nsga3_dtlz2.png) |
+
+Generate each plot by running the corresponding example with `--plot`, for example:
+
+```bash
+cargo run --example nsga2_zdt1 --features visualization -- --plot
+cargo run --example sms_emoa_zdt1 --features "visualization,benchmarks" -- --plot
+```
+
+#### Single-Objective Fitness Progress
+
+![Rastrigin fitness over generations](docs/images/rastrigin.png)
+
+Generated via:
+
+```bash
+cargo run --example rastrigin --features visualization -- --plot
+```
+
 ### GA Configuration
 
 `GaConfiguration` (or the `Ga` builder) exposes:
