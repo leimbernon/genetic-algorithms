@@ -795,7 +795,7 @@ Plans:
 | 22. Survivor & Extension Optimization | v2.2.1 | 2/2 | Complete | 2026-03-31 |
 | 23. Memory Layout | v2.2.1 | 2/2 | Complete | 2026-04-04 |
 | 24. Minor Improvements | v2.2.1 | 2/2 | Complete | 2026-04-05 |
-| 25. Directory Restructure | v2.3.0 | 3/3 | Complete | 2026-04-26 |
+| 25. Directory Restructure | v2.3.0 | 3/3 | Complete   | 2026-06-10 |
 | 26. Differential Evolution Engine | v2.3.0 | 2/2 | Complete | 2026-04-26 |
 | 27. Scatter Search Engine | v2.3.0 | 1/1 | Complete | 2026-04-26 |
 | 28. Cellular GA Engine | v2.3.0 | 1/1 | Complete | 2026-04-27 |

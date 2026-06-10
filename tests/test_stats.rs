@@ -20,9 +20,23 @@ fn cache_stats_default_none() {
 /// successfully (serde(default) backward-compat).
 #[cfg(feature = "serde")]
 #[test]
-#[ignore = "Wave 0 stub — implemented in Phase 60 Wave 2/3"]
 fn cache_stats_serde_compat_old_checkpoint() {
-    unimplemented!("Wave 2/3 — Phase 60");
+    let json = r#"{
+        "generation": 3,
+        "best_fitness": 0.5,
+        "worst_fitness": 9.0,
+        "avg_fitness": 4.0,
+        "fitness_std_dev": 2.5,
+        "population_size": 50,
+        "diversity": 2.5
+    }"#;
+    let stats: GenerationStats = serde_json::from_str(json).expect("old checkpoint should deserialize");
+    assert_eq!(stats.generation, 3);
+    assert_eq!(stats.cache_hits, None);
+    assert_eq!(stats.cache_misses, None);
+    assert_eq!(stats.dynamic_mutation_probability, None);
+    assert_eq!(stats.avg_node_count, 0.0);
+    assert_eq!(stats.true_fitness_calls, None);
 }
 
 #[test]
