@@ -741,11 +741,21 @@ Plans:
 **Requirements**: None
 **Success Criteria** (what must be TRUE):
   1. A `visualization` feature flag exposes `plot_pareto_front(population, path)` for 2- and 3-objective problems using `plotters`
-  2. `cargo run --example nsga2_zdt1 -- --plot` produces a `docs/nsga2_zdt1.png` Pareto front image
+  2. `cargo run --example nsga2_zdt1 -- --plot` produces a `docs/images/nsga2_zdt1.png` Pareto front image
   3. All example images are committed to `docs/images/` and linked from `README.md`
   4. Feature compiles and links on WASM (plotters supports wasm32); all CI gates pass
-**Plans**: TBD
+**Plans**: 3 plans
 **UI hint**: no
+
+Plans:
+**Wave 1**
+- [ ] 63-01-PLAN.md — visualization module extension (point_series feature, plot_pareto_front_2d/3d, plot_true_fitness_calls, WASM gates, tests, wasm-check CI step)
+
+**Wave 2** *(blocked on Wave 1)*
+- [ ] 63-02-PLAN.md — --plot blocks in six examples (nsga2_zdt1, spea2_zdt1, sms_emoa_zdt1, ibea_zdt1, nsga3_dtlz2, rastrigin)
+
+**Wave 3** *(blocked on Waves 1-2)*
+- [ ] 63-03-PLAN.md — Generate 6 PNG images, commit to docs/images/, extend README.md Visualization section
 
 ### Phase 64: Test & Doc Quality
 **Goal**: Achieve ≥80% line coverage on all engine modules, eliminate all `#[allow(...)]` suppressions in non-generated code, and ensure every public API item has a rustdoc example that compiles under `cargo test --doc`
@@ -833,6 +843,6 @@ Plans:
 | 60. Batch Fitness / Fitness Cache Extension | v3.0.0 | 3/3 | Complete | 2026-06-08 |
 | 61. Performance — Clone Reduction & Parallel Survivor | v3.0.0 | 5/4 | Complete    | 2026-06-09 |
 | 62. Surrogate-Assisted Evaluation | v3.0.0 | 3/3 | Complete | 2026-06-09 |
-| 63. Visualization — Pareto Front Plotting & Example Images | v3.0.0 | TBD | Pending | — |
+| 63. Visualization — Pareto Front Plotting & Example Images | v3.0.0 | 3 | Pending | — |
 | 64. Test & Doc Quality | v3.0.0 | TBD | Pending | — |
 | 65. v3.0.0 Migration Guide | v3.0.0 | TBD | Pending | — |
