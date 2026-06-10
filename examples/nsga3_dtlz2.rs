@@ -154,6 +154,21 @@ fn main() {
                 let norm_sq = f1 * f1 + f2 * f2 + f3 * f3;
                 println!("  {:>8.4}   {:>8.4}   {:>8.4}   {:>8.4}", f1, f2, f3, norm_sq);
             }
+
+            #[cfg(feature = "visualization")]
+            if std::env::args().any(|a| a == "--plot") {
+                // requires --features visualization
+                let points: Vec<(f64, f64, f64)> = front.individuals.iter()
+                    .map(|ind| (ind.objectives[0], ind.objectives[1], ind.objectives[2]))
+                    .collect();
+                std::fs::create_dir_all("docs/images").expect("failed to create docs/images");
+                genetic_algorithms::visualization::plot_pareto_front_3d(
+                    &points,
+                    "docs/images/nsga3_dtlz2.png",
+                )
+                .expect("plot failed");
+                println!("Pareto front plot saved to docs/images/nsga3_dtlz2.png");
+            }
         }
         Err(e) => {
             eprintln!("NSGA-III failed: {:?}", e);

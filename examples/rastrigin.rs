@@ -99,9 +99,17 @@ fn main() {
 
     // --- Run the GA with a callback to report progress ---
     let report_interval = 50;
+
+    // Stats accumulator for --plot (visualization feature); move added for accumulator capture
+    #[cfg(feature = "visualization")]
+    let plot_stats: std::sync::Arc<std::sync::Mutex<Vec<genetic_algorithms::stats::GenerationStats>>> =
+        std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+    #[cfg(feature = "visualization")]
+    let plot_stats_clone = plot_stats.clone();
+
     let result = ga.run_with_callback(
         Some(
-            |gen: &usize,
+            move |gen: &usize,
              pop: &Population<RangeChromosome<f64>>,
              _stats: &GenerationStats,
              _cause: &TerminationCause|
@@ -112,6 +120,8 @@ fn main() {
                     "Generation {:4}: best = {:8.4}, avg = {:8.4}",
                     gen, pop.best_chromosome.fitness, avg_fitness
                 );
+                #[cfg(feature = "visualization")]
+                plot_stats_clone.lock().unwrap().push(_stats.clone());
                 std::ops::ControlFlow::Continue(())
             },
         ),
@@ -130,6 +140,19 @@ fn main() {
                 println!("Near-optimal solution found!");
             } else {
                 println!("Did not reach optimum. Try increasing generations or population size.");
+            }
+
+            #[cfg(feature = "visualization")]
+            if std::env::args().any(|a| a == "--plot") {
+                // requires --features visualization
+                let stats = plot_stats.lock().unwrap();
+                std::fs::create_dir_all("docs/images").expect("failed to create docs/images");
+                genetic_algorithms::visualization::plot_fitness(
+                    &stats,
+                    "docs/images/rastrigin.png",
+                )
+                .expect("plot failed");
+                println!("Fitness plot saved to docs/images/rastrigin.png");
             }
         }
         Err(e) => {
