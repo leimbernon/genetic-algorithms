@@ -752,7 +752,7 @@ Plans:
 - [x] 63-01-PLAN.md — visualization module extension (point_series feature, plot_pareto_front_2d/3d, plot_true_fitness_calls, WASM gates, tests, wasm-check CI step)
 
 **Wave 2** *(blocked on Wave 1)*
-- [ ] 63-02-PLAN.md — --plot blocks in six examples (nsga2_zdt1, spea2_zdt1, sms_emoa_zdt1, ibea_zdt1, nsga3_dtlz2, rastrigin)
+- [x] 63-02-PLAN.md — --plot blocks in six examples (nsga2_zdt1, spea2_zdt1, sms_emoa_zdt1, ibea_zdt1, nsga3_dtlz2, rastrigin)
 
 **Wave 3** *(blocked on Waves 1-2)*
 - [ ] 63-03-PLAN.md — Generate 6 PNG images, commit to docs/images/, extend README.md Visualization section
@@ -843,6 +843,6 @@ Plans:
 | 60. Batch Fitness / Fitness Cache Extension | v3.0.0 | 3/3 | Complete | 2026-06-08 |
 | 61. Performance — Clone Reduction & Parallel Survivor | v3.0.0 | 5/4 | Complete    | 2026-06-09 |
 | 62. Surrogate-Assisted Evaluation | v3.0.0 | 3/3 | Complete | 2026-06-09 |
-| 63. Visualization — Pareto Front Plotting & Example Images | v3.0.0 | 1/3 | In Progress|  |
+| 63. Visualization — Pareto Front Plotting & Example Images | v3.0.0 | 2/3 | In Progress|  |
 | 64. Test & Doc Quality | v3.0.0 | TBD | Pending | — |
 | 65. v3.0.0 Migration Guide | v3.0.0 | TBD | Pending | — |
