@@ -152,6 +152,21 @@ fn main() {
                     front.individuals[i].objectives[1]
                 );
             }
+
+            #[cfg(feature = "visualization")]
+            if std::env::args().any(|a| a == "--plot") {
+                // requires --features "visualization,benchmarks"
+                let points: Vec<(f64, f64)> = front.individuals.iter()
+                    .map(|ind| (ind.objectives[0], ind.objectives[1]))
+                    .collect();
+                std::fs::create_dir_all("docs/images").expect("failed to create docs/images");
+                genetic_algorithms::visualization::plot_pareto_front_2d(
+                    &points,
+                    "docs/images/sms_emoa_zdt1.png",
+                )
+                .expect("plot failed");
+                println!("Pareto front plot saved to docs/images/sms_emoa_zdt1.png");
+            }
         }
         Err(e) => {
             eprintln!("SMS-EMOA failed: {:?}", e);
