@@ -22,6 +22,28 @@ fn make_stats(n: usize) -> Vec<GenerationStats> {
             diversity: 10.0,
             dynamic_mutation_probability: None,
             avg_node_count: 0.0,
+            cache_hits: None,
+            cache_misses: None,
+            true_fitness_calls: None,
+        })
+        .collect()
+}
+
+fn make_stats_with_surrogate(n: usize) -> Vec<GenerationStats> {
+    (0..n)
+        .map(|i| GenerationStats {
+            generation: i,
+            best_fitness: 100.0 - i as f64,
+            worst_fitness: i as f64,
+            avg_fitness: 50.0,
+            fitness_std_dev: 10.0,
+            population_size: 100,
+            diversity: 10.0,
+            dynamic_mutation_probability: None,
+            avg_node_count: 0.0,
+            cache_hits: None,
+            cache_misses: None,
+            true_fitness_calls: Some(50 + i as u64),
         })
         .collect()
 }
@@ -288,4 +310,52 @@ fn test_plot_histogram_identical_values() {
     );
 
     let _ = std::fs::remove_file(&path);
+}
+
+// ── plot_pareto_front_2d stubs (activated in Task 2) ─────────────────────────
+
+#[test]
+#[ignore]
+fn test_plot_pareto_front_2d_png() {
+    let _ = "stub";
+}
+
+#[test]
+#[ignore]
+fn test_pareto_2d_insufficient_empty() {
+    let _ = "stub";
+}
+
+#[test]
+#[ignore]
+fn test_pareto_2d_insufficient_single() {
+    let _ = "stub";
+}
+
+// ── plot_pareto_front_3d stubs (activated in Task 2) ─────────────────────────
+
+#[test]
+#[ignore]
+fn test_plot_pareto_front_3d_png() {
+    let _ = "stub";
+}
+
+#[test]
+#[ignore]
+fn test_pareto_3d_insufficient_empty() {
+    let _ = "stub";
+}
+
+// ── plot_true_fitness_calls stubs (activated in Task 2) ──────────────────────
+
+#[test]
+#[ignore]
+fn test_plot_true_fitness_calls_png() {
+    let _ = "stub";
+}
+
+#[test]
+#[ignore]
+fn test_true_fitness_calls_insufficient_all_none() {
+    let _ = "stub";
 }

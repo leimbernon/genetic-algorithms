@@ -30,3 +30,6 @@ jobs:
 
       - name: cargo check (serde feature)
         run: cargo check --target wasm32-unknown-unknown --lib --features serde
+
+      - name: cargo check (visualization feature)
+        run: cargo check --target wasm32-unknown-unknown --lib --features visualization

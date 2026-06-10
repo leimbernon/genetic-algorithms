@@ -47,7 +47,7 @@ env_logger = "0.11.5"
 serde = { version = "1", features = ["derive", "rc"], optional = true }
 serde_json = { version = "1", optional = true }
 serde_stacker = { version = "0.1", optional = true }
-plotters = { version = "0.3.7", default-features = false, features = ["bitmap_backend", "bitmap_encoder", "svg_backend", "line_series", "histogram", "ab_glyph"], optional = true }
+plotters = { version = "0.3.7", default-features = false, features = ["bitmap_backend", "bitmap_encoder", "svg_backend", "line_series", "point_series", "histogram", "ab_glyph"], optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.3", features = ["wasm_js"] }

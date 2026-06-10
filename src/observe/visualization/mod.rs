@@ -260,13 +260,20 @@ pub fn plot_fitness(stats: &[GenerationStats], path: &str) -> Result<(), Visuali
 
     match Path::new(path).extension().and_then(|e| e.to_str()) {
         Some("png") => {
-            let root = BitMapBackend::new(path, (800, 600)).into_drawing_area();
-            root.fill(&WHITE)
-                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
-            draw_fitness_chart(&root, stats)
-                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
-            root.present()
-                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                let root = BitMapBackend::new(path, (800, 600)).into_drawing_area();
+                root.fill(&WHITE)
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+                draw_fitness_chart(&root, stats)
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+                root.present()
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+            }
+            #[cfg(target_arch = "wasm32")]
+            {
+                return Err(VisualizationError::UnsupportedFormat);
+            }
         }
         Some("svg") => {
             let root = SVGBackend::new(path, (800, 600)).into_drawing_area();
@@ -310,13 +317,20 @@ pub fn plot_diversity(stats: &[GenerationStats], path: &str) -> Result<(), Visua
 
     match Path::new(path).extension().and_then(|e| e.to_str()) {
         Some("png") => {
-            let root = BitMapBackend::new(path, (800, 600)).into_drawing_area();
-            root.fill(&WHITE)
-                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
-            draw_diversity_chart(&root, stats)
-                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
-            root.present()
-                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                let root = BitMapBackend::new(path, (800, 600)).into_drawing_area();
+                root.fill(&WHITE)
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+                draw_diversity_chart(&root, stats)
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+                root.present()
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+            }
+            #[cfg(target_arch = "wasm32")]
+            {
+                return Err(VisualizationError::UnsupportedFormat);
+            }
         }
         Some("svg") => {
             let root = SVGBackend::new(path, (800, 600)).into_drawing_area();
@@ -362,13 +376,20 @@ pub fn plot_histogram(fitness_values: &[f64], path: &str) -> Result<(), Visualiz
 
     match Path::new(path).extension().and_then(|e| e.to_str()) {
         Some("png") => {
-            let root = BitMapBackend::new(path, (800, 600)).into_drawing_area();
-            root.fill(&WHITE)
-                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
-            draw_histogram_chart(&root, fitness_values)
-                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
-            root.present()
-                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                let root = BitMapBackend::new(path, (800, 600)).into_drawing_area();
+                root.fill(&WHITE)
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+                draw_histogram_chart(&root, fitness_values)
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+                root.present()
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+            }
+            #[cfg(target_arch = "wasm32")]
+            {
+                return Err(VisualizationError::UnsupportedFormat);
+            }
         }
         Some("svg") => {
             let root = SVGBackend::new(path, (800, 600)).into_drawing_area();
