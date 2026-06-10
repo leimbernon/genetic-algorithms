@@ -121,7 +121,9 @@ fn main() {
                     gen, pop.best_chromosome.fitness, avg_fitness
                 );
                 #[cfg(feature = "visualization")]
-                plot_stats_clone.lock().unwrap().push(_stats.clone());
+                if let Ok(mut guard) = plot_stats_clone.lock() {
+                    guard.push(_stats.clone());
+                }
                 std::ops::ControlFlow::Continue(())
             },
         ),
@@ -145,7 +147,8 @@ fn main() {
             #[cfg(feature = "visualization")]
             if std::env::args().any(|a| a == "--plot") {
                 // requires --features visualization
-                let stats = plot_stats.lock().unwrap();
+                let stats_guard = plot_stats.lock().unwrap_or_else(|e| e.into_inner());
+                let stats = &*stats_guard;
                 std::fs::create_dir_all("docs/images").expect("failed to create docs/images");
                 genetic_algorithms::visualization::plot_fitness(
                     &stats,

@@ -148,7 +148,7 @@ fn main() {
 
             front
                 .individuals
-                .sort_by(|a, b| a.objectives[0].partial_cmp(&b.objectives[0]).unwrap());
+                .sort_by(|a, b| a.objectives[0].partial_cmp(&b.objectives[0]).unwrap_or(std::cmp::Ordering::Equal));
 
             let n = front.len();
             let step = (n / 10).max(1);

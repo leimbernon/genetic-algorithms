@@ -104,13 +104,14 @@ where
     DB::ErrorType: std::error::Error + Send + Sync,
 {
     let max_gen = stats.last().map(|s| s.generation).unwrap_or(0);
+    let x_max = if max_gen == 0 { 1 } else { max_gen };
     let (y_min, y_max) = compute_y_range(stats);
 
     let mut chart = ChartBuilder::on(root)
         .margin(10)
         .x_label_area_size(0)
         .y_label_area_size(0)
-        .build_cartesian_2d(0usize..max_gen, y_min..y_max)?;
+        .build_cartesian_2d(0usize..x_max, y_min..y_max)?;
 
     chart.configure_mesh().disable_mesh().draw()?;
 
@@ -164,13 +165,14 @@ where
     DB::ErrorType: std::error::Error + Send + Sync,
 {
     let max_gen = stats.last().map(|s| s.generation).unwrap_or(0);
+    let x_max = if max_gen == 0 { 1 } else { max_gen };
     let (y_min, y_max) = compute_diversity_range(stats);
 
     let mut chart = ChartBuilder::on(root)
         .margin(10)
         .x_label_area_size(0)
         .y_label_area_size(0)
-        .build_cartesian_2d(0usize..max_gen, y_min..y_max)?;
+        .build_cartesian_2d(0usize..x_max, y_min..y_max)?;
 
     chart.configure_mesh().disable_mesh().draw()?;
 
@@ -276,13 +278,20 @@ pub fn plot_fitness(stats: &[GenerationStats], path: &str) -> Result<(), Visuali
             }
         }
         Some("svg") => {
-            let root = SVGBackend::new(path, (800, 600)).into_drawing_area();
-            root.fill(&WHITE)
-                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
-            draw_fitness_chart(&root, stats)
-                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
-            root.present()
-                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                let root = SVGBackend::new(path, (800, 600)).into_drawing_area();
+                root.fill(&WHITE)
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+                draw_fitness_chart(&root, stats)
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+                root.present()
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+            }
+            #[cfg(target_arch = "wasm32")]
+            {
+                return Err(VisualizationError::UnsupportedFormat);
+            }
         }
         _ => return Err(VisualizationError::UnsupportedFormat),
     }
@@ -333,13 +342,20 @@ pub fn plot_diversity(stats: &[GenerationStats], path: &str) -> Result<(), Visua
             }
         }
         Some("svg") => {
-            let root = SVGBackend::new(path, (800, 600)).into_drawing_area();
-            root.fill(&WHITE)
-                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
-            draw_diversity_chart(&root, stats)
-                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
-            root.present()
-                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                let root = SVGBackend::new(path, (800, 600)).into_drawing_area();
+                root.fill(&WHITE)
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+                draw_diversity_chart(&root, stats)
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+                root.present()
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+            }
+            #[cfg(target_arch = "wasm32")]
+            {
+                return Err(VisualizationError::UnsupportedFormat);
+            }
         }
         _ => return Err(VisualizationError::UnsupportedFormat),
     }
@@ -370,7 +386,7 @@ pub fn plot_diversity(stats: &[GenerationStats], path: &str) -> Result<(), Visua
 /// plot_histogram(&fitness_values, "output/histogram.png").unwrap();
 /// ```
 pub fn plot_histogram(fitness_values: &[f64], path: &str) -> Result<(), VisualizationError> {
-    if fitness_values.is_empty() {
+    if fitness_values.len() < 2 {
         return Err(VisualizationError::InsufficientData);
     }
 
@@ -392,13 +408,20 @@ pub fn plot_histogram(fitness_values: &[f64], path: &str) -> Result<(), Visualiz
             }
         }
         Some("svg") => {
-            let root = SVGBackend::new(path, (800, 600)).into_drawing_area();
-            root.fill(&WHITE)
-                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
-            draw_histogram_chart(&root, fitness_values)
-                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
-            root.present()
-                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                let root = SVGBackend::new(path, (800, 600)).into_drawing_area();
+                root.fill(&WHITE)
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+                draw_histogram_chart(&root, fitness_values)
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+                root.present()
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+            }
+            #[cfg(target_arch = "wasm32")]
+            {
+                return Err(VisualizationError::UnsupportedFormat);
+            }
         }
         _ => return Err(VisualizationError::UnsupportedFormat),
     }
@@ -500,13 +523,20 @@ pub fn plot_pareto_front_2d(points: &[(f64, f64)], path: &str) -> Result<(), Vis
             }
         }
         Some("svg") => {
-            let root = SVGBackend::new(path, (800, 600)).into_drawing_area();
-            root.fill(&WHITE)
-                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
-            draw_pareto_2d_chart(&root, points)
-                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
-            root.present()
-                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                let root = SVGBackend::new(path, (800, 600)).into_drawing_area();
+                root.fill(&WHITE)
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+                draw_pareto_2d_chart(&root, points)
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+                root.present()
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+            }
+            #[cfg(target_arch = "wasm32")]
+            {
+                return Err(VisualizationError::UnsupportedFormat);
+            }
         }
         _ => return Err(VisualizationError::UnsupportedFormat),
     }
@@ -531,14 +561,10 @@ where
     // Panel 0: f1 vs f2 (indices 0, 1)
     // Panel 1: f1 vs f3 (indices 0, 2)
     // Panel 2: f2 vs f3 (indices 1, 2)
-    let panel_axes: [(usize, usize, &str, &str); 3] = [
-        (0, 1, "f1", "f2"),
-        (0, 2, "f1", "f3"),
-        (1, 2, "f2", "f3"),
-    ];
+    let panel_axes: [(usize, usize); 3] = [(0, 1), (0, 2), (1, 2)];
 
     for i in 0..panels.len() {
-        let (xi, yi, _x_label, _y_label) = panel_axes[i];
+        let (xi, yi) = panel_axes[i];
 
         let (x_min, x_max) = compute_pareto_range(points.iter().map(|p| match xi {
             0 => p.0,
@@ -629,13 +655,20 @@ pub fn plot_pareto_front_3d(
             }
         }
         Some("svg") => {
-            let root = SVGBackend::new(path, (1200, 400)).into_drawing_area();
-            root.fill(&WHITE)
-                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
-            draw_pareto_3d_chart(&root, points)
-                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
-            root.present()
-                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                let root = SVGBackend::new(path, (1200, 400)).into_drawing_area();
+                root.fill(&WHITE)
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+                draw_pareto_3d_chart(&root, points)
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+                root.present()
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+            }
+            #[cfg(target_arch = "wasm32")]
+            {
+                return Err(VisualizationError::UnsupportedFormat);
+            }
         }
         _ => return Err(VisualizationError::UnsupportedFormat),
     }
@@ -655,13 +688,14 @@ where
     DB::ErrorType: std::error::Error + Send + Sync,
 {
     let max_gen = data.iter().map(|&(g, _)| g).max().unwrap_or(0);
+    let x_max = if max_gen == 0 { 1 } else { max_gen };
     let (y_min, y_max) = compute_pareto_range(data.iter().map(|&(_, v)| v as f64));
 
     let mut chart = ChartBuilder::on(root)
         .margin(10)
         .x_label_area_size(0)
         .y_label_area_size(0)
-        .build_cartesian_2d(0usize..max_gen + 1, y_min..y_max)?;
+        .build_cartesian_2d(0usize..x_max + 1, y_min..y_max)?;
 
     chart.configure_mesh().disable_mesh().draw()?;
 
@@ -729,13 +763,20 @@ pub fn plot_true_fitness_calls(
             }
         }
         Some("svg") => {
-            let root = SVGBackend::new(path, (800, 600)).into_drawing_area();
-            root.fill(&WHITE)
-                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
-            draw_true_fitness_calls_chart(&root, &data)
-                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
-            root.present()
-                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                let root = SVGBackend::new(path, (800, 600)).into_drawing_area();
+                root.fill(&WHITE)
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+                draw_true_fitness_calls_chart(&root, &data)
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+                root.present()
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+            }
+            #[cfg(target_arch = "wasm32")]
+            {
+                return Err(VisualizationError::UnsupportedFormat);
+            }
         }
         _ => return Err(VisualizationError::UnsupportedFormat),
     }
