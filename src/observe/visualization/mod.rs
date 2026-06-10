@@ -405,3 +405,340 @@ pub fn plot_histogram(fitness_values: &[f64], path: &str) -> Result<(), Visualiz
 
     Ok(())
 }
+
+/// Compute the axis range for a single dimension of a Pareto front.
+///
+/// Iterates over all values tracking min and max. If the range is degenerate
+/// (max ≈ min), expands max by 1.0 to prevent a zero-span axis panic in plotters.
+fn compute_pareto_range(iter: impl Iterator<Item = f64>) -> (f64, f64) {
+    let mut min = f64::INFINITY;
+    let mut max = f64::NEG_INFINITY;
+    for v in iter {
+        if v < min {
+            min = v;
+        }
+        if v > max {
+            max = v;
+        }
+    }
+    if (max - min).abs() < f64::EPSILON {
+        max = min + 1.0;
+    }
+    (min, max)
+}
+
+/// Draw a 2-D Pareto scatter chart onto `root`.
+///
+/// Plots each point as a filled `Circle` of radius 3 in blue.
+/// Axis labels are `f1` (x) and `f2` (y).
+fn draw_pareto_2d_chart<DB>(
+    root: &DrawingArea<DB, Shift>,
+    points: &[(f64, f64)],
+) -> Result<(), DrawingAreaErrorKind<DB::ErrorType>>
+where
+    DB: DrawingBackend,
+    DB::ErrorType: std::error::Error + Send + Sync,
+{
+    let (x_min, x_max) = compute_pareto_range(points.iter().map(|p| p.0));
+    let (y_min, y_max) = compute_pareto_range(points.iter().map(|p| p.1));
+
+    let mut chart = ChartBuilder::on(root)
+        .margin(10)
+        .x_label_area_size(0)
+        .y_label_area_size(0)
+        .build_cartesian_2d(x_min..x_max, y_min..y_max)?;
+
+    chart.configure_mesh().disable_mesh().draw()?;
+
+    chart.draw_series(points.iter().map(|&(x, y)| Circle::new((x, y), 3, BLUE.filled())))?;
+
+    Ok(())
+}
+
+/// Plot a 2-D Pareto front as a scatter chart and write to a PNG or SVG file.
+///
+/// Each point `(f1, f2)` is rendered as a blue circle. The output format is
+/// inferred from the file extension:
+/// - `.png` → `BitMapBackend` (raster, 800×600; not available on WASM)
+/// - `.svg` → `SVGBackend` (vector, 800×600)
+/// - Anything else → [`VisualizationError::UnsupportedFormat`]
+///
+/// # Errors
+///
+/// - [`VisualizationError::InsufficientData`] — if `points.len() < 2`
+/// - [`VisualizationError::UnsupportedFormat`] — if the path extension is not `.png` or `.svg`,
+///   or if called on WASM with `.png`
+/// - [`VisualizationError::DrawingError`] — if the plotters backend fails
+///
+/// # Example
+///
+/// ```ignore
+/// use genetic_algorithms::visualization::plot_pareto_front_2d;
+/// let points = vec![(0.0_f64, 1.0), (0.5, 0.5), (1.0, 0.0)];
+/// plot_pareto_front_2d(&points, "output/pareto2d.png").unwrap();
+/// ```
+pub fn plot_pareto_front_2d(points: &[(f64, f64)], path: &str) -> Result<(), VisualizationError> {
+    if points.len() < 2 {
+        return Err(VisualizationError::InsufficientData);
+    }
+
+    match Path::new(path).extension().and_then(|e| e.to_str()) {
+        Some("png") => {
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                let root = BitMapBackend::new(path, (800, 600)).into_drawing_area();
+                root.fill(&WHITE)
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+                draw_pareto_2d_chart(&root, points)
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+                root.present()
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+            }
+            #[cfg(target_arch = "wasm32")]
+            {
+                return Err(VisualizationError::UnsupportedFormat);
+            }
+        }
+        Some("svg") => {
+            let root = SVGBackend::new(path, (800, 600)).into_drawing_area();
+            root.fill(&WHITE)
+                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+            draw_pareto_2d_chart(&root, points)
+                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+            root.present()
+                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+        }
+        _ => return Err(VisualizationError::UnsupportedFormat),
+    }
+
+    Ok(())
+}
+
+/// Draw a 3-D Pareto front as three side-by-side scatter panels onto `root`.
+///
+/// Splits `root` into three equal panels (left: f1×f2, center: f1×f3, right: f2×f3).
+/// Each panel renders blue circles of radius 3 at the appropriate coordinates.
+fn draw_pareto_3d_chart<DB>(
+    root: &DrawingArea<DB, Shift>,
+    points: &[(f64, f64, f64)],
+) -> Result<(), DrawingAreaErrorKind<DB::ErrorType>>
+where
+    DB: DrawingBackend,
+    DB::ErrorType: std::error::Error + Send + Sync,
+{
+    let panels = root.split_evenly((1, 3));
+
+    // Panel 0: f1 vs f2 (indices 0, 1)
+    // Panel 1: f1 vs f3 (indices 0, 2)
+    // Panel 2: f2 vs f3 (indices 1, 2)
+    let panel_axes: [(usize, usize, &str, &str); 3] = [
+        (0, 1, "f1", "f2"),
+        (0, 2, "f1", "f3"),
+        (1, 2, "f2", "f3"),
+    ];
+
+    for i in 0..panels.len() {
+        let (xi, yi, _x_label, _y_label) = panel_axes[i];
+
+        let (x_min, x_max) = compute_pareto_range(points.iter().map(|p| match xi {
+            0 => p.0,
+            1 => p.1,
+            _ => p.2,
+        }));
+        let (y_min, y_max) = compute_pareto_range(points.iter().map(|p| match yi {
+            0 => p.0,
+            1 => p.1,
+            _ => p.2,
+        }));
+
+        let mut chart = ChartBuilder::on(&panels[i])
+            .margin(10)
+            .x_label_area_size(0)
+            .y_label_area_size(0)
+            .build_cartesian_2d(x_min..x_max, y_min..y_max)?;
+
+        chart.configure_mesh().disable_mesh().draw()?;
+
+        chart.draw_series(points.iter().map(|p| {
+            let px = match xi {
+                0 => p.0,
+                1 => p.1,
+                _ => p.2,
+            };
+            let py = match yi {
+                0 => p.0,
+                1 => p.1,
+                _ => p.2,
+            };
+            Circle::new((px, py), 3, BLUE.filled())
+        }))?;
+    }
+
+    Ok(())
+}
+
+/// Plot a 3-D Pareto front as three side-by-side scatter panels and write to a PNG or SVG file.
+///
+/// The 1200×400 canvas is split into three equal panels:
+/// - Left: f1 vs f2
+/// - Center: f1 vs f3
+/// - Right: f2 vs f3
+///
+/// The output format is inferred from the file extension:
+/// - `.png` → `BitMapBackend` (raster, 1200×400; not available on WASM)
+/// - `.svg` → `SVGBackend` (vector, 1200×400)
+/// - Anything else → [`VisualizationError::UnsupportedFormat`]
+///
+/// # Errors
+///
+/// - [`VisualizationError::InsufficientData`] — if `points.len() < 2`
+/// - [`VisualizationError::UnsupportedFormat`] — if the path extension is not `.png` or `.svg`,
+///   or if called on WASM with `.png`
+/// - [`VisualizationError::DrawingError`] — if the plotters backend fails
+///
+/// # Example
+///
+/// ```ignore
+/// use genetic_algorithms::visualization::plot_pareto_front_3d;
+/// let points = vec![(0.0_f64, 0.0, 1.0), (0.5, 0.5, 0.5), (1.0, 1.0, 0.0)];
+/// plot_pareto_front_3d(&points, "output/pareto3d.png").unwrap();
+/// ```
+pub fn plot_pareto_front_3d(
+    points: &[(f64, f64, f64)],
+    path: &str,
+) -> Result<(), VisualizationError> {
+    if points.len() < 2 {
+        return Err(VisualizationError::InsufficientData);
+    }
+
+    match Path::new(path).extension().and_then(|e| e.to_str()) {
+        Some("png") => {
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                let root = BitMapBackend::new(path, (1200, 400)).into_drawing_area();
+                root.fill(&WHITE)
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+                draw_pareto_3d_chart(&root, points)
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+                root.present()
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+            }
+            #[cfg(target_arch = "wasm32")]
+            {
+                return Err(VisualizationError::UnsupportedFormat);
+            }
+        }
+        Some("svg") => {
+            let root = SVGBackend::new(path, (1200, 400)).into_drawing_area();
+            root.fill(&WHITE)
+                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+            draw_pareto_3d_chart(&root, points)
+                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+            root.present()
+                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+        }
+        _ => return Err(VisualizationError::UnsupportedFormat),
+    }
+
+    Ok(())
+}
+
+/// Draw a line chart of true fitness call counts over generations onto `root`.
+///
+/// Plots a magenta line series of `(generation, true_fitness_calls)` pairs.
+fn draw_true_fitness_calls_chart<DB>(
+    root: &DrawingArea<DB, Shift>,
+    data: &[(usize, u64)],
+) -> Result<(), DrawingAreaErrorKind<DB::ErrorType>>
+where
+    DB: DrawingBackend,
+    DB::ErrorType: std::error::Error + Send + Sync,
+{
+    let max_gen = data.iter().map(|&(g, _)| g).max().unwrap_or(0);
+    let (y_min, y_max) = compute_pareto_range(data.iter().map(|&(_, v)| v as f64));
+
+    let mut chart = ChartBuilder::on(root)
+        .margin(10)
+        .x_label_area_size(0)
+        .y_label_area_size(0)
+        .build_cartesian_2d(0usize..max_gen + 1, y_min..y_max)?;
+
+    chart.configure_mesh().disable_mesh().draw()?;
+
+    chart.draw_series(LineSeries::new(
+        data.iter().map(|&(g, v)| (g, v as f64)),
+        &MAGENTA,
+    ))?;
+
+    Ok(())
+}
+
+/// Plot the number of true fitness calls (post-surrogate-prescreening) over
+/// generations and write to a PNG or SVG file.
+///
+/// Only generations where [`GenerationStats::true_fitness_calls`] is `Some` are
+/// plotted. Returns [`VisualizationError::InsufficientData`] when fewer than
+/// 2 such generations exist.
+///
+/// The output format is inferred from the file extension:
+/// - `.png` → `BitMapBackend` (raster, 800×600; not available on WASM)
+/// - `.svg` → `SVGBackend` (vector, 800×600)
+/// - Anything else → [`VisualizationError::UnsupportedFormat`]
+///
+/// # Errors
+///
+/// - [`VisualizationError::InsufficientData`] — if fewer than 2 stats entries have `true_fitness_calls: Some(_)`
+/// - [`VisualizationError::UnsupportedFormat`] — if the path extension is not `.png` or `.svg`,
+///   or if called on WASM with `.png`
+/// - [`VisualizationError::DrawingError`] — if the plotters backend fails
+///
+/// # Example
+///
+/// ```ignore
+/// use genetic_algorithms::visualization::plot_true_fitness_calls;
+/// plot_true_fitness_calls(&stats, "output/true_fitness_calls.png").unwrap();
+/// ```
+pub fn plot_true_fitness_calls(
+    stats: &[GenerationStats],
+    path: &str,
+) -> Result<(), VisualizationError> {
+    let data: Vec<(usize, u64)> = stats
+        .iter()
+        .filter_map(|s| s.true_fitness_calls.map(|v| (s.generation, v)))
+        .collect();
+
+    if data.len() < 2 {
+        return Err(VisualizationError::InsufficientData);
+    }
+
+    match Path::new(path).extension().and_then(|e| e.to_str()) {
+        Some("png") => {
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                let root = BitMapBackend::new(path, (800, 600)).into_drawing_area();
+                root.fill(&WHITE)
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+                draw_true_fitness_calls_chart(&root, &data)
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+                root.present()
+                    .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+            }
+            #[cfg(target_arch = "wasm32")]
+            {
+                return Err(VisualizationError::UnsupportedFormat);
+            }
+        }
+        Some("svg") => {
+            let root = SVGBackend::new(path, (800, 600)).into_drawing_area();
+            root.fill(&WHITE)
+                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+            draw_true_fitness_calls_chart(&root, &data)
+                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+            root.present()
+                .map_err(|e| VisualizationError::DrawingError(format!("{:?}", e)))?;
+        }
+        _ => return Err(VisualizationError::UnsupportedFormat),
+    }
+
+    Ok(())
+}
