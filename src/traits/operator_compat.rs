@@ -50,6 +50,26 @@ use crate::operations::{Crossover, Mutation};
 ///
 /// Both methods default to `None` (no restriction). Override them to restrict
 /// the valid operator set to a `Some(&'static [...])`  slice.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::{Crossover, Mutation};
+/// use genetic_algorithms::traits::OperatorCompat;
+/// use genetic_algorithms::chromosomes::UniqueChromosome;
+///
+/// // Permutation chromosomes restrict to permutation-preserving operators:
+/// // (UniqueChromosome already does this — shown here for illustration)
+/// struct MyPermutationChromosome;
+/// impl OperatorCompat for MyPermutationChromosome {
+///     fn valid_crossovers() -> Option<&'static [Crossover]> {
+///         Some(&[Crossover::Pmx, Crossover::Order, Crossover::EdgeRecombination])
+///     }
+///     fn valid_mutations() -> Option<&'static [Mutation]> {
+///         Some(&[Mutation::Swap, Mutation::Inversion, Mutation::Scramble])
+///     }
+/// }
+/// ```
 pub trait OperatorCompat {
     /// Returns the set of valid crossover operators for this chromosome type.
     ///

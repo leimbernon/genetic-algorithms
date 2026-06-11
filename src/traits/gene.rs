@@ -14,6 +14,18 @@
 ///
 /// `Default + Clone + Sync + Send` — genes are created in bulk during
 /// initialization and shared across threads by rayon.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::traits::GeneT;
+/// use genetic_algorithms::genotypes::Binary;
+///
+/// // Use a built-in gene type that implements GeneT:
+/// let mut gene = <Binary as Default>::default();
+/// gene.set_id(5);
+/// assert_eq!(gene.id(), 5);
+/// ```
 pub trait GeneT: Default + Clone + Sync + Send {
     /// Creates a new gene using `Default::default()`.
     fn new() -> Self {

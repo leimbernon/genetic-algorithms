@@ -28,6 +28,13 @@ use crate::error::GaError;
 /// The penalty is computed per-generation based on constraint violations
 /// and then added to the raw fitness value. All variants work with
 /// minimization, maximization, and fixed-fitness problems.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::constraints::PenaltyStrategy;
+/// let strategy = PenaltyStrategy::Static { coefficient: 10.0 };
+/// ```
 #[derive(Clone, Debug, Default, PartialEq)]
 pub enum PenaltyStrategy {
     /// No penalty applied (default).

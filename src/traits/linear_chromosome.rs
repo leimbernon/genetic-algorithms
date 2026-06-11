@@ -7,6 +7,20 @@ use std::borrow::Cow;
 /// used by all traditional GA chromosomes (binary, real-valued, integer-valued,
 /// list-based). Any type implementing this trait gains:
 ///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+/// use genetic_algorithms::genotypes::Range as RangeGene;
+/// use genetic_algorithms::traits::LinearChromosome;
+/// use std::borrow::Cow;
+///
+/// let mut chrom = RangeChromosome::<f64>::default();
+/// let genes = vec![RangeGene::default()];
+/// chrom.set_dna(Cow::Owned(genes));
+/// assert_eq!(chrom.dna().len(), 1);
+/// ```
+///
 /// - `dna()` / `dna_mut()` / `set_dna()` — slice access and zero-copy DNA updates.
 /// - `set_fitness_fn<F>()` — installs the user-provided fitness closure.
 /// - `new_gene()` — factory method for default gene construction.

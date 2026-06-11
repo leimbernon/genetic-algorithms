@@ -75,6 +75,20 @@ where
 /// # Returns
 ///
 /// A `Vec<U>` of fully initialized chromosomes.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::traits::common::initialize_chromosomes;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::initializers::binary_random_initialization;
+/// use std::sync::Arc;
+///
+/// let init_fn: Arc<dyn Fn(usize, Option<&[_]>) -> Vec<_> + Send + Sync> =
+///     Arc::new(|n, _| binary_random_initialization(n, None));
+/// let chromosomes: Vec<Binary> = initialize_chromosomes(10, 5, None, &init_fn, None, 0);
+/// assert_eq!(chromosomes.len(), 10);
+/// ```
 pub fn initialize_chromosomes<U>(
     count: usize,
     genes_per_chromosome: usize,
@@ -104,6 +118,20 @@ where
 ///
 /// Same semantics as [`initialize_chromosomes`] but distributes work across
 /// the rayon thread pool.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::traits::common::initialize_chromosomes_par;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::initializers::binary_random_initialization;
+/// use std::sync::Arc;
+///
+/// let init_fn: Arc<dyn Fn(usize, Option<&[_]>) -> Vec<_> + Send + Sync> =
+///     Arc::new(|n, _| binary_random_initialization(n, None));
+/// let chromosomes: Vec<Binary> = initialize_chromosomes_par(10, 5, None, &init_fn, None, 0);
+/// assert_eq!(chromosomes.len(), 10);
+/// ```
 pub fn initialize_chromosomes_par<U>(
     count: usize,
     genes_per_chromosome: usize,

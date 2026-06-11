@@ -35,6 +35,22 @@ use std::ops::{Index, IndexMut};
 /// - Maintain best chromosome according to the configured problem objective.
 /// - Compute average (f_avg) and maximum (f_max) fitness (used by adaptive GA).
 /// - Parallel fitness calculation to leverage multiple threads.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::population::Population;
+/// use genetic_algorithms::chromosomes::Binary;
+///
+/// // Create an empty population, then populate it.
+/// let chromosomes: Vec<Binary> = Vec::new();
+/// let pop = Population::new(chromosomes);
+/// assert_eq!(pop.chromosomes.len(), 0);
+///
+/// // An empty population for use before the first generation:
+/// let empty: Population<Binary> = Population::new_empty();
+/// assert_eq!(empty.chromosomes.len(), 0);
+/// ```
 pub struct Population<U>
 where
     U: ChromosomeT,

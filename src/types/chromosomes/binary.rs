@@ -19,6 +19,17 @@ use std::fmt;
 /// field represents the fitness score of the chromosome, and the `age` field represents
 /// the age of the chromosome.
 ///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::traits::LinearChromosome;
+///
+/// let mut chrom = Binary::new();
+/// chrom.dna_from_string("1010").expect("valid bit string");
+/// assert_eq!(chrom.phenotype(), "1010");
+/// assert_eq!(chrom.dna().len(), 4);
+/// ```
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Binary {

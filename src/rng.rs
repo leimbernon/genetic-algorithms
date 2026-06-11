@@ -44,6 +44,18 @@ static COUNTER: AtomicU64 = AtomicU64::new(0);
 ///
 /// Also resets the global counter to zero so that repeated runs with the
 /// same seed produce the same sequence.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::rng;
+///
+/// // Enable deterministic mode
+/// rng::set_seed(Some(42));
+///
+/// // Revert to entropy-based seeding
+/// rng::set_seed(None);
+/// ```
 pub fn set_seed(seed: Option<u64>) {
     match seed {
         Some(s) => {
@@ -65,6 +77,16 @@ pub fn set_seed(seed: Option<u64>) {
 ///
 /// When no seed is set, the RNG is seeded from operating-system entropy
 /// (equivalent to the default `rand::rng()` behaviour).
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::rng;
+///
+/// rng::set_seed(Some(99));
+/// let _rng = rng::make_rng(); // deterministic SmallRng
+/// rng::set_seed(None); // restore entropy mode
+/// ```
 pub fn make_rng() -> SmallRng {
     let raw = SEED.load(Ordering::Acquire);
     if raw >= 0 {

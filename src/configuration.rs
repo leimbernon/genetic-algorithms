@@ -49,6 +49,18 @@ use crate::{
 ///
 /// Determines how fitness values are compared when selecting the "best"
 /// individual and when checking stopping conditions.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::ga::Ga;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::configuration::ProblemSolving;
+/// use genetic_algorithms::traits::ConfigurationT;
+///
+/// let _ga = Ga::<Binary>::new()
+///     .with_problem_solving(ProblemSolving::Minimization);
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum ProblemSolving {
@@ -72,6 +84,15 @@ impl fmt::Display for ProblemSolving {
 /// Verbosity level for the GA's internal logging (backed by the `log` crate).
 ///
 /// Default is [`LogLevel::Off`]. Set via [`ConfigurationT::with_logs`].
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::configuration::LogLevel;
+///
+/// let level = LogLevel::Info;
+/// assert_eq!(level, LogLevel::Info);
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum LogLevel {
@@ -93,6 +114,19 @@ pub enum LogLevel {
 ///
 /// Controls how many parent pairs are created each generation and which
 /// selection strategy is used (tournament, roulette wheel, etc.).
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::ga::Ga;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::operations::Selection;
+/// use genetic_algorithms::traits::{ConfigurationT, SelectionConfig};
+///
+/// let _ga = Ga::<Binary>::new()
+///     .with_selection_method(Selection::Tournament)
+///     .with_number_of_couples(20);
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SelectionConfiguration {
@@ -128,6 +162,20 @@ impl Default for SelectionConfiguration {
 ///
 /// Specifies the crossover method, probability bounds (for adaptive GA),
 /// and method-specific parameters like SBX eta or BLX-alpha.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::ga::Ga;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::operations::Crossover;
+/// use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig};
+///
+/// let _ga = Ga::<Binary>::new()
+///     .with_crossover_method(Crossover::Sbx)
+///     .with_sbx_eta(20.0)
+///     .with_crossover_probability_max(0.9);
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CrossoverConfiguration {
@@ -190,6 +238,19 @@ impl Default for CrossoverConfiguration {
 /// `self_adaptive_tau`, `self_adaptive_tau_prime`, `sigma_min`, and `sigma_max`
 /// have been removed. Embed parameters in the variant directly, e.g.:
 /// `Mutation::Gaussian { sigma: Some(0.05) }`.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::ga::Ga;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::operations::Mutation;
+/// use genetic_algorithms::traits::{ConfigurationT, MutationConfig};
+///
+/// let _ga = Ga::<Binary>::new()
+///     .with_mutation_method(Mutation::Gaussian { sigma: Some(0.05) })
+///     .with_mutation_probability_max(0.1);
+/// ```
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MutationConfiguration {
@@ -224,6 +285,20 @@ impl Default for MutationConfiguration {
 /// Defines population size, chromosome length, optimization direction,
 /// and generation cap. The `chromosome_length` field describes whether
 /// chromosomes have a fixed or variable number of genes.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::ga::Ga;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::configuration::ProblemSolving;
+/// use genetic_algorithms::traits::{ConfigurationT, StoppingConfig};
+///
+/// let _ga = Ga::<Binary>::new()
+///     .with_population_size(100)
+///     .with_max_generations(500)
+///     .with_problem_solving(ProblemSolving::Minimization);
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LimitConfiguration {
@@ -250,6 +325,19 @@ impl Default for LimitConfiguration {
 /// When enabled, the GA periodically serializes its state (population,
 /// configuration, and statistics) to disk so a run can be resumed later.
 /// Requires the `serde` feature.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::ga::Ga;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::traits::ConfigurationT;
+///
+/// let _ga = Ga::<Binary>::new()
+///     .with_save_progress(true)
+///     .with_save_progress_interval(100)
+///     .with_save_progress_path("/tmp/ga_checkpoint".to_string());
+/// ```
 #[derive(Clone, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SaveProgressConfiguration {
@@ -261,6 +349,20 @@ pub struct SaveProgressConfiguration {
 /// Configuration for local search refinement in memetic algorithms.
 ///
 /// When `None` on GaConfiguration, no local search is performed (zero overhead).
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::configuration::LocalSearchConfiguration;
+/// use genetic_algorithms::operations::local_search::{LocalSearch, LocalSearchApplicationStrategy, LocalSearchMode};
+///
+/// let cfg = LocalSearchConfiguration {
+///     method: LocalSearch::HillClimbing,
+///     application_strategy: LocalSearchApplicationStrategy::AllOffspring,
+///     mode: LocalSearchMode::Lamarckian,
+///     ..Default::default()
+/// };
+/// ```
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LocalSearchConfiguration {
@@ -290,6 +392,25 @@ impl Default for LocalSearchConfiguration {
 /// Aggregates all sub-configurations (selection, crossover, mutation,
 /// limits, stopping criteria, niching, checkpointing) into a single struct
 /// that is stored inside [`Ga`](crate::ga::Ga).
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::ga::Ga;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::configuration::ProblemSolving;
+/// use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+/// use genetic_algorithms::traits::{ConfigurationT, StoppingConfig, SelectionConfig, CrossoverConfig, MutationConfig};
+///
+/// let _ga = Ga::<Binary>::new()
+///     .with_population_size(100)
+///     .with_max_generations(300)
+///     .with_problem_solving(ProblemSolving::Minimization)
+///     .with_selection_method(Selection::Tournament)
+///     .with_crossover_method(Crossover::Uniform)
+///     .with_mutation_method(Mutation::Swap)
+///     .with_survivor_method(Survivor::Fitness);
+/// ```
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct GaConfiguration {
