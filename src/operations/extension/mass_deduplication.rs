@@ -18,7 +18,7 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 /// # Examples
 ///
 /// ```rust,no_run
-/// use genetic_algorithms::operations::extension::mass_deduplication;
+/// use genetic_algorithms::operations::extension::mass_deduplication::mass_deduplication;
 /// use genetic_algorithms::chromosomes::Binary;
 /// use genetic_algorithms::configuration::ProblemSolving;
 /// let mut population: Vec<Binary> = vec![Binary::new(); 20];

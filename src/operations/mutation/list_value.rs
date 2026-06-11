@@ -24,7 +24,7 @@ use super::ValueMutable;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use genetic_algorithms::operations::mutation::list_value_mutation;
+/// use genetic_algorithms::operations::mutation::list_value::list_value_mutation;
 /// use genetic_algorithms::chromosomes::ListChromosome;
 /// let mut chromosome: ListChromosome<i32> = ListChromosome::new();
 /// list_value_mutation(&mut chromosome);

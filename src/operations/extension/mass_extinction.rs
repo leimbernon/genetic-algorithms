@@ -15,7 +15,7 @@ use rand::seq::SliceRandom;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use genetic_algorithms::operations::extension::mass_extinction;
+/// use genetic_algorithms::operations::extension::mass_extinction::mass_extinction;
 /// use genetic_algorithms::chromosomes::Binary;
 /// use genetic_algorithms::configuration::ProblemSolving;
 /// let mut population: Vec<Binary> = vec![Binary::new(); 20];

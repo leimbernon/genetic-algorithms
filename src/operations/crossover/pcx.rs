@@ -36,7 +36,7 @@ use std::fmt::Debug;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use genetic_algorithms::operations::crossover::pcx;
+/// use genetic_algorithms::operations::crossover::pcx::pcx;
 /// use genetic_algorithms::chromosomes::Range;
 /// let p1: Range<f64> = Range::new();
 /// let p2: Range<f64> = Range::new();

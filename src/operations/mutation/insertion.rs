@@ -41,7 +41,7 @@ use std::borrow::Cow;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use genetic_algorithms::operations::mutation::insertion_mutation;
+/// use genetic_algorithms::operations::mutation::insertion::insertion_mutation;
 /// use genetic_algorithms::chromosomes::Binary;
 /// let mut chromosome = Binary::new();
 /// let _ = insertion_mutation(&mut chromosome);

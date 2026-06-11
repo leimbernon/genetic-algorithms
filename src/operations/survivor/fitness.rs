@@ -33,7 +33,7 @@ use rayon::prelude::*;
 /// use genetic_algorithms::chromosomes::Binary;
 /// use genetic_algorithms::configuration::{LimitConfiguration, ProblemSolving};
 /// let mut population: Vec<Binary> = vec![Binary::new(); 20];
-/// let limits = LimitConfiguration::default().with_problem_solving(ProblemSolving::Maximization);
+/// let limits = LimitConfiguration { problem_solving: ProblemSolving::Maximization, ..LimitConfiguration::default() };
 /// fitness_based(&mut population, 10, limits);
 /// ```
 pub fn fitness_based<U: ChromosomeT>(

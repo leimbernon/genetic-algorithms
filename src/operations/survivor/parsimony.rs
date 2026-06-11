@@ -65,7 +65,7 @@ fn adjusted_fitness(
 /// use genetic_algorithms::chromosomes::Binary;
 /// use genetic_algorithms::configuration::{LimitConfiguration, ProblemSolving};
 /// let mut population: Vec<Binary> = vec![Binary::new(); 20];
-/// let limits = LimitConfiguration::default().with_problem_solving(ProblemSolving::Maximization);
+/// let limits = LimitConfiguration { problem_solving: ProblemSolving::Maximization, ..LimitConfiguration::default() };
 /// let _ = apply_parsimony_pressure(Survivor::Fitness, &mut population, 10, limits, 0.001);
 /// ```
 ///

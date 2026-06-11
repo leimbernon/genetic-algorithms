@@ -51,7 +51,7 @@ use std::fmt::Debug;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use genetic_algorithms::operations::mutation::self_adaptive_gaussian_mutation;
+/// use genetic_algorithms::operations::mutation::self_adaptive_gaussian::self_adaptive_gaussian_mutation;
 /// use genetic_algorithms::chromosomes::Range;
 /// let mut chromosome: Range<f64> = Range::new();
 /// let _ = self_adaptive_gaussian_mutation(&mut chromosome, 0.1, 0.05, 1e-5, None);

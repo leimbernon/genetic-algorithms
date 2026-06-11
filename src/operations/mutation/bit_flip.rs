@@ -17,7 +17,7 @@ use rand::Rng;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use genetic_algorithms::operations::mutation::bit_flip;
+/// use genetic_algorithms::operations::mutation::bit_flip::bit_flip;
 /// use genetic_algorithms::chromosomes::Binary;
 /// let mut chromosome = Binary::new();
 /// bit_flip(&mut chromosome);

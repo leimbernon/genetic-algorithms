@@ -43,7 +43,7 @@ fn gamma_approx(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```rust,no_run
-/// use genetic_algorithms::operations::mutation::levy_flight_mutation;
+/// use genetic_algorithms::operations::mutation::levy_flight::levy_flight_mutation;
 /// use genetic_algorithms::chromosomes::Range;
 /// let mut chromosome: Range<f64> = Range::new();
 /// levy_flight_mutation(&mut chromosome, 1.5);

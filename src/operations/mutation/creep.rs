@@ -29,7 +29,7 @@ use std::fmt::Debug;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use genetic_algorithms::operations::mutation::creep_mutation;
+/// use genetic_algorithms::operations::mutation::creep::creep_mutation;
 /// use genetic_algorithms::chromosomes::Range;
 /// let mut chromosome: Range<f64> = Range::new();
 /// creep_mutation(&mut chromosome, 0.05);

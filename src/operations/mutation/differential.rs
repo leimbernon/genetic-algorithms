@@ -36,7 +36,7 @@ use std::borrow::Cow;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use genetic_algorithms::operations::mutation::differential_mutation;
+/// use genetic_algorithms::operations::mutation::differential::differential_mutation;
 /// use genetic_algorithms::chromosomes::Range;
 /// let mut individual: Range<f64> = Range::new();
 /// let population: Vec<Range<f64>> = vec![Range::new(); 5];

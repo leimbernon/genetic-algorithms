@@ -36,7 +36,7 @@ use std::fmt::Debug;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use genetic_algorithms::operations::crossover::arithmetic;
+/// use genetic_algorithms::operations::crossover::arithmetic::arithmetic;
 /// use genetic_algorithms::chromosomes::Range;
 /// let parent1: Range<f64> = Range::new();
 /// let parent2: Range<f64> = Range::new();
@@ -106,9 +106,9 @@ where
 /// # Examples
 ///
 /// ```rust
-/// use genetic_algorithms::operations::crossover::ArithmeticConvertible;
-/// assert_eq!(f64::from_f64(0.5), 0.5_f64);
-/// assert_eq!(f64::to_f64(1.0_f64), 1.0_f64);
+/// use genetic_algorithms::operations::crossover::arithmetic::ArithmeticConvertible;
+/// assert_eq!(<f64 as ArithmeticConvertible>::from_f64(0.5), 0.5_f64);
+/// assert_eq!(<f64 as ArithmeticConvertible>::to_f64(1.0_f64), 1.0_f64);
 /// ```
 pub trait ArithmeticConvertible {
     /// Convert an `f64` into `Self`.

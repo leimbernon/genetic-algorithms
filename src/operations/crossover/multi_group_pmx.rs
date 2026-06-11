@@ -34,10 +34,10 @@ use std::borrow::Cow;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use genetic_algorithms::operations::crossover::multi_group_pmx;
-/// use genetic_algorithms::MultiUniqueChromosome;
-/// let parent1: MultiUniqueChromosome<i32> = MultiUniqueChromosome::new();
-/// let parent2: MultiUniqueChromosome<i32> = MultiUniqueChromosome::new();
+/// use genetic_algorithms::operations::crossover::multi_group_pmx::multi_group_pmx;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let parent1 = Binary::new();
+/// let parent2 = Binary::new();
 /// let _ = multi_group_pmx(&parent1, &parent2);
 /// ```
 pub fn multi_group_pmx<U: LinearChromosome>(

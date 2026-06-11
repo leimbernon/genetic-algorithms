@@ -29,7 +29,7 @@ use std::fmt::Debug;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use genetic_algorithms::operations::mutation::cauchy_mutation;
+/// use genetic_algorithms::operations::mutation::cauchy::cauchy_mutation;
 /// use genetic_algorithms::chromosomes::Range;
 /// let mut chromosome: Range<f64> = Range::new();
 /// cauchy_mutation(&mut chromosome, 0.1);

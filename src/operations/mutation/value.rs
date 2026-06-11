@@ -24,7 +24,7 @@ use super::ValueMutable;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use genetic_algorithms::operations::mutation::value_mutation;
+/// use genetic_algorithms::operations::mutation::value::value_mutation;
 /// use genetic_algorithms::chromosomes::Range;
 /// let mut chromosome: Range<f64> = Range::new();
 /// value_mutation(&mut chromosome);

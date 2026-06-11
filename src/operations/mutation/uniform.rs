@@ -22,7 +22,7 @@ use std::fmt::Debug;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use genetic_algorithms::operations::mutation::uniform_mutation;
+/// use genetic_algorithms::operations::mutation::uniform::uniform_mutation;
 /// use genetic_algorithms::chromosomes::Range;
 /// let mut chromosome: Range<f64> = Range::new();
 /// uniform_mutation(&mut chromosome);

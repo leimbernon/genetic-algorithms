@@ -29,7 +29,7 @@ use std::fmt::Debug;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use genetic_algorithms::operations::crossover::spx;
+/// use genetic_algorithms::operations::crossover::spx::spx;
 /// use genetic_algorithms::chromosomes::Range;
 /// let p1: Range<f64> = Range::new();
 /// let p2: Range<f64> = Range::new();

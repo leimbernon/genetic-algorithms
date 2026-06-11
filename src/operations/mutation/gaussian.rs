@@ -28,7 +28,7 @@ use std::fmt::Debug;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use genetic_algorithms::operations::mutation::gaussian_mutation;
+/// use genetic_algorithms::operations::mutation::gaussian::gaussian_mutation;
 /// use genetic_algorithms::chromosomes::Range;
 /// let mut chromosome: Range<f64> = Range::new();
 /// gaussian_mutation(&mut chromosome, 0.1);
@@ -77,9 +77,9 @@ where
 /// # Examples
 ///
 /// ```rust
-/// use genetic_algorithms::operations::mutation::GaussianConvertible;
+/// use genetic_algorithms::operations::mutation::gaussian::GaussianConvertible;
 /// assert_eq!(f64::from_f64(1.5), 1.5_f64);
-/// assert_eq!(f64::to_f64(2.0_f64), 2.0_f64);
+/// assert_eq!(<f64 as GaussianConvertible>::to_f64(2.0_f64), 2.0_f64);
 /// ```
 pub trait GaussianConvertible {
     /// Converts an `f64` value to this type (e.g., rounding for integers).
@@ -144,7 +144,7 @@ impl GaussianConvertible for i64 {
 /// # Examples
 ///
 /// ```rust,no_run
-/// use genetic_algorithms::operations::mutation::multi_range_gaussian_mutation;
+/// use genetic_algorithms::operations::mutation::gaussian::multi_range_gaussian_mutation;
 /// use genetic_algorithms::MultiRangeChromosome;
 /// let mut chromosome: MultiRangeChromosome<f64> = MultiRangeChromosome::new();
 /// multi_range_gaussian_mutation(&mut chromosome, 0.1);

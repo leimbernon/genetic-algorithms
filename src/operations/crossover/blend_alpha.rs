@@ -36,7 +36,7 @@ use std::fmt::Debug;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use genetic_algorithms::operations::crossover::blend_alpha;
+/// use genetic_algorithms::operations::crossover::blend_alpha::blend_alpha;
 /// use genetic_algorithms::chromosomes::Range;
 /// let parent1: Range<f64> = Range::new();
 /// let parent2: Range<f64> = Range::new();
@@ -114,9 +114,9 @@ where
 /// # Examples
 ///
 /// ```rust
-/// use genetic_algorithms::operations::crossover::BlendConvertible;
-/// assert_eq!(f64::from_f64(0.5), 0.5_f64);
-/// assert_eq!(f64::to_f64(1.0_f64), 1.0_f64);
+/// use genetic_algorithms::operations::crossover::blend_alpha::BlendConvertible;
+/// assert_eq!(<f64 as BlendConvertible>::from_f64(0.5), 0.5_f64);
+/// assert_eq!(<f64 as BlendConvertible>::to_f64(1.0_f64), 1.0_f64);
 /// ```
 pub trait BlendConvertible {
     /// Converts an `f64` value to this type (e.g., rounding for integers).
