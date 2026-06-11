@@ -59,9 +59,9 @@ fn main() {
     let alleles_clone = alleles.clone();
 
     // --- Build composite observer (LogObserver always active; MetricsObserver when feature flag set) ---
-    let composite = CompositeObserver::new().add(Arc::new(LogObserver));
+    let composite = CompositeObserver::new().register(Arc::new(LogObserver));
     #[cfg(feature = "observer-metrics")]
-    let composite = composite.add(Arc::new(MetricsObserver::new("rastrigin")));
+    let composite = composite.register(Arc::new(MetricsObserver::new("rastrigin")));
 
     // --- Build the GA configuration ---
     let mut ga = Ga::new()
@@ -151,7 +151,7 @@ fn main() {
                 let stats = &*stats_guard;
                 std::fs::create_dir_all("docs/images").expect("failed to create docs/images");
                 genetic_algorithms::visualization::plot_fitness(
-                    &stats,
+                    stats,
                     "docs/images/rastrigin.png",
                 )
                 .expect("plot failed");

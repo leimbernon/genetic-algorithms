@@ -43,7 +43,7 @@ fn bench_alps_vs_de(c: &mut Criterion) {
                     .with_age_gap(5)
                     .with_injection_interval(10)
                     .with_max_generations(100)
-                    .with_mutation_sigma(0.3);
+                    .with_mutation(genetic_algorithms::operations::Mutation::Gaussian { sigma: Some(0.3) });
                 let mut engine = AlpsEngine::new(config, |n| make_pop(n, 5), sphere);
                 engine.run()
             });
@@ -91,7 +91,7 @@ fn bench_alps_age_schemes(c: &mut Criterion) {
                         .with_age_scheme(scheme.clone())
                         .with_age_gap(5)
                         .with_max_generations(100)
-                        .with_mutation_sigma(0.3);
+                        .with_mutation(genetic_algorithms::operations::Mutation::Gaussian { sigma: Some(0.3) });
                     let mut engine = AlpsEngine::new(config, |n| make_pop(n, 5), sphere);
                     engine.run()
                 });

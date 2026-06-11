@@ -175,6 +175,9 @@ fn matvec(a: &[f64], x: &[f64], n: usize) -> Vec<f64> {
 /// Internal bookkeeping for one CMA-ES run.
 ///
 /// All fields follow Hansen's variable naming from arXiv:1604.00772.
+// TODO(plan 64-03): fields `n` and `lambda` are stored but not yet read back out
+// of the struct. Integration tests that exercise the full CMA loop will exercise
+// these fields indirectly; remove this allow once those tests land.
 #[allow(dead_code)]
 struct CmaState {
     /// Problem dimension.

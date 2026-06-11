@@ -147,7 +147,6 @@ where
     pub observer: Option<Arc<dyn Spea2Observer<U> + Send + Sync>>,
 }
 
-#[allow(dead_code)]
 impl<U> Spea2Ga<U>
 where
     U: LinearChromosome,

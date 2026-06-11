@@ -34,7 +34,7 @@ fn bench_metrics_observer_island(c: &mut Criterion) {
 
             let ga_config = GaConfiguration::new()
                 .with_population_size(20)
-                .with_genes_per_chromosome(8)
+                .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(8))
                 .with_max_generations(10)
                 .with_selection_method(Selection::Tournament)
                 .with_crossover_method(Crossover::Uniform)
