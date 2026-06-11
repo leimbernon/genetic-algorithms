@@ -63,7 +63,7 @@ pub struct AlpsResult<U: LinearChromosome> {
 ///     .with_age_gap(5)
 ///     .with_injection_interval(10)
 ///     .with_max_generations(500)
-///     .with_mutation_sigma(0.1)
+///     .with_mutation(genetic_algorithms::operations::Mutation::Gaussian { sigma: Some(0.1) })
 ///     .with_problem_solving(ProblemSolving::Minimization)
 ///     .with_fitness_target(0.01);
 ///

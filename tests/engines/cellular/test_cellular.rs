@@ -146,7 +146,7 @@ fn test_early_stopping_on_fitness_target() {
         .with_neighborhood(Neighborhood::Moore)
         .with_update_mode(UpdateMode::Asynchronous)
         .with_max_generations(10_000)
-        .with_mutation_sigma(1.0)
+        .with_mutation(Mutation::Gaussian { sigma: Some(1.0) })
         .with_problem_solving(ProblemSolving::Minimization)
         // Very lenient target — engine should stop well before 10_000 gens.
         .with_fitness_target(1_000.0);
@@ -191,4 +191,30 @@ fn test_all_neighborhoods_asynchronous() {
         assert!(result.generations > 0, "asynchronous engine produced 0 generations");
         assert_eq!(result.population.len(), 25);
     }
+}
+
+// --- Migration: Mutation::Gaussian replaces deprecated with_mutation_sigma ----
+
+/// Regression test: constructing CellularConfiguration with `Mutation::Gaussian { sigma }`
+/// (the v3.0.0 replacement for the removed `with_mutation_sigma` builder) produces a
+/// working Cellular GA run.  This confirms callers migrated per D-08.
+#[test]
+fn test_cellular_mutation_gaussian_migration() {
+    let config = CellularConfiguration::default()
+        .with_grid(4, 4)
+        .with_neighborhood(Neighborhood::Moore)
+        .with_update_mode(UpdateMode::Asynchronous)
+        .with_max_generations(20)
+        .with_mutation(Mutation::Gaussian { sigma: Some(0.3) })
+        .with_problem_solving(ProblemSolving::Minimization);
+
+    let mut engine = CellularEngine::new(
+        config,
+        |n| random_pop(n, 3, -2.0, 2.0, 456),
+        sphere,
+    );
+    let result = engine.run();
+    assert!(result.generations > 0, "expected at least one generation");
+    assert_eq!(result.population.len(), 16, "4x4 grid = 16 individuals");
+    assert!(result.best_fitness >= 0.0, "sphere function is non-negative");
 }

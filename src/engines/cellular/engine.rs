@@ -59,7 +59,7 @@ pub struct CellularResult<U: LinearChromosome> {
 ///     .with_neighborhood(Neighborhood::Moore)
 ///     .with_update_mode(UpdateMode::Asynchronous)
 ///     .with_max_generations(200)
-///     .with_mutation_sigma(0.1)
+///     .with_mutation(genetic_algorithms::operations::Mutation::Gaussian { sigma: Some(0.1) })
 ///     .with_problem_solving(ProblemSolving::Minimization)
 ///     .with_fitness_target(0.01);
 ///
