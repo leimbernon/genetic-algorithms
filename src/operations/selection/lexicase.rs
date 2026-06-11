@@ -115,6 +115,15 @@ fn select_one_winner<U: VectorFitness>(
 ///
 /// `Vec<Vec<usize>>` of parent index groups. Returns empty vec if population
 /// has fewer than 2 individuals or case scores are empty.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::selection::lexicase_selection;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let population: Vec<Binary> = vec![Binary::new(); 10];
+/// let pairs = lexicase_selection(&population, 5, 2);
+/// ```
 pub fn lexicase_selection<U>(
     chromosomes: &[U],
     number_of_couples: usize,
@@ -169,6 +178,15 @@ where
 ///
 /// `Vec<Vec<usize>>` of parent index groups. Returns empty vec if population
 /// has fewer than 2 individuals or case scores are empty.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::selection::epsilon_lexicase_selection;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let population: Vec<Binary> = vec![Binary::new(); 10];
+/// let pairs = epsilon_lexicase_selection(&population, 5, Some(0.01), 2);
+/// ```
 pub fn epsilon_lexicase_selection<U>(
     chromosomes: &[U],
     number_of_couples: usize,

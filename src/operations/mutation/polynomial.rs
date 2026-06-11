@@ -37,6 +37,15 @@ use std::fmt::Debug;
 /// # Returns
 ///
 /// `Ok(())` on success, or `Err(GaError::MutationError)` if `eta_m` is negative.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::polynomial_mutation;
+/// use genetic_algorithms::chromosomes::Range;
+/// let mut chromosome: Range<f64> = Range::new();
+/// let _ = polynomial_mutation(&mut chromosome, 20.0);
+/// ```
 pub fn polynomial_mutation<T>(
     individual: &mut RangeChromosome<T>,
     eta_m: f64,
@@ -101,6 +110,14 @@ where
 /// Trait for types that can be converted to/from an f64 value (for polynomial mutation).
 ///
 /// Implementations should do a reasonable conversion (e.g., rounding for integers).
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::operations::mutation::PolynomialConvertible;
+/// assert_eq!(f64::from_f64(0.5), 0.5_f64);
+/// assert_eq!(f64::to_f64(1.0_f64), 1.0_f64);
+/// ```
 pub trait PolynomialConvertible {
     /// Converts an f64 value to this type.
     fn from_f64(val: f64) -> Self;

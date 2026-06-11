@@ -33,6 +33,15 @@ use rand::Rng;
 ///
 /// A vector of `Vec<usize>` parent index groups. Returns an empty vector if the
 /// population has fewer than 2 individuals.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::selection::boltzmann_selection;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let population: Vec<Binary> = vec![Binary::new(); 10];
+/// let pairs = boltzmann_selection(&population, 5, 1.0, 2);
+/// ```
 pub fn boltzmann_selection<U: ChromosomeT>(
     chromosomes: &[U],
     couples: usize,

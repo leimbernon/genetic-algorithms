@@ -32,6 +32,15 @@ use rand::Rng;
 /// A vector of `Vec<usize>` parent index groups drawn exclusively from
 /// the top half of the population. Returns an empty vector if fewer than 2
 /// chromosomes are provided.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::selection::truncation_selection;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let population: Vec<Binary> = vec![Binary::new(); 10];
+/// let pairs = truncation_selection(&population, 5, 2);
+/// ```
 pub fn truncation_selection<U: ChromosomeT>(
     chromosomes: &[U],
     couples: usize,

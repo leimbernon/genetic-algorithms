@@ -13,6 +13,15 @@ use rand::Rng;
 ///
 /// Selects a random position and inverts its value (true ↔ false).
 /// This is the natural mutation operator for binary-encoded chromosomes.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::bit_flip;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let mut chromosome = Binary::new();
+/// bit_flip(&mut chromosome);
+/// ```
 pub fn bit_flip<U>(chromosome: &mut U)
 where
     U: LinearChromosome<Gene = BinaryGenotype>,

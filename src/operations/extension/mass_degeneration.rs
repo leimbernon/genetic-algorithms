@@ -10,6 +10,16 @@ use log::info;
 
 /// Applies mass degeneration: protects elite chromosomes and applies
 /// `mutation_rounds` of swap mutation to all others, resetting their fitness.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::extension::mass_degeneration;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::configuration::ProblemSolving;
+/// let mut population: Vec<Binary> = vec![Binary::new(); 20];
+/// mass_degeneration(&mut population, ProblemSolving::Maximization, 3, 2);
+/// ```
 pub fn mass_degeneration<U: LinearChromosome>(
     chromosomes: &mut [U],
     problem_solving: ProblemSolving,

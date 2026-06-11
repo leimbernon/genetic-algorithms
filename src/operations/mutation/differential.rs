@@ -33,6 +33,16 @@ use std::borrow::Cow;
 /// * `target_idx` - Index of `individual` within `chromosomes`.
 /// * `f` - The differential weight (scale factor). Typical range: 0.4–1.0.
 ///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::differential_mutation;
+/// use genetic_algorithms::chromosomes::Range;
+/// let mut individual: Range<f64> = Range::new();
+/// let population: Vec<Range<f64>> = vec![Range::new(); 5];
+/// let _ = differential_mutation(&mut individual, &population, 0, 0.8);
+/// ```
+///
 /// # Errors
 ///
 /// - `GaError::MutationError` if `chromosomes.len() < 4` (D-03)

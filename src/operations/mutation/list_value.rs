@@ -20,6 +20,15 @@ use super::ValueMutable;
 ///
 /// If the chromosome has no genes, or the selected gene has fewer than 2
 /// alleles, the function returns without modifying the chromosome (no-op).
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::list_value_mutation;
+/// use genetic_algorithms::chromosomes::ListChromosome;
+/// let mut chromosome: ListChromosome<i32> = ListChromosome::new();
+/// list_value_mutation(&mut chromosome);
+/// ```
 pub fn list_value_mutation<T>(individual: &mut ListChromosome<T>)
 where
     T: Clone + Sync + Send + Default + Debug + 'static,

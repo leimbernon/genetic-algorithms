@@ -24,6 +24,15 @@ use std::fmt::Debug;
 ///
 /// * `individual` - The chromosome to mutate.
 /// * `sigma` - The standard deviation of the Gaussian perturbation.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::gaussian_mutation;
+/// use genetic_algorithms::chromosomes::Range;
+/// let mut chromosome: Range<f64> = Range::new();
+/// gaussian_mutation(&mut chromosome, 0.1);
+/// ```
 pub fn gaussian_mutation<T>(individual: &mut RangeChromosome<T>, sigma: f64)
 where
     T: Sync + Send + Clone + Default + Debug + PartialOrd + Copy + 'static + GaussianConvertible,
@@ -64,6 +73,14 @@ where
 /// This is needed because Rust's standard library doesn't provide a universal
 /// `From<f64>` for numeric types. Implementations should do a reasonable
 /// conversion (e.g., rounding for integers).
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::operations::mutation::GaussianConvertible;
+/// assert_eq!(f64::from_f64(1.5), 1.5_f64);
+/// assert_eq!(f64::to_f64(2.0_f64), 2.0_f64);
+/// ```
 pub trait GaussianConvertible {
     /// Converts an `f64` value to this type (e.g., rounding for integers).
     fn from_f64(val: f64) -> Self;
@@ -123,6 +140,15 @@ impl GaussianConvertible for i64 {
 ///
 /// The `_sigma` parameter is accepted for API consistency but is intentionally
 /// ignored — per-gene `mutation_rate` is the authoritative scale.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::multi_range_gaussian_mutation;
+/// use genetic_algorithms::MultiRangeChromosome;
+/// let mut chromosome: MultiRangeChromosome<f64> = MultiRangeChromosome::new();
+/// multi_range_gaussian_mutation(&mut chromosome, 0.1);
+/// ```
 pub fn multi_range_gaussian_mutation<T>(
     individual: &mut crate::chromosomes::MultiRangeChromosome<T>,
     _sigma: f64,

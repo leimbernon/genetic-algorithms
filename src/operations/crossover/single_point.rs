@@ -11,6 +11,16 @@ use std::borrow::Cow;
 /// Given parents `[A B C D E]` and `[V W X Y Z]` with crossover point 2,
 /// produces children `[A B X Y Z]` and `[V W C D E]`.
 ///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::crossover::single_point;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let parent1 = Binary::new();
+/// let parent2 = Binary::new();
+/// let _ = single_point(&parent1, &parent2);
+/// ```
+///
 /// # Errors
 ///
 /// Returns `Err(GaError::CrossoverError)` if parents have different DNA lengths.

@@ -27,6 +27,16 @@ use std::fmt::Debug;
 /// # Returns
 ///
 /// Two children chromosomes, or an error if parents have mismatched lengths.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::crossover::sbx;
+/// use genetic_algorithms::chromosomes::Range;
+/// let parent1: Range<f64> = Range::new();
+/// let parent2: Range<f64> = Range::new();
+/// let _ = sbx(&parent1, &parent2, 10.0);
+/// ```
 pub fn sbx<T>(
     parent_1: &RangeChromosome<T>,
     parent_2: &RangeChromosome<T>,
@@ -104,6 +114,14 @@ where
 }
 
 /// Trait for types that can be converted to/from an f64 value (for SBX).
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::operations::crossover::SbxConvertible;
+/// assert_eq!(f64::from_f64(0.5), 0.5_f64);
+/// assert_eq!(f64::to_f64(2.0_f64), 2.0_f64);
+/// ```
 pub trait SbxConvertible {
     /// Converts an `f64` value to this type (e.g., rounding for integers).
     fn from_f64(val: f64) -> Self;

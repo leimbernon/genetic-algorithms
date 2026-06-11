@@ -14,6 +14,16 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 ///
 /// For each group of duplicates, the one with the best fitness is kept.
 /// The population may be smaller after this operation; the GA loop handles regrowth.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::extension::mass_deduplication;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::configuration::ProblemSolving;
+/// let mut population: Vec<Binary> = vec![Binary::new(); 20];
+/// mass_deduplication(&mut population, ProblemSolving::Maximization);
+/// ```
 pub fn mass_deduplication<U: LinearChromosome>(
     chromosomes: &mut Vec<U>,
     problem_solving: ProblemSolving,

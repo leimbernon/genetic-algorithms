@@ -28,6 +28,17 @@ use std::borrow::Cow;
 /// Two offspring chromosomes. Offspring length equals `min(len_a, len_b)` for
 /// `Trim` and `max(len_a, len_b)` for `Pad`.
 ///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::crossover::variable_length_crossover;
+/// use genetic_algorithms::operations::AlignmentStrategy;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let parent1 = Binary::new();
+/// let parent2 = Binary::new();
+/// let _ = variable_length_crossover(&parent1, &parent2, AlignmentStrategy::Trim);
+/// ```
+///
 /// # Errors
 ///
 /// Returns `Err(GaError::CrossoverError)` if both parents are empty.

@@ -14,6 +14,15 @@ pub(crate) use rand::Rng;
 /// Two indices `i` and `j` are picked such that `i < j`, and every gene
 /// in `[i, j)` is swapped with another randomly chosen gene in the same
 /// range. If the DNA has fewer than 2 genes the function is a no-op.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::scramble;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let mut chromosome = Binary::new();
+/// scramble(&mut chromosome);
+/// ```
 pub fn scramble<U: LinearChromosome>(chromosome: &mut U) {
     //Getting two random genes from the dna of the chromosome
     debug!(target="mutation_events", method="scramble"; "Starting the scramble mutation");

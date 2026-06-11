@@ -23,6 +23,17 @@ use rayon::prelude::*;
 /// If fewer offspring exist than `population_size`, all offspring are kept
 /// (resulting in a temporarily smaller population). The remaining offspring are
 /// then ranked by fitness and truncated to `population_size`.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::survivor::mu_comma_lambda;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::configuration::{LimitConfiguration, ProblemSolving};
+/// let mut population: Vec<Binary> = vec![Binary::new(); 20];
+/// let limits = LimitConfiguration::default().with_problem_solving(ProblemSolving::Maximization);
+/// mu_comma_lambda(&mut population, 10, limits);
+/// ```
 pub fn mu_comma_lambda<U: ChromosomeT>(
     chromosomes: &mut Vec<U>,
     population_size: usize,

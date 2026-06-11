@@ -22,6 +22,15 @@ use rayon::prelude::*;
 /// * `couples` - Desired number of parent groups (clamped to `population / num_parents`).
 /// * `_number_of_threads` - Unused; parallelism is managed by Rayon's global pool.
 /// * `num_parents` - Number of parents per group (must be >= 2).
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::selection::tournament;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let population: Vec<Binary> = vec![Binary::new(); 10];
+/// let pairs = tournament(&population, 5, 1, 2);
+/// ```
 pub fn tournament<U>(
     chromosomes: &[U],
     couples: usize,

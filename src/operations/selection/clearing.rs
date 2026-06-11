@@ -27,6 +27,15 @@ use log::{debug, trace};
 /// * `number_of_couples` - Target number of parent groups to produce. Groups are
 ///   drawn with replacement when the eligible pool is smaller than required.
 /// * `num_parents` - Number of parents per group (must be >= 2).
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::selection::clearing_selection;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let population: Vec<Binary> = vec![Binary::new(); 10];
+/// let pairs = clearing_selection(&population, 0.1, 5, 2);
+/// ```
 pub fn clearing_selection<U: ChromosomeT>(
     chromosomes: &[U],
     niche_radius: f64,

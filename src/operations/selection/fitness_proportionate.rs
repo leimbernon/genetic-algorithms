@@ -27,6 +27,15 @@ use rand::Rng;
 /// * `chromosomes` - Population to select from.
 /// * `couples` - Number of parent groups to produce.
 /// * `num_parents` - Number of parents per group (must be >= 2).
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::selection::roulette_wheel_selection;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let population: Vec<Binary> = vec![Binary::new(); 10];
+/// let pairs = roulette_wheel_selection(&population, 5, 2);
+/// ```
 pub fn roulette_wheel_selection<U: ChromosomeT>(chromosomes: &[U], couples: usize, num_parents: usize) -> Vec<Vec<usize>> {
     let num_parents = num_parents.max(2);
     let mut mating = Vec::new();
@@ -91,6 +100,15 @@ pub fn roulette_wheel_selection<U: ChromosomeT>(chromosomes: &[U], couples: usiz
 /// * `chromosomes` - Population to select from.
 /// * `couples` - Number of parent groups to produce.
 /// * `num_parents` - Number of parents per group (must be >= 2).
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::selection::stochastic_universal_sampling;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let population: Vec<Binary> = vec![Binary::new(); 10];
+/// let pairs = stochastic_universal_sampling(&population, 5, 2);
+/// ```
 pub fn stochastic_universal_sampling<U: ChromosomeT>(
     chromosomes: &[U],
     couples: usize,

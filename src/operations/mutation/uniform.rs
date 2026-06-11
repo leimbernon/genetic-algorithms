@@ -18,6 +18,15 @@ use std::fmt::Debug;
 /// # Arguments
 ///
 /// * `individual` - The chromosome to mutate (exactly one gene is altered).
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::uniform_mutation;
+/// use genetic_algorithms::chromosomes::Range;
+/// let mut chromosome: Range<f64> = Range::new();
+/// uniform_mutation(&mut chromosome);
+/// ```
 pub fn uniform_mutation<T>(individual: &mut RangeChromosome<T>)
 where
     T: Sync + Send + Clone + Default + Debug + PartialOrd + Copy + 'static + GaussianConvertible,

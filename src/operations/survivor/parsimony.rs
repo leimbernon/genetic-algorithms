@@ -57,6 +57,18 @@ fn adjusted_fitness(
 /// * `limit_configuration` — Controls sorting direction and optional target.
 /// * `length_penalty` — Parsimony coefficient. Sign is auto-adjusted per mode.
 ///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::survivor::apply_parsimony_pressure;
+/// use genetic_algorithms::operations::Survivor;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::configuration::{LimitConfiguration, ProblemSolving};
+/// let mut population: Vec<Binary> = vec![Binary::new(); 20];
+/// let limits = LimitConfiguration::default().with_problem_solving(ProblemSolving::Maximization);
+/// let _ = apply_parsimony_pressure(Survivor::Fitness, &mut population, 10, limits, 0.001);
+/// ```
+///
 /// # Errors
 ///
 /// Propagates any `GaError` from the underlying survivor-selection call.

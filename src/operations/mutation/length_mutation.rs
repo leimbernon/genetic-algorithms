@@ -37,6 +37,16 @@ use std::borrow::Cow;
 /// * `chromosome_length` — Must be `ChromosomeLength::Variable { min, max }`.
 ///   Returns `Err(GaError::MutationError)` for `ChromosomeLength::Fixed`.
 ///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::length_insertion_mutation;
+/// use genetic_algorithms::chromosomes::{Binary, ChromosomeLength};
+/// let mut chromosome = Binary::new();
+/// let length = ChromosomeLength::Variable { min: 2, max: 10 };
+/// let _ = length_insertion_mutation(&mut chromosome, length);
+/// ```
+///
 /// # Errors
 ///
 /// Returns `Err(GaError::MutationError)` when `chromosome_length` is
@@ -100,6 +110,16 @@ pub fn length_insertion_mutation<U: LinearChromosome>(
 /// * `individual` — The chromosome to mutate.
 /// * `chromosome_length` — Must be `ChromosomeLength::Variable { min, max }`.
 ///   Returns `Err(GaError::MutationError)` for `ChromosomeLength::Fixed`.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::length_deletion_mutation;
+/// use genetic_algorithms::chromosomes::{Binary, ChromosomeLength};
+/// let mut chromosome = Binary::new();
+/// let length = ChromosomeLength::Variable { min: 2, max: 10 };
+/// let _ = length_deletion_mutation(&mut chromosome, length);
+/// ```
 ///
 /// # Errors
 ///

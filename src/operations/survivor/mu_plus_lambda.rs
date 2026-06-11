@@ -24,6 +24,17 @@ use rayon::prelude::*;
 /// semantic distinction is that (mu+lambda) explicitly frames the competition as
 /// "parents + offspring together", which is the convention in evolution-strategy
 /// literature.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::survivor::mu_plus_lambda;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::configuration::{LimitConfiguration, ProblemSolving};
+/// let mut population: Vec<Binary> = vec![Binary::new(); 20];
+/// let limits = LimitConfiguration::default().with_problem_solving(ProblemSolving::Maximization);
+/// mu_plus_lambda(&mut population, 10, limits);
+/// ```
 pub fn mu_plus_lambda<U: ChromosomeT>(
     chromosomes: &mut Vec<U>,
     population_size: usize,

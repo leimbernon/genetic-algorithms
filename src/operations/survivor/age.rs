@@ -16,6 +16,15 @@ use rayon::prelude::*;
 ///
 /// * `chromosomes` - Combined parents + offspring (modified in place).
 /// * `population_size` - Desired population size after selection.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::survivor::age_based;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let mut population: Vec<Binary> = vec![Binary::new(); 20];
+/// age_based(&mut population, 10);
+/// ```
 pub fn age_based<U: ChromosomeT>(chromosomes: &mut Vec<U>, population_size: usize) {
     //We first sort the chromosomes by their fitness
     debug!(target="survivor_events", method="age_based"; "Starting age based survivor method");

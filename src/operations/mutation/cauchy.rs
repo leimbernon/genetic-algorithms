@@ -25,6 +25,15 @@ use std::fmt::Debug;
 ///
 /// * `individual` - The chromosome to mutate (exactly one gene is altered).
 /// * `scale` - The Cauchy γ parameter controlling the scale of the heavy tail.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::cauchy_mutation;
+/// use genetic_algorithms::chromosomes::Range;
+/// let mut chromosome: Range<f64> = Range::new();
+/// cauchy_mutation(&mut chromosome, 0.1);
+/// ```
 pub fn cauchy_mutation<T>(individual: &mut RangeChromosome<T>, scale: f64)
 where
     T: Sync + Send + Clone + Default + Debug + PartialOrd + Copy + 'static + GaussianConvertible,

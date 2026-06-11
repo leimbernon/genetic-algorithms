@@ -20,6 +20,15 @@ use rand::Rng;
 ///
 /// * `chromosomes` - Population to select from.
 /// * `num_parents` - Number of parents per group (must be >= 2).
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::selection::random;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let population: Vec<Binary> = vec![Binary::new(); 10];
+/// let pairs = random(&population, 2);
+/// ```
 pub fn random<U: ChromosomeT>(chromosomes: &[U], num_parents: usize) -> Vec<Vec<usize>> {
     let num_parents = num_parents.max(2);
     let n = chromosomes.len();

@@ -20,6 +20,15 @@ use super::ValueMutable;
 /// - Writes back the mutated gene into the individual's DNA.
 ///
 /// If the chromosome has no genes or the selected gene has no ranges, it does nothing.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::value_mutation;
+/// use genetic_algorithms::chromosomes::Range;
+/// let mut chromosome: Range<f64> = Range::new();
+/// value_mutation(&mut chromosome);
+/// ```
 pub fn value_mutation<T>(individual: &mut RangeChromosome<T>)
 where
     T: Sync + Send + Clone + Default + Debug + PartialOrd + SampleUniform + Copy + 'static,

@@ -30,6 +30,16 @@ use std::borrow::Cow;
 ///
 /// `pmx_build_child` panics if a gene ID in a parent slice does not appear in the
 /// other parent's slice (parents must be permutations within each group).
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::crossover::multi_group_pmx;
+/// use genetic_algorithms::MultiUniqueChromosome;
+/// let parent1: MultiUniqueChromosome<i32> = MultiUniqueChromosome::new();
+/// let parent2: MultiUniqueChromosome<i32> = MultiUniqueChromosome::new();
+/// let _ = multi_group_pmx(&parent1, &parent2);
+/// ```
 pub fn multi_group_pmx<U: LinearChromosome>(
     parent_1: &U,
     parent_2: &U,

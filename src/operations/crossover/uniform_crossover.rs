@@ -11,6 +11,16 @@ use std::borrow::Cow;
 /// For every gene position a coin is flipped — the child gets the gene from
 /// parent 1 or parent 2 with equal probability.
 ///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::crossover::uniform;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let parent1 = Binary::new();
+/// let parent2 = Binary::new();
+/// let _ = uniform(&parent1, &parent2);
+/// ```
+///
 /// # Errors
 ///
 /// Returns `Err(GaError::CrossoverError)` if parents have different DNA lengths.

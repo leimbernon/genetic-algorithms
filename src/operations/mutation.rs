@@ -175,6 +175,15 @@ fn try_self_adaptive<U: LinearChromosome + 'static>(
 /// Override the methods relevant to your chromosome type:
 /// - **Binary chromosomes**: override `bit_flip_mutate`
 /// - **Range chromosomes**: override `value_mutate`, `creep_mutate`, `gaussian_mutate`
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::ValueMutable;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let mut chromosome = Binary::new();
+/// chromosome.bit_flip_mutate();
+/// ```
 pub trait ValueMutable: LinearChromosome {
     /// Performs value mutation on this chromosome in-place.
     ///

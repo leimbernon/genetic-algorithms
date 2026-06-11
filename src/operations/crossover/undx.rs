@@ -31,6 +31,17 @@ use std::fmt::Debug;
 ///
 /// A `Vec` containing exactly 1 offspring, or a `GaError::CrossoverError` if
 /// fewer than 3 parents are provided or parent DNA lengths are mismatched.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::crossover::undx;
+/// use genetic_algorithms::chromosomes::Range;
+/// let p1: Range<f64> = Range::new();
+/// let p2: Range<f64> = Range::new();
+/// let p3: Range<f64> = Range::new();
+/// let _ = undx(&[&p1, &p2, &p3], 3, None, None);
+/// ```
 pub fn undx<T>(
     parents: &[&RangeChromosome<T>],
     _num_parents: usize,

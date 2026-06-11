@@ -15,6 +15,15 @@ use rand::Rng;
 /// Two indices are chosen at random; the genes in the inclusive range
 /// `[lower, upper]` are then reversed in place. If the DNA has fewer than
 /// 2 genes the function is a no-op.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::inversion;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let mut chromosome = Binary::new();
+/// inversion(&mut chromosome);
+/// ```
 pub fn inversion<U: LinearChromosome>(individual: &mut U) {
     // Starting the inversion mutation and obtaining two random indices
     debug!(target="mutation_events", method="inversion"; "Starting the inversion mutation");

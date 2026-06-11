@@ -30,6 +30,15 @@ use rand::Rng;
 /// # Returns
 ///
 /// A vector of `Vec<usize>` parent index groups.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::selection::rank_selection;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let population: Vec<Binary> = vec![Binary::new(); 10];
+/// let pairs = rank_selection(&population, 5, 2);
+/// ```
 pub fn rank_selection<U: ChromosomeT>(chromosomes: &[U], couples: usize, num_parents: usize) -> Vec<Vec<usize>> {
     let num_parents = num_parents.max(2);
     debug!(target="selection_events", method="rank_selection"; "Starting rank-based selection");

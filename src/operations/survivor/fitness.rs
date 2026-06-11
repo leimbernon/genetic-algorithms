@@ -25,6 +25,17 @@ use rayon::prelude::*;
 /// * `chromosomes` - Combined parents + offspring (modified in place).
 /// * `population_size` - Desired population size after selection.
 /// * `limit_configuration` - Controls sorting direction and optional target.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::survivor::fitness_based;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::configuration::{LimitConfiguration, ProblemSolving};
+/// let mut population: Vec<Binary> = vec![Binary::new(); 20];
+/// let limits = LimitConfiguration::default().with_problem_solving(ProblemSolving::Maximization);
+/// fitness_based(&mut population, 10, limits);
+/// ```
 pub fn fitness_based<U: ChromosomeT>(
     chromosomes: &mut Vec<U>,
     population_size: usize,

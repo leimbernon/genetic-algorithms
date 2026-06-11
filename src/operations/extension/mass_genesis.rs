@@ -10,6 +10,16 @@ use log::info;
 /// Applies mass genesis: keeps only the 2 best chromosomes.
 ///
 /// The population will be smaller after this operation; the GA loop handles regrowth.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::extension::mass_genesis;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::configuration::ProblemSolving;
+/// let mut population: Vec<Binary> = vec![Binary::new(); 20];
+/// mass_genesis(&mut population, ProblemSolving::Maximization);
+/// ```
 pub fn mass_genesis<U: ChromosomeT>(chromosomes: &mut Vec<U>, problem_solving: ProblemSolving) {
     if chromosomes.len() <= 2 {
         return;

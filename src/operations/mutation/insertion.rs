@@ -37,6 +37,15 @@ use std::borrow::Cow;
 /// # Returns
 ///
 /// `Ok(())` on success.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::insertion_mutation;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let mut chromosome = Binary::new();
+/// let _ = insertion_mutation(&mut chromosome);
+/// ```
 pub fn insertion_mutation<U: LinearChromosome>(individual: &mut U) -> Result<(), GaError> {
     let len = individual.dna().len();
     if len < 2 {

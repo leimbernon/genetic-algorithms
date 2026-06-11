@@ -32,6 +32,16 @@ use std::fmt::Debug;
 /// # Returns
 ///
 /// Two children chromosomes, or an error if parents have mismatched DNA lengths.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::crossover::arithmetic;
+/// use genetic_algorithms::chromosomes::Range;
+/// let parent1: Range<f64> = Range::new();
+/// let parent2: Range<f64> = Range::new();
+/// let _ = arithmetic(&parent1, &parent2, 0.5);
+/// ```
 pub fn arithmetic<T>(
     parent_1: &RangeChromosome<T>,
     parent_2: &RangeChromosome<T>,
@@ -92,6 +102,14 @@ where
 }
 
 /// Trait for types that can be converted to/from an `f64` value (for arithmetic crossover).
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::operations::crossover::ArithmeticConvertible;
+/// assert_eq!(f64::from_f64(0.5), 0.5_f64);
+/// assert_eq!(f64::to_f64(1.0_f64), 1.0_f64);
+/// ```
 pub trait ArithmeticConvertible {
     /// Convert an `f64` into `Self`.
     fn from_f64(val: f64) -> Self;

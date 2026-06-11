@@ -38,6 +38,15 @@ use std::fmt::Debug;
 /// # Returns
 ///
 /// `Ok(())` on success, or `Err(GaError::MutationError)` on invalid parameters.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::non_uniform_mutation;
+/// use genetic_algorithms::chromosomes::Range;
+/// let mut chromosome: Range<f64> = Range::new();
+/// let _ = non_uniform_mutation(&mut chromosome, 10, 100, 2.0);
+/// ```
 pub fn non_uniform_mutation<T>(
     individual: &mut RangeChromosome<T>,
     generation: usize,
@@ -113,6 +122,14 @@ where
 /// Trait for types that can be converted to/from an f64 value (for non-uniform mutation).
 ///
 /// Implementations should do a reasonable conversion (e.g., rounding for integers).
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::operations::mutation::NonUniformConvertible;
+/// assert_eq!(f64::from_f64(0.5), 0.5_f64);
+/// assert_eq!(f64::to_f64(1.0_f64), 1.0_f64);
+/// ```
 pub trait NonUniformConvertible {
     /// Converts an f64 value to this type.
     fn from_f64(val: f64) -> Self;

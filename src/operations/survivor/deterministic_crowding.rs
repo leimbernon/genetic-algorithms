@@ -41,6 +41,15 @@ fn hamming_distance<U: LinearChromosome>(a: &U, b: &U) -> usize {
 /// # Arguments
 ///
 /// * `chromosomes` - Combined parents + offspring (modified in place).
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::survivor::deterministic_crowding;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let mut population: Vec<Binary> = vec![Binary::new(); 20];
+/// deterministic_crowding(&mut population);
+/// ```
 pub fn deterministic_crowding<U: LinearChromosome>(chromosomes: &mut Vec<U>) {
     debug!(target="survivor_events", method="deterministic_crowding"; "Starting deterministic crowding survivor");
 
