@@ -69,6 +69,11 @@ mod engines {
     mod eda {
         mod test_eda;
     }
+    mod gp {
+        mod test_gp_primitives;
+        mod test_gp_chromosome;
+        mod test_gp_configuration;
+    }
     mod test_strategy_trait;
     mod hill_climb {
         mod test_hill_climb;
