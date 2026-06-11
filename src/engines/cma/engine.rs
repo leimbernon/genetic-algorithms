@@ -175,10 +175,6 @@ fn matvec(a: &[f64], x: &[f64], n: usize) -> Vec<f64> {
 /// Internal bookkeeping for one CMA-ES run.
 ///
 /// All fields follow Hansen's variable naming from arXiv:1604.00772.
-// TODO(plan 64-03): fields `n` and `lambda` are stored but not yet read back out
-// of the struct. Integration tests that exercise the full CMA loop will exercise
-// these fields indirectly; remove this allow once those tests land.
-#[allow(dead_code)]
 struct CmaState {
     /// Problem dimension.
     n: usize,
@@ -706,6 +702,8 @@ where
 
             // Initialise CMA state (full reset: sigma0, identity C, zero paths)
             let mut state = CmaState::new(n, current_lambda, &self.config, restart_mean);
+            debug_assert_eq!(state.n, n, "CmaState dimension mismatch");
+            debug_assert_eq!(state.lambda, current_lambda, "CmaState lambda mismatch");
 
             // Initial eigendecomposition
             let (b_init, d_init) = jacobi_eigendecompose(&state.c_mat, n);

@@ -1188,31 +1188,6 @@ where
         self
     }
 
-    /// Evaluates the fitness of all chromosomes in `pop` using the batch evaluator.
-    ///
-    /// # Behaviour
-    ///
-    /// - **No evaluator configured** (`self.batch_evaluator` is `None`): returns `Ok(())` immediately (no-op).
-    /// - **Evaluator set, no cache**: calls `evaluate_batch(pop)`, assigns `pop[i].set_fitness(values[i])` for every `i`.
-    /// - **Evaluator + cache set** (D-06 partition): splits the population into cache-hit and cache-miss sets,
-    ///   calls `evaluate_batch` only for misses, writes results back, and stores miss results into the cache.
-    ///   The cache `Mutex` is released before calling `evaluate_batch` to avoid holding the lock during
-    ///   potentially expensive external calls (Pitfall 2 from the research notes).
-    ///
-    /// # Panics (debug only)
-    ///
-    /// Asserts that the returned `Vec<f64>` length matches the input slice length (T-60-01 threat mitigation).
-    #[allow(dead_code)]
-    fn batch_evaluate_pop(&mut self, pop: &mut [U]) -> Result<(), GaError> {
-        let evaluator = match self.batch_evaluator.as_ref() {
-            Some(e) => Arc::clone(e),
-            None => return Ok(()),
-        };
-        let cache_opt = self.fitness_cache.as_ref().map(Arc::clone);
-
-        batch_evaluate(evaluator, cache_opt, pop)
-    }
-
     /// Randomly initializes the population using the provided initialization function.
     ///
     /// Behavior:
@@ -1260,8 +1235,8 @@ where
         let chromosome_length = self.configuration.limit_configuration.chromosome_length;
         let init_fn = self.initialization_fn.as_ref().unwrap();
         // In batch mode `fitness_fn` is None; pass None to initialize_chromosomes_par
-        // so chromosomes start with default 0.0 fitness — batch_evaluate_pop will assign
-        // correct values after initialization() returns.
+        // so chromosomes start with default 0.0 fitness — batch_evaluate runs afterward
+        // to assign correct values.
         let fitness_fn = self.fitness_fn.as_ref();
 
         let chromosomes = match chromosome_length {
@@ -1380,7 +1355,7 @@ where
         };
         let init_fn = self.initialization_fn.as_ref().unwrap();
         // In batch mode `fitness_fn` is None — chromosomes start with default fitness;
-        // batch_evaluate_pop will assign correct values after initialization() returns.
+        // batch_evaluate runs afterward to assign correct values.
         let fitness_fn = self.fitness_fn.as_ref();
 
         // Step 1: Collect seed DNA for dedup comparison
@@ -1760,8 +1735,8 @@ where
                 None
             };
             // D-02: In batch mode, pass None for fitness_fn so parent_crossover does not
-            // call calculate_fitness per-child; batch_evaluate_pop runs on the returned
-            // offspring slice instead.
+            // call calculate_fitness per-child; batch_evaluate runs on the returned offspring
+            // slice instead.
             let crossover_fitness_fn = if self.batch_evaluator.is_some() {
                 None
             } else {
@@ -2682,9 +2657,9 @@ where
 
 /// Evaluates `pop` using a batch evaluator, with optional LRU cache partitioning.
 ///
-/// This free function contains the core logic of `Ga::batch_evaluate_pop`, extracted to
-/// avoid Rust's borrow checker conflict when `pop` is a field of the same struct that
-/// also owns `batch_evaluator` and `fitness_cache`.
+/// Free function used by the GA run loop to avoid Rust's borrow checker conflict
+/// when `pop` is a field of the same struct that also owns `batch_evaluator` and
+/// `fitness_cache`.
 ///
 /// # Cases
 ///
