@@ -332,8 +332,9 @@ where
             let w = inertia_weight(&self.config.inertia, gen, self.config.max_generations);
 
             // ── Update each particle ──────────────────────────────────────────
-            // `i` is required for cross-indexing into `state.velocities`,
-            // `state.pbest_positions`, and `state.pbest_fitness` in parallel.
+            // `i` is required to cross-index state.velocities[i], state.pbest_positions[i],
+            // state.pbest_fitness[i] — three independent vectors. Refactoring to
+            // enumerate() over a single vec would break this contract.
             #[allow(clippy::needless_range_loop)]
             for i in 0..pop.len() {
                 // Read current position.

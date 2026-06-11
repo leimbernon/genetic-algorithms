@@ -372,14 +372,13 @@ where
 ///
 /// * `mutation` - The mutation variant to apply (carries its own params).
 /// * `individual` - Mutable reference to the chromosome to mutate.
-/// * `step` - **Deprecated / ignored.** Embed the value in the variant instead.
-/// * `sigma` - **Deprecated / ignored.** Embed the value in the variant instead.
-#[allow(unused_variables)]
+/// * `_step` - Ignored. Embed the step value in `Mutation::Creep { step: Some(value) }` instead.
+/// * `_sigma` - Ignored. Embed sigma in `Mutation::Gaussian { sigma: Some(value) }` instead.
 pub fn factory_with_params<U>(
     mutation: Mutation,
     individual: &mut U,
-    step: Option<f64>,
-    sigma: Option<f64>,
+    _step: Option<f64>,
+    _sigma: Option<f64>,
 ) -> Result<(), GaError>
 where
     U: LinearChromosome + ValueMutable + 'static,

@@ -160,7 +160,6 @@ where
     pub observer: Option<Arc<dyn MoeaDObserver<U> + Send + Sync>>,
 }
 
-#[allow(dead_code)]
 impl<U> MoeaDGa<U>
 where
     U: LinearChromosome + VectorFitness,

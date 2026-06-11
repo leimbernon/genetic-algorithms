@@ -151,7 +151,6 @@ where
     pub observer: Option<Arc<dyn IbeaObserver<U> + Send + Sync>>,
 }
 
-#[allow(dead_code)]
 impl<U> IbeaGa<U>
 where
     U: LinearChromosome,

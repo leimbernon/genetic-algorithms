@@ -47,7 +47,7 @@
 //!     .with_survivor_method(Survivor::Fitness)
 //!     .with_problem_solving(ProblemSolving::Minimization)
 //!     .with_max_generations(500)
-//!     .with_observer(Arc::new(CompositeObserver::new().add(Arc::new(LogObserver))))
+//!     .with_observer(Arc::new(CompositeObserver::new().register(Arc::new(LogObserver))))
 //!     .build()
 //!     .expect("Invalid configuration");
 //!

@@ -6,7 +6,7 @@ use std::sync::Arc;
 use super::configuration::{DeAdaptive, DeConfiguration, DeMutationStrategy};
 use super::crossover::crossover;
 use crate::traits::RealGene;
-use super::mutation::{mutate, JadeState, LShadeState};
+use super::mutation::{mutate, DeMutationParams, JadeState, LShadeState};
 use crate::configuration::ProblemSolving;
 use crate::rng::make_rng;
 use crate::traits::{FitnessFn, LinearChromosome};
@@ -142,7 +142,12 @@ where
                     DeAdaptive::Jade { .. } if !archive.is_empty() => Some(&archive),
                     _ => None,
                 };
-                let mutant = mutate(&eff_strategy, &pop, i, eff_best, f, &mut rng, arc_ref);
+                let mutant = mutate(
+                    &DeMutationParams { strategy: &eff_strategy, target_idx: i, best_idx: eff_best, f },
+                    &pop,
+                    &mut rng,
+                    arc_ref,
+                );
 
                 // Crossover
                 let trial_dna = crossover(

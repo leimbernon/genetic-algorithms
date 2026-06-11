@@ -147,7 +147,6 @@ where
     pub observer: Option<Arc<dyn SmsEmoaObserver<U> + Send + Sync>>,
 }
 
-#[allow(dead_code)]
 impl<U> SmsEmoaGa<U>
 where
     U: LinearChromosome,

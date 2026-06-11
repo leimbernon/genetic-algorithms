@@ -59,9 +59,9 @@ fn main() {
     let alleles_clone = alleles.clone();
 
     // --- Build composite observer (LogObserver always active; MetricsObserver when feature flag set) ---
-    let composite = CompositeObserver::new().add(Arc::new(LogObserver));
+    let composite = CompositeObserver::new().register(Arc::new(LogObserver));
     #[cfg(feature = "observer-metrics")]
-    let composite = composite.add(Arc::new(MetricsObserver::new("rastrigin")));
+    let composite = composite.register(Arc::new(MetricsObserver::new("rastrigin")));
 
     // --- Build the GA configuration ---
     let mut ga = Ga::new()
