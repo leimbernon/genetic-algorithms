@@ -162,6 +162,17 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
+// ─── Type aliases (D-09) ──────────────────────────────────────────────────────
+
+/// Constraint function: maps a chromosome's DNA slice to a violation score (0 = satisfied).
+type ConstraintFn<G> = Arc<dyn Fn(&[G]) -> f64 + Send + Sync>;
+
+/// Repair function: applies an in-place repair to a chromosome after mutation.
+type RepairFn<U> = Arc<dyn Fn(&mut U) -> Result<(), GaError> + Send + Sync>;
+
+/// AOS reward accumulator shared across rayon threads (Phase 43).
+type RewardAccumulator = Option<Arc<Mutex<Vec<(usize, f64)>>>>;
+
 /// Marker trait that resolves to `serde::Serialize` when the `serde` feature is
 /// enabled, or to an auto-implemented blanket trait otherwise.
 ///
@@ -243,7 +254,6 @@ pub enum TerminationCause {
 /// - Manage configuration, alleles, population and termination state.
 /// - Provide builder-like configuration methods (`ConfigurationT`) to compose the run.
 /// - Coordinate the GA cycle: initialization, selection, crossover, mutation, survivor, evaluation.
-#[allow(deprecated, clippy::type_complexity)]
 pub struct Ga<U>
 where
     U: LinearChromosome,
@@ -312,7 +322,7 @@ where
 
     /// Optional constraint violation functions.
     /// Each function returns a violation >= 0 for a DNA slice (0 means satisfied).
-    constraint_fns: Option<Vec<Arc<dyn Fn(&[U::Gene]) -> f64 + Send + Sync>>>,
+    constraint_fns: Option<Vec<ConstraintFn<U::Gene>>>,
 
     /// Strategy for applying penalty to infeasible solutions.
     penalty_strategy: PenaltyStrategy,
@@ -321,7 +331,7 @@ where
     constraint_handling: Option<ConstraintHandling>,
 
     /// Optional repair operator. Applied after mutation, before fitness evaluation.
-    repair_operator: Option<Arc<dyn Fn(&mut U) -> Result<(), GaError> + Send + Sync>>,
+    repair_operator: Option<RepairFn<U>>,
 
     /// Current penalty coefficient (used by adaptive penalty).
     penalty_coefficient: f64,
@@ -1498,7 +1508,6 @@ where
     /// 4) Survivor selection to prune population, 5) Best chromosome update, 6) Stop check.
     ///
     /// Logging is controlled by configuration log level; adaptive GA updates use f_avg and f_max.
-    #[allow(deprecated)]
     pub fn run_with_callback<F>(
         &mut self,
         callback: Option<F>,
@@ -1515,7 +1524,9 @@ where
         crate::rng::set_seed(self.configuration.rng_seed);
 
         // Checkpoint resumption: load checkpoint if configured
-        #[allow(unused_mut)]
+        // `checkpoint_generation` is only mutated inside the `#[cfg(feature = "serde")]` block.
+        // Without serde the mut is valid but unused — suppress only on non-serde builds (Pitfall 4).
+        #[cfg_attr(not(feature = "serde"), allow(unused_mut))]
         let mut checkpoint_generation: Option<usize> = None;
         if self.checkpoint_path.is_some() {
             #[cfg(feature = "serde")]
@@ -1760,19 +1771,20 @@ where
                 &parents,
                 &self.population.chromosomes,
                 &self.configuration,
-                age,
-                self.population.f_max,
-                self.population.f_avg,
-                dynamic_prob,
-                crossover_fitness_fn,
-                // AOS parameters (Phase 43)
-                self.configuration.crossover_portfolio.as_ref(),
-                self.configuration.mutation_portfolio.as_ref(),
-                self.aos_crossover.as_ref(),
-                self.aos_mutation.as_ref(),
-                i,
-                best_fitness_so_far,
-                is_maximization,
+                ParentCrossoverParams {
+                    age,
+                    f_max: self.population.f_max,
+                    f_avg: self.population.f_avg,
+                    dynamic_mutation_prob: dynamic_prob,
+                    generation: i,
+                    best_fitness: best_fitness_so_far,
+                    is_maximization,
+                    fitness_fn: crossover_fitness_fn,
+                    crossover_portfolio: self.configuration.crossover_portfolio.as_ref(),
+                    mutation_portfolio: self.configuration.mutation_portfolio.as_ref(),
+                    aos_crossover_state: self.aos_crossover.as_ref(),
+                    aos_mutation_state: self.aos_mutation.as_ref(),
+                },
             )?;
             // D-08: surrogate prescreening — runs BEFORE cache/batch/repair/constraints (Pitfall 1).
             // Retains only the top max(1, floor(n * fraction)) offspring by predicted score.
@@ -1905,7 +1917,7 @@ where
                             indices
                         }
                         LocalSearchApplicationStrategy::Probabilistic { probability } => {
-                            let mut rng = rand::thread_rng();
+                            let mut rng = crate::rng::make_rng();
                             (0..offspring.len())
                                 .filter(|_| rng.random::<f64>() < probability)
                                 .collect()
@@ -2801,34 +2813,70 @@ where
     result
 }
 
+/// AOS and fitness parameters bundled for `parent_crossover` (D-07).
+///
+/// Groups the Adaptive Operator Selection state, operator portfolios,
+/// fitness-context values, and per-offspring age assignment — the args that
+/// do not belong to the core population/configuration inputs — so the
+/// function signature stays below Clippy's `too_many_arguments` limit (7).
+struct ParentCrossoverParams<'a, U: LinearChromosome> {
+    /// Age assigned to each produced offspring.
+    age: usize,
+    /// Population-level maximum fitness (used by AGA crossover probability).
+    f_max: f64,
+    /// Population-level average fitness (used by AGA probability formulas).
+    f_avg: f64,
+    /// Dynamic mutation probability override (None → use configured static probability).
+    dynamic_mutation_prob: Option<f64>,
+    /// Current generation index (used by AOS selection strategy).
+    generation: usize,
+    /// Current best fitness across the population (used by AOS reward).
+    best_fitness: f64,
+    /// Whether the problem is a maximization problem (for AOS reward sign).
+    is_maximization: bool,
+    /// Per-chromosome fitness function (None in batch mode).
+    fitness_fn: Option<Arc<FitnessFn<U::Gene>>>,
+    /// Optional AOS crossover portfolio.
+    crossover_portfolio: Option<&'a Vec<Crossover>>,
+    /// Optional AOS mutation portfolio.
+    mutation_portfolio: Option<&'a Vec<Mutation>>,
+    /// Optional shared AOS crossover state.
+    aos_crossover_state: Option<&'a Mutex<AosState>>,
+    /// Optional shared AOS mutation state.
+    aos_mutation_state: Option<&'a Mutex<AosState>>,
+}
+
 /// Performs parent crossover using the configured crossover and mutation strategies.
 ///
 /// Behavior:
 /// - Splits work among threads considering available parent pairs.
 /// - Computes adaptive probabilities when enabled; otherwise uses static ones.
 /// - Produces children, mutates them, computes their fitness, and returns the offspring.
-#[allow(clippy::too_many_arguments)]
 fn parent_crossover<U>(
     parents: &[Vec<usize>],
     chromosomes: &[U],
     configuration: &GaConfiguration,
-    age: usize,
-    f_max: f64,
-    f_avg: f64,
-    dynamic_mutation_prob: Option<f64>,
-    fitness_fn: Option<Arc<FitnessFn<U::Gene>>>,
-    // ---- AOS parameters (Phase 43) ----
-    crossover_portfolio: Option<&Vec<Crossover>>,
-    mutation_portfolio: Option<&Vec<Mutation>>,
-    aos_crossover_state: Option<&Mutex<AosState>>,
-    aos_mutation_state: Option<&Mutex<AosState>>,
-    generation: usize,
-    best_fitness: f64,
-    is_maximization: bool,
+    params: ParentCrossoverParams<'_, U>,
 ) -> Result<Vec<U>, GaError>
 where
     U: LinearChromosome + Send + Sync + 'static + Clone + mutation::ValueMutable,
 {
+    // Destructure the population-level and AOS params bundle (D-07)
+    let ParentCrossoverParams {
+        age,
+        f_max,
+        f_avg,
+        dynamic_mutation_prob,
+        generation,
+        best_fitness,
+        is_maximization,
+        fitness_fn,
+        crossover_portfolio,
+        mutation_portfolio,
+        aos_crossover_state,
+        aos_mutation_state,
+    } = params;
+
     /*
         Gets the static crossover probability config and the static mutation probability config
         This way we avoid of passing by these conditions at each thread if it's not necessary
@@ -2859,16 +2907,12 @@ where
 
     // Create AOS reward accumulators (Phase 43)
     // These are shared across rayon threads via Arc<Mutex<Vec<(usize, f64)>>>
-    #[allow(clippy::type_complexity)]
-    let crossover_reward_acc: Option<Arc<Mutex<Vec<(usize, f64)>>>> =
-        if aos_crossover_state.is_some() {
-            Some(Arc::new(Mutex::new(Vec::new())))
-        } else {
-            None
-        };
-    #[allow(clippy::type_complexity)]
-    let mutation_reward_acc: Option<Arc<Mutex<Vec<(usize, f64)>>>> = if aos_mutation_state.is_some()
-    {
+    let crossover_reward_acc: RewardAccumulator = if aos_crossover_state.is_some() {
+        Some(Arc::new(Mutex::new(Vec::new())))
+    } else {
+        None
+    };
+    let mutation_reward_acc: RewardAccumulator = if aos_mutation_state.is_some() {
         Some(Arc::new(Mutex::new(Vec::new())))
     } else {
         None

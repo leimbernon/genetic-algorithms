@@ -151,7 +151,7 @@ fn main() {
                 let stats = &*stats_guard;
                 std::fs::create_dir_all("docs/images").expect("failed to create docs/images");
                 genetic_algorithms::visualization::plot_fitness(
-                    &stats,
+                    stats,
                     "docs/images/rastrigin.png",
                 )
                 .expect("plot failed");

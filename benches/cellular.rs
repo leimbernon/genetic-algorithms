@@ -45,7 +45,7 @@ fn bench_cellular_neighborhoods(c: &mut Criterion) {
                         .with_neighborhood(neighborhood.clone())
                         .with_update_mode(UpdateMode::Asynchronous)
                         .with_max_generations(100)
-                        .with_mutation_sigma(0.3);
+                        .with_mutation(genetic_algorithms::operations::Mutation::Gaussian { sigma: Some(0.3) });
                     let mut engine = CellularEngine::new(config, |n| make_pop(n, 5), sphere);
                     engine.run()
                 });
@@ -74,7 +74,7 @@ fn bench_cellular_sync_vs_async(c: &mut Criterion) {
                         .with_neighborhood(Neighborhood::Moore)
                         .with_update_mode(update_mode.clone())
                         .with_max_generations(100)
-                        .with_mutation_sigma(0.3);
+                        .with_mutation(genetic_algorithms::operations::Mutation::Gaussian { sigma: Some(0.3) });
                     let mut engine = CellularEngine::new(config, |n| make_pop(n, 5), sphere);
                     engine.run()
                 });
