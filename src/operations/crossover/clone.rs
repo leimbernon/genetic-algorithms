@@ -14,6 +14,16 @@ use log::debug;
 /// - Mutation-only evolutionary strategies where crossover should be a no-op.
 /// - Baseline comparisons in experiments to isolate the effect of crossover.
 ///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::crossover::clone_crossover;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let parent1 = Binary::new();
+/// let parent2 = Binary::new();
+/// let _ = clone_crossover(&parent1, &parent2);
+/// ```
+///
 /// # Errors
 ///
 /// Returns `Err(GaError::CrossoverError)` if parents have different DNA lengths.

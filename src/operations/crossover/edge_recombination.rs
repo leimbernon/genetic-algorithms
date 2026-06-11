@@ -18,6 +18,16 @@ use std::collections::{HashMap, HashSet};
 /// 3. On tie or exhausted neighbour list, fall back to a random unvisited gene
 ///    (D-06).
 ///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::crossover::erx;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let parent1 = Binary::new();
+/// let parent2 = Binary::new();
+/// let _ = erx(&parent1, &parent2);
+/// ```
+///
 /// # Errors
 /// - [`GaError::CrossoverError`] if parent lengths differ.
 /// - [`GaError::CrossoverError`] if length < 2 (D-07).

@@ -13,6 +13,16 @@ use std::collections::HashMap;
 /// same index it occupied in one of the parents), making it well-suited for
 /// permutation-based problems.
 ///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::crossover::cycle;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let parent1 = Binary::new();
+/// let parent2 = Binary::new();
+/// let _ = cycle(&parent1, &parent2);
+/// ```
+///
 /// # Errors
 ///
 /// Returns `Err(GaError::CrossoverError)` if parents have different DNA lengths.

@@ -38,6 +38,16 @@ use std::borrow::Cow;
 /// - Groups of size 2: positions (0, 1) are used (full segment crossover).
 /// - Groups of size >= 3: two distinct positions are sampled randomly.
 ///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::crossover::multi_group_ox::multi_group_ox;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let parent1 = Binary::new();
+/// let parent2 = Binary::new();
+/// let _ = multi_group_ox(&parent1, &parent2);
+/// ```
+///
 /// # Panics
 ///
 /// `ox_build_child` panics if gene IDs are not unique within a group slice.

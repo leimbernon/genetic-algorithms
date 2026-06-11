@@ -7,6 +7,16 @@ use rand::Rng;
 
 /// Multi-point crossover: alternates segments between parents at N random cut points.
 ///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::crossover::multipoint;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let parent1 = Binary::new();
+/// let parent2 = Binary::new();
+/// let _ = multipoint(&parent1, &parent2, 2);
+/// ```
+///
 /// # Errors
 ///
 /// Returns `Err(GaError::CrossoverError)` if parents have different DNA lengths

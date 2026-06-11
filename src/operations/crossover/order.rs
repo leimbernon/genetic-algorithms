@@ -7,6 +7,16 @@ use rand::Rng;
 use std::borrow::Cow;
 use std::collections::HashSet;
 
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::crossover::order;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let parent1 = Binary::new();
+/// let parent2 = Binary::new();
+/// let _ = order(&parent1, &parent2);
+/// ```
+///
 /// Order Crossover (OX): preserves the relative order of genes.
 ///
 /// Essential for TSP and permutation problems where gene order matters.

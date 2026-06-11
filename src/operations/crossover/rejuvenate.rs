@@ -5,6 +5,16 @@ use crate::traits::LinearChromosome;
 use log::debug;
 use std::borrow::Cow;
 
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::crossover::rejuvenate;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let parent1 = Binary::new();
+/// let parent2 = Binary::new();
+/// let _ = rejuvenate(&parent1, &parent2);
+/// ```
+///
 /// Rejuvenate crossover: clones parents as offspring and resets their ages to zero.
 ///
 /// Given parents `P1` and `P2`, produces children that are exact clones with age reset:

@@ -20,6 +20,16 @@ use std::collections::HashMap;
 /// 4. Fill remaining positions directly from the other parent.
 ///
 /// Both parents must have the same DNA length (≥ 2) and contain unique gene IDs.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::crossover::pmx;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let parent1 = Binary::new();
+/// let parent2 = Binary::new();
+/// let _ = pmx(&parent1, &parent2);
+/// ```
 pub fn pmx<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
     let len = parent_1.dna().len();
 
