@@ -541,7 +541,7 @@ Plans:
 - [x] 64-01-PLAN.md — Coverage baseline + cargo-llvm-cov CI gate (D-01, D-02, D-03, D-04, D-05)
 
 **Wave 1** *(blocked on Wave 0)*
-- [ ] 64-02-PLAN.md — Fix all #[allow(...)] suppressions at root cause (D-06, D-07, D-08, D-09, D-10)
+- [x] 64-02-PLAN.md — Fix all #[allow(...)] suppressions at root cause (D-06, D-07, D-08, D-09, D-10)
 
 **Wave 2** *(blocked on Waves 0-1, parallel with 64-04)*
 - [ ] 64-03-PLAN.md — Data-driven coverage tests for lowest-coverage modules (D-05, D-14)
@@ -779,17 +779,17 @@ Plans:
   2. Zero `#[allow(dead_code)]`, `#[allow(unused_imports)]`, or `#[allow(clippy::...)]` attributes remain in non-generated source files
   3. Every `pub` item in `src/` has a rustdoc `# Examples` block that compiles via `cargo test --doc`
   4. All CI gates pass with zero warnings
-**Plans:** 1/4 plans executed
+**Plans:** 3/4 plans executed
 
 Plans:
 **Wave 0**
-- [ ] 64-01-PLAN.md — Coverage baseline + cargo-llvm-cov CI gate (D-01, D-02, D-03, D-04, D-05)
+- [x] 64-01-PLAN.md — Coverage baseline + cargo-llvm-cov CI gate (D-01, D-02, D-03, D-04, D-05)
 
 **Wave 1** *(blocked on Wave 0)*
-- [ ] 64-02-PLAN.md — Fix all #[allow(...)] suppressions at root cause (D-06, D-07, D-08, D-09, D-10)
+- [x] 64-02-PLAN.md — Fix all #[allow(...)] suppressions at root cause (D-06, D-07, D-08, D-09, D-10)
 
 **Wave 2** *(blocked on Waves 0-1, parallel with 64-04)*
-- [ ] 64-03-PLAN.md — Data-driven coverage tests for lowest-coverage modules (D-05, D-14)
+- [x] 64-03-PLAN.md — Data-driven coverage tests for lowest-coverage modules (D-05, D-14)
 
 **Wave 2** *(blocked on Wave 1, parallel with 64-03)*
 - [ ] 64-04-PLAN.md — Rustdoc # Examples blocks on all user-facing pub items (D-11, D-12, D-13)
@@ -883,5 +883,5 @@ Plans:
 | 61. Performance — Clone Reduction & Parallel Survivor | v3.0.0 | 5/4 | Complete    | 2026-06-09 |
 | 62. Surrogate-Assisted Evaluation | v3.0.0 | 3/3 | Complete | 2026-06-09 |
 | 63. Visualization — Pareto Front Plotting & Example Images | v3.0.0 | 3/3 | Complete   | 2026-06-10 |
-| 64. Test & Doc Quality | v3.0.0 | 1/4 | In Progress|  |
+| 64. Test & Doc Quality | v3.0.0 | 3/4 | In Progress|  |
 | 65. v3.0.0 Migration Guide | v3.0.0 | TBD | Pending | — |

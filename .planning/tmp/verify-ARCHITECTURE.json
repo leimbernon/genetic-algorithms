@@ -1,0 +1,20 @@
+{
+  "doc_path": "docs/ARCHITECTURE.md",
+  "claims_checked": 44,
+  "claims_passed": 42,
+  "claims_failed": 2,
+  "failures": [
+    {
+      "line": 59,
+      "claim": "GeneT Requires `id() -> i32` and `set_id()`",
+      "expected": "id() -> i32 is a required method on GeneT",
+      "actual": "id() has a default implementation (returns 0) in src/traits/gene.rs; only set_id() is required (no default body)"
+    },
+    {
+      "line": 66,
+      "claim": "GaObserver<U> stored as `Arc<dyn GaObserver + Send + Sync>`",
+      "expected": "Arc<dyn GaObserver<U> + Send + Sync>",
+      "actual": "The trait is generic (GaObserver<U: ChromosomeT>); the stored type must include the type parameter: Arc<dyn GaObserver<U> + Send + Sync>. The doc omits <U>."
+    }
+  ]
+}
