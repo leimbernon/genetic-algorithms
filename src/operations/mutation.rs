@@ -363,6 +363,16 @@ impl MutationOperator for Mutation {
 ///
 /// `Ok(())` if the mutation succeeded, or `Err(GaError::MutationError)` if the
 /// mutation cannot be applied to this chromosome type.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::operations::{mutation::factory, Mutation};
+///
+/// let mut individual = Binary::new();
+/// factory(Mutation::BitFlip, &mut individual).unwrap();
+/// ```
 pub fn factory<U>(mutation: Mutation, individual: &mut U) -> Result<(), GaError>
 where
     U: LinearChromosome + ValueMutable + 'static,
@@ -383,6 +393,16 @@ where
 /// * `individual` - Mutable reference to the chromosome to mutate.
 /// * `_step` - Ignored. Embed the step value in `Mutation::Creep { step: Some(value) }` instead.
 /// * `_sigma` - Ignored. Embed sigma in `Mutation::Gaussian { sigma: Some(value) }` instead.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::operations::{mutation::factory_with_params, Mutation};
+///
+/// let mut individual = Binary::new();
+/// factory_with_params(Mutation::BitFlip, &mut individual, None, None).unwrap();
+/// ```
 pub fn factory_with_params<U>(
     mutation: Mutation,
     individual: &mut U,
@@ -417,6 +437,17 @@ where
 /// * `chromosome_length` - Length policy; required for `Insertion`/`Deletion`.
 /// * `_step` - Ignored (retained for call-site compatibility).
 /// * `_sigma` - Ignored (retained for call-site compatibility).
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::chromosomes::{Binary, ChromosomeLength};
+/// use genetic_algorithms::operations::{mutation::factory_with_chromosome_length, Mutation};
+///
+/// let mut individual = Binary::new();
+/// let cl = ChromosomeLength::Variable { min: 2, max: 10 };
+/// factory_with_chromosome_length(Mutation::Insertion, &mut individual, Some(cl), None, None).unwrap();
+/// ```
 pub fn factory_with_chromosome_length<U>(
     mutation: Mutation,
     individual: &mut U,
@@ -447,6 +478,16 @@ where
 ///
 /// Returns `Err(GaError::MutationError)` if the chromosome does not downcast to a
 /// supported `SelfAdaptive` type (i.e., `RangeChromosome<f64|f32|i32|i64>`).
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::chromosomes::Range;
+/// use genetic_algorithms::operations::mutation::factory_self_adaptive;
+///
+/// let mut individual = Range::<f64>::new();
+/// factory_self_adaptive(&mut individual, Some(0.1), Some(0.01), Some(0.001), Some(1.0)).unwrap();
+/// ```
 pub fn factory_self_adaptive<U: LinearChromosome + ValueMutable + 'static>(
     individual: &mut U,
     tau: Option<f64>,
@@ -472,6 +513,16 @@ pub fn factory_self_adaptive<U: LinearChromosome + ValueMutable + 'static>(
 ///
 /// `Ok(())` on success, or `Err(GaError::MutationError)` if the variant requires
 /// a chromosome type that implements `ValueMutable` or `SelfAdaptive`.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::operations::{mutation::factory_non_value, Mutation};
+///
+/// let mut individual = Binary::new();
+/// factory_non_value(Mutation::Swap, &mut individual).unwrap();
+/// ```
 pub fn factory_non_value<U>(mutation: Mutation, individual: &mut U) -> Result<(), GaError>
 where
     U: LinearChromosome + 'static,
@@ -576,6 +627,21 @@ where
 /// # Returns
 ///
 /// The adapted mutation probability.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::traits::ChromosomeT;
+/// use genetic_algorithms::operations::mutation::aga_probability;
+///
+/// let mut p1 = Binary::new();
+/// p1.set_fitness(0.8);
+/// let mut p2 = Binary::new();
+/// p2.set_fitness(0.4);
+/// let prob = aga_probability(&p1, &p2, 0.6, 0.9, 0.1);
+/// assert_eq!(prob, 0.1);
+/// ```
 pub fn aga_probability<U: ChromosomeT>(
     parent_1: &U,
     parent_2: &U,
@@ -599,6 +665,23 @@ pub fn aga_probability<U: ChromosomeT>(
 /// Computes population cardinality as the ratio of unique fitness values to population size.
 ///
 /// Returns a value in `[0.0, 1.0]` where 1.0 means all individuals have distinct fitness.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::traits::ChromosomeT;
+/// use genetic_algorithms::operations::mutation::compute_cardinality;
+///
+/// let mut c1 = Binary::new();
+/// c1.set_fitness(1.0);
+/// let mut c2 = Binary::new();
+/// c2.set_fitness(2.0);
+/// let mut c3 = Binary::new();
+/// c3.set_fitness(1.0);
+/// let cardinality = compute_cardinality(&[c1, c2, c3]);
+/// assert!((cardinality - 2.0 / 3.0).abs() < 1e-9);
+/// ```
 pub fn compute_cardinality<U: ChromosomeT>(chromosomes: &[U]) -> f64 {
     if chromosomes.is_empty() {
         return 0.0;
@@ -615,6 +698,17 @@ pub fn compute_cardinality<U: ChromosomeT>(chromosomes: &[U]) -> f64 {
 ///
 /// Increases probability when cardinality is below target (low diversity),
 /// decreases it when cardinality is above target (high diversity).
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::operations::mutation::dynamic_probability;
+///
+/// let prob = dynamic_probability(0.05, 0.3, 0.5, 0.01, 0.9, 0.01);
+/// assert!((prob - 0.06).abs() < 1e-9);
+/// let prob = dynamic_probability(0.05, 0.7, 0.5, 0.01, 0.9, 0.01);
+/// assert!((prob - 0.04).abs() < 1e-9);
+/// ```
 pub fn dynamic_probability(
     current_probability: f64,
     cardinality: f64,

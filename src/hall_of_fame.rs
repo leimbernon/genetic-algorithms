@@ -28,6 +28,17 @@ use std::cmp::Ordering;
 /// Distance metric for diversity filtering in the Hall of Fame.
 ///
 /// Determines how "closeness" between two archived solutions is measured.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::hall_of_fame::DistanceMetric;
+///
+/// let m = DistanceMetric::Genotypic { min_distance: 0.2 };
+/// assert_eq!(m, DistanceMetric::Genotypic { min_distance: 0.2 });
+/// let default = DistanceMetric::default();
+/// assert_eq!(default, DistanceMetric::Fitness { min_distance: 0.0 });
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum DistanceMetric {
@@ -61,6 +72,15 @@ impl Default for DistanceMetric {
 /// Configuration for the Hall of Fame.
 ///
 /// Controls the archive capacity and diversity filtering behavior.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::hall_of_fame::{HallOfFameConfig, DistanceMetric};
+///
+/// let config = HallOfFameConfig { capacity: 10, distance_metric: DistanceMetric::default() };
+/// assert_eq!(config.capacity, 10);
+/// ```
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct HallOfFameConfig {
@@ -85,6 +105,17 @@ impl Default for HallOfFameConfig {
 ///
 /// Stores the chromosome along with metadata about when and with what
 /// fitness it was added.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::hall_of_fame::Entry;
+/// use genetic_algorithms::chromosomes::Binary;
+///
+/// let entry = Entry { chromosome: Binary::new(), generation_added: 5, fitness_at_addition: 0.9 };
+/// assert_eq!(entry.generation_added, 5);
+/// assert_eq!(entry.fitness_at_addition, 0.9);
+/// ```
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Entry<U: LinearChromosome> {
@@ -105,6 +136,16 @@ pub struct Entry<U: LinearChromosome> {
 /// # Type parameters
 ///
 /// * `U` -- The chromosome type, must implement [`LinearChromosome`].
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::hall_of_fame::{HallOfFame, HallOfFameConfig};
+/// use genetic_algorithms::chromosomes::Binary;
+///
+/// let config = HallOfFameConfig { capacity: 5, ..Default::default() };
+/// let _hof = HallOfFame::<Binary>::new(config);
+/// ```
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct HallOfFame<U: LinearChromosome> {
@@ -293,6 +334,18 @@ impl<U: LinearChromosome> HallOfFame<U> {
 /// the missing gene's ID treated as `-1`.
 ///
 /// Reuses the `.id()` comparison pattern from niching (ga.rs:1045-1056).
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::hall_of_fame::genotypic_distance;
+/// use genetic_algorithms::genotypes::Binary as BinaryGene;
+///
+/// let a = vec![BinaryGene { id: 0, value: true }, BinaryGene { id: 1, value: false }];
+/// let b = vec![BinaryGene { id: 0, value: true }, BinaryGene { id: 2, value: true }];
+/// let d = genotypic_distance(&a, &b);
+/// assert_eq!(d, 0.5);
+/// ```
 pub fn genotypic_distance<G: GeneT>(dna_a: &[G], dna_b: &[G]) -> f64 {
     let max_len = dna_a.len().max(dna_b.len());
     if max_len == 0 {

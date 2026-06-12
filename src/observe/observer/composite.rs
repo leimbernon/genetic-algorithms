@@ -42,6 +42,17 @@ use std::time::Duration;
 /// [`AllObserver<U>`] via the blanket impl in `src/observer/mod.rs`, so it can
 /// be attached to `Ga<U>`, `IslandGa<U>`, or `Nsga2Ga<U>` using the same
 /// `Arc<dyn GaObserver<U>>` or `Arc<dyn IslandGaObserver<U>>` fields.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use std::sync::Arc;
+/// use genetic_algorithms::observer::{CompositeObserver, LogObserver};
+/// use genetic_algorithms::chromosomes::Binary;
+///
+/// let composite = CompositeObserver::<Binary>::new()
+///     .register(Arc::new(LogObserver));
+/// ```
 pub struct CompositeObserver<U: ChromosomeT> {
     observers: Vec<Arc<dyn AllObserver<U> + Send + Sync>>,
 }

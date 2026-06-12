@@ -43,6 +43,14 @@ use std::time::Duration;
 ///
 /// **Note:** Attaching `LogObserver` alongside another observer that prints per-generation output
 /// may produce redundant output.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::observer::LogObserver;
+///
+/// let _obs = LogObserver;
+/// ```
 pub struct LogObserver;
 
 impl<U: ChromosomeT> GaObserver<U> for LogObserver {

@@ -109,12 +109,36 @@ where
 /// Trait for computing distance between two chromosomes' DNA.
 ///
 /// Implement this trait for custom distance metrics.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::niching::distance::{DistanceMetric, HammingDistance};
+/// use genetic_algorithms::genotypes::Binary as BinaryGene;
+///
+/// let a = vec![BinaryGene::new(), BinaryGene::new()];
+/// let b = vec![BinaryGene::new(), BinaryGene::new()];
+/// let d = HammingDistance::distance(&a, &b);
+/// assert!(d >= 0.0);
+/// ```
 pub trait DistanceMetric<G> {
     /// Computes the distance between two DNA sequences.
     fn distance(dna_a: &[G], dna_b: &[G]) -> f64;
 }
 
 /// Hamming distance metric for binary chromosomes.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::niching::distance::{DistanceMetric, HammingDistance};
+/// use genetic_algorithms::genotypes::Binary as BinaryGene;
+///
+/// let a = vec![BinaryGene::new(), BinaryGene::new()];
+/// let b = vec![BinaryGene::new(), BinaryGene::new()];
+/// let d = HammingDistance::distance(&a, &b);
+/// assert!(d >= 0.0);
+/// ```
 pub struct HammingDistance;
 
 impl DistanceMetric<BinaryGenotype> for HammingDistance {
@@ -124,6 +148,18 @@ impl DistanceMetric<BinaryGenotype> for HammingDistance {
 }
 
 /// Euclidean distance metric for range chromosomes.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::niching::distance::{DistanceMetric, EuclideanDistance};
+/// use genetic_algorithms::genotypes::Range as RangeGene;
+///
+/// let a = vec![RangeGene::new(0, vec![], 1.0_f64), RangeGene::new(1, vec![], 0.0_f64)];
+/// let b = vec![RangeGene::new(0, vec![], 0.0_f64), RangeGene::new(1, vec![], 1.0_f64)];
+/// let d = EuclideanDistance::distance(&a, &b);
+/// assert!((d - std::f64::consts::SQRT_2).abs() < 1e-9);
+/// ```
 pub struct EuclideanDistance;
 
 impl<T> DistanceMetric<crate::genotypes::Range<T>> for EuclideanDistance

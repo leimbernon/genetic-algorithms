@@ -14,6 +14,17 @@ type FitnessFnTrait<G> = dyn Fn(&[G]) -> f64 + Send + Sync;
 ///
 /// Two wrappers are considered equal (`PartialEq`) only if they point to the
 /// same `Arc` allocation (i.e., one was cloned from the other).
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::fitness::fitness_fn_wrapper::FitnessFnWrapper;
+/// use genetic_algorithms::genotypes::Binary as BinaryGene;
+///
+/// let wrapper = FitnessFnWrapper::<BinaryGene>::new(|dna| dna.iter().filter(|g| g.value).count() as f64);
+/// let dna = vec![BinaryGene { id: 0, value: true }, BinaryGene { id: 1, value: false }];
+/// assert_eq!(wrapper.call(&dna), 1.0);
+/// ```
 pub struct FitnessFnWrapper<G: GeneT>(Arc<FitnessFnTrait<G>>);
 
 impl<G: GeneT> Clone for FitnessFnWrapper<G> {

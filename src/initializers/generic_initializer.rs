@@ -16,6 +16,18 @@ use rand::Rng;
 /// # Panics
 ///
 /// Panics if `alleles` is `None`.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::genotypes::Binary as BinaryGene;
+/// use genetic_algorithms::initializers::generic_initializer::generic_random_initialization;
+///
+/// let alleles = vec![BinaryGene::new(), BinaryGene::new()];
+/// let dna = generic_random_initialization::<Binary>(4, Some(&alleles));
+/// assert_eq!(dna.len(), 4);
+/// ```
 pub fn generic_random_initialization<U>(
     genes_per_chromosome: usize,
     alleles: Option<&[U::Gene]>,
@@ -48,6 +60,18 @@ where
 /// # Panics
 ///
 /// Panics if `alleles` is `None`.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::genotypes::Binary as BinaryGene;
+/// use genetic_algorithms::initializers::generic_initializer::generic_random_initialization_without_repetitions;
+///
+/// let alleles = vec![BinaryGene::new(), BinaryGene::new(), BinaryGene::new(), BinaryGene::new()];
+/// let dna = generic_random_initialization_without_repetitions::<Binary>(3, Some(&alleles));
+/// assert_eq!(dna.len(), 3);
+/// ```
 pub fn generic_random_initialization_without_repetitions<U>(
     genes_per_chromosome: usize,
     alleles: Option<&[U::Gene]>,

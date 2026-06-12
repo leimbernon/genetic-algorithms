@@ -35,6 +35,20 @@ use std::time::Duration;
 /// Payload for the [`GaObserver::on_extension_triggered`] hook.
 ///
 /// Stack-allocated and `Copy`-able — zero heap allocation.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::observer::ExtensionEvent;
+///
+/// let event = ExtensionEvent {
+///     generation: 42,
+///     diversity: 0.15,
+///     extension_type: "MassExtinction",
+///     threshold: 0.2,
+/// };
+/// assert_eq!(event.generation, 42);
+/// ```
 #[derive(Debug, Clone, Copy)]
 pub struct ExtensionEvent {
     /// The generation at which the extension fired.
@@ -63,6 +77,24 @@ pub struct ExtensionEvent {
 /// | Thread safety | `Send` only | `Send + Sync` |
 ///
 /// See [`MIGRATION.md`](https://docs.rs/genetic_algorithms) for migration recipes.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::observer::GaObserver;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::stats::GenerationStats;
+/// use genetic_algorithms::ga::TerminationCause;
+///
+/// struct MyObserver;
+///
+/// impl GaObserver<Binary> for MyObserver {
+///     fn on_run_start(&self) { println!("GA started"); }
+///     fn on_run_end(&self, cause: TerminationCause, _stats: &[GenerationStats]) {
+///         println!("GA ended: {:?}", cause);
+///     }
+/// }
+/// ```
 pub trait GaObserver<U: ChromosomeT>: Send + Sync {
     /// Called once before the first generation.
     fn on_run_start(&self) {}
@@ -129,6 +161,14 @@ pub trait GaObserver<U: ChromosomeT>: Send + Sync {
 /// Zero-sized no-op observer. All hooks use their default empty bodies.
 ///
 /// Useful as a compile-check type or as a placeholder.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::observer::NoopObserver;
+///
+/// let _obs = NoopObserver;
+/// ```
 pub struct NoopObserver;
 
 impl<U: ChromosomeT> GaObserver<U> for NoopObserver {}
@@ -137,6 +177,21 @@ impl<U: ChromosomeT> GaObserver<U> for NoopObserver {}
 ///
 /// All methods have default no-op implementations. The `Send + Sync`
 /// supertraits are required for safe sharing across rayon island threads via `Arc`.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::observer::IslandGaObserver;
+/// use genetic_algorithms::chromosomes::Binary;
+///
+/// struct MyIslandObserver;
+///
+/// impl IslandGaObserver<Binary> for MyIslandObserver {
+///     fn on_island_run_start(&self, island_id: usize) {
+///         println!("Island {} started", island_id);
+///     }
+/// }
+/// ```
 pub trait IslandGaObserver<U: ChromosomeT>: Send + Sync {
     /// Called when an island run starts.
     fn on_island_run_start(&self, _island_id: usize) {}
@@ -158,6 +213,21 @@ pub trait IslandGaObserver<U: ChromosomeT>: Send + Sync {
 ///
 /// All methods have default no-op implementations. The `Send + Sync`
 /// supertraits are required for safe sharing across rayon threads via `Arc`.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::observer::Nsga2Observer;
+/// use genetic_algorithms::chromosomes::Range;
+///
+/// struct MyNsga2Observer;
+///
+/// impl Nsga2Observer<Range<f64>> for MyNsga2Observer {
+///     fn on_pareto_front_assigned(&self, generation: usize, front_count: usize, _pop: usize) {
+///         println!("Gen {}: {} Pareto fronts", generation, front_count);
+///     }
+/// }
+/// ```
 pub trait Nsga2Observer<U: ChromosomeT>: Send + Sync {
     /// Called after Pareto fronts are assigned.
     fn on_pareto_front_assigned(
@@ -184,6 +254,16 @@ pub trait Nsga2Observer<U: ChromosomeT>: Send + Sync {
 /// would be a breaking change for existing `AllObserver` implementors. Use
 /// [`Nsga3Ga::with_observer`](crate::nsga3::Nsga3Ga::with_observer) to attach
 /// an `Nsga3Observer` independently.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::observer::Nsga3Observer;
+/// use genetic_algorithms::chromosomes::Range;
+///
+/// struct MyNsga3Observer;
+/// impl Nsga3Observer<Range<f64>> for MyNsga3Observer {}
+/// ```
 pub trait Nsga3Observer<U: ChromosomeT>: Send + Sync {
     /// Called after Pareto fronts are assigned for the current generation.
     fn on_pareto_front_assigned(
@@ -208,6 +288,16 @@ pub trait Nsga3Observer<U: ChromosomeT>: Send + Sync {
 /// would be a breaking change for existing `AllObserver` implementors. Use
 /// [`MoeaDGa::with_observer`](crate::moead::MoeaDGa::with_observer) to attach
 /// a `MoeaDObserver` independently.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::observer::MoeaDObserver;
+/// use genetic_algorithms::chromosomes::Range;
+///
+/// struct MyMoeaDObserver;
+/// impl MoeaDObserver<Range<f64>> for MyMoeaDObserver {}
+/// ```
 pub trait MoeaDObserver<U: ChromosomeT>: Send + Sync {
     /// Called after Pareto fronts are assigned for the current generation.
     fn on_pareto_front_assigned(
@@ -232,6 +322,16 @@ pub trait MoeaDObserver<U: ChromosomeT>: Send + Sync {
 /// would be a breaking change for existing `AllObserver` implementors (D-07). Use
 /// [`Spea2Ga::with_observer`](crate::spea2::Spea2Ga::with_observer) to attach
 /// a `Spea2Observer` independently.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::observer::Spea2Observer;
+/// use genetic_algorithms::chromosomes::Range;
+///
+/// struct MySpea2Observer;
+/// impl Spea2Observer<Range<f64>> for MySpea2Observer {}
+/// ```
 pub trait Spea2Observer<U: ChromosomeT>: Send + Sync {
     /// Called after strength + density fitness is assigned to all individuals
     /// in the combined population + archive set.
@@ -265,6 +365,16 @@ pub trait Spea2Observer<U: ChromosomeT>: Send + Sync {
 /// would be a breaking change for existing `AllObserver` implementors. Use
 /// [`SmsEmoaGa::with_observer`](crate::sms_emoa::SmsEmoaGa::with_observer) to attach
 /// a `SmsEmoaObserver` independently.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::observer::SmsEmoaObserver;
+/// use genetic_algorithms::chromosomes::Range;
+///
+/// struct MySmsEmoaObserver;
+/// impl SmsEmoaObserver<Range<f64>> for MySmsEmoaObserver {}
+/// ```
 pub trait SmsEmoaObserver<U: ChromosomeT>: Send + Sync {
     /// Called after hypervolume contribution calculation completes for the current generation.
     fn on_hypervolume_contribution_assigned(
@@ -289,6 +399,16 @@ pub trait SmsEmoaObserver<U: ChromosomeT>: Send + Sync {
 /// would be a breaking change for existing `AllObserver` implementors. Use
 /// [`IbeaGa::with_observer`](crate::ibea::IbeaGa::with_observer) to attach
 /// an `IbeaObserver` independently.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::observer::IbeaObserver;
+/// use genetic_algorithms::chromosomes::Range;
+///
+/// struct MyIbeaObserver;
+/// impl IbeaObserver<Range<f64>> for MyIbeaObserver {}
+/// ```
 pub trait IbeaObserver<U: ChromosomeT>: Send + Sync {
     /// Called after indicator-based fitness assignment completes for the current generation.
     fn on_indicator_fitness_assigned(
@@ -316,6 +436,19 @@ pub trait IbeaObserver<U: ChromosomeT>: Send + Sync {
 ///
 /// `AllObserver<U>` has zero methods of its own — it is a pure supertrait
 /// marker and is object-safe: `dyn AllObserver<U>` is valid.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::observer::{GaObserver, IslandGaObserver, Nsga2Observer, AllObserver};
+/// use genetic_algorithms::chromosomes::Binary;
+///
+/// struct MyAllObserver;
+/// impl GaObserver<Binary> for MyAllObserver {}
+/// impl IslandGaObserver<Binary> for MyAllObserver {}
+/// impl Nsga2Observer<Binary> for MyAllObserver {}
+/// // MyAllObserver now satisfies AllObserver<Binary> via blanket impl
+/// ```
 pub trait AllObserver<U: ChromosomeT>:
     GaObserver<U> + IslandGaObserver<U> + Nsga2Observer<U> + Send + Sync
 {

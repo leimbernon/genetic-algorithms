@@ -20,6 +20,15 @@ use rand::Rng;
 use std::f64;
 
 /// Strategy variant for adaptive operator selection.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::aos::AosStrategy;
+///
+/// let pm = AosStrategy::pm_default();
+/// assert!(matches!(pm, AosStrategy::ProbabilityMatching { .. }));
+/// ```
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum AosStrategy {
@@ -110,6 +119,15 @@ impl ArmState {
 /// Tracks per-arm rewards, selection probabilities (for PM/AP), and
 /// selection counts (for MAB UCB). Provides methods to select operators,
 /// record rewards, and update probabilities.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::aos::{AosState, AosStrategy};
+///
+/// let state = AosState::new(3, AosStrategy::pm_default(), 10);
+/// assert_eq!(state.num_arms(), 3);
+/// ```
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct AosState {
@@ -379,6 +397,15 @@ impl AosState {
 /// Formula: `(parent_fitness - offspring_fitness) / max(|best_fitness|, EPSILON)`
 ///
 /// A positive result means the offspring is better (lower fitness for minimization).
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::aos::compute_normalized_reward;
+///
+/// let reward = compute_normalized_reward(1.0, 0.8, 1.0);
+/// assert!((reward - 0.2).abs() < 1e-9);
+/// ```
 /// A negative result means the offspring is worse.
 /// The denominator is clamped to `f64::EPSILON` to prevent division by zero (T-43-03).
 ///
