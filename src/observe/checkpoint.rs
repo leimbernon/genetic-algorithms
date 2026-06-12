@@ -45,7 +45,7 @@ use std::path::Path;
 /// use genetic_algorithms::configuration::GaConfiguration;
 ///
 /// let cp = Checkpoint::<Binary> {
-///     population: Population::new(),
+///     population: Population::new(vec![]),
 ///     configuration: GaConfiguration::default(),
 ///     generation: 10,
 ///     stats: vec![],
@@ -87,7 +87,7 @@ where
 /// use genetic_algorithms::configuration::GaConfiguration;
 ///
 /// let cp = Checkpoint::<Binary> {
-///     population: Population::new(),
+///     population: Population::new(vec![]),
 ///     configuration: GaConfiguration::default(),
 ///     generation: 5,
 ///     stats: vec![],

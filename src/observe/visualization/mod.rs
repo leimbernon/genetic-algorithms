@@ -319,6 +319,8 @@ where
 ///
 /// ```rust,no_run
 /// use genetic_algorithms::visualization::plot_fitness;
+/// use genetic_algorithms::stats::GenerationStats;
+/// let stats: Vec<GenerationStats> = vec![];
 /// plot_fitness(&stats, "output/fitness.png").unwrap();
 /// ```
 pub fn plot_fitness(stats: &[GenerationStats], path: &str) -> Result<(), VisualizationError> {
@@ -383,6 +385,8 @@ pub fn plot_fitness(stats: &[GenerationStats], path: &str) -> Result<(), Visuali
 ///
 /// ```rust,no_run
 /// use genetic_algorithms::visualization::plot_diversity;
+/// use genetic_algorithms::stats::GenerationStats;
+/// let stats: Vec<GenerationStats> = vec![];
 /// plot_diversity(&stats, "output/diversity.png").unwrap();
 /// ```
 pub fn plot_diversity(stats: &[GenerationStats], path: &str) -> Result<(), VisualizationError> {
@@ -449,6 +453,7 @@ pub fn plot_diversity(stats: &[GenerationStats], path: &str) -> Result<(), Visua
 ///
 /// ```rust,no_run
 /// use genetic_algorithms::visualization::plot_histogram;
+/// let fitness_values: Vec<f64> = vec![];
 /// plot_histogram(&fitness_values, "output/histogram.png").unwrap();
 /// ```
 pub fn plot_histogram(fitness_values: &[f64], path: &str) -> Result<(), VisualizationError> {
@@ -849,6 +854,8 @@ where
 ///
 /// ```rust,no_run
 /// use genetic_algorithms::visualization::plot_true_fitness_calls;
+/// use genetic_algorithms::stats::GenerationStats;
+/// let stats: Vec<GenerationStats> = vec![];
 /// plot_true_fitness_calls(&stats, "output/true_fitness_calls.png").unwrap();
 /// ```
 pub fn plot_true_fitness_calls(

@@ -142,14 +142,10 @@ pub use crate::multi_objective::ObjectiveFn;
 /// use genetic_algorithms::configuration::GaConfiguration;
 /// use genetic_algorithms::chromosomes::Range as RangeChromosome;
 ///
-/// let nsga2_config = Nsga2Configuration::default();
+/// let nsga2_config = Nsga2Configuration::new().with_num_objectives(2);
 /// let ga_config = GaConfiguration::default();
 ///
-/// let engine = Nsga2Ga::<RangeChromosome<f64>>::new(nsga2_config, ga_config)
-///     .with_objectives(vec![
-///         |dna| dna.iter().map(|g| g.value() * g.value()).sum(),
-///         |dna| dna.iter().map(|g| (g.value() - 1.0).powi(2)).sum(),
-///     ]);
+/// let engine = Nsga2Ga::<RangeChromosome<f64>>::new(nsga2_config, ga_config);
 /// ```
 pub struct Nsga2Ga<U>
 where

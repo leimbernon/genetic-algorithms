@@ -230,7 +230,7 @@ impl<T: for<'de> serde::Deserialize<'de>> MaybeDeserialize for T {}
 /// # Examples
 ///
 /// ```rust
-/// use genetic_algorithms::engines::ga::TerminationCause;
+/// use genetic_algorithms::TerminationCause;
 ///
 /// let cause = TerminationCause::FitnessTargetReached;
 /// assert_eq!(cause, TerminationCause::FitnessTargetReached);

@@ -116,8 +116,8 @@ where
 /// use genetic_algorithms::niching::distance::{DistanceMetric, HammingDistance};
 /// use genetic_algorithms::genotypes::Binary as BinaryGene;
 ///
-/// let a = vec![BinaryGene::new(), BinaryGene::new()];
-/// let b = vec![BinaryGene::new(), BinaryGene::new()];
+/// let a = vec![BinaryGene::default(), BinaryGene::default()];
+/// let b = vec![BinaryGene::default(), BinaryGene::default()];
 /// let d = HammingDistance::distance(&a, &b);
 /// assert!(d >= 0.0);
 /// ```
@@ -134,8 +134,8 @@ pub trait DistanceMetric<G> {
 /// use genetic_algorithms::niching::distance::{DistanceMetric, HammingDistance};
 /// use genetic_algorithms::genotypes::Binary as BinaryGene;
 ///
-/// let a = vec![BinaryGene::new(), BinaryGene::new()];
-/// let b = vec![BinaryGene::new(), BinaryGene::new()];
+/// let a = vec![BinaryGene::default(), BinaryGene::default()];
+/// let b = vec![BinaryGene::default(), BinaryGene::default()];
 /// let d = HammingDistance::distance(&a, &b);
 /// assert!(d >= 0.0);
 /// ```

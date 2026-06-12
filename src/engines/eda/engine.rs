@@ -80,6 +80,7 @@ pub enum EdaModel {
 /// ```rust,no_run
 /// use genetic_algorithms::eda::{EdaConfiguration, EdaEngine, EdaResult};
 /// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::traits::GeneT;
 ///
 /// let config = EdaConfiguration::default().with_max_generations(200);
 /// let mut engine = EdaEngine::<Binary>::new(
@@ -116,6 +117,7 @@ pub struct EdaResult<U: LinearChromosome> {
 /// use genetic_algorithms::eda::{EdaConfiguration, EdaEngine};
 /// use genetic_algorithms::chromosomes::Binary;
 /// use genetic_algorithms::configuration::ProblemSolving;
+/// use genetic_algorithms::traits::GeneT;
 ///
 /// let config = EdaConfiguration::default()
 ///     .with_max_generations(200)
@@ -429,6 +431,7 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
 /// use genetic_algorithms::eda::{EdaConfiguration, EdaRealEngine};
 /// use genetic_algorithms::chromosomes::Range as RangeChromosome;
 /// use genetic_algorithms::configuration::ProblemSolving;
+/// use genetic_algorithms::RealGene;
 ///
 /// let config = EdaConfiguration::default()
 ///     .with_max_generations(300)

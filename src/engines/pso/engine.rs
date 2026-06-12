@@ -34,6 +34,7 @@ use super::configuration::{inertia_weight, PsoConfiguration, PsoTopology};
 /// ```rust,no_run
 /// use genetic_algorithms::pso::{PsoConfiguration, PsoEngine, PsoResult};
 /// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+/// use genetic_algorithms::RealGene;
 ///
 /// let config = PsoConfiguration::default();
 /// let mut engine = PsoEngine::<RangeChromosome<f64>>::new(
@@ -156,6 +157,7 @@ impl PsoState {
 /// ```rust,no_run
 /// use genetic_algorithms::pso::{PsoConfiguration, PsoEngine};
 /// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+/// use genetic_algorithms::RealGene;
 ///
 /// let config = PsoConfiguration::default()
 ///     .with_max_generations(500);

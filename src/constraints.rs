@@ -127,7 +127,7 @@ pub fn apply_static_penalty(fitness: f64, total_violation: f64, coefficient: f64
 /// ```rust
 /// use genetic_algorithms::constraints::apply_dynamic_penalty;
 ///
-/// let penalized = apply_dynamic_penalty(5.0, 2.0, 10, 0.5, 2.0, 1.0);
+/// let penalized = apply_dynamic_penalty(5.0, 5.0, 5, 1.0, 1.0, 1.0);
 /// assert!((penalized - 30.0).abs() < 1e-9);
 /// ```
 pub fn apply_dynamic_penalty(
