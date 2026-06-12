@@ -4,6 +4,17 @@ use crate::configuration::ProblemSolving;
 
 /// Configuration for `PermutateEngine`. Candidates must have fitness pre-evaluated before being
 /// passed to the engine — `chromosome.fitness()` is called directly, not a fitness function.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::permutate::PermutateConfiguration;
+/// use genetic_algorithms::configuration::ProblemSolving;
+///
+/// let config = PermutateConfiguration::default()
+///     .with_safety_gate(50_000)
+///     .with_problem_solving(ProblemSolving::Minimization);
+/// ```
 #[derive(Debug, Clone)]
 pub struct PermutateConfiguration {
     /// Maximum number of candidates to evaluate before stopping.

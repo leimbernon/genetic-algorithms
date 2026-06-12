@@ -8,6 +8,15 @@ use crate::operations::{Crossover, Mutation};
 /// Each scheme produces a monotonically increasing sequence of age limits.
 /// The base unit is `age_gap`, which is multiplied by the scheme's factor
 /// for each layer index.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::alps::AlpsAgeScheme;
+///
+/// let scheme = AlpsAgeScheme::Fibonacci;
+/// assert_eq!(scheme, AlpsAgeScheme::Fibonacci);
+/// ```
 #[derive(Debug, Clone, PartialEq)]
 pub enum AlpsAgeScheme {
     /// `max_age[i] = (i + 1) * age_gap`
@@ -27,6 +36,24 @@ pub enum AlpsAgeScheme {
 }
 
 /// Configuration for an [`AlpsEngine`](super::engine::AlpsEngine) run.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::alps::{AlpsAgeScheme, AlpsConfiguration};
+/// use genetic_algorithms::configuration::ProblemSolving;
+/// use genetic_algorithms::operations::{Crossover, Mutation};
+///
+/// let config = AlpsConfiguration::default()
+///     .with_n_layers(5)
+///     .with_layer_size(20)
+///     .with_age_scheme(AlpsAgeScheme::Fibonacci)
+///     .with_age_gap(5)
+///     .with_injection_interval(10)
+///     .with_max_generations(500)
+///     .with_problem_solving(ProblemSolving::Minimization)
+///     .with_fitness_target(0.01);
+/// ```
 #[derive(Debug, Clone)]
 pub struct AlpsConfiguration {
     /// Number of age layers (minimum 2).
@@ -143,6 +170,16 @@ impl AlpsConfiguration {
 }
 
 /// Returns the `n`-th Fibonacci number (1-indexed: fib(1)=1, fib(2)=1, fib(3)=2, …).
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::alps::configuration::fibonacci;
+///
+/// assert_eq!(fibonacci(1), 1);
+/// assert_eq!(fibonacci(2), 1);
+/// assert_eq!(fibonacci(7), 13);
+/// ```
 pub fn fibonacci(n: usize) -> usize {
     match n {
         0 => 0,

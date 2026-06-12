@@ -9,6 +9,21 @@
 ///
 /// * `objectives` - A slice of objective vectors, one per individual **in this front**.
 /// * `crowding` - Mutable slice (same length as `objectives`) to fill with crowding distance values.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::nsga2::crowding_distance::assign_crowding_distance;
+///
+/// let o0 = vec![1.0, 3.0_f64];
+/// let o1 = vec![2.0, 2.0_f64];
+/// let o2 = vec![3.0, 1.0_f64];
+/// let objectives: Vec<&[f64]> = vec![&o0, &o1, &o2];
+/// let mut crowding = vec![0.0_f64; 3];
+/// assign_crowding_distance(&objectives, &mut crowding);
+/// assert!(crowding[0].is_infinite());
+/// assert!(crowding[2].is_infinite());
+/// ```
 pub fn assign_crowding_distance(objectives: &[&[f64]], crowding: &mut [f64]) {
     let n = objectives.len();
     if n == 0 {

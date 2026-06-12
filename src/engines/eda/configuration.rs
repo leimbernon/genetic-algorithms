@@ -13,6 +13,19 @@ use crate::configuration::ProblemSolving;
 /// The probabilistic model is selected automatically based on the gene type:
 /// - `U::Gene: RealGene` → Gaussian univariate model (mean + std per position)
 /// - Otherwise → Bernoulli model (probability per position; classic UMDA for binary genes)
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::eda::EdaConfiguration;
+/// use genetic_algorithms::configuration::ProblemSolving;
+///
+/// let config = EdaConfiguration::default()
+///     .with_population_size(100)
+///     .with_max_generations(500)
+///     .with_selection_ratio(0.5)
+///     .with_problem_solving(ProblemSolving::Minimization);
+/// ```
 #[derive(Debug, Clone)]
 pub struct EdaConfiguration {
     /// Number of individuals in the population.

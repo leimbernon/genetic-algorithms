@@ -32,6 +32,22 @@ use rand::Rng;
 use super::configuration::AlpsConfiguration;
 
 /// Result returned by [`AlpsEngine::run`].
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::alps::{AlpsConfiguration, AlpsEngine, AlpsResult};
+/// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+///
+/// let config = AlpsConfiguration::default();
+/// let mut engine = AlpsEngine::<RangeChromosome<f64>>::new(
+///     config,
+///     |n| vec![RangeChromosome::default(); n],
+///     |dna| dna.iter().map(|g| g.value() * g.value()).sum(),
+/// );
+/// let result: AlpsResult<RangeChromosome<f64>> = engine.run();
+/// println!("Best fitness: {}", result.best_fitness);
+/// ```
 pub struct AlpsResult<U: LinearChromosome> {
     /// Final layer populations (index 0 = youngest).
     pub layers: Vec<Vec<U>>,
@@ -48,13 +64,13 @@ pub struct AlpsResult<U: LinearChromosome> {
 /// Evolves multiple age-layered sub-populations with cross-layer mating and
 /// periodic reseeding of the youngest layer to maintain diversity.
 ///
-/// # Example
+/// # Examples
 ///
-/// ```ignore
+/// ```rust,no_run
 /// use genetic_algorithms::alps::{AlpsAgeScheme, AlpsConfiguration, AlpsEngine};
 /// use genetic_algorithms::chromosomes::Range as RangeChromosome;
-/// use genetic_algorithms::genotypes::Range as RangeGene;
 /// use genetic_algorithms::configuration::ProblemSolving;
+/// use genetic_algorithms::operations::Mutation;
 ///
 /// let config = AlpsConfiguration::default()
 ///     .with_n_layers(5)
@@ -63,16 +79,17 @@ pub struct AlpsResult<U: LinearChromosome> {
 ///     .with_age_gap(5)
 ///     .with_injection_interval(10)
 ///     .with_max_generations(500)
-///     .with_mutation(genetic_algorithms::operations::Mutation::Gaussian { sigma: Some(0.1) })
+///     .with_mutation(Mutation::Gaussian { sigma: Some(0.1) })
 ///     .with_problem_solving(ProblemSolving::Minimization)
 ///     .with_fitness_target(0.01);
 ///
-/// let mut engine = AlpsEngine::new(
+/// let mut engine = AlpsEngine::<RangeChromosome<f64>>::new(
 ///     config,
-///     |n| /* build n chromosomes */ todo!(),
+///     |n| vec![RangeChromosome::default(); n],
 ///     |dna| dna.iter().map(|g| g.value() * g.value()).sum(),
 /// );
 /// let result = engine.run();
+/// println!("Generations: {}", result.generations);
 /// ```
 pub struct AlpsEngine<U: LinearChromosome> {
     config: AlpsConfiguration,

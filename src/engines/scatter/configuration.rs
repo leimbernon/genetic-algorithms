@@ -3,6 +3,19 @@
 use crate::configuration::ProblemSolving;
 
 /// Configuration for a [`ScatterEngine`](super::engine::ScatterEngine) run.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::scatter::ScatterConfiguration;
+/// use genetic_algorithms::configuration::ProblemSolving;
+///
+/// let config = ScatterConfiguration::default()
+///     .with_population_size(50)
+///     .with_reference_set_size(10)
+///     .with_max_iterations(100)
+///     .with_problem_solving(ProblemSolving::Minimization);
+/// ```
 #[derive(Debug, Clone)]
 pub struct ScatterConfiguration {
     /// Total number of solutions generated during diversification.

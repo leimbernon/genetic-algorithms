@@ -226,6 +226,15 @@ impl<T: for<'de> serde::Deserialize<'de>> MaybeDeserialize for T {}
 /// - `TimeLimitReached`: elapsed wall-clock time exceeded the configured limit.
 /// - `CallbackRequested`: the user callback returned `ControlFlow::Break`.
 /// - `NotTerminated`: internal state before the run finalizes or if a callback is invoked mid-run.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::engines::ga::TerminationCause;
+///
+/// let cause = TerminationCause::FitnessTargetReached;
+/// assert_eq!(cause, TerminationCause::FitnessTargetReached);
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum TerminationCause {

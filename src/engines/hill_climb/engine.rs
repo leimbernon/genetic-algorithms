@@ -23,6 +23,27 @@ type NeighborFn<U> = Arc<dyn Fn(&U) -> Vec<U> + Send + Sync>;
 ///   best (more thorough, higher per-iteration cost).
 ///
 /// Implements [`Strategy<U>`] for runtime swapping with other engines.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::hill_climb::{HillClimbConfiguration, HillClimbEngine, HillClimbMode};
+/// use genetic_algorithms::chromosomes::Binary;
+///
+/// let initial = Binary::default();
+/// let config = HillClimbConfiguration::default()
+///     .with_mode(HillClimbMode::Stochastic)
+///     .with_no_improvement_limit(50);
+///
+/// let mut engine = HillClimbEngine::new(
+///     config,
+///     initial,
+///     |current| {
+///         // generate neighbors by bit-flipping each position
+///         vec![current.clone()]
+///     },
+/// );
+/// ```
 pub struct HillClimbEngine<U: LinearChromosome> {
     config: HillClimbConfiguration,
     neighbor_fn: NeighborFn<U>,

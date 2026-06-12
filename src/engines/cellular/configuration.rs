@@ -7,6 +7,15 @@ use crate::operations::{Crossover, Mutation, Selection};
 ///
 /// Defines which cells are considered "neighbors" of a given cell on the
 /// 2D toroidal grid.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::cellular::Neighborhood;
+///
+/// let n = Neighborhood::Moore;
+/// assert_eq!(n, Neighborhood::Moore);
+/// ```
 #[derive(Debug, Clone, PartialEq)]
 pub enum Neighborhood {
     /// Von Neumann neighborhood — 4 cells (North, South, East, West).
@@ -31,6 +40,15 @@ pub enum Neighborhood {
 ///
 /// Controls whether cells read from the previous generation's state or the
 /// current (partially updated) state when computing offspring.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::cellular::UpdateMode;
+///
+/// let mode = UpdateMode::Asynchronous;
+/// assert_eq!(mode, UpdateMode::Asynchronous);
+/// ```
 #[derive(Debug, Clone, PartialEq)]
 pub enum UpdateMode {
     /// All cells read from the previous generation; writes are applied after
@@ -42,6 +60,21 @@ pub enum UpdateMode {
 }
 
 /// Configuration for a [`CellularEngine`](super::engine::CellularEngine) run.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::cellular::{CellularConfiguration, Neighborhood, UpdateMode};
+/// use genetic_algorithms::configuration::ProblemSolving;
+/// use genetic_algorithms::operations::{Crossover, Mutation, Selection};
+///
+/// let config = CellularConfiguration::default()
+///     .with_grid(8, 8)
+///     .with_neighborhood(Neighborhood::Moore)
+///     .with_update_mode(UpdateMode::Asynchronous)
+///     .with_max_generations(200)
+///     .with_problem_solving(ProblemSolving::Minimization);
+/// ```
 #[derive(Debug, Clone)]
 pub struct CellularConfiguration {
     /// Number of rows in the toroidal grid.

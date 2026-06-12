@@ -133,6 +133,24 @@ pub use crate::multi_objective::ObjectiveFn;
 /// # Type Parameters
 ///
 /// * `U` - Chromosome type implementing `ChromosomeT`.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::nsga2::Nsga2Ga;
+/// use genetic_algorithms::nsga2::configuration::Nsga2Configuration;
+/// use genetic_algorithms::configuration::GaConfiguration;
+/// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+///
+/// let nsga2_config = Nsga2Configuration::default();
+/// let ga_config = GaConfiguration::default();
+///
+/// let engine = Nsga2Ga::<RangeChromosome<f64>>::new(nsga2_config, ga_config)
+///     .with_objectives(vec![
+///         |dna| dna.iter().map(|g| g.value() * g.value()).sum(),
+///         |dna| dna.iter().map(|g| (g.value() - 1.0).powi(2)).sum(),
+///     ]);
+/// ```
 pub struct Nsga2Ga<U>
 where
     U: LinearChromosome + VectorFitness,

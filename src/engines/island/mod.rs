@@ -143,6 +143,24 @@ use std::sync::Arc;
 /// # Type Parameters
 ///
 /// * `U` - Chromosome type implementing `ChromosomeT`.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::island::IslandGa;
+/// use genetic_algorithms::island::configuration::IslandConfiguration;
+/// use genetic_algorithms::configuration::GaConfiguration;
+/// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+///
+/// let island_config = IslandConfiguration::new()
+///     .with_num_islands(4)
+///     .with_migration_interval(10);
+///
+/// let ga_config = GaConfiguration::default();
+///
+/// let engine = IslandGa::<RangeChromosome<f64>>::new(island_config, ga_config)
+///     .with_fitness_fn(|dna| dna.iter().map(|g| g.value() * g.value()).sum::<f64>());
+/// ```
 pub struct IslandGa<U>
 where
     U: LinearChromosome,

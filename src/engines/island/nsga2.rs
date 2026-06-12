@@ -66,6 +66,26 @@ use std::sync::Arc;
 /// # Type Parameters
 ///
 /// * `U` - Chromosome type implementing `ChromosomeT`.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::island::nsga2::IslandNsga2Ga;
+/// use genetic_algorithms::island::configuration::IslandConfiguration;
+/// use genetic_algorithms::nsga2::configuration::Nsga2Configuration;
+/// use genetic_algorithms::configuration::GaConfiguration;
+/// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+///
+/// let island_config = IslandConfiguration::new().with_num_islands(4);
+/// let nsga2_config = Nsga2Configuration::default();
+/// let ga_config = GaConfiguration::default();
+///
+/// let engine = IslandNsga2Ga::<RangeChromosome<f64>>::new(
+///     island_config,
+///     nsga2_config,
+///     ga_config,
+/// );
+/// ```
 pub struct IslandNsga2Ga<U>
 where
     U: LinearChromosome,
@@ -456,6 +476,21 @@ where
 ///
 /// Picks two random individuals and returns the index of the better one
 /// (lower rank, or higher crowding distance if tied).
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::island::nsga2::binary_tournament;
+/// use genetic_algorithms::nsga2::pareto::ParetoIndividual;
+/// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+/// use rand::thread_rng;
+///
+/// let ind = ParetoIndividual::new(RangeChromosome::<f64>::default(), vec![0.0, 1.0]);
+/// let population = vec![ind.clone(), ind.clone()];
+/// let mut rng = thread_rng();
+/// let winner = binary_tournament(&population, &mut rng);
+/// assert!(winner < population.len());
+/// ```
 pub fn binary_tournament<U>(population: &[ParetoIndividual<U>], rng: &mut impl Rng) -> usize
 where
     U: LinearChromosome,
