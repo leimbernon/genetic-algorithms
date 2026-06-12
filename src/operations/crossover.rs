@@ -455,7 +455,7 @@ fn try_pcx<U: LinearChromosome>(
 /// let p1 = Range::<f64>::new();
 /// let p2 = Range::<f64>::new();
 /// let p3 = Range::<f64>::new();
-/// let config = CrossoverConfiguration { method: Crossover::Spx { expansion: None }, ..Default::default() };
+/// let config = CrossoverConfiguration { method: Crossover::Spx { num_parents: 3 }, ..Default::default() };
 /// let _offspring = factory_multi_parent(&[&p1, &p2, &p3], config);
 /// ```
 pub fn factory_multi_parent<U: LinearChromosome + RealValued>(
@@ -518,7 +518,7 @@ pub fn factory_multi_parent<U: LinearChromosome + RealValued>(
 /// let p1 = Range::<f64>::new();
 /// let p2 = Range::<f64>::new();
 /// let p3 = Range::<f64>::new();
-/// let config = CrossoverConfiguration { method: Crossover::Undx { sigma_xi: None, sigma_eta: None }, ..Default::default() };
+/// let config = CrossoverConfiguration { method: Crossover::Undx { num_parents: 3 }, ..Default::default() };
 /// let _result = factory_multi_parent_dispatch(&[&p1, &p2, &p3], config);
 /// ```
 pub fn factory_multi_parent_dispatch<U: LinearChromosome + 'static>(
