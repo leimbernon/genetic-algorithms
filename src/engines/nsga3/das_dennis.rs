@@ -18,6 +18,16 @@
 /// - `num_objectives == 0` returns an empty vector.
 /// - `num_objectives == 1` returns `vec![vec![1.0]]` regardless of `p`.
 /// - `p == 0` returns `vec![vec![0.0; num_objectives]]` (a single all-zero point).
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::nsga3::das_dennis::generate_das_dennis;
+///
+/// let points = generate_das_dennis(2, 4);
+/// assert_eq!(points.len(), 5); // C(4+2-1, 2-1) = 5
+/// assert!((points[0].iter().sum::<f64>() - 1.0).abs() < 1e-9);
+/// ```
 pub fn generate_das_dennis(num_objectives: usize, p: usize) -> Vec<Vec<f64>> {
     if num_objectives == 0 {
         return Vec::new();

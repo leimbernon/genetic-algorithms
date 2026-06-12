@@ -144,6 +144,19 @@ use std::time::Instant;
 /// # Type Parameters
 ///
 /// * `U` - Chromosome type implementing `ChromosomeT`.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::moead::MoeaDGa;
+/// use genetic_algorithms::moead::configuration::MoeaDConfiguration;
+/// use genetic_algorithms::configuration::GaConfiguration;
+/// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+///
+/// let moead_config = MoeaDConfiguration::default();
+/// let ga_config = GaConfiguration::default();
+/// let engine = MoeaDGa::<RangeChromosome<f64>>::new(moead_config, ga_config);
+/// ```
 pub struct MoeaDGa<U>
 where
     U: LinearChromosome + VectorFitness,

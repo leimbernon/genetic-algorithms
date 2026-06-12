@@ -131,6 +131,19 @@ use std::time::Instant;
 /// # Type Parameters
 ///
 /// * `U` - Chromosome type implementing `ChromosomeT`.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::sms_emoa::SmsEmoaGa;
+/// use genetic_algorithms::sms_emoa::configuration::SmsEmoaConfiguration;
+/// use genetic_algorithms::configuration::GaConfiguration;
+/// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+///
+/// let sms_config = SmsEmoaConfiguration::default();
+/// let ga_config = GaConfiguration::default();
+/// let engine = SmsEmoaGa::<RangeChromosome<f64>>::new(sms_config, ga_config);
+/// ```
 pub struct SmsEmoaGa<U>
 where
     U: LinearChromosome,

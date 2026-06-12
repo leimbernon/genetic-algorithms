@@ -135,6 +135,19 @@ use std::time::Instant;
 /// # Type Parameters
 ///
 /// * `U` - Chromosome type implementing `ChromosomeT`.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::ibea::IbeaGa;
+/// use genetic_algorithms::ibea::configuration::IbeaConfiguration;
+/// use genetic_algorithms::configuration::GaConfiguration;
+/// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+///
+/// let ibea_config = IbeaConfiguration::default();
+/// let ga_config = GaConfiguration::default();
+/// let engine = IbeaGa::<RangeChromosome<f64>>::new(ibea_config, ga_config);
+/// ```
 pub struct IbeaGa<U>
 where
     U: LinearChromosome,

@@ -147,6 +147,19 @@ use std::time::Instant;
 /// # Type Parameters
 ///
 /// * `U` - Chromosome type implementing `ChromosomeT`.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::nsga3::Nsga3Ga;
+/// use genetic_algorithms::nsga3::configuration::Nsga3Configuration;
+/// use genetic_algorithms::configuration::GaConfiguration;
+/// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+///
+/// let nsga3_config = Nsga3Configuration::default();
+/// let ga_config = GaConfiguration::default();
+/// let engine = Nsga3Ga::<RangeChromosome<f64>>::new(nsga3_config, ga_config);
+/// ```
 pub struct Nsga3Ga<U>
 where
     U: LinearChromosome + VectorFitness,

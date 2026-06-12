@@ -131,6 +131,19 @@ use std::time::Instant;
 /// # Type Parameters
 ///
 /// * `U` - Chromosome type implementing `ChromosomeT`.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::spea2::Spea2Ga;
+/// use genetic_algorithms::spea2::configuration::Spea2Configuration;
+/// use genetic_algorithms::configuration::GaConfiguration;
+/// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+///
+/// let spea2_config = Spea2Configuration::default();
+/// let ga_config = GaConfiguration::default();
+/// let engine = Spea2Ga::<RangeChromosome<f64>>::new(spea2_config, ga_config);
+/// ```
 pub struct Spea2Ga<U>
 where
     U: LinearChromosome,
