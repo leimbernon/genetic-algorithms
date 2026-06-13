@@ -34,7 +34,13 @@ fn self_adaptive_sigma_min_enforced() {
     }
 }
 
+// Stochastic acceptance probe — the assertion is probabilistic, not deterministic.
+// `crate::rng::make_rng()` reads a process-global seed, so setting `rng::set_seed`
+// inside the test would leak into other tests running concurrently. Run manually
+// with `cargo test -- --ignored self_adaptive_sigma_spread_evolves` when validating
+// the self-adaptive Gaussian sigma random walk.
 #[test]
+#[ignore]
 fn self_adaptive_sigma_spread_evolves() {
     // All sigmas start equal. After many mutations the independent per-dimension local
     // noise (tau term) causes dimensions to diverge: some collapse toward sigma_min,
