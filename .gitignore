@@ -25,3 +25,6 @@ __pycache__/
 .claude/
 .planning/
 .DS_Store
+
+# Local logs
+*.log
