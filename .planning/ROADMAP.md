@@ -795,29 +795,28 @@ Plans:
 - [ ] 64-04-PLAN.md — Rustdoc # Examples blocks on all user-facing pub items (D-11, D-12, D-13)
 **UI hint**: no
 
-### Phase 65: v3.0.0 Migration Guide
-**Goal**: Users upgrading from v2.x to v3.0.0 can follow a single authoritative `MIGRATION_V3.md` guide that covers every breaking change with before/after code snippets, compiler error messages, and automated migration hints
+### Phase 65: v3.0.0 Migration Guide & Release Notes
+**Goal**: Users upgrading from v2.x to v3.0.0 can follow a single authoritative `MIGRATION.md` guide that covers every breaking change with before/after code snippets, compiler error messages, and migration hints; the v3.0.0 CHANGELOG entry summarizes the full milestone for release notes.
 **Depends on**: Phase 64
 **Requirements**: None
 **Success Criteria** (what must be TRUE):
-  1. `MIGRATION_V3.md` covers all breaking changes: `ChromosomeT` split, `LinearChromosome` bound requirement, `DeGene → RealGene` rename, `SelectionOperator::select` return-type change, `Mutation` enum variant parameter changes, `StoppingCriteria` flattening, `Reporter` removal
+  1. `MIGRATION.md` covers all breaking changes: `ChromosomeT` split, `LinearChromosome` bound requirement, `DeGene → RealGene` rename, `SelectionOperator::select` return-type change, `Mutation` enum variant parameter changes, `StoppingCriteria` flattening, `Reporter` removal, `LimitConfiguration` field removals, `GaConfiguration` accessor methods, `LinearChromosome::default → reset`
   2. Every breaking change entry includes: the old API, the new API, the compiler error a user will see, and the fix
-  3. `README.md` links to `MIGRATION_V3.md` in the "Upgrading" section
-  4. All CI gates pass
-**Plans:** 4 plans
+  3. `README.md` links to `MIGRATION.md` in the "Upgrading" section (header banner above the badge)
+  4. `CHANGELOG.md` contains a `## [3.0.0]` entry following Keep-a-Changelog with Added / Changed (breaking) / Removed buckets covering all v3 phases (47–65)
+  5. All CI gates pass (cargo test, cargo test --features serde, cargo clippy --all-targets -D warnings, cargo doc --no-deps with zero warnings, cargo check --target wasm32-unknown-unknown)
+**Plans:** 3 plans
 
 Plans:
 **Wave 0**
-- [ ] 64-01-PLAN.md — Coverage baseline + cargo-llvm-cov CI gate (D-01, D-02, D-03, D-04, D-05)
+- [x] 65-01-PLAN.md — Author MIGRATION.md with 10 breaking-change recipes (before / after / compiler error / fix); README upgrade banner link
 
 **Wave 1** *(blocked on Wave 0)*
-- [ ] 64-02-PLAN.md — Fix all #[allow(...)] suppressions at root cause (D-06, D-07, D-08, D-09, D-10)
+- [x] 65-02-PLAN.md — Author CHANGELOG `## [3.0.0]` entry aggregating phases 47–65; compare links
 
-**Wave 2** *(blocked on Waves 0-1, parallel with 64-04)*
-- [ ] 64-03-PLAN.md — Data-driven coverage tests for lowest-coverage modules (D-05, D-14)
+**Wave 2** *(blocked on Wave 1)*
+- [ ] 65-03-PLAN.md — Final release-gate verification (full CI matrix, examples smoke-run, MIGRATION.md cross-check against actual compiler errors on a representative v2 sample crate)
 
-**Wave 2** *(blocked on Wave 1, parallel with 64-03)*
-- [ ] 64-04-PLAN.md — Rustdoc # Examples blocks on all user-facing pub items (D-11, D-12, D-13)
 **UI hint**: no
 
 ## Progress
