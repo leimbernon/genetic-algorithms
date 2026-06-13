@@ -120,6 +120,10 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 - [x] **Phase 49: Unified Strategy Trait + Alternative Strategy Engines** — `Strategy<U>` trait; `HillClimbEngine` (Stochastic + SteepestAscent); `PermutateEngine` with safety gate; observer hooks throughout
 - [x] **Phase 50: Lexicase Selection** — `MultiCaseFitness: ChromosomeT` trait; `LexicaseSelection`; epsilon-lexicase variant; behavioral diversity CI test (completed 2026-05-23)
 - [x] **Phase 51: Multi-Parent Crossover + Self-Adaptive Mutation** — UNDX, SPX, PCX operators with `RealValued` marker trait; `SelfAdaptive: ChromosomeT` trait; `Mutation::SelfAdaptiveGaussian` with log-normal sigma update (completed — `Crossover::{Undx, Spx, Pcx}` in `src/operations/crossover.rs`; `Mutation::SelfAdaptiveGaussian` in `src/operations/mutation/self_adaptive_gaussian.rs`; `RealValued` and `SelfAdaptive` traits under `src/traits/`)
+- [ ] **Phase 66: Build-perf foundations** — Baseline harness (`bench/build_perf.sh`), feature-matrix CI workflow, and deterministic golden-output regression tests. Foundation for Phases 67–69; nothing user-facing.
+- [ ] **Phase 67: Build-perf M1 (config quick wins)** — `[profile.dev]` / `[profile.test]` tuning, `cargo-nextest` on CI, explicit `mold`/`lld` linker config, `sccache` on CI runners.
+- [ ] **Phase 68: Build-perf M2 (dep hygiene)** — Remove `env_logger` auto-install (anti-pattern), move `env_logger` to dev-deps, gate `log` behind `logging` feature (default-on). Folded into v3.0.0 breaking-change set.
+- [ ] **Phase 69: Build-perf M3 (major refactors)** — `criterion` → `divan` bench harness migration, `parallel` feature gating `rayon`, split `engines/ga.rs` (139 KB) into cohesive submodules under `engines/ga/`.
 - [x] **Phase 52: Variable-Length Chromosomes** — `ChromosomeLength::Variable { min, max }`; `Mutation::Insertion` / `Mutation::Deletion`; `Crossover::VariableLength(AlignmentStrategy)`; parsimony pressure survivor config (completed 2026-05-24)
 - [x] **Phase 53: Tree Chromosome + GpGa Engine** — `TreeChromosome: ChromosomeT` supertrait; `GpGa<U>` engine; ramped half-and-half init; subtree crossover + mutation; bloat control; serde with `serde_stacker`; `Display` as expression string (completed 2026-05-25)
 
@@ -816,6 +820,105 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1)*
 - [ ] 65-03-PLAN.md — Final release-gate verification (full CI matrix, examples smoke-run, MIGRATION.md cross-check against actual compiler errors on a representative v2 sample crate)
+
+**Note**: Phase 65 is re-sequenced to run AFTER Phase 69 so MIGRATION.md captures the env_logger / `logging` / `parallel` feature changes.
+
+**UI hint**: no
+
+### Phase 66: Build-perf foundations (baseline + matrix + golden tests)
+**Goal**: Establish the measurement and regression-prevention infrastructure required to land any build-time work without introducing regressions. Phases 67-69 cannot start until this is green on main.
+**Depends on**: Phase 64
+**Requirements**: None (driven by `.planning/v3.0.0-BUILD-PERF.md` §Cross-cutting work)
+**Success Criteria** (what must be TRUE):
+  1. `bench/build_perf.sh` is an executable shell script that runs the full measurement suite (clean dev build, WASM check, test suite, dep count, public-API snapshot, golden-example runs) and writes a JSON report to `target/build-perf/`
+  2. `.planning/baselines/v3.0.0-baseline.json` is committed and contains the canonical v3.0.0 baseline numbers for every metric the script emits
+  3. `.github/workflows/feature-matrix.yml` exists and runs `cargo test` on every supported feature combination (default, serde, visualization, benchmarks, observer-tracing, observer-metrics, all-features, wasm32) — green on main before Phase 67 starts
+  4. `tests/golden/` contains deterministic seeded runs of `rastrigin`, `nsga2_zdt1`, `cma_es_rastrigin`, `pso_rastrigin` with their expected best-fitness values frozen to 12 decimals; the golden tests run as part of `cargo test`
+  5. A new CI job `build-perf-gate` runs `bench/build_perf.sh` on every PR and fails if any metric regresses by more than 2 % (configurable per-metric)
+**Plans**: 3 plans
+
+Plans:
+**Wave 0**
+- [ ] 66-01-PLAN.md — Author `bench/build_perf.sh` + `target/build-perf/` schema + initial baseline capture committed to `.planning/baselines/v3.0.0-baseline.json`
+
+**Wave 1** *(blocked on Wave 0)*
+- [ ] 66-02-PLAN.md — Feature-matrix CI workflow + green run on main
+
+**Wave 1** *(parallel with 66-02)*
+- [ ] 66-03-PLAN.md — `tests/golden/` deterministic example regression tests + `build-perf-gate` CI job
+
+**UI hint**: no
+
+### Phase 67: Build-perf M1 — config-only quick wins
+**Goal**: Land five zero-risk build-config improvements that shave 5-15 % off clean dev wall-clock and 30-60 % off CI wall-clock without any source-code behaviour change.
+**Depends on**: Phase 66
+**Requirements**: None
+**Success Criteria** (what must be TRUE):
+  1. `Cargo.toml` defines `[profile.dev]`, `[profile.dev.package."*"]`, and `[profile.test]` with the tuned values from `.planning/v3.0.0-BUILD-PERF.md` §Action #5/#6
+  2. CI workflow uses `cargo nextest run` (local `cargo test` still works unchanged)
+  3. `.cargo/config.toml` declares the explicit linker for Linux (mold) and documents the optional macOS/Windows paths
+  4. CI workflows use `sccache` via `mozilla-actions/sccache-action`; cache hit-rate is logged
+  5. `build-perf-gate` job confirms at least a 5 % clean-build wall-clock improvement vs the Phase 66 baseline; CC-3 golden tests remain byte-identical
+  6. Zero new rustdoc warnings; `cargo clippy --all-targets -D warnings` stays green
+**Plans**: 4 plans
+
+Plans:
+**Wave 0** *(all four can run in parallel)*
+- [ ] 67-01-PLAN.md — Cargo profile tuning + `docs/DEVELOPMENT.md` "Cargo profiles" section + `.planning/intel/build-profile.md`
+- [ ] 67-02-PLAN.md — `cargo-nextest` CI swap + `docs/TESTING.md` opt-in instructions
+- [ ] 67-03-PLAN.md — `.cargo/config.toml` linker recommendations + `docs/DEVELOPMENT.md` "Linker recommendations" section
+- [ ] 67-04-PLAN.md — `sccache` CI integration + cache-hit logging
+
+**UI hint**: no
+
+### Phase 68: Build-perf M2 — dependency hygiene
+**Goal**: Eliminate the env_logger anti-pattern and gate `log` behind a default-on `logging` feature. Shed ~12 transitive crates and ~15-25 % clean build wall-clock.
+**Depends on**: Phase 67
+**Requirements**: None (origin: 2026-06-13 build audit)
+**Success Criteria** (what must be TRUE):
+  1. `src/engines/ga.rs` no longer calls `env_logger::Builder::from_default_env().try_init()`; the GA emits `log!()` events as before and lets the user install whatever subscriber they want
+  2. `env_logger` moves from `[dependencies]` to `[dev-dependencies]`; every example that previously relied on the auto-installed logger calls `env_logger::init()` explicitly in `main()`
+  3. A new `logging` feature gates the `log` crate dependency; `default = ["logging", ...]` preserves current behaviour on default builds
+  4. `tests/test_no_logger_installed.rs` asserts the GA does not install a logger when none is configured
+  5. `MIGRATION.md` gains a "Logger setup (v2 auto-init → v3 explicit)" recipe; `CHANGELOG.md` v3.0.0 entry's Changed/breaking bucket documents the removal; `README.md` Quick Start and `docs/getting-started.md` updated
+  6. `.planning/intel/logger-history.md` records the rationale so future AI agents do not reintroduce the auto-init
+  7. Feature-matrix CI is green with and without `logging` enabled; `build-perf-gate` confirms 12-15 fewer transitive crates and ≥ 15 % clean-build improvement
+  8. CC-3 golden tests byte-identical
+**Plans**: 2 plans
+
+Plans:
+**Wave 0**
+- [ ] 68-01-PLAN.md — Remove env_logger auto-install + move to dev-deps + update examples + MIGRATION.md recipe + `.planning/intel/logger-history.md`
+
+**Wave 1** *(blocked on Wave 0)*
+- [ ] 68-02-PLAN.md — `logging` feature gate + every `log!()` call-site behind `#[cfg(feature = "logging")]` (or internal macro) + feature-matrix CI green + docs across 4 audiences + `.planning/intel/feature-flags.md`
+
+**UI hint**: no
+
+### Phase 69: Build-perf M3 — major refactors
+**Goal**: Land the three biggest-payoff refactors with zero regression: criterion → divan bench harness, `parallel` feature gating rayon, and split `engines/ga.rs` (139 KB) into cohesive submodules.
+**Depends on**: Phase 68
+**Requirements**: None
+**Success Criteria** (what must be TRUE):
+  1. Every `benches/*.rs` is ported from `criterion` to `divan`; `criterion` is removed from `[dev-dependencies]`; bench median values pre- vs post-port within ±3 % on the same machine
+  2. A new `parallel` feature (default-on) gates `rayon`; every `par_iter()`/`par_chunks*()` site routes through `#[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]` with the existing sequential fallback as the canonical wasm/no-parallel path; CLAUDE.md WASM rule updated to document the new gate
+  3. `engines/ga.rs` is split into `engines/ga/mod.rs` + 10 cohesive submodules (`lifecycle`, `generation`, `adaptive`, `aos`, `extension`, `cache`, `batch`, `stats`, `observer`, `stopping`); `cargo expand` symbol diff confirms zero semantic change
+  4. `build-perf-gate` confirms ≥ 10 % clean-build improvement on the `--no-default-features --features logging` combination (bench harness drop + rayon optional) and measurable codegen-units parallelism gain from the ga.rs split
+  5. Feature-matrix CI green on every combination including the new `parallel` off path; CC-3 golden tests byte-identical with `parallel=on` AND `parallel=off`
+  6. Documentation deliverables shipped: `CHANGELOG.md` Added/Changed entries, `README.md` + `src/lib.rs` Features tables, `docs/benchmarks.md`, `docs/ARCHITECTURE.md`, `CLAUDE.md`, and three `.planning/intel/*.md` files (bench-harness, parallel-feature, ga-internals)
+**Plans**: 5 plans
+
+Plans:
+**Wave 0**
+- [ ] 69-01-PLAN.md — criterion → divan port (one bench file per commit) + `[dev-dependencies]` swap + `docs/benchmarks.md` + `.planning/intel/bench-harness.md`
+
+**Wave 1** *(blocked on Wave 0)*
+- [ ] 69-02-PLAN.md — `parallel` feature scaffolding: Cargo.toml feature + canonical gate macro + CI matrix combination added
+- [ ] 69-03-PLAN.md — Gate every rayon call-site (~60 across the crate); feature-matrix CI green; CLAUDE.md WASM rule updated; `.planning/intel/parallel-feature.md`
+
+**Wave 2** *(blocked on Wave 1)*
+- [ ] 69-04-PLAN.md — `engines/ga.rs` → `engines/ga/{mod,lifecycle,generation,adaptive,aos,extension,cache,batch,stats,observer,stopping}.rs` pure-move refactor + `cargo expand` symbol diff verification
+- [ ] 69-05-PLAN.md — Documentation sweep: `docs/ARCHITECTURE.md` module map, `.planning/intel/ga-internals.md`, final `build-perf-gate` confirmation
 
 **UI hint**: no
 
