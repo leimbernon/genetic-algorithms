@@ -11,9 +11,15 @@ jobs:
   coverage:
     name: coverage (src/engines/ + src/operations/)
     runs-on: ubuntu-latest
+    env:
+      RUSTC_WRAPPER: sccache
+      SCCACHE_GHA_ENABLED: "true"
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Configure sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
 
       - name: Install stable toolchain with llvm-tools
         uses: dtolnay/rust-toolchain@stable
@@ -40,3 +46,6 @@ jobs:
             --all-features \
             --ignore-filename-regex '^(?!.*(src/engines/|src/operations/)).*$' \
             --fail-under-lines 80
+
+      - name: sccache stats
+        run: sccache --show-stats
