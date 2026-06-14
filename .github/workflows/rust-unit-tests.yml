@@ -9,6 +9,8 @@ permissions:
 
 env:
   CARGO_TERM_COLOR: always
+  RUSTC_WRAPPER: sccache
+  SCCACHE_GHA_ENABLED: "true"
 
 jobs:
   build:
@@ -17,6 +19,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v5
+    - name: Configure sccache
+      uses: mozilla-actions/sccache-action@v0.0.9
     - name: Install nextest
       uses: taiki-e/install-action@nextest
     - name: Install mold linker
@@ -25,3 +29,5 @@ jobs:
       run: cargo build --verbose
     - name: Run tests (nextest)
       run: cargo nextest run
+    - name: sccache stats
+      run: sccache --show-stats
