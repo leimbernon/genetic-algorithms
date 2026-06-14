@@ -267,3 +267,22 @@ To undo the Linux mold configuration:
 3. Remove this `§Linker recommendations` section from `docs/DEVELOPMENT.md`.
 
 The `[target.wasm32-unknown-unknown]` block in `.cargo/config.toml` is unrelated to mold and must always remain present — it sets the `getrandom` backend required for WASM compilation.
+
+## CI caching
+
+CI uses `mozilla-actions/sccache-action@v0.0.9` to cache compiler output across runs via the GitHub Actions cache backend. `sccache` is set as `RUSTC_WRAPPER`, which intercepts every `rustc` invocation and serves the result from cache on cache hits. This typically delivers a 30–60 % wall-clock reduction on warm CI runs.
+
+Affected workflows (Phase 67 / Plan 67-04):
+- `rust-unit-tests.yml`
+- `coverage.yml`
+- `wasm-check.yml`
+- `rust-clippy.yml`
+- `examples-smoke.yml`
+
+`build-perf-gate.yml` intentionally does **not** use sccache. That workflow measures cold-build wall-clock time to enforce a build-performance regression gate; enabling caching would invalidate the timing baseline (Pitfall 4 in `.planning/phases/67-build-perf-m1-config-only-quick-wins/67-RESEARCH.md`).
+
+**Contributors do not need to install or configure anything locally.** sccache is CI-only — it is activated via the GitHub Actions action and is not required for local development.
+
+Cache hit-rate is logged at the end of every affected CI job via `sccache --show-stats`. Look for the `Compile requests` / `Cache hits` lines in the job log to spot unexpected cache misses or regressions.
+
+Version is pinned to `v0.0.9` (not `@latest` or `@main`) for supply-chain hygiene. To update, open a dedicated PR, update the `uses:` line in all five workflows, and measure before/after hit-rate in CI.
