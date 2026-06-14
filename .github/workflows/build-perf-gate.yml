@@ -1,0 +1,96 @@
+name: Build perf gate
+
+on:
+  pull_request:
+    branches: [main, "milestone/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  build-perf-gate:
+    name: build-perf-gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install stable toolchain with wasm32 target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      # Cache only cargo registry/target deps (not the final build artifacts).
+      # The build-perf harness uses `cargo clean` internally to measure cold builds;
+      # caching build artifacts here would interfere with the measurement (D-04).
+      - name: Cache cargo registry and target
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run build-perf harness
+        run: bash bench/build_perf.sh
+
+      - name: Check regression against baseline
+        run: |
+          python3 - <<'PYEOF'
+          import json, sys
+
+          baseline = json.load(open(".planning/baselines/v3.0.0-baseline.json"))
+          current  = json.load(open("target/build-perf/results.json"))
+
+          TIMING_FIELDS = ["dev_build_s", "wasm_check_s", "test_suite_s"]
+          TOLERANCE     = 0.02  # 2% regression budget for timing fields
+
+          failed = False
+
+          for field in TIMING_FIELDS:
+              base = baseline.get(field)
+              cur  = current.get(field)
+              if base is None or cur is None:
+                  print(f"WARNING: field '{field}' missing from one of the JSON files; skipping")
+                  continue
+              if base == 0:
+                  print(f"WARNING: baseline {field} is 0; skipping relative comparison")
+                  continue
+              delta = (cur - base) / base
+              if delta > TOLERANCE:
+                  print(f"REGRESSION: {field} regressed {delta:.1%} (was {base}, now {cur})")
+                  failed = True
+              else:
+                  print(f"OK: {field}: {base} -> {cur} ({delta:+.1%})")
+
+          # dep_count: exact match (0% tolerance)
+          base_dep = baseline.get("dep_count")
+          cur_dep  = current.get("dep_count")
+          if base_dep is not None and cur_dep is not None:
+              if cur_dep != base_dep:
+                  print(f"REGRESSION: dep_count changed from {base_dep} to {cur_dep}")
+                  failed = True
+              else:
+                  print(f"OK: dep_count: {base_dep} (unchanged)")
+
+          # public_api_hash: exact match, skip if either side is "unavailable"
+          base_hash = baseline.get("public_api_hash", "unavailable")
+          cur_hash  = current.get("public_api_hash", "unavailable")
+          if base_hash == "unavailable" or cur_hash == "unavailable":
+              print(f"WARNING: public_api_hash comparison skipped (one or both sides are 'unavailable')")
+          elif cur_hash != base_hash:
+              print(f"REGRESSION: public_api_hash changed from {base_hash} to {cur_hash}")
+              failed = True
+          else:
+              print(f"OK: public_api_hash: unchanged")
+
+          if failed:
+              sys.exit(1)
+          print("Build perf gate: all metrics within tolerance")
+          PYEOF
+
+      - name: Print metric diff summary
+        run: |
+          python3 -c "
+          import json
+          b = json.load(open('.planning/baselines/v3.0.0-baseline.json'))
+          c = json.load(open('target/build-perf/results.json'))
+          print('=== Build-perf metric comparison (baseline -> current) ===')
+          for k in b:
+              print(f'  {k}: {b.get(k)} -> {c.get(k)}')
+          "
