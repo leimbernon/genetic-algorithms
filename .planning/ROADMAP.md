@@ -121,7 +121,7 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 - [x] **Phase 50: Lexicase Selection** — `MultiCaseFitness: ChromosomeT` trait; `LexicaseSelection`; epsilon-lexicase variant; behavioral diversity CI test (completed 2026-05-23)
 - [x] **Phase 51: Multi-Parent Crossover + Self-Adaptive Mutation** — UNDX, SPX, PCX operators with `RealValued` marker trait; `SelfAdaptive: ChromosomeT` trait; `Mutation::SelfAdaptiveGaussian` with log-normal sigma update (completed — `Crossover::{Undx, Spx, Pcx}` in `src/operations/crossover.rs`; `Mutation::SelfAdaptiveGaussian` in `src/operations/mutation/self_adaptive_gaussian.rs`; `RealValued` and `SelfAdaptive` traits under `src/traits/`)
 - [x] **Phase 66: Build-perf foundations** — Baseline harness (`bench/build_perf.sh`), feature-matrix CI workflow, and deterministic golden-output regression tests. Foundation for Phases 67–69; nothing user-facing. (completed 2026-06-14)
-- [ ] **Phase 67: Build-perf M1 (config quick wins)** — `[profile.dev]` / `[profile.test]` tuning, `cargo-nextest` on CI, explicit `mold`/`lld` linker config, `sccache` on CI runners.
+- [x] **Phase 67: Build-perf M1 (config quick wins)** — `[profile.dev]` / `[profile.test]` tuning, `cargo-nextest` on CI, explicit `mold`/`lld` linker config, `sccache` on CI runners. (completed 2026-06-14)
 - [ ] **Phase 68: Build-perf M2 (dep hygiene)** — Remove `env_logger` auto-install (anti-pattern), move `env_logger` to dev-deps, gate `log` behind `logging` feature (default-on). Folded into v3.0.0 breaking-change set.
 - [ ] **Phase 69: Build-perf M3 (major refactors)** — `criterion` → `divan` bench harness migration, `parallel` feature gating `rayon`, split `engines/ga.rs` (139 KB) into cohesive submodules under `engines/ga/`.
 - [x] **Phase 52: Variable-Length Chromosomes** — `ChromosomeLength::Variable { min, max }`; `Mutation::Insertion` / `Mutation::Deletion`; `Crossover::VariableLength(AlignmentStrategy)`; parsimony pressure survivor config (completed 2026-05-24)
@@ -867,7 +867,7 @@ Plans:
 - [x] 67-01-PLAN.md — Cargo profile tuning + `docs/DEVELOPMENT.md` "Cargo profiles" section + `.planning/intel/build-profile.md`
 - [x] 67-02-PLAN.md — `cargo-nextest` CI swap + `docs/TESTING.md` opt-in instructions
 - [x] 67-03-PLAN.md — `.cargo/config.toml` linker recommendations + `docs/DEVELOPMENT.md` "Linker recommendations" section
-- [ ] 67-04-PLAN.md — `sccache` CI integration + cache-hit logging
+- [x] 67-04-PLAN.md — `sccache` CI integration + cache-hit logging
 
 **UI hint**: no
 
