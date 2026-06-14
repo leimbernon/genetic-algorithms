@@ -28,9 +28,12 @@ jobs:
       - name: Install cargo-llvm-cov
         run: cargo install cargo-llvm-cov --locked
 
+      - name: Install nextest
+        uses: taiki-e/install-action@nextest
+
       - name: Run coverage gate (src/engines/ + src/operations/ ≥ 80%)
         run: |
-          cargo llvm-cov \
+          cargo llvm-cov nextest \
             --all-features \
             --ignore-filename-regex '^(?!.*(src/engines/|src/operations/)).*$' \
             --fail-under-lines 80

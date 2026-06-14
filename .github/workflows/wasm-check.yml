@@ -25,6 +25,9 @@ jobs:
         with:
           key: wasm32-unknown-unknown
 
+      - name: Install nextest
+        uses: taiki-e/install-action@nextest
+
       - name: cargo check (default features)
         run: cargo check --target wasm32-unknown-unknown --lib
 
