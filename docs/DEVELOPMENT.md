@@ -202,3 +202,68 @@ If you need to undo the profile tuning (e.g., to diagnose a compiler bug or to m
 Then delete `.planning/intel/build-profile.md` and remove this `§Cargo profiles` section from `docs/DEVELOPMENT.md`. No source-code change is required.
 
 Before reverting, read `.planning/intel/build-profile.md` — it explains why the blocks were added and what CI baseline they are anchored to (Phase 66 / `.planning/baselines/v3.0.0-baseline.json`).
+
+## Linker recommendations
+
+For a medium-sized Rust library like `genetic_algorithms`, the link phase accounts for a meaningful slice of clean-build wall-clock time. Selecting a faster linker is one of the highest-leverage build-performance improvements available because it requires no code changes and applies to every build unconditionally. `.cargo/config.toml` encodes the recommended linker for each target platform so all developers and CI jobs benefit automatically.
+
+### Linux (x86_64-unknown-linux-gnu)
+
+`mold` is now the default linker on Linux via `.cargo/config.toml`:
+
+```toml
+[target.x86_64-unknown-linux-gnu]
+linker = "clang"
+rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+```
+
+`linker = "clang"` is required because mold is invoked via `-fuse-ld=mold` and `gcc` on some Ubuntu versions does not forward that flag reliably to the linker. `clang` consistently honours `-fuse-ld`.
+
+CI installs mold with:
+```bash
+sudo apt-get install -y mold
+```
+This step is present in `rust-unit-tests.yml`, `coverage.yml`, `rust-clippy.yml`, and `examples-smoke.yml` (Phase 67 / Plan 67-03).
+
+For local development on Ubuntu/Debian:
+```bash
+sudo apt-get install -y mold
+```
+On Fedora/RHEL: `sudo dnf install mold`. On Arch: `sudo pacman -S mold`. The package is available in Ubuntu 22.04+ official repositories; no PPA needed.
+
+### macOS (aarch64-apple-darwin)
+
+A commented-out `lld` block is provided in `.cargo/config.toml` for opt-in use:
+
+```toml
+# Uncomment for ~5 % faster macOS builds (requires `brew install llvm`):
+# [target.aarch64-apple-darwin]
+# rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+```
+
+To opt in, install LLVM and uncomment the block:
+```bash
+brew install llvm
+```
+Then uncomment the two lines in `.cargo/config.toml`. This yields approximately 5 % faster link times on Apple Silicon. The block is left commented by default because it requires a manual `brew install` step and is not enforced in CI.
+
+### Windows
+
+No automated linker configuration is provided for Windows targets because the project has no Windows CI. To opt in locally, add the following to your user-level `~/.cargo/config.toml` (do NOT commit this to the repository):
+
+```toml
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "link-arg=-fuse-ld=lld-link"]
+```
+
+This uses `rust-lld` (bundled with the Rust toolchain) as the linker via `lld-link`. No additional installation is required.
+
+### Reverting
+
+To undo the Linux mold configuration:
+
+1. Delete the `[target.x86_64-unknown-linux-gnu]` block from `.cargo/config.toml` (leave the `[target.wasm32-unknown-unknown]` block intact — it MUST remain).
+2. Remove the `Install mold linker` step from `rust-unit-tests.yml`, `coverage.yml`, `rust-clippy.yml`, and `examples-smoke.yml`.
+3. Remove this `§Linker recommendations` section from `docs/DEVELOPMENT.md`.
+
+The `[target.wasm32-unknown-unknown]` block in `.cargo/config.toml` is unrelated to mold and must always remain present — it sets the `getrandom` backend required for WASM compilation.
