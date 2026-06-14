@@ -147,3 +147,58 @@ main
 - [GETTING-STARTED.md](GETTING-STARTED.md) — Prerequisites and first-run instructions
 - [TESTING.md](TESTING.md) — Test structure, naming conventions, and coverage details
 - [ARCHITECTURE.md](ARCHITECTURE.md) — Module map, core abstractions, and execution flow
+
+## Cargo profiles
+
+`Cargo.toml` declares three custom profile blocks — `[profile.dev]`, `[profile.dev.package."*"]`, and `[profile.test]` — that reduce local dev-build and test wall-clock without changing any compiled behaviour. They were introduced in Phase 67 (Plan 67-01) after a systematic build-performance analysis (`.planning/v3.0.0-BUILD-PERF.md` §Action #5/#6). See `.planning/intel/build-profile.md` for the AI-agent-facing rationale.
+
+### [profile.dev]
+
+```toml
+[profile.dev]
+debug = "line-tables-only"
+split-debuginfo = "unpacked"
+```
+
+- **`debug = "line-tables-only"`**: Emits only line-number tables rather than full DWARF debug info. Backtraces still show file names and line numbers. The resulting debug section is significantly smaller, which speeds up the linker on every incremental build.
+- **`split-debuginfo = "unpacked"`**: On macOS, the default `"packed"` mode spawns `dsymutil` to create a `.dSYM` bundle; this is the single largest contributor to link-time slowness on Apple Silicon and Intel Macs. Setting `"unpacked"` skips `dsymutil` for dev builds. On Linux this key is a no-op.
+
+### [profile.dev.package."*"]
+
+```toml
+[profile.dev.package."*"]
+opt-level = 1
+debug = false
+```
+
+- **`opt-level = 1`**: Applies `-O1` optimisation to all third-party crates (rand, rayon, log, serde, …) while leaving your own code in `-O0` for fast iteration. The first clean build pays a one-time penalty of ~5-10 seconds; subsequent incremental builds are unaffected because compiled deps are cached in the Cargo artifact store.
+- **`debug = false`**: Suppresses debug symbols for dependency crates. Combined with `opt-level = 1`, this makes the linker's job on deps dramatically smaller.
+
+The result is noticeably faster test runtimes for anything that calls rand, rayon, or serde hot paths — the GA library itself uses all three heavily.
+
+### [profile.test]
+
+```toml
+[profile.test]
+opt-level = 1
+```
+
+- **`opt-level = 1`**: Test binaries run a lot of GA generations (crossover, mutation, survivor selection). Under `-O0` the inner loops are very slow; a single `-O1` pass cuts runtime by roughly 50 % with no additional rustc-time cost. This keeps `cargo test` fast enough to run in the inner development loop without sacrificing the debuggability of your own code.
+
+### Reverting
+
+If you need to undo the profile tuning (e.g., to diagnose a compiler bug or to measure unoptimised dep performance), simply delete the three blocks at the end of `Cargo.toml`:
+
+```toml
+# DELETE these three blocks:
+[profile.dev]
+...
+[profile.dev.package."*"]
+...
+[profile.test]
+...
+```
+
+Then delete `.planning/intel/build-profile.md` and remove this `§Cargo profiles` section from `docs/DEVELOPMENT.md`. No source-code change is required.
+
+Before reverting, read `.planning/intel/build-profile.md` — it explains why the blocks were added and what CI baseline they are anchored to (Phase 66 / `.planning/baselines/v3.0.0-baseline.json`).
