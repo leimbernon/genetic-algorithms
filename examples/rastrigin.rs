@@ -33,10 +33,20 @@ use genetic_algorithms::traits::{
 };
 #[cfg(feature = "observer-metrics")]
 use genetic_algorithms::MetricsObserver;
-use genetic_algorithms::{ChromosomeLength, CompositeObserver, LogObserver};
+use genetic_algorithms::{rng, ChromosomeLength, CompositeObserver, LogObserver};
 use std::sync::Arc;
 
 fn main() {
+    // Parse optional --seed <N> argument for reproducible runs (used by build_perf.sh golden capture).
+    let args: Vec<String> = std::env::args().collect();
+    if let Some(pos) = args.iter().position(|a| a == "--seed") {
+        if let Some(val) = args.get(pos + 1) {
+            if let Ok(s) = val.parse::<u64>() {
+                rng::set_seed(Some(s));
+            }
+        }
+    }
+
     // --- Problem parameters ---
     const DIMENSIONS: usize = 5;
     const POP_SIZE: usize = 100;
