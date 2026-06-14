@@ -120,7 +120,7 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 - [x] **Phase 49: Unified Strategy Trait + Alternative Strategy Engines** — `Strategy<U>` trait; `HillClimbEngine` (Stochastic + SteepestAscent); `PermutateEngine` with safety gate; observer hooks throughout
 - [x] **Phase 50: Lexicase Selection** — `MultiCaseFitness: ChromosomeT` trait; `LexicaseSelection`; epsilon-lexicase variant; behavioral diversity CI test (completed 2026-05-23)
 - [x] **Phase 51: Multi-Parent Crossover + Self-Adaptive Mutation** — UNDX, SPX, PCX operators with `RealValued` marker trait; `SelfAdaptive: ChromosomeT` trait; `Mutation::SelfAdaptiveGaussian` with log-normal sigma update (completed — `Crossover::{Undx, Spx, Pcx}` in `src/operations/crossover.rs`; `Mutation::SelfAdaptiveGaussian` in `src/operations/mutation/self_adaptive_gaussian.rs`; `RealValued` and `SelfAdaptive` traits under `src/traits/`)
-- [ ] **Phase 66: Build-perf foundations** — Baseline harness (`bench/build_perf.sh`), feature-matrix CI workflow, and deterministic golden-output regression tests. Foundation for Phases 67–69; nothing user-facing.
+- [x] **Phase 66: Build-perf foundations** — Baseline harness (`bench/build_perf.sh`), feature-matrix CI workflow, and deterministic golden-output regression tests. Foundation for Phases 67–69; nothing user-facing. (completed 2026-06-14)
 - [ ] **Phase 67: Build-perf M1 (config quick wins)** — `[profile.dev]` / `[profile.test]` tuning, `cargo-nextest` on CI, explicit `mold`/`lld` linker config, `sccache` on CI runners.
 - [ ] **Phase 68: Build-perf M2 (dep hygiene)** — Remove `env_logger` auto-install (anti-pattern), move `env_logger` to dev-deps, gate `log` behind `logging` feature (default-on). Folded into v3.0.0 breaking-change set.
 - [ ] **Phase 69: Build-perf M3 (major refactors)** — `criterion` → `divan` bench harness migration, `parallel` feature gating `rayon`, split `engines/ga.rs` (139 KB) into cohesive submodules under `engines/ga/`.
@@ -839,13 +839,13 @@ Plans:
 
 Plans:
 **Wave 0**
-- [ ] 66-01-PLAN.md — Author `bench/build_perf.sh` + `target/build-perf/` schema + initial baseline capture committed to `.planning/baselines/v3.0.0-baseline.json`
+- [x] 66-01-PLAN.md — Author `bench/build_perf.sh` + `target/build-perf/` schema + initial baseline capture committed to `.planning/baselines/v3.0.0-baseline.json`
 
 **Wave 1** *(blocked on Wave 0)*
-- [ ] 66-02-PLAN.md — Feature-matrix CI workflow + green run on main
+- [x] 66-02-PLAN.md — Feature-matrix CI workflow + green run on main
 
 **Wave 1** *(parallel with 66-02)*
-- [ ] 66-03-PLAN.md — `tests/golden/` deterministic example regression tests + `build-perf-gate` CI job
+- [x] 66-03-PLAN.md — `tests/golden/` deterministic example regression tests + `build-perf-gate` CI job
 
 **UI hint**: no
 
