@@ -38,5 +38,8 @@ jobs:
         with:
           key: "examples-smoke-${{ matrix.example }}"
 
+      - name: Install mold linker
+        run: sudo apt-get install -y mold
+
       - name: Run example (smoke)
         run: cargo run --example ${{ matrix.example }} --release

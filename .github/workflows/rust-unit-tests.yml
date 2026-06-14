@@ -19,6 +19,8 @@ jobs:
     - uses: actions/checkout@v5
     - name: Install nextest
       uses: taiki-e/install-action@nextest
+    - name: Install mold linker
+      run: sudo apt-get install -y mold
     - name: Build
       run: cargo build --verbose
     - name: Run tests (nextest)
