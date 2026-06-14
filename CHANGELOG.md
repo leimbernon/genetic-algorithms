@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Tune `[profile.dev]`, `[profile.dev.package."*"]`, and `[profile.test]` for faster local dev/test wall-clock (~5-15 % clean dev build; ~50 % test runtime). See `docs/DEVELOPMENT.md` §Cargo profiles. (Phase 67 / Plan 67-01)
+- CI switched from `cargo test` to `cargo nextest run` in `rust-unit-tests.yml`, `coverage.yml` (`cargo llvm-cov nextest`), and installs nextest in `wasm-check.yml` for future-proofing. Local `cargo test` workflow unchanged. (Phase 67 / Plan 67-02)
 
 ### Removed
 
