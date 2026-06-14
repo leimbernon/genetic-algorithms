@@ -42,6 +42,7 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 use genetic_algorithms::configuration::GaConfiguration;
+use genetic_algorithms::rng;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::initializers::range_random_initialization;
 use genetic_algorithms::nsga2::configuration::{Nsga2Configuration, ObjectiveDirection};
@@ -99,6 +100,16 @@ impl genetic_algorithms::operations::mutation::ValueMutable for Zdt1Chromosome {
 impl genetic_algorithms::traits::OperatorCompat for Zdt1Chromosome {}
 
 fn main() {
+    // Parse optional --seed <N> argument for reproducible runs (used by build_perf.sh golden capture).
+    let args: Vec<String> = std::env::args().collect();
+    if let Some(pos) = args.iter().position(|a| a == "--seed") {
+        if let Some(val) = args.get(pos + 1) {
+            if let Ok(s) = val.parse::<u64>() {
+                rng::set_seed(Some(s));
+            }
+        }
+    }
+
     const POP_SIZE: usize = 100;
     const MAX_GENERATIONS: usize = 250;
 

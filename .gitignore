@@ -28,3 +28,6 @@ __pycache__/
 
 # Local logs
 *.log
+
+# Build performance measurement outputs (ephemeral; committed baseline is in .planning/baselines/)
+target/build-perf/
