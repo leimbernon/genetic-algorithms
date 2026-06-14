@@ -38,13 +38,25 @@ use std::sync::Arc;
 
 fn main() {
     // Parse optional --seed <N> argument for reproducible runs (used by build_perf.sh golden capture).
+    // When --seed is provided, rayon is fixed to 1 thread so the counter-based RNG in
+    // rng::make_rng() is called in a deterministic order. The seed is also passed via
+    // with_rng_seed() so the GA engine re-applies it at run() time (the engine resets the seed
+    // internally, overriding any set_seed() call made before build()).
     let args: Vec<String> = std::env::args().collect();
-    if let Some(pos) = args.iter().position(|a| a == "--seed") {
-        if let Some(val) = args.get(pos + 1) {
-            if let Ok(s) = val.parse::<u64>() {
-                rng::set_seed(Some(s));
-            }
-        }
+    let seed_opt: Option<u64> = args
+        .iter()
+        .position(|a| a == "--seed")
+        .and_then(|pos| args.get(pos + 1))
+        .and_then(|v| v.parse::<u64>().ok());
+
+    if let Some(s) = seed_opt {
+        // Fix rayon to single thread for reproducible RNG counter ordering.
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(1)
+            .build_global()
+            .ok(); // ignore error if pool already initialized
+        // Pre-set seed for initialization function (runs before ga.run()).
+        rng::set_seed(Some(s));
     }
 
     // --- Problem parameters ---
@@ -74,7 +86,7 @@ fn main() {
     let composite = composite.register(Arc::new(MetricsObserver::new("rastrigin")));
 
     // --- Build the GA configuration ---
-    let mut ga = Ga::new()
+    let mut ga_builder = Ga::new()
         // Chromosome: DIMENSIONS genes, each a continuous value in [-5.12, 5.12]
         .with_chromosome_length(ChromosomeLength::Fixed(DIMENSIONS))
         .with_population_size(POP_SIZE)
@@ -95,9 +107,14 @@ fn main() {
         .with_problem_solving(ProblemSolving::Minimization)
         .with_max_generations(MAX_GENERATIONS)
         // Observer: CompositeObserver fans out to LogObserver (and MetricsObserver if feature enabled)
-        .with_observer(Arc::new(composite))
-        .build()
-        .expect("Failed to build GA configuration");
+        .with_observer(Arc::new(composite));
+
+    // Wire seed into GA engine so run() re-applies it (engine resets seed internally at run time).
+    if let Some(s) = seed_opt {
+        ga_builder = ga_builder.with_rng_seed(s);
+    }
+
+    let mut ga = ga_builder.build().expect("Failed to build GA configuration");
 
     println!("== Rastrigin Continuous Optimization ==");
     println!(
