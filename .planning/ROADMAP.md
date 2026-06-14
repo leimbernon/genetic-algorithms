@@ -864,7 +864,7 @@ Plans:
 
 Plans:
 **Wave 0** *(all four can run in parallel)*
-- [ ] 67-01-PLAN.md — Cargo profile tuning + `docs/DEVELOPMENT.md` "Cargo profiles" section + `.planning/intel/build-profile.md`
+- [x] 67-01-PLAN.md — Cargo profile tuning + `docs/DEVELOPMENT.md` "Cargo profiles" section + `.planning/intel/build-profile.md`
 - [ ] 67-02-PLAN.md — `cargo-nextest` CI swap + `docs/TESTING.md` opt-in instructions
 - [ ] 67-03-PLAN.md — `.cargo/config.toml` linker recommendations + `docs/DEVELOPMENT.md` "Linker recommendations" section
 - [ ] 67-04-PLAN.md — `sccache` CI integration + cache-hit logging
