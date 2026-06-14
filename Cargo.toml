@@ -47,6 +47,8 @@ env_logger = "0.11.5"
 serde = { version = "1", features = ["derive", "rc"], optional = true }
 serde_json = { version = "1", optional = true }
 serde_stacker = { version = "0.1", optional = true }
+mold = "0.0.1"
+cargo-nextest = "0.9.96"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 plotters = { version = "0.3.7", default-features = false, features = ["bitmap_backend", "bitmap_encoder", "svg_backend", "line_series", "point_series", "histogram", "ttf"], optional = true }
@@ -140,3 +142,19 @@ name = "eda_trap"
 
 [[example]]
 name = "surrogate_rastrigin"
+
+[profile.dev]
+# debuginfo for line numbers in backtraces, no full DWARF.
+debug = "line-tables-only"
+# Default split-debuginfo on macOS is slow; line tables alone shave seconds.
+split-debuginfo = "unpacked"
+
+[profile.dev.package."*"]
+# Optimise dependencies once; speeds up runtime tests on rand/rayon/log
+# at the cost of ~5-10 s on first build (one-time, then cached).
+opt-level = 1
+debug = false
+
+[profile.test]
+# Tests run a lot of GA generations; -O1 cuts runtime ~50 % at no rustc cost.
+opt-level = 1
