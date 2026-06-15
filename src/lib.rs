@@ -196,7 +196,7 @@
 //! [`IslandGaObserver`], [`Nsga2Observer`],
 //! [`Nsga3Observer`], [`Spea2Observer`],
 //! [`MoeaDObserver`], [`SmsEmoaObserver`],
-//! and [`IbeaObserver`].
+//! [`IbeaObserver`], [`CmaObserver`], [`PsoObserver`], and [`EdaObserver`].
 //!
 //! Zero overhead when no observer is attached (stored as `Option<Arc<dyn GaObserver<U>>>`).
 //!
@@ -347,12 +347,15 @@ pub use constraints::PenaltyStrategy;
 pub use ga::TerminationCause;
 pub use hall_of_fame::{DistanceMetric, HallOfFame, HallOfFameConfig};
 pub use observer::AllObserver;
+pub use observer::CmaObserver;
 pub use observer::CompositeObserver;
+pub use observer::EdaObserver;
 pub use observer::ExtensionEvent;
 pub use observer::GaObserver;
 pub use observer::IbeaObserver;
 pub use observer::IslandGaObserver;
 pub use observer::LogObserver;
+pub use observer::PsoObserver;
 #[cfg(feature = "observer-metrics")]
 pub use observer::MetricsObserver;
 pub use observer::MoeaDObserver;

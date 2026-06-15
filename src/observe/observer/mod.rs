@@ -428,6 +428,93 @@ pub trait IbeaObserver<U: ChromosomeT>: Send + Sync {
     }
 }
 
+/// Observer for [`CmaEngine<U>`](crate::cma::CmaEngine) engine-specific events.
+///
+/// All methods have default no-op implementations. The `Send + Sync`
+/// supertraits are required for safe sharing across rayon threads via `Arc`.
+///
+/// # Note: not in `AllObserver`
+///
+/// `AllObserver<U>` does NOT include `CmaObserver<U>` — adding it would be a
+/// breaking change for existing `AllObserver` implementors. Attach a
+/// `CmaObserver` independently to a `CmaEngine` if your build wires it through.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::observer::CmaObserver;
+/// use genetic_algorithms::chromosomes::Range;
+///
+/// struct MyCmaObserver;
+/// impl CmaObserver<Range<f64>> for MyCmaObserver {}
+/// ```
+pub trait CmaObserver<U: ChromosomeT>: Send + Sync {
+    /// Called after the global step size `sigma` is updated for the current generation.
+    fn on_sigma_updated(&self, _generation: usize, _sigma: f64) {}
+    /// Called after the covariance matrix is updated for the current generation.
+    fn on_covariance_updated(&self, _generation: usize, _condition_number: f64) {}
+    /// Called when eigendecomposition completes for the current generation,
+    /// carrying the wall-clock duration in milliseconds.
+    fn on_eigendecomposition_complete(&self, _generation: usize, _duration_ms: f64) {}
+}
+
+/// Observer for [`PsoEngine<U>`](crate::pso::PsoEngine) engine-specific events.
+///
+/// All methods have default no-op implementations. The `Send + Sync`
+/// supertraits are required for safe sharing across rayon threads via `Arc`.
+///
+/// # Note: not in `AllObserver`
+///
+/// `AllObserver<U>` does NOT include `PsoObserver<U>` — adding it would be a
+/// breaking change for existing `AllObserver` implementors. Attach a
+/// `PsoObserver` independently to a `PsoEngine` if your build wires it through.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::observer::PsoObserver;
+/// use genetic_algorithms::chromosomes::Range;
+///
+/// struct MyPsoObserver;
+/// impl PsoObserver<Range<f64>> for MyPsoObserver {}
+/// ```
+pub trait PsoObserver<U: ChromosomeT>: Send + Sync {
+    /// Called after velocities are updated for the current generation.
+    fn on_velocity_updated(&self, _generation: usize, _population_size: usize) {}
+    /// Called after a particle's personal best is improved.
+    fn on_personal_best_updated(&self, _generation: usize, _particle_index: usize, _fitness: f64) {}
+    /// Called after the swarm's global (or neighborhood) best is updated.
+    fn on_global_best_updated(&self, _generation: usize, _fitness: f64) {}
+}
+
+/// Observer for [`EdaEngine<U>`](crate::eda::EdaEngine) / [`EdaRealEngine<U>`](crate::eda::EdaRealEngine) engine-specific events.
+///
+/// All methods have default no-op implementations. The `Send + Sync`
+/// supertraits are required for safe sharing across rayon threads via `Arc`.
+///
+/// # Note: not in `AllObserver`
+///
+/// `AllObserver<U>` does NOT include `EdaObserver<U>` — adding it would be a
+/// breaking change for existing `AllObserver` implementors. Attach an
+/// `EdaObserver` independently if your build wires it through.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::observer::EdaObserver;
+/// use genetic_algorithms::chromosomes::Binary;
+///
+/// struct MyEdaObserver;
+/// impl EdaObserver<Binary> for MyEdaObserver {}
+/// ```
+pub trait EdaObserver<U: ChromosomeT>: Send + Sync {
+    /// Called after the probabilistic model is re-estimated from the selected
+    /// parents for the current generation.
+    fn on_model_updated(&self, _generation: usize, _selected_count: usize) {}
+    /// Called after offspring are sampled from the current model.
+    fn on_offspring_sampled(&self, _generation: usize, _offspring_count: usize) {}
+}
+
 /// Combined observer bound for use with [`CompositeObserver`].
 ///
 /// Any type that implements [`GaObserver<U>`], [`IslandGaObserver<U>`],
