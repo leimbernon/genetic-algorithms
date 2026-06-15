@@ -206,4 +206,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-01 after Phase 56 — CmaEngine shipped: RealGene trait, CMA-ES run loop (Hansen arXiv:1604.00772), Jacobi eigendecomposition, GaObserver hooks, and cma_es_rastrigin example. 14/14 must-haves verified, 1154 tests pass, WASM clean.*
+*Last updated: 2026-06-15 after Phase 68 — Build/perf M2 dependency hygiene complete: env_logger removed from [dependencies], LogLevel/with_logs() removed, logging feature gate added (default-on), crate::log_*! macro family introduced, CI feature matrix extended, logger-history.md intel file created. 8/8 must-haves verified, SC-6 gap closed.*
