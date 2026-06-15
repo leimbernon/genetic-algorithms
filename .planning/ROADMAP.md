@@ -122,7 +122,7 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 - [x] **Phase 51: Multi-Parent Crossover + Self-Adaptive Mutation** — UNDX, SPX, PCX operators with `RealValued` marker trait; `SelfAdaptive: ChromosomeT` trait; `Mutation::SelfAdaptiveGaussian` with log-normal sigma update (completed — `Crossover::{Undx, Spx, Pcx}` in `src/operations/crossover.rs`; `Mutation::SelfAdaptiveGaussian` in `src/operations/mutation/self_adaptive_gaussian.rs`; `RealValued` and `SelfAdaptive` traits under `src/traits/`)
 - [x] **Phase 66: Build-perf foundations** — Baseline harness (`bench/build_perf.sh`), feature-matrix CI workflow, and deterministic golden-output regression tests. Foundation for Phases 67–69; nothing user-facing. (completed 2026-06-14)
 - [x] **Phase 67: Build-perf M1 (config quick wins)** — `[profile.dev]` / `[profile.test]` tuning, `cargo-nextest` on CI, explicit `mold`/`lld` linker config, `sccache` on CI runners. (completed 2026-06-14)
-- [ ] **Phase 68: Build-perf M2 (dep hygiene)** — Remove `env_logger` auto-install (anti-pattern), move `env_logger` to dev-deps, gate `log` behind `logging` feature (default-on). Folded into v3.0.0 breaking-change set.
+- [x] **Phase 68: Build-perf M2 (dep hygiene)** — Remove `env_logger` auto-install (anti-pattern), move `env_logger` to dev-deps, gate `log` behind `logging` feature (default-on). Folded into v3.0.0 breaking-change set. (completed 2026-06-15)
 - [ ] **Phase 69: Build-perf M3 (major refactors)** — `criterion` → `divan` bench harness migration, `parallel` feature gating `rayon`, split `engines/ga.rs` (139 KB) into cohesive submodules under `engines/ga/`.
 - [x] **Phase 52: Variable-Length Chromosomes** — `ChromosomeLength::Variable { min, max }`; `Mutation::Insertion` / `Mutation::Deletion`; `Crossover::VariableLength(AlignmentStrategy)`; parsimony pressure survivor config (completed 2026-05-24)
 - [x] **Phase 53: Tree Chromosome + GpGa Engine** — `TreeChromosome: ChromosomeT` supertrait; `GpGa<U>` engine; ramped half-and-half init; subtree crossover + mutation; bloat control; serde with `serde_stacker`; `Display` as expression string (completed 2026-05-25)
@@ -888,10 +888,10 @@ Plans:
 
 Plans:
 **Wave 0**
-- [ ] 68-01-PLAN.md — Remove env_logger auto-install + move to dev-deps + update examples + MIGRATION.md recipe + `.planning/intel/logger-history.md`
+- [x] 68-01-PLAN.md — Remove env_logger auto-install + move to dev-deps + update examples + MIGRATION.md recipe + `.planning/intel/logger-history.md`
 
 **Wave 1** *(blocked on Wave 0)*
-- [ ] 68-02-PLAN.md — `logging` feature gate + every `log!()` call-site behind `#[cfg(feature = "logging")]` (or internal macro) + feature-matrix CI green + docs across 4 audiences + `.planning/intel/feature-flags.md`
+- [x] 68-02-PLAN.md — `logging` feature gate + every `log!()` call-site behind `#[cfg(feature = "logging")]` (or internal macro) + feature-matrix CI green + docs across 4 audiences + `.planning/intel/feature-flags.md`
 
 **UI hint**: no
 
