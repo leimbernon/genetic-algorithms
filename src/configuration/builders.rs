@@ -8,9 +8,7 @@
 //! `Ga` builder unchanged.
 
 use crate::chromosomes::ChromosomeLength;
-use crate::configuration::{
-    GaConfiguration, LocalSearchConfiguration, LogLevel, ProblemSolving,
-};
+use crate::configuration::{GaConfiguration, LocalSearchConfiguration, ProblemSolving};
 use crate::extension::configuration::ExtensionConfiguration;
 use crate::niching::configuration::NichingConfiguration;
 use crate::operations::{Crossover, Extension, Mutation, Selection, Survivor};
@@ -216,10 +214,6 @@ impl ConfigurationT for GaConfiguration {
     }
     fn with_threads(mut self, number_of_threads: usize) -> Self {
         self.number_of_threads = number_of_threads;
-        self
-    }
-    fn with_logs(mut self, log_level: LogLevel) -> Self {
-        self.log_level = log_level;
         self
     }
     fn with_survivor_method(mut self, method: Survivor) -> Self {

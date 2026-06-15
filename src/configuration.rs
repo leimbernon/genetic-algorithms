@@ -28,7 +28,6 @@
 //!
 //! [`Ga`]: crate::ga::Ga
 //! [`ConfigurationT`]: crate::traits::ConfigurationT
-//! [`ConfigurationT::with_logs`]: crate::traits::ConfigurationT::with_logs
 //! [`SelectionConfig`]: crate::traits::SelectionConfig
 //! [`CrossoverConfig`]: crate::traits::CrossoverConfig
 //! [`MutationConfig`]: crate::traits::MutationConfig
@@ -77,35 +76,6 @@ impl fmt::Display for ProblemSolving {
             ProblemSolving::FixedFitness => write!(f, "FixedFitness"),
         }
     }
-}
-
-/// Verbosity level for the GA's internal logging (backed by the `log` crate).
-///
-/// Default is [`LogLevel::Off`]. Set via [`crate::traits::ConfigurationT::with_logs`].
-///
-/// # Examples
-///
-/// ```rust
-/// use genetic_algorithms::configuration::LogLevel;
-///
-/// let level = LogLevel::Info;
-/// assert_eq!(level, LogLevel::Info);
-/// ```
-#[derive(Copy, Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum LogLevel {
-    /// Disable all logging output.
-    Off,
-    /// Log only errors.
-    Error,
-    /// Log warnings and above.
-    Warn,
-    /// Log informational messages and above.
-    Info,
-    /// Log debug-level messages and above.
-    Debug,
-    /// Log everything, including fine-grained trace messages.
-    Trace,
 }
 
 /// Configuration for the parent-selection operator.
@@ -419,7 +389,6 @@ pub struct GaConfiguration {
     pub(crate) crossover_configuration: CrossoverConfiguration,
     pub(crate) mutation_configuration: MutationConfiguration,
     pub(crate) survivor: Survivor,
-    pub(crate) log_level: LogLevel,
     pub(crate) save_progress_configuration: SaveProgressConfiguration,
     /// Number of best individuals to preserve unchanged between generations (elitism).
     /// Default is 0 (no elitism).
@@ -480,7 +449,6 @@ impl Default for GaConfiguration {
             adaptive_ga: false,
             number_of_threads: 1,
             survivor: Survivor::Fitness,
-            log_level: LogLevel::Off,
             limit_configuration: LimitConfiguration {
                 ..Default::default()
             },
@@ -535,10 +503,6 @@ impl GaConfiguration {
     /// Returns the survivor selection method.
     pub fn survivor(&self) -> Survivor {
         self.survivor
-    }
-    /// Returns the log level.
-    pub fn log(&self) -> LogLevel {
-        self.log_level
     }
     /// Returns the save-progress configuration.
     pub fn save_progress(&self) -> &SaveProgressConfiguration {

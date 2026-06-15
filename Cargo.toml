@@ -43,7 +43,6 @@ rayon = "1.10"
 log = { version = "0.4.22", features = ["std", "serde", "kv_unstable"] }
 tracing = { version = "0.1", optional = true }
 metrics = { version = "0.24", optional = true }
-env_logger = "0.11.5"
 serde = { version = "1", features = ["derive", "rc"], optional = true }
 serde_json = { version = "1", optional = true }
 serde_stacker = { version = "0.1", optional = true }
@@ -57,6 +56,7 @@ plotters = { version = "0.3.7", default-features = false, features = ["svg_backe
 
 [dev-dependencies]
 criterion = "0.8.2"
+env_logger = "0.11.5"
 serde_json = { version = "1", features = ["unbounded_depth"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-log = "0.2"

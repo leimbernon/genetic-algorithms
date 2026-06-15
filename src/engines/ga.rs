@@ -141,7 +141,7 @@ use crate::stats::GenerationStats;
 use crate::traits::{FitnessFn, InitializationFn, MutationOperator};
 use crate::validators::validator_factory as ValidatorFactory;
 use crate::{
-    configuration::{LimitConfiguration, LocalSearchConfiguration, LogLevel, ProblemSolving},
+    configuration::{LimitConfiguration, LocalSearchConfiguration, ProblemSolving},
     operations::local_search::{LocalSearch, LocalSearchApplicationStrategy, LocalSearchMode},
     operations::{
         crossover, extension, mutation, selection, survivor, Crossover, Extension, Mutation,
@@ -662,10 +662,6 @@ where
     }
     fn with_threads(mut self, number_of_threads: usize) -> Self {
         self.configuration.number_of_threads = number_of_threads;
-        self
-    }
-    fn with_logs(mut self, log_level: LogLevel) -> Self {
-        self.configuration.log_level = log_level;
         self
     }
     fn with_survivor_method(mut self, method: crate::operations::Survivor) -> Self {
@@ -1575,19 +1571,6 @@ where
                 "No initialization function set".to_string(),
             ));
         }
-
-        //We initialize the logger programmatically (no env::set_var, which is UB in multi-threaded context)
-        let log_level = match self.configuration.log_level {
-            LogLevel::Off => log::LevelFilter::Off,
-            LogLevel::Error => log::LevelFilter::Error,
-            LogLevel::Warn => log::LevelFilter::Warn,
-            LogLevel::Info => log::LevelFilter::Info,
-            LogLevel::Debug => log::LevelFilter::Debug,
-            LogLevel::Trace => log::LevelFilter::Trace,
-        };
-        let _ = env_logger::Builder::from_default_env()
-            .filter_level(log_level)
-            .try_init();
 
         //Initialize the adaptive ga
         if self.configuration.adaptive_ga {
