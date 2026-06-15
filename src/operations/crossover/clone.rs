@@ -2,8 +2,6 @@
 
 use crate::error::GaError;
 use crate::traits::LinearChromosome;
-use log::debug;
-
 /// Clone crossover: copies parents directly as offspring without any genetic exchange.
 ///
 /// Given parents `P1` and `P2`, produces children that are exact clones:
@@ -36,11 +34,11 @@ pub fn clone_crossover<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Resul
         )));
     }
 
-    debug!(target="crossover_events", method="clone"; "Starting clone crossover");
+    crate::log_debug!(target="crossover_events", method="clone"; "Starting clone crossover");
 
     let child_1 = parent_1.clone();
     let child_2 = parent_2.clone();
 
-    debug!(target="crossover_events", method="clone"; "Clone crossover finished");
+    crate::log_debug!(target="crossover_events", method="clone"; "Clone crossover finished");
     Ok(vec![child_1, child_2])
 }

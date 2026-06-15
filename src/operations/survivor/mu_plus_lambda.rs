@@ -10,7 +10,6 @@ pub(crate) use crate::{
     configuration::{LimitConfiguration, ProblemSolving},
     traits::ChromosomeT,
 };
-use log::{debug, trace};
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
 
@@ -40,7 +39,7 @@ pub fn mu_plus_lambda<U: ChromosomeT>(
     population_size: usize,
     limit_configuration: LimitConfiguration,
 ) {
-    debug!(target="survivor_events", method="mu_plus_lambda"; "Starting (mu+lambda) survivor selection");
+    crate::log_debug!(target="survivor_events", method="mu_plus_lambda"; "Starting (mu+lambda) survivor selection");
     if limit_configuration.problem_solving != ProblemSolving::FixedFitness {
         #[cfg(not(target_arch = "wasm32"))]
         chromosomes.par_sort_unstable_by(|a, b| {
@@ -70,7 +69,7 @@ pub fn mu_plus_lambda<U: ChromosomeT>(
         });
     }
 
-    trace!(target="survivor_events", method="mu_plus_lambda"; "Chromosomes length {} - population size {}", chromosomes.len(), population_size);
+    crate::log_trace!(target="survivor_events", method="mu_plus_lambda"; "Chromosomes length {} - population size {}", chromosomes.len(), population_size);
     if chromosomes.len() > population_size {
         match limit_configuration.problem_solving {
             ProblemSolving::Maximization => {
@@ -83,5 +82,5 @@ pub fn mu_plus_lambda<U: ChromosomeT>(
         }
     }
 
-    debug!(target="survivor_events", method="mu_plus_lambda"; "(mu+lambda) survivor selection finished");
+    crate::log_debug!(target="survivor_events", method="mu_plus_lambda"; "(mu+lambda) survivor selection finished");
 }

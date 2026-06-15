@@ -613,7 +613,7 @@ where
 
         // Guard: empty population from user's init_fn
         if peek_pop.is_empty() {
-            log::warn!(
+            crate::log_warn!(
                 target: "cma_events",
                 "CmaEngine: init_fn returned an empty population; returning empty result"
             );
@@ -807,7 +807,7 @@ where
 
                 // ── Validate mean (T-56-03-02: guard against NaN/Inf) ────────
                 if !new_mean.iter().all(|v| v.is_finite()) {
-                    log::warn!(
+                    crate::log_warn!(
                         target: "cma_events",
                         "CmaEngine generation {}: new_mean contains NaN/Inf — stopping early",
                         gen

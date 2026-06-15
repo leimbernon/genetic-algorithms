@@ -3,7 +3,6 @@
 use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
 use crate::traits::LinearChromosome;
-use log::debug;
 use std::borrow::Cow;
 use std::fmt::Debug;
 
@@ -59,7 +58,7 @@ where
         )));
     }
 
-    debug!(target="crossover_events", method="arithmetic"; "Starting arithmetic crossover with alpha={}", alpha);
+    crate::log_debug!(target="crossover_events", method="arithmetic"; "Starting arithmetic crossover with alpha={}", alpha);
 
     let dna1 = parent_1.dna();
     let dna2 = parent_2.dna();
@@ -97,7 +96,7 @@ where
     child_1.set_dna(Cow::Owned(child_dna_1));
     child_2.set_dna(Cow::Owned(child_dna_2));
 
-    debug!(target="crossover_events", method="arithmetic"; "Arithmetic crossover finished");
+    crate::log_debug!(target="crossover_events", method="arithmetic"; "Arithmetic crossover finished");
     Ok(vec![child_1, child_2])
 }
 

@@ -9,7 +9,6 @@ pub(crate) use crate::{
     configuration::{LimitConfiguration, ProblemSolving},
     traits::ChromosomeT,
 };
-use log::{debug, trace};
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
 
@@ -41,7 +40,7 @@ pub fn fitness_based<U: ChromosomeT>(
     population_size: usize,
     limit_configuration: LimitConfiguration,
 ) {
-    debug!(target="survivor_events", method="fitness_based"; "Starting fitness based survivor method");
+    crate::log_debug!(target="survivor_events", method="fitness_based"; "Starting fitness based survivor method");
     if limit_configuration.problem_solving != ProblemSolving::FixedFitness {
         //We sort the chromosomes by their fitness if there is not a fixed fitness problem
         #[cfg(not(target_arch = "wasm32"))]
@@ -75,7 +74,7 @@ pub fn fitness_based<U: ChromosomeT>(
 
     // Drop surplus individuals in a single bulk operation instead of
     // one-by-one Vec::remove calls (which are O(N) each).
-    trace!(target="survivor_events", method="fitness_based"; "Chromosomes length {} - population size {}", chromosomes.len(), population_size);
+    crate::log_trace!(target="survivor_events", method="fitness_based"; "Chromosomes length {} - population size {}", chromosomes.len(), population_size);
     if chromosomes.len() > population_size {
         match limit_configuration.problem_solving {
             // Sorted descending: best (highest) at front, worst at tail.
@@ -91,5 +90,5 @@ pub fn fitness_based<U: ChromosomeT>(
         }
     }
 
-    debug!(target="survivor_events", method="fitness_based"; "Fitness based survivor method finished");
+    crate::log_debug!(target="survivor_events", method="fitness_based"; "Fitness based survivor method finished");
 }

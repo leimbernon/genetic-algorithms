@@ -58,7 +58,7 @@ impl SelectionOperator for Selection {
             // a custom `niche_radius` must go through `selection::factory` instead.
             // The single-population GA always uses the factory path and is unaffected.
             Selection::Clearing => {
-                log::warn!(target: "selection_events",
+                crate::log_warn!(target: "selection_events",
                     "Selection::Clearing called through SelectionOperator trait: \
                      niche_radius defaults to 0.1 (configured value ignored). \
                      Use selection::factory for the full configuration.");

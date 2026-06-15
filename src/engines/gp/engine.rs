@@ -299,7 +299,7 @@ where
                             break;
                         }
                         Err(e) => {
-                            log::warn!(
+                            crate::log_warn!(
                                 target: "gp_events",
                                 "Bloat rejected in crossover gen={}: {}",
                                 gen,
@@ -324,7 +324,7 @@ where
                     if rng.random::<f64>() < *prob {
                         if let Err(e) = mutation.apply(&mut c1, max_depth, max_node_count, &mut rng)
                         {
-                            log::warn!(
+                            crate::log_warn!(
                                 target: "gp_events",
                                 "Bloat rejected in mutation gen={}: {}",
                                 gen,
@@ -335,7 +335,7 @@ where
                     if rng.random::<f64>() < *prob {
                         if let Err(e) = mutation.apply(&mut c2, max_depth, max_node_count, &mut rng)
                         {
-                            log::warn!(
+                            crate::log_warn!(
                                 target: "gp_events",
                                 "Bloat rejected in mutation gen={}: {}",
                                 gen,

@@ -154,6 +154,7 @@ fn test_ibea_run_small_population() {
     assert!(result.is_ok(), "IBEA run with small pop failed: {:?}", result.err());
 }
 
+#[cfg(feature = "logging")]
 #[test]
 fn test_ibea_run_invokes_observer_hooks() {
     use std::sync::Arc;

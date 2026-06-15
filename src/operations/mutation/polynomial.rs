@@ -13,7 +13,6 @@
 use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
 use crate::traits::LinearChromosome;
-use log::debug;
 use rand::Rng;
 use std::fmt::Debug;
 
@@ -62,7 +61,7 @@ where
 
     let len = individual.dna().len();
     if len == 0 {
-        debug!(target="mutation_events", method="polynomial"; "Empty DNA, skipping polynomial mutation");
+        crate::log_debug!(target="mutation_events", method="polynomial"; "Empty DNA, skipping polynomial mutation");
         return Ok(());
     }
 
@@ -72,7 +71,7 @@ where
     let mut gene = individual.dna()[idx].clone();
 
     if gene.ranges.is_empty() {
-        debug!(target="mutation_events", method="polynomial"; "Gene {} has no ranges, skipping", idx);
+        crate::log_debug!(target="mutation_events", method="polynomial"; "Gene {} has no ranges, skipping", idx);
         return Ok(());
     }
 
@@ -103,7 +102,7 @@ where
     gene.value = T::from_f64(new_val_f64);
     individual.set_gene(idx, gene);
 
-    debug!(target="mutation_events", method="polynomial"; "Polynomial mutation applied at gene {} with eta_m={}", idx, eta_m);
+    crate::log_debug!(target="mutation_events", method="polynomial"; "Polynomial mutation applied at gene {} with eta_m={}", idx, eta_m);
     Ok(())
 }
 

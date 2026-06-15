@@ -5,7 +5,6 @@
 //! selected at most once (no replacement), and the cost is *O(N)*.
 
 use crate::traits::ChromosomeT;
-use log::{debug, trace};
 use rand::Rng;
 
 /// Random selection: groups individuals randomly without regard to fitness.
@@ -37,7 +36,7 @@ pub fn random<U: ChromosomeT>(chromosomes: &[U], num_parents: usize) -> Vec<Vec<
     let mut indexes: Vec<usize> = (0..n).collect();
     let mut rng = crate::rng::make_rng();
     let mut remaining = n;
-    debug!(target="selection_events", method="random"; "Starting random selection");
+    crate::log_debug!(target="selection_events", method="random"; "Starting random selection");
 
     // Pick groups via Fisher-Yates: swap chosen element with the last
     // unprocessed element and shrink the working range.
@@ -50,7 +49,7 @@ pub fn random<U: ChromosomeT>(chromosomes: &[U], num_parents: usize) -> Vec<Vec<
             indexes.swap(r, remaining);
             group.push(index_value);
         }
-        trace!(target="selection_events", method="random"; "Mating group: {:?}", group);
+        crate::log_trace!(target="selection_events", method="random"; "Mating group: {:?}", group);
         mating.push(group);
     }
 

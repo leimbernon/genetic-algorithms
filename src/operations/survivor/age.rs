@@ -5,7 +5,6 @@
 //! prevents long-lived individuals from dominating the population.
 
 pub(crate) use crate::traits::ChromosomeT;
-use log::{debug, trace};
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
 
@@ -27,7 +26,7 @@ use rayon::prelude::*;
 /// ```
 pub fn age_based<U: ChromosomeT>(chromosomes: &mut Vec<U>, population_size: usize) {
     //We first sort the chromosomes by their fitness
-    debug!(target="survivor_events", method="age_based"; "Starting age based survivor method");
+    crate::log_debug!(target="survivor_events", method="age_based"; "Starting age based survivor method");
     #[cfg(not(target_arch = "wasm32"))]
     chromosomes.par_sort_unstable_by(|a, b| b.age().cmp(&a.age()));
     #[cfg(target_arch = "wasm32")]
@@ -35,9 +34,9 @@ pub fn age_based<U: ChromosomeT>(chromosomes: &mut Vec<U>, population_size: usiz
 
     // Drop surplus individuals from the tail in O(1) instead of
     // loop of Vec::remove (O(N) per removal).
-    trace!(target="survivor_events", method="age_based"; "Chromosomes length {} - population size {}", chromosomes.len(), population_size);
+    crate::log_trace!(target="survivor_events", method="age_based"; "Chromosomes length {} - population size {}", chromosomes.len(), population_size);
     if chromosomes.len() > population_size {
         chromosomes.truncate(population_size);
     }
-    debug!(target="survivor_events", method="age_based"; "Age based survivor method finished");
+    crate::log_debug!(target="survivor_events", method="age_based"; "Age based survivor method finished");
 }

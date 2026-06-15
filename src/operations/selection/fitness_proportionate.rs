@@ -9,7 +9,6 @@
 //!   spin of the wheel, producing a lower-variance set of parents.
 
 use crate::traits::ChromosomeT;
-use log::{debug, trace};
 use rand::Rng;
 
 /// Roulette-wheel selection (fitness-proportionate).
@@ -41,16 +40,16 @@ pub fn roulette_wheel_selection<U: ChromosomeT>(chromosomes: &[U], couples: usiz
     let mut mating = Vec::new();
 
     //1- Calculate the sum of all fitnesses
-    debug!(target="selection_events", method="roulette_wheel_selection"; "Starting the roulette wheel selection");
+    crate::log_debug!(target="selection_events", method="roulette_wheel_selection"; "Starting the roulette wheel selection");
     let total_fitness: f64 = chromosomes.iter().map(|ind| ind.fitness()).sum();
 
     let mut rng = crate::rng::make_rng();
 
-    trace!(target="selection_events", method="roulette_wheel_selection"; "Total fitness: {}", total_fitness);
+    crate::log_trace!(target="selection_events", method="roulette_wheel_selection"; "Total fitness: {}", total_fitness);
 
     // Guard against zero or negative total fitness
     if total_fitness <= 0.0 {
-        debug!(target="selection_events", method="roulette_wheel_selection"; "Roulette wheel selection finished");
+        crate::log_debug!(target="selection_events", method="roulette_wheel_selection"; "Roulette wheel selection finished");
         return mating;
     }
 
@@ -73,7 +72,7 @@ pub fn roulette_wheel_selection<U: ChromosomeT>(chromosomes: &[U], couples: usiz
         // Clamp to valid index range in case of floating point edge cases
         let chosen = chosen.min(chromosomes.len() - 1);
         selected.push(chosen);
-        trace!(target="selection_events", method="roulette_wheel_selection"; "Selected chromosome {} with spin {}", chosen, spin);
+        crate::log_trace!(target="selection_events", method="roulette_wheel_selection"; "Selected chromosome {} with spin {}", chosen, spin);
     }
 
     //4- Group selected parents into N-ary groups
@@ -81,7 +80,7 @@ pub fn roulette_wheel_selection<U: ChromosomeT>(chromosomes: &[U], couples: usiz
         mating.push(group.to_vec());
     }
 
-    debug!(target="selection_events", method="roulette_wheel_selection"; "Roulette wheel selection finished");
+    crate::log_debug!(target="selection_events", method="roulette_wheel_selection"; "Roulette wheel selection finished");
     mating
 }
 
@@ -115,7 +114,7 @@ pub fn stochastic_universal_sampling<U: ChromosomeT>(
     num_parents: usize,
 ) -> Vec<Vec<usize>> {
     let num_parents = num_parents.max(2);
-    debug!(target="selection_events", method="stochastic_universal_sampling"; "Starting the stochastic universal sampling selection");
+    crate::log_debug!(target="selection_events", method="stochastic_universal_sampling"; "Starting the stochastic universal sampling selection");
     let mut mating = Vec::new();
 
     if chromosomes.is_empty() || couples == 0 {
@@ -123,11 +122,11 @@ pub fn stochastic_universal_sampling<U: ChromosomeT>(
     }
 
     let num_selections = couples * num_parents;
-    trace!(target="selection_events", method="stochastic_universal_sampling"; "Chromosome selections: {}", num_selections);
+    crate::log_trace!(target="selection_events", method="stochastic_universal_sampling"; "Chromosome selections: {}", num_selections);
 
     //1- Calculate total fitness and build cumulative fitness array
     let total: f64 = chromosomes.iter().map(|gen| gen.fitness()).sum();
-    trace!(target="selection_events", method="stochastic_universal_sampling"; "Total fitness: {}", total);
+    crate::log_trace!(target="selection_events", method="stochastic_universal_sampling"; "Total fitness: {}", total);
 
     if total <= 0.0 {
         return mating;
@@ -138,14 +137,14 @@ pub fn stochastic_universal_sampling<U: ChromosomeT>(
     for genotype in chromosomes {
         cumulative += genotype.fitness();
         cumulative_fitness.push(cumulative);
-        trace!(target="selection_events", method="stochastic_universal_sampling"; "Selection probability {}", cumulative / total);
+        crate::log_trace!(target="selection_events", method="stochastic_universal_sampling"; "Selection probability {}", cumulative / total);
     }
 
     //2- Calculate the pointer distance and the starting point between 0 and the pointer distance
     let pointer_distance = total / num_selections as f64;
     let mut rng = crate::rng::make_rng();
     let starting_point = rng.random_range(0.0..pointer_distance);
-    trace!(target="selection_events", method="stochastic_universal_sampling"; "pointer distance {} - starting point {}", pointer_distance, starting_point);
+    crate::log_trace!(target="selection_events", method="stochastic_universal_sampling"; "pointer distance {} - starting point {}", pointer_distance, starting_point);
 
     //3- Walk pointers and select individuals
     let mut selected = Vec::with_capacity(num_selections);
@@ -169,6 +168,6 @@ pub fn stochastic_universal_sampling<U: ChromosomeT>(
         }
     }
 
-    debug!(target="selection_events", method="stochastic_universal_sampling"; "Stochastic universal sampling finished");
+    crate::log_debug!(target="selection_events", method="stochastic_universal_sampling"; "Stochastic universal sampling finished");
     mating
 }

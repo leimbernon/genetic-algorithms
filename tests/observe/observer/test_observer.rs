@@ -295,6 +295,7 @@ fn test_observer_stagnation_fires() {
 }
 
 /// LogObserver: implements GaObserver for BinaryChromosome (compile check)
+#[cfg(feature = "logging")]
 #[test]
 fn test_log_observer_implements_trait() {
     use genetic_algorithms::observer::LogObserver;
@@ -303,6 +304,7 @@ fn test_log_observer_implements_trait() {
 }
 
 /// LogObserver: is Send + Sync
+#[cfg(feature = "logging")]
 #[test]
 fn test_log_observer_is_send_sync() {
     use genetic_algorithms::observer::LogObserver;
@@ -311,6 +313,7 @@ fn test_log_observer_is_send_sync() {
 }
 
 /// LogObserver: is a unit struct (zero-sized)
+#[cfg(feature = "logging")]
 #[test]
 fn test_log_observer_is_unit_struct() {
     use genetic_algorithms::observer::LogObserver;
@@ -318,6 +321,7 @@ fn test_log_observer_is_unit_struct() {
 }
 
 /// LogObserver: attaches to Ga<U> and GA run completes without panic
+#[cfg(feature = "logging")]
 #[test]
 fn test_log_observer_attaches_and_runs() {
     use genetic_algorithms::observer::LogObserver;
@@ -328,6 +332,7 @@ fn test_log_observer_attaches_and_runs() {
 }
 
 /// LogObserver: is re-exported from crate root
+#[cfg(feature = "logging")]
 #[test]
 fn test_log_observer_crate_reexport() {
     let _obs = genetic_algorithms::LogObserver;

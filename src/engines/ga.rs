@@ -880,7 +880,7 @@ where
                 ));
             }
             if xover_pf.len() == 1 {
-                log::warn!(target: "ga_events", "AOS crossover portfolio has only 1 operator; portfolio mode is effectively the same as single-operator mode");
+                crate::log_warn!(target: "ga_events", "AOS crossover portfolio has only 1 operator; portfolio mode is effectively the same as single-operator mode");
             }
         }
         if let Some(ref mut_pf) = self.configuration.mutation_portfolio {
@@ -890,7 +890,7 @@ where
                 ));
             }
             if mut_pf.len() == 1 {
-                log::warn!(target: "ga_events", "AOS mutation portfolio has only 1 operator; portfolio mode is effectively the same as single-operator mode");
+                crate::log_warn!(target: "ga_events", "AOS mutation portfolio has only 1 operator; portfolio mode is effectively the same as single-operator mode");
             }
         }
         // Warn if both portfolio and single-operator are configured
@@ -899,12 +899,12 @@ where
                 != crate::operations::Crossover::Uniform
         {
             // The default method is Uniform, so only warn if the user explicitly changed it
-            log::warn!(target: "ga_events", "Both crossover portfolio and with_crossover_method() are configured. with_crossover_method() will be ignored when portfolio is set");
+            crate::log_warn!(target: "ga_events", "Both crossover portfolio and with_crossover_method() are configured. with_crossover_method() will be ignored when portfolio is set");
         }
         if self.configuration.mutation_portfolio.is_some()
             && self.configuration.mutation_configuration.method != crate::operations::Mutation::Swap
         {
-            log::warn!(target: "ga_events", "Both mutation portfolio and with_mutation_method() are configured. with_mutation_method() will be ignored when portfolio is set");
+            crate::log_warn!(target: "ga_events", "Both mutation portfolio and with_mutation_method() are configured. with_mutation_method() will be ignored when portfolio is set");
         }
 
         Ok(self)
@@ -1646,7 +1646,7 @@ where
         let start_time = Instant::now();
         #[cfg(target_arch = "wasm32")]
         if self.configuration.max_duration_secs.is_some() {
-            log::warn!(target: "ga_events", "max_duration_secs is not supported on wasm32 — time limit will be ignored");
+            crate::log_warn!(target: "ga_events", "max_duration_secs is not supported on wasm32 — time limit will be ignored");
         }
         let mut best_fitness_so_far = self.population.best_chromosome.fitness();
         let mut stagnation_count: usize = 0;
@@ -2308,7 +2308,7 @@ where
                         // Exception: this log::warn! cannot migrate to LogObserver because no
                         // on_checkpoint_failed hook exists (deferred per REQUIREMENTS.md EXT-02).
                         // It is feature-gated (#[cfg(feature = "serde")]) and only fires on I/O errors.
-                        log::warn!("Failed to save checkpoint at generation {}: {}", i + 1, e);
+                        crate::log_warn!("Failed to save checkpoint at generation {}: {}", i + 1, e);
                     }
                 }
             }

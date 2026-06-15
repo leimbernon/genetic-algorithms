@@ -8,7 +8,6 @@
 use crate::chromosomes::Range as RangeChromosome;
 use crate::operations::mutation::gaussian::GaussianConvertible;
 use crate::traits::LinearChromosome;
-use log::debug;
 use rand::Rng;
 use std::fmt::Debug;
 
@@ -58,7 +57,7 @@ where
     gene.value = T::from_f64(new_val_f64);
     individual.set_gene(idx, gene);
 
-    debug!(
+    crate::log_debug!(
         target: "mutation_events",
         "Uniform mutation applied at idx={} range_idx={}",
         idx, range_idx

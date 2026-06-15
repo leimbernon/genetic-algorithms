@@ -4,7 +4,6 @@ use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
 use crate::operations::crossover::sbx::SbxConvertible;
 use crate::traits::LinearChromosome;
-use log::debug;
 use rand::Rng;
 use std::borrow::Cow;
 use std::fmt::Debug;
@@ -52,7 +51,7 @@ pub fn pcx<T>(
 where
     T: Sync + Send + Clone + Default + Debug + PartialOrd + Copy + 'static + SbxConvertible,
 {
-    debug!(target: "crossover_events", method = "pcx"; "Starting PCX crossover with {} parents", parents.len());
+    crate::log_debug!(target: "crossover_events", method = "pcx"; "Starting PCX crossover with {} parents", parents.len());
 
     if parents.len() < 3 {
         return Err(GaError::CrossoverError(
@@ -73,7 +72,7 @@ where
 
     if expected == 0 {
         let child = RangeChromosome::<T>::new();
-        debug!(target: "crossover_events", method = "pcx"; "PCX crossover finished");
+        crate::log_debug!(target: "crossover_events", method = "pcx"; "PCX crossover finished");
         return Ok(vec![child]);
     }
 
@@ -137,6 +136,6 @@ where
     let mut child = RangeChromosome::<T>::new();
     child.set_dna(Cow::Owned(child_dna));
 
-    debug!(target: "crossover_events", method = "pcx"; "PCX crossover finished");
+    crate::log_debug!(target: "crossover_events", method = "pcx"; "PCX crossover finished");
     Ok(vec![child])
 }

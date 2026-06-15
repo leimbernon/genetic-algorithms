@@ -2,7 +2,6 @@
 
 use crate::error::GaError;
 use crate::traits::{LinearChromosome, GeneT};
-use log::debug;
 use rand::Rng;
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -47,7 +46,7 @@ pub fn pmx<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, Ga
         ));
     }
 
-    debug!(target="crossover_events", method="pmx"; "Starting PMX crossover");
+    crate::log_debug!(target="crossover_events", method="pmx"; "Starting PMX crossover");
 
     let mut rng = crate::rng::make_rng();
 
@@ -68,7 +67,7 @@ pub fn pmx<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, Ga
     child_1.set_dna(Cow::Owned(child_dna_1));
     child_2.set_dna(Cow::Owned(child_dna_2));
 
-    debug!(target="crossover_events", method="pmx"; "PMX crossover finished with points ({}, {})", start, end);
+    crate::log_debug!(target="crossover_events", method="pmx"; "PMX crossover finished with points ({}, {})", start, end);
 
     Ok(vec![child_1, child_2])
 }

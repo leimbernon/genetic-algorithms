@@ -1,6 +1,10 @@
 //! Integration test asserting that `Ga::run()` never installs a logger on the
 //! caller's behalf.
 //!
+//! This test requires the `logging` feature (uses the `log` crate directly).
+#![cfg(feature = "logging")]
+//!
+//!
 //! Strategy: The global `log` logger slot can be set exactly once per process.
 //! If the library called `env_logger::Builder::try_init()` during `Ga::run()`,
 //! the slot would be occupied, and our subsequent `log::set_logger` call would

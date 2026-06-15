@@ -82,7 +82,7 @@ pub trait LinearChromosome: ChromosomeT {
     fn set_gene(&mut self, gene_index: usize, gene: Self::Gene) -> &mut Self {
         let len = self.dna().len();
         if gene_index >= len {
-            log::warn!(
+            crate::log_warn!(
                 "set_gene: index {} is out of bounds (DNA length {}), ignoring",
                 gene_index,
                 len

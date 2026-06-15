@@ -15,7 +15,6 @@ use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
 use crate::operations::mutation::gaussian::GaussianConvertible;
 use crate::traits::LinearChromosome;
-use log::debug;
 use rand::Rng;
 use std::any::Any;
 use std::borrow::Cow;
@@ -72,7 +71,7 @@ where
         )));
     }
 
-    debug!(target: "mutation_events", "Starting differential mutation f={}", f);
+    crate::log_debug!(target: "mutation_events", "Starting differential mutation f={}", f);
 
     macro_rules! try_type {
         ($t:ty) => {
@@ -136,7 +135,7 @@ where
                     new_dna[i].value = <$t as GaussianConvertible>::from_f64(clamped);
                 }
                 target.set_dna(Cow::Owned(new_dna));
-                debug!(target: "mutation_events", "Finished differential mutation");
+                crate::log_debug!(target: "mutation_events", "Finished differential mutation");
                 return Ok(());
             }
         };

@@ -6,7 +6,6 @@
 //! selection.
 
 use crate::traits::ChromosomeT;
-use log::{debug, trace};
 use rand::Rng;
 
 /// Rank-based selection: individuals are ranked by fitness and selection
@@ -41,7 +40,7 @@ use rand::Rng;
 /// ```
 pub fn rank_selection<U: ChromosomeT>(chromosomes: &[U], couples: usize, num_parents: usize) -> Vec<Vec<usize>> {
     let num_parents = num_parents.max(2);
-    debug!(target="selection_events", method="rank_selection"; "Starting rank-based selection");
+    crate::log_debug!(target="selection_events", method="rank_selection"; "Starting rank-based selection");
 
     let n = chromosomes.len();
     if n < 2 {
@@ -67,7 +66,7 @@ pub fn rank_selection<U: ChromosomeT>(chromosomes: &[U], couples: usize, num_par
         let rank = (rank_minus_1 + 1) as f64;
         cum += rank / rank_sum as f64;
         cumulative.push((original_idx, cum));
-        trace!(target="selection_events", method="rank_selection"; "Index {} rank {} cum_prob {}", original_idx, rank_minus_1 + 1, cum);
+        crate::log_trace!(target="selection_events", method="rank_selection"; "Index {} rank {} cum_prob {}", original_idx, rank_minus_1 + 1, cum);
     }
 
     // Select parents via roulette on ranks
@@ -86,11 +85,11 @@ pub fn rank_selection<U: ChromosomeT>(chromosomes: &[U], couples: usize, num_par
     for chunk in selected.chunks(num_parents) {
         if chunk.len() == num_parents {
             let group = chunk.to_vec();
-            trace!(target="selection_events", method="rank_selection"; "Mating group: {:?}", group);
+            crate::log_trace!(target="selection_events", method="rank_selection"; "Mating group: {:?}", group);
             mating.push(group);
         }
     }
 
-    debug!(target="selection_events", method="rank_selection"; "Rank-based selection finished with {} groups", mating.len());
+    crate::log_debug!(target="selection_events", method="rank_selection"; "Rank-based selection finished with {} groups", mating.len());
     mating
 }

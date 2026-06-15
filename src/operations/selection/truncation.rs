@@ -6,7 +6,6 @@
 //! the cost of reduced diversity.
 
 use crate::traits::ChromosomeT;
-use log::{debug, trace};
 use rand::Rng;
 
 /// Truncation selection: only the top portion of the population is eligible
@@ -47,7 +46,7 @@ pub fn truncation_selection<U: ChromosomeT>(
     num_parents: usize,
 ) -> Vec<Vec<usize>> {
     let num_parents = num_parents.max(2);
-    debug!(target="selection_events", method="truncation"; "Starting truncation selection");
+    crate::log_debug!(target="selection_events", method="truncation"; "Starting truncation selection");
 
     let n = chromosomes.len();
     if n < 2 {
@@ -69,13 +68,13 @@ pub fn truncation_selection<U: ChromosomeT>(
 
     let elite = &indexed[..truncation_size];
 
-    trace!(
+    crate::log_trace!(
         target="selection_events", method="truncation";
         "Population size {}, truncation size {}", n, truncation_size
     );
 
     for &(original_idx, fit) in elite.iter() {
-        trace!(
+        crate::log_trace!(
             target="selection_events", method="truncation";
             "Elite member -> index {} fitness {}", original_idx, fit
         );
@@ -90,14 +89,14 @@ pub fn truncation_selection<U: ChromosomeT>(
         for _ in 0..num_parents {
             group.push(elite[rng.random_range(0..truncation_size)].0);
         }
-        trace!(
+        crate::log_trace!(
             target="selection_events", method="truncation";
             "Mating group: {:?}", group
         );
         mating.push(group);
     }
 
-    debug!(
+    crate::log_debug!(
         target="selection_events", method="truncation";
         "Truncation selection finished with {} groups", mating.len()
     );

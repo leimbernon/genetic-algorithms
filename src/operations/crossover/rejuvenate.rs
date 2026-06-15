@@ -2,7 +2,6 @@
 
 use crate::error::GaError;
 use crate::traits::LinearChromosome;
-use log::debug;
 use std::borrow::Cow;
 
 /// # Examples
@@ -39,7 +38,7 @@ pub fn rejuvenate<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec
         )));
     }
 
-    debug!(target="crossover_events", method="rejuvenate"; "Starting rejuvenate crossover");
+    crate::log_debug!(target="crossover_events", method="rejuvenate"; "Starting rejuvenate crossover");
 
     let mut child_1 = U::new();
     let mut child_2 = U::new();
@@ -47,6 +46,6 @@ pub fn rejuvenate<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec
     child_1.set_dna(Cow::Borrowed(parent_1.dna()));
     child_2.set_dna(Cow::Borrowed(parent_2.dna()));
 
-    debug!(target="crossover_events", method="rejuvenate"; "Rejuvenate crossover finished");
+    crate::log_debug!(target="crossover_events", method="rejuvenate"; "Rejuvenate crossover finished");
     Ok(vec![child_1, child_2])
 }

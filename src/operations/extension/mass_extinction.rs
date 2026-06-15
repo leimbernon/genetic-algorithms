@@ -4,7 +4,6 @@
 
 use crate::configuration::ProblemSolving;
 use crate::traits::ChromosomeT;
-use log::info;
 use rand::seq::SliceRandom;
 
 /// Applies mass extinction: keeps elite individuals and randomly selects
@@ -54,7 +53,7 @@ pub fn mass_extinction<U: ChromosomeT>(
     chromosomes.extend(elite);
     chromosomes.extend(rest);
 
-    info!(
+    crate::log_info!(
         target = "extension_events",
         method = "mass_extinction";
         "MassExtinction applied: population reduced to {}",

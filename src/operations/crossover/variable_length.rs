@@ -11,7 +11,6 @@
 use crate::error::GaError;
 use crate::operations::AlignmentStrategy;
 use crate::traits::LinearChromosome;
-use log::debug;
 use rand::Rng;
 use std::borrow::Cow;
 
@@ -50,7 +49,7 @@ pub fn variable_length_crossover<U: LinearChromosome>(
     let len_a = parent_1.dna().len();
     let len_b = parent_2.dna().len();
 
-    debug!(
+    crate::log_debug!(
         target = "crossover_events",
         method = "variable_length";
         "Starting variable-length crossover (strategy={:?}, len_a={}, len_b={})",
@@ -122,7 +121,7 @@ pub fn variable_length_crossover<U: LinearChromosome>(
     child_1.set_dna(Cow::Owned(child_dna_1));
     child_2.set_dna(Cow::Owned(child_dna_2));
 
-    debug!(
+    crate::log_debug!(
         target = "crossover_events",
         method = "variable_length";
         "Variable-length crossover finished (point={}, offspring_len={})",

@@ -2,7 +2,6 @@
 
 use crate::error::GaError;
 use crate::traits::LinearChromosome;
-use log::{debug, trace};
 use rand::Rng;
 
 /// Multi-point crossover: alternates segments between parents at N random cut points.
@@ -38,7 +37,7 @@ pub fn multipoint<U: LinearChromosome>(
 
     let mut dna_child_1 = Vec::new();
     let mut dna_child_2 = Vec::new();
-    debug!(target="crossover_events", method="multipoint_crossover"; "Starting the  multipoint crossover");
+    crate::log_debug!(target="crossover_events", method="multipoint_crossover"; "Starting the  multipoint crossover");
 
     let dna_len = parent_1.dna().len();
 
@@ -50,7 +49,7 @@ pub fn multipoint<U: LinearChromosome>(
             crossover_number_of_points
         }
     };
-    trace!(target="crossover_events", method="multipoint_crossover"; "Number of crossover points {}", n);
+    crate::log_trace!(target="crossover_events", method="multipoint_crossover"; "Number of crossover points {}", n);
 
     // Generate N random, sorted, unique crossover point indices within 1..dna_len
     // Using Fisher-Yates partial shuffle on the range to pick N unique values
@@ -62,7 +61,7 @@ pub fn multipoint<U: LinearChromosome>(
     }
     let mut crossover_points: Vec<usize> = candidates[..n].to_vec();
     crossover_points.sort();
-    trace!(target="crossover_events", method="multipoint_crossover"; "Crossover points {:?}", crossover_points);
+    crate::log_trace!(target="crossover_events", method="multipoint_crossover"; "Crossover points {:?}", crossover_points);
 
     // Walk through the DNA, alternating parent source at each crossover point
     let mut crossed = false;
@@ -87,7 +86,7 @@ pub fn multipoint<U: LinearChromosome>(
     //Sets the dna into the children and return them
     child_1.set_dna(std::borrow::Cow::Owned(dna_child_1));
     child_2.set_dna(std::borrow::Cow::Owned(dna_child_2));
-    debug!(target="crossover_events", method="multipoint_crossover"; "Multipoint crossover finished");
+    crate::log_debug!(target="crossover_events", method="multipoint_crossover"; "Multipoint crossover finished");
 
     Ok(vec![child_1, child_2])
 }

@@ -121,7 +121,7 @@ impl<T: Clone + Default + Sync + Send> GeneT for List<T> {
             self.id = id;
             self.value = self.alleles[id as usize].clone();
         } else {
-            log::warn!(
+            crate::log_warn!(
                 target: "ga_events",
                 "List::set_id({}) out of bounds (alleles.len() = {}), ignoring",
                 id,

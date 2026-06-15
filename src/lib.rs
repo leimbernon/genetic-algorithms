@@ -126,6 +126,7 @@
 //!
 //! | Flag | Description | Default |
 //! |------|-------------|---------|
+//! | `logging` | Enables `log` crate emission of events via `LogObserver`. Disable via `default-features = false` to shed `log` for minimal binary size (embedded / ultra-lean WASM). | **On** |
 //! | `serde` | Serialization/deserialization for checkpoint save/load via `serde_json` | Off |
 //! | `benchmarks` | Standard benchmark functions (Sphere, Rastrigin, Rosenbrock, ZDT, DTLZ) and multi-objective quality indicators | Off |
 //! | `visualization` | PNG/SVG fitness plots, diversity charts, and histogram generation via `plotters` | Off |

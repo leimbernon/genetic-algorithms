@@ -11,7 +11,6 @@ use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
 use crate::operations::mutation::gaussian::GaussianConvertible;
 use crate::traits::SelfAdaptive;
-use log::debug;
 use rand::Rng;
 use std::fmt::Debug;
 
@@ -116,7 +115,7 @@ where
     gene.value = T::from_f64(new_val);
     individual.dna[idx] = gene;
 
-    debug!(
+    crate::log_debug!(
         target: "mutation_events",
         "SelfAdaptiveGaussian mutation applied at idx={} sigma={}",
         idx,

@@ -53,7 +53,6 @@ use crate::nsga2::non_dominated_sort::{assign_ranks, non_dominated_sort};
 use crate::nsga2::pareto::{ParetoFront, ParetoIndividual};
 use crate::operations::mutation;
 use crate::traits::{InitializationFn, LinearChromosome, MutationOperator, VectorFitness};
-use log::{debug, info};
 use rand::Rng;
 use rayon::prelude::*;
 use std::sync::Arc;
@@ -250,7 +249,7 @@ where
                 .collect();
 
             self.islands.push(population);
-            debug!(
+            crate::log_debug!(
                 target: "island_events",
                 "Initialized NSGA-II island {} with {} individuals", island_idx, pop_size
             );
@@ -331,7 +330,7 @@ where
         let max_gens = self.nsga2_config.max_generations;
         let pop_size = self.nsga2_config.population_size;
 
-        info!(
+        crate::log_info!(
             target: "island_events",
             "Starting Island-NSGA-II: {} islands, {} individuals/island, {} objectives, {} generations",
             self.island_config.num_islands,
@@ -358,7 +357,7 @@ where
                 && gen % self.island_config.migration_interval == 0
             {
                 migrate_pareto(&mut self.islands, &self.island_config)?;
-                debug!(
+                crate::log_debug!(
                     target: "island_events",
                     "Pareto migration at generation {}", gen
                 );

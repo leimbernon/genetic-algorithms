@@ -182,7 +182,7 @@ impl<U: LinearChromosome> HallOfFame<U> {
 
         // Skip NaN fitness (T-41-01)
         if fitness.is_nan() {
-            log::debug!("Skipping chromosome with NaN fitness");
+            crate::log_debug!("Skipping chromosome with NaN fitness");
             return false;
         }
 

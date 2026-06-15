@@ -3,7 +3,6 @@
 use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
 use crate::traits::LinearChromosome;
-use log::debug;
 use rand::Rng;
 use std::borrow::Cow;
 use std::fmt::Debug;
@@ -54,7 +53,7 @@ where
         )));
     }
 
-    debug!(target="crossover_events", method="sbx"; "Starting SBX crossover with eta={}", eta);
+    crate::log_debug!(target="crossover_events", method="sbx"; "Starting SBX crossover with eta={}", eta);
 
     let mut rng = crate::rng::make_rng();
     let dna1 = parent_1.dna();
@@ -109,7 +108,7 @@ where
     child_1.set_dna(Cow::Owned(child_dna_1));
     child_2.set_dna(Cow::Owned(child_dna_2));
 
-    debug!(target="crossover_events", method="sbx"; "SBX crossover finished");
+    crate::log_debug!(target="crossover_events", method="sbx"; "SBX crossover finished");
     Ok(vec![child_1, child_2])
 }
 

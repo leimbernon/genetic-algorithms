@@ -6,7 +6,6 @@
 
 use crate::genotypes::Binary as BinaryGenotype;
 use crate::traits::LinearChromosome;
-use log::debug;
 use rand::Rng;
 
 /// Bit flip mutation: randomly flips the boolean value of one gene in a Binary chromosome.
@@ -31,12 +30,12 @@ where
         return;
     }
 
-    debug!(target="mutation_events", method="bit_flip"; "Starting the bit flip mutation");
+    crate::log_debug!(target="mutation_events", method="bit_flip"; "Starting the bit flip mutation");
     let mut rng = crate::rng::make_rng();
     let index = rng.random_range(0..len);
 
     let mut gene = chromosome.dna()[index];
     gene.value = !gene.value;
     chromosome.set_gene(index, gene);
-    debug!(target="mutation_events", method="bit_flip"; "Bit flip mutation finished");
+    crate::log_debug!(target="mutation_events", method="bit_flip"; "Bit flip mutation finished");
 }

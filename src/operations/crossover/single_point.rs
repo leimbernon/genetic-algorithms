@@ -2,7 +2,6 @@
 
 use crate::error::GaError;
 use crate::traits::LinearChromosome;
-use log::debug;
 use rand::Rng;
 use std::borrow::Cow;
 
@@ -39,7 +38,7 @@ pub fn single_point<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<V
         ));
     }
 
-    debug!(target="crossover_events", method="single_point"; "Starting single-point crossover");
+    crate::log_debug!(target="crossover_events", method="single_point"; "Starting single-point crossover");
     let mut rng = crate::rng::make_rng();
     // Crossover point: between 1 and len-1 (exclusive bounds ensure both parts are non-empty)
     let point = rng.random_range(1..len);
@@ -61,6 +60,6 @@ pub fn single_point<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<V
     child_1.set_dna(Cow::Owned(child_dna_1));
     child_2.set_dna(Cow::Owned(child_dna_2));
 
-    debug!(target="crossover_events", method="single_point"; "Single-point crossover finished at point {}", point);
+    crate::log_debug!(target="crossover_events", method="single_point"; "Single-point crossover finished at point {}", point);
     Ok(vec![child_1, child_2])
 }

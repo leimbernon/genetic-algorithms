@@ -24,7 +24,6 @@ use crate::chromosomes::ChromosomeLength;
 use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
 use crate::traits::{ChromosomeT, LinearChromosome, MutationOperator};
-use log::warn;
 use std::any::Any;
 
 pub mod bit_flip;
@@ -190,7 +189,7 @@ pub trait ValueMutable: LinearChromosome {
     /// The default implementation logs a warning and falls back to swap mutation.
     /// Override this for chromosome types that have a meaningful value range per gene.
     fn value_mutate(&mut self) {
-        warn!(
+        crate::log_warn!(
             "value_mutate() not overridden for this chromosome type; \
              falling back to swap mutation. Implement ValueMutable::value_mutate() \
              for proper value mutation behavior."
@@ -203,7 +202,7 @@ pub trait ValueMutable: LinearChromosome {
     /// The default implementation logs a warning and falls back to swap mutation.
     /// Override this for Binary chromosomes to flip a random gene's boolean value.
     fn bit_flip_mutate(&mut self) {
-        warn!(
+        crate::log_warn!(
             "bit_flip_mutate() not overridden for this chromosome type; \
              falling back to swap mutation. Implement ValueMutable::bit_flip_mutate() \
              for proper bit-flip behavior."
@@ -216,7 +215,7 @@ pub trait ValueMutable: LinearChromosome {
     /// The default implementation logs a warning and falls back to swap mutation.
     /// Override this for `Range<T>` chromosomes to apply small uniform perturbation.
     fn creep_mutate(&mut self, _step: f64) {
-        warn!(
+        crate::log_warn!(
             "creep_mutate() not overridden for this chromosome type; \
              falling back to swap mutation. Implement ValueMutable::creep_mutate() \
              for proper creep mutation behavior."
@@ -229,7 +228,7 @@ pub trait ValueMutable: LinearChromosome {
     /// The default implementation logs a warning and falls back to swap mutation.
     /// Override this for `Range<T>` chromosomes to apply gaussian perturbation.
     fn gaussian_mutate(&mut self, _sigma: f64) {
-        warn!(
+        crate::log_warn!(
             "gaussian_mutate() not overridden for this chromosome type; \
              falling back to swap mutation. Implement ValueMutable::gaussian_mutate() \
              for proper gaussian mutation behavior."

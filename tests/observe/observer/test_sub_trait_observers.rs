@@ -47,7 +47,9 @@ use genetic_algorithms::island::configuration::IslandConfiguration;
 use genetic_algorithms::island::IslandGa;
 use genetic_algorithms::nsga2::configuration::Nsga2Configuration;
 use genetic_algorithms::nsga2::Nsga2Ga;
-use genetic_algorithms::observer::{GaObserver, IslandGaObserver, LogObserver, Nsga2Observer};
+use genetic_algorithms::observer::{GaObserver, IslandGaObserver, Nsga2Observer};
+#[cfg(feature = "logging")]
+use genetic_algorithms::observer::LogObserver;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::stats::GenerationStats;
 use genetic_algorithms::traits::{
@@ -219,6 +221,7 @@ fn test_nsga2_observer_hooks_fire() {
 // ============================================================================
 
 /// SUB-03: LogObserver satisfies all three observer trait bounds simultaneously.
+#[cfg(feature = "logging")]
 #[test]
 fn test_logobserver_implements_all_three_traits() {
     fn assert_ga_observer<U: ChromosomeT, T: GaObserver<U>>() {}

@@ -6,7 +6,6 @@
 
 use crate::configuration::ProblemSolving;
 use crate::traits::{LinearChromosome, GeneT};
-use log::info;
 use std::collections::HashMap;
 use std::hash::{DefaultHasher, Hash, Hasher};
 
@@ -84,7 +83,7 @@ pub fn mass_deduplication<U: LinearChromosome>(
     });
 
     let removed = original_len - chromosomes.len();
-    info!(
+    crate::log_info!(
         target = "extension_events",
         method = "mass_deduplication";
         "MassDeduplication applied: removed {} duplicates, {} unique remain",

@@ -19,8 +19,6 @@ use crate::configuration::{LimitConfiguration, ProblemSolving};
 use crate::error::GaError;
 use crate::operations::Survivor;
 use crate::traits::LinearChromosome;
-use log::debug;
-
 /// Computes the parsimony-adjusted fitness for a single chromosome.
 ///
 /// Does **not** mutate the chromosome — purely a computation helper.
@@ -79,7 +77,7 @@ pub fn apply_parsimony_pressure<U: LinearChromosome>(
     limit_configuration: LimitConfiguration,
     length_penalty: f64,
 ) -> Result<(), GaError> {
-    debug!(
+    crate::log_debug!(
         target = "survivor_events",
         method = "parsimony";
         "Applying parsimony pressure (penalty={}, mode={:?}, pop={})",

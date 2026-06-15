@@ -5,8 +5,6 @@
 
 use crate::configuration::ProblemSolving;
 use crate::traits::ChromosomeT;
-use log::info;
-
 /// Applies mass genesis: keeps only the 2 best chromosomes.
 ///
 /// The population will be smaller after this operation; the GA loop handles regrowth.
@@ -59,7 +57,7 @@ pub fn mass_genesis<U: ChromosomeT>(chromosomes: &mut Vec<U>, problem_solving: P
     chromosomes.swap(1, second_idx);
     chromosomes.truncate(2);
 
-    info!(
+    crate::log_info!(
         target = "extension_events",
         method = "mass_genesis";
         "MassGenesis applied: population trimmed to 2 best chromosomes"

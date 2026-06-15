@@ -11,7 +11,6 @@
 use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
 use crate::traits::LinearChromosome;
-use log::debug;
 use rand::Rng;
 use std::fmt::Debug;
 
@@ -71,7 +70,7 @@ where
 
     let len = individual.dna().len();
     if len == 0 {
-        debug!(target="mutation_events", method="non_uniform"; "Empty DNA, skipping non-uniform mutation");
+        crate::log_debug!(target="mutation_events", method="non_uniform"; "Empty DNA, skipping non-uniform mutation");
         return Ok(());
     }
 
@@ -81,7 +80,7 @@ where
     let mut gene = individual.dna()[idx].clone();
 
     if gene.ranges.is_empty() {
-        debug!(target="mutation_events", method="non_uniform"; "Gene {} has no ranges, skipping", idx);
+        crate::log_debug!(target="mutation_events", method="non_uniform"; "Gene {} has no ranges, skipping", idx);
         return Ok(());
     }
 
@@ -111,7 +110,7 @@ where
     gene.value = T::from_f64(clamped);
     individual.set_gene(idx, gene);
 
-    debug!(
+    crate::log_debug!(
         target="mutation_events", method="non_uniform";
         "Non-uniform mutation applied at gene {} (gen={}/{}, b={}, tau={:.4})",
         idx, generation, max_generations, b, tau

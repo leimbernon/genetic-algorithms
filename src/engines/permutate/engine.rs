@@ -93,7 +93,7 @@ impl<U: ChromosomeT + Clone> PermutateEngine<U> {
         for (idx, candidate) in self.candidates.iter().enumerate() {
             // Safety gate: stop if too many candidates evaluated.
             if idx >= gate {
-                log::warn!(
+                crate::log_warn!(
                     target: "ga_events",
                     "PermutateEngine: safety gate of {} reached, stopping after {} candidates",
                     gate,

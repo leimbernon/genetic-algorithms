@@ -113,11 +113,11 @@ harness = false
 
 [[example]]
 name = "sms_emoa_zdt1"
-required-features = ["benchmarks"]
+required-features = ["benchmarks", "logging"]
 
 [[example]]
 name = "ibea_zdt1"
-required-features = ["benchmarks"]
+required-features = ["benchmarks", "logging"]
 
 [[bench]]
 name = "metrics_observer"
@@ -129,18 +129,74 @@ name = "memetic_rastrigin"
 
 [[example]]
 name = "cma_es_rastrigin"
+required-features = ["logging"]
 
 [[example]]
 name = "ipop_rastrigin"
+required-features = ["logging"]
 
 [[example]]
 name = "pso_rastrigin"
+required-features = ["logging"]
 
 [[example]]
 name = "eda_trap"
+required-features = ["logging"]
 
 [[example]]
 name = "surrogate_rastrigin"
+
+[[example]]
+name = "knapsack_binary"
+required-features = ["logging"]
+
+[[example]]
+name = "job_scheduling"
+required-features = ["logging"]
+
+[[example]]
+name = "onemax_extension"
+required-features = ["logging"]
+
+[[example]]
+name = "island_model"
+required-features = ["logging"]
+
+[[example]]
+name = "nsga2_zdt1"
+required-features = ["logging"]
+
+[[example]]
+name = "feature_selection"
+required-features = ["logging"]
+
+[[example]]
+name = "rastrigin"
+required-features = ["logging"]
+
+[[example]]
+name = "nsga3_dtlz2"
+required-features = ["logging"]
+
+[[example]]
+name = "nqueens_range"
+required-features = ["logging"]
+
+[[example]]
+name = "niching"
+required-features = ["logging"]
+
+[[example]]
+name = "onemax_binary"
+required-features = ["logging"]
+
+[[example]]
+name = "spea2_zdt1"
+required-features = ["logging"]
+
+[[example]]
+name = "moead_dtlz2"
+required-features = ["logging"]
 
 [profile.dev]
 # debuginfo for line numbers in backtraces, no full DWARF.

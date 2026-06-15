@@ -5,7 +5,6 @@
 //! runs in parallel using Rayon for large populations.
 
 use crate::traits::ChromosomeT;
-use log::{debug, trace};
 use rand::Rng;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
@@ -48,7 +47,7 @@ fn tournament_impl<U>(chromosomes: &[U], couples: usize, num_parents: usize) -> 
 where
     U: ChromosomeT + Send + Sync + 'static + Clone,
 {
-    debug!(target="selection_events", method="tournament"; "Starting tournament selection");
+    crate::log_debug!(target="selection_events", method="tournament"; "Starting tournament selection");
     let num_parents = num_parents.max(2);
     let couples = if couples * num_parents > chromosomes.len() {
         chromosomes.len() / num_parents
@@ -69,7 +68,7 @@ where
             let index_1 = rng.random_range(0..chromosomes.len());
             let index_2 = rng.random_range(0..chromosomes.len());
 
-            trace!(target="selection_events", method="tournament"; "Tournament between {} and {}", index_1, index_2);
+            crate::log_trace!(target="selection_events", method="tournament"; "Tournament between {} and {}", index_1, index_2);
 
             if chromosomes[index_1].fitness() >= chromosomes[index_2].fitness() {
                 index_1
@@ -85,7 +84,7 @@ where
             let index_1 = rng.random_range(0..chromosomes.len());
             let index_2 = rng.random_range(0..chromosomes.len());
 
-            trace!(target="selection_events", method="tournament"; "Tournament between {} and {}", index_1, index_2);
+            crate::log_trace!(target="selection_events", method="tournament"; "Tournament between {} and {}", index_1, index_2);
 
             if chromosomes[index_1].fitness() >= chromosomes[index_2].fitness() {
                 index_1
@@ -100,11 +99,11 @@ where
     for chunk in winners.chunks(num_parents) {
         if chunk.len() == num_parents {
             let group = chunk.to_vec();
-            trace!(target="selection_events", method="tournament"; "Mating group: {:?}", group);
+            crate::log_trace!(target="selection_events", method="tournament"; "Mating group: {:?}", group);
             mating.push(group);
         }
     }
 
-    debug!(target="selection_events", method="tournament"; "Tournament selection finished");
+    crate::log_debug!(target="selection_events", method="tournament"; "Tournament selection finished");
     mating
 }

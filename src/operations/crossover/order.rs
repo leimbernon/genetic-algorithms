@@ -2,7 +2,6 @@
 
 use crate::error::GaError;
 use crate::traits::LinearChromosome;
-use log::debug;
 use rand::Rng;
 use std::borrow::Cow;
 use std::collections::HashSet;
@@ -41,7 +40,7 @@ pub fn order<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, 
         ));
     }
 
-    debug!(target="crossover_events", method="order"; "Starting order crossover (OX)");
+    crate::log_debug!(target="crossover_events", method="order"; "Starting order crossover (OX)");
     let mut rng = crate::rng::make_rng();
 
     let mut p1 = rng.random_range(0..len);
@@ -61,7 +60,7 @@ pub fn order<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, 
     child_1.set_dna(Cow::Owned(child_dna_1));
     child_2.set_dna(Cow::Owned(child_dna_2));
 
-    debug!(target="crossover_events", method="order"; "Order crossover finished with points ({}, {})", p1, p2);
+    crate::log_debug!(target="crossover_events", method="order"; "Order crossover finished with points ({}, {})", p1, p2);
     Ok(vec![child_1, child_2])
 }
 

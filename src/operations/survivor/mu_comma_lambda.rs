@@ -9,7 +9,6 @@ pub(crate) use crate::{
     configuration::{LimitConfiguration, ProblemSolving},
     traits::ChromosomeT,
 };
-use log::{debug, trace};
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
 
@@ -39,14 +38,14 @@ pub fn mu_comma_lambda<U: ChromosomeT>(
     population_size: usize,
     limit_configuration: LimitConfiguration,
 ) {
-    debug!(target="survivor_events", method="mu_comma_lambda"; "Starting (mu,lambda) survivor selection");
+    crate::log_debug!(target="survivor_events", method="mu_comma_lambda"; "Starting (mu,lambda) survivor selection");
 
     // Discard all parents -- only offspring (age == 0) survive.
     chromosomes.retain(|c| c.age() == 0);
-    trace!(target="survivor_events", method="mu_comma_lambda"; "Offspring count after parent removal: {}", chromosomes.len());
+    crate::log_trace!(target="survivor_events", method="mu_comma_lambda"; "Offspring count after parent removal: {}", chromosomes.len());
 
     if chromosomes.len() <= population_size {
-        debug!(target="survivor_events", method="mu_comma_lambda"; "(mu,lambda) survivor selection finished (all offspring kept)");
+        crate::log_debug!(target="survivor_events", method="mu_comma_lambda"; "(mu,lambda) survivor selection finished (all offspring kept)");
         return;
     }
 
@@ -92,5 +91,5 @@ pub fn mu_comma_lambda<U: ChromosomeT>(
         }
     }
 
-    debug!(target="survivor_events", method="mu_comma_lambda"; "(mu,lambda) survivor selection finished");
+    crate::log_debug!(target="survivor_events", method="mu_comma_lambda"; "(mu,lambda) survivor selection finished");
 }

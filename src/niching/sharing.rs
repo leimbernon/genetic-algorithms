@@ -1,5 +1,3 @@
-use log::debug;
-
 /// Computes the sharing function value `sh(d)` for a given distance.
 ///
 /// The sharing function is:
@@ -98,7 +96,7 @@ pub fn apply_fitness_sharing(
         }
     }
 
-    debug!(
+    crate::log_debug!(
         target: "niching_events",
         "Applied fitness sharing to {} individuals with sigma_share={}, alpha={}",
         n,
@@ -209,7 +207,7 @@ pub fn apply_fitness_sharing_with_dna<G, F>(
         }
     }
 
-    debug!(
+    crate::log_debug!(
         target: "niching_events",
         "Applied fitness sharing (with_dna) to {} individuals with sigma_share={}, alpha={}",
         n,

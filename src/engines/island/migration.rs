@@ -4,7 +4,6 @@ use crate::island::topology::neighbors;
 use crate::nsga2::pareto::ParetoIndividual;
 use crate::population::Population;
 use crate::traits::ChromosomeT;
-use log::debug;
 use rand::Rng;
 use std::sync::Arc;
 
@@ -104,7 +103,7 @@ where
                     replace_random(&mut islands[dest_idx], source_migrants, &mut rng);
                 }
             }
-            debug!(
+            crate::log_debug!(
                 target: "island_events",
                 "Migrated {} individuals from island {} to island {} (policy={:?})",
                 source_migrants.len(),
@@ -326,7 +325,7 @@ where
         for &dest_idx in &dest_indices {
             let migrants = source_migrants.clone();
             replace_worst_pareto(&mut islands[dest_idx], &migrants);
-            debug!(
+            crate::log_debug!(
                 target: "island_events",
                 "Pareto migration: {} individuals from island {} to island {}",
                 migrants.len(),

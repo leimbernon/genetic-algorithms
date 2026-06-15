@@ -15,6 +15,7 @@ use genetic_algorithms::island::configuration::IslandConfiguration;
 use genetic_algorithms::island::IslandGa;
 use genetic_algorithms::nsga2::configuration::Nsga2Configuration;
 use genetic_algorithms::nsga2::Nsga2Ga;
+#[cfg(feature = "logging")]
 use genetic_algorithms::observer::LogObserver;
 use genetic_algorithms::observer::{GaObserver, IslandGaObserver, Nsga2Observer};
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
@@ -305,6 +306,7 @@ fn composite_observer_new_is_empty() {
     assert_eq!(composite.observer_count(), 0);
 }
 
+#[cfg(feature = "logging")]
 #[test]
 fn composite_observer_add_builds_chain() {
     let composite: CompositeObserver<BinaryChromosome> = CompositeObserver::new()
@@ -319,6 +321,7 @@ fn composite_observer_default_is_empty() {
     assert_eq!(composite.observer_count(), 0);
 }
 
+#[cfg(feature = "logging")]
 #[test]
 fn composite_observer_clone_shares_arcs() {
     let composite: CompositeObserver<BinaryChromosome> = CompositeObserver::new()

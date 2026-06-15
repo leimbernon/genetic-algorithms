@@ -2,7 +2,6 @@
 
 use crate::error::GaError;
 use crate::traits::{LinearChromosome, GeneT};
-use log::debug;
 use rand::Rng;
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
@@ -67,7 +66,7 @@ pub fn erx<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, Ga
         ));
     }
 
-    debug!(target="crossover_events", method="edge_recombination"; "Starting ERX crossover");
+    crate::log_debug!(target="crossover_events", method="edge_recombination"; "Starting ERX crossover");
     let mut rng = crate::rng::make_rng();
 
     // Build adjacency map (circular: index wraps at boundaries)
@@ -118,7 +117,7 @@ pub fn erx<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, Ga
     child_1.set_dna(Cow::Owned(dna_1));
     child_2.set_dna(Cow::Owned(dna_2));
 
-    debug!(target="crossover_events", method="edge_recombination"; "ERX crossover finished");
+    crate::log_debug!(target="crossover_events", method="edge_recombination"; "ERX crossover finished");
     Ok(vec![child_1, child_2])
 }
 
