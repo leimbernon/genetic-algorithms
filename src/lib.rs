@@ -20,7 +20,7 @@
 //! use genetic_algorithms::initializers::range_random_initialization;
 //! use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 //! use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig};
-//! use genetic_algorithms::{CompositeObserver, LogObserver};
+//! use genetic_algorithms::{ChromosomeLength, CompositeObserver, LogObserver};
 //! use std::sync::Arc;
 //!
 //! let fitness_fn = |dna: &[RangeGenotype<f64>]| -> f64 {
@@ -35,10 +35,10 @@
 //! let alleles_clone = alleles.clone();
 //!
 //! let mut ga = Ga::new()
-//!     .with_genes_per_chromosome(5_usize)
+//!     .with_chromosome_length(ChromosomeLength::Fixed(5))
 //!     .with_population_size(100)
-//!     .with_initialization_fn(move |genes_per_chromosome, _, _| {
-//!         range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+//!     .with_initialization_fn(move |n, _| {
+//!         range_random_initialization(n, Some(&alleles_clone))
 //!     })
 //!     .with_fitness_fn(fitness_fn)
 //!     .with_selection_method(Selection::Tournament)

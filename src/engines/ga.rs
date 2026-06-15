@@ -88,10 +88,10 @@
 //! let mut ga = Ga::new()
 //!     .with_population_size(200)
 //!     .with_max_generations(500)
-//!     .with_genes_per_chromosome(10)
+//!     .with_chromosome_length(crate::chromosomes::ChromosomeLength::Fixed(10))
 //!     .with_fitness_fn(rastrigin)
-//!     .with_initialization_fn(move |n, _, _| {
-//!         range_random_initialization(n, Some(&alleles), Some(false))
+//!     .with_initialization_fn(move |n, _| {
+//!         range_random_initialization(n, Some(&alleles))
 //!     })
 //!     .with_selection_method(Selection::Tournament)
 //!     .with_crossover_method(Crossover::BlendAlpha)
