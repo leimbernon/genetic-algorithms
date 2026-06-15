@@ -2,246 +2,311 @@
 phase: 68-build-perf-m2-dependency-hygiene
 reviewed: 2026-06-15T00:00:00Z
 depth: standard
-files_reviewed: 73
+files_reviewed: 10
 files_reviewed_list:
-  - .github/workflows/feature-matrix.yml
-  - CHANGELOG.md
-  - Cargo.toml
-  - README.md
-  - src/engines/cma/engine.rs
-  - src/engines/ga.rs
-  - src/engines/gp/engine.rs
-  - src/engines/island/migration.rs
-  - src/engines/island/nsga2.rs
-  - src/engines/permutate/engine.rs
-  - src/hall_of_fame.rs
-  - src/lib.rs
-  - src/niching/sharing.rs
-  - src/observe/observer/mod.rs
-  - src/operations/crossover/arithmetic.rs
-  - src/operations/crossover/blend_alpha.rs
-  - src/operations/crossover/clone.rs
-  - src/operations/crossover/cycle.rs
-  - src/operations/crossover/edge_recombination.rs
-  - src/operations/crossover/multipoint.rs
-  - src/operations/crossover/order.rs
-  - src/operations/crossover/pcx.rs
-  - src/operations/crossover/pmx.rs
-  - src/operations/crossover/rejuvenate.rs
-  - src/operations/crossover/sbx.rs
-  - src/operations/crossover/single_point.rs
-  - src/operations/crossover/spx.rs
-  - src/operations/crossover/undx.rs
-  - src/operations/crossover/uniform_crossover.rs
-  - src/operations/crossover/variable_length.rs
-  - src/operations/extension/mass_deduplication.rs
-  - src/operations/extension/mass_degeneration.rs
-  - src/operations/extension/mass_extinction.rs
-  - src/operations/extension/mass_genesis.rs
-  - src/operations/mutation.rs
-  - src/operations/mutation/bit_flip.rs
-  - src/operations/mutation/cauchy.rs
-  - src/operations/mutation/differential.rs
-  - src/operations/mutation/insertion.rs
-  - src/operations/mutation/inversion.rs
-  - src/operations/mutation/length_mutation.rs
-  - src/operations/mutation/levy_flight.rs
-  - src/operations/mutation/non_uniform.rs
-  - src/operations/mutation/polynomial.rs
-  - src/operations/mutation/scramble.rs
-  - src/operations/mutation/self_adaptive_gaussian.rs
-  - src/operations/mutation/swap.rs
-  - src/operations/mutation/uniform.rs
-  - src/operations/selection.rs
-  - src/operations/selection/boltzmann.rs
-  - src/operations/selection/clearing.rs
-  - src/operations/selection/fitness_proportionate.rs
-  - src/operations/selection/lexicase.rs
-  - src/operations/selection/random.rs
-  - src/operations/selection/rank.rs
-  - src/operations/selection/tournament.rs
-  - src/operations/selection/truncation.rs
-  - src/operations/survivor/age.rs
-  - src/operations/survivor/deterministic_crowding.rs
-  - src/operations/survivor/fitness.rs
-  - src/operations/survivor/mu_comma_lambda.rs
-  - src/operations/survivor/mu_plus_lambda.rs
-  - src/operations/survivor/parsimony.rs
-  - src/population.rs
-  - src/traits/linear_chromosome.rs
-  - src/types/genotypes/list.rs
-  - tests/engines/ibea/test_ibea.rs
-  - tests/engines/moead/test_moead.rs
-  - tests/engines/sms_emoa/test_sms_emoa.rs
-  - tests/engines/spea2/test_spea2.rs
-  - tests/observe/observer/test_composite_observer.rs
-  - tests/observe/observer/test_observer.rs
-  - tests/observe/observer/test_sub_trait_observers.rs
   - tests/test_no_logger_installed.rs
+  - src/engines/ga.rs
+  - src/configuration.rs
+  - src/configuration/builders.rs
+  - src/traits/configuration.rs
+  - docs/getting-started.md
+  - src/lib.rs
+  - src/observe/observer/mod.rs
+  - src/observe/observer/log.rs
+  - .github/workflows/feature-matrix.yml
 findings:
-  critical: 1
-  warning: 3
-  info: 1
-  total: 5
+  critical: 3
+  warning: 4
+  info: 2
+  total: 9
 status: issues_found
 ---
 
 # Phase 68: Code Review Report
 
-**Reviewed:** 2026-06-15
+**Reviewed:** 2026-06-15T00:00:00Z
 **Depth:** standard
-**Files Reviewed:** 73
+**Files Reviewed:** 10
 **Status:** issues_found
 
 ## Summary
 
-This phase introduced the `logging` optional feature: a `crate::log_*!` macro family in
-`src/lib.rs` that delegates to `::log::*` when the feature is enabled and expands to `()`
-when disabled, converting 183 call sites across `src/`. `LogObserver` is gated behind
-`#[cfg(feature = "logging")]` at both the module level (`observe/observer/mod.rs`) and the
-public re-export (`lib.rs`). The CI matrix (`feature-matrix.yml`) gains `no-default-features`
-and `logging-explicit` matrix legs.
+This phase adds the `test_no_logger_installed.rs` integration test, refactors configuration builder impls into `src/configuration/builders.rs`, expands `src/observe/observer/` with `log.rs`, and updates the feature-matrix workflow. The core files (`ga.rs`, `configuration.rs`, `traits/configuration.rs`) contain several pre-existing issues that are exposed or worsened by the new code added in this phase.
 
-The macro migration is mechanically sound: all 183 `crate::log_*!` call sites correctly
-use the new macros, no bare `use log::` imports remain in `src/` outside expected files,
-and all test files that use `LogObserver` correctly gate their usage under
-`#[cfg(feature = "logging")]`. The `test_no_logger_installed` integration test properly
-validates that the library does not auto-install a logger.
+The most severe issues are: (1) doc-code examples in `src/lib.rs` and `src/engines/ga.rs` call a nonexistent `with_genes_per_chromosome` method — this is a public-facing API contract breakage; (2) the same examples pass three-argument closures to `with_initialization_fn` whose type only accepts two — every copy-paste of these examples fails to compile; (3) the adaptive penalty coefficient is silently multiplied starting from `0.0`, meaning `penalty_coefficient` will remain `0.0` forever when `initial_coefficient` is used and no initial assignment is made before the update window fires.
 
-Four issues were found.
+---
 
-## Critical Issues
+## Structural Findings (fallow)
 
-### CR-01: README documents `LogObserver` as requiring "No feature flags" — now false
+No structural pre-pass was provided for this review.
 
-**File:** `README.md:312`
-**Issue:** The README states `**LogObserver** — logs every hook via the log crate. **No feature
-flags required**.` This was true before Phase 68, but `LogObserver` is now gated behind the
-`logging` feature. Users who follow this documentation and add
-`use genetic_algorithms::LogObserver;` to a crate compiled with
-`default-features = false` will get a compile error because `LogObserver` is not in scope.
-The same snippet at README lines 314–320 references `LogObserver` in a code block without
-any mention of the required feature.
+---
+
+## Narrative Findings (AI reviewer)
+
+### Critical Issues
+
+#### CR-01: `with_genes_per_chromosome` does not exist — all doc examples are broken
+
+**File:** `src/lib.rs:38`, `src/engines/ga.rs:91`, `src/engines/ga.rs:769`
+
+**Issue:** Both the crate-level `lib.rs` quick-start example and the `Ga` module-level doc
+example call `.with_genes_per_chromosome(...)`, which is not a method on `Ga<U>` or any
+configuration trait. The real API requires `.with_chromosome_length(ChromosomeLength::Fixed(n))`.
+These doc examples are marked `rust,ignore`, so the compiler never catches the dead method — but
+users who copy-paste the canonical quick-start snippet get an immediate compile error:
+
+```
+error[E0599]: no method named `with_genes_per_chromosome` found for struct `Ga<…>`
+```
+
+This invalidates the primary onboarding path for new users.
 
 **Fix:**
-```markdown
-**`LogObserver`** — logs every hook via the `log` crate. Requires the `logging` feature
-(enabled by default). Implements `GaObserver`, `IslandGaObserver`, and `Nsga2Observer`.
+```rust
+// src/lib.rs line 38 — replace:
+.with_genes_per_chromosome(5_usize)
+// with:
+.with_chromosome_length(genetic_algorithms::chromosomes::ChromosomeLength::Fixed(5))
 
-```toml
-# If you disabled default features, re-enable logging explicitly:
-genetic_algorithms = { version = "3.0.0", default-features = false, features = ["logging"] }
-```
-```
-
-Also update the code block at line 314 to add the crate feature requirement in a comment
-or guard, consistent with how `observer-metrics` and `observer-tracing` snippets handle it
-in the same section.
-
-## Warnings
-
-### WR-01: `logging` feature silently pulls `serde_core` + `serde_derive` as transitive deps
-
-**File:** `Cargo.toml:44`
-**Issue:** The `log` dependency is declared as:
-```toml
-log = { version = "0.4.22", features = ["std", "serde", "kv_unstable"], optional = true }
-```
-The `"serde"` sub-feature of the `log` crate activates `serde`'s serialization support
-for `Level` and `LevelFilter`. Cargo's resolved lock confirms this:
-```
-name = "log"
-version = "0.4.29"
-dependencies = ["serde_core", "value-bag"]
-```
-`serde_core` 1.0.228 (with `serde_derive`) is therefore a transitive dependency of the
-`logging` feature, even when the user has not enabled the crate's `serde` feature. This
-contradicts the documented promise that disabling default features "sheds `log` for minimal
-binary size". More concretely, a WASM or embedded user who enables `logging` but not `serde`
-still compiles serde proc-macros as a transitive dep.
-
-Neither `Level` nor `LevelFilter` appear to be serialized anywhere in this codebase;
-the `serde` feature on `log` is not needed.
-
-**Fix:**
-```toml
-# Remove the "serde" sub-feature from the log dependency:
-log = { version = "0.4.22", features = ["std", "kv_unstable"], optional = true }
-```
-This eliminates `serde_core` + `serde_derive` from the transitive closure of the `logging`
-feature when the user has not also enabled the `serde` feature.
-
-### WR-02: `feature-matrix.yml` runs only on `push`, not on PRs — `no-default-features` never tested at PR time
-
-**File:** `.github/workflows/feature-matrix.yml:3-5`
-**Issue:** The workflow trigger is:
-```yaml
-on:
-  push:
-    branches: [main, "milestone/**"]
-```
-The `no-default-features` and `logging-explicit` matrix legs (which verify that the library
-compiles and all tests pass without the `log` crate) only run after merge. A PR that
-accidentally re-introduces a `use log::info!` call at a non-gated site would compile fine
-with default features (the PR CI only runs `rust-unit-tests.yml` which does not test
-`--no-default-features`) and only fail after landing. The `feature-matrix.yml` should also
-trigger on `pull_request` for at minimum `main` and `milestone/**` targets.
-
-**Fix:**
-```yaml
-on:
-  push:
-    branches: [main, "milestone/**"]
-  pull_request:
-    branches: [main, "milestone/**"]
-```
-
-### WR-03: wasm32 check does not test `--no-default-features` (logging=off) path
-
-**File:** `.github/workflows/wasm-check.yml` (cross-reference with `feature-matrix.yml:46-48`)
-**Issue:** `wasm-check.yml` runs three `cargo check --target wasm32-unknown-unknown` steps:
-default features, `--features serde`, `--features visualization`. It does not run
-`--no-default-features`, which is the path that removes the `log` crate entirely. Since
-the `crate::log_*!` macros expand to `()` on that path, a compilation error in the
-no-logging code path on wasm32 would not be caught by any CI check.
-
-The `feature-matrix.yml` wasm32 leg runs `cargo check --target wasm32-unknown-unknown --lib`
-but again uses default features. There is no test that checks `wasm32 + no-default-features`.
-
-**Fix:** Add a step to `wasm-check.yml`:
-```yaml
-- name: cargo check (no-default-features, logging off)
-  run: cargo check --target wasm32-unknown-unknown --lib --no-default-features
-```
-
-## Info
-
-### IN-01: `MIGRATION.md` missing leading `/` in `Cargo.toml` include list
-
-**File:** `Cargo.toml:29`
-**Issue:** All other entries in the `include` list use root-anchored paths (`"/src"`,
-`"/README.md"`, `"/CHANGELOG.md"`, etc.), but `MIGRATION.md` is listed without a leading
-slash:
-```toml
-include = [
-    "/src",
-    "/README.md",
-    "/CHANGELOG.md",
-    ...
-    "MIGRATION.md",   # <-- inconsistent, not anchored
-]
-```
-Cargo treats a path without a leading `/` as a glob that can match anywhere in the directory
-tree. For a root-level file this is harmless, but it is inconsistent and could silently match
-unintended paths if a file named `MIGRATION.md` were ever nested in a subdirectory.
-
-**Fix:**
-```toml
-    "/MIGRATION.md",
+// src/engines/ga.rs line 91 — replace:
+.with_genes_per_chromosome(10)
+// with:
+.with_chromosome_length(crate::chromosomes::ChromosomeLength::Fixed(10))
 ```
 
 ---
 
-_Reviewed: 2026-06-15_
+#### CR-02: Three-argument closure passed to `with_initialization_fn`, which expects two
+
+**File:** `src/lib.rs:40-42`, `src/engines/ga.rs:93-95`
+
+**Issue:** The `InitializationFn<G>` type is defined as:
+```rust
+pub type InitializationFn<G> = dyn Fn(usize, Option<&[G]>) -> Vec<G> + Send + Sync;
+```
+Two parameters. Both doc examples pass a closure with **three** parameters:
+```rust
+.with_initialization_fn(move |genes_per_chromosome, _, _| {   // third _ is phantom
+    range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+})
+```
+Additionally, `range_random_initialization` itself only accepts **two** arguments
+(`src/initializers/range_initializer.rs:36-39`), so `Some(false)` as the third argument is
+also fabricated. Because all examples are `rust,ignore`, this is invisible to CI but every
+user who follows the quick-start guide encounters compile errors.
+
+**Fix:**
+```rust
+// Replace the three-arg closure with the correct two-arg form:
+.with_initialization_fn(move |n, _| {
+    range_random_initialization(n, Some(&alleles_clone))
+})
+```
+
+---
+
+#### CR-03: Adaptive penalty coefficient never escapes `0.0` on the first update window
+
+**File:** `src/engines/ga.rs:2595-2631`
+
+**Issue:** The `PenaltyStrategy::Adaptive` branch in `apply_penalty_to_chromosomes` uses a
+local snapshot `coeff` (which correctly substitutes `initial_coefficient` when
+`self.penalty_coefficient == 0.0`) to apply the penalty. However, when the update window fires,
+it multiplies `self.penalty_coefficient` directly — which is still `0.0`:
+
+```rust
+let coeff = if self.penalty_coefficient == 0.0 {
+    initial_coefficient   // used to apply penalty (correct)
+} else {
+    self.penalty_coefficient
+};
+// ... at the update window:
+if self.adaptive_penalty_counter > 0 {
+    let new_coeff = self.penalty_coefficient * 1.1;  // 0.0 * 1.1 = 0.0 forever
+    self.penalty_coefficient = new_coeff;
+}
+```
+
+`self.penalty_coefficient` is initialized to `0.0` (line 419) and is never assigned
+`initial_coefficient` before the multiplicative update. The coefficient remains `0.0`
+permanently. The adaptive penalty is silently non-functional.
+
+The identical dead-code pattern also exists in the offspring constraint loop at line 1834:
+```rust
+let coeff = if self.penalty_coefficient == 0.0 {
+    0.0 // comment says "Will be initialized at generation boundary" — but it never is
+```
+
+**Fix:**
+```rust
+// Assign initial_coefficient to self.penalty_coefficient on first use:
+if self.penalty_coefficient == 0.0 {
+    self.penalty_coefficient = initial_coefficient;
+}
+let coeff = self.penalty_coefficient;
+// Now window updates: self.penalty_coefficient * 1.1 is non-trivial
+```
+
+---
+
+### Warnings
+
+#### WR-01: `LogObserver::on_generation_end` emits unconditional spurious `limit_reached` trace messages
+
+**File:** `src/observe/observer/log.rs:154-161`
+
+**Issue:** The `on_generation_end` hook unconditionally emits two `trace!`-level messages:
+```rust
+log::trace!(target="ga_events", method="limit_reached"; "limit reached for minimization");
+log::trace!(target="ga_events", method="limit_reached"; "limit reached for fixed fitness");
+```
+These fire on **every generation end**, even when neither limit condition is met. With
+`RUST_LOG=trace`, users see thousands of spurious "limit reached" messages in normal runs.
+This contradicts the stated design goal of reproducing pre-v2.2.0 log output faithfully —
+the original code only emitted these messages when the condition was actually true.
+
+**Fix:** Remove the unconditional trace emissions. If reproduction is desired, add an
+`on_run_end` implementation that checks `TerminationCause`:
+```rust
+fn on_run_end(&self, cause: TerminationCause, _all_stats: &[GenerationStats]) {
+    log::debug!(target="ga_events", method="limit_reached"; "Started limit reached method");
+    if matches!(cause, TerminationCause::FitnessTargetReached) {
+        log::trace!(target="ga_events", method="limit_reached"; "limit reached for fixed fitness");
+    }
+    log::debug!(target="ga_events", method="limit_reached"; "Limit reached method finished");
+}
+```
+
+---
+
+#### WR-02: `limit_reached` uses exact float equality — misses floating-point fitness targets
+
+**File:** `src/engines/ga.rs:2754-2781`
+
+**Issue:** The `limit_reached` function checks stopping conditions with `==` on `f64`:
+```rust
+if chromosome.fitness() == 0.0 {      // Minimization
+if chromosome.fitness() == target {   // FixedFitness
+```
+For any fitness function that produces a result via floating-point arithmetic (e.g.,
+`1e-15` instead of `0.0`, or `100.000000001` instead of `100.0`), the limit is never
+triggered. The run exhausts `max_generations` silently. This is a correctness bug for all
+callers that use a computed (non-integer) fitness target.
+
+Additionally, `fitness_target` is never checked for `ProblemSolving::Maximization` — users
+who call `with_fitness_target` with `Maximization` get no early stop at all.
+
+**Fix:** Use epsilon comparison or document the exact-equality semantics explicitly:
+```rust
+// Minimization:
+if chromosome.fitness().abs() < 1e-9 {
+// FixedFitness:
+if (chromosome.fitness() - target).abs() <= target.abs() * 1e-9 + 1e-12 {
+```
+
+---
+
+#### WR-03: `initialize_with_seeds` dedup compares by `gene.id()` only — always fails for template-allele gene types
+
+**File:** `src/engines/ga.rs:1393-1425`
+
+**Issue:** The genotypic uniqueness check in `initialize_with_seeds` compares DNA by
+`gene.id()` at each position:
+```rust
+let id_a = new_dna.get(i).map(|g| g.id()).unwrap_or(-1);
+let id_b = seed_dna.get(i).map(|g| g.id()).unwrap_or(-1);
+id_a == id_b
+```
+For `Range<T>` chromosomes initialized from a template allele, all genes share
+`id = 0` (the template's id). Every generated chromosome appears identical to every seed
+under this comparison, so `is_duplicate` is always `true`. The retry loop exhausts
+`max_attempts` (line 1373: `fill_count * 10`) and returns:
+```
+GaError::InitializationError("Failed to generate N unique random chromosomes…")
+```
+This means `with_seeds` is silently broken for the most common real-valued use case.
+
+**Fix:** Compare gene **values** (via `PartialEq` on gene), not just ids, or skip dedup
+when all allele ids are non-unique:
+```rust
+// Check if gene IDs are unique before applying id-based dedup
+let ids_are_unique = {
+    let ids: std::collections::HashSet<i32> = self.alleles.iter().map(|g| g.id()).collect();
+    ids.len() == self.alleles.len()
+};
+// Only run dedup when ids meaningfully distinguish genes
+if ids_are_unique { /* run existing check */ }
+```
+
+---
+
+#### WR-04: `test_no_logger_installed.rs` installs a `PanicLogger` that persists for the whole process
+
+**File:** `tests/test_no_logger_installed.rs:85-89`
+
+**Issue:** After the GA run, the test installs `PANIC_LOGGER` as the global logger:
+```rust
+log::set_logger(&PANIC_LOGGER).expect("...");
+log::set_max_level(log::LevelFilter::Trace);
+```
+This sets the level to `Trace` permanently. Any log emission at any level by code running
+after this test in the same process will call `PanicLogger::log()`, which panics. The
+comment at line 15 correctly explains that integration test files are separate binaries,
+but if a second test function is ever added to this file, it will inherit the poisoned
+logger state from the first test (tests in the same binary share the process) and fail
+unpredictably.
+
+There is no protection against accidentally adding a second test to this file (e.g., a
+future maintainer adds a variant that tests a different GA configuration).
+
+**Fix:** Add a prominent invariant comment at the top of the test file:
+```rust
+// INVARIANT: This file MUST contain exactly ONE test function.
+// `PANIC_LOGGER` is installed at Trace level and cannot be uninstalled.
+// A second test in this file would panic on any subsequent log emission.
+```
+Also consider resetting the max level to `Off` after the assertion so accidental future
+additions do not panic:
+```rust
+log::set_max_level(log::LevelFilter::Trace);
+// Prove the slot is free, then immediately silence the logger
+// so the PanicLogger cannot fire on any future code in this process.
+log::set_max_level(log::LevelFilter::Off);
+```
+
+---
+
+### Info
+
+#### IN-01: `feature-matrix.yml` — `logging-explicit` step provides redundant but harmless coverage
+
+**File:** `.github/workflows/feature-matrix.yml:43-45`
+
+**Issue:** The `logging-explicit` step runs with `--no-default-features --features logging`.
+This correctly exercises `test_no_logger_installed.rs`. However, the `default` matrix entry
+(line 19-21) also exercises it because `logging` is in `default = ["logging"]`. The explicit
+step adds coverage value only for testing that the feature compiles in isolation without other
+defaults. No action required.
+
+---
+
+#### IN-02: Builder impls duplicated across `builders.rs` and `ga.rs`
+
+**File:** `src/configuration/builders.rs:20-273`, `src/engines/ga.rs:430-734`
+
+**Issue:** Every `XxxConfig for GaConfiguration` impl in `builders.rs` is structurally
+duplicated by the corresponding `XxxConfig for Ga<U>` impl in `ga.rs`. Both implement the
+same trait methods with identical logic, differing only in delegation depth. This is
+~260 lines of near-identical code and creates a maintenance hazard: any new builder method
+requires two identical implementations. A macro or blanket delegation impl would eliminate
+the duplication.
+
+No change required for this phase.
+
+---
+
+_Reviewed: 2026-06-15T00:00:00Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
