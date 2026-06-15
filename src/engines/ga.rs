@@ -1388,40 +1388,54 @@ where
             let mut new_chromosome = U::new();
             new_chromosome.set_dna(std::borrow::Cow::Owned(genes));
 
-            // Check genotypic uniqueness against seed DNAs
+            // Check genotypic uniqueness against seed DNAs.
+            // id-based dedup is only meaningful when all allele IDs are distinct.
+            // For Range<T> chromosomes all alleles share id=0, so id-based dedup
+            // incorrectly treats every generated chromosome as a duplicate of every
+            // seed, exhausting max_attempts and returning an InitializationError.
+            // When allele IDs are non-unique, skip dedup entirely — the random
+            // initializer produces statistically unique chromosomes in practice.
             let new_dna = new_chromosome.dna();
-            let is_duplicate = seed_dnas.iter().any(|seed_dna| {
-                let max_len = new_dna.len().max(seed_dna.len());
-                if max_len == 0 {
-                    return true;
+
+            let ids_are_unique = {
+                let mut seen = std::collections::HashSet::new();
+                self.alleles.iter().all(|g| seen.insert(g.id()))
+            };
+
+            if ids_are_unique {
+                let is_duplicate = seed_dnas.iter().any(|seed_dna| {
+                    let max_len = new_dna.len().max(seed_dna.len());
+                    if max_len == 0 {
+                        return true;
+                    }
+                    (0..max_len).all(|i| {
+                        let id_a = new_dna.get(i).map(|g| g.id()).unwrap_or(-1);
+                        let id_b = seed_dna.get(i).map(|g| g.id()).unwrap_or(-1);
+                        id_a == id_b
+                    })
+                });
+
+                if is_duplicate {
+                    continue; // Discard and retry
                 }
-                (0..max_len).all(|i| {
-                    let id_a = new_dna.get(i).map(|g| g.id()).unwrap_or(-1);
-                    let id_b = seed_dna.get(i).map(|g| g.id()).unwrap_or(-1);
-                    id_a == id_b
-                })
-            });
 
-            if is_duplicate {
-                continue; // Discard and retry
-            }
+                // Also dedup against already-generated fill chromosomes
+                let is_fill_duplicate = fill_chromosomes.iter().any(|existing| {
+                    let existing_dna = existing.dna();
+                    let max_len = new_dna.len().max(existing_dna.len());
+                    if max_len == 0 {
+                        return true;
+                    }
+                    (0..max_len).all(|i| {
+                        let id_a = new_dna.get(i).map(|g| g.id()).unwrap_or(-1);
+                        let id_b = existing_dna.get(i).map(|g| g.id()).unwrap_or(-1);
+                        id_a == id_b
+                    })
+                });
 
-            // Also dedup against already-generated fill chromosomes
-            let is_fill_duplicate = fill_chromosomes.iter().any(|existing| {
-                let existing_dna = existing.dna();
-                let max_len = new_dna.len().max(existing_dna.len());
-                if max_len == 0 {
-                    return true;
+                if is_fill_duplicate {
+                    continue; // Discard and retry
                 }
-                (0..max_len).all(|i| {
-                    let id_a = new_dna.get(i).map(|g| g.id()).unwrap_or(-1);
-                    let id_b = existing_dna.get(i).map(|g| g.id()).unwrap_or(-1);
-                    id_a == id_b
-                })
-            });
-
-            if is_fill_duplicate {
-                continue; // Discard and retry
             }
 
             // Set fitness function and evaluate (skipped in batch mode — fitness_fn is None)
