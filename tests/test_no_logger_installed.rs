@@ -15,6 +15,17 @@
 //! Relies on the fact that integration test files are separate binaries (each
 //! gets a clean global logger slot per Rust's testing model), so the slot is
 //! always free at test start.
+//!
+//! # INVARIANT
+//!
+//! This file MUST contain exactly ONE test function (`ga_does_not_install_logger`).
+//!
+//! `PANIC_LOGGER` is installed at `Trace` level and cannot be uninstalled — the
+//! `log` crate only allows setting the global logger once per process. After
+//! installation the max level is immediately set to `Off` so that accidental
+//! future log emissions do not trigger the panic. However, a second test function
+//! in this binary would still inherit the poisoned global-logger slot and could
+//! fail unpredictably depending on test execution order. Do NOT add more tests here.
 
 use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
@@ -86,6 +97,10 @@ fn ga_does_not_install_logger() {
         "global logger slot should still be free after Ga::run() — \
          the library must not install env_logger or any other logger",
     );
+    // Briefly raise the level to Trace to prove the slot is free (the assertion
+    // above already proved it), then immediately silence the logger so that
+    // PanicLogger cannot fire on any code that runs later in this process.
     log::set_max_level(log::LevelFilter::Trace);
+    log::set_max_level(log::LevelFilter::Off);
     // Reaching this point proves the auto-init is gone.
 }
