@@ -414,7 +414,7 @@ cargo run --example rastrigin --features visualization -- --plot
 - **Elitism:** `elitism_count` — preserve the top N individuals unchanged across generations.
 - **Extension:** configure via `with_extension_method()`, `with_extension_diversity_threshold()`, `with_extension_survival_rate()`, `with_extension_mutation_rounds()`, `with_extension_elite_count()`.
 - **Stopping criteria:** `StoppingCriteria` with `stagnation_generations`, `convergence_threshold`, `max_duration_secs`. The GA stops when any enabled criterion is met.
-- **Infra:** `adaptive_ga`, `number_of_threads`, `log_level`.
+- **Infra:** `adaptive_ga`, `number_of_threads`.
 
 ### Adaptive GA
 
@@ -431,6 +431,33 @@ When `adaptive_ga = false`:
 - Selection, crossover, mutation, and fitness evaluation are parallelized each generation.
 - `Cow<[Gene]>` prevents needless cloning of DNA vectors.
 - `select_nth_unstable_by()` used over full sort when finding top-k individuals.
+
+### Logging
+
+The library emits structured `log!()` events (using the [`log`](https://crates.io/crates/log)
+facade) but **does not install a logger**. Install your own subscriber in `main()`:
+
+```rust
+fn main() {
+    env_logger::init(); // or: tracing_subscriber::fmt::init(), etc.
+
+    let mut ga = Ga::new()
+        // ... configure ...
+        .build()
+        .unwrap();
+    ga.run().unwrap();
+}
+```
+
+Control verbosity with `RUST_LOG`: `RUST_LOG=genetic_algorithms=warn cargo run`. The GA emits
+events on the `ga_events`, `population_events`, and related log targets.
+
+Add `env_logger` to your project's `[dev-dependencies]` for examples and tests:
+
+```toml
+[dev-dependencies]
+env_logger = "0.11"
+```
 
 ## WebAssembly
 

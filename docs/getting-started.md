@@ -64,6 +64,10 @@ cd my_ga_project
 
 Replace `src/main.rs` with:
 
+> **Logging:** The library emits `log!()` events but does not install a logger itself. Call
+> `env_logger::init()` (or any other `log` subscriber) as the very first statement of `main()`
+> if you want to see log output. Add `env_logger = "0.11"` to your `[dev-dependencies]`.
+
 ```rust
 use std::sync::Arc;
 
@@ -80,6 +84,8 @@ use genetic_algorithms::traits::{
 use genetic_algorithms::LogObserver;
 
 fn main() {
+    env_logger::init(); // install logger before running the GA; set RUST_LOG=info to see events
+
     const N_BITS: usize = 100;
     const POP_SIZE: usize = 50;
     const MAX_GENERATIONS: usize = 1000;

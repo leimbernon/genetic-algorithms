@@ -333,3 +333,71 @@ Available sub-struct accessors on `Ga::configuration() -> &GaConfiguration`:
 - `.crossover()` → `&CrossoverConfiguration`
 - `.mutation()` → `&MutationConfiguration`
 - `.survivor()` → `Survivor` (returns enum value, not reference)
+
+---
+
+## Logger setup (v2 auto-init → v3 explicit)
+
+**What changed (Phase 68 / Plan 68-01):** The library no longer installs `env_logger` automatically
+during `Ga::run()`. In v2, the GA called `env_logger::Builder::from_default_env().try_init()` at
+the start of every run — silently competing with the application's own logger installation and
+dragging `env_logger` (and ~12 transitive crates) into every library consumer's dependency graph.
+In v3, `env_logger` is a dev-dependency only; the library emits `log!()` events and the application
+chooses the subscriber.
+
+**Who is affected:** Any code that relied on the implicit `env_logger` initialization inside the GA
+to receive log output. Also any code that called `.with_logs(LogLevel::Warn)` (or any other
+`LogLevel` variant) on the builder.
+
+### Before
+
+```rust
+use genetic_algorithms::configuration::LogLevel;
+use genetic_algorithms::traits::ConfigurationT;
+use genetic_algorithms::ga::Ga;
+use genetic_algorithms::chromosomes::Binary;
+
+// No logger installed in main() — the GA installs env_logger automatically.
+let mut ga = Ga::<Binary>::new()
+    .with_logs(LogLevel::Warn)   // configures env_logger filter level
+    // ...
+    .build()
+    .unwrap();
+
+ga.run().unwrap(); // env_logger was installed here; RUST_LOG=warn output appeared
+```
+
+### After
+
+```rust
+use genetic_algorithms::traits::ConfigurationT;
+use genetic_algorithms::ga::Ga;
+use genetic_algorithms::chromosomes::Binary;
+
+fn main() {
+    env_logger::init(); // application installs its own subscriber — first statement in main()
+    // or any other log subscriber: tracing-subscriber, simplelog, fern, etc.
+
+    let mut ga = Ga::<Binary>::new()
+        // .with_logs() is gone — control log verbosity via RUST_LOG or your subscriber's config
+        // ...
+        .build()
+        .unwrap();
+
+    ga.run().unwrap(); // the GA emits log!() events; env_logger above handles them
+}
+```
+
+Control verbosity the idiomatic way: set `RUST_LOG=genetic_algorithms=warn cargo run`, or configure
+your subscriber programmatically. The GA emits events on the `ga_events`, `population_events`,
+and related log targets.
+
+See `.planning/intel/logger-history.md` for the full rationale and a list of what must never be
+reintroduced.
+
+### Removed: `LogLevel` enum and `with_logs()` builder method
+
+Both `configuration::LogLevel` and `ConfigurationT::with_logs()` are removed in v3.0.0. They
+only existed to configure the now-removed auto-installer. Remove all calls to `.with_logs()`
+and any `use ... LogLevel` imports from your code. Filter log verbosity via `RUST_LOG` or your
+own subscriber configuration instead.
