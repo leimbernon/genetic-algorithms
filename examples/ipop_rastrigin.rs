@@ -65,6 +65,7 @@ fn init_population(n: usize) -> Vec<RangeChromosome<f64>> {
 }
 
 fn main() {
+    let _ = env_logger::try_init();
     let config = CmaConfiguration::default_for_dim(DIMENSIONS)
         .with_sigma0(0.5)
         .with_max_generations(200)

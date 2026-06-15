@@ -100,6 +100,7 @@ fn report(
 }
 
 fn main() {
+    let _ = env_logger::try_init();
     // For maximization problem
     let mut ga = Ga::new()
         .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(10))

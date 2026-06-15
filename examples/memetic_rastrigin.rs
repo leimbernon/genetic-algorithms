@@ -79,7 +79,6 @@ fn run_ga(name: &str, use_local_search: bool) -> f64 {
     }
 
     let mut ga = builder
-        .with_logs(genetic_algorithms::configuration::LogLevel::Warn)
         .build()
         .expect("Invalid GA configuration");
 
@@ -98,6 +97,7 @@ fn run_ga(name: &str, use_local_search: bool) -> f64 {
 }
 
 fn main() {
+    env_logger::init();
     println!("=== Memetic Algorithm: Rastrigin Minimization ===\n");
 
     let memetic_fitness = run_ga("Memetic GA (HillClimbing)", true);

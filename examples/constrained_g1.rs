@@ -25,6 +25,7 @@ const POP_SIZE: usize = 200;
 const MAX_GEN: usize = 200;
 
 fn main() {
+    let _ = env_logger::try_init();
     println!("Constrained G1 benchmark with static penalty");
     println!(
         "Variables: {}, Population: {}, Generations: {}",
