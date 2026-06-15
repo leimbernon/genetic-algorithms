@@ -7,7 +7,7 @@
 
 use crate::chromosomes::ChromosomeLength;
 use crate::configuration::LocalSearchConfiguration;
-use crate::configuration::{LogLevel, ProblemSolving};
+use crate::configuration::ProblemSolving;
 use crate::operations::{Crossover, Extension, Mutation, Selection, Survivor};
 
 /// Configuration for parent selection.
@@ -309,8 +309,6 @@ pub trait ConfigurationT:
     fn with_adaptive_ga(self, adaptive_ga: bool) -> Self;
     /// Sets the number of threads used for parallel fitness evaluation.
     fn with_threads(self, number_of_threads: usize) -> Self;
-    /// Sets the logging verbosity level.
-    fn with_logs(self, log_level: LogLevel) -> Self;
     /// Sets the survivor-selection strategy (fitness-based or age-based).
     fn with_survivor_method(self, method: Survivor) -> Self;
 

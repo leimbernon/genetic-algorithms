@@ -20,6 +20,7 @@ use genetic_algorithms::traits::{
 };
 
 fn main() {
+    let _ = env_logger::try_init();
     println!("=== AOS Demo: Crossover Portfolio with Probability Matching ===\n");
 
     // Problem: minimize sum of 8 gene values (each in [0, 100])

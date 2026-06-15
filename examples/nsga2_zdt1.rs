@@ -100,6 +100,7 @@ impl genetic_algorithms::operations::mutation::ValueMutable for Zdt1Chromosome {
 impl genetic_algorithms::traits::OperatorCompat for Zdt1Chromosome {}
 
 fn main() {
+    let _ = env_logger::try_init();
     // Parse optional --seed <N> argument for reproducible runs (used by build_perf.sh golden capture).
     let args: Vec<String> = std::env::args().collect();
     if let Some(pos) = args.iter().position(|a| a == "--seed") {

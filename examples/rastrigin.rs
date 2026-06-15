@@ -37,6 +37,7 @@ use genetic_algorithms::{rng, ChromosomeLength, CompositeObserver, LogObserver};
 use std::sync::Arc;
 
 fn main() {
+    let _ = env_logger::try_init();
     // Parse optional --seed <N> argument for reproducible runs (used by build_perf.sh golden capture).
     // When --seed is provided, rayon is fixed to 1 thread so the counter-based RNG in
     // rng::make_rng() is called in a deterministic order. The seed is also passed via

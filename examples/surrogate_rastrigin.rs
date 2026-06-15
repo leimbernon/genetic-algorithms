@@ -99,6 +99,7 @@ fn make_rastrigin_fn(
 // ---------------------------------------------------------------------------
 
 fn main() {
+    let _ = env_logger::try_init();
     // Atomic counter to track true fitness invocations.
     let eval_counter = Arc::new(AtomicUsize::new(0));
     let fitness_fn = make_rastrigin_fn(Arc::clone(&eval_counter));

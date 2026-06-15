@@ -93,6 +93,7 @@ impl genetic_algorithms::operations::mutation::ValueMutable for Dtlz2Chromosome 
 impl genetic_algorithms::traits::OperatorCompat for Dtlz2Chromosome {}
 
 fn main() {
+    let _ = env_logger::try_init();
     let nsga3_config = Nsga3Configuration::new()
         .with_num_objectives(3)
         .with_population_size(POP_SIZE)

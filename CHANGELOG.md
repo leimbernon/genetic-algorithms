@@ -74,6 +74,7 @@ v3.0.0 is a major release focused on **advanced representations, alternative met
 - `surrogate_rastrigin` — Surrogate-assisted GA on Rastrigin.
 
 ### Changed (breaking)
+- **Library no longer auto-installs `env_logger`**. Apps wanting log output must call `env_logger::init()` (or any other `log` subscriber) themselves in `main()`. Sheds ~12 transitive deps; `env_logger` is now a dev-dependency only. (Phase 68 / Plan 68-01)
 - **`ChromosomeT` split** — `ChromosomeT` is now a minimal core (fitness, age). The flat-slice DNA surface moved to the new `LinearChromosome: ChromosomeT` supertrait. Custom chromosome implementors must split their impls. Tree chromosomes implement `TreeChromosome: ChromosomeT` instead.
 - **`DeGene` → `RealGene`** hard rename. Trait moved to `src/traits/real_gene.rs`. Affects custom `DeEngine` / `ScatterEngine` impls.
 - **`LinearChromosome::default(mut self) -> Self`** reset helper renamed to `reset()` to avoid clashing with `std::default::Default`.
@@ -85,6 +86,7 @@ v3.0.0 is a major release focused on **advanced representations, alternative met
 - **`GaConfiguration` fields** are now `pub(crate)`. External read access goes through accessor methods.
 
 ### Removed
+- **`configuration::LogLevel` enum** and **`ConfigurationT::with_logs()` builder method** — both only configured the now-removed `env_logger` auto-installer. Filter log verbosity via `RUST_LOG` or your own subscriber. (Phase 68 / Plan 68-01)
 - **`Reporter<U>` trait** and built-in `NoopReporter`, `SimpleReporter`, `DurationReporter` (deprecated since 2.2.0). Use `GaObserver<U>` + `LogObserver` instead. `.with_reporter()` builder method removed; use `.with_observer()`.
 
 ### Architecture & quality

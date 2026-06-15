@@ -64,6 +64,7 @@ use genetic_algorithms::{CompositeObserver, IslandGaObserver, LogObserver};
 use std::sync::Arc;
 
 fn main() {
+    let _ = env_logger::try_init();
     // --- Problem parameters ---
     const DIMENSIONS: usize = 20;
     const POP_SIZE_PER_ISLAND: usize = 50;

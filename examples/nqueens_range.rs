@@ -47,6 +47,7 @@ fn report(
 }
 
 fn main() {
+    let _ = env_logger::try_init();
     let alleles = vec![RangeGenotype::new(0, vec![(0, N as i32 - 1)], 0)];
     let alleles_clone = alleles.clone();
     let mut ga = Ga::new()

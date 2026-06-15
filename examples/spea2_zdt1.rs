@@ -103,6 +103,7 @@ impl genetic_algorithms::operations::mutation::ValueMutable for Zdt1Chromosome {
 impl genetic_algorithms::traits::OperatorCompat for Zdt1Chromosome {}
 
 fn main() {
+    let _ = env_logger::try_init();
     const POP_SIZE: usize = 100;
     const ARCHIVE_SIZE: usize = 100;
     const MAX_GENERATIONS: usize = 250;

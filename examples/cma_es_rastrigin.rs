@@ -65,6 +65,7 @@ fn init_population(n: usize) -> Vec<RangeChromosome<f64>> {
 }
 
 fn main() {
+    let _ = env_logger::try_init();
     // Parse optional --seed <N> argument for reproducible runs (used by build_perf.sh golden capture).
     // Falls back to seed 42 when not specified (original behaviour).
     let args: Vec<String> = std::env::args().collect();
