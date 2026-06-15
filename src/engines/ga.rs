@@ -1829,10 +1829,14 @@ where
                                 );
                                 c.set_fitness(penalized);
                             }
-                            PenaltyStrategy::Adaptive { .. } => {
-                                // Adaptive penalty uses the current coefficient
+                            PenaltyStrategy::Adaptive {
+                                initial_coefficient,
+                                ..
+                            } => {
+                                // Bootstrap: use initial_coefficient if the generation-boundary
+                                // update has not yet run (penalty_coefficient is still 0.0).
                                 let coeff = if self.penalty_coefficient == 0.0 {
-                                    0.0 // Will be initialized at generation boundary
+                                    initial_coefficient
                                 } else {
                                     self.penalty_coefficient
                                 };
@@ -2595,11 +2599,13 @@ where
                 initial_coefficient,
                 window_size,
             } => {
-                let coeff = if self.penalty_coefficient == 0.0 {
-                    initial_coefficient
-                } else {
-                    self.penalty_coefficient
-                };
+                // Bootstrap: on first call self.penalty_coefficient is 0.0 (never assigned).
+                // Assign initial_coefficient so that multiplicative window updates are
+                // non-trivial and the adaptive mechanism actually functions.
+                if self.penalty_coefficient == 0.0 {
+                    self.penalty_coefficient = initial_coefficient;
+                }
+                let coeff = self.penalty_coefficient;
                 // Track feasibility of best individual for adaptive adjustment
                 if generation > 0 && generation % window_size == 0 {
                     let best_violation = violations
