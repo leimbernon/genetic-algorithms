@@ -86,6 +86,14 @@ genetic_algorithms = { version = "3.0.0", features = ["observer-tracing"] }
 genetic_algorithms = { version = "3.0.0", features = ["observer-metrics"] }
 ```
 
+To shed the `log` crate entirely for embedded / ultra-lean / wasm-only builds:
+
+```toml
+genetic_algorithms = { version = "3.0.0", default-features = false }
+```
+
+The `logging` feature is on by default. Disabling it removes the `log` dependency and causes all internal log emissions to expand to `()` at compile time. `LogObserver` is also unavailable without this feature.
+
 ## Quick Start
 
 Minimal GA using `Range<f64>` chromosomes, minimizing the Rastrigin function:

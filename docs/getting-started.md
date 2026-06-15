@@ -130,6 +130,31 @@ Expected output (generation count will vary):
 Best fitness: 100
 ```
 
+## Disabling logging for ultra-lean builds
+
+The `logging` feature is enabled by default. It activates the `log` crate dependency and makes
+`LogObserver` available. To shed the `log` dependency entirely — useful for embedded targets,
+WASM builds where every kilobyte counts, or any environment where you control observability
+entirely through a different mechanism — disable it via:
+
+```toml
+genetic_algorithms = { version = "3.0.0", default-features = false }
+```
+
+With `logging` off, all internal log emissions expand to `()` at compile time (zero overhead,
+no code generation). `LogObserver` is not exported. You can re-enable it selectively alongside
+other disabled-by-default features:
+
+```toml
+genetic_algorithms = { version = "3.0.0", default-features = false, features = ["serde"] }
+```
+
+If you want the `serde` feature but also logging, add both explicitly:
+
+```toml
+genetic_algorithms = { version = "3.0.0", default-features = false, features = ["serde", "logging"] }
+```
+
 ## Running the Bundled Examples
 
 The repository ships with runnable examples in `examples/`. Each example has a doc comment explaining the problem and operators used. Run any example with:
