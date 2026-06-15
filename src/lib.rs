@@ -260,6 +260,60 @@
 //! - [docs.rs/genetic_algorithms](https://docs.rs/genetic_algorithms/latest/genetic_algorithms) — Full API reference with module-level documentation
 //! - [crates.io](https://crates.io/crates/genetic_algorithms) — Package registry and version history
 
+// Internal logging macro family — delegates to ::log::* when the `logging` feature is enabled,
+// expands to () when disabled. Avoids 100+ per-call-site #[cfg(feature = "logging")] annotations.
+#[cfg(feature = "logging")]
+macro_rules! log_info {
+    ($($arg:tt)*) => { ::log::info!($($arg)*) };
+}
+#[cfg(not(feature = "logging"))]
+macro_rules! log_info {
+    ($($arg:tt)*) => { () };
+}
+
+#[cfg(feature = "logging")]
+macro_rules! log_debug {
+    ($($arg:tt)*) => { ::log::debug!($($arg)*) };
+}
+#[cfg(not(feature = "logging"))]
+macro_rules! log_debug {
+    ($($arg:tt)*) => { () };
+}
+
+#[cfg(feature = "logging")]
+macro_rules! log_trace {
+    ($($arg:tt)*) => { ::log::trace!($($arg)*) };
+}
+#[cfg(not(feature = "logging"))]
+macro_rules! log_trace {
+    ($($arg:tt)*) => { () };
+}
+
+#[cfg(feature = "logging")]
+macro_rules! log_warn {
+    ($($arg:tt)*) => { ::log::warn!($($arg)*) };
+}
+#[cfg(not(feature = "logging"))]
+macro_rules! log_warn {
+    ($($arg:tt)*) => { () };
+}
+
+#[cfg(feature = "logging")]
+macro_rules! log_error {
+    ($($arg:tt)*) => { ::log::error!($($arg)*) };
+}
+#[cfg(not(feature = "logging"))]
+macro_rules! log_error {
+    ($($arg:tt)*) => { () };
+}
+
+// Make macros accessible from all submodules via `crate::log_*!`
+pub(crate) use log_info;
+pub(crate) use log_debug;
+pub(crate) use log_trace;
+pub(crate) use log_warn;
+pub(crate) use log_error;
+
 extern crate core;
 
 pub mod aos;
@@ -354,6 +408,7 @@ pub use observer::ExtensionEvent;
 pub use observer::GaObserver;
 pub use observer::IbeaObserver;
 pub use observer::IslandGaObserver;
+#[cfg(feature = "logging")]
 pub use observer::LogObserver;
 pub use observer::PsoObserver;
 #[cfg(feature = "observer-metrics")]

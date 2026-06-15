@@ -548,7 +548,9 @@ where
 {
 }
 
+#[cfg(feature = "logging")]
 mod log;
+#[cfg(feature = "logging")]
 pub use log::LogObserver;
 
 #[cfg(feature = "observer-tracing")]
