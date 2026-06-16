@@ -1,8 +1,3 @@
-use criterion::{
-    criterion_group, criterion_main, AxisScale, BatchSize, BenchmarkId, Criterion,
-    PlotConfiguration,
-};
-
 use genetic_algorithms::fitness::FitnessFnWrapper;
 use rand::Rng;
 use std::borrow::Cow;
@@ -76,6 +71,8 @@ impl LinearChromosome for SimpleChromosome {
     }
 }
 
+const POPULATION_SIZE: usize = 1000;
+
 #[cfg(not(tarpaulin_include))]
 fn setup_population(population_size: usize, gene_length: usize) -> Vec<SimpleChromosome> {
     let mut rng = rand::rng();
@@ -93,57 +90,32 @@ fn setup_population(population_size: usize, gene_length: usize) -> Vec<SimpleChr
         .collect()
 }
 
-// Benchmark the survivor methods
-#[cfg(not(tarpaulin_include))]
-fn benchmark_survivor_methods(c: &mut Criterion) {
-    let population_size = 1000;
-    let gene_lengths = vec![10, 100, 1000];
+mod survivor_methods {
+    use super::*;
 
-    let mut group = c.benchmark_group("survivor_methods");
-    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
-
-    for &gene_length in &gene_lengths {
-        let chromosomes = setup_population(population_size, gene_length);
-
-        // Benchmark for age survivor — clone moved to iter_batched setup
-        group.bench_with_input(
-            BenchmarkId::new("age survivor", format!("genes_{}", gene_length)),
-            &chromosomes,
-            |b, chromosomes| {
-                b.iter_batched(
-                    || chromosomes.clone(),
-                    |mut chromosomes| age_based(&mut chromosomes, population_size),
-                    BatchSize::SmallInput,
-                );
-            },
-        );
-
-        // Benchmark for fitness survivor — clone moved to iter_batched setup
-        group.bench_with_input(
-            BenchmarkId::new("fitness survivor", format!("genes_{}", gene_length)),
-            &chromosomes,
-            |b, chromosomes| {
-                b.iter_batched(
-                    || chromosomes.clone(),
-                    |mut chromosomes| {
-                        let limit_configuration =
-                            genetic_algorithms::configuration::LimitConfiguration::default();
-                        fitness_based(&mut chromosomes, population_size, limit_configuration);
-                    },
-                    BatchSize::SmallInput,
-                );
-            },
-        );
+    #[cfg(not(tarpaulin_include))]
+    #[divan::bench(args = [10usize, 100, 1000])]
+    fn age_survivor(bencher: divan::Bencher, gene_length: usize) {
+        let chromosomes = setup_population(POPULATION_SIZE, gene_length);
+        bencher
+            .with_inputs(|| chromosomes.clone())
+            .bench_values(|mut chromosomes| age_based(&mut chromosomes, POPULATION_SIZE));
     }
 
-    group.finish();
+    #[cfg(not(tarpaulin_include))]
+    #[divan::bench(args = [10usize, 100, 1000])]
+    fn fitness_survivor(bencher: divan::Bencher, gene_length: usize) {
+        let chromosomes = setup_population(POPULATION_SIZE, gene_length);
+        bencher
+            .with_inputs(|| chromosomes.clone())
+            .bench_values(|mut chromosomes| {
+                let limit_configuration =
+                    genetic_algorithms::configuration::LimitConfiguration::default();
+                fitness_based(&mut chromosomes, POPULATION_SIZE, limit_configuration);
+            });
+    }
 }
 
-// Benchmark group (profiler removed due to criterion version mismatch with pprof)
-criterion_group! {
-    name = survivor_benchmarks;
-    config = Criterion::default();
-    targets = benchmark_survivor_methods
+fn main() {
+    divan::main();
 }
-
-criterion_main!(survivor_benchmarks);
