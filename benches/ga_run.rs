@@ -1,8 +1,3 @@
-use criterion::{
-    criterion_group, criterion_main, AxisScale, BatchSize, BenchmarkId, Criterion,
-    PlotConfiguration,
-};
-
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::fitness::FitnessFnWrapper;
 use genetic_algorithms::ga::Ga;
@@ -142,47 +137,27 @@ fn build_ga(
 // Benchmarks
 // ---------------------------------------------------------------------------
 
-#[cfg(not(tarpaulin_include))]
-fn benchmark_ga_run(c: &mut Criterion) {
-    let mut group = c.benchmark_group("ga_run");
-    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+mod ga_run {
+    use super::*;
 
-    // Vary population size while keeping generations and gene length modest
-    let configs: Vec<(usize, usize, usize)> = vec![
-        // (population_size, gene_length, max_generations)
-        (20, 10, 10),
+    /// args = (population_size, gene_length, max_generations)
+    #[cfg(not(tarpaulin_include))]
+    #[divan::bench(args = [
+        (20usize, 10usize, 10usize),
         (50, 10, 10),
         (100, 10, 10),
         (50, 50, 10),
         (50, 10, 50),
-    ];
-
-    for &(pop_size, gene_len, max_gen) in &configs {
-        group.bench_with_input(
-            BenchmarkId::new(
-                "Ga::run",
-                format!("pop_{}_genes_{}_gen_{}", pop_size, gene_len, max_gen),
-            ),
-            &(pop_size, gene_len, max_gen),
-            |b, &(ps, gl, mg)| {
-                b.iter_batched(
-                    || build_ga(ps, gl, mg),
-                    |mut ga| {
-                        let _ = ga.run();
-                    },
-                    BatchSize::SmallInput,
-                );
-            },
-        );
+    ])]
+    fn benchmark_ga_run(bencher: divan::Bencher, (pop_size, gene_len, max_gen): (usize, usize, usize)) {
+        bencher
+            .with_inputs(|| build_ga(pop_size, gene_len, max_gen))
+            .bench_values(|mut ga| {
+                let _ = ga.run();
+            });
     }
-
-    group.finish();
 }
 
-criterion_group! {
-    name = ga_benchmarks;
-    config = Criterion::default();
-    targets = benchmark_ga_run
+fn main() {
+    divan::main();
 }
-
-criterion_main!(ga_benchmarks);
