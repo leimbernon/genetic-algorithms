@@ -6,7 +6,7 @@
 
 use crate::traits::ChromosomeT;
 use rand::Rng;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
 use rayon::prelude::*;
 
 /// Tournament selection: for each parent slot, two individuals are chosen at
@@ -60,7 +60,7 @@ where
 
     // Use rayon to run tournaments in parallel — each iteration picks 2 random contestants
     // and the winner goes to a results vector. We collect num_parents*couples winners and group them.
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
     let winners: Vec<usize> = (0..total_contestants)
         .into_par_iter()
         .map(|_| {
@@ -77,7 +77,7 @@ where
             }
         })
         .collect();
-    #[cfg(target_arch = "wasm32")]
+    #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
     let winners: Vec<usize> = (0..total_contestants)
         .map(|_| {
             let mut rng = crate::rng::make_rng();

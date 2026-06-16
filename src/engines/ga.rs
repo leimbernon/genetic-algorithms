@@ -154,7 +154,7 @@ use crate::{
     },
 };
 use rand::Rng;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
 use rayon::prelude::*;
 use std::fmt::Debug;
 use std::ops::ControlFlow;
@@ -1272,7 +1272,7 @@ where
                 // In batch mode fitness_fn is None; ff_opt carries the optional reference
                 let ff = fitness_fn.cloned();
 
-                #[cfg(not(target_arch = "wasm32"))]
+                #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
                 let result: Vec<U> = (0..population_size)
                     .into_par_iter()
                     .map(|_| {
@@ -1292,7 +1292,7 @@ where
                         c
                     })
                     .collect();
-                #[cfg(target_arch = "wasm32")]
+                #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
                 let result: Vec<U> = (0..population_size)
                     .map(|_| {
                         let len = {
@@ -1931,7 +1931,7 @@ where
                     );
                     let search_method = ls_config.method;
 
-                    #[cfg(not(target_arch = "wasm32"))]
+                    #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
                     {
                         // Extract candidates, process in parallel, reinsert
                         let mut selected: Vec<U> = candidates
@@ -1945,7 +1945,7 @@ where
                             offspring[idx] = improved;
                         }
                     }
-                    #[cfg(target_arch = "wasm32")]
+                    #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
                     {
                         candidates.iter().for_each(|&idx| {
                             let _ = search_method.improve(&mut offspring[idx], ff.as_ref());
@@ -2241,7 +2241,7 @@ where
                                 crate::chromosomes::ChromosomeLength::Fixed(n) => (n, n),
                             };
 
-                            #[cfg(not(target_arch = "wasm32"))]
+                            #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
                             let new_chromosomes: Vec<U> = (0..deficit)
                                 .into_par_iter()
                                 .map(|_| {
@@ -2263,7 +2263,7 @@ where
                                     new_chromosome
                                 })
                                 .collect();
-                            #[cfg(target_arch = "wasm32")]
+                            #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
                             let new_chromosomes: Vec<U> = (0..deficit)
                                 .map(|_| {
                                     let len = if min_obs == max_obs {
@@ -3168,10 +3168,10 @@ where
         Ok(vec![child_1, child_2])
     };
 
-    // Use rayon to process parent pairs in parallel (sequential fallback on wasm32)
-    #[cfg(not(target_arch = "wasm32"))]
+    // Use rayon to process parent pairs in parallel (sequential fallback on wasm32 or parallel=off)
+    #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
     let results: Vec<Result<Vec<U>, GaError>> = parents.par_iter().map(process_pair).collect();
-    #[cfg(target_arch = "wasm32")]
+    #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
     let results: Vec<Result<Vec<U>, GaError>> = parents.iter().map(process_pair).collect();
 
     // Check for any errors and flatten the results

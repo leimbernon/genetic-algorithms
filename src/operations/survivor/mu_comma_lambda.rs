@@ -9,7 +9,7 @@ pub(crate) use crate::{
     configuration::{LimitConfiguration, ProblemSolving},
     traits::ChromosomeT,
 };
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
 use rayon::prelude::*;
 
 /// Select survivors using the (mu,lambda) strategy.
@@ -51,13 +51,13 @@ pub fn mu_comma_lambda<U: ChromosomeT>(
 
     // Rank offspring by fitness and truncate.
     if limit_configuration.problem_solving != ProblemSolving::FixedFitness {
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
         chromosomes.par_sort_unstable_by(|a, b| {
             b.fitness()
                 .partial_cmp(&a.fitness())
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
         chromosomes.sort_unstable_by(|a, b| {
             b.fitness()
                 .partial_cmp(&a.fitness())
@@ -65,13 +65,13 @@ pub fn mu_comma_lambda<U: ChromosomeT>(
         });
     } else {
         let target = limit_configuration.fitness_target.unwrap_or(0.0);
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
         chromosomes.par_sort_unstable_by(|a, b| {
             b.fitness_distance(&target)
                 .partial_cmp(&a.fitness_distance(&target))
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
         chromosomes.sort_unstable_by(|a, b| {
             b.fitness_distance(&target)
                 .partial_cmp(&a.fitness_distance(&target))

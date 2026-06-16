@@ -341,7 +341,7 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
                 .collect();
 
             // Evaluate new population
-            #[cfg(not(target_arch = "wasm32"))]
+            #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
             {
                 use rayon::prelude::*;
                 let fitness_fn = Arc::clone(&self.fitness_fn);
@@ -353,7 +353,7 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
                     ind.set_fitness(f);
                 }
             }
-            #[cfg(target_arch = "wasm32")]
+            #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
             {
                 for ind in &mut new_pop {
                     let f = (self.fitness_fn)(ind.dna());
@@ -667,7 +667,7 @@ where
                 .collect();
 
             // Evaluate fitness
-            #[cfg(not(target_arch = "wasm32"))]
+            #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
             {
                 use rayon::prelude::*;
                 let fitness_fn = Arc::clone(&self.fitness_fn);
@@ -679,7 +679,7 @@ where
                     ind.set_fitness(f);
                 }
             }
-            #[cfg(target_arch = "wasm32")]
+            #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
             {
                 for ind in &mut new_pop {
                     let f = (self.fitness_fn)(ind.dna());

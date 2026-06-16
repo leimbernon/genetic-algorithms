@@ -51,11 +51,14 @@ fn main() {
         .and_then(|v| v.parse::<u64>().ok());
 
     if let Some(s) = seed_opt {
-        // Fix rayon to single thread for reproducible RNG counter ordering.
-        rayon::ThreadPoolBuilder::new()
-            .num_threads(1)
-            .build_global()
-            .ok(); // ignore error if pool already initialized
+        #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
+        {
+            // Fix rayon to single thread for reproducible RNG counter ordering.
+            rayon::ThreadPoolBuilder::new()
+                .num_threads(1)
+                .build_global()
+                .ok(); // ignore error if pool already initialized
+        }
         // Pre-set seed for initialization function (runs before ga.run()).
         rng::set_seed(Some(s));
     }

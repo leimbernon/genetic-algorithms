@@ -9,7 +9,7 @@ pub(crate) use crate::{
     configuration::{LimitConfiguration, ProblemSolving},
     traits::ChromosomeT,
 };
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
 use rayon::prelude::*;
 
 /// Fitness-based survivor selection: sorts the combined population by fitness
@@ -43,13 +43,13 @@ pub fn fitness_based<U: ChromosomeT>(
     crate::log_debug!(target="survivor_events", method="fitness_based"; "Starting fitness based survivor method");
     if limit_configuration.problem_solving != ProblemSolving::FixedFitness {
         //We sort the chromosomes by their fitness if there is not a fixed fitness problem
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
         chromosomes.par_sort_unstable_by(|a, b| {
             b.fitness()
                 .partial_cmp(&a.fitness())
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
         chromosomes.sort_unstable_by(|a, b| {
             b.fitness()
                 .partial_cmp(&a.fitness())
@@ -58,13 +58,13 @@ pub fn fitness_based<U: ChromosomeT>(
     } else {
         //We sort the chromosomes by their distance with the fitness target in a fixed fitness problem
         let target = limit_configuration.fitness_target.unwrap_or(0.0);
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
         chromosomes.par_sort_unstable_by(|a, b| {
             b.fitness_distance(&target)
                 .partial_cmp(&a.fitness_distance(&target))
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
         chromosomes.sort_unstable_by(|a, b| {
             b.fitness_distance(&target)
                 .partial_cmp(&a.fitness_distance(&target))

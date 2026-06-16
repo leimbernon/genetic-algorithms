@@ -65,3 +65,10 @@ jobs:
 
       - name: ${{ matrix.name }}
         run: ${{ matrix.cmd }}
+
+      - name: Enforce no unconditional rayon references in src/
+        run: |
+          if grep -rn 'rayon::' src/ | grep -v '#\[cfg'; then
+            echo "ERROR: unconditional rayon:: reference found in src/ — all rayon call-sites must be cfg-gated"
+            exit 1
+          fi
