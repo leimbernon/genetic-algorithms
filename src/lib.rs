@@ -331,7 +331,7 @@ pub mod constraints;
 pub mod error;
 pub mod extension;
 pub mod fitness;
-#[path = "engines/ga.rs"]
+#[path = "engines/ga/mod.rs"]
 pub mod ga;
 #[path = "types/genotypes/mod.rs"]
 pub mod genotypes;
