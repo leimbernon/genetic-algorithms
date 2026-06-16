@@ -135,6 +135,7 @@ pub(crate) mod adaptive;
 pub(crate) mod aos;
 pub(crate) mod batch;
 pub(crate) mod cache;
+pub(crate) mod extension;
 pub(crate) mod observer;
 pub(crate) mod stats;
 pub(crate) mod stopping;
@@ -152,7 +153,8 @@ use crate::{
     configuration::{LimitConfiguration, LocalSearchConfiguration, ProblemSolving},
     operations::local_search::{LocalSearch, LocalSearchApplicationStrategy, LocalSearchMode},
     operations::{
-        crossover, extension, mutation, selection, survivor, Crossover, Extension, Mutation,
+        crossover, extension as extension_ops, mutation, selection, survivor, Crossover, Extension,
+        Mutation,
     },
     population::Population,
     traits::{
@@ -2147,10 +2149,8 @@ where
 
             // Apply extension strategy if configured and diversity is low
             if let Some(ref ext_config) = self.configuration.extension_configuration {
-                if ext_config.method != Extension::Noop
-                    && gen_stats.diversity < ext_config.diversity_threshold
-                {
-                    extension::factory(
+                if extension::should_trigger_extension(ext_config, gen_stats.diversity) {
+                    extension_ops::factory(
                         ext_config.method,
                         &mut self.population.chromosomes,
                         initial_population_size,
