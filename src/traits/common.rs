@@ -5,6 +5,7 @@
 //! orchestrators (`Ga`, `IslandGa`, `Nsga2Ga`) use during population setup.
 
 use crate::traits::{GeneT, LinearChromosome};
+#[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
 use rayon::prelude::*;
 use std::borrow::Cow;
 use std::sync::Arc;
@@ -144,7 +145,8 @@ where
     U: LinearChromosome,
     U::Gene: GeneT,
 {
-    (0..count)
+    #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
+    let result = (0..count)
         .into_par_iter()
         .map(|_| {
             build_one_chromosome(
@@ -155,5 +157,19 @@ where
                 age,
             )
         })
-        .collect()
+        .collect();
+    #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
+    let result = (0..count)
+        .into_iter()
+        .map(|_| {
+            build_one_chromosome(
+                genes_per_chromosome,
+                alleles,
+                init_fn.as_ref(),
+                fitness_fn,
+                age,
+            )
+        })
+        .collect();
+    result
 }

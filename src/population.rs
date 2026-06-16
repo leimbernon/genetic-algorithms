@@ -23,6 +23,7 @@
 
 use crate::configuration::ProblemSolving;
 use crate::traits::ChromosomeT;
+#[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
 use rayon::prelude::*;
 use std::fmt;
 use std::ops::{Index, IndexMut};
@@ -132,7 +133,14 @@ where
 
         // Calculate fitness in parallel for chromosomes that have not yet been evaluated.
         // NaN fitness indicates a chromosome whose fitness has never been computed.
+        #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
         self.chromosomes.par_iter_mut().for_each(|chromosome| {
+            if chromosome.fitness().is_nan() {
+                chromosome.calculate_fitness();
+            }
+        });
+        #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
+        self.chromosomes.iter_mut().for_each(|chromosome| {
             if chromosome.fitness().is_nan() {
                 chromosome.calculate_fitness();
             }

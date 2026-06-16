@@ -54,6 +54,7 @@ use crate::nsga2::pareto::{ParetoFront, ParetoIndividual};
 use crate::operations::mutation;
 use crate::traits::{InitializationFn, LinearChromosome, MutationOperator, VectorFitness};
 use rand::Rng;
+#[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
 use rayon::prelude::*;
 use std::sync::Arc;
 
@@ -239,8 +240,18 @@ where
             );
 
             // Wrap in ParetoIndividual and evaluate objectives via VectorFitness
+            #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
             let population: Vec<ParetoIndividual<U>> = chromosomes
                 .into_par_iter()
+                .map(|mut chrom| {
+                    chrom.calculate_fitness();
+                    let objectives = chrom.fitness_values().to_vec();
+                    ParetoIndividual::new(chrom, objectives)
+                })
+                .collect();
+            #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
+            let population: Vec<ParetoIndividual<U>> = chromosomes
+                .into_iter()
                 .map(|mut chrom| {
                     chrom.calculate_fitness();
                     let objectives = chrom.fitness_values().to_vec();
@@ -340,10 +351,16 @@ where
         );
 
         // Initial ranking for all islands
+        #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
         {
-            use rayon::prelude::*;
             self.islands
                 .par_iter_mut()
+                .for_each(|island| Self::rank_and_crowd(island));
+        }
+        #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
+        {
+            self.islands
+                .iter_mut()
                 .for_each(|island| Self::rank_and_crowd(island));
         }
 
@@ -377,13 +394,13 @@ where
     /// 4. Environmental selection: sort by (rank asc, crowding desc), truncate to `pop_size`.
     fn evolve_islands_one_generation(&mut self, pop_size: usize) -> Result<(), GaError> {
         use crate::operations::crossover;
-        use rayon::prelude::*;
 
         let crossover_config = self.ga_config.crossover_configuration;
         let mutation_config = self.ga_config.mutation_configuration.clone();
         let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
         let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
 
+        #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
         self.islands.par_iter_mut().try_for_each(|island| {
             let mut rng = crate::rng::make_rng();
             let mut offspring: Vec<ParetoIndividual<U>> = Vec::with_capacity(pop_size);
@@ -444,7 +461,70 @@ where
             island.truncate(pop_size);
 
             Ok(())
-        })
+        })?;
+        #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
+        self.islands.iter_mut().try_for_each(|island| {
+            let mut rng = crate::rng::make_rng();
+            let mut offspring: Vec<ParetoIndividual<U>> = Vec::with_capacity(pop_size);
+
+            while offspring.len() < pop_size {
+                // Binary tournament selection
+                let parent_a = binary_tournament(island, &mut rng);
+                let parent_b = binary_tournament(island, &mut rng);
+
+                let p: f64 = rng.random();
+                let mut children = if p <= crossover_prob {
+                    crossover::factory(
+                        &island[parent_a].chromosome,
+                        &island[parent_b].chromosome,
+                        crossover_config,
+                    )?
+                } else {
+                    vec![
+                        island[parent_a].chromosome.clone(),
+                        island[parent_b].chromosome.clone(),
+                    ]
+                };
+
+                // Mutation
+                for child in children.iter_mut() {
+                    let mp: f64 = rng.random();
+                    if mp <= mut_prob {
+                        mutation_config.method.mutate(child, &mutation_config.method)?;
+                    }
+                }
+
+                // Evaluate objectives via VectorFitness and wrap in ParetoIndividual
+                for mut child in children {
+                    child.calculate_fitness();
+                    let objectives = child.fitness_values().to_vec();
+                    offspring.push(ParetoIndividual::new(child, objectives));
+                    if offspring.len() >= pop_size {
+                        break;
+                    }
+                }
+            }
+
+            // Combine parent + offspring
+            island.extend(offspring);
+
+            // Non-dominated sort + crowding on combined
+            Self::rank_and_crowd(island);
+
+            // Environmental selection: sort by (rank asc, crowding desc), truncate
+            island.sort_by(|a, b| {
+                a.rank.cmp(&b.rank).then_with(|| {
+                    b.crowding_distance
+                        .partial_cmp(&a.crowding_distance)
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                })
+            });
+
+            island.truncate(pop_size);
+
+            Ok(())
+        })?;
+        Ok(())
     }
 
     /// Merges all islands and returns the global Pareto front (rank-0 individuals).
