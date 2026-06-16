@@ -89,7 +89,7 @@ The concrete operator structs live in `src/operations/<type>/` subdirectories. C
 
 | Engine | Module | Description |
 |--------|--------|-------------|
-| `Ga<U>` | `src/engines/ga.rs` | Single-population single-objective GA. The primary entry point. |
+| `Ga<U>` | `src/engines/ga/` | Single-population single-objective GA. The primary entry point. Split from a single 3342-line file in Phase 69 Action #4 into 11 submodules (mod.rs, lifecycle.rs, generation.rs, adaptive.rs, aos.rs, extension.rs, cache.rs, batch.rs, stats.rs, observer.rs, stopping.rs). See `.planning/intel/ga-internals.md` for per-submodule responsibilities and visibility rules. |
 | `Nsga2Ga<U>` | `src/engines/nsga2/` | NSGA-II for multi-objective optimization. Uses `ParetoIndividual<U>` wrapper, non-dominated sorting, and crowding-distance survivor selection. |
 | `Nsga3Ga<U>` | `src/engines/nsga3/` | NSGA-III: reference-point based selection for many-objective (3+) problems with Das-Dennis weights and ASF normalization. |
 | `MoeaDGa<U>` | `src/engines/moead/` | MOEA/D: decomposes the multi-objective problem into scalar sub-problems via Tchebycheff, PBI, or weighted-sum aggregation. |
@@ -142,7 +142,18 @@ The engine-specific `IslandGaObserver<U>` and `Nsga2Observer<U>` traits extend t
 ```
 src/
 ├── engines/           # GA engine orchestrators
-│   ├── ga.rs          # Single-objective GA (Ga<U>)
+│   ├── ga/            # Single-objective GA (Ga<U>) — 11 submodules (Phase 69 Action #4)
+│   │   ├── mod.rs         # Ga struct, builders, build, run, run_with_callback, stats, hall_of_fame
+│   │   ├── lifecycle.rs   # init_population, initialize_random, initialize_with_seeds, finalise helpers
+│   │   ├── generation.rs  # Per-generation loop body (selection → crossover → mutation → survivor → elitism → niching → best-update)
+│   │   ├── adaptive.rs    # Adaptive crossover/mutation probability updates
+│   │   ├── aos.rs         # Adaptive Operator Selection credit/reward updates
+│   │   ├── extension.rs   # Extension trigger and diversity-check helper
+│   │   ├── cache.rs       # Fitness cache lookup and insertion helpers
+│   │   ├── batch.rs       # batch_evaluate<U>() free function
+│   │   ├── stats.rs       # GenerationStats collection per generation
+│   │   ├── observer.rs    # Observer hook dispatch (dispatch() free function)
+│   │   └── stopping.rs    # limit_reached<U>() and stopping criteria check
 │   ├── nsga2/         # NSGA-II multi-objective engine
 │   ├── nsga3/         # NSGA-III many-objective engine
 │   ├── moead/         # MOEA/D decomposition-based engine

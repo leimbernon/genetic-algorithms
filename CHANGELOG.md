@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI now installs and uses `mold` as the Linux linker in `rust-unit-tests.yml`, `coverage.yml`, `rust-clippy.yml`, `examples-smoke.yml`. `.cargo/config.toml` declares `linker = "clang"` + `-fuse-ld=mold` for `x86_64-unknown-linux-gnu`; a commented-out lld block documents the macOS opt-in. WASM block preserved. (Phase 67 / Plan 67-03)
 - CI now uses `mozilla-actions/sccache-action@v0.0.9` with `RUSTC_WRAPPER=sccache` across five workflows (`rust-unit-tests.yml`, `coverage.yml`, `wasm-check.yml`, `rust-clippy.yml`, `examples-smoke.yml`). Cache hit-rate logged via `sccache --show-stats`. `build-perf-gate.yml` intentionally excluded to preserve cold-build measurements. (Phase 67 / Plan 67-04)
 - Bench harness migrated from criterion to divan (Phase 69 Action #7). All 13 bench files (`selection`, `crossover`, `mutation`, `survivor`, `ga_run`, `nsga2`, `island_ga`, `de`, `scatter`, `alps`, `cellular`, `rastrigin`, `metrics_observer`) ported to divan 0.1.21. criterion removed from `[dev-dependencies]`. No public-API change. (Phase 69 / Plan 69-01)
+- `src/engines/ga.rs` (3342 lines) split into 11 submodules under `src/engines/ga/`: `mod.rs` (orchestrator), `lifecycle.rs`, `generation.rs`, `adaptive.rs`, `aos.rs`, `extension.rs`, `cache.rs`, `batch.rs`, `stats.rs`, `observer.rs`, `stopping.rs`. No API change; zero semantic change verified via cargo expand symbol diff and 1661 passing tests. Phase 69 Action #4. See `.planning/intel/ga-internals.md` for per-submodule responsibilities and visibility rules.
 
 ### Removed
 
@@ -98,6 +99,7 @@ v3.0.0 is a major release focused on **advanced representations, alternative met
 - Non-breaking directory reorganization: `src/engines/`, `src/types/`, `src/observe/`, `src/traits/` are the canonical sub-trees; `src/lib.rs` re-exports via `#[path]` aliases so the public API path is unchanged.
 - `lib.rs` engine catalog and "When to Use Which Engine" decision table refreshed to cover all 17 engines.
 - Repo hygiene: `*.log` added to `.gitignore`; stray `server.log` removed from working tree.
+
 
 ---
 
