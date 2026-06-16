@@ -132,6 +132,7 @@
 //! - Holland, J. H. (1975). *Adaptation in Natural and Artificial Systems.*
 
 pub(crate) mod cache;
+pub(crate) mod stats;
 pub(crate) mod stopping;
 
 use crate::aos::AosState;
@@ -2130,7 +2131,7 @@ where
 
             // Collect per-generation statistics
             let mut gen_stats =
-                GenerationStats::from_fitness_values(i, &fitness_values, is_maximization);
+                stats::collect_generation_stats(i, &fitness_values, is_maximization);
 
             // Update dynamic mutation probability based on population diversity
             if self.configuration.mutation_configuration.dynamic_mutation {
