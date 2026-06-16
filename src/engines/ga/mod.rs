@@ -132,6 +132,7 @@
 //! - Holland, J. H. (1975). *Adaptation in Natural and Artificial Systems.*
 
 pub(crate) mod adaptive;
+pub(crate) mod aos;
 pub(crate) mod batch;
 pub(crate) mod cache;
 pub(crate) mod observer;
@@ -1597,20 +1598,11 @@ where
         }
 
         // Initialize AOS state if portfolios are configured (Phase 43)
-        if let Some(ref xover_pf) = self.configuration.crossover_portfolio {
-            self.aos_crossover = Some(Mutex::new(AosState::new(
-                xover_pf.len(),
-                self.configuration.aos_strategy.clone(),
-                self.configuration.aos_reward_window,
-            )));
-        }
-        if let Some(ref mut_pf) = self.configuration.mutation_portfolio {
-            self.aos_mutation = Some(Mutex::new(AosState::new(
-                mut_pf.len(),
-                self.configuration.aos_strategy.clone(),
-                self.configuration.aos_reward_window,
-            )));
-        }
+        aos::init_aos_state(
+            &self.configuration,
+            &mut self.aos_crossover,
+            &mut self.aos_mutation,
+        );
 
         // Initialize dynamic mutation probability
         if self.configuration.mutation_configuration.dynamic_mutation {
