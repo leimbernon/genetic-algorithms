@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **`parallel` feature (default-on)**. Disable via `default-features = false` to shed rayon + crossbeam dependencies for embedded / wasm-only builds. All rayon call-sites are gated under `#[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]`; sequential fallbacks are provided under `#[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]`. Phase 69 Action #3.
+
+### Changed
+
+- Bench harness migrated from criterion to divan (Phase 69 Action #7). All 13 bench files (`selection`, `crossover`, `mutation`, `survivor`, `ga_run`, `nsga2`, `island_ga`, `de`, `scatter`, `alps`, `cellular`, `rastrigin`, `metrics_observer`) ported to divan 0.1.21. criterion removed from `[dev-dependencies]`. No public-API change. (Phase 69 / Plan 69-01)
+- `src/engines/ga.rs` (3342 lines) split into 11 submodules under `src/engines/ga/`: `mod.rs` (orchestrator), `lifecycle.rs`, `generation.rs`, `adaptive.rs`, `aos.rs`, `extension.rs`, `cache.rs`, `batch.rs`, `stats.rs`, `observer.rs`, `stopping.rs`. No API change; zero semantic change verified via cargo expand symbol diff and 1661 passing tests. Phase 69 Action #4. See `.planning/intel/ga-internals.md` for per-submodule responsibilities and visibility rules.
+
+### Removed
+
+---
+
 ## [2.4.0] - 2026-05-18
 
 ### Added
