@@ -131,6 +131,7 @@
 //! - Goldberg, D. E. (1989). *Genetic Algorithms in Search, Optimization, and Machine Learning.*
 //! - Holland, J. H. (1975). *Adaptation in Natural and Artificial Systems.*
 
+pub(crate) mod cache;
 pub(crate) mod stopping;
 
 use crate::aos::AosState;
@@ -1684,13 +1685,8 @@ where
         for i in start_gen..total_gens {
             age += 1;
             // D-07: snapshot cache counters before this generation so we can compute deltas.
-            let (prev_cache_hits, prev_cache_misses) = match &self.fitness_cache {
-                Some(ch) => {
-                    let c = ch.lock().expect("fitness cache lock poisoned");
-                    (c.hits(), c.misses())
-                }
-                None => (0, 0),
-            };
+            let (prev_cache_hits, prev_cache_misses) =
+                cache::cache_snapshot(&self.fitness_cache);
 
             self.notify(|obs| obs.on_generation_start(i));
 
@@ -2173,11 +2169,12 @@ where
             }
 
             // D-07: populate per-generation cache delta stats when a cache is active.
-            if let Some(ref ch) = self.fitness_cache {
-                let c = ch.lock().expect("fitness cache lock poisoned");
-                gen_stats.cache_hits = Some(c.hits().saturating_sub(prev_cache_hits));
-                gen_stats.cache_misses = Some(c.misses().saturating_sub(prev_cache_misses));
-            }
+            cache::cache_fill_stats(
+                &self.fitness_cache,
+                &mut gen_stats,
+                prev_cache_hits,
+                prev_cache_misses,
+            );
 
             // D-08: populate true_fitness_calls — Some(n) when surrogate ran this generation,
             // None otherwise (mirrors the cache delta pattern above).
