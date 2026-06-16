@@ -132,6 +132,7 @@
 //! - Holland, J. H. (1975). *Adaptation in Natural and Artificial Systems.*
 
 pub(crate) mod cache;
+pub(crate) mod observer;
 pub(crate) mod stats;
 pub(crate) mod stopping;
 
@@ -959,9 +960,7 @@ where
     /// Dispatches an observer hook if an observer is attached. No-op when `self.observer` is `None`.
     #[inline]
     fn notify<F: FnOnce(&dyn GaObserver<U>)>(&self, f: F) {
-        if let Some(ref obs) = self.observer {
-            f(obs.as_ref());
-        }
+        observer::dispatch(&self.observer, f);
     }
 
     /// Enables an LRU fitness cache with the given capacity.
