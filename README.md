@@ -94,6 +94,18 @@ genetic_algorithms = { version = "3.0.0", default-features = false }
 
 The `logging` feature is on by default. Disabling it removes the `log` dependency and causes all internal log emissions to expand to `()` at compile time. `LogObserver` is also unavailable without this feature.
 
+The `parallel` feature is also on by default. Disable via `default-features = false` to shed the `rayon` + `crossbeam` dependencies for embedded / wasm-only builds:
+
+```toml
+# Disable rayon for wasm-only or embedded builds
+genetic_algorithms = { version = "3.0.0", default-features = false, features = ["logging"] }
+```
+
+| Feature | Description | Default |
+|---------|-------------|---------|
+| `logging` | `log` crate events via `LogObserver` | **On** |
+| `parallel` | Parallel fitness evaluation via rayon (default-on; disable to shed rayon + crossbeam dependencies for embedded / wasm-only builds) | **On** |
+
 ## Quick Start
 
 Minimal GA using `Range<f64>` chromosomes, minimizing the Rastrigin function:

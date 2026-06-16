@@ -76,6 +76,7 @@ v3.0.0 is a major release focused on **advanced representations, alternative met
 
 ### Added — Dependency hygiene
 - **`logging` feature (default-on)**. Disable via `default-features = false` to shed the `log` crate entirely for ultra-lean / embedded / wasm-only builds. The library uses an internal macro family (`crate::log_info!`, `crate::log_debug!`, `crate::log_trace!`, `crate::log_warn!`, `crate::log_error!`) that expands to `::log::*` when the feature is enabled and to `()` when disabled. `LogObserver` is only available when `logging` is on. (Phase 68 / Plan 68-02)
+- **`parallel` feature (default-on)**. Disable via `default-features = false` to shed rayon + crossbeam dependencies for embedded / wasm-only builds. All rayon call-sites are gated under `#[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]`; sequential fallbacks are provided under `#[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]`. Phase 69 Action #3.
 
 ### Changed (breaking)
 - **Library no longer auto-installs `env_logger`**. Apps wanting log output must call `env_logger::init()` (or any other `log` subscriber) themselves in `main()`. Sheds ~12 transitive deps; `env_logger` is now a dev-dependency only. (Phase 68 / Plan 68-01)
