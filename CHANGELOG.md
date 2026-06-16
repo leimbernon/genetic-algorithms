@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI switched from `cargo test` to `cargo nextest run` in `rust-unit-tests.yml`, `coverage.yml` (`cargo llvm-cov nextest`), and installs nextest in `wasm-check.yml` for future-proofing. Local `cargo test` workflow unchanged. (Phase 67 / Plan 67-02)
 - CI now installs and uses `mold` as the Linux linker in `rust-unit-tests.yml`, `coverage.yml`, `rust-clippy.yml`, `examples-smoke.yml`. `.cargo/config.toml` declares `linker = "clang"` + `-fuse-ld=mold` for `x86_64-unknown-linux-gnu`; a commented-out lld block documents the macOS opt-in. WASM block preserved. (Phase 67 / Plan 67-03)
 - CI now uses `mozilla-actions/sccache-action@v0.0.9` with `RUSTC_WRAPPER=sccache` across five workflows (`rust-unit-tests.yml`, `coverage.yml`, `wasm-check.yml`, `rust-clippy.yml`, `examples-smoke.yml`). Cache hit-rate logged via `sccache --show-stats`. `build-perf-gate.yml` intentionally excluded to preserve cold-build measurements. (Phase 67 / Plan 67-04)
+- Bench harness migrated from criterion to divan (Phase 69 Action #7). All 13 bench files (`selection`, `crossover`, `mutation`, `survivor`, `ga_run`, `nsga2`, `island_ga`, `de`, `scatter`, `alps`, `cellular`, `rastrigin`, `metrics_observer`) ported to divan 0.1.21. criterion removed from `[dev-dependencies]`. No public-API change. (Phase 69 / Plan 69-01)
 
 ### Removed
 
