@@ -1,4 +1,4 @@
-//! Extracted from src/engines/ga.rs in phase 69-04 — batch_evaluate<U>() helper.
+//! Extracted from src/engines/ga.rs in phase 69-04 — `batch_evaluate` helper.
 
 use super::*;
 

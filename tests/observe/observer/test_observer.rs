@@ -338,10 +338,11 @@ fn test_log_observer_crate_reexport() {
     let _obs = genetic_algorithms::LogObserver;
 }
 
-/// Regression: no direct info!/debug!/trace! calls remain in ga.rs
+/// Regression: no direct info!/debug!/trace! calls remain in engines/ga/mod.rs
+/// (ga.rs was split into engines/ga/ directory module in phase 69-04)
 #[test]
 fn test_ga_has_no_direct_log_calls() {
-    let ga_source = include_str!("../../../src/engines/ga.rs");
+    let ga_source = include_str!("../../../src/engines/ga/mod.rs");
     // Count occurrences of direct log macro invocations
     // The only allowed log call is log::warn! inside #[cfg(feature = "serde")]
     for line in ga_source.lines() {
