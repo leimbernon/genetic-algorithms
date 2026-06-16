@@ -57,6 +57,7 @@ plotters = { version = "0.3.7", default-features = false, features = ["svg_backe
 
 [dev-dependencies]
 criterion = "0.8.2"
+divan = "0.1.21"
 env_logger = "0.11.5"
 serde_json = { version = "1", features = ["unbounded_depth"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
