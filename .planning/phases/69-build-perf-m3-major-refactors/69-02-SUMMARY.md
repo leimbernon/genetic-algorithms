@@ -128,6 +128,17 @@ None — the three Pattern B files were straightforward to gate. The `evolve_isl
 - After 69-03 lands, `cargo test --no-default-features --features logging` will pass and parallel-off CI will go green
 - WASM check (`cargo check --target wasm32-unknown-unknown --lib`) passes after this plan
 
+## Self-Check: PASSED
+
+- SUMMARY.md exists at `.planning/phases/69-build-perf-m3-major-refactors/69-02-SUMMARY.md`
+- Commit 27090f2 exists (build: Cargo.toml parallel feature)
+- Commit 670baeb exists (fix: three ungated rayon imports gated)
+- Commit 3cac835 exists (ci: parallel-off CI matrix entry)
+- All Cargo.toml acceptance criteria grep checks return 1
+- All D-06 parallel arm import gates return 1 per file
+- Sequential arm count: population.rs=1, common.rs=1, nsga2.rs=3 (total 5, >= 3 required)
+- Forbidden form count: 0 in all three files
+
 ---
 *Phase: 69-build-perf-m3-major-refactors*
 *Completed: 2026-06-16*
