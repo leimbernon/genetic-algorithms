@@ -1,7 +1,3 @@
-use criterion::{
-    criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion, PlotConfiguration,
-};
-
 use genetic_algorithms::fitness::FitnessFnWrapper;
 use rand::seq::SliceRandom;
 use rand::Rng;
@@ -122,85 +118,73 @@ fn setup_random_pair(gene_length: usize) -> (SimpleChromosome, SimpleChromosome)
     (make(), make())
 }
 
-#[cfg(not(tarpaulin_include))]
-fn benchmark_crossover_methods(c: &mut Criterion) {
-    let gene_lengths = vec![10, 100, 1000];
-    let crossover_points = vec![1, 2, 3];
+mod crossover_methods {
+    use super::*;
 
-    let mut group = c.benchmark_group("crossover_methods");
-    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
-
-    for &gene_length in &gene_lengths {
+    #[cfg(not(tarpaulin_include))]
+    #[divan::bench(args = [10usize, 100, 1000])]
+    fn cycle(bencher: divan::Bencher, gene_length: usize) {
         let (perm_p1, perm_p2) = setup_permutation_pair(gene_length);
-        let (rand_p1, rand_p2) = setup_random_pair(gene_length);
-
-        // Cycle crossover (requires permutation parents)
-        group.bench_with_input(
-            BenchmarkId::new("cycle", format!("genes_{}", gene_length)),
-            &gene_length,
-            |b, _| {
-                b.iter(|| {
-                    let _ = cycle(&perm_p1, &perm_p2);
-                });
-            },
-        );
-
-        // Order crossover (requires permutation parents)
-        group.bench_with_input(
-            BenchmarkId::new("order", format!("genes_{}", gene_length)),
-            &gene_length,
-            |b, _| {
-                b.iter(|| {
-                    let _ = order(&perm_p1, &perm_p2);
-                });
-            },
-        );
-
-        // Single-point crossover
-        group.bench_with_input(
-            BenchmarkId::new("single_point", format!("genes_{}", gene_length)),
-            &gene_length,
-            |b, _| {
-                b.iter(|| {
-                    let _ = single_point(&rand_p1, &rand_p2);
-                });
-            },
-        );
-
-        // Multipoint crossover (various point counts)
-        for &points in &crossover_points {
-            group.bench_with_input(
-                BenchmarkId::new(
-                    "multipoint",
-                    format!("genes_{}_points_{}", gene_length, points),
-                ),
-                &gene_length,
-                |b, _| {
-                    b.iter(|| {
-                        let _ = multipoint(&rand_p1, &rand_p2, points);
-                    });
-                },
-            );
-        }
-
-        // Uniform crossover
-        group.bench_with_input(
-            BenchmarkId::new("uniform", format!("genes_{}", gene_length)),
-            &gene_length,
-            |b, _| {
-                b.iter(|| {
-                    let _ = uniform(&rand_p1, &rand_p2);
-                });
-            },
-        );
+        bencher.bench(|| {
+            let _ = super::cycle(&perm_p1, &perm_p2);
+        });
     }
-    group.finish();
+
+    #[cfg(not(tarpaulin_include))]
+    #[divan::bench(args = [10usize, 100, 1000])]
+    fn order(bencher: divan::Bencher, gene_length: usize) {
+        let (perm_p1, perm_p2) = setup_permutation_pair(gene_length);
+        bencher.bench(|| {
+            let _ = super::order(&perm_p1, &perm_p2);
+        });
+    }
+
+    #[cfg(not(tarpaulin_include))]
+    #[divan::bench(args = [10usize, 100, 1000])]
+    fn single_point(bencher: divan::Bencher, gene_length: usize) {
+        let (rand_p1, rand_p2) = setup_random_pair(gene_length);
+        bencher.bench(|| {
+            let _ = super::single_point(&rand_p1, &rand_p2);
+        });
+    }
+
+    #[cfg(not(tarpaulin_include))]
+    #[divan::bench(args = [10usize, 100, 1000])]
+    fn multipoint_1(bencher: divan::Bencher, gene_length: usize) {
+        let (rand_p1, rand_p2) = setup_random_pair(gene_length);
+        bencher.bench(|| {
+            let _ = super::multipoint(&rand_p1, &rand_p2, 1);
+        });
+    }
+
+    #[cfg(not(tarpaulin_include))]
+    #[divan::bench(args = [10usize, 100, 1000])]
+    fn multipoint_2(bencher: divan::Bencher, gene_length: usize) {
+        let (rand_p1, rand_p2) = setup_random_pair(gene_length);
+        bencher.bench(|| {
+            let _ = super::multipoint(&rand_p1, &rand_p2, 2);
+        });
+    }
+
+    #[cfg(not(tarpaulin_include))]
+    #[divan::bench(args = [10usize, 100, 1000])]
+    fn multipoint_3(bencher: divan::Bencher, gene_length: usize) {
+        let (rand_p1, rand_p2) = setup_random_pair(gene_length);
+        bencher.bench(|| {
+            let _ = super::multipoint(&rand_p1, &rand_p2, 3);
+        });
+    }
+
+    #[cfg(not(tarpaulin_include))]
+    #[divan::bench(args = [10usize, 100, 1000])]
+    fn uniform(bencher: divan::Bencher, gene_length: usize) {
+        let (rand_p1, rand_p2) = setup_random_pair(gene_length);
+        bencher.bench(|| {
+            let _ = super::uniform(&rand_p1, &rand_p2);
+        });
+    }
 }
 
-criterion_group! {
-    name = crossover_benchmarks;
-    config = Criterion::default();
-    targets = benchmark_crossover_methods
+fn main() {
+    divan::main();
 }
-
-criterion_main!(crossover_benchmarks);

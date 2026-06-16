@@ -1,5 +1,3 @@
-use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
-
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::Ga;
@@ -74,35 +72,21 @@ fn build_rastrigin_ga(
 // Benchmarks
 // ---------------------------------------------------------------------------
 
-#[cfg(not(tarpaulin_include))]
-fn benchmark_rastrigin(c: &mut Criterion) {
-    let mut group = c.benchmark_group("rastrigin");
+mod rastrigin {
+    use super::*;
 
-    let dims = vec![10usize, 20, 50];
-
-    for &dim in &dims {
-        group.bench_with_input(
-            BenchmarkId::new("Ga::run", format!("pop_500_dim_{}", dim)),
-            &dim,
-            |b, &d| {
-                b.iter_batched(
-                    || build_rastrigin_ga(500, d, 50),
-                    |mut ga| {
-                        let _ = ga.run();
-                    },
-                    BatchSize::SmallInput,
-                );
-            },
-        );
+    /// args = dims; pop_size=500, max_generations=50 fixed
+    #[cfg(not(tarpaulin_include))]
+    #[divan::bench(args = [10usize, 20, 50])]
+    fn ga_run(bencher: divan::Bencher, dim: usize) {
+        bencher
+            .with_inputs(|| build_rastrigin_ga(500, dim, 50))
+            .bench_values(|mut ga| {
+                let _ = ga.run();
+            });
     }
-
-    group.finish();
 }
 
-criterion_group! {
-    name = rastrigin_benchmarks;
-    config = Criterion::default();
-    targets = benchmark_rastrigin
+fn main() {
+    divan::main();
 }
-
-criterion_main!(rastrigin_benchmarks);
