@@ -131,6 +131,7 @@
 //! - Goldberg, D. E. (1989). *Genetic Algorithms in Search, Optimization, and Machine Learning.*
 //! - Holland, J. H. (1975). *Adaptation in Natural and Artificial Systems.*
 
+pub(crate) mod adaptive;
 pub(crate) mod batch;
 pub(crate) mod cache;
 pub(crate) mod observer;
@@ -2134,40 +2135,11 @@ where
                 stats::collect_generation_stats(i, &fitness_values, is_maximization);
 
             // Update dynamic mutation probability based on population diversity
-            if self.configuration.mutation_configuration.dynamic_mutation {
-                let target = self
-                    .configuration
-                    .mutation_configuration
-                    .target_cardinality
-                    .unwrap_or(0.5);
-                let step = self
-                    .configuration
-                    .mutation_configuration
-                    .probability_step
-                    .unwrap_or(0.01);
-                let p_max = self
-                    .configuration
-                    .mutation_configuration
-                    .probability_max
-                    .unwrap_or(1.0);
-                let p_min = self
-                    .configuration
-                    .mutation_configuration
-                    .probability_min
-                    .unwrap_or(0.0);
-
-                self.dynamic_mutation_probability = mutation::dynamic_probability(
-                    self.dynamic_mutation_probability,
-                    gen_stats.diversity,
-                    target,
-                    step,
-                    p_max,
-                    p_min,
-                );
-
-                // Set the field directly on gen_stats before push (no last_mut needed)
-                gen_stats.dynamic_mutation_probability = Some(self.dynamic_mutation_probability);
-            }
+            adaptive::update_dynamic_mutation(
+                &self.configuration.mutation_configuration,
+                &mut self.dynamic_mutation_probability,
+                &mut gen_stats,
+            );
 
             // D-07: populate per-generation cache delta stats when a cache is active.
             cache::cache_fill_stats(
