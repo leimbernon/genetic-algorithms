@@ -275,6 +275,25 @@ pub enum TerminationCause {
 /// - Manage configuration, alleles, population and termination state.
 /// - Provide builder-like configuration methods (`ConfigurationT`) to compose the run.
 /// - Coordinate the GA cycle: initialization, selection, crossover, mutation, survivor, evaluation.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::ga::Ga;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+/// use genetic_algorithms::traits::ConfigurationT;
+///
+/// let engine = Ga::<Binary>::new()
+///     .with_population_size(100)
+///     .with_max_generations(500)
+///     .with_selection_method(Selection::Tournament)
+///     .with_crossover_method(Crossover::Uniform)
+///     .with_mutation_method(Mutation::BitFlip)
+///     .with_survivor_method(Survivor::Fitness)
+///     .build()
+///     .expect("Invalid configuration");
+/// ```
 pub struct Ga<U>
 where
     U: LinearChromosome,
