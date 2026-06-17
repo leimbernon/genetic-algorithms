@@ -123,7 +123,7 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 - [x] **Phase 66: Build-perf foundations** — Baseline harness (`bench/build_perf.sh`), feature-matrix CI workflow, and deterministic golden-output regression tests. Foundation for Phases 67–69; nothing user-facing. (completed 2026-06-14)
 - [x] **Phase 67: Build-perf M1 (config quick wins)** — `[profile.dev]` / `[profile.test]` tuning, `cargo-nextest` on CI, explicit `mold`/`lld` linker config, `sccache` on CI runners. (completed 2026-06-14)
 - [x] **Phase 68: Build-perf M2 (dep hygiene)** — Remove `env_logger` auto-install (anti-pattern), move `env_logger` to dev-deps, gate `log` behind `logging` feature (default-on). Folded into v3.0.0 breaking-change set. (completed 2026-06-15)
-- [ ] **Phase 69: Build-perf M3 (major refactors)** — `criterion` → `divan` bench harness migration, `parallel` feature gating `rayon`, split `engines/ga.rs` (139 KB) into cohesive submodules under `engines/ga/`.
+- [x] **Phase 69: Build-perf M3 (major refactors)** — `criterion` → `divan` bench harness migration, `parallel` feature gating `rayon`, split `engines/ga.rs` (139 KB) into cohesive submodules under `engines/ga/`. (completed 2026-06-17)
 - [x] **Phase 52: Variable-Length Chromosomes** — `ChromosomeLength::Variable { min, max }`; `Mutation::Insertion` / `Mutation::Deletion`; `Crossover::VariableLength(AlignmentStrategy)`; parsimony pressure survivor config (completed 2026-05-24)
 - [x] **Phase 53: Tree Chromosome + GpGa Engine** — `TreeChromosome: ChromosomeT` supertrait; `GpGa<U>` engine; ramped half-and-half init; subtree crossover + mutation; bloat control; serde with `serde_stacker`; `Display` as expression string (completed 2026-05-25)
 
