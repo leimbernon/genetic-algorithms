@@ -7,7 +7,6 @@
 
 use crate::error::GaError;
 use crate::traits::LinearChromosome;
-use log::debug;
 use rand::Rng;
 use std::borrow::Cow;
 
@@ -37,10 +36,19 @@ use std::borrow::Cow;
 /// # Returns
 ///
 /// `Ok(())` on success.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::insertion::insertion_mutation;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let mut chromosome = Binary::new();
+/// let _ = insertion_mutation(&mut chromosome);
+/// ```
 pub fn insertion_mutation<U: LinearChromosome>(individual: &mut U) -> Result<(), GaError> {
     let len = individual.dna().len();
     if len < 2 {
-        debug!(target="mutation_events", method="insertion"; "DNA length < 2, skipping insertion mutation");
+        crate::log_debug!(target="mutation_events", method="insertion"; "DNA length < 2, skipping insertion mutation");
         return Ok(());
     }
 
@@ -53,7 +61,7 @@ pub fn insertion_mutation<U: LinearChromosome>(individual: &mut U) -> Result<(),
         j = rng.random_range(0..len);
     }
 
-    debug!(target="mutation_events", method="insertion"; "Starting insertion mutation: remove gene at {} and insert near {}", j, i);
+    crate::log_debug!(target="mutation_events", method="insertion"; "Starting insertion mutation: remove gene at {} and insert near {}", j, i);
 
     let mut dna = individual.dna().to_vec();
 
@@ -78,6 +86,6 @@ pub fn insertion_mutation<U: LinearChromosome>(individual: &mut U) -> Result<(),
 
     individual.set_dna(Cow::Owned(dna));
 
-    debug!(target="mutation_events", method="insertion"; "Insertion mutation finished");
+    crate::log_debug!(target="mutation_events", method="insertion"; "Insertion mutation finished");
     Ok(())
 }

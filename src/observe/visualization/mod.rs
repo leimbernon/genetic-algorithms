@@ -38,6 +38,15 @@ use crate::stats::GenerationStats;
 ///
 /// Follows the [`crate::error::GaError`] style: plain enum, `Display` impl,
 /// `std::error::Error` impl. No `thiserror` macro.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::visualization::VisualizationError;
+///
+/// let err = VisualizationError::UnsupportedFormat;
+/// assert!(err.to_string().contains("png"));
+/// ```
 #[derive(Debug)]
 pub enum VisualizationError {
     /// A plotters drawing backend error (PNG encode, SVG render, file write).
@@ -306,10 +315,12 @@ where
 /// - [`VisualizationError::UnsupportedFormat`] — if the path extension is not `.png` or `.svg`
 /// - [`VisualizationError::DrawingError`] — if the plotters backend fails
 ///
-/// # Example
+/// # Examples
 ///
-/// ```ignore
+/// ```rust,no_run
 /// use genetic_algorithms::visualization::plot_fitness;
+/// use genetic_algorithms::stats::GenerationStats;
+/// let stats: Vec<GenerationStats> = vec![];
 /// plot_fitness(&stats, "output/fitness.png").unwrap();
 /// ```
 pub fn plot_fitness(stats: &[GenerationStats], path: &str) -> Result<(), VisualizationError> {
@@ -370,10 +381,12 @@ pub fn plot_fitness(stats: &[GenerationStats], path: &str) -> Result<(), Visuali
 /// - [`VisualizationError::UnsupportedFormat`] — if the path extension is not `.png` or `.svg`
 /// - [`VisualizationError::DrawingError`] — if the plotters backend fails
 ///
-/// # Example
+/// # Examples
 ///
-/// ```ignore
+/// ```rust,no_run
 /// use genetic_algorithms::visualization::plot_diversity;
+/// use genetic_algorithms::stats::GenerationStats;
+/// let stats: Vec<GenerationStats> = vec![];
 /// plot_diversity(&stats, "output/diversity.png").unwrap();
 /// ```
 pub fn plot_diversity(stats: &[GenerationStats], path: &str) -> Result<(), VisualizationError> {
@@ -436,10 +449,11 @@ pub fn plot_diversity(stats: &[GenerationStats], path: &str) -> Result<(), Visua
 /// - [`VisualizationError::UnsupportedFormat`] — if the path extension is not `.png` or `.svg`
 /// - [`VisualizationError::DrawingError`] — if the plotters backend fails
 ///
-/// # Example
+/// # Examples
 ///
-/// ```ignore
+/// ```rust,no_run
 /// use genetic_algorithms::visualization::plot_histogram;
+/// let fitness_values: Vec<f64> = vec![];
 /// plot_histogram(&fitness_values, "output/histogram.png").unwrap();
 /// ```
 pub fn plot_histogram(fitness_values: &[f64], path: &str) -> Result<(), VisualizationError> {
@@ -575,9 +589,9 @@ where
 ///   or if called on WASM with `.png`
 /// - [`VisualizationError::DrawingError`] — if the plotters backend fails
 ///
-/// # Example
+/// # Examples
 ///
-/// ```ignore
+/// ```rust,no_run
 /// use genetic_algorithms::visualization::plot_pareto_front_2d;
 /// let points = vec![(0.0_f64, 1.0), (0.5, 0.5), (1.0, 0.0)];
 /// plot_pareto_front_2d(&points, "output/pareto2d.png").unwrap();
@@ -715,9 +729,9 @@ where
 ///   or if called on WASM with `.png`
 /// - [`VisualizationError::DrawingError`] — if the plotters backend fails
 ///
-/// # Example
+/// # Examples
 ///
-/// ```ignore
+/// ```rust,no_run
 /// use genetic_algorithms::visualization::plot_pareto_front_3d;
 /// let points = vec![(0.0_f64, 0.0, 1.0), (0.5, 0.5, 0.5), (1.0, 1.0, 0.0)];
 /// plot_pareto_front_3d(&points, "output/pareto3d.png").unwrap();
@@ -836,10 +850,12 @@ where
 ///   or if called on WASM with `.png`
 /// - [`VisualizationError::DrawingError`] — if the plotters backend fails
 ///
-/// # Example
+/// # Examples
 ///
-/// ```ignore
+/// ```rust,no_run
 /// use genetic_algorithms::visualization::plot_true_fitness_calls;
+/// use genetic_algorithms::stats::GenerationStats;
+/// let stats: Vec<GenerationStats> = vec![];
 /// plot_true_fitness_calls(&stats, "output/true_fitness_calls.png").unwrap();
 /// ```
 pub fn plot_true_fitness_calls(

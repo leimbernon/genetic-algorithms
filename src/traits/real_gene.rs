@@ -20,6 +20,19 @@ use crate::traits::GeneT;
 /// `f64` may implement this trait. Used by [`DeEngine`](crate::de::DeEngine),
 /// [`ScatterEngine`](crate::scatter::ScatterEngine), and
 /// [`CmaEngine`](crate::cma::CmaEngine).
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::genotypes::Range;
+/// use genetic_algorithms::traits::{GeneT, RealGene};
+///
+/// let mut gene: Range<f64> = Default::default();
+/// gene.set_value(3.14);
+/// assert!((gene.real_value() - 3.14).abs() < 1e-10);
+/// let shifted = gene.with_real_value(2.71);
+/// assert!((shifted.real_value() - 2.71).abs() < 1e-10);
+/// ```
 pub trait RealGene: GeneT {
     /// Returns the gene's continuous value as `f64`.
     fn real_value(&self) -> f64;

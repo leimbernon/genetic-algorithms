@@ -6,7 +6,6 @@
 //! the cost of reduced diversity.
 
 use crate::traits::ChromosomeT;
-use log::{debug, trace};
 use rand::Rng;
 
 /// Truncation selection: only the top portion of the population is eligible
@@ -32,13 +31,22 @@ use rand::Rng;
 /// A vector of `Vec<usize>` parent index groups drawn exclusively from
 /// the top half of the population. Returns an empty vector if fewer than 2
 /// chromosomes are provided.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::selection::truncation_selection;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let population: Vec<Binary> = vec![Binary::new(); 10];
+/// let pairs = truncation_selection(&population, 5, 2);
+/// ```
 pub fn truncation_selection<U: ChromosomeT>(
     chromosomes: &[U],
     couples: usize,
     num_parents: usize,
 ) -> Vec<Vec<usize>> {
     let num_parents = num_parents.max(2);
-    debug!(target="selection_events", method="truncation"; "Starting truncation selection");
+    crate::log_debug!(target="selection_events", method="truncation"; "Starting truncation selection");
 
     let n = chromosomes.len();
     if n < 2 {
@@ -60,13 +68,13 @@ pub fn truncation_selection<U: ChromosomeT>(
 
     let elite = &indexed[..truncation_size];
 
-    trace!(
+    crate::log_trace!(
         target="selection_events", method="truncation";
         "Population size {}, truncation size {}", n, truncation_size
     );
 
     for &(original_idx, fit) in elite.iter() {
-        trace!(
+        crate::log_trace!(
             target="selection_events", method="truncation";
             "Elite member -> index {} fitness {}", original_idx, fit
         );
@@ -81,14 +89,14 @@ pub fn truncation_selection<U: ChromosomeT>(
         for _ in 0..num_parents {
             group.push(elite[rng.random_range(0..truncation_size)].0);
         }
-        trace!(
+        crate::log_trace!(
             target="selection_events", method="truncation";
             "Mating group: {:?}", group
         );
         mating.push(group);
     }
 
-    debug!(
+    crate::log_debug!(
         target="selection_events", method="truncation";
         "Truncation selection finished with {} groups", mating.len()
     );

@@ -24,6 +24,23 @@ use std::fmt;
 ///
 /// This enum covers configuration errors, validation errors,
 /// operator errors, and initialization errors.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::error::GaError;
+///
+/// let err = GaError::ConfigurationError("population_size must be > 0".to_string());
+/// assert!(err.to_string().contains("population_size"));
+///
+/// // GaError implements std::error::Error — use it with the ? operator:
+/// fn check(ok: bool) -> Result<(), GaError> {
+///     if ok { Ok(()) }
+///     else { Err(GaError::ValidationError("check failed".to_string())) }
+/// }
+/// assert!(check(true).is_ok());
+/// assert!(check(false).is_err());
+/// ```
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum GaError {

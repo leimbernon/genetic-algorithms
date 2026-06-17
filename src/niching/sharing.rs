@@ -1,5 +1,3 @@
-use log::debug;
-
 /// Computes the sharing function value `sh(d)` for a given distance.
 ///
 /// The sharing function is:
@@ -98,7 +96,7 @@ pub fn apply_fitness_sharing(
         }
     }
 
-    debug!(
+    crate::log_debug!(
         target: "niching_events",
         "Applied fitness sharing to {} individuals with sigma_share={}, alpha={}",
         n,
@@ -117,6 +115,21 @@ pub fn apply_fitness_sharing(
 /// # Returns
 ///
 /// A symmetric matrix (Vec of Vec) of distances.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::niching::sharing::compute_distance_matrix;
+///
+/// let a = vec![1.0_f64, 2.0];
+/// let b = vec![4.0_f64, 6.0];
+/// let matrix = compute_distance_matrix(&[&a, &b], |x, y| {
+///     x.iter().zip(y.iter()).map(|(a, b)| (a - b).powi(2)).sum::<f64>().sqrt()
+/// });
+/// assert_eq!(matrix.len(), 2);
+/// assert!((matrix[0][1] - 5.0).abs() < 1e-9);
+/// assert!((matrix[1][0] - 5.0).abs() < 1e-9);
+/// ```
 pub fn compute_distance_matrix<G, F>(dna_slices: &[&[G]], distance_fn: F) -> Vec<Vec<f64>>
 where
     F: Fn(&[G], &[G]) -> f64,
@@ -148,6 +161,18 @@ where
 /// * `distance_fn` - A function that computes distance between two DNA slices.
 /// * `sigma_share` - Sharing radius.
 /// * `alpha` - Shape parameter for the sharing function.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::niching::sharing::apply_fitness_sharing_with_dna;
+///
+/// let a = vec![0.0_f64];
+/// let b = vec![10.0_f64];
+/// let mut fitness = vec![1.0, 1.0];
+/// apply_fitness_sharing_with_dna(&mut fitness, &[&a, &b], |x, y| (x[0] - y[0]).abs(), 5.0, 1.0);
+/// assert!(fitness[0] > 0.0);
+/// ```
 pub fn apply_fitness_sharing_with_dna<G, F>(
     fitness_values: &mut [f64],
     dna_slices: &[&[G]],
@@ -182,7 +207,7 @@ pub fn apply_fitness_sharing_with_dna<G, F>(
         }
     }
 
-    debug!(
+    crate::log_debug!(
         target: "niching_events",
         "Applied fitness sharing (with_dna) to {} individuals with sigma_share={}, alpha={}",
         n,

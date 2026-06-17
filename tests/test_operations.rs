@@ -38,5 +38,6 @@ mod operations {
     mod test_survivor_deterministic_crowding;
     mod test_survivor_mu_comma_lambda;
     mod test_survivor_mu_plus_lambda;
+    mod test_crossover_factory;
 }
 mod structures;

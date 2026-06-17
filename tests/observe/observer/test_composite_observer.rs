@@ -15,6 +15,7 @@ use genetic_algorithms::island::configuration::IslandConfiguration;
 use genetic_algorithms::island::IslandGa;
 use genetic_algorithms::nsga2::configuration::Nsga2Configuration;
 use genetic_algorithms::nsga2::Nsga2Ga;
+#[cfg(feature = "logging")]
 use genetic_algorithms::observer::LogObserver;
 use genetic_algorithms::observer::{GaObserver, IslandGaObserver, Nsga2Observer};
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
@@ -146,8 +147,8 @@ fn test_composite_observer_ga_hooks() {
     let b = Arc::new(CountingAllObserver::default());
 
     let composite = CompositeObserver::<BinaryChromosome>::new()
-        .add(Arc::clone(&a) as Arc<dyn AllObserver<BinaryChromosome> + Send + Sync>)
-        .add(Arc::clone(&b) as Arc<dyn AllObserver<BinaryChromosome> + Send + Sync>);
+        .register(Arc::clone(&a) as Arc<dyn AllObserver<BinaryChromosome> + Send + Sync>)
+        .register(Arc::clone(&b) as Arc<dyn AllObserver<BinaryChromosome> + Send + Sync>);
 
     let mut ga = build_ga(Arc::new(composite), 5);
     ga.run().expect("GA run should succeed");
@@ -173,8 +174,8 @@ fn test_composite_observer_island_hooks() {
     let b = Arc::new(CountingAllObserver::default());
 
     let composite = CompositeObserver::<BinaryChromosome>::new()
-        .add(Arc::clone(&a) as Arc<dyn AllObserver<BinaryChromosome> + Send + Sync>)
-        .add(Arc::clone(&b) as Arc<dyn AllObserver<BinaryChromosome> + Send + Sync>);
+        .register(Arc::clone(&a) as Arc<dyn AllObserver<BinaryChromosome> + Send + Sync>)
+        .register(Arc::clone(&b) as Arc<dyn AllObserver<BinaryChromosome> + Send + Sync>);
 
     let island_config = IslandConfiguration::new()
         .with_num_islands(2)
@@ -223,8 +224,8 @@ fn test_composite_observer_nsga2_hooks() {
     let b = Arc::new(CountingAllObserver::default());
 
     let composite = CompositeObserver::<MoBinaryChromosome>::new()
-        .add(Arc::clone(&a) as Arc<dyn AllObserver<MoBinaryChromosome> + Send + Sync>)
-        .add(Arc::clone(&b) as Arc<dyn AllObserver<MoBinaryChromosome> + Send + Sync>);
+        .register(Arc::clone(&a) as Arc<dyn AllObserver<MoBinaryChromosome> + Send + Sync>)
+        .register(Arc::clone(&b) as Arc<dyn AllObserver<MoBinaryChromosome> + Send + Sync>);
 
     let nsga2_config = Nsga2Configuration::new()
         .with_num_objectives(2)
@@ -283,8 +284,8 @@ fn test_composite_fan_out_order() {
     let arc2 = Arc::clone(&observer) as Arc<dyn AllObserver<BinaryChromosome> + Send + Sync>;
 
     let composite = CompositeObserver::<BinaryChromosome>::new()
-        .add(arc1)
-        .add(arc2);
+        .register(arc1)
+        .register(arc2);
 
     let mut ga = build_ga(Arc::new(composite), 1);
     ga.run().expect("GA run should succeed");
@@ -305,11 +306,12 @@ fn composite_observer_new_is_empty() {
     assert_eq!(composite.observer_count(), 0);
 }
 
+#[cfg(feature = "logging")]
 #[test]
 fn composite_observer_add_builds_chain() {
     let composite: CompositeObserver<BinaryChromosome> = CompositeObserver::new()
-        .add(Arc::new(LogObserver) as Arc<dyn AllObserver<BinaryChromosome> + Send + Sync>)
-        .add(Arc::new(LogObserver) as Arc<dyn AllObserver<BinaryChromosome> + Send + Sync>);
+        .register(Arc::new(LogObserver) as Arc<dyn AllObserver<BinaryChromosome> + Send + Sync>)
+        .register(Arc::new(LogObserver) as Arc<dyn AllObserver<BinaryChromosome> + Send + Sync>);
     assert_eq!(composite.observer_count(), 2);
 }
 
@@ -319,10 +321,11 @@ fn composite_observer_default_is_empty() {
     assert_eq!(composite.observer_count(), 0);
 }
 
+#[cfg(feature = "logging")]
 #[test]
 fn composite_observer_clone_shares_arcs() {
     let composite: CompositeObserver<BinaryChromosome> = CompositeObserver::new()
-        .add(Arc::new(LogObserver) as Arc<dyn AllObserver<BinaryChromosome> + Send + Sync>);
+        .register(Arc::new(LogObserver) as Arc<dyn AllObserver<BinaryChromosome> + Send + Sync>);
     let cloned = composite.clone();
     assert_eq!(cloned.observer_count(), 1);
 }

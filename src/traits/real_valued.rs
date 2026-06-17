@@ -30,7 +30,7 @@ use crate::traits::LinearChromosome;
 /// Binary chromosomes (`Binary`) and permutation chromosomes (`Unique<T>`)
 /// must **not** implement `RealValued`.
 ///
-/// # Example
+/// # Examples
 ///
 /// ```rust,no_run
 /// use genetic_algorithms::traits::{LinearChromosome, RealValued};

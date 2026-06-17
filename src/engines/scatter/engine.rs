@@ -16,6 +16,22 @@ use crate::traits::{LinearChromosome, FitnessFn};
 use rand::Rng;
 
 /// Result returned by [`ScatterEngine::run`].
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::scatter::{ScatterConfiguration, ScatterEngine, ScatterResult};
+/// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+///
+/// let config = ScatterConfiguration::default();
+/// let mut engine = ScatterEngine::<RangeChromosome<f64>>::new(
+///     config,
+///     |n| vec![RangeChromosome::default(); n],
+///     |dna| dna.iter().map(|g| g.value() * g.value()).sum(),
+/// );
+/// let result: ScatterResult<RangeChromosome<f64>> = engine.run();
+/// println!("Best fitness: {}", result.best_fitness);
+/// ```
 pub struct ScatterResult<U: LinearChromosome> {
     /// Final reference set.
     pub reference_set: Vec<U>,
@@ -45,6 +61,27 @@ pub struct ScatterResult<U: LinearChromosome> {
 ///    d. Merge candidates with reference set; keep best `b` by quality and
 ///    diversity.
 /// 4. Stop when `max_iterations` is reached or `fitness_target` is met.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::scatter::{ScatterConfiguration, ScatterEngine};
+/// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+/// use genetic_algorithms::configuration::ProblemSolving;
+///
+/// let config = ScatterConfiguration::default()
+///     .with_reference_set_size(10)
+///     .with_max_iterations(50)
+///     .with_problem_solving(ProblemSolving::Minimization);
+///
+/// let mut engine = ScatterEngine::<RangeChromosome<f64>>::new(
+///     config,
+///     |n| vec![RangeChromosome::default(); n],
+///     |dna| dna.iter().map(|g| g.value() * g.value()).sum(),
+/// );
+/// let result = engine.run();
+/// println!("Iterations: {}", result.iterations);
+/// ```
 pub struct ScatterEngine<U: LinearChromosome>
 where
     U::Gene: RealGene,

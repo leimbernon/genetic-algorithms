@@ -8,7 +8,6 @@
 use crate::chromosomes::Range as RangeChromosome;
 use crate::operations::mutation::gaussian::GaussianConvertible;
 use crate::traits::LinearChromosome;
-use log::debug;
 use rand::Rng;
 use std::fmt::Debug;
 
@@ -18,6 +17,15 @@ use std::fmt::Debug;
 /// # Arguments
 ///
 /// * `individual` - The chromosome to mutate (exactly one gene is altered).
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::uniform::uniform_mutation;
+/// use genetic_algorithms::chromosomes::Range;
+/// let mut chromosome: Range<f64> = Range::new();
+/// uniform_mutation(&mut chromosome);
+/// ```
 pub fn uniform_mutation<T>(individual: &mut RangeChromosome<T>)
 where
     T: Sync + Send + Clone + Default + Debug + PartialOrd + Copy + 'static + GaussianConvertible,
@@ -49,7 +57,7 @@ where
     gene.value = T::from_f64(new_val_f64);
     individual.set_gene(idx, gene);
 
-    debug!(
+    crate::log_debug!(
         target: "mutation_events",
         "Uniform mutation applied at idx={} range_idx={}",
         idx, range_idx

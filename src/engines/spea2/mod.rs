@@ -121,7 +121,7 @@ use crate::operations::{crossover, mutation};
 use crate::spea2::configuration::Spea2Configuration;
 use crate::traits::{InitializationFn, LinearChromosome, MutationOperator, VectorFitness};
 use rand::Rng;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
 use rayon::prelude::*;
 use std::sync::Arc;
 use std::time::Instant;
@@ -131,6 +131,19 @@ use std::time::Instant;
 /// # Type Parameters
 ///
 /// * `U` - Chromosome type implementing `ChromosomeT`.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::spea2::Spea2Ga;
+/// use genetic_algorithms::spea2::configuration::Spea2Configuration;
+/// use genetic_algorithms::configuration::GaConfiguration;
+/// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+///
+/// let spea2_config = Spea2Configuration::default();
+/// let ga_config = GaConfiguration::default();
+/// let engine = Spea2Ga::<RangeChromosome<f64>>::new(spea2_config, ga_config);
+/// ```
 pub struct Spea2Ga<U>
 where
     U: LinearChromosome,
@@ -147,7 +160,6 @@ where
     pub observer: Option<Arc<dyn Spea2Observer<U> + Send + Sync>>,
 }
 
-#[allow(dead_code)]
 impl<U> Spea2Ga<U>
 where
     U: LinearChromosome,
@@ -620,7 +632,7 @@ where
             0,
         );
 
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_par_iter()
             .map(|mut chrom| {
@@ -629,7 +641,7 @@ where
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_iter()
             .map(|mut chrom| {
@@ -690,7 +702,7 @@ where
         }
 
         // Evaluate objectives for all offspring
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
         let evaluated: Vec<ParetoIndividual<U>> = offspring
             .into_par_iter()
             .map(|mut chrom| {
@@ -699,7 +711,7 @@ where
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
         let evaluated: Vec<ParetoIndividual<U>> = offspring
             .into_iter()
             .map(|mut chrom| {

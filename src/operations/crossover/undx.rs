@@ -4,7 +4,6 @@ use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
 use crate::operations::crossover::sbx::SbxConvertible;
 use crate::traits::LinearChromosome;
-use log::debug;
 use rand::Rng;
 use std::borrow::Cow;
 use std::fmt::Debug;
@@ -31,6 +30,17 @@ use std::fmt::Debug;
 ///
 /// A `Vec` containing exactly 1 offspring, or a `GaError::CrossoverError` if
 /// fewer than 3 parents are provided or parent DNA lengths are mismatched.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::crossover::undx::undx;
+/// use genetic_algorithms::chromosomes::Range;
+/// let p1: Range<f64> = Range::new();
+/// let p2: Range<f64> = Range::new();
+/// let p3: Range<f64> = Range::new();
+/// let _ = undx(&[&p1, &p2, &p3], 3, None, None);
+/// ```
 pub fn undx<T>(
     parents: &[&RangeChromosome<T>],
     _num_parents: usize,
@@ -40,7 +50,7 @@ pub fn undx<T>(
 where
     T: Sync + Send + Clone + Default + Debug + PartialOrd + Copy + 'static + SbxConvertible,
 {
-    debug!(target: "crossover_events", method = "undx"; "Starting UNDX crossover with {} parents", parents.len());
+    crate::log_debug!(target: "crossover_events", method = "undx"; "Starting UNDX crossover with {} parents", parents.len());
 
     if parents.len() < 3 {
         return Err(GaError::CrossoverError(
@@ -61,7 +71,7 @@ where
 
     if expected == 0 {
         let child = RangeChromosome::<T>::new();
-        debug!(target: "crossover_events", method = "undx"; "UNDX crossover finished");
+        crate::log_debug!(target: "crossover_events", method = "undx"; "UNDX crossover finished");
         return Ok(vec![child]);
     }
 
@@ -140,6 +150,6 @@ where
     let mut child = RangeChromosome::<T>::new();
     child.set_dna(Cow::Owned(child_dna));
 
-    debug!(target: "crossover_events", method = "undx"; "UNDX crossover finished");
+    crate::log_debug!(target: "crossover_events", method = "undx"; "UNDX crossover finished");
     Ok(vec![child])
 }

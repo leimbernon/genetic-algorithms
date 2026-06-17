@@ -19,8 +19,6 @@ use crate::configuration::{LimitConfiguration, ProblemSolving};
 use crate::error::GaError;
 use crate::operations::Survivor;
 use crate::traits::LinearChromosome;
-use log::debug;
-
 /// Computes the parsimony-adjusted fitness for a single chromosome.
 ///
 /// Does **not** mutate the chromosome — purely a computation helper.
@@ -57,6 +55,18 @@ fn adjusted_fitness(
 /// * `limit_configuration` — Controls sorting direction and optional target.
 /// * `length_penalty` — Parsimony coefficient. Sign is auto-adjusted per mode.
 ///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::survivor::apply_parsimony_pressure;
+/// use genetic_algorithms::operations::Survivor;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::configuration::{LimitConfiguration, ProblemSolving};
+/// let mut population: Vec<Binary> = vec![Binary::new(); 20];
+/// let limits = LimitConfiguration { problem_solving: ProblemSolving::Maximization, ..LimitConfiguration::default() };
+/// let _ = apply_parsimony_pressure(Survivor::Fitness, &mut population, 10, limits, 0.001);
+/// ```
+///
 /// # Errors
 ///
 /// Propagates any `GaError` from the underlying survivor-selection call.
@@ -67,7 +77,7 @@ pub fn apply_parsimony_pressure<U: LinearChromosome>(
     limit_configuration: LimitConfiguration,
     length_penalty: f64,
 ) -> Result<(), GaError> {
-    debug!(
+    crate::log_debug!(
         target = "survivor_events",
         method = "parsimony";
         "Applying parsimony pressure (penalty={}, mode={:?}, pop={})",

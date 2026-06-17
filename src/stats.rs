@@ -21,6 +21,18 @@
 /// Per-generation statistics for tracking GA convergence and behavior.
 ///
 /// Collected at the end of each generation and optionally passed to callbacks.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::stats::GenerationStats;
+///
+/// let stats = GenerationStats::from_fitness_values(0, &[1.0, 2.0, 3.0], true);
+/// assert_eq!(stats.generation, 0);
+/// assert_eq!(stats.best_fitness, 3.0); // maximization
+/// assert_eq!(stats.worst_fitness, 1.0);
+/// assert!((stats.avg_fitness - 2.0).abs() < 1e-10);
+/// ```
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct GenerationStats {

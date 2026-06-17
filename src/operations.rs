@@ -40,6 +40,18 @@ pub use local_search::{
 ///
 /// Determines how individuals are chosen from the current population to
 /// become parents for the next generation's offspring.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::ga::Ga;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::operations::Selection;
+/// use genetic_algorithms::traits::{ConfigurationT, SelectionConfig};
+///
+/// let _ga = Ga::<Binary>::new()
+///     .with_selection_method(Selection::Tournament);
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Selection {
@@ -83,13 +95,24 @@ pub enum Selection {
 /// When the two parents have different DNA lengths, `AlignmentStrategy` determines
 /// how the lengths are reconciled before the single-point crossover is applied.
 ///
-/// # Variants
-///
 /// - `Trim` — both parents are truncated to `min(len_a, len_b)` before recombination.
 ///   Offspring length equals `min(len_a, len_b)`.
 /// - `Pad` — the shorter parent is padded with genes sampled from its own alleles
 ///   until both parents reach `max(len_a, len_b)`. Offspring length equals
 ///   `max(len_a, len_b)`.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::operations::{AlignmentStrategy, Crossover};
+///
+/// let strategy = AlignmentStrategy::Trim;
+/// assert_eq!(strategy, AlignmentStrategy::Trim);
+///
+/// // Use with VariableLength crossover:
+/// let crossover = Crossover::VariableLength(AlignmentStrategy::Pad);
+/// assert_eq!(crossover, Crossover::VariableLength(AlignmentStrategy::Pad));
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum AlignmentStrategy {
@@ -104,6 +127,18 @@ pub enum AlignmentStrategy {
 /// Crossover (recombination) strategies.
 ///
 /// Determines how two parent chromosomes are combined to produce offspring.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::ga::Ga;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::operations::Crossover;
+/// use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig};
+///
+/// let _ga = Ga::<Binary>::new()
+///     .with_crossover_method(Crossover::Uniform);
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Crossover {
@@ -203,6 +238,18 @@ pub enum Crossover {
 /// default is applied (see each variant's documentation). This replaces the old
 /// `MutationConfiguration` operator-specific fields (`step`, `sigma`, etc.) which
 /// have been removed in v3.0.0.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::ga::Ga;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::operations::Mutation;
+/// use genetic_algorithms::traits::{ConfigurationT, MutationConfig};
+///
+/// let _ga = Ga::<Binary>::new()
+///     .with_mutation_method(Mutation::Gaussian { sigma: Some(0.1) });
+/// ```
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Mutation {
@@ -347,6 +394,18 @@ pub enum Mutation {
 ///
 /// Determines which individuals from the combined parent+offspring pool
 /// survive into the next generation.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::ga::Ga;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::operations::Survivor;
+/// use genetic_algorithms::traits::ConfigurationT;
+///
+/// let _ga = Ga::<Binary>::new()
+///     .with_survivor_method(Survivor::Fitness);
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Survivor {
@@ -369,6 +428,19 @@ pub enum Survivor {
 ///
 /// Extensions are optional diversity-rescue mechanisms that trigger when
 /// population diversity drops below a configurable threshold.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::ga::Ga;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::operations::Extension;
+/// use genetic_algorithms::traits::{ConfigurationT, ExtensionConfig};
+///
+/// let _ga = Ga::<Binary>::new()
+///     .with_extension_method(Extension::MassExtinction)
+///     .with_extension_diversity_threshold(0.01);
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Extension {

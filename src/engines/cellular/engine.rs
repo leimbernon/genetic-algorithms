@@ -29,6 +29,22 @@ use rand::Rng;
 use super::configuration::{CellularConfiguration, Neighborhood, UpdateMode};
 
 /// Result returned by [`CellularEngine::run`].
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::cellular::{CellularConfiguration, CellularEngine, CellularResult};
+/// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+///
+/// let config = CellularConfiguration::default();
+/// let mut engine = CellularEngine::<RangeChromosome<f64>>::new(
+///     config,
+///     |n| vec![RangeChromosome::default(); n],
+///     |dna| dna.iter().map(|g| g.value() * g.value()).sum(),
+/// );
+/// let result: CellularResult<RangeChromosome<f64>> = engine.run();
+/// println!("Best fitness: {}", result.best_fitness);
+/// ```
 pub struct CellularResult<U: LinearChromosome> {
     /// Final grid population (row-major, length = `rows × cols`).
     pub population: Vec<U>,
@@ -45,30 +61,29 @@ pub struct CellularResult<U: LinearChromosome> {
 /// Evolves a population laid out on a 2D toroidal grid using local
 /// neighbourhood interactions.
 ///
-/// # Example
+/// # Examples
 ///
-/// ```ignore
+/// ```rust,no_run
 /// use genetic_algorithms::cellular::{CellularConfiguration, CellularEngine, Neighborhood, UpdateMode};
 /// use genetic_algorithms::chromosomes::Range as RangeChromosome;
-/// use genetic_algorithms::genotypes::Range as RangeGene;
-/// use genetic_algorithms::operations::{Crossover, Mutation, Selection};
 /// use genetic_algorithms::configuration::ProblemSolving;
+/// use genetic_algorithms::operations::Mutation;
 ///
 /// let config = CellularConfiguration::default()
 ///     .with_grid(8, 8)
 ///     .with_neighborhood(Neighborhood::Moore)
 ///     .with_update_mode(UpdateMode::Asynchronous)
 ///     .with_max_generations(200)
-///     .with_mutation_sigma(0.1)
-///     .with_problem_solving(ProblemSolving::Minimization)
-///     .with_fitness_target(0.01);
+///     .with_mutation(Mutation::Gaussian { sigma: Some(0.1) })
+///     .with_problem_solving(ProblemSolving::Minimization);
 ///
-/// let mut engine = CellularEngine::new(
+/// let mut engine = CellularEngine::<RangeChromosome<f64>>::new(
 ///     config,
-///     |n| /* build n chromosomes */ todo!(),
+///     |n| vec![RangeChromosome::default(); n],
 ///     |dna| dna.iter().map(|g| g.value() * g.value()).sum(),
 /// );
 /// let result = engine.run();
+/// println!("Generations: {}", result.generations);
 /// ```
 pub struct CellularEngine<U: LinearChromosome> {
     config: CellularConfiguration,

@@ -132,7 +132,7 @@ fn test_cross_layer_mating_produces_result() {
         .with_age_gap(2)   // short age limits to force promotions quickly
         .with_injection_interval(0) // disable injection to isolate cross-layer behavior
         .with_max_generations(50)
-        .with_mutation_sigma(0.5);
+        .with_mutation(Mutation::Gaussian { sigma: Some(0.5) });
 
     let mut engine = AlpsEngine::new(
         config,
@@ -156,7 +156,7 @@ fn test_injection_enabled_runs() {
         .with_age_gap(3)
         .with_injection_interval(5)
         .with_max_generations(30)
-        .with_mutation_sigma(0.5);
+        .with_mutation(Mutation::Gaussian { sigma: Some(0.5) });
 
     let mut engine = AlpsEngine::new(
         config,
@@ -176,7 +176,7 @@ fn test_injection_disabled_runs() {
         .with_layer_size(10)
         .with_injection_interval(0) // disabled
         .with_max_generations(30)
-        .with_mutation_sigma(0.5);
+        .with_mutation(Mutation::Gaussian { sigma: Some(0.5) });
 
     let mut engine = AlpsEngine::new(
         config,
@@ -195,7 +195,7 @@ fn test_early_stopping() {
         .with_n_layers(3)
         .with_layer_size(10)
         .with_max_generations(100_000)
-        .with_mutation_sigma(1.0)
+        .with_mutation(Mutation::Gaussian { sigma: Some(1.0) })
         .with_fitness_target(1_000.0) // trivially reachable
         .with_problem_solving(ProblemSolving::Minimization);
 
@@ -206,6 +206,33 @@ fn test_early_stopping() {
     );
     let result = engine.run();
     assert!(result.generations < 100_000, "expected early stop but ran {} gens", result.generations);
+}
+
+// --- Migration: Mutation::Gaussian replaces deprecated with_mutation_sigma ----
+
+/// Regression test: constructing AlpsConfiguration with `Mutation::Gaussian { sigma }`
+/// (the v3.0.0 replacement for the removed `with_mutation_sigma` builder) produces a
+/// working ALPS run.  This confirms callers migrated per D-08.
+#[test]
+fn test_alps_mutation_gaussian_migration() {
+    let config = AlpsConfiguration::default()
+        .with_n_layers(3)
+        .with_layer_size(10)
+        .with_age_scheme(AlpsAgeScheme::Fibonacci)
+        .with_age_gap(3)
+        .with_max_generations(20)
+        .with_mutation(Mutation::Gaussian { sigma: Some(0.3) })
+        .with_problem_solving(ProblemSolving::Minimization);
+
+    let mut engine = AlpsEngine::new(
+        config,
+        |n| random_pop(n, 3, -2.0, 2.0, 123),
+        sphere,
+    );
+    let result = engine.run();
+    assert!(result.generations > 0, "expected at least one generation");
+    assert_eq!(result.layers.len(), 3);
+    assert!(result.best_fitness >= 0.0, "sphere function is non-negative");
 }
 
 // --- Result consistency -------------------------------------------------------

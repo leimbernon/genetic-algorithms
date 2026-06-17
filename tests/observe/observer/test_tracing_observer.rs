@@ -109,7 +109,7 @@ fn test_tracing_observer_in_composite() {
     // COMP-01: TracingObserver can be added to CompositeObserver
     let tracing_obs = Arc::new(TracingObserver::new());
     let composite = CompositeObserver::<BinaryChromosome>::new()
-        .add(tracing_obs as Arc<dyn AllObserver<BinaryChromosome> + Send + Sync>);
+        .register(tracing_obs as Arc<dyn AllObserver<BinaryChromosome> + Send + Sync>);
 
     let composite_arc: Arc<dyn GaObserver<BinaryChromosome> + Send + Sync> = Arc::new(composite);
     let mut ga = build_test_ga(composite_arc);

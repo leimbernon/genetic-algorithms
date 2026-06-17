@@ -58,7 +58,7 @@ impl SelectionOperator for Selection {
             // a custom `niche_radius` must go through `selection::factory` instead.
             // The single-population GA always uses the factory path and is unaffected.
             Selection::Clearing => {
-                log::warn!(target: "selection_events",
+                crate::log_warn!(target: "selection_events",
                     "Selection::Clearing called through SelectionOperator trait: \
                      niche_radius defaults to 0.1 (configured value ignored). \
                      Use selection::factory for the full configuration.");
@@ -89,6 +89,21 @@ impl SelectionOperator for Selection {
 ///
 /// `Ok(Vec<Vec<usize>>)` with parent groups (each inner Vec has `num_parents` indices),
 /// or `Err(GaError::SelectionError)` if the population is too small to form groups.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::configuration::SelectionConfiguration;
+/// use genetic_algorithms::operations::selection::factory;
+/// use genetic_algorithms::traits::ChromosomeT;
+///
+/// let mut c1 = Binary::new(); c1.set_fitness(1.0);
+/// let mut c2 = Binary::new(); c2.set_fitness(2.0);
+/// let config = SelectionConfiguration { number_of_couples: 2, ..Default::default() };
+/// let groups = factory(&[c1, c2], config, 1, 2).unwrap();
+/// assert_eq!(groups.len(), 2);
+/// ```
 pub fn factory<U>(
     chromosomes: &[U],
     configuration: SelectionConfiguration,
@@ -161,6 +176,27 @@ where
 /// - `GaError::SelectionError` if `fitness_values()` is empty on the first chromosome.
 /// - `GaError::SelectionError` if any chromosome has a NaN fitness value.
 /// - `GaError::ConfigurationError` if called with a non-lexicase selection method.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::configuration::SelectionConfiguration;
+/// use genetic_algorithms::operations::{selection::factory_lexicase, Selection};
+/// use genetic_algorithms::traits::{ChromosomeT, VectorFitness};
+///
+/// let mut c1 = Binary::new();
+/// c1.set_fitness_values(vec![1.0, 0.5]);
+/// let mut c2 = Binary::new();
+/// c2.set_fitness_values(vec![0.8, 0.9]);
+/// let config = SelectionConfiguration {
+///     method: Selection::Lexicase,
+///     number_of_couples: 2,
+///     ..Default::default()
+/// };
+/// let groups = factory_lexicase(&mut [c1, c2], config, 1).unwrap();
+/// assert_eq!(groups.len(), 2);
+/// ```
 pub fn factory_lexicase<U>(
     chromosomes: &mut [U],
     configuration: SelectionConfiguration,

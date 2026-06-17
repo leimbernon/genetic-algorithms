@@ -40,7 +40,7 @@ use super::configuration::GpConfiguration;
 use super::init::ramped_half_and_half;
 use super::node::{GpNode, Node};
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
 use rayon::prelude::*;
 
 // ---------------------------------------------------------------------------
@@ -163,13 +163,13 @@ where
     ///
     /// Uses `par_iter_mut()` on non-WASM targets (rayon) and `iter_mut()` on WASM.
     fn evaluate_population(&self, pop: &mut Vec<GpChromosome<N>>) {
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
         pop.par_iter_mut().for_each(|chr| {
             let f = (self.fitness_fn)(chr.tree());
             chr.set_fitness(f);
         });
 
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
         pop.iter_mut().for_each(|chr| {
             let f = (self.fitness_fn)(chr.tree());
             chr.set_fitness(f);
@@ -299,7 +299,7 @@ where
                             break;
                         }
                         Err(e) => {
-                            log::warn!(
+                            crate::log_warn!(
                                 target: "gp_events",
                                 "Bloat rejected in crossover gen={}: {}",
                                 gen,
@@ -324,7 +324,7 @@ where
                     if rng.random::<f64>() < *prob {
                         if let Err(e) = mutation.apply(&mut c1, max_depth, max_node_count, &mut rng)
                         {
-                            log::warn!(
+                            crate::log_warn!(
                                 target: "gp_events",
                                 "Bloat rejected in mutation gen={}: {}",
                                 gen,
@@ -335,7 +335,7 @@ where
                     if rng.random::<f64>() < *prob {
                         if let Err(e) = mutation.apply(&mut c2, max_depth, max_node_count, &mut rng)
                         {
-                            log::warn!(
+                            crate::log_warn!(
                                 target: "gp_events",
                                 "Bloat rejected in mutation gen={}: {}",
                                 gen,

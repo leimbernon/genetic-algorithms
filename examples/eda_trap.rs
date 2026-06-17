@@ -99,6 +99,7 @@ fn init_population(n: usize) -> Vec<BinaryChromosome> {
 }
 
 fn main() {
+    let _ = env_logger::try_init();
     rng::set_seed(Some(42));
 
     let config = EdaConfiguration {

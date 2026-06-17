@@ -7,7 +7,6 @@
 //! simulated-annealing effect.
 
 use crate::traits::ChromosomeT;
-use log::{debug, trace};
 use rand::Rng;
 
 /// Boltzmann selection: uses a temperature parameter to control selective pressure,
@@ -33,6 +32,15 @@ use rand::Rng;
 ///
 /// A vector of `Vec<usize>` parent index groups. Returns an empty vector if the
 /// population has fewer than 2 individuals.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::selection::boltzmann_selection;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let population: Vec<Binary> = vec![Binary::new(); 10];
+/// let pairs = boltzmann_selection(&population, 5, 1.0, 2);
+/// ```
 pub fn boltzmann_selection<U: ChromosomeT>(
     chromosomes: &[U],
     couples: usize,
@@ -40,16 +48,16 @@ pub fn boltzmann_selection<U: ChromosomeT>(
     num_parents: usize,
 ) -> Vec<Vec<usize>> {
     let num_parents = num_parents.max(2);
-    debug!(target="selection_events", method="boltzmann"; "Starting Boltzmann selection");
+    crate::log_debug!(target="selection_events", method="boltzmann"; "Starting Boltzmann selection");
 
     let n = chromosomes.len();
     if n < 2 {
-        debug!(target="selection_events", method="boltzmann"; "Population too small ({}), returning empty", n);
+        crate::log_debug!(target="selection_events", method="boltzmann"; "Population too small ({}), returning empty", n);
         return Vec::new();
     }
 
     let temp = if temperature <= 0.0 {
-        debug!(target="selection_events", method="boltzmann"; "Temperature {} <= 0.0, using fallback 1.0", temperature);
+        crate::log_debug!(target="selection_events", method="boltzmann"; "Temperature {} <= 0.0, using fallback 1.0", temperature);
         1.0
     } else {
         temperature
@@ -79,7 +87,7 @@ pub fn boltzmann_selection<U: ChromosomeT>(
         };
         cum += prob;
         cumulative.push(cum);
-        trace!(target="selection_events", method="boltzmann"; "Index {} fitness {} weight {} cum_prob {}", i, fitnesses[i], w, cum);
+        crate::log_trace!(target="selection_events", method="boltzmann"; "Index {} fitness {} weight {} cum_prob {}", i, fitnesses[i], w, cum);
     }
 
     // Correct any floating-point drift so the last entry is exactly 1.0
@@ -103,11 +111,11 @@ pub fn boltzmann_selection<U: ChromosomeT>(
     for chunk in selected.chunks(num_parents) {
         if chunk.len() == num_parents {
             let group = chunk.to_vec();
-            trace!(target="selection_events", method="boltzmann"; "Mating group: {:?}", group);
+            crate::log_trace!(target="selection_events", method="boltzmann"; "Mating group: {:?}", group);
             mating.push(group);
         }
     }
 
-    debug!(target="selection_events", method="boltzmann"; "Boltzmann selection finished with {} groups", mating.len());
+    crate::log_debug!(target="selection_events", method="boltzmann"; "Boltzmann selection finished with {} groups", mating.len());
     mating
 }

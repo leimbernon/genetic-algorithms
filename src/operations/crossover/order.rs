@@ -2,11 +2,20 @@
 
 use crate::error::GaError;
 use crate::traits::LinearChromosome;
-use log::debug;
 use rand::Rng;
 use std::borrow::Cow;
 use std::collections::HashSet;
 
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::crossover::order;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let parent1 = Binary::new();
+/// let parent2 = Binary::new();
+/// let _ = order(&parent1, &parent2);
+/// ```
+///
 /// Order Crossover (OX): preserves the relative order of genes.
 ///
 /// Essential for TSP and permutation problems where gene order matters.
@@ -31,7 +40,7 @@ pub fn order<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, 
         ));
     }
 
-    debug!(target="crossover_events", method="order"; "Starting order crossover (OX)");
+    crate::log_debug!(target="crossover_events", method="order"; "Starting order crossover (OX)");
     let mut rng = crate::rng::make_rng();
 
     let mut p1 = rng.random_range(0..len);
@@ -51,7 +60,7 @@ pub fn order<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, 
     child_1.set_dna(Cow::Owned(child_dna_1));
     child_2.set_dna(Cow::Owned(child_dna_2));
 
-    debug!(target="crossover_events", method="order"; "Order crossover finished with points ({}, {})", p1, p2);
+    crate::log_debug!(target="crossover_events", method="order"; "Order crossover finished with points ({}, {})", p1, p2);
     Ok(vec![child_1, child_2])
 }
 

@@ -444,6 +444,20 @@ fn try_pcx<U: LinearChromosome>(
 ///
 /// `ga.rs` (Plan 04) — integration point that calls `factory_multi_parent` when
 /// `configuration.crossover.method` is `Undx`, `Spx`, or `Pcx`.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::chromosomes::Range;
+/// use genetic_algorithms::configuration::CrossoverConfiguration;
+/// use genetic_algorithms::operations::{crossover::factory_multi_parent, Crossover};
+///
+/// let p1 = Range::<f64>::new();
+/// let p2 = Range::<f64>::new();
+/// let p3 = Range::<f64>::new();
+/// let config = CrossoverConfiguration { method: Crossover::Spx { num_parents: 3 }, ..Default::default() };
+/// let _offspring = factory_multi_parent(&[&p1, &p2, &p3], config);
+/// ```
 pub fn factory_multi_parent<U: LinearChromosome + RealValued>(
     parents: &[&U],
     configuration: CrossoverConfiguration,
@@ -493,6 +507,20 @@ pub fn factory_multi_parent<U: LinearChromosome + RealValued>(
 ///
 /// `parents` must contain at least 3 references and `configuration.method` must be
 /// `Crossover::Undx`, `Crossover::Spx`, or `Crossover::Pcx`.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::chromosomes::Range;
+/// use genetic_algorithms::configuration::CrossoverConfiguration;
+/// use genetic_algorithms::operations::{crossover::factory_multi_parent_dispatch, Crossover};
+///
+/// let p1 = Range::<f64>::new();
+/// let p2 = Range::<f64>::new();
+/// let p3 = Range::<f64>::new();
+/// let config = CrossoverConfiguration { method: Crossover::Undx { num_parents: 3 }, ..Default::default() };
+/// let _result = factory_multi_parent_dispatch(&[&p1, &p2, &p3], config);
+/// ```
 pub fn factory_multi_parent_dispatch<U: LinearChromosome + 'static>(
     parents: &[&U],
     configuration: CrossoverConfiguration,
@@ -535,6 +563,19 @@ pub fn factory_multi_parent_dispatch<U: LinearChromosome + 'static>(
 }
 
 /// Dispatches crossover according to the configured method and parameters.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::configuration::CrossoverConfiguration;
+/// use genetic_algorithms::operations::crossover::factory;
+///
+/// let parent_1 = Binary::new();
+/// let parent_2 = Binary::new();
+/// let config = CrossoverConfiguration::default();
+/// let _offspring = factory(&parent_1, &parent_2, config).unwrap();
+/// ```
 pub fn factory<U: LinearChromosome>(
     parent_1: &U,
     parent_2: &U,
@@ -547,6 +588,21 @@ pub fn factory<U: LinearChromosome>(
 ///
 /// Returns a probability between `probability_min` and `probability_max`
 /// based on how the fitter parent compares to the population average.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::traits::ChromosomeT;
+/// use genetic_algorithms::operations::crossover::aga_probability;
+///
+/// let mut p1 = Binary::new();
+/// p1.set_fitness(0.9);
+/// let mut p2 = Binary::new();
+/// p2.set_fitness(0.6);
+/// let prob = aga_probability(&p1, &p2, 1.0, 0.7, 0.9, 0.1);
+/// assert!(prob >= 0.0 && prob <= 0.9);
+/// ```
 pub fn aga_probability<U: LinearChromosome>(
     parent_1: &U,
     parent_2: &U,

@@ -8,6 +8,7 @@ use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::initializers::range_random_initialization;
 use genetic_algorithms::moead::configuration::{MoeaDConfiguration, ObjectiveDirection, ScalarizationFn};
 use genetic_algorithms::moead::MoeaDGa;
+#[cfg(feature = "logging")]
 use genetic_algorithms::LogObserver;
 use genetic_algorithms::MoeaDObserver;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -320,6 +321,7 @@ fn test_moead_run_rejects_differential_mutation() {
     assert!(matches!(result, Err(GaError::MutationError(ref msg)) if msg.contains("Differential mutation is not supported in MOEA/D")));
 }
 
+#[cfg(feature = "logging")]
 #[test]
 fn test_moead_log_observer() {
     let mut moead = build_test_moead(15, 3, ScalarizationFn::Tchebycheff)

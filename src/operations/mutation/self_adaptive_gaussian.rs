@@ -11,7 +11,6 @@ use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
 use crate::operations::mutation::gaussian::GaussianConvertible;
 use crate::traits::SelfAdaptive;
-use log::debug;
 use rand::Rng;
 use std::fmt::Debug;
 
@@ -47,6 +46,15 @@ use std::fmt::Debug;
 ///
 /// Does not use `rayon`, `std::time::Instant`, or `SystemTime`.
 /// Uses [`crate::rng::make_rng`] for all randomness.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::self_adaptive_gaussian::self_adaptive_gaussian_mutation;
+/// use genetic_algorithms::chromosomes::Range;
+/// let mut chromosome: Range<f64> = Range::new();
+/// let _ = self_adaptive_gaussian_mutation(&mut chromosome, 0.1, 0.05, 1e-5, None);
+/// ```
 pub fn self_adaptive_gaussian_mutation<T>(
     individual: &mut RangeChromosome<T>,
     tau: f64,
@@ -107,7 +115,7 @@ where
     gene.value = T::from_f64(new_val);
     individual.dna[idx] = gene;
 
-    debug!(
+    crate::log_debug!(
         target: "mutation_events",
         "SelfAdaptiveGaussian mutation applied at idx={} sigma={}",
         idx,

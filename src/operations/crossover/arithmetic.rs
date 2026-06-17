@@ -3,7 +3,6 @@
 use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
 use crate::traits::LinearChromosome;
-use log::debug;
 use std::borrow::Cow;
 use std::fmt::Debug;
 
@@ -32,6 +31,16 @@ use std::fmt::Debug;
 /// # Returns
 ///
 /// Two children chromosomes, or an error if parents have mismatched DNA lengths.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::crossover::arithmetic::arithmetic;
+/// use genetic_algorithms::chromosomes::Range;
+/// let parent1: Range<f64> = Range::new();
+/// let parent2: Range<f64> = Range::new();
+/// let _ = arithmetic(&parent1, &parent2, 0.5);
+/// ```
 pub fn arithmetic<T>(
     parent_1: &RangeChromosome<T>,
     parent_2: &RangeChromosome<T>,
@@ -49,7 +58,7 @@ where
         )));
     }
 
-    debug!(target="crossover_events", method="arithmetic"; "Starting arithmetic crossover with alpha={}", alpha);
+    crate::log_debug!(target="crossover_events", method="arithmetic"; "Starting arithmetic crossover with alpha={}", alpha);
 
     let dna1 = parent_1.dna();
     let dna2 = parent_2.dna();
@@ -87,11 +96,19 @@ where
     child_1.set_dna(Cow::Owned(child_dna_1));
     child_2.set_dna(Cow::Owned(child_dna_2));
 
-    debug!(target="crossover_events", method="arithmetic"; "Arithmetic crossover finished");
+    crate::log_debug!(target="crossover_events", method="arithmetic"; "Arithmetic crossover finished");
     Ok(vec![child_1, child_2])
 }
 
 /// Trait for types that can be converted to/from an `f64` value (for arithmetic crossover).
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::operations::crossover::arithmetic::ArithmeticConvertible;
+/// assert_eq!(<f64 as ArithmeticConvertible>::from_f64(0.5), 0.5_f64);
+/// assert_eq!(<f64 as ArithmeticConvertible>::to_f64(1.0_f64), 1.0_f64);
+/// ```
 pub trait ArithmeticConvertible {
     /// Convert an `f64` into `Self`.
     fn from_f64(val: f64) -> Self;

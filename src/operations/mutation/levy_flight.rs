@@ -6,7 +6,6 @@
 use crate::chromosomes::Range as RangeChromosome;
 use crate::operations::mutation::gaussian::GaussianConvertible;
 use crate::traits::LinearChromosome;
-use log::debug;
 use rand::Rng;
 use std::fmt::Debug;
 
@@ -39,6 +38,15 @@ fn gamma_approx(x: f64) -> f64 {
 /// Applies Lévy Flight perturbation to a single randomly selected gene of `individual`.
 /// `alpha` is the Lévy stability index (typical range: (0.0, 2.0); default 1.5).
 /// The step is scaled by the gene range width `(hi - lo)` so behavior is range-independent.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::levy_flight::levy_flight_mutation;
+/// use genetic_algorithms::chromosomes::Range;
+/// let mut chromosome: Range<f64> = Range::new();
+/// levy_flight_mutation(&mut chromosome, 1.5);
+/// ```
 pub fn levy_flight_mutation<T>(individual: &mut RangeChromosome<T>, alpha: f64)
 where
     T: Sync + Send + Clone + Default + Debug + PartialOrd + Copy + 'static + GaussianConvertible,
@@ -92,7 +100,7 @@ where
     gene.value = T::from_f64(new_val_f64);
     individual.set_gene(idx, gene);
 
-    debug!(
+    crate::log_debug!(
         target: "mutation_events",
         "LevyFlight mutation applied at idx={} range_idx={} alpha={} (clamped {})",
         idx, range_idx, alpha, alpha_clamped

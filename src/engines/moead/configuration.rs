@@ -10,6 +10,16 @@ pub use crate::nsga2::configuration::ObjectiveDirection;
 /// - `Pbi { theta }` — penalty-based boundary intersection (eq. 5):
 ///   `g = d1 + theta * d2`. Common values for `theta` are 1.0–10.0; Zhang & Li
 ///   use 5.0.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::moead::configuration::ScalarizationFn;
+///
+/// let fn_type = ScalarizationFn::Tchebycheff;
+/// let pbi = ScalarizationFn::Pbi { theta: 5.0 };
+/// assert_eq!(fn_type, ScalarizationFn::Tchebycheff);
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum ScalarizationFn {

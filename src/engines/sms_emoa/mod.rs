@@ -121,7 +121,7 @@ use crate::operations::{crossover, mutation};
 use crate::sms_emoa::configuration::SmsEmoaConfiguration;
 use crate::traits::{InitializationFn, LinearChromosome, MutationOperator, VectorFitness};
 use rand::Rng;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
 use rayon::prelude::*;
 use std::sync::Arc;
 use std::time::Instant;
@@ -131,6 +131,19 @@ use std::time::Instant;
 /// # Type Parameters
 ///
 /// * `U` - Chromosome type implementing `ChromosomeT`.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::sms_emoa::SmsEmoaGa;
+/// use genetic_algorithms::sms_emoa::configuration::SmsEmoaConfiguration;
+/// use genetic_algorithms::configuration::GaConfiguration;
+/// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+///
+/// let sms_config = SmsEmoaConfiguration::default();
+/// let ga_config = GaConfiguration::default();
+/// let engine = SmsEmoaGa::<RangeChromosome<f64>>::new(sms_config, ga_config);
+/// ```
 pub struct SmsEmoaGa<U>
 where
     U: LinearChromosome,
@@ -147,7 +160,6 @@ where
     pub observer: Option<Arc<dyn SmsEmoaObserver<U> + Send + Sync>>,
 }
 
-#[allow(dead_code)]
 impl<U> SmsEmoaGa<U>
 where
     U: LinearChromosome,
@@ -299,7 +311,7 @@ where
             0,
         );
 
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_par_iter()
             .map(|mut chrom| {
@@ -308,7 +320,7 @@ where
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_iter()
             .map(|mut chrom| {

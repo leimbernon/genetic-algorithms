@@ -11,7 +11,6 @@
 use crate::error::GaError;
 use crate::operations::AlignmentStrategy;
 use crate::traits::LinearChromosome;
-use log::debug;
 use rand::Rng;
 use std::borrow::Cow;
 
@@ -28,6 +27,17 @@ use std::borrow::Cow;
 /// Two offspring chromosomes. Offspring length equals `min(len_a, len_b)` for
 /// `Trim` and `max(len_a, len_b)` for `Pad`.
 ///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::crossover::variable_length_crossover;
+/// use genetic_algorithms::operations::AlignmentStrategy;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let parent1 = Binary::new();
+/// let parent2 = Binary::new();
+/// let _ = variable_length_crossover(&parent1, &parent2, AlignmentStrategy::Trim);
+/// ```
+///
 /// # Errors
 ///
 /// Returns `Err(GaError::CrossoverError)` if both parents are empty.
@@ -39,7 +49,7 @@ pub fn variable_length_crossover<U: LinearChromosome>(
     let len_a = parent_1.dna().len();
     let len_b = parent_2.dna().len();
 
-    debug!(
+    crate::log_debug!(
         target = "crossover_events",
         method = "variable_length";
         "Starting variable-length crossover (strategy={:?}, len_a={}, len_b={})",
@@ -111,7 +121,7 @@ pub fn variable_length_crossover<U: LinearChromosome>(
     child_1.set_dna(Cow::Owned(child_dna_1));
     child_2.set_dna(Cow::Owned(child_dna_2));
 
-    debug!(
+    crate::log_debug!(
         target = "crossover_events",
         method = "variable_length";
         "Variable-length crossover finished (point={}, offspring_len={})",

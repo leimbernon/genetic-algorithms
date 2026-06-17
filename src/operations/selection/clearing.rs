@@ -14,8 +14,6 @@
 //! making the operator generic across all chromosome types.
 
 use crate::traits::ChromosomeT;
-use log::{debug, trace};
-
 /// Clearing selection: builds an eligible pool by removing niche-dominated
 /// individuals, then groups eligible individuals randomly into N-ary parent groups.
 ///
@@ -27,6 +25,15 @@ use log::{debug, trace};
 /// * `number_of_couples` - Target number of parent groups to produce. Groups are
 ///   drawn with replacement when the eligible pool is smaller than required.
 /// * `num_parents` - Number of parents per group (must be >= 2).
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::selection::clearing_selection;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let population: Vec<Binary> = vec![Binary::new(); 10];
+/// let pairs = clearing_selection(&population, 0.1, 5, 2);
+/// ```
 pub fn clearing_selection<U: ChromosomeT>(
     chromosomes: &[U],
     niche_radius: f64,
@@ -34,7 +41,7 @@ pub fn clearing_selection<U: ChromosomeT>(
     num_parents: usize,
 ) -> Vec<Vec<usize>> {
     let num_parents = num_parents.max(2);
-    debug!(target="selection_events", method="clearing"; "Starting clearing selection with niche_radius={} number_of_couples={}", niche_radius, number_of_couples);
+    crate::log_debug!(target="selection_events", method="clearing"; "Starting clearing selection with niche_radius={} number_of_couples={}", niche_radius, number_of_couples);
 
     let n = chromosomes.len();
 
@@ -60,12 +67,12 @@ pub fn clearing_selection<U: ChromosomeT>(
         }
         // This individual is a niche winner. Clear all uncleared individuals
         // (ranked below it, not yet winners) within niche_radius.
-        trace!(target="selection_events", method="clearing"; "Niche winner: index={} fitness={}", winner_idx, winner_fitness);
+        crate::log_trace!(target="selection_events", method="clearing"; "Niche winner: index={} fitness={}", winner_idx, winner_fitness);
         for &(candidate_idx, candidate_fitness) in &sorted[(rank + 1)..] {
             if !cleared[candidate_idx] && (winner_fitness - candidate_fitness).abs() <= niche_radius
             {
                 cleared[candidate_idx] = true;
-                trace!(target="selection_events", method="clearing"; "Cleared: index={} fitness={}", candidate_idx, candidate_fitness);
+                crate::log_trace!(target="selection_events", method="clearing"; "Cleared: index={} fitness={}", candidate_idx, candidate_fitness);
             }
         }
     }
@@ -73,11 +80,11 @@ pub fn clearing_selection<U: ChromosomeT>(
     // Collect eligible pool (original indices of unclaimed individuals).
     let eligible: Vec<usize> = (0..n).filter(|&i| !cleared[i]).collect();
 
-    trace!(target="selection_events", method="clearing"; "Eligible pool size: {}", eligible.len());
+    crate::log_trace!(target="selection_events", method="clearing"; "Eligible pool size: {}", eligible.len());
 
     // Need at least 2 eligible individuals to form any group.
     if eligible.len() < 2 {
-        debug!(target="selection_events", method="clearing"; "Clearing selection finished: 0 groups (eligible pool too small)");
+        crate::log_debug!(target="selection_events", method="clearing"; "Clearing selection finished: 0 groups (eligible pool too small)");
         return Vec::new();
     }
 
@@ -103,10 +110,10 @@ pub fn clearing_selection<U: ChromosomeT>(
             let extra_i = rng.random_range(0..eligible.len());
             group.push(eligible[extra_i]);
         }
-        trace!(target="selection_events", method="clearing"; "Mating group: {:?}", group);
+        crate::log_trace!(target="selection_events", method="clearing"; "Mating group: {:?}", group);
         mating.push(group);
     }
 
-    debug!(target="selection_events", method="clearing"; "Clearing selection finished: {} groups", mating.len());
+    crate::log_debug!(target="selection_events", method="clearing"; "Clearing selection finished: {} groups", mating.len());
     mating
 }

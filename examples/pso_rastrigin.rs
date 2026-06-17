@@ -68,7 +68,17 @@ fn init_population(n: usize) -> Vec<RangeChromosome<f64>> {
 }
 
 fn main() {
-    rng::set_seed(Some(99));
+    let _ = env_logger::try_init();
+    // Parse optional --seed <N> argument for reproducible runs (used by build_perf.sh golden capture).
+    // Falls back to seed 99 when not specified (original behaviour).
+    let args: Vec<String> = std::env::args().collect();
+    let seed = args
+        .iter()
+        .position(|a| a == "--seed")
+        .and_then(|pos| args.get(pos + 1))
+        .and_then(|v| v.parse::<u64>().ok())
+        .unwrap_or(99);
+    rng::set_seed(Some(seed));
     let config = PsoConfiguration {
         population_size: 200,
         max_generations: 1000,

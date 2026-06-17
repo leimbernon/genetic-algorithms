@@ -11,7 +11,6 @@
 use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
 use crate::traits::LinearChromosome;
-use log::debug;
 use rand::Rng;
 use std::fmt::Debug;
 
@@ -38,6 +37,15 @@ use std::fmt::Debug;
 /// # Returns
 ///
 /// `Ok(())` on success, or `Err(GaError::MutationError)` on invalid parameters.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::non_uniform::non_uniform_mutation;
+/// use genetic_algorithms::chromosomes::Range;
+/// let mut chromosome: Range<f64> = Range::new();
+/// let _ = non_uniform_mutation(&mut chromosome, 10, 100, 2.0);
+/// ```
 pub fn non_uniform_mutation<T>(
     individual: &mut RangeChromosome<T>,
     generation: usize,
@@ -62,7 +70,7 @@ where
 
     let len = individual.dna().len();
     if len == 0 {
-        debug!(target="mutation_events", method="non_uniform"; "Empty DNA, skipping non-uniform mutation");
+        crate::log_debug!(target="mutation_events", method="non_uniform"; "Empty DNA, skipping non-uniform mutation");
         return Ok(());
     }
 
@@ -72,7 +80,7 @@ where
     let mut gene = individual.dna()[idx].clone();
 
     if gene.ranges.is_empty() {
-        debug!(target="mutation_events", method="non_uniform"; "Gene {} has no ranges, skipping", idx);
+        crate::log_debug!(target="mutation_events", method="non_uniform"; "Gene {} has no ranges, skipping", idx);
         return Ok(());
     }
 
@@ -102,7 +110,7 @@ where
     gene.value = T::from_f64(clamped);
     individual.set_gene(idx, gene);
 
-    debug!(
+    crate::log_debug!(
         target="mutation_events", method="non_uniform";
         "Non-uniform mutation applied at gene {} (gen={}/{}, b={}, tau={:.4})",
         idx, generation, max_generations, b, tau
@@ -113,6 +121,14 @@ where
 /// Trait for types that can be converted to/from an f64 value (for non-uniform mutation).
 ///
 /// Implementations should do a reasonable conversion (e.g., rounding for integers).
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::operations::mutation::non_uniform::NonUniformConvertible;
+/// assert_eq!(<f64 as NonUniformConvertible>::from_f64(0.5), 0.5_f64);
+/// assert_eq!(<f64 as NonUniformConvertible>::to_f64(1.0_f64), 1.0_f64);
+/// ```
 pub trait NonUniformConvertible {
     /// Converts an f64 value to this type.
     fn from_f64(val: f64) -> Self;

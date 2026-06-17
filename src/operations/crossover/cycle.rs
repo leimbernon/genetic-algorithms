@@ -2,7 +2,6 @@
 
 use crate::error::GaError;
 use crate::traits::{LinearChromosome, GeneT};
-use log::{debug, trace};
 use std::borrow::Cow;
 use std::collections::HashMap;
 
@@ -12,6 +11,16 @@ use std::collections::HashMap;
 /// Preserves the absolute position of every gene (each gene ends up at the
 /// same index it occupied in one of the parents), making it well-suited for
 /// permutation-based problems.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::crossover::cycle;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let parent1 = Binary::new();
+/// let parent2 = Binary::new();
+/// let _ = cycle(&parent1, &parent2);
+/// ```
 ///
 /// # Errors
 ///
@@ -39,7 +48,7 @@ pub fn cycle<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, 
     let mut child_2_dna = parent_2.dna().to_vec();
     let mut visited = vec![false; dna_len];
 
-    debug!(target="crossover_events", method="cycle_crossover"; "Starting the cycle crossover");
+    crate::log_debug!(target="crossover_events", method="cycle_crossover"; "Starting the cycle crossover");
     let mut cycle_count: usize = 0;
     for start in 0..dna_len {
         if visited[start] {
@@ -50,7 +59,7 @@ pub fn cycle<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, 
         let use_parent_1 = cycle_count % 2 == 0;
 
         while !visited[idx] {
-            trace!(target="crossover_events", method="cycle_crossover"; "Index {} not yet visited", idx);
+            crate::log_trace!(target="crossover_events", method="cycle_crossover"; "Index {} not yet visited", idx);
             visited[idx] = true;
 
             if use_parent_1 {
@@ -62,7 +71,7 @@ pub fn cycle<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, 
             }
 
             let next_gene_id = parent_2.dna()[idx].id();
-            trace!(target="crossover_events", method="cycle_crossover"; "Next gene id {}", next_gene_id);
+            crate::log_trace!(target="crossover_events", method="cycle_crossover"; "Next gene id {}", next_gene_id);
             match p1_id_to_idx.get(&next_gene_id) {
                 Some(&pos) => idx = pos,
                 None => {
@@ -80,7 +89,7 @@ pub fn cycle<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, 
     let mut child_2 = U::new();
     child_1.set_dna(Cow::Owned(child_1_dna));
     child_2.set_dna(Cow::Owned(child_2_dna));
-    debug!(target="crossover_events", method="cycle_crossover"; "Cycle crossover finished");
+    crate::log_debug!(target="crossover_events", method="cycle_crossover"; "Cycle crossover finished");
 
     Ok(vec![child_1, child_2])
 }

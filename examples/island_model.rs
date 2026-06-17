@@ -64,6 +64,7 @@ use genetic_algorithms::{CompositeObserver, IslandGaObserver, LogObserver};
 use std::sync::Arc;
 
 fn main() {
+    let _ = env_logger::try_init();
     // --- Problem parameters ---
     const DIMENSIONS: usize = 20;
     const POP_SIZE_PER_ISLAND: usize = 50;
@@ -120,9 +121,9 @@ fn main() {
 
     // --- Build composite observer (LogObserver always active; MetricsObserver when feature flag set) ---
     // CompositeObserver implements IslandGaObserver — forwards all island hooks to inner observers.
-    let composite = CompositeObserver::new().add(Arc::new(LogObserver));
+    let composite = CompositeObserver::new().register(Arc::new(LogObserver));
     #[cfg(feature = "observer-metrics")]
-    let composite = composite.add(Arc::new(MetricsObserver::new("island_model")));
+    let composite = composite.register(Arc::new(MetricsObserver::new("island_model")));
 
     // --- Print problem summary ---
     println!("== Island Model: Rastrigin {}D Minimization ==", DIMENSIONS);

@@ -7,6 +7,15 @@ use crate::operations::{Crossover, Mutation, Selection};
 ///
 /// Defines which cells are considered "neighbors" of a given cell on the
 /// 2D toroidal grid.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::cellular::Neighborhood;
+///
+/// let n = Neighborhood::Moore;
+/// assert_eq!(n, Neighborhood::Moore);
+/// ```
 #[derive(Debug, Clone, PartialEq)]
 pub enum Neighborhood {
     /// Von Neumann neighborhood — 4 cells (North, South, East, West).
@@ -31,6 +40,15 @@ pub enum Neighborhood {
 ///
 /// Controls whether cells read from the previous generation's state or the
 /// current (partially updated) state when computing offspring.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::cellular::UpdateMode;
+///
+/// let mode = UpdateMode::Asynchronous;
+/// assert_eq!(mode, UpdateMode::Asynchronous);
+/// ```
 #[derive(Debug, Clone, PartialEq)]
 pub enum UpdateMode {
     /// All cells read from the previous generation; writes are applied after
@@ -42,6 +60,21 @@ pub enum UpdateMode {
 }
 
 /// Configuration for a [`CellularEngine`](super::engine::CellularEngine) run.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::cellular::{CellularConfiguration, Neighborhood, UpdateMode};
+/// use genetic_algorithms::configuration::ProblemSolving;
+/// use genetic_algorithms::operations::{Crossover, Mutation, Selection};
+///
+/// let config = CellularConfiguration::default()
+///     .with_grid(8, 8)
+///     .with_neighborhood(Neighborhood::Moore)
+///     .with_update_mode(UpdateMode::Asynchronous)
+///     .with_max_generations(200)
+///     .with_problem_solving(ProblemSolving::Minimization);
+/// ```
 #[derive(Debug, Clone)]
 pub struct CellularConfiguration {
     /// Number of rows in the toroidal grid.
@@ -60,19 +93,12 @@ pub struct CellularConfiguration {
     pub crossover: Crossover,
     /// Mutation operator applied to each offspring.
     pub mutation: Mutation,
-    /// Optional step size for Creep mutation (deprecated — embed in `Mutation::Creep { step }`).
-    #[deprecated(since = "3.0.0", note = "Use `Mutation::Creep { step: Some(value) }` instead")]
-    pub mutation_step: Option<f64>,
-    /// Optional standard deviation for Gaussian mutation (deprecated — embed in `Mutation::Gaussian { sigma }`).
-    #[deprecated(since = "3.0.0", note = "Use `Mutation::Gaussian { sigma: Some(value) }` instead")]
-    pub mutation_sigma: Option<f64>,
     /// Whether to minimise or maximise fitness.
     pub problem_solving: ProblemSolving,
     /// Optional fitness target — engine stops early when reached.
     pub fitness_target: Option<f64>,
 }
 
-#[allow(deprecated)]
 impl Default for CellularConfiguration {
     fn default() -> Self {
         Self {
@@ -84,8 +110,6 @@ impl Default for CellularConfiguration {
             selection: Selection::Tournament,
             crossover: Crossover::Uniform,
             mutation: Mutation::Gaussian { sigma: Some(0.1) },
-            mutation_step: None,
-            mutation_sigma: None,
             problem_solving: ProblemSolving::Minimization,
             fitness_target: None,
         }
@@ -127,20 +151,6 @@ impl CellularConfiguration {
     /// Builder: set mutation operator.
     pub fn with_mutation(mut self, m: Mutation) -> Self {
         self.mutation = m;
-        self
-    }
-    /// Builder: set mutation step size (for Creep mutation).
-    /// **Deprecated** — use `Mutation::Creep { step: Some(value) }` with `with_mutation()`.
-    #[allow(deprecated)]
-    pub fn with_mutation_step(mut self, step: f64) -> Self {
-        self.mutation_step = Some(step);
-        self
-    }
-    /// Builder: set mutation sigma (for Gaussian mutation).
-    /// **Deprecated** — use `Mutation::Gaussian { sigma: Some(value) }` with `with_mutation()`.
-    #[allow(deprecated)]
-    pub fn with_mutation_sigma(mut self, sigma: f64) -> Self {
-        self.mutation_sigma = Some(sigma);
         self
     }
     /// Builder: set problem solving direction.

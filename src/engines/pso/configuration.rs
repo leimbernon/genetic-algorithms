@@ -6,6 +6,15 @@ use crate::configuration::ProblemSolving;
 ///
 /// Controls how much of the particle's previous velocity is retained on each generation.
 /// A higher inertia promotes global exploration; a lower inertia promotes local exploitation.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::pso::PsoInertia;
+///
+/// let inertia = PsoInertia::Constant(0.729);
+/// let decay = PsoInertia::LinearDecay { w_start: 0.9, w_end: 0.4 };
+/// ```
 #[derive(Debug, Clone)]
 pub enum PsoInertia {
     /// Fixed inertia weight applied every generation.
@@ -30,6 +39,14 @@ pub enum PsoInertia {
 /// Neighborhood topology for the PSO social influence term.
 ///
 /// Determines which particles each particle is attracted toward.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::pso::PsoTopology;
+///
+/// let topology = PsoTopology::Ring { neighborhood_size: 2 };
+/// ```
 #[derive(Debug, Clone)]
 pub enum PsoTopology {
     /// Global best (gbest) topology.
@@ -58,6 +75,20 @@ pub enum PsoTopology {
 }
 
 /// Configuration for a [`PsoEngine`](super::engine::PsoEngine) run.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::pso::{PsoConfiguration, PsoInertia, PsoTopology};
+/// use genetic_algorithms::configuration::ProblemSolving;
+///
+/// let config = PsoConfiguration::default()
+///     .with_population_size(30)
+///     .with_max_generations(1000)
+///     .with_inertia(PsoInertia::LinearDecay { w_start: 0.9, w_end: 0.4 })
+///     .with_topology(PsoTopology::Global)
+///     .with_problem_solving(ProblemSolving::Minimization);
+/// ```
 #[derive(Debug, Clone)]
 pub struct PsoConfiguration {
     /// Number of particles in the swarm.

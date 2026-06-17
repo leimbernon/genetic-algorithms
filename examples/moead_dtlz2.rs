@@ -103,6 +103,7 @@ impl genetic_algorithms::operations::mutation::ValueMutable for Dtlz2Chromosome 
 impl genetic_algorithms::traits::OperatorCompat for Dtlz2Chromosome {}
 
 fn main() {
+    let _ = env_logger::try_init();
     // --- MOEA/D configuration ---
     let moead_config = MoeaDConfiguration::new()
         .with_num_objectives(3)

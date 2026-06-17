@@ -27,7 +27,7 @@ use rand::Rng;
 /// The `adapt_strategy_params()` update rule is provided as a default
 /// implementation via the trait body, so implementors get it for free.
 ///
-/// # Example
+/// # Examples
 ///
 /// ```rust
 /// use genetic_algorithms::chromosomes::Range;

@@ -13,7 +13,6 @@
 use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
 use crate::traits::LinearChromosome;
-use log::debug;
 use rand::Rng;
 use std::fmt::Debug;
 
@@ -37,6 +36,15 @@ use std::fmt::Debug;
 /// # Returns
 ///
 /// `Ok(())` on success, or `Err(GaError::MutationError)` if `eta_m` is negative.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::polynomial::polynomial_mutation;
+/// use genetic_algorithms::chromosomes::Range;
+/// let mut chromosome: Range<f64> = Range::new();
+/// let _ = polynomial_mutation(&mut chromosome, 20.0);
+/// ```
 pub fn polynomial_mutation<T>(
     individual: &mut RangeChromosome<T>,
     eta_m: f64,
@@ -53,7 +61,7 @@ where
 
     let len = individual.dna().len();
     if len == 0 {
-        debug!(target="mutation_events", method="polynomial"; "Empty DNA, skipping polynomial mutation");
+        crate::log_debug!(target="mutation_events", method="polynomial"; "Empty DNA, skipping polynomial mutation");
         return Ok(());
     }
 
@@ -63,7 +71,7 @@ where
     let mut gene = individual.dna()[idx].clone();
 
     if gene.ranges.is_empty() {
-        debug!(target="mutation_events", method="polynomial"; "Gene {} has no ranges, skipping", idx);
+        crate::log_debug!(target="mutation_events", method="polynomial"; "Gene {} has no ranges, skipping", idx);
         return Ok(());
     }
 
@@ -94,13 +102,21 @@ where
     gene.value = T::from_f64(new_val_f64);
     individual.set_gene(idx, gene);
 
-    debug!(target="mutation_events", method="polynomial"; "Polynomial mutation applied at gene {} with eta_m={}", idx, eta_m);
+    crate::log_debug!(target="mutation_events", method="polynomial"; "Polynomial mutation applied at gene {} with eta_m={}", idx, eta_m);
     Ok(())
 }
 
 /// Trait for types that can be converted to/from an f64 value (for polynomial mutation).
 ///
 /// Implementations should do a reasonable conversion (e.g., rounding for integers).
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::operations::mutation::polynomial::PolynomialConvertible;
+/// assert_eq!(<f64 as PolynomialConvertible>::from_f64(0.5), 0.5_f64);
+/// assert_eq!(<f64 as PolynomialConvertible>::to_f64(1.0_f64), 1.0_f64);
+/// ```
 pub trait PolynomialConvertible {
     /// Converts an f64 value to this type.
     fn from_f64(val: f64) -> Self;

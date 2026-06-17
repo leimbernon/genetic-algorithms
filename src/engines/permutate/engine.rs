@@ -18,6 +18,17 @@ use super::configuration::PermutateConfiguration;
 ///
 /// Candidates must have fitness pre-evaluated before being passed to the engine —
 /// `chromosome.fitness()` is called directly, not a fitness function.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::permutate::{PermutateConfiguration, PermutateEngine};
+/// use genetic_algorithms::chromosomes::Binary;
+///
+/// let candidates: Vec<Binary> = vec![Binary::default(); 10];
+/// let config = PermutateConfiguration::default();
+/// let mut engine = PermutateEngine::new(config, candidates);
+/// ```
 pub struct PermutateEngine<U: ChromosomeT> {
     config: PermutateConfiguration,
     candidates: Vec<U>,
@@ -82,7 +93,7 @@ impl<U: ChromosomeT + Clone> PermutateEngine<U> {
         for (idx, candidate) in self.candidates.iter().enumerate() {
             // Safety gate: stop if too many candidates evaluated.
             if idx >= gate {
-                log::warn!(
+                crate::log_warn!(
                     target: "ga_events",
                     "PermutateEngine: safety gate of {} reached, stopping after {} candidates",
                     gate,

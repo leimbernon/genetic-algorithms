@@ -175,7 +175,6 @@ fn matvec(a: &[f64], x: &[f64], n: usize) -> Vec<f64> {
 /// Internal bookkeeping for one CMA-ES run.
 ///
 /// All fields follow Hansen's variable naming from arXiv:1604.00772.
-#[allow(dead_code)]
 struct CmaState {
     /// Problem dimension.
     n: usize,
@@ -614,7 +613,7 @@ where
 
         // Guard: empty population from user's init_fn
         if peek_pop.is_empty() {
-            log::warn!(
+            crate::log_warn!(
                 target: "cma_events",
                 "CmaEngine: init_fn returned an empty population; returning empty result"
             );
@@ -703,6 +702,8 @@ where
 
             // Initialise CMA state (full reset: sigma0, identity C, zero paths)
             let mut state = CmaState::new(n, current_lambda, &self.config, restart_mean);
+            debug_assert_eq!(state.n, n, "CmaState dimension mismatch");
+            debug_assert_eq!(state.lambda, current_lambda, "CmaState lambda mismatch");
 
             // Initial eigendecomposition
             let (b_init, d_init) = jacobi_eigendecompose(&state.c_mat, n);
@@ -806,7 +807,7 @@ where
 
                 // ── Validate mean (T-56-03-02: guard against NaN/Inf) ────────
                 if !new_mean.iter().all(|v| v.is_finite()) {
-                    log::warn!(
+                    crate::log_warn!(
                         target: "cma_events",
                         "CmaEngine generation {}: new_mean contains NaN/Inf — stopping early",
                         gen

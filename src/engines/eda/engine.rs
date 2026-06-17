@@ -42,6 +42,14 @@ use super::configuration::EdaConfiguration;
 /// The probabilistic model learned by the EDA engine at the final generation.
 ///
 /// Returned in [`EdaResult`] so callers can inspect the converged distribution.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::eda::EdaModel;
+///
+/// let model = EdaModel::Bernoulli(vec![0.5, 0.8, 0.2]);
+/// ```
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum EdaModel {
@@ -66,6 +74,23 @@ pub enum EdaModel {
 // ─── EdaResult ────────────────────────────────────────────────────────────────
 
 /// Result returned by [`EdaEngine::run`].
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::eda::{EdaConfiguration, EdaEngine, EdaResult};
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::traits::GeneT;
+///
+/// let config = EdaConfiguration::default().with_max_generations(200);
+/// let mut engine = EdaEngine::<Binary>::new(
+///     config,
+///     |n| vec![Binary::default(); n],
+///     |dna| dna.iter().filter(|g| g.id() == 1).count() as f64,
+/// );
+/// let result: EdaResult<Binary> = engine.run();
+/// println!("Best fitness: {}", result.best_fitness);
+/// ```
 pub struct EdaResult<U: LinearChromosome> {
     /// Final population after the last generation.
     pub population: Vec<U>,
@@ -86,23 +111,25 @@ pub struct EdaResult<U: LinearChromosome> {
 /// Uses the classic UMDA Bernoulli model: estimates `p_i` per gene position from the
 /// selected parents and samples Bernoulli(`p_i`) to produce offspring.
 ///
-/// # Example
+/// # Examples
 ///
-/// ```ignore
+/// ```rust,no_run
 /// use genetic_algorithms::eda::{EdaConfiguration, EdaEngine};
 /// use genetic_algorithms::chromosomes::Binary;
 /// use genetic_algorithms::configuration::ProblemSolving;
+/// use genetic_algorithms::traits::GeneT;
 ///
 /// let config = EdaConfiguration::default()
 ///     .with_max_generations(200)
 ///     .with_problem_solving(ProblemSolving::Maximization);
 ///
-/// let mut engine = EdaEngine::new(
+/// let mut engine = EdaEngine::<Binary>::new(
 ///     config,
-///     |n| { /* return Vec<Binary> of length n */ todo!() },
-///     |dna| dna.iter().filter(|g| g.id() == 1).count() as f64, // OneMax
+///     |n| vec![Binary::default(); n],
+///     |dna| dna.iter().filter(|g| g.id() == 1).count() as f64,
 /// );
 /// let result = engine.run();
+/// println!("Generations: {}", result.generations);
 /// ```
 pub struct EdaEngine<U: LinearChromosome> {
     config: EdaConfiguration,
@@ -314,7 +341,7 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
                 .collect();
 
             // Evaluate new population
-            #[cfg(not(target_arch = "wasm32"))]
+            #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
             {
                 use rayon::prelude::*;
                 let fitness_fn = Arc::clone(&self.fitness_fn);
@@ -326,7 +353,7 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
                     ind.set_fitness(f);
                 }
             }
-            #[cfg(target_arch = "wasm32")]
+            #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
             {
                 for ind in &mut new_pop {
                     let f = (self.fitness_fn)(ind.dna());
@@ -398,24 +425,25 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
 /// from the selected parents and samples `N(mean_i, std_i)` clamped to `gene.bounds()`
 /// for each offspring.
 ///
-/// # Example
+/// # Examples
 ///
-/// ```ignore
+/// ```rust,no_run
 /// use genetic_algorithms::eda::{EdaConfiguration, EdaRealEngine};
 /// use genetic_algorithms::chromosomes::Range as RangeChromosome;
-/// use genetic_algorithms::genotypes::Range as RangeGene;
 /// use genetic_algorithms::configuration::ProblemSolving;
+/// use genetic_algorithms::RealGene;
 ///
 /// let config = EdaConfiguration::default()
 ///     .with_max_generations(300)
 ///     .with_problem_solving(ProblemSolving::Minimization);
 ///
-/// let mut engine = EdaRealEngine::new(
+/// let mut engine = EdaRealEngine::<RangeChromosome<f64>>::new(
 ///     config,
-///     |n| { /* return Vec<RangeChromosome<f64>> of length n */ todo!() },
-///     |dna| dna.iter().map(|g| g.real_value().powi(2)).sum(), // sphere
+///     |n| vec![RangeChromosome::default(); n],
+///     |dna| dna.iter().map(|g| g.real_value().powi(2)).sum(),
 /// );
 /// let result = engine.run();
+/// println!("Generations: {}", result.generations);
 /// ```
 pub struct EdaRealEngine<U: LinearChromosome>
 where
@@ -639,7 +667,7 @@ where
                 .collect();
 
             // Evaluate fitness
-            #[cfg(not(target_arch = "wasm32"))]
+            #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
             {
                 use rayon::prelude::*;
                 let fitness_fn = Arc::clone(&self.fitness_fn);
@@ -651,7 +679,7 @@ where
                     ind.set_fitness(f);
                 }
             }
-            #[cfg(target_arch = "wasm32")]
+            #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
             {
                 for ind in &mut new_pop {
                     let f = (self.fitness_fn)(ind.dna());

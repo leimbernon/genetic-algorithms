@@ -10,8 +10,7 @@ pub(crate) use crate::{
     configuration::{LimitConfiguration, ProblemSolving},
     traits::ChromosomeT,
 };
-use log::{debug, trace};
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
 use rayon::prelude::*;
 
 /// Select survivors using the (mu+lambda) strategy.
@@ -24,20 +23,31 @@ use rayon::prelude::*;
 /// semantic distinction is that (mu+lambda) explicitly frames the competition as
 /// "parents + offspring together", which is the convention in evolution-strategy
 /// literature.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::survivor::mu_plus_lambda;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::configuration::{LimitConfiguration, ProblemSolving};
+/// let mut population: Vec<Binary> = vec![Binary::new(); 20];
+/// let limits = LimitConfiguration { problem_solving: ProblemSolving::Maximization, ..LimitConfiguration::default() };
+/// mu_plus_lambda(&mut population, 10, limits);
+/// ```
 pub fn mu_plus_lambda<U: ChromosomeT>(
     chromosomes: &mut Vec<U>,
     population_size: usize,
     limit_configuration: LimitConfiguration,
 ) {
-    debug!(target="survivor_events", method="mu_plus_lambda"; "Starting (mu+lambda) survivor selection");
+    crate::log_debug!(target="survivor_events", method="mu_plus_lambda"; "Starting (mu+lambda) survivor selection");
     if limit_configuration.problem_solving != ProblemSolving::FixedFitness {
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
         chromosomes.par_sort_unstable_by(|a, b| {
             b.fitness()
                 .partial_cmp(&a.fitness())
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
         chromosomes.sort_unstable_by(|a, b| {
             b.fitness()
                 .partial_cmp(&a.fitness())
@@ -45,13 +55,13 @@ pub fn mu_plus_lambda<U: ChromosomeT>(
         });
     } else {
         let target = limit_configuration.fitness_target.unwrap_or(0.0);
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
         chromosomes.par_sort_unstable_by(|a, b| {
             b.fitness_distance(&target)
                 .partial_cmp(&a.fitness_distance(&target))
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
         chromosomes.sort_unstable_by(|a, b| {
             b.fitness_distance(&target)
                 .partial_cmp(&a.fitness_distance(&target))
@@ -59,7 +69,7 @@ pub fn mu_plus_lambda<U: ChromosomeT>(
         });
     }
 
-    trace!(target="survivor_events", method="mu_plus_lambda"; "Chromosomes length {} - population size {}", chromosomes.len(), population_size);
+    crate::log_trace!(target="survivor_events", method="mu_plus_lambda"; "Chromosomes length {} - population size {}", chromosomes.len(), population_size);
     if chromosomes.len() > population_size {
         match limit_configuration.problem_solving {
             ProblemSolving::Maximization => {
@@ -72,5 +82,5 @@ pub fn mu_plus_lambda<U: ChromosomeT>(
         }
     }
 
-    debug!(target="survivor_events", method="mu_plus_lambda"; "(mu+lambda) survivor selection finished");
+    crate::log_debug!(target="survivor_events", method="mu_plus_lambda"; "(mu+lambda) survivor selection finished");
 }

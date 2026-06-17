@@ -36,6 +36,7 @@ use genetic_algorithms::LogObserver;
 use std::sync::Arc;
 
 fn main() {
+    let _ = env_logger::try_init();
     // --- Problem parameters ---
     const N_BITS: usize = 64;
     const POP_SIZE: usize = 30;

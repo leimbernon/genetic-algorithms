@@ -2,7 +2,6 @@
 
 use crate::error::GaError;
 use crate::traits::{LinearChromosome, GeneT};
-use log::debug;
 use rand::Rng;
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
@@ -17,6 +16,16 @@ use std::collections::{HashMap, HashSet};
 ///    unvisited neighbour with the fewest remaining unvisited neighbours.
 /// 3. On tie or exhausted neighbour list, fall back to a random unvisited gene
 ///    (D-06).
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::crossover::erx;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let parent1 = Binary::new();
+/// let parent2 = Binary::new();
+/// let _ = erx(&parent1, &parent2);
+/// ```
 ///
 /// # Errors
 /// - [`GaError::CrossoverError`] if parent lengths differ.
@@ -57,7 +66,7 @@ pub fn erx<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, Ga
         ));
     }
 
-    debug!(target="crossover_events", method="edge_recombination"; "Starting ERX crossover");
+    crate::log_debug!(target="crossover_events", method="edge_recombination"; "Starting ERX crossover");
     let mut rng = crate::rng::make_rng();
 
     // Build adjacency map (circular: index wraps at boundaries)
@@ -108,7 +117,7 @@ pub fn erx<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, Ga
     child_1.set_dna(Cow::Owned(dna_1));
     child_2.set_dna(Cow::Owned(dna_2));
 
-    debug!(target="crossover_events", method="edge_recombination"; "ERX crossover finished");
+    crate::log_debug!(target="crossover_events", method="edge_recombination"; "ERX crossover finished");
     Ok(vec![child_1, child_2])
 }
 

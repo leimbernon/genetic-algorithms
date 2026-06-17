@@ -33,10 +33,36 @@ use genetic_algorithms::traits::{
 };
 #[cfg(feature = "observer-metrics")]
 use genetic_algorithms::MetricsObserver;
-use genetic_algorithms::{ChromosomeLength, CompositeObserver, LogObserver};
+use genetic_algorithms::{rng, ChromosomeLength, CompositeObserver, LogObserver};
 use std::sync::Arc;
 
 fn main() {
+    let _ = env_logger::try_init();
+    // Parse optional --seed <N> argument for reproducible runs (used by build_perf.sh golden capture).
+    // When --seed is provided, rayon is fixed to 1 thread so the counter-based RNG in
+    // rng::make_rng() is called in a deterministic order. The seed is also passed via
+    // with_rng_seed() so the GA engine re-applies it at run() time (the engine resets the seed
+    // internally, overriding any set_seed() call made before build()).
+    let args: Vec<String> = std::env::args().collect();
+    let seed_opt: Option<u64> = args
+        .iter()
+        .position(|a| a == "--seed")
+        .and_then(|pos| args.get(pos + 1))
+        .and_then(|v| v.parse::<u64>().ok());
+
+    if let Some(s) = seed_opt {
+        #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
+        {
+            // Fix rayon to single thread for reproducible RNG counter ordering.
+            rayon::ThreadPoolBuilder::new()
+                .num_threads(1)
+                .build_global()
+                .ok(); // ignore error if pool already initialized
+        }
+        // Pre-set seed for initialization function (runs before ga.run()).
+        rng::set_seed(Some(s));
+    }
+
     // --- Problem parameters ---
     const DIMENSIONS: usize = 5;
     const POP_SIZE: usize = 100;
@@ -59,12 +85,12 @@ fn main() {
     let alleles_clone = alleles.clone();
 
     // --- Build composite observer (LogObserver always active; MetricsObserver when feature flag set) ---
-    let composite = CompositeObserver::new().add(Arc::new(LogObserver));
+    let composite = CompositeObserver::new().register(Arc::new(LogObserver));
     #[cfg(feature = "observer-metrics")]
-    let composite = composite.add(Arc::new(MetricsObserver::new("rastrigin")));
+    let composite = composite.register(Arc::new(MetricsObserver::new("rastrigin")));
 
     // --- Build the GA configuration ---
-    let mut ga = Ga::new()
+    let mut ga_builder = Ga::new()
         // Chromosome: DIMENSIONS genes, each a continuous value in [-5.12, 5.12]
         .with_chromosome_length(ChromosomeLength::Fixed(DIMENSIONS))
         .with_population_size(POP_SIZE)
@@ -85,9 +111,14 @@ fn main() {
         .with_problem_solving(ProblemSolving::Minimization)
         .with_max_generations(MAX_GENERATIONS)
         // Observer: CompositeObserver fans out to LogObserver (and MetricsObserver if feature enabled)
-        .with_observer(Arc::new(composite))
-        .build()
-        .expect("Failed to build GA configuration");
+        .with_observer(Arc::new(composite));
+
+    // Wire seed into GA engine so run() re-applies it (engine resets seed internally at run time).
+    if let Some(s) = seed_opt {
+        ga_builder = ga_builder.with_rng_seed(s);
+    }
+
+    let mut ga = ga_builder.build().expect("Failed to build GA configuration");
 
     println!("== Rastrigin Continuous Optimization ==");
     println!(
@@ -151,7 +182,7 @@ fn main() {
                 let stats = &*stats_guard;
                 std::fs::create_dir_all("docs/images").expect("failed to create docs/images");
                 genetic_algorithms::visualization::plot_fitness(
-                    &stats,
+                    stats,
                     "docs/images/rastrigin.png",
                 )
                 .expect("plot failed");

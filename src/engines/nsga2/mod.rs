@@ -120,7 +120,7 @@ use crate::observer::Nsga2Observer;
 use crate::operations::mutation;
 use crate::traits::{InitializationFn, LinearChromosome, MutationOperator, VectorFitness};
 use rand::Rng;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
 use rayon::prelude::*;
 use std::sync::Arc;
 use std::time::Instant;
@@ -133,6 +133,20 @@ pub use crate::multi_objective::ObjectiveFn;
 /// # Type Parameters
 ///
 /// * `U` - Chromosome type implementing `ChromosomeT`.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::nsga2::Nsga2Ga;
+/// use genetic_algorithms::nsga2::configuration::Nsga2Configuration;
+/// use genetic_algorithms::configuration::GaConfiguration;
+/// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+///
+/// let nsga2_config = Nsga2Configuration::new().with_num_objectives(2);
+/// let ga_config = GaConfiguration::default();
+///
+/// let engine = Nsga2Ga::<RangeChromosome<f64>>::new(nsga2_config, ga_config);
+/// ```
 pub struct Nsga2Ga<U>
 where
     U: LinearChromosome + VectorFitness,
@@ -463,7 +477,7 @@ where
 
         // Wrap each chromosome in a ParetoIndividual with evaluated objectives
         let constraint_fns = &self.constraint_fns;
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
         let population = chromosomes
             .into_par_iter()
             .map(|mut chrom| {
@@ -475,7 +489,7 @@ where
                 ind
             })
             .collect();
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
         let population = chromosomes
             .into_iter()
             .map(|mut chrom| {
@@ -551,7 +565,7 @@ where
 
         // Evaluate objectives in parallel
         let constraint_fns = &self.constraint_fns;
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
         let offspring = raw_offspring
             .into_par_iter()
             .map(|mut chrom| {
@@ -563,7 +577,7 @@ where
                 ind
             })
             .collect();
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
         let offspring = raw_offspring
             .into_iter()
             .map(|mut chrom| {

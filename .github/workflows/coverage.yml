@@ -1,0 +1,54 @@
+name: Coverage Gate
+
+on:
+  pull_request:
+    branches: [main, "milestone/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  coverage:
+    name: coverage (src/engines/ + src/operations/)
+    runs-on: ubuntu-latest
+    env:
+      RUSTC_WRAPPER: sccache
+      SCCACHE_GHA_ENABLED: "true"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
+
+      - name: Install stable toolchain with llvm-tools
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+
+      - name: Cache cargo registry and target
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: coverage
+
+      - name: Install mold linker and fontconfig
+        # libfontconfig1-dev + pkg-config are required by the `visualization`
+        # feature (plotters → yeslogic-fontconfig-sys) which is pulled in by
+        # `--all-features` below.
+        run: sudo apt-get install -y mold libfontconfig1-dev pkg-config
+
+      - name: Install cargo-llvm-cov
+        run: cargo install cargo-llvm-cov --locked
+
+      - name: Install nextest
+        uses: taiki-e/install-action@nextest
+
+      - name: Run coverage gate (src/engines/ + src/operations/ ≥ 80%)
+        run: |
+          cargo llvm-cov nextest \
+            --all-features \
+            --ignore-filename-regex '^(?!.*(src/engines/|src/operations/)).*$' \
+            --fail-under-lines 80
+
+      - name: sccache stats
+        run: sccache --show-stats

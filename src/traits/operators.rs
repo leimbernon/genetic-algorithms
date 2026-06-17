@@ -11,10 +11,11 @@ use crate::traits::{ChromosomeT, LinearChromosome};
 /// implementations are provided for the [`Selection`](crate::operations::Selection)
 /// enum variants.
 ///
-/// # Example
+/// # Examples
 ///
-/// ```rust,ignore
+/// ```rust,no_run
 /// use genetic_algorithms::traits::SelectionOperator;
+/// use genetic_algorithms::traits::ChromosomeT;
 ///
 /// struct MySelection;
 ///
@@ -29,7 +30,7 @@ use crate::traits::{ChromosomeT, LinearChromosome};
 ///     where
 ///         U: ChromosomeT + Sync + Send + 'static + Clone,
 ///     {
-///         // Custom selection logic here
+///         // Custom selection logic: return random parent pairs
 ///         vec![]
 ///     }
 /// }
@@ -60,10 +61,12 @@ pub trait SelectionOperator {
 /// automatically when `U` is [`Range<T>`](crate::chromosomes::Range) with
 /// `T` being `f64`, `f32`, `i32`, or `i64`.
 ///
-/// # Example
+/// # Examples
 ///
-/// ```rust,ignore
+/// ```rust,no_run
 /// use genetic_algorithms::traits::CrossoverOperator;
+/// use genetic_algorithms::traits::LinearChromosome;
+/// use genetic_algorithms::error::GaError;
 ///
 /// struct MyCrossover;
 ///
@@ -71,7 +74,7 @@ pub trait SelectionOperator {
 ///     fn crossover<U: LinearChromosome>(&self, parent_1: &U, parent_2: &U)
 ///         -> Result<Vec<U>, GaError>
 ///     {
-///         // Custom crossover logic here
+///         // Clone-crossover: no recombination, both parents survive unchanged
 ///         Ok(vec![parent_1.clone(), parent_2.clone()])
 ///     }
 /// }
@@ -94,11 +97,14 @@ pub trait CrossoverOperator {
 /// implementations are provided for the [`Mutation`]
 /// enum variants.
 ///
-/// # Example
+/// # Examples
 ///
-/// ```rust,ignore
+/// ```rust,no_run
 /// use genetic_algorithms::traits::MutationOperator;
+/// use genetic_algorithms::traits::LinearChromosome;
+/// use genetic_algorithms::operations::mutation::ValueMutable;
 /// use genetic_algorithms::operations::Mutation;
+/// use genetic_algorithms::error::GaError;
 ///
 /// struct MyMutation;
 ///
@@ -111,7 +117,7 @@ pub trait CrossoverOperator {
 ///     where
 ///         U: LinearChromosome + ValueMutable + 'static,
 ///     {
-///         // Custom mutation logic here
+///         // No-op mutation: individual is returned unchanged
 ///         Ok(())
 ///     }
 /// }
@@ -142,10 +148,13 @@ pub trait MutationOperator {
 /// Built-in implementations are provided for the
 /// [`Survivor`](crate::operations::Survivor) enum variants.
 ///
-/// # Example
+/// # Examples
 ///
-/// ```rust,ignore
+/// ```rust,no_run
 /// use genetic_algorithms::traits::SurvivorOperator;
+/// use genetic_algorithms::traits::LinearChromosome;
+/// use genetic_algorithms::configuration::LimitConfiguration;
+/// use genetic_algorithms::error::GaError;
 ///
 /// struct MySurvivor;
 ///
@@ -156,7 +165,8 @@ pub trait MutationOperator {
 ///         population_size: usize,
 ///         limit_configuration: LimitConfiguration,
 ///     ) -> Result<(), GaError> {
-///         // Custom survivor selection logic here
+///         // Keep only the first `population_size` individuals (example only)
+///         chromosomes.truncate(population_size);
 ///         Ok(())
 ///     }
 /// }
@@ -179,10 +189,14 @@ pub trait SurvivorOperator {
 /// implementations are provided for the
 /// [`Extension`](crate::operations::Extension) enum variants.
 ///
-/// # Example
+/// # Examples
 ///
-/// ```rust,ignore
+/// ```rust,no_run
 /// use genetic_algorithms::traits::ExtensionOperator;
+/// use genetic_algorithms::traits::LinearChromosome;
+/// use genetic_algorithms::configuration::ProblemSolving;
+/// use genetic_algorithms::extension::configuration::ExtensionConfiguration;
+/// use genetic_algorithms::error::GaError;
 ///
 /// struct MyExtension;
 ///
@@ -194,7 +208,7 @@ pub trait SurvivorOperator {
 ///         problem_solving: ProblemSolving,
 ///         config: &ExtensionConfiguration,
 ///     ) -> Result<(), GaError> {
-///         // Custom extension logic here
+///         // No-op: diversity rescue is skipped in this custom strategy
 ///         Ok(())
 ///     }
 /// }
@@ -223,20 +237,25 @@ pub trait ExtensionOperator {
 /// The fitness function is received as a parameter at each call site (D-02),
 /// enabling it to be Arc::cloned across parallel refinement tasks (D-03).
 ///
-/// # Example
+/// # Examples
 ///
-/// ```rust,ignore
+/// ```rust,no_run
 /// use genetic_algorithms::traits::LocalSearchOperator;
+/// use genetic_algorithms::traits::LinearChromosome;
+/// use genetic_algorithms::error::GaError;
 ///
 /// struct MyLocalSearch;
 ///
 /// impl LocalSearchOperator for MyLocalSearch {
-///     fn improve<U: LinearChromosome + Send + Sync + 'static + Clone>(
+///     fn improve<U>(
 ///         &self,
 ///         individual: &mut U,
 ///         fitness_fn: &dyn Fn(&[U::Gene]) -> f64,
-///     ) -> Result<usize, GaError> {
-///         // Custom local search logic here
+///     ) -> Result<usize, GaError>
+///     where
+///         U: LinearChromosome + Send + Sync + 'static + Clone,
+///     {
+///         // Return 0 improvements (no-op example)
 ///         Ok(0)
 ///     }
 /// }

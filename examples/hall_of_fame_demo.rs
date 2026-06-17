@@ -18,6 +18,7 @@ use genetic_algorithms::traits::{
 };
 
 fn main() {
+    let _ = env_logger::try_init();
     println!("=== Hall of Fame / Solution Archive Demo ===");
     println!();
 

@@ -6,6 +6,32 @@ use genetic_algorithms::operations::mutation::differential::differential_mutatio
 use genetic_algorithms::traits::LinearChromosome;
 use std::borrow::Cow;
 
+fn make_f32_population(size: usize) -> Vec<RangeChromosome<f32>> {
+    (0..size)
+        .map(|i| {
+            let mut c = RangeChromosome::<f32>::new();
+            let dna: Vec<_> = (0_i32..3)
+                .map(|j| RangeGenotype::new(j, vec![(0.0f32, 100.0f32)], (i as f32 * 10.0).min(90.0)))
+                .collect();
+            c.set_dna(Cow::Owned(dna));
+            c
+        })
+        .collect()
+}
+
+fn make_i64_population(size: usize) -> Vec<RangeChromosome<i64>> {
+    (0..size)
+        .map(|i| {
+            let mut c = RangeChromosome::<i64>::new();
+            let dna: Vec<_> = (0_i32..3)
+                .map(|j| RangeGenotype::new(j, vec![(0i64, 100i64)], ((i as i64) * 10).min(90)))
+                .collect();
+            c.set_dna(Cow::Owned(dna));
+            c
+        })
+        .collect()
+}
+
 /// Build a population of `size` RangeChromosome<f64> with distinct initial values
 /// so that donor vectors x_r2 and x_r3 produce non-zero differences.
 fn make_f64_population(size: usize) -> Vec<RangeChromosome<f64>> {
@@ -152,6 +178,56 @@ fn differential_mutation_with_i32() {
             assert!(
                 gene.value >= lo && gene.value <= hi,
                 "i32 gene value {} out of range [{}, {}]",
+                gene.value,
+                lo,
+                hi
+            );
+        }
+    }
+}
+
+#[test]
+fn differential_error_target_idx_out_of_bounds() {
+    let pop = make_f64_population(4);
+    let mut target = pop[0].clone();
+    let result = differential_mutation(&mut target, &pop, 99, 0.5);
+    assert!(
+        matches!(result, Err(GaError::MutationError(_))),
+        "Expected MutationError for target_idx=99 out of bounds, got {:?}",
+        result
+    );
+}
+
+#[test]
+fn differential_mutation_with_f32() {
+    let pop = make_f32_population(10);
+    for _ in 0..50 {
+        let mut target = pop[0].clone();
+        differential_mutation(&mut target, &pop, 0, 0.5).unwrap();
+        for gene in target.dna() {
+            let (lo, hi) = gene.ranges[0];
+            assert!(
+                gene.value >= lo && gene.value <= hi,
+                "f32 gene value {} out of range [{}, {}]",
+                gene.value,
+                lo,
+                hi
+            );
+        }
+    }
+}
+
+#[test]
+fn differential_mutation_with_i64() {
+    let pop = make_i64_population(10);
+    for _ in 0..50 {
+        let mut target = pop[0].clone();
+        differential_mutation(&mut target, &pop, 0, 0.5).unwrap();
+        for gene in target.dna() {
+            let (lo, hi) = gene.ranges[0];
+            assert!(
+                gene.value >= lo && gene.value <= hi,
+                "i64 gene value {} out of range [{}, {}]",
                 gene.value,
                 lo,
                 hi

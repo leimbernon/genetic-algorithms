@@ -64,6 +64,10 @@ cd my_ga_project
 
 Replace `src/main.rs` with:
 
+> **Logging:** The library emits `log!()` events but does not install a logger itself. Call
+> `env_logger::init()` (or any other `log` subscriber) as the very first statement of `main()`
+> if you want to see log output. Add `env_logger = "0.11"` to your `[dev-dependencies]`.
+
 ```rust
 use std::sync::Arc;
 
@@ -80,6 +84,8 @@ use genetic_algorithms::traits::{
 use genetic_algorithms::LogObserver;
 
 fn main() {
+    env_logger::init(); // install logger before running the GA; set RUST_LOG=info to see events
+
     const N_BITS: usize = 100;
     const POP_SIZE: usize = 50;
     const MAX_GENERATIONS: usize = 1000;
@@ -122,6 +128,31 @@ Expected output (generation count will vary):
 
 ```
 Best fitness: 100
+```
+
+## Disabling logging for ultra-lean builds
+
+The `logging` feature is enabled by default. It activates the `log` crate dependency and makes
+`LogObserver` available. To shed the `log` dependency entirely — useful for embedded targets,
+WASM builds where every kilobyte counts, or any environment where you control observability
+entirely through a different mechanism — disable it via:
+
+```toml
+genetic_algorithms = { version = "3.0.0", default-features = false }
+```
+
+With `logging` off, all internal log emissions expand to `()` at compile time (zero overhead,
+no code generation). `LogObserver` is not exported. You can re-enable it selectively alongside
+other disabled-by-default features:
+
+```toml
+genetic_algorithms = { version = "3.0.0", default-features = false, features = ["serde"] }
+```
+
+If you want the `serde` feature but also logging, add both explicitly:
+
+```toml
+genetic_algorithms = { version = "3.0.0", default-features = false, features = ["serde", "logging"] }
 ```
 
 ## Running the Bundled Examples

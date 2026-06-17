@@ -33,6 +33,17 @@ use crate::traits::ChromosomeT;
 ///
 /// Implement alongside [`ChromosomeT`]. Call [`set_fitness_values`](VectorFitness::set_fitness_values)
 /// inside your `calculate_fitness()` implementation.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::traits::VectorFitness;
+///
+/// let mut chrom = Binary::new();
+/// chrom.set_fitness_values(vec![0.9, 0.7]);
+/// assert_eq!(chrom.fitness_values().len(), 2);
+/// ```
 pub trait VectorFitness: ChromosomeT {
     /// Returns the per-case or per-objective fitness values set during `calculate_fitness`.
     fn fitness_values(&self) -> &[f64];

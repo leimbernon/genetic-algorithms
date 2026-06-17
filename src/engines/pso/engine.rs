@@ -28,6 +28,23 @@ use super::configuration::{inertia_weight, PsoConfiguration, PsoTopology};
 // ─── PsoResult ────────────────────────────────────────────────────────────────
 
 /// Result returned by [`PsoEngine::run`].
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::pso::{PsoConfiguration, PsoEngine, PsoResult};
+/// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+/// use genetic_algorithms::RealGene;
+///
+/// let config = PsoConfiguration::default();
+/// let mut engine = PsoEngine::<RangeChromosome<f64>>::new(
+///     config,
+///     |n| vec![RangeChromosome::default(); n],
+///     |dna| dna.iter().map(|g| g.real_value().powi(2)).sum(),
+/// );
+/// let result: PsoResult<RangeChromosome<f64>> = engine.run();
+/// println!("Best fitness: {}", result.best_fitness);
+/// ```
 pub struct PsoResult<U: LinearChromosome> {
     /// Final population (all particles evaluated at end of run).
     pub population: Vec<U>,
@@ -135,22 +152,23 @@ impl PsoState {
 /// Generic over the chromosome type `U`; `U::Gene` must implement [`RealGene`]
 /// so that velocity and position arithmetic can be performed on gene values.
 ///
-/// # Example
+/// # Examples
 ///
-/// ```ignore
+/// ```rust,no_run
 /// use genetic_algorithms::pso::{PsoConfiguration, PsoEngine};
 /// use genetic_algorithms::chromosomes::Range as RangeChromosome;
-/// use genetic_algorithms::genotypes::Range as RangeGene;
+/// use genetic_algorithms::RealGene;
 ///
 /// let config = PsoConfiguration::default()
 ///     .with_max_generations(500);
 ///
-/// let mut engine = PsoEngine::new(
+/// let mut engine = PsoEngine::<RangeChromosome<f64>>::new(
 ///     config,
-///     |n| { /* return Vec<RangeChromosome<f64>> of length n */ todo!() },
+///     |n| vec![RangeChromosome::default(); n],
 ///     |dna| dna.iter().map(|g| g.real_value().powi(2)).sum(),
 /// );
 /// let result = engine.run();
+/// println!("Generations: {}", result.generations);
 /// ```
 pub struct PsoEngine<U: LinearChromosome>
 where
@@ -332,8 +350,9 @@ where
             let w = inertia_weight(&self.config.inertia, gen, self.config.max_generations);
 
             // ── Update each particle ──────────────────────────────────────────
-            // `i` is required for cross-indexing into `state.velocities`,
-            // `state.pbest_positions`, and `state.pbest_fitness` in parallel.
+            // `i` is required to cross-index state.velocities[i], state.pbest_positions[i],
+            // state.pbest_fitness[i] — three independent vectors. Refactoring to
+            // enumerate() over a single vec would break this contract.
             #[allow(clippy::needless_range_loop)]
             for i in 0..pop.len() {
                 // Read current position.

@@ -7,6 +7,7 @@ use genetic_algorithms::error::GaError;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::spea2::configuration::{Spea2Configuration, ObjectiveDirection};
 use genetic_algorithms::spea2::Spea2Ga;
+#[cfg(feature = "logging")]
 use genetic_algorithms::LogObserver;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -265,6 +266,7 @@ fn test_spea2_run_invokes_observer_hooks() {
         "on_archive_updated should fire once per generation");
 }
 
+#[cfg(feature = "logging")]
 #[test]
 fn test_spea2_log_observer() {
     let mut spea2 = build_test_spea2(15, 10, 3)

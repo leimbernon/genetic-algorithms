@@ -18,6 +18,19 @@ use crate::traits::{FitnessFn, GeneT};
 /// The cache uses a `HashMap` for O(1) lookups and a `VecDeque` for tracking
 /// access order. When the cache exceeds its capacity, the least recently used
 /// entry is evicted.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::fitness::cache::FitnessCache;
+///
+/// let mut cache = FitnessCache::new(4);
+/// cache.put(42, 0.9);
+/// assert_eq!(cache.get(42), Some(0.9));
+/// assert_eq!(cache.get(99), None);
+/// assert_eq!(cache.hits(), 1);
+/// assert_eq!(cache.misses(), 1);
+/// ```
 pub struct FitnessCache {
     map: HashMap<u64, f64>,
     order: VecDeque<u64>,
@@ -98,6 +111,18 @@ impl FitnessCache {
 ///
 /// This approach works for all gene types (including `Range<f64>` which
 /// does not implement `Hash`) since `Debug` is required by the `Ga` impl.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::fitness::cache::hash_dna;
+/// use genetic_algorithms::genotypes::Binary as BinaryGene;
+///
+/// let dna = vec![BinaryGene { id: 0, value: true }, BinaryGene { id: 1, value: false }];
+/// let h1 = hash_dna(&dna);
+/// let h2 = hash_dna(&dna);
+/// assert_eq!(h1, h2);
+/// ```
 pub fn hash_dna<G: Debug>(dna: &[G]) -> u64 {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     // Hash each gene's Debug representation to capture full state

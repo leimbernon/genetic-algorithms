@@ -20,7 +20,7 @@
 //! use genetic_algorithms::initializers::range_random_initialization;
 //! use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 //! use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig};
-//! use genetic_algorithms::{CompositeObserver, LogObserver};
+//! use genetic_algorithms::{ChromosomeLength, CompositeObserver, LogObserver};
 //! use std::sync::Arc;
 //!
 //! let fitness_fn = |dna: &[RangeGenotype<f64>]| -> f64 {
@@ -35,10 +35,10 @@
 //! let alleles_clone = alleles.clone();
 //!
 //! let mut ga = Ga::new()
-//!     .with_genes_per_chromosome(5_usize)
+//!     .with_chromosome_length(ChromosomeLength::Fixed(5))
 //!     .with_population_size(100)
-//!     .with_initialization_fn(move |genes_per_chromosome, _, _| {
-//!         range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+//!     .with_initialization_fn(move |n, _| {
+//!         range_random_initialization(n, Some(&alleles_clone))
 //!     })
 //!     .with_fitness_fn(fitness_fn)
 //!     .with_selection_method(Selection::Tournament)
@@ -47,7 +47,7 @@
 //!     .with_survivor_method(Survivor::Fitness)
 //!     .with_problem_solving(ProblemSolving::Minimization)
 //!     .with_max_generations(500)
-//!     .with_observer(Arc::new(CompositeObserver::new().add(Arc::new(LogObserver))))
+//!     .with_observer(Arc::new(CompositeObserver::new().register(Arc::new(LogObserver))))
 //!     .build()
 //!     .expect("Invalid configuration");
 //!
@@ -126,6 +126,8 @@
 //!
 //! | Flag | Description | Default |
 //! |------|-------------|---------|
+//! | `logging` | Enables `log` crate emission of events via `LogObserver`. Disable via `default-features = false` to shed `log` for minimal binary size (embedded / ultra-lean WASM). | **On** |
+//! | `parallel` | Parallel fitness evaluation via rayon (default-on; disable via `default-features = false` to shed rayon + crossbeam dependencies for embedded / wasm-only builds). | **On** |
 //! | `serde` | Serialization/deserialization for checkpoint save/load via `serde_json` | Off |
 //! | `benchmarks` | Standard benchmark functions (Sphere, Rastrigin, Rosenbrock, ZDT, DTLZ) and multi-objective quality indicators | Off |
 //! | `visualization` | PNG/SVG fitness plots, diversity charts, and histogram generation via `plotters` | Off |
@@ -196,7 +198,7 @@
 //! [`IslandGaObserver`], [`Nsga2Observer`],
 //! [`Nsga3Observer`], [`Spea2Observer`],
 //! [`MoeaDObserver`], [`SmsEmoaObserver`],
-//! and [`IbeaObserver`].
+//! [`IbeaObserver`], [`CmaObserver`], [`PsoObserver`], and [`EdaObserver`].
 //!
 //! Zero overhead when no observer is attached (stored as `Option<Arc<dyn GaObserver<U>>>`).
 //!
@@ -260,6 +262,50 @@
 //! - [docs.rs/genetic_algorithms](https://docs.rs/genetic_algorithms/latest/genetic_algorithms) — Full API reference with module-level documentation
 //! - [crates.io](https://crates.io/crates/genetic_algorithms) — Package registry and version history
 
+// Internal logging macro family — delegates to ::log::* when the `logging` feature is enabled,
+// expands to () when disabled. Avoids 100+ per-call-site #[cfg(feature = "logging")] annotations.
+#[cfg(feature = "logging")]
+macro_rules! log_info {
+    ($($arg:tt)*) => { ::log::info!($($arg)*) };
+}
+#[cfg(not(feature = "logging"))]
+macro_rules! log_info {
+    ($($arg:tt)*) => { () };
+}
+
+#[cfg(feature = "logging")]
+macro_rules! log_debug {
+    ($($arg:tt)*) => { ::log::debug!($($arg)*) };
+}
+#[cfg(not(feature = "logging"))]
+macro_rules! log_debug {
+    ($($arg:tt)*) => { () };
+}
+
+#[cfg(feature = "logging")]
+macro_rules! log_trace {
+    ($($arg:tt)*) => { ::log::trace!($($arg)*) };
+}
+#[cfg(not(feature = "logging"))]
+macro_rules! log_trace {
+    ($($arg:tt)*) => { () };
+}
+
+#[cfg(feature = "logging")]
+macro_rules! log_warn {
+    ($($arg:tt)*) => { ::log::warn!($($arg)*) };
+}
+#[cfg(not(feature = "logging"))]
+macro_rules! log_warn {
+    ($($arg:tt)*) => { () };
+}
+
+// Make macros accessible from all submodules via `crate::log_*!`
+pub(crate) use log_info;
+pub(crate) use log_debug;
+pub(crate) use log_trace;
+pub(crate) use log_warn;
+
 extern crate core;
 
 pub mod aos;
@@ -275,7 +321,7 @@ pub mod constraints;
 pub mod error;
 pub mod extension;
 pub mod fitness;
-#[path = "engines/ga.rs"]
+#[path = "engines/ga/mod.rs"]
 pub mod ga;
 #[path = "types/genotypes/mod.rs"]
 pub mod genotypes;
@@ -347,12 +393,16 @@ pub use constraints::PenaltyStrategy;
 pub use ga::TerminationCause;
 pub use hall_of_fame::{DistanceMetric, HallOfFame, HallOfFameConfig};
 pub use observer::AllObserver;
+pub use observer::CmaObserver;
 pub use observer::CompositeObserver;
+pub use observer::EdaObserver;
 pub use observer::ExtensionEvent;
 pub use observer::GaObserver;
 pub use observer::IbeaObserver;
 pub use observer::IslandGaObserver;
+#[cfg(feature = "logging")]
 pub use observer::LogObserver;
+pub use observer::PsoObserver;
 #[cfg(feature = "observer-metrics")]
 pub use observer::MetricsObserver;
 pub use observer::MoeaDObserver;

@@ -205,3 +205,41 @@ cargo test --features serde
 cargo clippy
 cargo doc --no-deps
 ```
+
+## Using cargo-nextest locally (optional)
+
+CI uses `cargo nextest run` for faster per-binary parallel test execution (30–50 % wall-clock
+reduction on the full suite). Local `cargo test` is unchanged and remains the supported default
+workflow (D-04) — you do not need to install nextest to contribute.
+
+If you want to mirror CI locally:
+
+**Install:**
+
+```bash
+cargo install cargo-nextest --locked
+```
+
+Note: `taiki-e/install-action@nextest` is the CI-only install path; the command above is the
+correct way to install nextest in a local dev environment.
+
+**Run the test suite:**
+
+```bash
+cargo nextest run
+```
+
+This is functionally equivalent to `cargo test` for lib and integration tests.
+
+**Coverage (mirror CI):**
+
+```bash
+cargo llvm-cov nextest --all-features
+```
+
+**Important — doc tests:** `cargo nextest run` does NOT execute doc tests. If you add or
+modify doc examples, run `cargo test --doc` separately to verify them:
+
+```bash
+cargo test --doc
+```
