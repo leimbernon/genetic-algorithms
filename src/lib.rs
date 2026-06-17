@@ -300,21 +300,11 @@ macro_rules! log_warn {
     ($($arg:tt)*) => { () };
 }
 
-#[cfg(feature = "logging")]
-macro_rules! log_error {
-    ($($arg:tt)*) => { ::log::error!($($arg)*) };
-}
-#[cfg(not(feature = "logging"))]
-macro_rules! log_error {
-    ($($arg:tt)*) => { () };
-}
-
 // Make macros accessible from all submodules via `crate::log_*!`
 pub(crate) use log_info;
 pub(crate) use log_debug;
 pub(crate) use log_trace;
 pub(crate) use log_warn;
-pub(crate) use log_error;
 
 extern crate core;
 
