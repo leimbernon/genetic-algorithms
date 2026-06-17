@@ -26,6 +26,9 @@ jobs:
       - name: Cache cargo registry and target
         uses: Swatinem/rust-cache@v2
 
+      - name: Install mold linker
+        run: sudo apt-get install -y mold
+
       - name: Run build-perf harness
         run: bash bench/build_perf.sh
 

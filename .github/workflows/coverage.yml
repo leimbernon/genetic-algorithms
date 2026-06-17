@@ -44,7 +44,7 @@ jobs:
         run: |
           cargo llvm-cov nextest \
             --all-features \
-            --include-filename-regex 'src/(engines|operations)/' \
+            --ignore-filename-regex '^(?!.*(src/engines/|src/operations/)).*$' \
             --fail-under-lines 80
 
       - name: sccache stats
