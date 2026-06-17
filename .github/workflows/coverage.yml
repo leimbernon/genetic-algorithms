@@ -31,8 +31,11 @@ jobs:
         with:
           key: coverage
 
-      - name: Install mold linker
-        run: sudo apt-get install -y mold
+      - name: Install mold linker and fontconfig
+        # libfontconfig1-dev + pkg-config are required by the `visualization`
+        # feature (plotters → yeslogic-fontconfig-sys) which is pulled in by
+        # `--all-features` below.
+        run: sudo apt-get install -y mold libfontconfig1-dev pkg-config
 
       - name: Install cargo-llvm-cov
         run: cargo install cargo-llvm-cov --locked

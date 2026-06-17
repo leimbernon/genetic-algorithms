@@ -282,7 +282,9 @@ pub enum TerminationCause {
 /// use genetic_algorithms::ga::Ga;
 /// use genetic_algorithms::chromosomes::Binary;
 /// use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
-/// use genetic_algorithms::traits::ConfigurationT;
+/// use genetic_algorithms::traits::{
+///     ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+/// };
 ///
 /// let engine = Ga::<Binary>::new()
 ///     .with_population_size(100)
