@@ -80,14 +80,15 @@ pub struct GpResult<N: GpNode + Default> {
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```rust,no_run
+/// // no_run: GP engine example — illustrative API usage
 /// use genetic_algorithms::gp::{GpChromosome, GpConfiguration, GpGa, MathNode};
 ///
 /// let config = GpConfiguration::new()
 ///     .with_population_size(50)
 ///     .with_max_generations(20);
 ///
-/// let mut engine = GpGa::with_ramped_half_and_half(config, |tree| {
+/// let mut engine: GpGa<MathNode> = GpGa::with_ramped_half_and_half(config, |tree| {
 ///     // Walk `tree` and return a fitness value
 ///     0.0
 /// });

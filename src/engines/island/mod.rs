@@ -63,12 +63,14 @@
 //!
 //! ## Complete Example
 //!
-//! ```rust,ignore
+//! ```rust,no_run
+//! // no_run: Island GA example — illustrative API usage, not a runnable benchmark
 //! use genetic_algorithms::configuration::GaConfiguration;
 //! use genetic_algorithms::island::configuration::IslandConfiguration;
 //! use genetic_algorithms::island::topology::MigrationTopology;
 //! use genetic_algorithms::island::IslandGa;
-//! use genetic_algorithms::traits::ConfigurationT;
+//! use genetic_algorithms::traits::{ConfigurationT, StoppingConfig};
+//! use genetic_algorithms::chromosomes::{ChromosomeLength, Range as RangeChromosome};
 //!
 //! let island_config = IslandConfiguration::new()
 //!     .with_num_islands(4)
@@ -79,9 +81,9 @@
 //! let ga_config = GaConfiguration::default()
 //!     .with_population_size(100)
 //!     .with_max_generations(500)
-//!     .with_genes_per_chromosome(10);
+//!     .with_chromosome_length(ChromosomeLength::Fixed(10));
 //!
-//! let mut island_ga = IslandGa::new(island_config, ga_config);
+//! let mut island_ga: IslandGa<RangeChromosome<f64>> = IslandGa::new(island_config, ga_config);
 //! // See examples/island_model.rs for a full runnable example
 //! ```
 //!

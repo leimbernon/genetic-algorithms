@@ -75,7 +75,8 @@
 //!
 //! ## Complete Example
 //!
-//! ```ignore
+//! ```rust,no_run
+//! // no_run: NSGA3 engine example — illustrative API usage, not a runnable benchmark
 //! use genetic_algorithms::nsga3::Nsga3Ga;
 //! use genetic_algorithms::nsga3::configuration::Nsga3Configuration;
 //! use genetic_algorithms::configuration::GaConfiguration;
@@ -87,12 +88,12 @@
 //!     .with_reference_points_auto(12);
 //!
 //! let ga_config = GaConfiguration::default();
-//! let mut nsga3 = Nsga3Ga::<MyChromosome>::new(nsga3_config, ga_config)
-//!     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
-//!     .build()?;
-//!
-//! let pareto_front = nsga3.run()?;
-//! println!("Front size: {}", pareto_front.len());
+//! // let mut nsga3 = Nsga3Ga::<MyChromosome>::new(nsga3_config, ga_config)
+//! //     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
+//! //     .build()?;
+//! //
+//! // let pareto_front = nsga3.run()?;
+//! // println!("Front size: {}", pareto_front.len());
 //! ```
 //!
 //! ## Configuration Tips

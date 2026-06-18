@@ -66,13 +66,14 @@
 //!
 //! ## Complete Example
 //!
-//! ```rust,ignore
-//! use genetic_algorithms::chromosomes::Range as RangeChromosome;
+//! ```rust,no_run
+//! // no_run: full GA algorithm run — illustrative API usage, not a runnable benchmark
+//! use genetic_algorithms::chromosomes::{ChromosomeLength, Range as RangeChromosome};
 //! use genetic_algorithms::ga::Ga;
 //! use genetic_algorithms::genotypes::Range as RangeGenotype;
 //! use genetic_algorithms::initializers::range_random_initialization;
 //! use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
-//! use genetic_algorithms::traits::{ChromosomeT, ConfigurationT, StoppingConfig};
+//! use genetic_algorithms::traits::{ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig, SurvivorConfig};
 //!
 //! // Rastrigin function: f(x) = A*n + sum(x_i^2 - A*cos(2*pi*x_i))
 //! fn rastrigin(dna: &[RangeGenotype<f64>]) -> f64 {
@@ -85,17 +86,17 @@
 //!
 //! let alleles = vec![RangeGenotype::new(0, vec![(-5.12, 5.12)], 0.0)];
 //!
-//! let mut ga = Ga::new()
+//! let mut ga: Ga<RangeChromosome<f64>> = Ga::new()
 //!     .with_population_size(200)
 //!     .with_max_generations(500)
-//!     .with_chromosome_length(crate::chromosomes::ChromosomeLength::Fixed(10))
+//!     .with_chromosome_length(ChromosomeLength::Fixed(10))
 //!     .with_fitness_fn(rastrigin)
 //!     .with_initialization_fn(move |n, _| {
 //!         range_random_initialization(n, Some(&alleles))
 //!     })
 //!     .with_selection_method(Selection::Tournament)
 //!     .with_crossover_method(Crossover::BlendAlpha)
-//!     .with_mutation_method(Mutation::Gaussian)
+//!     .with_mutation_method(Mutation::Gaussian(Default::default()))
 //!     .with_survivor_method(Survivor::Fitness)
 //!     .build()?;
 //!
@@ -800,13 +801,17 @@ where
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// let mut ga = Ga::new()
+    /// ```rust,no_run
+    /// // no_run: Ga::build() example — illustrative API usage
+    /// use genetic_algorithms::ga::Ga;
+    /// use genetic_algorithms::chromosomes::Binary;
+    /// use genetic_algorithms::traits::{ConfigurationT, StoppingConfig};
+    ///
+    /// let mut ga = Ga::<Binary>::new()
     ///     .with_population_size(100)
-    ///     .with_genes_per_chromosome(8)
-    ///     // ... other settings ...
+    ///     .with_max_generations(500)
     ///     .build()?;
-    /// ga.run()?;
+    /// # Ok::<_, Box<dyn std::error::Error>>(())
     /// ```
     pub fn build(mut self) -> Result<Self, GaError> {
         // Auto-set number_of_couples from population_size if not explicitly configured
@@ -1211,7 +1216,14 @@ where
     ///
     /// # Example
     ///
-    /// ```rust,ignore
+    /// ```rust,no_run
+    /// // no_run: with_local_search example — illustrative API usage
+    /// use genetic_algorithms::ga::Ga;
+    /// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+    /// use genetic_algorithms::operations::local_search::{LocalSearch, LocalSearchApplicationStrategy};
+    /// use genetic_algorithms::configuration::LocalSearchConfiguration;
+    /// use genetic_algorithms::traits::{ConfigurationT, LocalSearchConfig};
+    ///
     /// let ga = Ga::<RangeChromosome<f64>>::new()
     ///     .with_local_search(LocalSearch::HillClimbing)
     ///     .with_local_search_configuration(LocalSearchConfiguration {
@@ -2434,11 +2446,16 @@ where
     ///
     /// # Example
     ///
-    /// ```rust,ignore
-    /// // Selection::Lexicase / EpsilonLexicase reach run() only when U does not implement
-    /// // VectorFitness; factory() returns GaError::ConfigurationError for those variants per D-06.
+    /// ```rust,no_run
+    /// // no_run: select_parents_lexicase — requires VectorFitness chromosome and initialized GA
+    /// # use genetic_algorithms::ga::Ga;
+    /// # use genetic_algorithms::chromosomes::Range as RangeChromosome;
+    /// # use genetic_algorithms::traits::ConfigurationT;
+    /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
     /// // Users with VectorFitness chromosomes call select_parents_lexicase() directly.
-    /// let pairs = ga.select_parents_lexicase()?;
+    /// // let pairs = ga.select_parents_lexicase()?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn select_parents_lexicase(&mut self) -> Result<Vec<Vec<usize>>, GaError> {
         crate::operations::selection::factory_lexicase(

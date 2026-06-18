@@ -19,7 +19,8 @@
 /// [`with_restart_strategy`](super::configuration::CmaConfiguration::with_restart_strategy).
 ///
 /// # Example
-/// ```ignore
+/// ```rust,no_run
+/// // no_run: RestartStrategy example — illustrative API usage
 /// use genetic_algorithms::cma::{CmaConfiguration, RestartStrategy};
 ///
 /// let config = CmaConfiguration::default_for_dim(10)

@@ -28,7 +28,11 @@ use std::mem;
 ///
 /// # Example
 ///
-/// ```rust,ignore
+/// ```rust,no_run
+/// // no_run: GpNode trait implementation example — illustrative API usage
+/// use genetic_algorithms::gp::GpNode;
+/// use rand::Rng;
+///
 /// #[derive(Clone, Debug)]
 /// enum MyNode { Add, Mul, Const(f64) }
 ///

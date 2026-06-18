@@ -64,7 +64,8 @@
 //!
 //! ## Complete Example
 //!
-//! ```ignore
+//! ```rust,no_run
+//! // no_run: IBEA engine example — illustrative API usage, not a runnable benchmark
 //! use genetic_algorithms::ibea::IbeaGa;
 //! use genetic_algorithms::ibea::configuration::IbeaConfiguration;
 //! use genetic_algorithms::configuration::GaConfiguration;
@@ -75,16 +76,16 @@
 //!     .with_max_generations(250);
 //!
 //! let ga_config = GaConfiguration::default();
-//! let mut ibea = IbeaGa::<MyChromosome>::new(ibea_config, ga_config)
-//!     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
-//!     .with_objective_fns(vec![
-//!         Box::new(|dna| { /* ZDT1 f1 */ 0.0 }),
-//!         Box::new(|dna| { /* ZDT1 f2 */ 0.0 }),
-//!     ])
-//!     .build()?;
-//!
-//! let pareto_front = ibea.run()?;
-//! println!("Front size: {}", pareto_front.len());
+//! // let mut ibea = IbeaGa::<MyChromosome>::new(ibea_config, ga_config)
+//! //     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
+//! //     .with_objective_fns(vec![
+//! //         Box::new(|dna| { /* ZDT1 f1 */ 0.0 }),
+//! //         Box::new(|dna| { /* ZDT1 f2 */ 0.0 }),
+//! //     ])
+//! //     .build()?;
+//! //
+//! // let pareto_front = ibea.run()?;
+//! // println!("Front size: {}", pareto_front.len());
 //! ```
 //!
 //! ## Configuration Tips

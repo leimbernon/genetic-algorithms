@@ -315,18 +315,20 @@ pub struct CmaResult<U: LinearChromosome> {
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```rust,no_run
+/// // no_run: CMA-ES engine example — illustrative API usage, requires full initialization
 /// use genetic_algorithms::cma::{CmaConfiguration, CmaEngine};
 /// use genetic_algorithms::chromosomes::Range as RangeChromosome;
 /// use genetic_algorithms::genotypes::Range as RangeGene;
+/// use genetic_algorithms::traits::RealGene;
 ///
 /// let config = CmaConfiguration::default_for_dim(5)
 ///     .with_max_generations(500);
 ///
-/// let mut engine = CmaEngine::new(
+/// let mut engine: CmaEngine<RangeChromosome<f64>> = CmaEngine::new(
 ///     config,
 ///     |n| { /* return Vec<RangeChromosome<f64>> of length n */ todo!() },
-///     |dna| dna.iter().map(|g| g.real_value().powi(2)).sum(),
+///     |dna: &[RangeGene<f64>]| dna.iter().map(|g| g.real_value().powi(2)).sum(),
 /// );
 /// let result = engine.run();
 /// ```

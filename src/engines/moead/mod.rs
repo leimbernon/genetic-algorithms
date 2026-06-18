@@ -66,7 +66,8 @@
 //!
 //! ## Complete Example
 //!
-//! ```ignore
+//! ```rust,no_run
+//! // no_run: MOEA/D engine example — illustrative API usage, not a runnable benchmark
 //! use genetic_algorithms::moead::MoeaDGa;
 //! use genetic_algorithms::moead::configuration::{
 //!     MoeaDConfiguration, ScalarizationFn,
@@ -83,12 +84,12 @@
 //!     .with_max_neighbor_replacements(2);
 //!
 //! let ga_config = GaConfiguration::default();
-//! let mut moead = MoeaDGa::<MyChromosome>::new(moead_config, ga_config)
-//!     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
-//!     .build()?;
-//!
-//! let pareto_front = moead.run()?;
-//! println!("Front size: {}", pareto_front.len());
+//! // let mut moead = MoeaDGa::<MyChromosome>::new(moead_config, ga_config)
+//! //     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
+//! //     .build()?;
+//! //
+//! // let pareto_front = moead.run()?;
+//! // println!("Front size: {}", pareto_front.len());
 //! ```
 //!
 //! ## Configuration Tips

@@ -61,7 +61,8 @@
 //!
 //! ## Complete Example
 //!
-//! ```ignore
+//! ```rust,no_run
+//! // no_run: SPEA2 engine example — illustrative API usage, not a runnable benchmark
 //! use genetic_algorithms::spea2::Spea2Ga;
 //! use genetic_algorithms::spea2::configuration::Spea2Configuration;
 //! use genetic_algorithms::configuration::GaConfiguration;
@@ -73,16 +74,16 @@
 //!     .with_max_generations(250);
 //!
 //! let ga_config = GaConfiguration::default();
-//! let mut spea2 = Spea2Ga::<MyChromosome>::new(spea2_config, ga_config)
-//!     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
-//!     .with_objective_fns(vec![
-//!         Box::new(|dna| { /* ZDT1 f1 */ 0.0 }),
-//!         Box::new(|dna| { /* ZDT1 f2 */ 0.0 }),
-//!     ])
-//!     .build()?;
-//!
-//! let pareto_front = spea2.run()?;
-//! println!("Front size: {}", pareto_front.len());
+//! // let mut spea2 = Spea2Ga::<MyChromosome>::new(spea2_config, ga_config)
+//! //     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
+//! //     .with_objective_fns(vec![
+//! //         Box::new(|dna| { /* ZDT1 f1 */ 0.0 }),
+//! //         Box::new(|dna| { /* ZDT1 f2 */ 0.0 }),
+//! //     ])
+//! //     .build()?;
+//! //
+//! // let pareto_front = spea2.run()?;
+//! // println!("Front size: {}", pareto_front.len());
 //! ```
 //!
 //! ## Configuration Tips

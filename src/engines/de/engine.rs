@@ -31,19 +31,21 @@ pub struct DeResult<U: LinearChromosome> {
 ///
 /// # Example
 ///
-/// ```ignore
-/// use genetic_algorithms::engines::de::{DeEngine, DeConfiguration, DeMutationStrategy};
+/// ```rust,no_run
+/// // no_run: DE engine example — illustrative API usage, requires full initialization
+/// use genetic_algorithms::de::{DeEngine, DeConfiguration, DeMutationStrategy};
 /// use genetic_algorithms::chromosomes::Range as RangeChromosome;
 /// use genetic_algorithms::genotypes::Range as RangeGene;
+/// use genetic_algorithms::traits::RealGene;
 ///
 /// let config = DeConfiguration::default()
 ///     .with_population_size(50)
 ///     .with_max_generations(500);
 ///
-/// let mut engine = DeEngine::new(
+/// let mut engine: DeEngine<RangeChromosome<f64>> = DeEngine::new(
 ///     config,
 ///     |n| (0..n).map(|_| /* initialise chromosome */ todo!()).collect(),
-///     |dna| dna.iter().map(|g| g.real_value().powi(2)).sum(),
+///     |dna: &[RangeGene<f64>]| dna.iter().map(|g| g.real_value().powi(2)).sum(),
 /// );
 /// let result = engine.run();
 /// ```
