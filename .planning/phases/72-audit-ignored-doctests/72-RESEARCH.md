@@ -196,17 +196,17 @@ No structural changes — only doc comment modifications in existing files.
 | A2 | Feature-gated doctests (visualization, observer-tracing, observer-metrics) are out of scope for default `cargo test --doc` | Common Pitfalls | Low — CONTEXT.md scope says 29, matches default features |
 | A3 | Engine module-level examples (CMA, DE, GA, GP, etc.) that run full algorithm loops should be `no_run` due to runtime | Code Examples | Low — standard practice for expensive examples |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Feature-gated doctests (visualization, observer-tracing, observer-metrics)**
+1. **(RESOLVED)** **Feature-gated doctests (visualization, observer-tracing, observer-metrics)**
    - What we know: 3 additional ignored doctests exist behind feature flags (32 total with all features)
    - What's unclear: Whether the phase scope includes feature-gated doctests
-   - Recommendation: Convert them to `no_run` as well — they're still ignored doctests, just not visible in default test runs. The CONTEXT.md says "every `# Examples` block in `src/`" which includes feature-gated files.
+   - **Resolution:** In scope — Plan 02 Task 2 handles feature-gated doctests (metrics_observer.rs, tracing_observer.rs, visualization/mod.rs). Convert to `no_run` with reason comment.
 
-2. **Engine examples with `todo!()` stubs**
+2. **(RESOLVED)** **Engine examples with `todo!()` stubs**
    - What we know: CMA-ES, DE, GP examples use `todo!()` in initialization functions
    - What's unclear: Whether `no_run` is acceptable for stubs or if they should be fully implemented
-   - Recommendation: Keep as `no_run` — the purpose is API documentation, not runnable code. Add a comment explaining the stub.
+   - **Resolution:** Keep as `no_run` — Plan 02 Task 1 handles these as `no_run` with reason comment explaining stub is intentional for API documentation.
 
 ## Environment Availability
 
