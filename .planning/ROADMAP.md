@@ -1111,7 +1111,7 @@ Plans:
   3. `cargo test`, `cargo clippy`, `cargo doc --no-deps` pass with zero warnings
   4. `cargo check --target wasm32-unknown-unknown` passes
 
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 **Wave 1**
@@ -1120,7 +1120,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1)*
 
-- [ ] 70-02-PLAN.md — Refactor mutation.rs: replace try_* functions with trait dispatch + remove downcasting + verification gate
+- [x] 70-02-PLAN.md — Refactor mutation.rs: replace try_* functions with trait dispatch + remove downcasting + verification gate
 
 **UI hint**: no
 
@@ -1246,7 +1246,7 @@ Plans:
 | 63. Visualization — Pareto Front Plotting & Example Images | v3.0.0 | 3/3 | Complete   | 2026-06-10 |
 | 64. Test & Doc Quality | v3.0.0 | 4/4 | Complete | 2026-06-12 |
 | 65. v3.0.0 Migration Guide | v3.0.0 | 3/3 | Complete   | 2026-06-17 |
-| 70. Replace Operator Downcasting (#247) | v3.0.0 | 1/2 | In Progress|  |
+| 70. Replace Operator Downcasting (#247) | v3.0.0 | 2/2 | Complete   | 2026-06-18 |
 | 71. Per-Operator Mutation Params (#249) | v3.0.0 | TBD | Pending | — |
 | 72. Audit Ignored Doctests (#265) | v3.0.0 | TBD | Pending | — |
 | 73. Move Inline Test Modules (#266) | v3.0.0 | TBD | Pending | — |
