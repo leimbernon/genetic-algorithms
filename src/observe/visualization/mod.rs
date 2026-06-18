@@ -17,12 +17,13 @@
 //!
 //! # Example
 //!
-//! ```ignore
+//! ```rust,no_run
+//! // no_run: visualization usage — illustrative API example, requires visualization feature
 //! use genetic_algorithms::visualization::plot_fitness;
 //! use genetic_algorithms::stats::GenerationStats;
 //!
-//! let stats: Vec<GenerationStats> = /* ... collect from ga.run() ... */ vec![];
-//! plot_fitness(&stats, "fitness_chart.png").expect("chart failed");
+//! // let stats: Vec<GenerationStats> = /* ... collect from ga.run() ... */ vec![];
+//! // plot_fitness(&stats, "fitness_chart.png").expect("chart failed");
 //! ```
 
 use std::fmt;

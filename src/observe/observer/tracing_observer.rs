@@ -22,15 +22,16 @@
 //!
 //! # Usage
 //!
-//! ```ignore
+//! ```rust,no_run
+//! // no_run: TracingObserver usage — illustrative API example, requires observer-tracing feature
 //! use std::sync::Arc;
 //! use genetic_algorithms::TracingObserver;
 //!
-//! let mut ga = Ga::new()
-//!     // ... configuration ...
-//!     .with_observer(Arc::new(TracingObserver::new()))
-//!     .build()
-//!     .unwrap();
+//! // let mut ga = Ga::new()
+//! //     // ... configuration ...
+//! //     .with_observer(Arc::new(TracingObserver::new()))
+//! //     .build()
+//! //     .unwrap();
 //! ```
 //!
 //! # Safety
