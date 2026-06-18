@@ -248,8 +248,89 @@ pub enum Crossover {
 /// use genetic_algorithms::traits::{ConfigurationT, MutationConfig};
 ///
 /// let _ga = Ga::<Binary>::new()
-///     .with_mutation_method(Mutation::Gaussian { sigma: Some(0.1) });
+///     .with_mutation_method(Mutation::Gaussian(GaussianParams { sigma: Some(0.1) }));
 /// ```
+/// Parameters for [`Mutation::Creep`] — small uniform perturbation mutation.
+#[derive(Debug, Clone, PartialEq, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct CreepParams {
+    /// Step size for the perturbation. Default: `0.01`.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub step: Option<f64>,
+}
+
+/// Parameters for [`Mutation::Gaussian`] — Gaussian (normal distribution) perturbation mutation.
+#[derive(Debug, Clone, PartialEq, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct GaussianParams {
+    /// Standard deviation of the Gaussian noise. Default: `0.1`.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub sigma: Option<f64>,
+}
+
+/// Parameters for [`Mutation::Polynomial`] — polynomial mutation (NSGA-II style).
+#[derive(Debug, Clone, PartialEq, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct PolynomialParams {
+    /// Distribution index η_m. Default: `20.0`.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub eta: Option<f64>,
+}
+
+/// Parameters for [`Mutation::NonUniform`] — non-uniform mutation with generation-based decay.
+#[derive(Debug, Clone, PartialEq, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct NonUniformParams {
+    /// Decay parameter b. Default: `2.0`.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub b: Option<f64>,
+}
+
+/// Parameters for [`Mutation::Differential`] — DE-style differential mutation.
+#[derive(Debug, Clone, PartialEq, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct DifferentialParams {
+    /// F scale factor for the perturbation. Default: `0.5`.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub f: Option<f64>,
+}
+
+/// Parameters for [`Mutation::Cauchy`] — Cauchy (Lorentzian) perturbation mutation.
+#[derive(Debug, Clone, PartialEq, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct CauchyParams {
+    /// Scale parameter γ. Default: `1.0`.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub scale: Option<f64>,
+}
+
+/// Parameters for [`Mutation::LevyFlight`] — Lévy Flight mutation.
+#[derive(Debug, Clone, PartialEq, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct LevyFlightParams {
+    /// Stability index α. Default: `1.5`.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub alpha: Option<f64>,
+}
+
+/// Parameters for [`Mutation::SelfAdaptiveGaussian`] — self-adaptive Gaussian mutation (ES-style).
+#[derive(Debug, Clone, PartialEq, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct SelfAdaptiveGaussianParams {
+    /// Per-dimension learning rate τ. Default: `1.0 / sqrt(2.0 * n)`.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub tau: Option<f64>,
+    /// Global learning rate τ'. Default: `1.0 / sqrt(2.0 * sqrt(n))`.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub tau_prime: Option<f64>,
+    /// Sigma lower bound. Default: `1e-5`.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub sigma_min: Option<f64>,
+    /// Sigma upper bound. Default: no upper bound.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub sigma_max: Option<f64>,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Mutation {
@@ -267,38 +348,22 @@ pub enum Mutation {
     ///
     /// The `step` parameter controls the maximum perturbation magnitude.
     /// Default when `None`: `0.01`.
-    Creep {
-        /// Step size for the perturbation. Default: `0.01`.
-        #[cfg_attr(feature = "serde", serde(default))]
-        step: Option<f64>,
-    },
+    Creep(CreepParams),
     /// Gaussian (normal distribution) perturbation mutation for `Range<T>` chromosomes.
     ///
     /// The `sigma` parameter is the standard deviation of the Gaussian noise.
     /// Default when `None`: `0.1`.
-    Gaussian {
-        /// Standard deviation of the Gaussian noise. Default: `0.1`.
-        #[cfg_attr(feature = "serde", serde(default))]
-        sigma: Option<f64>,
-    },
+    Gaussian(GaussianParams),
     /// Polynomial mutation for `Range<T>` chromosomes (NSGA-II style).
     ///
     /// The `eta` parameter is the distribution index (higher values → smaller perturbations).
     /// Typical range: 20–100. Default when `None`: `20.0`.
-    Polynomial {
-        /// Distribution index η_m. Default: `20.0`.
-        #[cfg_attr(feature = "serde", serde(default))]
-        eta: Option<f64>,
-    },
+    Polynomial(PolynomialParams),
     /// Non-uniform mutation for `Range<T>` chromosomes.
     /// Mutation magnitude decreases over generations.
     ///
     /// The `b` parameter controls decay rate. Default when `None`: `2.0`.
-    NonUniform {
-        /// Decay parameter b. Default: `2.0`.
-        #[cfg_attr(feature = "serde", serde(default))]
-        b: Option<f64>,
-    },
+    NonUniform(NonUniformParams),
     /// Permutation-insert mutation for permutation-based chromosomes.
     /// Removes a gene and reinserts it at a different position, preserving all alleles
     /// and chromosome length. This is the permutation-preserving insertion move (formerly
@@ -326,30 +391,18 @@ pub enum Mutation {
     /// random population members (all distinct from the target), clamped to gene
     /// ranges. Default `f` when `None`: `0.5`.
     /// Requires `population_size >= 4`. Applied automatically by the standard GA
-    /// engine — do not call `factory_with_params` for this variant.
-    Differential {
-        /// F scale factor for the perturbation. Default: `0.5`.
-        #[cfg_attr(feature = "serde", serde(default))]
-        f: Option<f64>,
-    },
+    /// engine when configured.
+    Differential(DifferentialParams),
     /// Cauchy (Lorentzian) perturbation for `Range<T>` chromosomes.
     /// Uses the inverse-CDF method: `noise = scale * tan(π * (u - 0.5))`, where `u ~ Uniform(0, 1)`.
     /// Default `scale` when `None`: `1.0`.
     /// Returns `GaError::MutationError` for non-`Range<T>` chromosomes (Binary, List).
-    Cauchy {
-        /// Scale parameter γ. Default: `1.0`.
-        #[cfg_attr(feature = "serde", serde(default))]
-        scale: Option<f64>,
-    },
+    Cauchy(CauchyParams),
     /// Lévy Flight mutation for `Range<T>` chromosomes (Mantegna's algorithm).
     /// Generates heavy-tailed steps via `step = σ_u * u / |v|^(1/α)`.
     /// Valid `alpha` range: (0.0, 2.0). Default `alpha` when `None`: `1.5`.
     /// Returns `GaError::MutationError` for non-`Range<T>` chromosomes.
-    LevyFlight {
-        /// Stability index α. Default: `1.5`.
-        #[cfg_attr(feature = "serde", serde(default))]
-        alpha: Option<f64>,
-    },
+    LevyFlight(LevyFlightParams),
     /// Uniform reset mutation for `Range<T>` chromosomes.
     /// Resets a single randomly chosen gene to a uniform sample within its declared range.
     /// Equivalent to gene re-initialization. No configuration parameters required.
@@ -374,20 +427,7 @@ pub enum Mutation {
     /// - `sigma_max`: no upper bound
     ///
     /// Returns `GaError::MutationError` for chromosomes not implementing `SelfAdaptive`.
-    SelfAdaptiveGaussian {
-        /// Per-dimension learning rate τ. Default: `1.0 / sqrt(2.0 * n)`.
-        #[cfg_attr(feature = "serde", serde(default))]
-        tau: Option<f64>,
-        /// Global learning rate τ'. Default: `1.0 / sqrt(2.0 * sqrt(n))`.
-        #[cfg_attr(feature = "serde", serde(default))]
-        tau_prime: Option<f64>,
-        /// Sigma lower bound. Default: `1e-5`.
-        #[cfg_attr(feature = "serde", serde(default))]
-        sigma_min: Option<f64>,
-        /// Sigma upper bound. Default: no upper bound.
-        #[cfg_attr(feature = "serde", serde(default))]
-        sigma_max: Option<f64>,
-    },
+    SelfAdaptiveGaussian(SelfAdaptiveGaussianParams),
 }
 
 /// Survivor-selection strategies.
