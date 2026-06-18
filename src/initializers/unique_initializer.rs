@@ -17,15 +17,19 @@ use std::fmt::Debug;
 /// This is the canonical initializer for [`UniqueChromosome<T>`](crate::chromosomes::UniqueChromosome).
 /// Pass it via `with_initialization_fn`:
 ///
-/// ```rust,ignore
+/// ```rust,no_run
+/// // no_run: API illustration — Ga requires full configuration to build
+/// use genetic_algorithms::ga::Ga;
+/// use genetic_algorithms::initializers::unique_random_initialization;
+///
 /// let alphabet: Vec<i32> = (0..15).collect();
-/// let ga = Ga::new()
-///     .with_initialization_fn({
-///         let alphabet = alphabet.clone();
-///         move |_n, _| unique_random_initialization(&alphabet)
-///     })
-///     // ...
-///     .build()?;
+/// // let ga = Ga::new()
+/// //     .with_initialization_fn({
+/// //         let alphabet = alphabet.clone();
+/// //         move |_n, _| unique_random_initialization(&alphabet)
+/// //     })
+/// //     // ...
+/// //     .build()?;
 /// ```
 ///
 /// # Arguments

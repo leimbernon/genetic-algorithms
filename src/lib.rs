@@ -12,7 +12,8 @@
 //! Minimize the Rastrigin function using 5-dimensional [`Range<f64>`](crate::genotypes::Range)
 //! chromosomes with the standard [`Ga`](crate::ga::Ga) engine:
 //!
-//! ```rust,ignore
+//! ```rust,no_run
+//! // no_run: full GA loop with 500 generations — too slow for doctest
 //! use genetic_algorithms::chromosomes::Range as RangeChromosome;
 //! use genetic_algorithms::configuration::ProblemSolving;
 //! use genetic_algorithms::ga::Ga;
@@ -34,7 +35,7 @@
 //! let alleles = vec![RangeGenotype::new(0, vec![(-5.12, 5.12)], 0.0_f64)];
 //! let alleles_clone = alleles.clone();
 //!
-//! let mut ga = Ga::new()
+//! let mut ga: Ga<RangeChromosome<f64>> = Ga::new()
 //!     .with_chromosome_length(ChromosomeLength::Fixed(5))
 //!     .with_population_size(100)
 //!     .with_initialization_fn(move |n, _| {

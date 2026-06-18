@@ -15,7 +15,7 @@
 //!
 //! # Usage
 //!
-//! ```ignore
+//! ```
 //! use genetic_algorithms::rng;
 //!
 //! rng::set_seed(Some(42));      // enable deterministic mode

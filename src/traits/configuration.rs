@@ -100,11 +100,12 @@ pub trait MutationConfig {
     /// Sets the mutation method (e.g., `Mutation::Swap`, `Mutation::Gaussian(GaussianParams { sigma: Some(0.1) })`).
     ///
     /// Operator-specific parameters are now embedded directly in the variant:
-    /// ```rust,ignore
+    /// ```rust,no_run
+    /// // no_run: API illustration — `ga` is a configured Ga instance
     /// use genetic_algorithms::operations::{Mutation, GaussianParams, CreepParams};
     /// // v3.0.0 — pass params inside the variant:
-    /// ga.with_mutation_method(Mutation::Gaussian(GaussianParams { sigma: Some(0.05) }));
-    /// ga.with_mutation_method(Mutation::Creep(CreepParams { step: Some(0.1) }));
+    /// // ga.with_mutation_method(Mutation::Gaussian(GaussianParams { sigma: Some(0.05) }));
+    /// // ga.with_mutation_method(Mutation::Creep(CreepParams { step: Some(0.1) }));
     /// ```
     fn with_mutation_method(self, method: Mutation) -> Self;
     /// Enables or disables dynamic mutation probability adjustment based on population cardinality.
