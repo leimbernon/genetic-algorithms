@@ -146,11 +146,12 @@ pub fn hash_dna<G: Debug>(dna: &[G]) -> u64 {
 ///
 /// # Example
 ///
-/// ```rust,ignore
-/// let (cached_fn, cache) = wrap_with_cache(my_fitness_fn, 1024);
+/// ```rust,no_run
+/// // no_run: API illustration — my_fitness_fn must be defined by the user
+/// // let (cached_fn, cache) = wrap_with_cache(my_fitness_fn, 1024);
 /// // After a run:
-/// let stats = cache.lock().unwrap();
-/// println!("hits={} misses={}", stats.hits(), stats.misses());
+/// // let stats = cache.lock().unwrap();
+/// // println!("hits={} misses={}", stats.hits(), stats.misses());
 /// ```
 pub fn wrap_with_cache<G>(
     fitness_fn: Arc<FitnessFn<G>>,

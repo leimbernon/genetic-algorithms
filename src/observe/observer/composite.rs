@@ -8,16 +8,17 @@
 //!
 //! # Builder Pattern
 //!
-//! ```ignore
+//! ```rust,no_run
+//! // no_run: API illustration — ga and my_metrics_observer must be defined by the user
 //! use std::sync::Arc;
 //! use genetic_algorithms::{AllObserver, CompositeObserver};
 //! use genetic_algorithms::observer::LogObserver;
 //!
-//! let composite = CompositeObserver::new()
-//!     .register(Arc::new(LogObserver))
-//!     .register(Arc::new(my_metrics_observer));
-//!
-//! ga.with_observer(Arc::new(composite));
+//! // let composite = CompositeObserver::new()
+//! //     .register(Arc::new(LogObserver))
+//! //     .register(Arc::new(my_metrics_observer));
+//! //
+//! // ga.with_observer(Arc::new(composite));
 //! ```
 //!
 //! # Fan-out semantics
