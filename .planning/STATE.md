@@ -2,17 +2,17 @@
 gsd_state_version: 1.0
 milestone: v3.0.0
 milestone_name: — Advanced Representations, Alternative Strategies & Architecture Simplification
-current_phase: 70
-current_phase_name: replace-operator-downcasting
-status: verifying
-stopped_at: Phase 71 context gathered
-last_updated: "2026-06-18T09:15:04.390Z"
+status: executing
+stopped_at: Phase 72 context gathered
+last_updated: "2026-06-18T12:14:10.046Z"
 progress:
   total_phases: 43
   completed_phases: 20
-  total_plans: 80
-  completed_plans: 121
+  total_plans: 83
+  completed_plans: 123
   percent: 47
+current_phase: 71
+current_phase_name: per-operator-mutation-params
 ---
 
 # Project State
@@ -22,14 +22,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-18)
 
 **Core value:** Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library
-**Current focus:** Phase 70 — replace-operator-downcasting
+**Current focus:** Phase 71 — per-operator-mutation-params
 
 ## Current Position
 
-Phase: 70 (replace-operator-downcasting) — EXECUTING
-Plan: 2 of 2
+Phase: 71 (per-operator-mutation-params) — EXECUTING
+Plan: 3 of 3
 Plans: 143/143 complete (new phases have no plans yet)
-Status: Phase complete — ready for verification
+Status: Ready to execute
 
 Progress bar: [██████████████████░░] 45/50 phases complete
 
@@ -51,6 +51,7 @@ Progress bar: [██████████████████░░] 45/
 - v3.0.0: No new external crates required except conditional `serde_stacker` (gated behind existing `serde` feature flag) — verify wasm32 compatibility before committing
 - v3.0.0: `GpGa<U: TreeChromosome>` is a separate engine from `Ga<U: LinearChromosome>` — GP loop differences (ramped init, bloat control, depth limits) do not belong in the standard GA hot path
 - v3.0.0: `Box<N>` recursive enum for tree nodes (rejected arena crates) — subtree clone is O(subtree), not O(arena); arena index-remapping across arenas is too complex
+- [Phase ?]: .planning/phases/71-per-operator-mutation-params/71-01-SUMMARY.md
 
 ### Decisions (phase 59)
 
@@ -82,12 +83,13 @@ Progress bar: [██████████████████░░] 45/
 
 ## Session Continuity
 
-Last session: 2026-06-18T09:15:04.383Z
-Stopped at: Phase 71 context gathered
-Resume file: .planning/phases/71-per-operator-mutation-params/71-CONTEXT.md
+Last session: 2026-06-18T12:14:10.031Z
+Stopped at: Phase 72 context gathered
+Resume file: .planning/phases/72-audit-ignored-doctests/72-CONTEXT.md
 
 ## Performance Metrics
 
 | Phase | Plan | Duration | Notes |
 |-------|------|----------|-------|
 | Phase 70-replace-operator-downcasting P01 | 2min | 2 tasks | 3 files |
+| Phase 71 P01 | 50min | - tasks | - files |
