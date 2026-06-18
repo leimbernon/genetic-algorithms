@@ -188,6 +188,11 @@ impl<T: Sync + Send + Clone + Default + Debug + 'static> LinearChromosome for Li
     }
 }
 
+impl<T: Sync + Send + Clone + Default + Debug + 'static> crate::traits::RealValuedMutation
+    for ListChromosome<T>
+{
+}
+
 impl<T: Sync + Send + Clone + Default + Debug> fmt::Display for ListChromosome<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[{}] fitness={:.6}", self.phenotype(), self.fitness)

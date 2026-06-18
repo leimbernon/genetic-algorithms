@@ -197,6 +197,8 @@ impl ValueMutable for Binary {
     }
 }
 
+impl crate::traits::RealValuedMutation for Binary {}
+
 impl fmt::Display for Binary {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[{}] fitness={:.6}", self.phenotype(), self.fitness)

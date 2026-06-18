@@ -3,9 +3,9 @@
 //! This trait groups the 5 mutation operators that require numeric gene values:
 //! polynomial, Cauchy, Lévy Flight, uniform reset, and self-adaptive Gaussian.
 //!
-//! Only [`Range<T>`](crate::chromosomes::Range) implements all 5 methods.
-//! Other chromosome types inherit the default implementations that return
-//! [`Err(GaError::MutationError(...))`](crate::error::GaError::MutationError).
+//! A blanket implementation provides default error-returning methods for all
+//! [`LinearChromosome`] types. [`Range<T>`](crate::chromosomes::Range) overrides
+//! all 5 methods to delegate to the standalone operator functions.
 //!
 //! This trait replaces the previous runtime type-checking approach with
 //! compile-time trait dispatch.

@@ -48,7 +48,13 @@ pub(crate) fn parent_crossover<U>(
     params: ParentCrossoverParams<'_, U>,
 ) -> Result<Vec<U>, GaError>
 where
-    U: LinearChromosome + Send + Sync + 'static + Clone + mutation::ValueMutable,
+    U: LinearChromosome
+        + Send
+        + Sync
+        + 'static
+        + Clone
+        + mutation::ValueMutable
+        + crate::traits::RealValuedMutation,
 {
     // Destructure the population-level and AOS params bundle (D-07)
     let ParentCrossoverParams {

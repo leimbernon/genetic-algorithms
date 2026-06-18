@@ -161,8 +161,8 @@ use crate::{
     population::Population,
     traits::{
         ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, GeneT, LinearChromosome,
-        LocalSearchConfig, LocalSearchOperator, MutationConfig, NichingConfig, VectorFitness,
-        OperatorCompat, SelectionConfig, StoppingConfig, Strategy, SurvivorConfig,
+        LocalSearchConfig, LocalSearchOperator, MutationConfig, NichingConfig, OperatorCompat,
+        SelectionConfig, StoppingConfig, Strategy, SurvivorConfig, VectorFitness,
     },
 };
 use rand::Rng;
@@ -356,7 +356,10 @@ where
     ///
     /// [`FitnessCache`]: crate::fitness::FitnessCache
     /// [`BatchFitnessEvaluator`]: crate::fitness::BatchFitnessEvaluator
-    surrogate: Option<(Arc<dyn crate::fitness::SurrogateModel<U> + Send + Sync>, f64)>,
+    surrogate: Option<(
+        Arc<dyn crate::fitness::SurrogateModel<U> + Send + Sync>,
+        f64,
+    )>,
 
     /// Optional structured lifecycle observer. When `None` (the default),
     /// no hook calls or timing measurements are performed (zero overhead).
@@ -777,7 +780,8 @@ where
         + mutation::ValueMutable
         + MaybeSerialize
         + MaybeDeserialize
-        + OperatorCompat,
+        + OperatorCompat
+        + crate::traits::RealValuedMutation,
     U::Gene: 'static + Debug,
 {
     /// Validates configuration and adjusts defaults, returning a ready-to-run instance.
@@ -862,9 +866,8 @@ where
         // Wrap fitness function with LRU cache if configured
         if let Some(cache_size) = self.fitness_cache_size {
             if let Some(fitness_fn) = self.fitness_fn.take() {
-                let (wrapped, cache_handle) = crate::fitness::cache::wrap_with_cache(
-                    fitness_fn, cache_size,
-                );
+                let (wrapped, cache_handle) =
+                    crate::fitness::cache::wrap_with_cache(fitness_fn, cache_size);
                 self.fitness_fn = Some(wrapped);
                 self.fitness_cache = Some(cache_handle);
             }
@@ -1418,8 +1421,7 @@ where
         for i in start_gen..total_gens {
             age += 1;
             // D-07: snapshot cache counters before this generation so we can compute deltas.
-            let (prev_cache_hits, prev_cache_misses) =
-                cache::cache_snapshot(&self.fitness_cache);
+            let (prev_cache_hits, prev_cache_misses) = cache::cache_snapshot(&self.fitness_cache);
 
             self.notify(|obs| obs.on_generation_start(i));
 
@@ -1502,32 +1504,36 @@ where
             // Retains only the top max(1, floor(n * fraction)) offspring by predicted score.
             // Rejected offspring are dropped permanently (D-04) and never evaluated further.
             // Sequential sort only — unconditionally WASM-safe (no parallelism, no cfg gate).
-            let true_fitness_calls: Option<u64> = if let Some((ref surrogate, fraction)) = self.surrogate {
-                if offspring.is_empty() {
-                    Some(0)
+            let true_fitness_calls: Option<u64> =
+                if let Some((ref surrogate, fraction)) = self.surrogate {
+                    if offspring.is_empty() {
+                        Some(0)
+                    } else {
+                        let mut scores: Vec<(usize, f64)> = offspring
+                            .iter()
+                            .enumerate()
+                            .map(|(idx, c)| {
+                                let raw = surrogate.predict(c);
+                                let score = if raw.is_nan() { f64::NEG_INFINITY } else { raw };
+                                (idx, score)
+                            })
+                            .collect();
+                        // Sort descending: best-predicted offspring first.
+                        scores.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+                        // Retain at least 1; floor formula from D-03/SC-1d.
+                        let keep = ((offspring.len() as f64 * fraction).floor() as usize).max(1);
+                        scores.truncate(keep);
+                        // Restore original index order so downstream code sees a stable slice.
+                        scores.sort_unstable_by_key(|&(idx, _)| idx);
+                        offspring = scores
+                            .into_iter()
+                            .map(|(idx, _)| offspring[idx].clone())
+                            .collect();
+                        Some(offspring.len() as u64)
+                    }
                 } else {
-                    let mut scores: Vec<(usize, f64)> = offspring
-                        .iter()
-                        .enumerate()
-                        .map(|(idx, c)| {
-                            let raw = surrogate.predict(c);
-                            let score = if raw.is_nan() { f64::NEG_INFINITY } else { raw };
-                            (idx, score)
-                        })
-                        .collect();
-                    // Sort descending: best-predicted offspring first.
-                    scores.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
-                    // Retain at least 1; floor formula from D-03/SC-1d.
-                    let keep = ((offspring.len() as f64 * fraction).floor() as usize).max(1);
-                    scores.truncate(keep);
-                    // Restore original index order so downstream code sees a stable slice.
-                    scores.sort_unstable_by_key(|&(idx, _)| idx);
-                    offspring = scores.into_iter().map(|(idx, _)| offspring[idx].clone()).collect();
-                    Some(offspring.len() as u64)
-                }
-            } else {
-                None
-            };
+                    None
+                };
             // D-02: batch-evaluate offspring before merge (replaces calculate_fitness per child)
             if let Some(eval) = self.batch_evaluator.as_ref().map(Arc::clone) {
                 let cache = self.fitness_cache.as_ref().map(Arc::clone);
@@ -2027,7 +2033,11 @@ where
                         // Exception: this log::warn! cannot migrate to LogObserver because no
                         // on_checkpoint_failed hook exists (deferred per REQUIREMENTS.md EXT-02).
                         // It is feature-gated (#[cfg(feature = "serde")]) and only fires on I/O errors.
-                        crate::log_warn!("Failed to save checkpoint at generation {}: {}", i + 1, e);
+                        crate::log_warn!(
+                            "Failed to save checkpoint at generation {}: {}",
+                            i + 1,
+                            e
+                        );
                     }
                 }
             }
@@ -2086,9 +2096,7 @@ where
                 self.notify(|obs| obs.on_stagnation(i, stagnation_count));
             }
 
-            if let Some(max_stagnation) =
-                self.configuration.stagnation_generations
-            {
+            if let Some(max_stagnation) = self.configuration.stagnation_generations {
                 if stagnation_count >= max_stagnation {
                     self.termination_cause = TerminationCause::StagnationReached;
                     if let Some(func) = &callback {
@@ -2368,8 +2376,6 @@ where
     }
 }
 
-
-
 impl<U> Strategy<U> for Ga<U>
 where
     U: LinearChromosome
@@ -2381,7 +2387,8 @@ where
         + mutation::ValueMutable
         + MaybeSerialize
         + MaybeDeserialize
-        + OperatorCompat,
+        + OperatorCompat
+        + crate::traits::RealValuedMutation,
     U::Gene: 'static + Debug,
 {
     fn run(&mut self) -> Result<(), GaError> {
