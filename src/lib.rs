@@ -270,7 +270,9 @@ macro_rules! log_info {
 }
 #[cfg(not(feature = "logging"))]
 macro_rules! log_info {
-    ($($arg:tt)*) => { () };
+    ($($arg:tt)*) => {
+        ()
+    };
 }
 
 #[cfg(feature = "logging")]
@@ -279,7 +281,9 @@ macro_rules! log_debug {
 }
 #[cfg(not(feature = "logging"))]
 macro_rules! log_debug {
-    ($($arg:tt)*) => { () };
+    ($($arg:tt)*) => {
+        ()
+    };
 }
 
 #[cfg(feature = "logging")]
@@ -288,7 +292,9 @@ macro_rules! log_trace {
 }
 #[cfg(not(feature = "logging"))]
 macro_rules! log_trace {
-    ($($arg:tt)*) => { () };
+    ($($arg:tt)*) => {
+        ()
+    };
 }
 
 #[cfg(feature = "logging")]
@@ -297,12 +303,14 @@ macro_rules! log_warn {
 }
 #[cfg(not(feature = "logging"))]
 macro_rules! log_warn {
-    ($($arg:tt)*) => { () };
+    ($($arg:tt)*) => {
+        ()
+    };
 }
 
 // Make macros accessible from all submodules via `crate::log_*!`
-pub(crate) use log_info;
 pub(crate) use log_debug;
+pub(crate) use log_info;
 pub(crate) use log_trace;
 pub(crate) use log_warn;
 
@@ -347,8 +355,6 @@ pub mod cellular;
 pub mod de;
 #[path = "engines/hill_climb/mod.rs"]
 pub mod hill_climb;
-#[path = "engines/permutate/mod.rs"]
-pub mod permutate;
 #[path = "engines/island/mod.rs"]
 pub mod island;
 #[path = "engines/multi_objective/mod.rs"]
@@ -358,6 +364,8 @@ pub mod niching;
 pub mod nsga2;
 #[path = "engines/nsga3/mod.rs"]
 pub mod nsga3;
+#[path = "engines/permutate/mod.rs"]
+pub mod permutate;
 #[path = "engines/scatter/mod.rs"]
 pub mod scatter;
 
@@ -385,13 +393,21 @@ pub mod pso;
 #[path = "engines/eda/mod.rs"]
 pub mod eda;
 
-pub use fitness::BatchFitnessEvaluator;
-pub use fitness::SurrogateModel;
 pub use aos::{AosState, AosStrategy};
+pub use chromosomes::{
+    ChromosomeLength, MultiRangeChromosome, MultiUniqueChromosome, UniqueChromosome,
+};
+pub use cma::{RestartEvent, RestartKind, RestartStrategy};
 pub use constraints::ConstraintHandling;
 pub use constraints::PenaltyStrategy;
+pub use eda::{EdaConfiguration, EdaEngine, EdaModel, EdaRealEngine, EdaResult};
+pub use fitness::BatchFitnessEvaluator;
+pub use fitness::SurrogateModel;
 pub use ga::TerminationCause;
+pub use genotypes::{MultiRangeGenotype, UniqueGenotype};
 pub use hall_of_fame::{DistanceMetric, HallOfFame, HallOfFameConfig};
+pub use hill_climb::{HillClimbConfiguration, HillClimbEngine, HillClimbMode};
+pub use initializers::{multi_range_random_initialization, unique_random_initialization};
 pub use observer::AllObserver;
 pub use observer::CmaObserver;
 pub use observer::CompositeObserver;
@@ -402,25 +418,19 @@ pub use observer::IbeaObserver;
 pub use observer::IslandGaObserver;
 #[cfg(feature = "logging")]
 pub use observer::LogObserver;
-pub use observer::PsoObserver;
 #[cfg(feature = "observer-metrics")]
 pub use observer::MetricsObserver;
 pub use observer::MoeaDObserver;
 pub use observer::NoopObserver;
 pub use observer::Nsga2Observer;
 pub use observer::Nsga3Observer;
+pub use observer::PsoObserver;
 pub use observer::SmsEmoaObserver;
 pub use observer::Spea2Observer;
 #[cfg(feature = "observer-tracing")]
 pub use observer::TracingObserver;
-pub use chromosomes::{
-    ChromosomeLength, MultiRangeChromosome, MultiUniqueChromosome, UniqueChromosome,
-};
-pub use genotypes::{MultiRangeGenotype, UniqueGenotype};
-pub use hill_climb::{HillClimbConfiguration, HillClimbEngine, HillClimbMode};
-pub use initializers::{multi_range_random_initialization, unique_random_initialization};
 pub use permutate::{PermutateConfiguration, PermutateEngine};
-pub use traits::{LinearChromosome, OperatorCompat, RealGene, Strategy, VectorFitness};
 pub use pso::{PsoConfiguration, PsoEngine, PsoInertia, PsoResult, PsoTopology};
-pub use eda::{EdaConfiguration, EdaEngine, EdaModel, EdaRealEngine, EdaResult};
-pub use cma::{RestartEvent, RestartKind, RestartStrategy};
+pub use traits::{
+    LinearChromosome, OperatorCompat, RealGene, RealValuedMutation, Strategy, VectorFitness,
+};

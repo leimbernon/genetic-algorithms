@@ -42,31 +42,33 @@ pub mod gene;
 pub mod group_aware;
 pub mod linear_chromosome;
 pub mod multi_case_fitness;
-pub mod vector_fitness;
 pub mod operator_compat;
 pub mod operators;
 pub mod real_gene;
 pub mod real_valued;
+pub mod real_valued_mutation;
 pub mod self_adaptive;
 pub mod strategy;
+pub mod vector_fitness;
 pub use strategy::Strategy;
 
 pub use chromosome::ChromosomeT;
 pub use common::{initialize_chromosomes, initialize_chromosomes_par, FitnessFn, InitializationFn};
-pub use linear_chromosome::LinearChromosome;
-pub use vector_fitness::VectorFitness;
-pub use real_gene::RealGene;
-pub use real_valued::RealValued;
-pub use self_adaptive::SelfAdaptive;
 pub use configuration::{
     ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, LocalSearchConfig,
     MutationConfig, NichingConfig, SelectionConfig, StoppingConfig, SurvivorConfig,
 };
 pub use gene::GeneT;
-pub use multi_case_fitness::MultiCaseFitness;
 pub use group_aware::GroupAware;
+pub use linear_chromosome::LinearChromosome;
+pub use multi_case_fitness::MultiCaseFitness;
 pub use operator_compat::OperatorCompat;
 pub use operators::{
     CrossoverOperator, ExtensionOperator, LocalSearchOperator, MutationOperator, SelectionOperator,
     SurvivorOperator,
 };
+pub use real_gene::RealGene;
+pub use real_valued::RealValued;
+pub use real_valued_mutation::RealValuedMutation;
+pub use self_adaptive::SelfAdaptive;
+pub use vector_fitness::VectorFitness;
