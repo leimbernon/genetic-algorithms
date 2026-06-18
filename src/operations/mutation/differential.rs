@@ -9,7 +9,7 @@
 //! This operator is exposed as a free function so that engine integrations
 //! (e.g., the standard `Ga<U>` engine in Plan 03) can call it directly with
 //! full population context. Calling it via `MutationOperator::mutate` or
-//! `factory_with_params` returns `GaError::MutationError` as a safety net.
+//! `factory` returns `GaError::MutationError` as a safety net for differential mutation.
 
 use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;

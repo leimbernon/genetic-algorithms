@@ -67,14 +67,14 @@ pub struct CellularResult<U: LinearChromosome> {
 /// use genetic_algorithms::cellular::{CellularConfiguration, CellularEngine, Neighborhood, UpdateMode};
 /// use genetic_algorithms::chromosomes::Range as RangeChromosome;
 /// use genetic_algorithms::configuration::ProblemSolving;
-/// use genetic_algorithms::operations::Mutation;
+/// use genetic_algorithms::operations::{Mutation, GaussianParams};
 ///
 /// let config = CellularConfiguration::default()
 ///     .with_grid(8, 8)
 ///     .with_neighborhood(Neighborhood::Moore)
 ///     .with_update_mode(UpdateMode::Asynchronous)
 ///     .with_max_generations(200)
-///     .with_mutation(Mutation::Gaussian { sigma: Some(0.1) })
+///     .with_mutation(Mutation::Gaussian(GaussianParams { sigma: Some(0.1) }))
 ///     .with_problem_solving(ProblemSolving::Minimization);
 ///
 /// let mut engine = CellularEngine::<RangeChromosome<f64>>::new(

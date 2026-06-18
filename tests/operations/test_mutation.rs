@@ -3,7 +3,7 @@ use crate::structures::{Chromosome, Gene};
 use genetic_algorithms::{
     fitness::FitnessFnWrapper,
     operations::mutation::{self, aga_probability, inversion, scramble, swap},
-    operations::Mutation,
+    operations::{CreepParams, GaussianParams, Mutation},
 };
 
 #[test]
@@ -586,7 +586,7 @@ fn test_factory_non_value_creep_returns_error() {
         fitness_fn: FitnessFnWrapper::default(),
         fitness_values: vec![],
     };
-    let result = mutation::factory_non_value(Mutation::Creep { step: None }, &mut chromosome);
+    let result = mutation::factory_non_value(Mutation::Creep(CreepParams { step: None }), &mut chromosome);
     assert!(
         result.is_err(),
         "factory_non_value should reject Mutation::Creep"
@@ -602,7 +602,7 @@ fn test_factory_non_value_gaussian_returns_error() {
         fitness_fn: FitnessFnWrapper::default(),
         fitness_values: vec![],
     };
-    let result = mutation::factory_non_value(Mutation::Gaussian { sigma: None }, &mut chromosome);
+    let result = mutation::factory_non_value(Mutation::Gaussian(GaussianParams { sigma: None }), &mut chromosome);
     assert!(
         result.is_err(),
         "factory_non_value should reject Mutation::Gaussian"

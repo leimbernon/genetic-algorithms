@@ -25,7 +25,7 @@ use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::{Ga, TerminationCause};
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::initializers::range_random_initialization;
-use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+use genetic_algorithms::operations::{Crossover, GaussianParams, Mutation, Selection, Survivor};
 use genetic_algorithms::population::Population;
 use genetic_algorithms::stats::GenerationStats;
 use genetic_algorithms::traits::{
@@ -104,7 +104,7 @@ fn main() {
         // Crossover: Uniform blend
         .with_crossover_method(Crossover::Uniform)
         // Mutation: Gaussian perturbation (appropriate for continuous optimization)
-        .with_mutation_method(Mutation::Gaussian { sigma: None })
+        .with_mutation_method(Mutation::Gaussian(GaussianParams { sigma: None }))
         // Survivor selection: Fitness-based
         .with_survivor_method(Survivor::Fitness)
         // Problem: minimize fitness toward 0.0

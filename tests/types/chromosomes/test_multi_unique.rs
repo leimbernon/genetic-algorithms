@@ -8,7 +8,7 @@ use genetic_algorithms::error::GaError;
 use genetic_algorithms::ga::Ga;
 use genetic_algorithms::genotypes::UniqueGenotype;
 use genetic_algorithms::initializers::unique_random_initialization;
-use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+use genetic_algorithms::operations::{Crossover, GaussianParams, Mutation, Selection, Survivor};
 use genetic_algorithms::traits::{
     ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig, OperatorCompat,
     SelectionConfig, StoppingConfig,
@@ -168,7 +168,7 @@ fn multi_unique_chromosome_valid_mutations_restricted() {
     assert!(valid_slice.contains(&Mutation::Swap));
     assert!(valid_slice.contains(&Mutation::Inversion));
     // Gaussian is excluded
-    assert!(!valid_slice.contains(&Mutation::Gaussian { sigma: None }));
+    assert!(!valid_slice.contains(&Mutation::Gaussian(GaussianParams { sigma: None })));
 }
 
 // -- Integration tests with Ga::build() --

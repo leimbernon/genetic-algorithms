@@ -9,7 +9,7 @@
 //! Chromosome types that need value-aware mutations should implement the
 //! [`ValueMutable`] trait. Real-valued mutations (polynomial, Cauchy,
 //! Lévy Flight, uniform, self-adaptive Gaussian) dispatch via the
-//! [`RealValuedMutation`](crate::traits::RealValuedMutation) trait at
+//! [`RealValuedMutation`] trait at
 //! compile time, replacing previous runtime downcasting.
 //!
 //! ## Length-changing operators

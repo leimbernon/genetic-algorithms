@@ -8,7 +8,7 @@ use genetic_algorithms::cellular::{
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::genotypes::Range as RangeGene;
-use genetic_algorithms::operations::{Crossover, Mutation, Selection};
+use genetic_algorithms::operations::{Crossover, GaussianParams, Mutation, Selection};
 use genetic_algorithms::rng;
 use genetic_algorithms::traits::{ChromosomeT, LinearChromosome};
 use rand::Rng;
@@ -52,7 +52,7 @@ fn make_engine(
         .with_max_generations(100)
         .with_selection(Selection::Tournament)
         .with_crossover(Crossover::Uniform)
-        .with_mutation(Mutation::Gaussian { sigma: Some(0.5) })
+        .with_mutation(Mutation::Gaussian(GaussianParams { sigma: Some(0.5) }))
         .with_problem_solving(ProblemSolving::Minimization)
         .with_fitness_target(50.0);
 
@@ -147,7 +147,7 @@ fn test_early_stopping_on_fitness_target() {
         .with_neighborhood(Neighborhood::Moore)
         .with_update_mode(UpdateMode::Asynchronous)
         .with_max_generations(10_000)
-        .with_mutation(Mutation::Gaussian { sigma: Some(1.0) })
+        .with_mutation(Mutation::Gaussian(GaussianParams { sigma: Some(1.0) }))
         .with_problem_solving(ProblemSolving::Minimization)
         // Very lenient target — engine should stop well before 10_000 gens.
         .with_fitness_target(1_000.0);
@@ -202,7 +202,7 @@ fn test_all_neighborhoods_asynchronous() {
 
 // --- Migration: Mutation::Gaussian replaces deprecated with_mutation_sigma ----
 
-/// Regression test: constructing CellularConfiguration with `Mutation::Gaussian { sigma }`
+/// Regression test: constructing CellularConfiguration with `Mutation::Gaussian(GaussianParams { sigma })`
 /// (the v3.0.0 replacement for the removed `with_mutation_sigma` builder) produces a
 /// working Cellular GA run.  This confirms callers migrated per D-08.
 #[test]
@@ -212,7 +212,7 @@ fn test_cellular_mutation_gaussian_migration() {
         .with_neighborhood(Neighborhood::Moore)
         .with_update_mode(UpdateMode::Asynchronous)
         .with_max_generations(20)
-        .with_mutation(Mutation::Gaussian { sigma: Some(0.3) })
+        .with_mutation(Mutation::Gaussian(GaussianParams { sigma: Some(0.3) }))
         .with_problem_solving(ProblemSolving::Minimization);
 
     let mut engine = CellularEngine::new(config, |n| random_pop(n, 3, -2.0, 2.0, 456), sphere);

@@ -43,9 +43,9 @@ mod cellular_ga {
                 .with_neighborhood(Neighborhood::VonNeumann)
                 .with_update_mode(UpdateMode::Asynchronous)
                 .with_max_generations(100)
-                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian {
+                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian(genetic_algorithms::operations::GaussianParams {
                     sigma: Some(0.3),
-                });
+                }));
             let mut engine = CellularEngine::new(config, |n| make_pop(n, 5), sphere);
             engine.run()
         });
@@ -59,9 +59,9 @@ mod cellular_ga {
                 .with_neighborhood(Neighborhood::Moore)
                 .with_update_mode(UpdateMode::Asynchronous)
                 .with_max_generations(100)
-                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian {
+                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian(genetic_algorithms::operations::GaussianParams {
                     sigma: Some(0.3),
-                });
+                }));
             let mut engine = CellularEngine::new(config, |n| make_pop(n, 5), sphere);
             engine.run()
         });
@@ -75,9 +75,9 @@ mod cellular_ga {
                 .with_neighborhood(Neighborhood::CompactR2)
                 .with_update_mode(UpdateMode::Asynchronous)
                 .with_max_generations(100)
-                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian {
+                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian(genetic_algorithms::operations::GaussianParams {
                     sigma: Some(0.3),
-                });
+                }));
             let mut engine = CellularEngine::new(config, |n| make_pop(n, 5), sphere);
             engine.run()
         });
@@ -91,9 +91,9 @@ mod cellular_ga {
                 .with_neighborhood(Neighborhood::Linear)
                 .with_update_mode(UpdateMode::Asynchronous)
                 .with_max_generations(100)
-                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian {
+                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian(genetic_algorithms::operations::GaussianParams {
                     sigma: Some(0.3),
-                });
+                }));
             let mut engine = CellularEngine::new(config, |n| make_pop(n, 5), sphere);
             engine.run()
         });
@@ -111,9 +111,9 @@ mod cellular_sync_vs_async {
                 .with_neighborhood(Neighborhood::Moore)
                 .with_update_mode(UpdateMode::Synchronous)
                 .with_max_generations(100)
-                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian {
+                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian(genetic_algorithms::operations::GaussianParams {
                     sigma: Some(0.3),
-                });
+                }));
             let mut engine = CellularEngine::new(config, |n| make_pop(n, 5), sphere);
             engine.run()
         });
@@ -127,9 +127,9 @@ mod cellular_sync_vs_async {
                 .with_neighborhood(Neighborhood::Moore)
                 .with_update_mode(UpdateMode::Asynchronous)
                 .with_max_generations(100)
-                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian {
+                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian(genetic_algorithms::operations::GaussianParams {
                     sigma: Some(0.3),
-                });
+                }));
             let mut engine = CellularEngine::new(config, |n| make_pop(n, 5), sphere);
             engine.run()
         });

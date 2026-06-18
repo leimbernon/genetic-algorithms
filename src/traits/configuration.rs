@@ -85,11 +85,11 @@ pub trait CrossoverConfig {
 /// ```rust,no_run
 /// use genetic_algorithms::ga::Ga;
 /// use genetic_algorithms::chromosomes::Binary;
-/// use genetic_algorithms::operations::Mutation;
+/// use genetic_algorithms::operations::{Mutation, GaussianParams};
 /// use genetic_algorithms::traits::{ConfigurationT, MutationConfig};
 ///
 /// let ga: Ga<Binary> = Ga::new()
-///     .with_mutation_method(Mutation::Gaussian { sigma: Some(0.1) })
+///     .with_mutation_method(Mutation::Gaussian(GaussianParams { sigma: Some(0.1) }))
 ///     .with_mutation_probability_max(0.05);
 /// ```
 pub trait MutationConfig {
@@ -97,14 +97,14 @@ pub trait MutationConfig {
     fn with_mutation_probability_max(self, probability_max: f64) -> Self;
     /// Sets the minimum mutation probability (used only by adaptive GA).
     fn with_mutation_probability_min(self, probability_min: f64) -> Self;
-    /// Sets the mutation method (e.g., `Mutation::Swap`, `Mutation::Gaussian { sigma: Some(0.1) }`).
+    /// Sets the mutation method (e.g., `Mutation::Swap`, `Mutation::Gaussian(GaussianParams { sigma: Some(0.1) })`).
     ///
     /// Operator-specific parameters are now embedded directly in the variant:
     /// ```rust,ignore
-    /// use genetic_algorithms::operations::Mutation;
+    /// use genetic_algorithms::operations::{Mutation, GaussianParams, CreepParams};
     /// // v3.0.0 — pass params inside the variant:
-    /// ga.with_mutation_method(Mutation::Gaussian { sigma: Some(0.05) });
-    /// ga.with_mutation_method(Mutation::Creep { step: Some(0.1) });
+    /// ga.with_mutation_method(Mutation::Gaussian(GaussianParams { sigma: Some(0.05) }));
+    /// ga.with_mutation_method(Mutation::Creep(CreepParams { step: Some(0.1) }));
     /// ```
     fn with_mutation_method(self, method: Mutation) -> Self;
     /// Enables or disables dynamic mutation probability adjustment based on population cardinality.

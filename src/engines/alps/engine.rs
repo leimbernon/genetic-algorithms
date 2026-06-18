@@ -70,7 +70,7 @@ pub struct AlpsResult<U: LinearChromosome> {
 /// use genetic_algorithms::alps::{AlpsAgeScheme, AlpsConfiguration, AlpsEngine};
 /// use genetic_algorithms::chromosomes::Range as RangeChromosome;
 /// use genetic_algorithms::configuration::ProblemSolving;
-/// use genetic_algorithms::operations::Mutation;
+/// use genetic_algorithms::operations::{Mutation, GaussianParams};
 ///
 /// let config = AlpsConfiguration::default()
 ///     .with_n_layers(5)
@@ -79,7 +79,7 @@ pub struct AlpsResult<U: LinearChromosome> {
 ///     .with_age_gap(5)
 ///     .with_injection_interval(10)
 ///     .with_max_generations(500)
-///     .with_mutation(Mutation::Gaussian { sigma: Some(0.1) })
+///     .with_mutation(Mutation::Gaussian(GaussianParams { sigma: Some(0.1) }))
 ///     .with_problem_solving(ProblemSolving::Minimization)
 ///     .with_fitness_target(0.01);
 ///

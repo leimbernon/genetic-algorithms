@@ -26,7 +26,7 @@ use genetic_algorithms::initializers::range_random_initialization;
 use genetic_algorithms::operations::local_search::{
     LocalSearch, LocalSearchApplicationStrategy, LocalSearchMode,
 };
-use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+use genetic_algorithms::operations::{Crossover, GaussianParams, Mutation, Selection, Survivor};
 use genetic_algorithms::traits::{
     ChromosomeT, ConfigurationT, CrossoverConfig, ElitismConfig, LocalSearchConfig, MutationConfig,
     SelectionConfig, StoppingConfig,
@@ -62,7 +62,7 @@ fn run_ga(name: &str, use_local_search: bool) -> f64 {
         .with_fitness_fn(rastrigin_fitness)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
-        .with_mutation_method(Mutation::Gaussian { sigma: None })
+        .with_mutation_method(Mutation::Gaussian(GaussianParams { sigma: None }))
         .with_problem_solving(ProblemSolving::Minimization)
         .with_survivor_method(Survivor::Fitness)
         .with_max_generations(MAX_GENERATIONS)

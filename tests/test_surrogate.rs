@@ -32,7 +32,7 @@ use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::Ga;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::initializers::range_random_initialization;
-use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+use genetic_algorithms::operations::{Crossover, GaussianParams, Mutation, Selection, Survivor};
 use genetic_algorithms::traits::{
     ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
 };
@@ -311,7 +311,7 @@ fn build_surrogate_ga(
         .with_fitness_fn(|_dna: &[RangeGenotype<f64>]| 1.0)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::SinglePoint)
-        .with_mutation_method(Mutation::Gaussian { sigma: None })
+        .with_mutation_method(Mutation::Gaussian(GaussianParams { sigma: None }))
         .with_survivor_method(Survivor::Fitness)
         .with_max_generations(1)
         .with_problem_solving(ProblemSolving::Maximization)
@@ -411,7 +411,7 @@ fn build_runtime_ga(
         .with_fitness_fn(|_dna: &[RangeGenotype<f64>]| 1.0)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::SinglePoint)
-        .with_mutation_method(Mutation::Gaussian { sigma: None })
+        .with_mutation_method(Mutation::Gaussian(GaussianParams { sigma: None }))
         .with_survivor_method(Survivor::Fitness)
         .with_max_generations(generations)
         .with_problem_solving(ProblemSolving::Maximization)
@@ -502,7 +502,7 @@ fn true_fitness_calls_none_without_surrogate() {
         .with_fitness_fn(|_dna: &[RangeGenotype<f64>]| 1.0)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::SinglePoint)
-        .with_mutation_method(Mutation::Gaussian { sigma: None })
+        .with_mutation_method(Mutation::Gaussian(GaussianParams { sigma: None }))
         .with_survivor_method(Survivor::Fitness)
         .with_max_generations(5)
         .with_problem_solving(ProblemSolving::Maximization)
@@ -541,7 +541,7 @@ fn surrogate_with_batch_evaluator_composes() {
         .with_initialization_fn(move |n, _| range_random_initialization(n, Some(&alleles_clone)))
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::SinglePoint)
-        .with_mutation_method(Mutation::Gaussian { sigma: None })
+        .with_mutation_method(Mutation::Gaussian(GaussianParams { sigma: None }))
         .with_survivor_method(Survivor::Fitness)
         .with_max_generations(5)
         .with_problem_solving(ProblemSolving::Maximization)

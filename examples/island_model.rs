@@ -56,7 +56,7 @@ use genetic_algorithms::initializers::range_random_initialization;
 use genetic_algorithms::island::configuration::IslandConfiguration;
 use genetic_algorithms::island::topology::MigrationTopology;
 use genetic_algorithms::island::IslandGa;
-use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+use genetic_algorithms::operations::{Crossover, GaussianParams, Mutation, Selection, Survivor};
 use genetic_algorithms::traits::{ChromosomeT, LinearChromosome};
 #[cfg(feature = "observer-metrics")]
 use genetic_algorithms::MetricsObserver;
@@ -112,7 +112,7 @@ fn main() {
                 .with_problem_solving(ProblemSolving::Minimization)
                 .with_max_generations(MAX_GENERATIONS)
                 .with_mutation_probability_max(prob)
-                .with_mutation_method(Mutation::Gaussian { sigma: None })
+                .with_mutation_method(Mutation::Gaussian(GaussianParams { sigma: None }))
                 .with_crossover_method(Crossover::Uniform)
                 .with_selection_method(Selection::Tournament)
                 .with_survivor_method(Survivor::Fitness)

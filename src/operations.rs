@@ -244,7 +244,7 @@ pub enum Crossover {
 /// ```rust,no_run
 /// use genetic_algorithms::ga::Ga;
 /// use genetic_algorithms::chromosomes::Binary;
-/// use genetic_algorithms::operations::Mutation;
+/// use genetic_algorithms::operations::{Mutation, GaussianParams};
 /// use genetic_algorithms::traits::{ConfigurationT, MutationConfig};
 ///
 /// let _ga = Ga::<Binary>::new()

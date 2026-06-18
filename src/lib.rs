@@ -18,7 +18,7 @@
 //! use genetic_algorithms::ga::Ga;
 //! use genetic_algorithms::genotypes::Range as RangeGenotype;
 //! use genetic_algorithms::initializers::range_random_initialization;
-//! use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+//! use genetic_algorithms::operations::{Crossover, GaussianParams, Mutation, Selection, Survivor};
 //! use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig};
 //! use genetic_algorithms::{ChromosomeLength, CompositeObserver, LogObserver};
 //! use std::sync::Arc;
@@ -43,7 +43,7 @@
 //!     .with_fitness_fn(fitness_fn)
 //!     .with_selection_method(Selection::Tournament)
 //!     .with_crossover_method(Crossover::Uniform)
-//!     .with_mutation_method(Mutation::Gaussian)
+//!     .with_mutation_method(Mutation::Gaussian(GaussianParams { sigma: None }))
 //!     .with_survivor_method(Survivor::Fitness)
 //!     .with_problem_solving(ProblemSolving::Minimization)
 //!     .with_max_generations(500)

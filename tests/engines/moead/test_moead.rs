@@ -357,11 +357,11 @@ fn test_moead_run_invokes_observer_hooks() {
 
 #[test]
 fn test_moead_run_rejects_differential_mutation() {
-    use genetic_algorithms::operations::Mutation;
+    use genetic_algorithms::operations::{DifferentialParams, Mutation};
     let mut moead = build_test_moead(15, 3, ScalarizationFn::Tchebycheff);
     moead.ga_config = moead
         .ga_config
-        .with_mutation_method(Mutation::Differential { f: None })
+        .with_mutation_method(Mutation::Differential(DifferentialParams { f: None }))
         .with_mutation_probability_max(1.0);
     let result = moead.run();
     assert!(

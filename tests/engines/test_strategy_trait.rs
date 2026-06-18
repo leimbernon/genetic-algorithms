@@ -6,7 +6,7 @@ use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::Ga;
 use genetic_algorithms::genotypes::Range as RangeGene;
-use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+use genetic_algorithms::operations::{Crossover, GaussianParams, Mutation, Selection, Survivor};
 use genetic_algorithms::population::Population;
 use genetic_algorithms::traits::{
     ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig,
@@ -50,7 +50,7 @@ fn test_strategy_box_dyn_compiles() {
             .with_problem_solving(ProblemSolving::Minimization)
             .with_selection_method(Selection::Random)
             .with_crossover_method(Crossover::SinglePoint)
-            .with_mutation_method(Mutation::Gaussian { sigma: None })
+            .with_mutation_method(Mutation::Gaussian(GaussianParams { sigma: None }))
             .with_survivor_method(Survivor::Fitness)
             .with_max_generations(10)
             .with_population(population)
@@ -139,7 +139,7 @@ fn test_runtime_strategy_swap() {
             .with_problem_solving(ProblemSolving::Minimization)
             .with_selection_method(Selection::Random)
             .with_crossover_method(Crossover::SinglePoint)
-            .with_mutation_method(Mutation::Gaussian { sigma: None })
+            .with_mutation_method(Mutation::Gaussian(GaussianParams { sigma: None }))
             .with_survivor_method(Survivor::Fitness)
             .with_max_generations(5)
             .with_population(population)
