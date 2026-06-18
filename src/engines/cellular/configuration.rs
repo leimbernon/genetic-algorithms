@@ -1,7 +1,7 @@
 //! Configuration types for the Cellular Genetic Algorithm engine.
 
 use crate::configuration::ProblemSolving;
-use crate::operations::{Crossover, Mutation, Selection};
+use crate::operations::{Crossover, GaussianParams, Mutation, Selection};
 
 /// Neighborhood topology for the Cellular GA grid.
 ///
@@ -109,7 +109,7 @@ impl Default for CellularConfiguration {
             max_generations: 1000,
             selection: Selection::Tournament,
             crossover: Crossover::Uniform,
-            mutation: Mutation::Gaussian { sigma: Some(0.1) },
+            mutation: Mutation::Gaussian(GaussianParams { sigma: Some(0.1) }),
             problem_solving: ProblemSolving::Minimization,
             fitness_target: None,
         }

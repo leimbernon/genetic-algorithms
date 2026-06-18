@@ -593,8 +593,6 @@ where
                                         mutation_config.method.clone(),
                                         child,
                                         None,
-                                        None,
-                                        None,
                                     )?;
                                 }
                                 other => {
@@ -691,8 +689,6 @@ where
                                     mutation::factory_with_chromosome_length(
                                         mutation_config.method.clone(),
                                         child,
-                                        None,
-                                        None,
                                         None,
                                     )?;
                                 }

@@ -1,7 +1,7 @@
 //! Configuration types for the ALPS (Age-Layered Population Structure) engine.
 
 use crate::configuration::ProblemSolving;
-use crate::operations::{Crossover, Mutation};
+use crate::operations::{Crossover, GaussianParams, Mutation};
 
 /// Age scheme that determines the maximum age threshold for each layer.
 ///
@@ -92,7 +92,7 @@ impl Default for AlpsConfiguration {
             injection_interval: 10,
             max_generations: 1000,
             crossover: Crossover::Uniform,
-            mutation: Mutation::Gaussian { sigma: Some(0.1) },
+            mutation: Mutation::Gaussian(GaussianParams { sigma: Some(0.1) }),
             problem_solving: ProblemSolving::Minimization,
             fitness_target: None,
         }

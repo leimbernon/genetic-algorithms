@@ -22,6 +22,10 @@
 pub use self::inversion::inversion;
 pub use self::scramble::scramble;
 pub use self::swap::swap;
+use super::{
+    CauchyParams, CreepParams, GaussianParams, LevyFlightParams, PolynomialParams,
+    SelfAdaptiveGaussianParams,
+};
 use super::Mutation;
 use crate::chromosomes::ChromosomeLength;
 use crate::error::GaError;
@@ -131,19 +135,19 @@ impl MutationOperator for Mutation {
             Mutation::Scramble => scramble(individual),
             Mutation::Value => individual.value_mutate(),
             Mutation::BitFlip => individual.bit_flip_mutate(),
-            Mutation::Creep { step } => {
+            Mutation::Creep(CreepParams { step }) => {
                 let s = step.unwrap_or(0.01);
                 individual.creep_mutate(s);
             }
-            Mutation::Gaussian { sigma } => {
+            Mutation::Gaussian(GaussianParams { sigma }) => {
                 let s = sigma.unwrap_or(0.1);
                 individual.gaussian_mutate(s);
             }
-            Mutation::Polynomial { eta } => {
+            Mutation::Polynomial(PolynomialParams { eta }) => {
                 let eta_val = eta.unwrap_or(DEFAULT_POLYNOMIAL_ETA);
                 return individual.polynomial_mutation(eta_val);
             }
-            Mutation::NonUniform { .. } => {
+            Mutation::NonUniform(..) => {
                 return Err(GaError::MutationError(
                     "Mutation::NonUniform requires generation context (generation, max_generations). \
                      It is applied automatically by the GA engine."
@@ -172,31 +176,30 @@ impl MutationOperator for Mutation {
                 ));
             }
             Mutation::ListValue => individual.value_mutate(),
-            Mutation::Differential { .. } => {
+            Mutation::Differential(..) => {
                 return Err(GaError::MutationError(
                     "Mutation::Differential requires population context. \
-                     It is applied automatically by the GA engine when configured — \
-                     do not call factory_with_params() directly."
+                     It is applied automatically by the GA engine when configured."
                         .to_string(),
                 ));
             }
-            Mutation::Cauchy { scale } => {
+            Mutation::Cauchy(CauchyParams { scale }) => {
                 let s = scale.unwrap_or(1.0);
                 return individual.cauchy_mutation(s);
             }
-            Mutation::LevyFlight { alpha } => {
+            Mutation::LevyFlight(LevyFlightParams { alpha }) => {
                 let a = alpha.unwrap_or(1.5);
                 return individual.levy_flight_mutation(a);
             }
             Mutation::Uniform => {
                 return individual.uniform_mutation();
             }
-            Mutation::SelfAdaptiveGaussian {
+            Mutation::SelfAdaptiveGaussian(SelfAdaptiveGaussianParams {
                 tau,
                 tau_prime,
                 sigma_min,
                 sigma_max,
-            } => {
+            }) => {
                 let n_hint = individual.dna().len().max(1);
                 let effective_tau = tau.unwrap_or_else(|| 1.0 / (2.0 * n_hint as f64).sqrt());
                 let effective_tau_prime =
@@ -242,41 +245,6 @@ where
     mutation.mutate(individual, &mutation.clone())
 }
 
-/// Applies the specified mutation operator. Inline variant parameters take effect directly.
-///
-/// The `step` and `sigma` arguments are **ignored** in v3.0.0 — parameters are now
-/// carried by the `Mutation` variant itself (e.g. `Mutation::Gaussian { sigma: Some(0.05) }`).
-/// This function signature is retained for source compatibility; callers should migrate to
-/// constructing parameterized variants instead.
-///
-/// # Arguments
-///
-/// * `mutation` - The mutation variant to apply (carries its own params).
-/// * `individual` - Mutable reference to the chromosome to mutate.
-/// * `_step` - Ignored. Embed the step value in `Mutation::Creep { step: Some(value) }` instead.
-/// * `_sigma` - Ignored. Embed sigma in `Mutation::Gaussian { sigma: Some(value) }` instead.
-///
-/// # Examples
-///
-/// ```rust,no_run
-/// use genetic_algorithms::chromosomes::Binary;
-/// use genetic_algorithms::operations::{mutation::factory_with_params, Mutation};
-///
-/// let mut individual = Binary::new();
-/// factory_with_params(Mutation::BitFlip, &mut individual, None, None).unwrap();
-/// ```
-pub fn factory_with_params<U>(
-    mutation: Mutation,
-    individual: &mut U,
-    _step: Option<f64>,
-    _sigma: Option<f64>,
-) -> Result<(), GaError>
-where
-    U: LinearChromosome + ValueMutable + RealValuedMutation + 'static,
-{
-    mutation.mutate(individual, &mutation.clone())
-}
-
 /// Applies `Mutation::Insertion` or `Mutation::Deletion` with the given [`ChromosomeLength`].
 ///
 /// This function is the correct entry point for length-changing operators.
@@ -297,8 +265,6 @@ where
 /// * `mutation` - The mutation variant to apply.
 /// * `individual` - The chromosome to mutate.
 /// * `chromosome_length` - Length policy; required for `Insertion`/`Deletion`.
-/// * `_step` - Ignored (retained for call-site compatibility).
-/// * `_sigma` - Ignored (retained for call-site compatibility).
 ///
 /// # Examples
 ///
@@ -308,14 +274,12 @@ where
 ///
 /// let mut individual = Binary::new();
 /// let cl = ChromosomeLength::Variable { min: 2, max: 10 };
-/// factory_with_chromosome_length(Mutation::Insertion, &mut individual, Some(cl), None, None).unwrap();
+/// factory_with_chromosome_length(Mutation::Insertion, &mut individual, Some(cl)).unwrap();
 /// ```
 pub fn factory_with_chromosome_length<U>(
     mutation: Mutation,
     individual: &mut U,
     chromosome_length: Option<ChromosomeLength>,
-    _step: Option<f64>,
-    _sigma: Option<f64>,
 ) -> Result<(), GaError>
 where
     U: LinearChromosome + ValueMutable + RealValuedMutation + 'static,
@@ -357,12 +321,12 @@ pub fn factory_self_adaptive<U: LinearChromosome + ValueMutable + RealValuedMuta
     sigma_min: Option<f64>,
     sigma_max: Option<f64>,
 ) -> Result<(), GaError> {
-    let variant = Mutation::SelfAdaptiveGaussian {
+    let variant = Mutation::SelfAdaptiveGaussian(SelfAdaptiveGaussianParams {
         tau,
         tau_prime,
         sigma_min,
         sigma_max,
-    };
+    });
     variant.mutate(individual, &variant.clone())
 }
 
@@ -412,22 +376,22 @@ where
                  Use Swap, Inversion, or Scramble instead."
                 .to_string(),
         )),
-        Mutation::Creep { .. } => Err(GaError::MutationError(
+        Mutation::Creep(..) => Err(GaError::MutationError(
             "Mutation::Creep requires the chromosome type to implement ValueMutable. \
                  Use Swap, Inversion, or Scramble instead, or implement ValueMutable for your type."
                 .to_string(),
         )),
-        Mutation::Gaussian { .. } => Err(GaError::MutationError(
+        Mutation::Gaussian(..) => Err(GaError::MutationError(
             "Mutation::Gaussian requires the chromosome type to implement ValueMutable. \
                  Use Swap, Inversion, or Scramble instead, or implement ValueMutable for your type."
                 .to_string(),
         )),
-        Mutation::Polynomial { .. } => Err(GaError::MutationError(
+        Mutation::Polynomial(..) => Err(GaError::MutationError(
             "Mutation::Polynomial requires Range<T> chromosomes where T is f64, f32, i32, or i64. \
                  Use Swap, Inversion, or Scramble instead."
                 .to_string(),
         )),
-        Mutation::NonUniform { .. } => Err(GaError::MutationError(
+        Mutation::NonUniform(..) => Err(GaError::MutationError(
             "Mutation::NonUniform requires Range<T> chromosomes and generation context. \
                  Call non_uniform::non_uniform_mutation() directly."
                 .to_string(),
@@ -452,16 +416,16 @@ where
                  Use Swap, Inversion, or Scramble instead."
                 .to_string(),
         )),
-        Mutation::Differential { .. } => Err(GaError::MutationError(
+        Mutation::Differential(..) => Err(GaError::MutationError(
             "Mutation::Differential requires Range<T> chromosomes and population context. \
              Use Swap, Inversion, or Scramble instead.".to_string(),
         )),
-        Mutation::Cauchy { .. } => Err(GaError::MutationError(
+        Mutation::Cauchy(..) => Err(GaError::MutationError(
             "Mutation::Cauchy requires Range<T> chromosomes where T is f64, f32, i32, or i64. \
              Use Swap, Inversion, or Scramble for non-Range chromosomes."
                 .to_string(),
         )),
-        Mutation::LevyFlight { .. } => Err(GaError::MutationError(
+        Mutation::LevyFlight(..) => Err(GaError::MutationError(
             "Mutation::LevyFlight requires Range<T> chromosomes where T is f64, f32, i32, or i64. \
              Use Swap, Inversion, or Scramble for non-Range chromosomes.".to_string(),
         )),
@@ -469,7 +433,7 @@ where
             "Mutation::Uniform requires Range<T> chromosomes where T is f64, f32, i32, or i64. \
              Use Swap, Inversion, or Scramble for non-Range chromosomes.".to_string(),
         )),
-        Mutation::SelfAdaptiveGaussian { .. } => Err(GaError::MutationError(
+        Mutation::SelfAdaptiveGaussian(..) => Err(GaError::MutationError(
             "Mutation::SelfAdaptiveGaussian requires a chromosome implementing SelfAdaptive. \
              Use Swap, Inversion, or Scramble for non-SelfAdaptive chromosomes.".to_string(),
         )),

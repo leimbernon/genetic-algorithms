@@ -1,6 +1,7 @@
 //! Extracted from src/engines/ga.rs in phase 69-04 — Per-generation loop body (parent_crossover, extract_elite, reinsert_elite).
 
 use super::*;
+use crate::operations::DifferentialParams;
 
 /// AOS and fitness parameters bundled for `parent_crossover` (D-07).
 ///
@@ -264,7 +265,7 @@ where
 
         if mutation_probability <= effective_mutation_prob {
             match &mutation_method {
-                Mutation::Differential { f } => {
+                Mutation::Differential(DifferentialParams { f }) => {
                     let f_val = f.unwrap_or(0.5);
                     crate::operations::mutation::differential::differential_mutation(
                         &mut child_1,
@@ -278,8 +279,6 @@ where
                         mutation_method.clone(),
                         &mut child_1,
                         Some(configuration.limit_configuration.chromosome_length),
-                        None,
-                        None,
                     )?;
                 }
                 _ => {
@@ -291,7 +290,7 @@ where
         mutation_probability = rng.random_range(0.0..1.0);
         if mutation_probability <= effective_mutation_prob {
             match &mutation_method {
-                Mutation::Differential { f } => {
+                Mutation::Differential(DifferentialParams { f }) => {
                     let f_val = f.unwrap_or(0.5);
                     crate::operations::mutation::differential::differential_mutation(
                         &mut child_2,
@@ -305,8 +304,6 @@ where
                         mutation_method.clone(),
                         &mut child_2,
                         Some(configuration.limit_configuration.chromosome_length),
-                        None,
-                        None,
                     )?;
                 }
                 _ => {
