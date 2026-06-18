@@ -1135,8 +1135,18 @@ Plans:
   2. The `Mutation` enum factory dispatches to the correct parameter type — no unused `step` or `sigma` parameters passed to operators that don't need them
   3. `cargo test`, `cargo clippy`, `cargo doc --no-deps` pass with zero warnings
 
-**Plans**: TBD
+**Plans:** 2/3 plans executed
 **UI hint**: no
+
+Plans:
+**Wave 1**
+
+- [x] 71-01-PLAN.md — Define 8 param structs + reshape Mutation enum to tuple variants + mutation.rs dispatch/factory cleanup (D-01–D-07)
+
+**Wave 2** *(blocked on Wave 1, parallel — disjoint files)*
+
+- [x] 71-02-PLAN.md — Engine consumers: 4 factory_with_chromosome_length call sites, Differential match arm + guards, cellular/ALPS default Gaussian construction
+- [ ] 71-03-PLAN.md — Tests + examples + src doc-comment migration + factory_with_params→factory + phase verification gate
 
 ### Phase 72: Audit and Fix Ignored Doctests (Issue #265)
 
@@ -1149,7 +1159,17 @@ Plans:
   2. Every `pub` item in `src/` with a `# Examples` block has a compilable doctest
   3. No `#[ignore]` annotations remain on any doctest
 
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 72-01-PLAN.md — Fix failing CreepParams doctest + audit non-engine module doctests (lib, rng, traits, initializers, fitness, observe)
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [ ] 72-02-PLAN.md — Audit all engine module doctests (18 across 13 files) + feature-gated doctests + final verification gate
+
 **UI hint**: no
 
 ### Phase 73: Move Inline #[cfg(test)] Modules to tests/ (Issue #266)
@@ -1247,7 +1267,7 @@ Plans:
 | 64. Test & Doc Quality | v3.0.0 | 4/4 | Complete | 2026-06-12 |
 | 65. v3.0.0 Migration Guide | v3.0.0 | 3/3 | Complete   | 2026-06-17 |
 | 70. Replace Operator Downcasting (#247) | v3.0.0 | 2/2 | Complete   | 2026-06-18 |
-| 71. Per-Operator Mutation Params (#249) | v3.0.0 | TBD | Pending | — |
-| 72. Audit Ignored Doctests (#265) | v3.0.0 | TBD | Pending | — |
+| 71. Per-Operator Mutation Params (#249) | v3.0.0 | 2/3 | In Progress|  |
+| 72. Audit Ignored Doctests (#265) | v3.0.0 | 2/2 | Planning | — |
 | 73. Move Inline Test Modules (#266) | v3.0.0 | TBD | Pending | — |
 | 74. Add Missing Benchmarks (#267) | v3.0.0 | TBD | Pending | — |
