@@ -624,7 +624,7 @@ where
         if mp <= mut_prob {
             if matches!(
                 mutation_config.method,
-                crate::operations::Mutation::Differential { .. }
+                crate::operations::Mutation::Differential(..)
             ) {
                 return Err(GaError::MutationError(
                     "Differential mutation is not supported in MOEA/D; \
