@@ -9,7 +9,7 @@
 - ✅ **v2.2.1 — Performance Optimizations** — Phases 19-24 (shipped 2026-04-23)
 - ✅ **v2.3.0 — Alternative Metaheuristics & Population Models** — Phases 25-29 (shipped 2026-04-27)
 - ✅ **v2.4.0 — Observer Integration & New Operators + Advanced Multi-Objective** — Phases 30-46 (shipped 2026-05-18)
-- 🚧 **v3.0.0 — Advanced Representations, Alternative Strategies & Architecture Simplification** — Phases 47-65 (in progress)
+- 🚧 **v3.0.0 — Advanced Representations, Alternative Strategies & Architecture Simplification** — Phases 47-74 (in progress)
 
 ## Phases
 
@@ -456,15 +456,15 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 45-01-PLAN.md — Foundation: LocalSearchOperator trait, HillClimbing enum + factory, config types, serde, module wiring
+- [x] 45-01-PLAN.md — Foundation: LocalSearchOperator trait, HillClimbing enum + factory, config types, serde, module wiring
 
 **Wave 2** *(blocked on Wave 1)*
 
-- [ ] 45-02-PLAN.md — Ga integration: struct field, builder method, generation loop, strategy dispatch, parallel execution, tests
+- [x] 45-02-PLAN.md — Ga integration: struct field, builder method, generation loop, strategy dispatch, parallel execution, tests
 
 **Wave 3** *(blocked on Waves 1-2)*
 
-- [ ] 45-03-PLAN.md — Example (memetic_rastrigin), serde roundtrip test, WASM check, phase verification gate
+- [x] 45-03-PLAN.md — Example (memetic_rastrigin), serde roundtrip test, WASM check, phase verification gate
 
 ### Phase 46: Update the documentation to explain in more details the different algorithms. A refactor of the documentation can happen if needed
 
@@ -508,7 +508,7 @@ Plans:
   5. User can configure all stopping criteria via flat builder methods (`.with_stagnation_limit(50)`) without constructing a `StoppingCriteria` struct; `LocalSearch` is configured via an enum, not `Arc<dyn ...>`
   6. All 10 existing runnable examples (`cargo run --example <name>`) compile and pass their short-generation CI smoke tests on the milestone branch after every PR
 
-**Plans:** 6/8 plans executed
+**Plans:** 8/8 plans complete
 
 Plans:
 **PR 1 — ChromosomeT split (ARCH-01, ARCH-02)**
@@ -519,13 +519,13 @@ Plans:
 
 **PR 2 — Config cleanup (ARCH-04, ARCH-05, ARCH-06)**
 
-- [ ] 47-04-PLAN.md — ChromosomeLength enum + LimitConfiguration field removals + initializer signature cleanup
+- [x] 47-04-PLAN.md — ChromosomeLength enum + LimitConfiguration field removals + initializer signature cleanup
 - [x] 47-05-PLAN.md — StoppingCriteria flattening into GaConfiguration + sub-struct accessor pattern + ga.rs path updates (WASM gate preserved)
 - [x] 47-06-PLAN.md — Multi-obj engine + example + test caller migration + PR 2 gate
 
 **PR 3 — Reporter removal + CI (ARCH-03, ARCH-07)**
 
-- [ ] 47-07-PLAN.md — Reporter trait + impls + fire points removal + MIGRATION.md publication + README link + Cargo.toml include
+- [x] 47-07-PLAN.md — Reporter trait + impls + fire points removal + MIGRATION.md publication + README link + Cargo.toml include
 - [x] 47-08-PLAN.md — examples-smoke.yml CI workflow + final Phase 47 verification gate
 
 **UI hint**: no
@@ -548,19 +548,19 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 48-01-PLAN.md — OperatorCompat trait foundation + Crossover enum MultiGroup variants + build_child visibility + per-type empty impls + Wave 0 tests (GEN-01, GEN-04 foundation)
+- [x] 48-01-PLAN.md — OperatorCompat trait foundation + Crossover enum MultiGroup variants + build_child visibility + per-type empty impls + Wave 0 tests (GEN-01, GEN-04 foundation)
 
 **Wave 2** *(blocked on Wave 1)*
 
-- [ ] 48-02-PLAN.md — UniqueGenotype + UniqueChromosome + unique_random_initialization + job_scheduling example migration (GEN-01, GEN-02)
+- [x] 48-02-PLAN.md — UniqueGenotype + UniqueChromosome + unique_random_initialization + job_scheduling example migration (GEN-01, GEN-02)
 
 **Wave 3** *(blocked on Wave 2)*
 
-- [ ] 48-03-PLAN.md — MultiRangeGenotype + MultiRangeChromosome + multi_range_random_initialization + per-gene Gaussian mutation (GEN-03)
+- [x] 48-03-PLAN.md — MultiRangeGenotype + MultiRangeChromosome + multi_range_random_initialization + per-gene Gaussian mutation (GEN-03)
 
 **Wave 4** *(blocked on Wave 3)*
 
-- [ ] 48-04-PLAN.md — MultiUniqueChromosome + group_ranges + multi_group_pmx + multi_group_ox dispatch + Phase 48 verification gate (GEN-04)
+- [x] 48-04-PLAN.md — MultiUniqueChromosome + group_ranges + multi_group_pmx + multi_group_ox dispatch + Phase 48 verification gate (GEN-04)
 
 ### Phase 49: Unified Strategy Trait + Alternative Strategy Engines
 
@@ -619,19 +619,19 @@ Plans:
 Plans:
 **Wave 0**
 
-- [x] 64-01-PLAN.md — Coverage baseline + cargo-llvm-cov CI gate (D-01, D-02, D-03, D-04, D-05)
+- [x] 51-01-PLAN.md — RealValued marker trait + UNDX crossover + Wave 0 test stubs
 
 **Wave 1** *(blocked on Wave 0)*
 
-- [ ] 64-02-PLAN.md — Fix all #[allow(...)] suppressions at root cause (D-06, D-07, D-08, D-09, D-10)
+- [x] 51-02-PLAN.md — SPX + PCX crossover operators + factory dispatch
 
-**Wave 2** *(blocked on Waves 0-1, parallel with 64-04)*
+**Wave 2** *(blocked on Wave 1)*
 
-- [ ] 64-03-PLAN.md — Data-driven coverage tests for lowest-coverage modules (D-05, D-14)
+- [x] 51-03-PLAN.md — SelfAdaptive trait + SelfAdaptiveGaussian mutation + sigma update
 
-**Wave 2** *(blocked on Wave 1, parallel with 64-03)*
+**Wave 3** *(blocked on Wave 2)*
 
-- [ ] 64-04-PLAN.md — Rustdoc # Examples blocks on all user-facing pub items (D-11, D-12, D-13)
+- [x] 51-04-PLAN.md — Integration tests, serde, WASM check, phase verification gate
 
 **UI hint**: no
 
@@ -928,24 +928,24 @@ Plans:
   3. Every `pub` item in `src/` has a rustdoc `# Examples` block that compiles via `cargo test --doc`
   4. All CI gates pass with zero warnings
 
-**Plans:** 1/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 **Wave 0**
 
-- [ ] 64-01-PLAN.md — Coverage baseline + cargo-llvm-cov CI gate (D-01, D-02, D-03, D-04, D-05)
+- [x] 64-01-PLAN.md — Coverage baseline + cargo-llvm-cov CI gate (D-01, D-02, D-03, D-04, D-05)
 
 **Wave 1** *(blocked on Wave 0)*
 
-- [ ] 64-02-PLAN.md — Fix all #[allow(...)] suppressions at root cause (D-06, D-07, D-08, D-09, D-10)
+- [x] 64-02-PLAN.md — Fix all #[allow(...)] suppressions at root cause (D-06, D-07, D-08, D-09, D-10)
 
 **Wave 2** *(blocked on Waves 0-1, parallel with 64-04)*
 
-- [ ] 64-03-PLAN.md — Data-driven coverage tests for lowest-coverage modules (D-05, D-14)
+- [x] 64-03-PLAN.md — Data-driven coverage tests for lowest-coverage modules (D-05, D-14)
 
 **Wave 2** *(blocked on Wave 1, parallel with 64-03)*
 
-- [ ] 64-04-PLAN.md — Rustdoc # Examples blocks on all user-facing pub items (D-11, D-12, D-13)
+- [x] 64-04-PLAN.md — Rustdoc # Examples blocks on all user-facing pub items (D-11, D-12, D-13)
 
 **UI hint**: no
 
@@ -962,7 +962,7 @@ Plans:
   4. `CHANGELOG.md` contains a `## [3.0.0]` entry following Keep-a-Changelog with Added / Changed (breaking) / Removed buckets covering all v3 phases (47–65)
   5. All CI gates pass (cargo test, cargo test --features serde, cargo clippy --all-targets -D warnings, cargo doc --no-deps with zero warnings, cargo check --target wasm32-unknown-unknown)
 
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 
 Plans:
 **Wave 0**
@@ -975,7 +975,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1)*
 
-- [ ] 65-03-PLAN.md — Final release-gate verification (full CI matrix, examples smoke-run, MIGRATION.md cross-check against actual compiler errors on a representative v2 sample crate)
+- [x] 65-03-PLAN.md — Final release-gate verification (full CI matrix, examples smoke-run, MIGRATION.md cross-check against actual compiler errors on a representative v2 sample crate)
 
 **Note**: Phase 65 is re-sequenced to run AFTER Phase 69 so MIGRATION.md captures the env_logger / `logging` / `parallel` feature changes.
 
@@ -1099,6 +1099,88 @@ Plans:
 
 **UI hint**: no
 
+### Phase 70: Replace Operator Runtime Downcasting with Typed Dispatch (Issue #247)
+
+**Goal**: Eliminate all `as_any().downcast_mut()` calls in the mutation operator layer by introducing a typed dispatch mechanism that routes operators to the correct chromosome type at compile time rather than runtime
+**Depends on**: Phase 69
+**Requirements**: None (architecture refactor — closes GitHub issue #247)
+**Success Criteria** (what must be TRUE):
+
+  1. `src/operations/mutation.rs` contains zero `downcast` or `as_any` calls — all operator dispatch uses typed match arms or trait-based dispatch
+  2. All existing mutation operators (Polynomial, Cauchy, LevyFlight, Uniform, SelfAdaptiveGaussian, Differential, Gaussian, Swap, Inversion, Scramble) continue to work identically
+  3. `cargo test`, `cargo clippy`, `cargo doc --no-deps` pass with zero warnings
+  4. `cargo check --target wasm32-unknown-unknown` passes
+
+**Plans:** 2 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 70-01-PLAN.md — RealValuedMutation trait + Range<T> impl + re-export wiring
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [ ] 70-02-PLAN.md — Refactor mutation.rs: replace try_* functions with trait dispatch + remove downcasting + verification gate
+
+**UI hint**: no
+
+### Phase 71: Per-Operator Mutation Parameters (Issue #249)
+
+**Goal**: Replace the overloaded `mutate(step, sigma)` signature with per-operator parameter structs that carry only the parameters each operator needs, eliminating the one-size-fits-all signature
+**Depends on**: Phase 70
+**Requirements**: None (architecture refactor — closes GitHub issue #249)
+**Success Criteria** (what must be TRUE):
+
+  1. Each mutation operator has its own parameter struct (e.g., `GaussianParams { sigma }`, `CauchyParams { scale }`, `LevyParams { alpha }`) or uses no parameters (e.g., `Swap`, `Inversion`)
+  2. The `Mutation` enum factory dispatches to the correct parameter type — no unused `step` or `sigma` parameters passed to operators that don't need them
+  3. `cargo test`, `cargo clippy`, `cargo doc --no-deps` pass with zero warnings
+
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 72: Audit and Fix Ignored Doctests (Issue #265)
+
+**Goal**: Every rustdoc `# Examples` block in `src/` compiles and passes under `cargo test --doc` — zero `#[ignore]` or `# ignore` annotations on doctests
+**Depends on**: Phase 69
+**Requirements**: None (documentation — closes GitHub issue #265)
+**Success Criteria** (what must be TRUE):
+
+  1. `cargo test --doc` passes with zero failures and zero ignored tests
+  2. Every `pub` item in `src/` with a `# Examples` block has a compilable doctest
+  3. No `#[ignore]` annotations remain on any doctest
+
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 73: Move Inline #[cfg(test)] Modules to tests/ (Issue #266)
+
+**Goal**: All `#[cfg(test)] mod tests { ... }` blocks inside `src/` files are moved to corresponding files under `tests/`, reducing source file size and separating test code from library code
+**Depends on**: Phase 69
+**Requirements**: None (testing hygiene — closes GitHub issue #266)
+**Success Criteria** (what must be TRUE):
+
+  1. `grep -rn '#\[cfg(test)\]' src/` returns zero matches
+  2. All moved tests pass under `cargo test`
+  3. No test coverage regression — same number of tests pass before and after
+
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 74: Add Missing Engine and Feature Benchmarks (Issue #267)
+
+**Goal**: Every engine (PSO, CMA-ES, EDA, ALPS, Island, GP) and major feature (AOS, surrogate, batch fitness) has at least one Criterion benchmark in `benches/`
+**Depends on**: Phase 69
+**Requirements**: None (performance — closes GitHub issue #267)
+**Success Criteria** (what must be TRUE):
+
+  1. `benches/` contains benchmarks for: PSO, CMA-ES, EDA, ALPS, Island GA, GP
+  2. Each benchmark runs a representative problem (e.g., Rastrigin for real-valued, OneMax for binary)
+  3. `cargo bench --no-run` compiles all benchmarks
+  4. Benchmark groups follow existing pattern (genes_10, genes_100, genes_1000)
+
+**Plans**: TBD
+**UI hint**: no
+
 ## Progress
 
 | Phase | Milestone | Plans | Status | Completed |
@@ -1123,7 +1205,7 @@ Plans:
 | 22. Survivor & Extension Optimization | v2.2.1 | 2/2 | Complete | 2026-03-31 |
 | 23. Memory Layout | v2.2.1 | 2/2 | Complete | 2026-04-04 |
 | 24. Minor Improvements | v2.2.1 | 2/2 | Complete | 2026-04-05 |
-| 25. Directory Restructure | v2.3.0 | 3/3 | Complete   | 2026-06-10 |
+| 25. Directory Restructure | v2.3.0 | 3/3 | Complete   | 2026-06-17 |
 | 26. Differential Evolution Engine | v2.3.0 | 2/2 | Complete | 2026-04-26 |
 | 27. Scatter Search Engine | v2.3.0 | 1/1 | Complete | 2026-04-26 |
 | 28. Cellular GA Engine | v2.3.0 | 1/1 | Complete | 2026-04-27 |
@@ -1141,15 +1223,15 @@ Plans:
 | 40. Constraint Handling | v2.4.0 | 3/3 | Complete    | 2026-05-11 |
 | 41. Hall of Fame / Solution Archive | v2.4.0 | 3/3 | Complete | 2026-05-12 |
 | 42. Warm Starting & Population Seeding | v2.4.0 | 3/3 | Complete    | 2026-05-13 |
-| 43. Adaptive Operator Selection (AOS) | v2.4.0 | 3/3 | Complete | 2026-05-14 |
+| 43. Adaptive Operator Selection (AOS) | v2.4.0 | 3/3 | Complete | 2026-05-15 |
 | 44. Standard Benchmark Functions Suite | v2.4.0 | 3/3 | Complete    | 2026-05-14 |
-| 45. Memetic Algorithm Framework | v2.4.0 | 3 | Pending | — |
+| 45. Memetic Algorithm Framework | v2.4.0 | 3/3 | Complete | 2026-05-15 |
 | 46. Documentation Refactor | v2.4.0 | 7/7 | Complete    | 2026-05-15 |
-| 47. Architecture Audit & ChromosomeT Split | v3.0.0 | 8/8 | Complete | 2026-05-31 |
-| 48. New Genotype Types | v3.0.0 | 4/4 | Complete | 2026-05-31 |
+| 47. Architecture Audit & ChromosomeT Split | v3.0.0 | 8/8 | Complete | 2026-05-18 |
+| 48. New Genotype Types | v3.0.0 | 4/4 | Complete | 2026-05-19 |
 | 49. Unified Strategy Trait + Alternative Strategy Engines | v3.0.0 | 4/4 | Complete | 2026-05-31 |
 | 50. Lexicase Selection | v3.0.0 | 2/2 | Complete | 2026-05-23 |
-| 51. Multi-Parent Crossover + Self-Adaptive Mutation | v3.0.0 | 4/4 | Complete | 2026-05-31 |
+| 51. Multi-Parent Crossover + Self-Adaptive Mutation | v3.0.0 | 4/4 | Complete | 2026-05-23 |
 | 52. Variable-Length Chromosomes | v3.0.0 | 4/4 | Complete | 2026-05-24 |
 | 53. Tree Chromosome + GpGa Engine | v3.0.0 | 4/4 | Complete | 2026-05-25 |
 | 54. N-ary Selection / Per-Operator Mutation Params | v3.0.0 | 2/2 | Complete | 2026-05-31 |
@@ -1162,5 +1244,10 @@ Plans:
 | 61. Performance — Clone Reduction & Parallel Survivor | v3.0.0 | 5/4 | Complete    | 2026-06-09 |
 | 62. Surrogate-Assisted Evaluation | v3.0.0 | 3/3 | Complete | 2026-06-09 |
 | 63. Visualization — Pareto Front Plotting & Example Images | v3.0.0 | 3/3 | Complete   | 2026-06-10 |
-| 64. Test & Doc Quality | v3.0.0 | 1/4 | In Progress|  |
-| 65. v3.0.0 Migration Guide | v3.0.0 | TBD | Pending | — |
+| 64. Test & Doc Quality | v3.0.0 | 4/4 | Complete | 2026-06-12 |
+| 65. v3.0.0 Migration Guide | v3.0.0 | 3/3 | Complete   | 2026-06-17 |
+| 70. Replace Operator Downcasting (#247) | v3.0.0 | 2 | Pending | — |
+| 71. Per-Operator Mutation Params (#249) | v3.0.0 | TBD | Pending | — |
+| 72. Audit Ignored Doctests (#265) | v3.0.0 | TBD | Pending | — |
+| 73. Move Inline Test Modules (#266) | v3.0.0 | TBD | Pending | — |
+| 74. Add Missing Benchmarks (#267) | v3.0.0 | TBD | Pending | — |
