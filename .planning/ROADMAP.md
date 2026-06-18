@@ -1135,7 +1135,7 @@ Plans:
   2. The `Mutation` enum factory dispatches to the correct parameter type — no unused `step` or `sigma` parameters passed to operators that don't need them
   3. `cargo test`, `cargo clippy`, `cargo doc --no-deps` pass with zero warnings
 
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 **UI hint**: no
 
 Plans:
@@ -1146,7 +1146,7 @@ Plans:
 **Wave 2** *(blocked on Wave 1, parallel — disjoint files)*
 
 - [x] 71-02-PLAN.md — Engine consumers: 4 factory_with_chromosome_length call sites, Differential match arm + guards, cellular/ALPS default Gaussian construction
-- [ ] 71-03-PLAN.md — Tests + examples + src doc-comment migration + factory_with_params→factory + phase verification gate
+- [x] 71-03-PLAN.md — Tests + examples + src doc-comment migration + factory_with_params→factory + phase verification gate
 
 ### Phase 72: Audit and Fix Ignored Doctests (Issue #265)
 
@@ -1267,7 +1267,7 @@ Plans:
 | 64. Test & Doc Quality | v3.0.0 | 4/4 | Complete | 2026-06-12 |
 | 65. v3.0.0 Migration Guide | v3.0.0 | 3/3 | Complete   | 2026-06-17 |
 | 70. Replace Operator Downcasting (#247) | v3.0.0 | 2/2 | Complete   | 2026-06-18 |
-| 71. Per-Operator Mutation Params (#249) | v3.0.0 | 2/3 | In Progress|  |
+| 71. Per-Operator Mutation Params (#249) | v3.0.0 | 3/3 | Complete   | 2026-06-18 |
 | 72. Audit Ignored Doctests (#265) | v3.0.0 | 2/2 | Planning | — |
 | 73. Move Inline Test Modules (#266) | v3.0.0 | TBD | Pending | — |
 | 74. Add Missing Benchmarks (#267) | v3.0.0 | TBD | Pending | — |
