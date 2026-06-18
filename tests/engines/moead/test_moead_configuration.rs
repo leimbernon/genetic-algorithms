@@ -119,7 +119,10 @@ fn test_moead_effective_directions_explicit() {
 #[test]
 fn test_scalarization_default() {
     // D-03: default is Tchebycheff
-    assert!(matches!(ScalarizationFn::default(), ScalarizationFn::Tchebycheff));
+    assert!(matches!(
+        ScalarizationFn::default(),
+        ScalarizationFn::Tchebycheff
+    ));
     let config = MoeaDConfiguration::default();
     assert!(matches!(config.scalarization, ScalarizationFn::Tchebycheff));
 }
@@ -127,5 +130,7 @@ fn test_scalarization_default() {
 #[test]
 fn test_scalarization_pbi_holds_theta() {
     let config = MoeaDConfiguration::new().with_scalarization(ScalarizationFn::Pbi { theta: 5.0 });
-    assert!(matches!(config.scalarization, ScalarizationFn::Pbi { theta } if (theta - 5.0).abs() < 1e-9));
+    assert!(
+        matches!(config.scalarization, ScalarizationFn::Pbi { theta } if (theta - 5.0).abs() < 1e-9)
+    );
 }

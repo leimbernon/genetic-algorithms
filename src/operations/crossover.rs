@@ -20,7 +20,7 @@ pub(crate) use super::Crossover;
 use crate::chromosomes::Range as RangeChromosome;
 use crate::configuration::CrossoverConfiguration;
 use crate::error::GaError;
-use crate::traits::{LinearChromosome, CrossoverOperator, RealValued};
+use crate::traits::{CrossoverOperator, LinearChromosome, RealValued};
 use std::any::Any;
 
 pub mod arithmetic;
@@ -163,7 +163,11 @@ fn try_arithmetic<U: LinearChromosome>(
 }
 
 impl CrossoverOperator for Crossover {
-    fn crossover<U: LinearChromosome>(&self, parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
+    fn crossover<U: LinearChromosome>(
+        &self,
+        parent_1: &U,
+        parent_2: &U,
+    ) -> Result<Vec<U>, GaError> {
         match self {
             Crossover::Cycle => cycle(parent_1, parent_2),
             Crossover::MultiPoint => Err(GaError::CrossoverError(
@@ -217,7 +221,11 @@ impl CrossoverOperator for Crossover {
 }
 
 impl CrossoverOperator for CrossoverConfiguration {
-    fn crossover<U: LinearChromosome>(&self, parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
+    fn crossover<U: LinearChromosome>(
+        &self,
+        parent_1: &U,
+        parent_2: &U,
+    ) -> Result<Vec<U>, GaError> {
         match self.method {
             Crossover::Cycle => cycle(parent_1, parent_2),
             Crossover::MultiPoint => {
@@ -287,39 +295,37 @@ fn try_undx<U: LinearChromosome>(
     configuration: CrossoverConfiguration,
 ) -> Option<Result<Vec<U>, GaError>> {
     macro_rules! try_type {
-        ($t:ty) => {
-            {
-                let mut typed: Vec<&RangeChromosome<$t>> = Vec::with_capacity(parents.len());
-                let mut all_ok = true;
-                for p in parents.iter() {
-                    if let Some(r) = (*p as &dyn Any).downcast_ref::<RangeChromosome<$t>>() {
-                        typed.push(r);
-                    } else {
-                        all_ok = false;
-                        break;
-                    }
-                }
-                if all_ok && !typed.is_empty() {
-                    let result = undx::undx(
-                        &typed,
-                        typed.len(),
-                        configuration.undx_sigma_xi,
-                        configuration.undx_sigma_eta,
-                    );
-                    return Some(result.map(|children| {
-                        children
-                            .into_iter()
-                            .map(|c| {
-                                let boxed: Box<dyn Any> = Box::new(c);
-                                *boxed
-                                    .downcast::<U>()
-                                    .expect("type confirmed by downcast_ref")
-                            })
-                            .collect()
-                    }));
+        ($t:ty) => {{
+            let mut typed: Vec<&RangeChromosome<$t>> = Vec::with_capacity(parents.len());
+            let mut all_ok = true;
+            for p in parents.iter() {
+                if let Some(r) = (*p as &dyn Any).downcast_ref::<RangeChromosome<$t>>() {
+                    typed.push(r);
+                } else {
+                    all_ok = false;
+                    break;
                 }
             }
-        };
+            if all_ok && !typed.is_empty() {
+                let result = undx::undx(
+                    &typed,
+                    typed.len(),
+                    configuration.undx_sigma_xi,
+                    configuration.undx_sigma_eta,
+                );
+                return Some(result.map(|children| {
+                    children
+                        .into_iter()
+                        .map(|c| {
+                            let boxed: Box<dyn Any> = Box::new(c);
+                            *boxed
+                                .downcast::<U>()
+                                .expect("type confirmed by downcast_ref")
+                        })
+                        .collect()
+                }));
+            }
+        }};
     }
     try_type!(f64);
     try_type!(f32);
@@ -337,34 +343,32 @@ fn try_spx<U: LinearChromosome>(
     _configuration: CrossoverConfiguration,
 ) -> Option<Result<Vec<U>, GaError>> {
     macro_rules! try_type {
-        ($t:ty) => {
-            {
-                let mut typed: Vec<&RangeChromosome<$t>> = Vec::with_capacity(parents.len());
-                let mut all_ok = true;
-                for p in parents.iter() {
-                    if let Some(r) = (*p as &dyn Any).downcast_ref::<RangeChromosome<$t>>() {
-                        typed.push(r);
-                    } else {
-                        all_ok = false;
-                        break;
-                    }
-                }
-                if all_ok && !typed.is_empty() {
-                    let result = spx::spx(&typed, typed.len());
-                    return Some(result.map(|children| {
-                        children
-                            .into_iter()
-                            .map(|c| {
-                                let boxed: Box<dyn Any> = Box::new(c);
-                                *boxed
-                                    .downcast::<U>()
-                                    .expect("type confirmed by downcast_ref")
-                            })
-                            .collect()
-                    }));
+        ($t:ty) => {{
+            let mut typed: Vec<&RangeChromosome<$t>> = Vec::with_capacity(parents.len());
+            let mut all_ok = true;
+            for p in parents.iter() {
+                if let Some(r) = (*p as &dyn Any).downcast_ref::<RangeChromosome<$t>>() {
+                    typed.push(r);
+                } else {
+                    all_ok = false;
+                    break;
                 }
             }
-        };
+            if all_ok && !typed.is_empty() {
+                let result = spx::spx(&typed, typed.len());
+                return Some(result.map(|children| {
+                    children
+                        .into_iter()
+                        .map(|c| {
+                            let boxed: Box<dyn Any> = Box::new(c);
+                            *boxed
+                                .downcast::<U>()
+                                .expect("type confirmed by downcast_ref")
+                        })
+                        .collect()
+                }));
+            }
+        }};
     }
     try_type!(f64);
     try_type!(f32);
@@ -382,39 +386,37 @@ fn try_pcx<U: LinearChromosome>(
     configuration: CrossoverConfiguration,
 ) -> Option<Result<Vec<U>, GaError>> {
     macro_rules! try_type {
-        ($t:ty) => {
-            {
-                let mut typed: Vec<&RangeChromosome<$t>> = Vec::with_capacity(parents.len());
-                let mut all_ok = true;
-                for p in parents.iter() {
-                    if let Some(r) = (*p as &dyn Any).downcast_ref::<RangeChromosome<$t>>() {
-                        typed.push(r);
-                    } else {
-                        all_ok = false;
-                        break;
-                    }
-                }
-                if all_ok && !typed.is_empty() {
-                    let result = pcx::pcx(
-                        &typed,
-                        typed.len(),
-                        configuration.pcx_sigma_eta,
-                        configuration.pcx_sigma_zeta,
-                    );
-                    return Some(result.map(|children| {
-                        children
-                            .into_iter()
-                            .map(|c| {
-                                let boxed: Box<dyn Any> = Box::new(c);
-                                *boxed
-                                    .downcast::<U>()
-                                    .expect("type confirmed by downcast_ref")
-                            })
-                            .collect()
-                    }));
+        ($t:ty) => {{
+            let mut typed: Vec<&RangeChromosome<$t>> = Vec::with_capacity(parents.len());
+            let mut all_ok = true;
+            for p in parents.iter() {
+                if let Some(r) = (*p as &dyn Any).downcast_ref::<RangeChromosome<$t>>() {
+                    typed.push(r);
+                } else {
+                    all_ok = false;
+                    break;
                 }
             }
-        };
+            if all_ok && !typed.is_empty() {
+                let result = pcx::pcx(
+                    &typed,
+                    typed.len(),
+                    configuration.pcx_sigma_eta,
+                    configuration.pcx_sigma_zeta,
+                );
+                return Some(result.map(|children| {
+                    children
+                        .into_iter()
+                        .map(|c| {
+                            let boxed: Box<dyn Any> = Box::new(c);
+                            *boxed
+                                .downcast::<U>()
+                                .expect("type confirmed by downcast_ref")
+                        })
+                        .collect()
+                }));
+            }
+        }};
     }
     try_type!(f64);
     try_type!(f32);
@@ -468,30 +470,21 @@ pub fn factory_multi_parent<U: LinearChromosome + RealValued>(
         ));
     }
     match configuration.method {
-        Crossover::Undx { .. } => {
-            try_undx(parents, configuration).ok_or_else(|| {
-                GaError::CrossoverError(
-                    "UNDX requires Range<T> chromosomes where T is f64, f32, i32, or i64."
-                        .to_string(),
-                )
-            })?
-        }
-        Crossover::Spx { .. } => {
-            try_spx(parents, configuration).ok_or_else(|| {
-                GaError::CrossoverError(
-                    "SPX requires Range<T> chromosomes where T is f64, f32, i32, or i64."
-                        .to_string(),
-                )
-            })?
-        }
-        Crossover::Pcx { .. } => {
-            try_pcx(parents, configuration).ok_or_else(|| {
-                GaError::CrossoverError(
-                    "PCX requires Range<T> chromosomes where T is f64, f32, i32, or i64."
-                        .to_string(),
-                )
-            })?
-        }
+        Crossover::Undx { .. } => try_undx(parents, configuration).ok_or_else(|| {
+            GaError::CrossoverError(
+                "UNDX requires Range<T> chromosomes where T is f64, f32, i32, or i64.".to_string(),
+            )
+        })?,
+        Crossover::Spx { .. } => try_spx(parents, configuration).ok_or_else(|| {
+            GaError::CrossoverError(
+                "SPX requires Range<T> chromosomes where T is f64, f32, i32, or i64.".to_string(),
+            )
+        })?,
+        Crossover::Pcx { .. } => try_pcx(parents, configuration).ok_or_else(|| {
+            GaError::CrossoverError(
+                "PCX requires Range<T> chromosomes where T is f64, f32, i32, or i64.".to_string(),
+            )
+        })?,
         _ => Err(GaError::CrossoverError(
             "factory_multi_parent called with non-multi-parent crossover method".to_string(),
         )),
@@ -531,30 +524,21 @@ pub fn factory_multi_parent_dispatch<U: LinearChromosome + 'static>(
         ));
     }
     match configuration.method {
-        Crossover::Undx { .. } => {
-            try_undx(parents, configuration).ok_or_else(|| {
-                GaError::CrossoverError(
-                    "UNDX requires Range<T> chromosomes where T is f64, f32, i32, or i64."
-                        .to_string(),
-                )
-            })?
-        }
-        Crossover::Spx { .. } => {
-            try_spx(parents, configuration).ok_or_else(|| {
-                GaError::CrossoverError(
-                    "SPX requires Range<T> chromosomes where T is f64, f32, i32, or i64."
-                        .to_string(),
-                )
-            })?
-        }
-        Crossover::Pcx { .. } => {
-            try_pcx(parents, configuration).ok_or_else(|| {
-                GaError::CrossoverError(
-                    "PCX requires Range<T> chromosomes where T is f64, f32, i32, or i64."
-                        .to_string(),
-                )
-            })?
-        }
+        Crossover::Undx { .. } => try_undx(parents, configuration).ok_or_else(|| {
+            GaError::CrossoverError(
+                "UNDX requires Range<T> chromosomes where T is f64, f32, i32, or i64.".to_string(),
+            )
+        })?,
+        Crossover::Spx { .. } => try_spx(parents, configuration).ok_or_else(|| {
+            GaError::CrossoverError(
+                "SPX requires Range<T> chromosomes where T is f64, f32, i32, or i64.".to_string(),
+            )
+        })?,
+        Crossover::Pcx { .. } => try_pcx(parents, configuration).ok_or_else(|| {
+            GaError::CrossoverError(
+                "PCX requires Range<T> chromosomes where T is f64, f32, i32, or i64.".to_string(),
+            )
+        })?,
         _ => Err(GaError::CrossoverError(
             "factory_multi_parent_dispatch called with non-multi-parent crossover method"
                 .to_string(),

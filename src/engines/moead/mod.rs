@@ -355,7 +355,10 @@ where
 
 impl<U> MoeaDGa<U>
 where
-    U: LinearChromosome + VectorFitness + mutation::ValueMutable,
+    U: LinearChromosome
+        + VectorFitness
+        + mutation::ValueMutable
+        + crate::traits::RealValuedMutation,
 {
     /// Runs the MOEA/D algorithm and returns the post-hoc Pareto front.
     ///
@@ -619,14 +622,19 @@ where
         // Mutation dispatch — trait-based single call (params are in the variant).
         let mp: f64 = rng.random();
         if mp <= mut_prob {
-            if matches!(mutation_config.method, crate::operations::Mutation::Differential { .. }) {
+            if matches!(
+                mutation_config.method,
+                crate::operations::Mutation::Differential { .. }
+            ) {
                 return Err(GaError::MutationError(
                     "Differential mutation is not supported in MOEA/D; \
                      use Cauchy, LevyFlight, Polynomial, or a standard mutation method instead."
                         .to_string(),
                 ));
             }
-            mutation_config.method.mutate(&mut child, &mutation_config.method)?;
+            mutation_config
+                .method
+                .mutate(&mut child, &mutation_config.method)?;
         }
 
         Ok(child)

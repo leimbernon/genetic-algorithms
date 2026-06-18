@@ -11,7 +11,9 @@ fn make_f32_population(size: usize) -> Vec<RangeChromosome<f32>> {
         .map(|i| {
             let mut c = RangeChromosome::<f32>::new();
             let dna: Vec<_> = (0_i32..3)
-                .map(|j| RangeGenotype::new(j, vec![(0.0f32, 100.0f32)], (i as f32 * 10.0).min(90.0)))
+                .map(|j| {
+                    RangeGenotype::new(j, vec![(0.0f32, 100.0f32)], (i as f32 * 10.0).min(90.0))
+                })
                 .collect();
             c.set_dna(Cow::Owned(dna));
             c
@@ -103,12 +105,20 @@ fn differential_mutation_can_change_value() {
     for _ in 0..200 {
         let mut target = pop[0].clone();
         differential_mutation(&mut target, &pop, 0, 0.5).unwrap();
-        if target.dna().iter().zip(&original).any(|(a, b)| a.value != b.value) {
+        if target
+            .dna()
+            .iter()
+            .zip(&original)
+            .any(|(a, b)| a.value != b.value)
+        {
             changed = true;
             break;
         }
     }
-    assert!(changed, "Differential mutation did not change any value after 200 attempts");
+    assert!(
+        changed,
+        "Differential mutation did not change any value after 200 attempts"
+    );
 }
 
 #[test]
@@ -150,7 +160,11 @@ fn differential_f_parameter() {
     assert!(result_zero.is_ok(), "F=0.0 should not error");
     for gene in target_zero.dna() {
         let (lo, hi) = gene.ranges[0];
-        assert!(gene.value >= lo && gene.value <= hi, "F=0.0 out of range: {}", gene.value);
+        assert!(
+            gene.value >= lo && gene.value <= hi,
+            "F=0.0 out of range: {}",
+            gene.value
+        );
     }
 
     // F=2.0 can produce values outside range, but clamping must keep them in bounds

@@ -54,7 +54,13 @@ fn random_binary_pop(n: usize, seed: u64) -> Vec<BinaryChromosome> {
 }
 
 /// Build a random range population of `n` chromosomes of length `dim`.
-fn random_range_pop(n: usize, dim: usize, lo: f64, hi: f64, seed: u64) -> Vec<RangeChromosome<f64>> {
+fn random_range_pop(
+    n: usize,
+    dim: usize,
+    lo: f64,
+    hi: f64,
+    seed: u64,
+) -> Vec<RangeChromosome<f64>> {
     rng::set_seed(Some(seed));
     let mut r = rng::make_rng();
     use rand::Rng;
@@ -95,13 +101,21 @@ struct SpyObserver {
 }
 
 impl GaObserver<BinaryChromosome> for SpyObserver {
-    fn on_run_start(&self) { self.run_start.fetch_add(1, Ordering::SeqCst); }
+    fn on_run_start(&self) {
+        self.run_start.fetch_add(1, Ordering::SeqCst);
+    }
     fn on_run_end(&self, _cause: TerminationCause, _stats: &[GenerationStats]) {
         self.run_end.fetch_add(1, Ordering::SeqCst);
     }
-    fn on_generation_start(&self, _gen: usize) { self.generation_start.fetch_add(1, Ordering::SeqCst); }
-    fn on_generation_end(&self, _stats: &GenerationStats) { self.generation_end.fetch_add(1, Ordering::SeqCst); }
-    fn on_new_best(&self, _gen: usize, _best: &BinaryChromosome) { self.new_best.fetch_add(1, Ordering::SeqCst); }
+    fn on_generation_start(&self, _gen: usize) {
+        self.generation_start.fetch_add(1, Ordering::SeqCst);
+    }
+    fn on_generation_end(&self, _stats: &GenerationStats) {
+        self.generation_end.fetch_add(1, Ordering::SeqCst);
+    }
+    fn on_new_best(&self, _gen: usize, _best: &BinaryChromosome) {
+        self.new_best.fetch_add(1, Ordering::SeqCst);
+    }
 }
 
 // ─── EDA-01: Bernoulli OneMax convergence ─────────────────────────────────────
@@ -117,11 +131,7 @@ fn eda_01_bernoulli_onemax_convergence() {
         selection_ratio: 0.5,
     };
 
-    let mut engine = EdaEngine::new(
-        config,
-        |n| random_binary_pop(n, 1),
-        onemax,
-    );
+    let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 1), onemax);
 
     let result = engine.run();
 
@@ -147,11 +157,8 @@ fn eda_02_gaussian_sphere_convergence() {
         selection_ratio: 0.3,
     };
 
-    let mut engine = EdaRealEngine::new(
-        config,
-        |n| random_range_pop(n, DIM, -5.0, 5.0, 99),
-        sphere,
-    );
+    let mut engine =
+        EdaRealEngine::new(config, |n| random_range_pop(n, DIM, -5.0, 5.0, 99), sphere);
 
     let result = engine.run();
 
@@ -160,7 +167,10 @@ fn eda_02_gaussian_sphere_convergence() {
         "Expected best fitness < 5.0 for sphere, got {}",
         result.best_fitness
     );
-    assert!(result.best_fitness.is_finite(), "best_fitness must be finite");
+    assert!(
+        result.best_fitness.is_finite(),
+        "best_fitness must be finite"
+    );
 }
 
 // ─── EDA-03: EdaResult fields ─────────────────────────────────────────────────
@@ -176,17 +186,20 @@ fn eda_03_result_fields_populated() {
         selection_ratio: 0.5,
     };
 
-    let mut engine = EdaEngine::new(
-        config,
-        |n| random_binary_pop(n, 2),
-        onemax,
-    );
+    let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 2), onemax);
 
     let result = engine.run();
 
     assert_eq!(result.generations, 10, "Should run all 10 generations");
-    assert_eq!(result.population.len(), 20, "Final population size should be 20");
-    assert!(result.best_fitness.is_finite(), "best_fitness must be finite");
+    assert_eq!(
+        result.population.len(),
+        20,
+        "Final population size should be 20"
+    );
+    assert!(
+        result.best_fitness.is_finite(),
+        "best_fitness must be finite"
+    );
     assert_eq!(result.best.dna().len(), CHROMOSOME_LEN);
 }
 
@@ -199,19 +212,23 @@ fn eda_04_learned_model_is_bernoulli() {
         .with_population_size(50)
         .with_max_generations(20);
 
-    let mut engine = EdaEngine::new(
-        config,
-        |n| random_binary_pop(n, 5),
-        onemax,
-    );
+    let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 5), onemax);
 
     let result = engine.run();
 
     match result.learned_model {
         EdaModel::Bernoulli(probs) => {
-            assert_eq!(probs.len(), CHROMOSOME_LEN, "Bernoulli probs length should equal chromosome length");
+            assert_eq!(
+                probs.len(),
+                CHROMOSOME_LEN,
+                "Bernoulli probs length should equal chromosome length"
+            );
             for p in &probs {
-                assert!(*p >= 0.01 && *p <= 0.99, "Bernoulli prob {} out of [0.01, 0.99]", p);
+                assert!(
+                    *p >= 0.01 && *p <= 0.99,
+                    "Bernoulli prob {} out of [0.01, 0.99]",
+                    p
+                );
             }
         }
         EdaModel::Gaussian { .. } => panic!("Expected Bernoulli model for binary chromosomes"),
@@ -229,18 +246,22 @@ fn eda_05_learned_model_is_gaussian() {
         .with_max_generations(20)
         .with_problem_solving(ProblemSolving::Minimization);
 
-    let mut engine = EdaRealEngine::new(
-        config,
-        |n| random_range_pop(n, DIM, -3.0, 3.0, 7),
-        sphere,
-    );
+    let mut engine = EdaRealEngine::new(config, |n| random_range_pop(n, DIM, -3.0, 3.0, 7), sphere);
 
     let result = engine.run();
 
     match result.learned_model {
         EdaModel::Gaussian { means, stds } => {
-            assert_eq!(means.len(), DIM, "means length should equal chromosome length");
-            assert_eq!(stds.len(), DIM, "stds length should equal chromosome length");
+            assert_eq!(
+                means.len(),
+                DIM,
+                "means length should equal chromosome length"
+            );
+            assert_eq!(
+                stds.len(),
+                DIM,
+                "stds length should equal chromosome length"
+            );
             for std in &stds {
                 assert!(*std >= 1e-6, "std {} below floor", std);
             }
@@ -263,17 +284,21 @@ fn eda_06_observer_hooks_fire() {
 
     let spy = Arc::new(SpyObserver::default());
 
-    let mut engine = EdaEngine::new(
-        config,
-        |n| random_binary_pop(n, 3),
-        onemax,
-    )
-    .with_observer(Arc::clone(&spy) as Arc<dyn GaObserver<BinaryChromosome> + Send + Sync>);
+    let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 3), onemax)
+        .with_observer(Arc::clone(&spy) as Arc<dyn GaObserver<BinaryChromosome> + Send + Sync>);
 
     engine.run();
 
-    assert_eq!(spy.run_start.load(Ordering::SeqCst), 1, "on_run_start should fire once");
-    assert_eq!(spy.run_end.load(Ordering::SeqCst), 1, "on_run_end should fire once");
+    assert_eq!(
+        spy.run_start.load(Ordering::SeqCst),
+        1,
+        "on_run_start should fire once"
+    );
+    assert_eq!(
+        spy.run_end.load(Ordering::SeqCst),
+        1,
+        "on_run_end should fire once"
+    );
     assert_eq!(
         spy.generation_start.load(Ordering::SeqCst),
         5,
@@ -305,11 +330,7 @@ fn eda_07_fitness_target_early_stop() {
         selection_ratio: 0.5,
     };
 
-    let mut engine = EdaEngine::new(
-        config,
-        |n| random_binary_pop(n, 42),
-        onemax,
-    );
+    let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 42), onemax);
 
     let result = engine.run();
 
@@ -318,7 +339,10 @@ fn eda_07_fitness_target_early_stop() {
         "Engine should stop early when target is reached, ran {} generations",
         result.generations
     );
-    assert!(result.best_fitness >= 1.0, "Best fitness should satisfy the target");
+    assert!(
+        result.best_fitness >= 1.0,
+        "Best fitness should satisfy the target"
+    );
 }
 
 // ─── EDA-08: Minimization direction ──────────────────────────────────────────
@@ -336,15 +360,16 @@ fn eda_08_minimization_direction() {
         selection_ratio: 0.3,
     };
 
-    let mut engine = EdaRealEngine::new(
-        config,
-        |n| random_range_pop(n, DIM, -1.0, 1.0, 33),
-        sphere,
-    );
+    let mut engine =
+        EdaRealEngine::new(config, |n| random_range_pop(n, DIM, -1.0, 1.0, 33), sphere);
 
     let result = engine.run();
 
-    assert!(result.best_fitness >= 0.0, "Sphere minimum is 0, got {}", result.best_fitness);
+    assert!(
+        result.best_fitness >= 0.0,
+        "Sphere minimum is 0, got {}",
+        result.best_fitness
+    );
     assert!(result.best_fitness.is_finite());
 }
 
@@ -362,11 +387,7 @@ fn eda_09_selection_ratio_min_one_parent() {
         selection_ratio: 0.01, // 5 * 0.01 = 0.05 → floor = 0, clamped to 1
     };
 
-    let mut engine = EdaEngine::new(
-        config,
-        |n| random_binary_pop(n, 88),
-        onemax,
-    );
+    let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 88), onemax);
 
     // Should not panic — the engine must handle 1-parent selection
     let result = engine.run();

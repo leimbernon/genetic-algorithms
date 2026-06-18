@@ -2,7 +2,9 @@
 
 #[cfg(test)]
 use crate::structures::{Chromosome, Gene};
-use genetic_algorithms::{fitness::FitnessFnWrapper, operations::selection::clearing::clearing_selection};
+use genetic_algorithms::{
+    fitness::FitnessFnWrapper, operations::selection::clearing::clearing_selection,
+};
 
 fn make_chromosome(fitness: f64, dna: Vec<Gene>) -> Chromosome {
     Chromosome {
@@ -46,7 +48,10 @@ fn test_clearing_returns_pairs_of_valid_indices() {
 fn test_clearing_returns_no_pairs_for_single_chromosome() {
     let pop = vec![make_chromosome(1.0, vec![gene(0)])];
     let pairs = clearing_selection(&pop, 0.1, 1, 2);
-    assert!(pairs.is_empty(), "Cannot form pairs from a single individual");
+    assert!(
+        pairs.is_empty(),
+        "Cannot form pairs from a single individual"
+    );
 }
 
 #[test]
@@ -75,8 +80,14 @@ fn test_clearing_clears_dominated_individuals_within_radius() {
     assert_eq!(pairs.len(), 1);
     // Both indices must be from the eligible pool (1 and 2), not index 0
     for group in &pairs {
-        assert_ne!(group[0], 0, "Cleared individual (index 0) should not appear in pairs");
-        assert_ne!(group[1], 0, "Cleared individual (index 0) should not appear in pairs");
+        assert_ne!(
+            group[0], 0,
+            "Cleared individual (index 0) should not appear in pairs"
+        );
+        assert_ne!(
+            group[1], 0,
+            "Cleared individual (index 0) should not appear in pairs"
+        );
     }
 }
 
@@ -144,8 +155,14 @@ fn test_clearing_via_factory_respects_niche_radius() {
     // 2-element eligible pool.
     assert_eq!(pairs.len(), 3);
     for group in &pairs {
-        assert_ne!(group[0], 0, "Cleared individual (index 0) should not appear");
-        assert_ne!(group[1], 0, "Cleared individual (index 0) should not appear");
+        assert_ne!(
+            group[0], 0,
+            "Cleared individual (index 0) should not appear"
+        );
+        assert_ne!(
+            group[1], 0,
+            "Cleared individual (index 0) should not appear"
+        );
         assert_ne!(group[0], group[1], "Self-pairing not allowed");
     }
 }

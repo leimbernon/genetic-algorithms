@@ -30,7 +30,8 @@ fn cache_stats_serde_compat_old_checkpoint() {
         "population_size": 50,
         "diversity": 2.5
     }"#;
-    let stats: GenerationStats = serde_json::from_str(json).expect("old checkpoint should deserialize");
+    let stats: GenerationStats =
+        serde_json::from_str(json).expect("old checkpoint should deserialize");
     assert_eq!(stats.generation, 3);
     assert_eq!(stats.cache_hits, None);
     assert_eq!(stats.cache_misses, None);

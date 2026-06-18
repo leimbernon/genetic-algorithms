@@ -38,7 +38,10 @@ fn cauchy_mutation_via_factory_changes_value() {
             break;
         }
     }
-    assert!(changed, "Cauchy mutation never changed a value across 200 iterations");
+    assert!(
+        changed,
+        "Cauchy mutation never changed a value across 200 iterations"
+    );
 }
 
 #[test]
@@ -66,7 +69,11 @@ fn cauchy_mutation_changes_at_most_one_gene() {
         let before: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
         mutation::factory(Mutation::Cauchy { scale: Some(1.0) }, &mut c).unwrap();
         let after: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
-        let changed_count = before.iter().zip(after.iter()).filter(|(b, a)| b != a).count();
+        let changed_count = before
+            .iter()
+            .zip(after.iter())
+            .filter(|(b, a)| b != a)
+            .count();
         assert!(
             changed_count <= 1,
             "Cauchy changed {} genes in one call (expected <= 1)",
@@ -142,7 +149,10 @@ fn levy_flight_mutation_via_factory_changes_value() {
             break;
         }
     }
-    assert!(changed, "LevyFlight mutation never changed a value across 200 iterations");
+    assert!(
+        changed,
+        "LevyFlight mutation never changed a value across 200 iterations"
+    );
 }
 
 #[test]
@@ -155,7 +165,9 @@ fn levy_flight_mutation_via_factory_stays_in_range() {
             assert!(
                 gene.value >= lo && gene.value <= hi,
                 "LevyFlight: value {} out of range [{}, {}]",
-                gene.value, lo, hi
+                gene.value,
+                lo,
+                hi
             );
         }
     }
@@ -168,7 +180,11 @@ fn levy_flight_mutation_changes_at_most_one_gene() {
         let before: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
         mutation::factory(Mutation::LevyFlight { alpha: Some(1.5) }, &mut c).unwrap();
         let after: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
-        let changed_count = before.iter().zip(after.iter()).filter(|(b, a)| b != a).count();
+        let changed_count = before
+            .iter()
+            .zip(after.iter())
+            .filter(|(b, a)| b != a)
+            .count();
         assert!(
             changed_count <= 1,
             "LevyFlight changed {} genes in one call (expected <= 1)",
@@ -230,7 +246,10 @@ fn uniform_mutation_via_factory_changes_value() {
             break;
         }
     }
-    assert!(changed, "Uniform mutation never changed a value across 200 iterations");
+    assert!(
+        changed,
+        "Uniform mutation never changed a value across 200 iterations"
+    );
 }
 
 #[test]
@@ -243,7 +262,9 @@ fn uniform_mutation_via_factory_stays_in_range() {
             assert!(
                 gene.value >= lo && gene.value <= hi,
                 "Uniform: value {} out of range [{}, {}]",
-                gene.value, lo, hi
+                gene.value,
+                lo,
+                hi
             );
         }
     }
@@ -256,7 +277,11 @@ fn uniform_mutation_changes_at_most_one_gene() {
         let before: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
         mutation::factory(Mutation::Uniform, &mut c).unwrap();
         let after: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
-        let changed_count = before.iter().zip(after.iter()).filter(|(b, a)| b != a).count();
+        let changed_count = before
+            .iter()
+            .zip(after.iter())
+            .filter(|(b, a)| b != a)
+            .count();
         assert!(
             changed_count <= 1,
             "Uniform changed {} genes in one call (expected <= 1)",

@@ -48,11 +48,7 @@ fn make_engine(scheme: AlpsAgeScheme) -> AlpsEngine<RangeChromosome<f64>> {
         .with_problem_solving(ProblemSolving::Minimization)
         .with_fitness_target(50.0);
 
-    AlpsEngine::new(
-        config,
-        |n| random_pop(n, 5, -5.0, 5.0, 42),
-        sphere,
-    )
+    AlpsEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 42), sphere)
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -129,16 +125,12 @@ fn test_cross_layer_mating_produces_result() {
         .with_n_layers(3)
         .with_layer_size(10)
         .with_age_scheme(AlpsAgeScheme::Linear)
-        .with_age_gap(2)   // short age limits to force promotions quickly
+        .with_age_gap(2) // short age limits to force promotions quickly
         .with_injection_interval(0) // disable injection to isolate cross-layer behavior
         .with_max_generations(50)
         .with_mutation(Mutation::Gaussian { sigma: Some(0.5) });
 
-    let mut engine = AlpsEngine::new(
-        config,
-        |n| random_pop(n, 5, -5.0, 5.0, 42),
-        sphere,
-    );
+    let mut engine = AlpsEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 42), sphere);
     let result = engine.run();
     assert!(result.generations > 0);
     // Engine should have run without panicking; all layers returned.
@@ -158,11 +150,7 @@ fn test_injection_enabled_runs() {
         .with_max_generations(30)
         .with_mutation(Mutation::Gaussian { sigma: Some(0.5) });
 
-    let mut engine = AlpsEngine::new(
-        config,
-        |n| random_pop(n, 5, -5.0, 5.0, 7),
-        sphere,
-    );
+    let mut engine = AlpsEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 7), sphere);
     let result = engine.run();
     // With injection_interval=5 and 30 generations, layer 0 is reseeded ~5 times.
     assert!(result.generations > 0);
@@ -178,11 +166,7 @@ fn test_injection_disabled_runs() {
         .with_max_generations(30)
         .with_mutation(Mutation::Gaussian { sigma: Some(0.5) });
 
-    let mut engine = AlpsEngine::new(
-        config,
-        |n| random_pop(n, 5, -5.0, 5.0, 13),
-        sphere,
-    );
+    let mut engine = AlpsEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 13), sphere);
     let result = engine.run();
     assert!(result.generations > 0);
 }
@@ -199,13 +183,13 @@ fn test_early_stopping() {
         .with_fitness_target(1_000.0) // trivially reachable
         .with_problem_solving(ProblemSolving::Minimization);
 
-    let mut engine = AlpsEngine::new(
-        config,
-        |n| random_pop(n, 5, -5.0, 5.0, 99),
-        sphere,
-    );
+    let mut engine = AlpsEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 99), sphere);
     let result = engine.run();
-    assert!(result.generations < 100_000, "expected early stop but ran {} gens", result.generations);
+    assert!(
+        result.generations < 100_000,
+        "expected early stop but ran {} gens",
+        result.generations
+    );
 }
 
 // --- Migration: Mutation::Gaussian replaces deprecated with_mutation_sigma ----
@@ -224,15 +208,14 @@ fn test_alps_mutation_gaussian_migration() {
         .with_mutation(Mutation::Gaussian { sigma: Some(0.3) })
         .with_problem_solving(ProblemSolving::Minimization);
 
-    let mut engine = AlpsEngine::new(
-        config,
-        |n| random_pop(n, 3, -2.0, 2.0, 123),
-        sphere,
-    );
+    let mut engine = AlpsEngine::new(config, |n| random_pop(n, 3, -2.0, 2.0, 123), sphere);
     let result = engine.run();
     assert!(result.generations > 0, "expected at least one generation");
     assert_eq!(result.layers.len(), 3);
-    assert!(result.best_fitness >= 0.0, "sphere function is non-negative");
+    assert!(
+        result.best_fitness >= 0.0,
+        "sphere function is non-negative"
+    );
 }
 
 // --- Result consistency -------------------------------------------------------
@@ -243,7 +226,11 @@ fn test_best_fitness_consistent() {
     let result = engine.run();
 
     // best_fitness must be <= (or == for maximization) any individual in all layers.
-    let all_fitnesses: Vec<f64> = result.layers.iter().flat_map(|l| l.iter().map(|u| u.fitness())).collect();
+    let all_fitnesses: Vec<f64> = result
+        .layers
+        .iter()
+        .flat_map(|l| l.iter().map(|u| u.fitness()))
+        .collect();
     let pop_best = all_fitnesses.iter().cloned().fold(f64::MAX, f64::min);
 
     // best_fitness may be better than current population because injection
@@ -251,6 +238,7 @@ fn test_best_fitness_consistent() {
     assert!(
         result.best_fitness <= pop_best + 1e-9,
         "reported best {} is worse than population best {}",
-        result.best_fitness, pop_best
+        result.best_fitness,
+        pop_best
     );
 }

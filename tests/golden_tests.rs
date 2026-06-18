@@ -21,7 +21,15 @@ fn golden_rastrigin() {
     let expected = include_str!("golden/rastrigin.txt").trim();
 
     let output = Command::new(cargo_bin())
-        .args(["run", "--example", "rastrigin", "--release", "--", "--seed", "42"])
+        .args([
+            "run",
+            "--example",
+            "rastrigin",
+            "--release",
+            "--",
+            "--seed",
+            "42",
+        ])
         .output()
         .expect("failed to run rastrigin example");
 
@@ -42,7 +50,15 @@ fn golden_nsga2_zdt1() {
     let expected = include_str!("golden/nsga2_zdt1.txt").trim();
 
     let output = Command::new(cargo_bin())
-        .args(["run", "--example", "nsga2_zdt1", "--release", "--", "--seed", "42"])
+        .args([
+            "run",
+            "--example",
+            "nsga2_zdt1",
+            "--release",
+            "--",
+            "--seed",
+            "42",
+        ])
         .output()
         .expect("failed to run nsga2_zdt1 example");
 
@@ -63,7 +79,15 @@ fn golden_cma_es_rastrigin() {
     let expected = include_str!("golden/cma_es_rastrigin.txt").trim();
 
     let output = Command::new(cargo_bin())
-        .args(["run", "--example", "cma_es_rastrigin", "--release", "--", "--seed", "42"])
+        .args([
+            "run",
+            "--example",
+            "cma_es_rastrigin",
+            "--release",
+            "--",
+            "--seed",
+            "42",
+        ])
         .output()
         .expect("failed to run cma_es_rastrigin example");
 
@@ -71,7 +95,11 @@ fn golden_cma_es_rastrigin() {
     let captured = stdout
         .lines()
         .find(|l| l.contains("Best fitness:"))
-        .unwrap_or_else(|| panic!("cma_es_rastrigin stdout did not contain 'Best fitness:'\nFull stdout:\n{stdout}"));
+        .unwrap_or_else(|| {
+            panic!(
+                "cma_es_rastrigin stdout did not contain 'Best fitness:'\nFull stdout:\n{stdout}"
+            )
+        });
 
     assert_eq!(
         captured, expected,
@@ -84,7 +112,15 @@ fn golden_pso_rastrigin() {
     let expected = include_str!("golden/pso_rastrigin.txt").trim();
 
     let output = Command::new(cargo_bin())
-        .args(["run", "--example", "pso_rastrigin", "--release", "--", "--seed", "42"])
+        .args([
+            "run",
+            "--example",
+            "pso_rastrigin",
+            "--release",
+            "--",
+            "--seed",
+            "42",
+        ])
         .output()
         .expect("failed to run pso_rastrigin example");
 
@@ -92,7 +128,9 @@ fn golden_pso_rastrigin() {
     let captured = stdout
         .lines()
         .find(|l| l.contains("Best fitness:"))
-        .unwrap_or_else(|| panic!("pso_rastrigin stdout did not contain 'Best fitness:'\nFull stdout:\n{stdout}"));
+        .unwrap_or_else(|| {
+            panic!("pso_rastrigin stdout did not contain 'Best fitness:'\nFull stdout:\n{stdout}")
+        });
 
     assert_eq!(
         captured, expected,

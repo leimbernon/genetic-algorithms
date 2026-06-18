@@ -152,7 +152,11 @@ fn eval_with_vars_var_substitution() {
         ],
     };
     let result = tree.eval_with_vars(&[3.0, 5.0]);
-    assert!((result - 8.0).abs() < 1e-10, "x0+x1 with [3,5] = {}", result);
+    assert!(
+        (result - 8.0).abs() < 1e-10,
+        "x0+x1 with [3,5] = {}",
+        result
+    );
 }
 
 #[test]

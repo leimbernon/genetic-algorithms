@@ -12,7 +12,7 @@
 //! 3. Keep the fitter of the (offspring, most-similar-parent) pair; discard the other.
 //! 4. Offspring that have no available parent to pair with survive unconditionally.
 
-use crate::traits::{LinearChromosome, GeneT};
+use crate::traits::{GeneT, LinearChromosome};
 /// Hamming distance between two DNA slices on gene IDs.
 ///
 /// Counts positions where `gene_a.id() != gene_b.id()`, comparing up to

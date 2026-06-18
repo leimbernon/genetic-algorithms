@@ -30,7 +30,9 @@ use genetic_algorithms::ga::Ga;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::initializers::range_random_initialization;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
-use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig};
+use genetic_algorithms::traits::{
+    ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+};
 use genetic_algorithms::{ChromosomeLength, SurrogateModel};
 
 // ---------------------------------------------------------------------------
@@ -129,9 +131,7 @@ fn main() {
         .expect("Failed to build GA configuration");
 
     println!("== Surrogate-Assisted Rastrigin Minimization ==");
-    println!(
-        "Dimensions: {DIMENSIONS}, Population: {POPULATION_SIZE}, Generations: {GENERATIONS}"
-    );
+    println!("Dimensions: {DIMENSIONS}, Population: {POPULATION_SIZE}, Generations: {GENERATIONS}");
     println!("Surrogate prescreening fraction: {PRESCREENING_FRACTION}");
     println!("-------------------------------------------------------");
     println!(

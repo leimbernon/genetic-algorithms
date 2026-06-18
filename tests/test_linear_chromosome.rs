@@ -144,7 +144,10 @@ fn test_linear_chromosome_default_reset() {
 
     assert!(result.fitness().is_nan(), "reset() must set fitness to NaN");
     assert_eq!(result.age(), 0, "reset() must set age to 0");
-    assert!(result.dna().is_empty(), "reset() must set dna to empty slice");
+    assert!(
+        result.dna().is_empty(),
+        "reset() must set dna to empty slice"
+    );
 }
 
 /// Test: new_gene() returns TestGene::new() via the default LinearChromosome impl.
@@ -152,5 +155,9 @@ fn test_linear_chromosome_default_reset() {
 fn test_linear_chromosome_new_gene_default() {
     let gene = LinearChromo::new_gene();
     let expected = TestGene::new();
-    assert_eq!(gene.id(), expected.id(), "new_gene() must delegate to TestGene::new()");
+    assert_eq!(
+        gene.id(),
+        expected.id(),
+        "new_gene() must delegate to TestGene::new()"
+    );
 }

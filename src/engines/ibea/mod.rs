@@ -344,12 +344,14 @@ where
         }
         total_removed
     }
-
 }
 
 impl<U> IbeaGa<U>
 where
-    U: LinearChromosome + mutation::ValueMutable + VectorFitness,
+    U: LinearChromosome
+        + mutation::ValueMutable
+        + VectorFitness
+        + crate::traits::RealValuedMutation,
 {
     /// Initializes the population with random chromosomes and evaluates objectives in parallel.
     fn initialize_population(&self) -> Result<Vec<ParetoIndividual<U>>, GaError> {
@@ -404,7 +406,6 @@ where
         Ok(population)
     }
 
-
     /// Produces offspring chromosomes via binary tournament selection from population,
     /// followed by crossover + mutation on each selected pair.
     fn create_offspring(
@@ -439,7 +440,9 @@ where
             for mut child in children {
                 let mp: f64 = rng.random();
                 if mp <= mut_prob {
-                    mutation_config.method.mutate(&mut child, &mutation_config.method)?;
+                    mutation_config
+                        .method
+                        .mutate(&mut child, &mutation_config.method)?;
                 }
                 offspring.push(child);
                 if offspring.len() >= pop_size {

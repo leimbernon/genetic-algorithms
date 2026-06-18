@@ -93,8 +93,8 @@ fn main() {
         topology: PsoTopology::Global,
     };
 
-    let mut engine = PsoEngine::new(config, init_population, rastrigin)
-        .with_observer(Arc::new(LogObserver));
+    let mut engine =
+        PsoEngine::new(config, init_population, rastrigin).with_observer(Arc::new(LogObserver));
 
     println!("== PSO: {DIMENSIONS}D Rastrigin Minimization ==");
     println!("particles=200, max_generations=1000, target=1e-3");

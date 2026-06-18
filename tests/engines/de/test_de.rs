@@ -38,7 +38,10 @@ fn random_pop(n: usize, dim: usize, lo: f64, hi: f64, seed: u64) -> Vec<RangeChr
         .collect()
 }
 
-fn sphere_engine(strategy: DeMutationStrategy, mode: DeCrossoverMode) -> DeEngine<RangeChromosome<f64>> {
+fn sphere_engine(
+    strategy: DeMutationStrategy,
+    mode: DeCrossoverMode,
+) -> DeEngine<RangeChromosome<f64>> {
     let config = DeConfiguration::default()
         .with_population_size(30)
         .with_max_generations(300)
@@ -49,11 +52,7 @@ fn sphere_engine(strategy: DeMutationStrategy, mode: DeCrossoverMode) -> DeEngin
         .with_problem_solving(ProblemSolving::Minimization)
         .with_fitness_target(1.0); // stop early once good enough
 
-    DeEngine::new(
-        config,
-        |n| random_pop(n, 5, -5.0, 5.0, 42),
-        sphere,
-    )
+    DeEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 42), sphere)
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -80,7 +79,10 @@ fn test_de_best1_binomial() {
 
 #[test]
 fn test_de_current_to_best1_binomial() {
-    let mut engine = sphere_engine(DeMutationStrategy::CurrentToBest1, DeCrossoverMode::Binomial);
+    let mut engine = sphere_engine(
+        DeMutationStrategy::CurrentToBest1,
+        DeCrossoverMode::Binomial,
+    );
     let result = engine.run();
     assert!(result.best_fitness < 10.0);
 }
@@ -128,7 +130,11 @@ fn test_de_jade_converges() {
         .with_problem_solving(ProblemSolving::Minimization);
     let mut engine = DeEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 99), sphere);
     let result = engine.run();
-    assert!(result.best_fitness < 10.0, "JADE should converge; got {}", result.best_fitness);
+    assert!(
+        result.best_fitness < 10.0,
+        "JADE should converge; got {}",
+        result.best_fitness
+    );
 }
 
 #[test]
@@ -142,7 +148,11 @@ fn test_de_lshade_converges() {
         .with_problem_solving(ProblemSolving::Minimization);
     let mut engine = DeEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 77), sphere);
     let result = engine.run();
-    assert!(result.best_fitness < 10.0, "L-SHADE should converge; got {}", result.best_fitness);
+    assert!(
+        result.best_fitness < 10.0,
+        "L-SHADE should converge; got {}",
+        result.best_fitness
+    );
 }
 
 #[test]
@@ -160,7 +170,11 @@ fn test_de_maximization() {
     );
     let result = engine.run();
     // Best fitness should be negative or zero (closer to 0 is better for maximization)
-    assert!(result.best_fitness > -75.0, "Maximization run should improve; got {}", result.best_fitness);
+    assert!(
+        result.best_fitness > -75.0,
+        "Maximization run should improve; got {}",
+        result.best_fitness
+    );
 }
 
 #[test]

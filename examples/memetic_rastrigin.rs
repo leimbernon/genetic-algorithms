@@ -23,7 +23,9 @@ use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::Ga;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::initializers::range_random_initialization;
-use genetic_algorithms::operations::local_search::{LocalSearch, LocalSearchApplicationStrategy, LocalSearchMode};
+use genetic_algorithms::operations::local_search::{
+    LocalSearch, LocalSearchApplicationStrategy, LocalSearchMode,
+};
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::traits::{
     ChromosomeT, ConfigurationT, CrossoverConfig, ElitismConfig, LocalSearchConfig, MutationConfig,
@@ -35,7 +37,8 @@ fn rastrigin_fitness(dna: &[RangeGenotype<f64>]) -> f64 {
     let a = 10.0;
     let n = dna.len() as f64;
     a * n
-        + dna.iter()
+        + dna
+            .iter()
             .map(|g| g.value.powi(2) - a * (2.0 * std::f64::consts::PI * g.value).cos())
             .sum::<f64>()
 }
@@ -78,13 +81,9 @@ fn run_ga(name: &str, use_local_search: bool) -> f64 {
             });
     }
 
-    let mut ga = builder
-        .build()
-        .expect("Invalid GA configuration");
+    let mut ga = builder.build().expect("Invalid GA configuration");
 
-    let population = ga
-        .run()
-        .expect("GA run failed");
+    let population = ga.run().expect("GA run failed");
 
     let best_fitness = population.best_chromosome.fitness();
 

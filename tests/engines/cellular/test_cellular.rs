@@ -56,11 +56,7 @@ fn make_engine(
         .with_problem_solving(ProblemSolving::Minimization)
         .with_fitness_target(50.0);
 
-    CellularEngine::new(
-        config,
-        |n| random_pop(n, 5, -5.0, 5.0, 42),
-        sphere,
-    )
+    CellularEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 42), sphere)
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -131,11 +127,16 @@ fn test_best_is_from_population() {
     let mut engine = make_engine(5, 5, Neighborhood::Moore, UpdateMode::Asynchronous);
     let result = engine.run();
     // best_fitness must equal the fitness of the best individual in population
-    let pop_best = result.population.iter().map(|u| u.fitness()).fold(f64::MAX, f64::min);
+    let pop_best = result
+        .population
+        .iter()
+        .map(|u| u.fitness())
+        .fold(f64::MAX, f64::min);
     assert!(
         (result.best_fitness - pop_best).abs() < 1e-9 || result.best_fitness <= pop_best,
         "reported best {} not consistent with population best {}",
-        result.best_fitness, pop_best
+        result.best_fitness,
+        pop_best
     );
 }
 
@@ -151,14 +152,14 @@ fn test_early_stopping_on_fitness_target() {
         // Very lenient target — engine should stop well before 10_000 gens.
         .with_fitness_target(1_000.0);
 
-    let mut engine = CellularEngine::new(
-        config,
-        |n| random_pop(n, 5, -5.0, 5.0, 99),
-        sphere,
-    );
+    let mut engine = CellularEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 99), sphere);
     let result = engine.run();
     // Should stop early because fitness_target=1000 is trivially reachable.
-    assert!(result.generations < 10_000, "expected early stop but ran {} gens", result.generations);
+    assert!(
+        result.generations < 10_000,
+        "expected early stop but ran {} gens",
+        result.generations
+    );
 }
 
 // --- All four neighborhoods + both update modes ------------------------------
@@ -173,7 +174,10 @@ fn test_all_neighborhoods_synchronous() {
     ] {
         let mut engine = make_engine(5, 5, neighborhood, UpdateMode::Synchronous);
         let result = engine.run();
-        assert!(result.generations > 0, "synchronous engine produced 0 generations");
+        assert!(
+            result.generations > 0,
+            "synchronous engine produced 0 generations"
+        );
         assert_eq!(result.population.len(), 25);
     }
 }
@@ -188,7 +192,10 @@ fn test_all_neighborhoods_asynchronous() {
     ] {
         let mut engine = make_engine(5, 5, neighborhood, UpdateMode::Asynchronous);
         let result = engine.run();
-        assert!(result.generations > 0, "asynchronous engine produced 0 generations");
+        assert!(
+            result.generations > 0,
+            "asynchronous engine produced 0 generations"
+        );
         assert_eq!(result.population.len(), 25);
     }
 }
@@ -208,13 +215,12 @@ fn test_cellular_mutation_gaussian_migration() {
         .with_mutation(Mutation::Gaussian { sigma: Some(0.3) })
         .with_problem_solving(ProblemSolving::Minimization);
 
-    let mut engine = CellularEngine::new(
-        config,
-        |n| random_pop(n, 3, -2.0, 2.0, 456),
-        sphere,
-    );
+    let mut engine = CellularEngine::new(config, |n| random_pop(n, 3, -2.0, 2.0, 456), sphere);
     let result = engine.run();
     assert!(result.generations > 0, "expected at least one generation");
     assert_eq!(result.population.len(), 16, "4x4 grid = 16 individuals");
-    assert!(result.best_fitness >= 0.0, "sphere function is non-negative");
+    assert!(
+        result.best_fitness >= 0.0,
+        "sphere function is non-negative"
+    );
 }

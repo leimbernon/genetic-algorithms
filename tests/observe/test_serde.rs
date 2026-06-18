@@ -7,7 +7,6 @@
 use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::{GaConfiguration, ProblemSolving};
-use genetic_algorithms::ChromosomeLength;
 use genetic_algorithms::error::GaError;
 use genetic_algorithms::ga::TerminationCause;
 use genetic_algorithms::genotypes::Binary as BinaryGene;
@@ -19,6 +18,7 @@ use genetic_algorithms::nsga2::configuration::{Nsga2Configuration, ObjectiveDire
 use genetic_algorithms::operations::{AlignmentStrategy, Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::population::Population;
 use genetic_algorithms::stats::GenerationStats;
+use genetic_algorithms::ChromosomeLength;
 
 /// Helper: serialize to JSON and deserialize back, returning the round-tripped value.
 fn round_trip<T: serde::Serialize + serde::de::DeserializeOwned>(value: &T) -> T {
@@ -442,7 +442,8 @@ use genetic_algorithms::checkpoint::{load_checkpoint, save_checkpoint, Checkpoin
 use genetic_algorithms::ga::Ga;
 use genetic_algorithms::initializers::binary_initializer::binary_random_initialization;
 use genetic_algorithms::traits::{
-    ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig, SelectionConfig, StoppingConfig,
+    ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig,
+    SelectionConfig, StoppingConfig,
 };
 use std::path::Path;
 

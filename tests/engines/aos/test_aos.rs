@@ -3,7 +3,7 @@
 //! Tests AosStrategy construction, AosState::new(), select_operator(),
 //! record_rewards(), update(), and compute_normalized_reward().
 
-use genetic_algorithms::aos::{AosState, AosStrategy, compute_normalized_reward};
+use genetic_algorithms::aos::{compute_normalized_reward, AosState, AosStrategy};
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::Ga;
@@ -148,14 +148,7 @@ fn test_aos_pm_update_changes_probabilities() {
 
 #[test]
 fn test_aos_ap_update() {
-    let mut state = AosState::new(
-        2,
-        AosStrategy::AdaptivePursuit {
-            beta: 0.5,
-            c: 1.5,
-        },
-        10,
-    );
+    let mut state = AosState::new(2, AosStrategy::AdaptivePursuit { beta: 0.5, c: 1.5 }, 10);
     state.record_rewards(&[(0, 1.0), (1, -1.0)]);
     state.update();
     // Verify no panic
@@ -244,7 +237,11 @@ fn test_compute_normalized_reward_zero_best() {
 fn test_compute_normalized_reward_best_nonzero() {
     // Normal case with non-zero best
     let reward = compute_normalized_reward(100.0, 95.0, 50.0);
-    assert!((reward - 0.1).abs() < 1e-10, "Expected ~0.1, got {}", reward);
+    assert!(
+        (reward - 0.1).abs() < 1e-10,
+        "Expected ~0.1, got {}",
+        reward
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -335,10 +332,7 @@ fn aos_ga_both() -> Ga<RangeChromosome<i32>> {
         })
         .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
         .with_selection_method(Selection::Tournament)
-        .with_crossover_portfolio(vec![
-            Crossover::Uniform,
-            Crossover::SinglePoint,
-        ])
+        .with_crossover_portfolio(vec![Crossover::Uniform, Crossover::SinglePoint])
         .with_mutation_portfolio(vec![
             Mutation::Swap,
             Mutation::Inversion,
@@ -366,7 +360,10 @@ fn test_aos_ga_both_portfolios_builds_and_runs() {
         .build()
         .expect("AOS GA with both portfolios should build");
     let result = ga.run();
-    assert!(result.is_ok(), "AOS GA with both portfolios should run without errors");
+    assert!(
+        result.is_ok(),
+        "AOS GA with both portfolios should run without errors"
+    );
 }
 
 #[test]
@@ -414,10 +411,7 @@ fn test_aos_ga_adaptive_pursuit_runs() {
         })
         .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
         .with_selection_method(Selection::Tournament)
-        .with_crossover_portfolio(vec![
-            Crossover::Uniform,
-            Crossover::SinglePoint,
-        ])
+        .with_crossover_portfolio(vec![Crossover::Uniform, Crossover::SinglePoint])
         .with_mutation_method(Mutation::Swap)
         .with_aos_strategy(AosStrategy::ap_default())
         .with_problem_solving(ProblemSolving::Minimization)
@@ -427,7 +421,10 @@ fn test_aos_ga_adaptive_pursuit_runs() {
         .build()
         .expect("Adaptive Pursuit strategy GA should build");
     let result = ga.run();
-    assert!(result.is_ok(), "Adaptive Pursuit GA should run without errors");
+    assert!(
+        result.is_ok(),
+        "Adaptive Pursuit GA should run without errors"
+    );
 }
 
 #[test]
@@ -445,14 +442,8 @@ fn test_aos_ga_with_adaptive_ga_coexists() {
         })
         .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
         .with_selection_method(Selection::Tournament)
-        .with_crossover_portfolio(vec![
-            Crossover::Uniform,
-            Crossover::SinglePoint,
-        ])
-        .with_mutation_portfolio(vec![
-            Mutation::Swap,
-            Mutation::Inversion,
-        ])
+        .with_crossover_portfolio(vec![Crossover::Uniform, Crossover::SinglePoint])
+        .with_mutation_portfolio(vec![Mutation::Swap, Mutation::Inversion])
         .with_aos_strategy(AosStrategy::pm_default())
         .with_adaptive_ga(true)
         .with_crossover_probability_max(1.0)
@@ -466,7 +457,10 @@ fn test_aos_ga_with_adaptive_ga_coexists() {
         .build()
         .expect("AOS + Adaptive GA should build");
     let result = ga.run();
-    assert!(result.is_ok(), "AOS + Adaptive GA should run without errors");
+    assert!(
+        result.is_ok(),
+        "AOS + Adaptive GA should run without errors"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -506,5 +500,8 @@ fn test_aos_serde_state_roundtrip() {
     // Verify select_operator still works on deserialized state
     let mut rng = make_rng();
     let op = deserialized.select_operator(&mut rng, 100); // post-exploration
-    assert!(op < 3, "Deserialized state select_operator returns valid index");
+    assert!(
+        op < 3,
+        "Deserialized state select_operator returns valid index"
+    );
 }

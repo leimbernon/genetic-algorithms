@@ -389,10 +389,12 @@ fn test_hof_ga_builder_and_run() {
     use genetic_algorithms::configuration::ProblemSolving;
     use genetic_algorithms::ga::Ga;
     use genetic_algorithms::genotypes::Range as RangeGene;
-    use genetic_algorithms::hall_of_fame::{HallOfFameConfig, DistanceMetric};
+    use genetic_algorithms::hall_of_fame::{DistanceMetric, HallOfFameConfig};
     use genetic_algorithms::initializers::range_random_initialization;
     use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
-    use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig};
+    use genetic_algorithms::traits::{
+        ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+    };
 
     let n: i32 = 8;
     let alleles = vec![RangeGene::new(0, vec![(0, n - 1)], 0)];
@@ -404,7 +406,9 @@ fn test_hof_ga_builder_and_run() {
     };
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(
+            n.try_into().unwrap(),
+        ))
         .with_population_size(30)
         .with_initialization_fn(move |genes_per_chromosome, _| {
             range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
@@ -426,7 +430,10 @@ fn test_hof_ga_builder_and_run() {
     let hof = ga.hall_of_fame();
     assert!(hof.is_some(), "hall_of_fame() should return Some after run");
     let hof = hof.unwrap();
-    assert!(!hof.is_empty(), "Hall of Fame should not be empty after a run");
+    assert!(
+        !hof.is_empty(),
+        "Hall of Fame should not be empty after a run"
+    );
     assert!(hof.len() <= 10, "Hall of Fame should respect capacity");
     assert_eq!(hof.solutions().len(), hof.len());
 }
@@ -442,14 +449,18 @@ fn test_hof_ga_without_hof_returns_none() {
     use genetic_algorithms::genotypes::Range as RangeGene;
     use genetic_algorithms::initializers::range_random_initialization;
     use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
-    use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig};
+    use genetic_algorithms::traits::{
+        ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+    };
 
     let n: i32 = 8;
     let alleles = vec![RangeGene::new(0, vec![(0, n - 1)], 0)];
     let alleles_clone = alleles.clone();
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(
+            n.try_into().unwrap(),
+        ))
         .with_population_size(15)
         .with_initialization_fn(move |genes_per_chromosome, _| {
             range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
@@ -465,7 +476,10 @@ fn test_hof_ga_without_hof_returns_none() {
         .expect("build");
 
     let _ = ga.run();
-    assert!(ga.hall_of_fame().is_none(), "hall_of_fame() should be None when not configured");
+    assert!(
+        ga.hall_of_fame().is_none(),
+        "hall_of_fame() should be None when not configured"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -477,10 +491,12 @@ fn test_hof_ga_genotypic_distance() {
     use genetic_algorithms::configuration::ProblemSolving;
     use genetic_algorithms::ga::Ga;
     use genetic_algorithms::genotypes::Range as RangeGene;
-    use genetic_algorithms::hall_of_fame::{HallOfFameConfig, DistanceMetric};
+    use genetic_algorithms::hall_of_fame::{DistanceMetric, HallOfFameConfig};
     use genetic_algorithms::initializers::range_random_initialization;
     use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
-    use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig};
+    use genetic_algorithms::traits::{
+        ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+    };
 
     let n: i32 = 8;
     let alleles = vec![RangeGene::new(0, vec![(0, n - 1)], 0)];
@@ -493,7 +509,9 @@ fn test_hof_ga_genotypic_distance() {
     };
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(
+            n.try_into().unwrap(),
+        ))
         .with_population_size(30)
         .with_initialization_fn(move |genes_per_chromosome, _| {
             range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
@@ -515,6 +533,9 @@ fn test_hof_ga_genotypic_distance() {
     let hof = ga.hall_of_fame();
     assert!(hof.is_some());
     let hof = hof.unwrap();
-    assert!(!hof.is_empty(), "Hall of Fame with genotypic filter should have entries");
+    assert!(
+        !hof.is_empty(),
+        "Hall of Fame with genotypic filter should have entries"
+    );
     assert!(hof.len() <= 20, "Should respect capacity");
 }

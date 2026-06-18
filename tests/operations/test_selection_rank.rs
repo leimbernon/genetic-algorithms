@@ -18,8 +18,16 @@ fn test_rank_selection_produces_correct_pairs() {
     assert_eq!(pairs.len(), 3);
 
     for group in &pairs {
-        assert!(group[0] < population.len(), "Index out of bounds: {}", group[0]);
-        assert!(group[1] < population.len(), "Index out of bounds: {}", group[1]);
+        assert!(
+            group[0] < population.len(),
+            "Index out of bounds: {}",
+            group[0]
+        );
+        assert!(
+            group[1] < population.len(),
+            "Index out of bounds: {}",
+            group[1]
+        );
     }
 }
 

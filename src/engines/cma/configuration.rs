@@ -1,7 +1,7 @@
 //! Configuration for the CMA-ES engine.
 
-use crate::configuration::ProblemSolving;
 use super::restart::RestartStrategy;
+use crate::configuration::ProblemSolving;
 
 /// Configuration for a [`CmaEngine`](super::engine::CmaEngine) run.
 #[derive(Debug, Clone)]

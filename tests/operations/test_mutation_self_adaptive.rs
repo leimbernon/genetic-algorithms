@@ -138,7 +138,9 @@ fn self_adaptive_gaussian_default_params_stay_in_range() {
             assert!(
                 gene.value >= lo && gene.value <= hi,
                 "Gene value {} out of range [{}, {}]",
-                gene.value, lo, hi
+                gene.value,
+                lo,
+                hi
             );
         }
     }
@@ -150,5 +152,9 @@ fn factory_self_adaptive_with_explicit_params() {
     let mut c = build_f64_chromosome(4);
     c.set_strategy_params(vec![0.1; 4]);
     let result = mutation::factory_self_adaptive(&mut c, Some(0.5), Some(0.5), Some(1e-5), None);
-    assert!(result.is_ok(), "factory_self_adaptive should succeed: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "factory_self_adaptive should succeed: {:?}",
+        result
+    );
 }

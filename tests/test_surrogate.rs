@@ -127,7 +127,11 @@ fn test_predict_called() {
         surrogate.predict(&c);
     }
 
-    assert_eq!(calls.load(Ordering::SeqCst), 5, "predict must be called exactly 5 times");
+    assert_eq!(
+        calls.load(Ordering::SeqCst),
+        5,
+        "predict must be called exactly 5 times"
+    );
 
     // Also verify the trait is storable in Arc<dyn SurrogateModel<_> + Send + Sync>
     // (compile-time proof that the Send + Sync bounds are satisfied).
@@ -150,7 +154,11 @@ fn floor_keep(n: usize, f: f64) -> usize {
 #[test]
 fn test_prescreening_floor() {
     // Near-zero fraction: must retain at least 1
-    assert_eq!(floor_keep(10, 0.0001), 1, "floor(10 * 0.0001) == 0, max(0,1) == 1");
+    assert_eq!(
+        floor_keep(10, 0.0001),
+        1,
+        "floor(10 * 0.0001) == 0, max(0,1) == 1"
+    );
 
     // 50% fraction: retain exactly 5
     assert_eq!(floor_keep(10, 0.5), 5, "floor(10 * 0.5) == 5");
@@ -159,7 +167,11 @@ fn test_prescreening_floor() {
     assert_eq!(floor_keep(10, 1.0), 10, "floor(10 * 1.0) == 10");
 
     // Exactly 0.0 fraction: must retain at least 1
-    assert_eq!(floor_keep(10, 0.0), 1, "floor(10 * 0.0) == 0, max(0,1) == 1");
+    assert_eq!(
+        floor_keep(10, 0.0),
+        1,
+        "floor(10 * 0.0) == 0, max(0,1) == 1"
+    );
 
     // Larger population: n=100, f=0.3 → 30
     assert_eq!(floor_keep(100, 0.3), 30, "floor(100 * 0.3) == 30");
@@ -311,7 +323,8 @@ fn build_surrogate_ga(
 #[test]
 fn invalid_fraction_zero_rejected() {
     use genetic_algorithms::error::GaError;
-    let model = Arc::new(ZeroSurrogate) as Arc<dyn SurrogateModel<RangeChromosome<f64>> + Send + Sync>;
+    let model =
+        Arc::new(ZeroSurrogate) as Arc<dyn SurrogateModel<RangeChromosome<f64>> + Send + Sync>;
     let result = build_surrogate_ga(model, 0.0);
     assert!(result.is_err(), "build() must fail for fraction=0.0");
     match result.err().unwrap() {
@@ -330,7 +343,8 @@ fn invalid_fraction_zero_rejected() {
 #[test]
 fn invalid_fraction_over_one_rejected() {
     use genetic_algorithms::error::GaError;
-    let model = Arc::new(ZeroSurrogate) as Arc<dyn SurrogateModel<RangeChromosome<f64>> + Send + Sync>;
+    let model =
+        Arc::new(ZeroSurrogate) as Arc<dyn SurrogateModel<RangeChromosome<f64>> + Send + Sync>;
     let result = build_surrogate_ga(model, 1.5);
     assert!(result.is_err(), "build() must fail for fraction=1.5");
     match result.err().unwrap() {
@@ -343,9 +357,14 @@ fn invalid_fraction_over_one_rejected() {
 /// (upper boundary is inclusive per D-03).
 #[test]
 fn boundary_fraction_one_accepted() {
-    let model = Arc::new(ZeroSurrogate) as Arc<dyn SurrogateModel<RangeChromosome<f64>> + Send + Sync>;
+    let model =
+        Arc::new(ZeroSurrogate) as Arc<dyn SurrogateModel<RangeChromosome<f64>> + Send + Sync>;
     let result = build_surrogate_ga(model, 1.0);
-    assert!(result.is_ok(), "build() must succeed for fraction=1.0, got: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "build() must succeed for fraction=1.0, got: {:?}",
+        result.err()
+    );
 }
 
 // ─── Plan 02 Task 3: engine-runtime tests ────────────────────────────────────
@@ -404,17 +423,23 @@ fn build_runtime_ga(
 /// completes a multi-generation run without panic.
 #[test]
 fn ga_with_surrogate_runs() {
-    let model = Arc::new(IdentitySurrogate) as Arc<dyn SurrogateModel<RangeChromosome<f64>> + Send + Sync>;
+    let model =
+        Arc::new(IdentitySurrogate) as Arc<dyn SurrogateModel<RangeChromosome<f64>> + Send + Sync>;
     let mut ga = build_runtime_ga(model, 0.5, 5);
     let result = ga.run();
-    assert!(result.is_ok(), "ga.run() must succeed with surrogate: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "ga.run() must succeed with surrogate: {:?}",
+        result.err()
+    );
 }
 
 /// SC-1c: With fraction=0.5, the post-prescreening true_fitness_calls is
 /// Some(max(1, offspring_count / 2)) for at least one generation in a 5-gen run.
 #[test]
 fn prescreening_fraction_reduces_evaluations() {
-    let model = Arc::new(IdentitySurrogate) as Arc<dyn SurrogateModel<RangeChromosome<f64>> + Send + Sync>;
+    let model =
+        Arc::new(IdentitySurrogate) as Arc<dyn SurrogateModel<RangeChromosome<f64>> + Send + Sync>;
     let mut ga = build_runtime_ga(model, 0.5, 5);
     ga.run().expect("run must succeed");
     let stats = ga.stats();
@@ -430,13 +455,16 @@ fn prescreening_fraction_reduces_evaluations() {
             false
         }
     });
-    assert!(found, "at least one generation must have true_fitness_calls = Some(n)");
+    assert!(
+        found,
+        "at least one generation must have true_fitness_calls = Some(n)"
+    );
 
     // Additionally, verify the prescreening formula was applied: calls should be ≤ half the
     // offspring count. Check that at least one generation has calls ≤ 10 (half of pop=20).
-    let reduced = stats.iter().any(|s| {
-        s.true_fitness_calls.is_some_and(|c| c <= 10)
-    });
+    let reduced = stats
+        .iter()
+        .any(|s| s.true_fitness_calls.is_some_and(|c| c <= 10));
     assert!(
         reduced,
         "at least one generation should have true_fitness_calls <= 10 with fraction=0.5 and pop=20; got: {:?}",
@@ -448,7 +476,8 @@ fn prescreening_fraction_reduces_evaluations() {
 /// true_fitness_calls.is_some().
 #[test]
 fn true_fitness_calls_populated_in_stats() {
-    let model = Arc::new(IdentitySurrogate) as Arc<dyn SurrogateModel<RangeChromosome<f64>> + Send + Sync>;
+    let model =
+        Arc::new(IdentitySurrogate) as Arc<dyn SurrogateModel<RangeChromosome<f64>> + Send + Sync>;
     let mut ga = build_runtime_ga(model, 0.5, 5);
     ga.run().expect("run must succeed");
     for (i, stat) in ga.stats().iter().enumerate() {
@@ -498,7 +527,8 @@ fn surrogate_with_batch_evaluator_composes() {
     let evaluator = Arc::new(MaxSliceLengthEvaluator {
         max_len: Arc::clone(&max_len),
     });
-    let model = Arc::new(IdentitySurrogate) as Arc<dyn SurrogateModel<RangeChromosome<f64>> + Send + Sync>;
+    let model =
+        Arc::new(IdentitySurrogate) as Arc<dyn SurrogateModel<RangeChromosome<f64>> + Send + Sync>;
     let alleles = make_range_alleles();
     let alleles_clone = alleles.clone();
     // population_size=20, fraction=0.5 → batch evaluator should see ≤ max(1, 10) per generation.

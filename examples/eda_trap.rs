@@ -88,7 +88,10 @@ fn init_population(n: usize) -> Vec<BinaryChromosome> {
             let dna: Vec<BinaryGene> = (0..CHROMOSOME_LEN)
                 .map(|_| {
                     let v = rng.random::<bool>();
-                    BinaryGene { id: if v { 1 } else { 0 }, value: v }
+                    BinaryGene {
+                        id: if v { 1 } else { 0 },
+                        value: v,
+                    }
                 })
                 .collect();
             let mut c = BinaryChromosome::default();
@@ -148,7 +151,11 @@ fn main() {
             println!("Learned probs: [{}]", probs_str.join(", "));
 
             let converged = probs.iter().filter(|&&p| !(0.1..=0.9).contains(&p)).count();
-            println!("Converged positions (p > 0.9 or p < 0.1): {}/{}", converged, probs.len());
+            println!(
+                "Converged positions (p > 0.9 or p < 0.1): {}/{}",
+                converged,
+                probs.len()
+            );
         }
         _ => unreachable!("Binary chromosomes always use Bernoulli model"),
     }

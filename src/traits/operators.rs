@@ -88,7 +88,8 @@ pub trait CrossoverOperator {
     /// **Note:** Additional parameters (e.g., `number_of_points` for
     /// multi-point crossover) are expected to be stored in the operator
     /// struct or captured from configuration.
-    fn crossover<U: LinearChromosome>(&self, parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError>;
+    fn crossover<U: LinearChromosome>(&self, parent_1: &U, parent_2: &U)
+        -> Result<Vec<U>, GaError>;
 }
 
 /// Trait for mutation operators.
@@ -133,13 +134,9 @@ pub trait MutationOperator {
     ///   `sigma.unwrap_or(0.1)`). Context-dependent variants (`Differential`,
     ///   `NonUniform`, `Insertion`, `Deletion`) are handled by the GA engine before
     ///   this trait is called and return `GaError::MutationError` when invoked directly.
-    fn mutate<U>(
-        &self,
-        individual: &mut U,
-        mutation: &Mutation,
-    ) -> Result<(), GaError>
+    fn mutate<U>(&self, individual: &mut U, mutation: &Mutation) -> Result<(), GaError>
     where
-        U: LinearChromosome + ValueMutable + 'static;
+        U: LinearChromosome + ValueMutable + crate::traits::RealValuedMutation + 'static;
 }
 
 /// Trait for survivor selection operators.

@@ -10,8 +10,8 @@ use genetic_algorithms::genotypes::UniqueGenotype;
 use genetic_algorithms::initializers::unique_random_initialization;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::traits::{
-    ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig, SelectionConfig,
-    StoppingConfig, OperatorCompat,
+    ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig, OperatorCompat,
+    SelectionConfig, StoppingConfig,
 };
 use std::borrow::Cow;
 use std::sync::Arc;
@@ -45,11 +45,8 @@ fn make_ga(
 /// `MultiUniqueChromosome::new()` with three groups produces correct alphabet contents.
 #[test]
 fn multi_unique_chromosome_new_produces_correct_alphabets() {
-    let c = MultiUniqueChromosome::<i32>::new(vec![
-        vec![0, 1, 2],
-        vec![10, 20, 30],
-        vec![100, 200],
-    ]);
+    let c =
+        MultiUniqueChromosome::<i32>::new(vec![vec![0, 1, 2], vec![10, 20, 30], vec![100, 200]]);
     assert_eq!(c.groups.len(), 3);
     assert_eq!(&*c.groups[0], &[0, 1, 2]);
     assert_eq!(&*c.groups[1], &[10, 20, 30]);
@@ -62,11 +59,8 @@ fn multi_unique_chromosome_new_produces_correct_alphabets() {
 /// `group_ranges()` returns `[(0,2), (3,5), (6,7)]` for groups of sizes 3, 3, 2.
 #[test]
 fn group_ranges_three_groups() {
-    let c = MultiUniqueChromosome::<i32>::new(vec![
-        vec![0, 1, 2],
-        vec![10, 20, 30],
-        vec![100, 200],
-    ]);
+    let c =
+        MultiUniqueChromosome::<i32>::new(vec![vec![0, 1, 2], vec![10, 20, 30], vec![100, 200]]);
     assert_eq!(c.group_ranges(), vec![(0, 2), (3, 5), (6, 7)]);
 }
 

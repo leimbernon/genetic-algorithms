@@ -1,7 +1,7 @@
 //! Cycle crossover implementation.
 
 use crate::error::GaError;
-use crate::traits::{LinearChromosome, GeneT};
+use crate::traits::{GeneT, LinearChromosome};
 use std::borrow::Cow;
 use std::collections::HashMap;
 

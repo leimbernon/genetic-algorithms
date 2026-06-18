@@ -18,11 +18,8 @@ use std::collections::HashSet;
 ///   Group 1: values [10, 20, 30] (identity permutation)
 ///   Group 2: values [100, 200]   (identity permutation)
 fn make_parent_1() -> MultiUniqueChromosome<i32> {
-    let mut c = MultiUniqueChromosome::<i32>::new(vec![
-        vec![0, 1, 2],
-        vec![10, 20, 30],
-        vec![100, 200],
-    ]);
+    let mut c =
+        MultiUniqueChromosome::<i32>::new(vec![vec![0, 1, 2], vec![10, 20, 30], vec![100, 200]]);
     // DNA: the identity permutation for each group (ids 0..7)
     let genes = vec![
         UniqueGenotype::new(0, 0),
@@ -45,11 +42,8 @@ fn make_parent_1() -> MultiUniqueChromosome<i32> {
 ///   Group 1: values [30, 20, 10] (reversed)
 ///   Group 2: values [200, 100]   (reversed)
 fn make_parent_2() -> MultiUniqueChromosome<i32> {
-    let mut c = MultiUniqueChromosome::<i32>::new(vec![
-        vec![0, 1, 2],
-        vec![10, 20, 30],
-        vec![100, 200],
-    ]);
+    let mut c =
+        MultiUniqueChromosome::<i32>::new(vec![vec![0, 1, 2], vec![10, 20, 30], vec![100, 200]]);
     let genes = vec![
         UniqueGenotype::new(2, 2),
         UniqueGenotype::new(1, 1),
@@ -164,7 +158,8 @@ fn multi_group_pmx_no_gene_crosses_group_boundary() {
             assert!(
                 group0_values.contains(&g.value),
                 "child {} group-0 gene value {} is out of group-0 alphabet",
-                i, g.value
+                i,
+                g.value
             );
         }
         // Group 1 genes must only have values from group1_values
@@ -172,7 +167,8 @@ fn multi_group_pmx_no_gene_crosses_group_boundary() {
             assert!(
                 group1_values.contains(&g.value),
                 "child {} group-1 gene value {} is out of group-1 alphabet",
-                i, g.value
+                i,
+                g.value
             );
         }
         // Group 2 genes must only have values from group2_values
@@ -180,7 +176,8 @@ fn multi_group_pmx_no_gene_crosses_group_boundary() {
             assert!(
                 group2_values.contains(&g.value),
                 "child {} group-2 gene value {} is out of group-2 alphabet",
-                i, g.value
+                i,
+                g.value
             );
         }
     }
@@ -197,13 +194,28 @@ fn multi_group_pmx_children_have_unique_gene_ids_per_group() {
         let dna = child.dna();
         // Group 0 ids
         let ids_g0 = gene_id_set(&dna[0..=2]);
-        assert_eq!(ids_g0.len(), 3, "child {} group-0 should have 3 unique gene ids", ci);
+        assert_eq!(
+            ids_g0.len(),
+            3,
+            "child {} group-0 should have 3 unique gene ids",
+            ci
+        );
         // Group 1 ids
         let ids_g1 = gene_id_set(&dna[3..=5]);
-        assert_eq!(ids_g1.len(), 3, "child {} group-1 should have 3 unique gene ids", ci);
+        assert_eq!(
+            ids_g1.len(),
+            3,
+            "child {} group-1 should have 3 unique gene ids",
+            ci
+        );
         // Group 2 ids
         let ids_g2 = gene_id_set(&dna[6..=7]);
-        assert_eq!(ids_g2.len(), 2, "child {} group-2 should have 2 unique gene ids", ci);
+        assert_eq!(
+            ids_g2.len(),
+            2,
+            "child {} group-2 should have 2 unique gene ids",
+            ci
+        );
     }
 }
 
@@ -214,7 +226,10 @@ fn multi_group_pmx_empty_groups_returns_error() {
     let p2 = MultiUniqueChromosome::<i32>::default();
     let result = multi_group_pmx(&p1, &p2);
     assert!(
-        matches!(result, Err(genetic_algorithms::error::GaError::ConfigurationError(_))),
+        matches!(
+            result,
+            Err(genetic_algorithms::error::GaError::ConfigurationError(_))
+        ),
         "Expected ConfigurationError for empty-groups PMX; got {:?}",
         result
     );
@@ -243,7 +258,10 @@ fn multi_group_pmx_mismatched_group_structures_returns_error() {
     ]));
     let result = multi_group_pmx(&p1, &p2);
     assert!(
-        matches!(result, Err(genetic_algorithms::error::GaError::ConfigurationError(_))),
+        matches!(
+            result,
+            Err(genetic_algorithms::error::GaError::ConfigurationError(_))
+        ),
         "Expected ConfigurationError for mismatched group structures; got {:?}",
         result
     );

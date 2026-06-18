@@ -83,8 +83,8 @@ fn main() {
         .with_fitness_target(1e-3)
         .with_problem_solving(ProblemSolving::Minimization);
 
-    let mut engine = CmaEngine::new(config, init_population, rastrigin)
-        .with_observer(Arc::new(LogObserver));
+    let mut engine =
+        CmaEngine::new(config, init_population, rastrigin).with_observer(Arc::new(LogObserver));
 
     println!("== CMA-ES: {DIMENSIONS}D Rastrigin Minimization ==");
     println!("sigma0=0.5, max_generations=300, target=1e-3");

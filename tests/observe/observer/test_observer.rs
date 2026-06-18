@@ -170,10 +170,7 @@ fn test_observer_on_run_end_fires_once() {
 /// bit-flip mutation is guaranteed to trigger on_new_best.
 #[test]
 fn test_observer_on_new_best_fires() {
-    fn all_false_init(
-        size: usize,
-        _alleles: Option<&[BinaryGene]>,
-    ) -> Vec<BinaryGene> {
+    fn all_false_init(size: usize, _alleles: Option<&[BinaryGene]>) -> Vec<BinaryGene> {
         (0..size)
             .map(|i| BinaryGene {
                 id: i as i32,

@@ -463,7 +463,10 @@ where
 
 impl<U> Spea2Ga<U>
 where
-    U: LinearChromosome + mutation::ValueMutable + VectorFitness,
+    U: LinearChromosome
+        + mutation::ValueMutable
+        + VectorFitness
+        + crate::traits::RealValuedMutation,
 {
     /// Runs the SPEA2 algorithm and returns the Pareto front from the final archive.
     ///
@@ -572,8 +575,7 @@ where
             // Tag each archive member with its SPEA2 fitness so binary_tournament_from_archive
             // can compare by fitness (lower = better) instead of rank which is always 0 here.
             // We use `crowding_distance` as a scratch field since the SPEA2 loop does not use it.
-            let archive_fitness =
-                Self::assign_spea2_fitness(&archive, &[], &directions);
+            let archive_fitness = Self::assign_spea2_fitness(&archive, &[], &directions);
             for (i, ind) in archive.iter_mut().enumerate() {
                 ind.crowding_distance = archive_fitness[i];
             }
@@ -692,7 +694,9 @@ where
             for mut child in children {
                 let mp: f64 = rng.random();
                 if mp <= mut_prob {
-                    mutation_config.method.mutate(&mut child, &mutation_config.method)?;
+                    mutation_config
+                        .method
+                        .mutate(&mut child, &mutation_config.method)?;
                 }
                 offspring.push(child);
                 if offspring.len() >= pop_size {

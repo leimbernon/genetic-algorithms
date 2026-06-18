@@ -76,8 +76,8 @@ fn main() {
             max_restarts: 3,
         });
 
-    let mut engine = CmaEngine::new(config, init_population, rastrigin)
-        .with_observer(Arc::new(LogObserver));
+    let mut engine =
+        CmaEngine::new(config, init_population, rastrigin).with_observer(Arc::new(LogObserver));
 
     let result = engine.run();
 

@@ -1,4 +1,4 @@
-use genetic_algorithms::gp::{GpChromosome, GpGene, GpNode, Node, MathNode, TreeChromosome};
+use genetic_algorithms::gp::{GpChromosome, GpGene, GpNode, MathNode, Node, TreeChromosome};
 use genetic_algorithms::traits::{ChromosomeT, GeneT, VectorFitness};
 
 fn add_tree() -> Box<Node<MathNode>> {
@@ -62,7 +62,13 @@ fn gp_chromosome_calculate_fitness_with_fn() {
         if let Node::Function { value, children } = node {
             let args: Vec<f64> = children
                 .iter()
-                .map(|ch| if let Node::Terminal(MathNode::Const(v)) = &**ch { *v } else { 0.0 })
+                .map(|ch| {
+                    if let Node::Terminal(MathNode::Const(v)) = &**ch {
+                        *v
+                    } else {
+                        0.0
+                    }
+                })
                 .collect();
             value.evaluate(&args)
         } else {
@@ -70,7 +76,11 @@ fn gp_chromosome_calculate_fitness_with_fn() {
         }
     });
     c.calculate_fitness();
-    assert!((c.fitness() - 7.0).abs() < 1e-10, "expected 7.0, got {}", c.fitness());
+    assert!(
+        (c.fitness() - 7.0).abs() < 1e-10,
+        "expected 7.0, got {}",
+        c.fitness()
+    );
 }
 
 #[test]
@@ -107,8 +117,11 @@ fn gp_chromosome_default() {
 fn gp_chromosome_display() {
     let c = GpChromosome::with_root(add_tree());
     let s = format!("{}", c);
-    assert!(s.contains("add") || s.contains("3") || s.contains("4"),
-        "Display output '{}' should contain tree content", s);
+    assert!(
+        s.contains("add") || s.contains("3") || s.contains("4"),
+        "Display output '{}' should contain tree content",
+        s
+    );
 }
 
 #[test]

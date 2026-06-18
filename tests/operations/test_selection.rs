@@ -1019,7 +1019,11 @@ fn test_roulette_wheel_single_chromosome() {
     }];
     // 1 chromosome, couples=2 => 2 pairs (both selecting index 0)
     let pairs = fitness_proportionate::roulette_wheel_selection(&chromosomes, 2, 2);
-    assert_eq!(pairs.len(), 2, "Roulette wheel with 1 chromosome should return couples pairs");
+    assert_eq!(
+        pairs.len(),
+        2,
+        "Roulette wheel with 1 chromosome should return couples pairs"
+    );
 }
 
 #[test]
@@ -1161,7 +1165,11 @@ fn test_factory_returns_groups_of_num_parents() {
     };
 
     let result = selection::factory(&chromosomes, config, 1, 3);
-    assert!(result.is_ok(), "factory with num_parents=3 should succeed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "factory with num_parents=3 should succeed: {:?}",
+        result.err()
+    );
     let groups = result.unwrap();
     assert!(!groups.is_empty(), "Should return at least one group");
     for group in &groups {
@@ -1184,7 +1192,11 @@ fn test_factory_returns_groups_of_num_parents() {
         ..Default::default()
     };
     let result2 = selection::factory(&chromosomes, config2, 1, 2);
-    assert!(result2.is_ok(), "factory with num_parents=2 should succeed: {:?}", result2.err());
+    assert!(
+        result2.is_ok(),
+        "factory with num_parents=2 should succeed: {:?}",
+        result2.err()
+    );
     let groups2 = result2.unwrap();
     for group in &groups2 {
         assert_eq!(

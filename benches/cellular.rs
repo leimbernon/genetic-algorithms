@@ -1,6 +1,8 @@
 use std::borrow::Cow;
 
-use genetic_algorithms::cellular::{CellularConfiguration, CellularEngine, Neighborhood, UpdateMode};
+use genetic_algorithms::cellular::{
+    CellularConfiguration, CellularEngine, Neighborhood, UpdateMode,
+};
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::genotypes::Range as RangeGene;
 use genetic_algorithms::traits::LinearChromosome;
@@ -15,7 +17,13 @@ fn make_pop(n: usize, dim: usize) -> Vec<RangeChromosome<f64>> {
     (0..n)
         .map(|_| {
             let dna: Vec<RangeGene<f64>> = (0..dim)
-                .map(|j| RangeGene::new(j as i32, vec![(-5.0_f64, 5.0)], rng.random::<f64>() * 10.0 - 5.0))
+                .map(|j| {
+                    RangeGene::new(
+                        j as i32,
+                        vec![(-5.0_f64, 5.0)],
+                        rng.random::<f64>() * 10.0 - 5.0,
+                    )
+                })
                 .collect();
             let mut c = <RangeChromosome<f64> as Default>::default();
             c.set_dna(Cow::Owned(dna));
@@ -35,7 +43,9 @@ mod cellular_ga {
                 .with_neighborhood(Neighborhood::VonNeumann)
                 .with_update_mode(UpdateMode::Asynchronous)
                 .with_max_generations(100)
-                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian { sigma: Some(0.3) });
+                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian {
+                    sigma: Some(0.3),
+                });
             let mut engine = CellularEngine::new(config, |n| make_pop(n, 5), sphere);
             engine.run()
         });
@@ -49,7 +59,9 @@ mod cellular_ga {
                 .with_neighborhood(Neighborhood::Moore)
                 .with_update_mode(UpdateMode::Asynchronous)
                 .with_max_generations(100)
-                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian { sigma: Some(0.3) });
+                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian {
+                    sigma: Some(0.3),
+                });
             let mut engine = CellularEngine::new(config, |n| make_pop(n, 5), sphere);
             engine.run()
         });
@@ -63,7 +75,9 @@ mod cellular_ga {
                 .with_neighborhood(Neighborhood::CompactR2)
                 .with_update_mode(UpdateMode::Asynchronous)
                 .with_max_generations(100)
-                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian { sigma: Some(0.3) });
+                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian {
+                    sigma: Some(0.3),
+                });
             let mut engine = CellularEngine::new(config, |n| make_pop(n, 5), sphere);
             engine.run()
         });
@@ -77,7 +91,9 @@ mod cellular_ga {
                 .with_neighborhood(Neighborhood::Linear)
                 .with_update_mode(UpdateMode::Asynchronous)
                 .with_max_generations(100)
-                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian { sigma: Some(0.3) });
+                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian {
+                    sigma: Some(0.3),
+                });
             let mut engine = CellularEngine::new(config, |n| make_pop(n, 5), sphere);
             engine.run()
         });
@@ -95,7 +111,9 @@ mod cellular_sync_vs_async {
                 .with_neighborhood(Neighborhood::Moore)
                 .with_update_mode(UpdateMode::Synchronous)
                 .with_max_generations(100)
-                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian { sigma: Some(0.3) });
+                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian {
+                    sigma: Some(0.3),
+                });
             let mut engine = CellularEngine::new(config, |n| make_pop(n, 5), sphere);
             engine.run()
         });
@@ -109,7 +127,9 @@ mod cellular_sync_vs_async {
                 .with_neighborhood(Neighborhood::Moore)
                 .with_update_mode(UpdateMode::Asynchronous)
                 .with_max_generations(100)
-                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian { sigma: Some(0.3) });
+                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian {
+                    sigma: Some(0.3),
+                });
             let mut engine = CellularEngine::new(config, |n| make_pop(n, 5), sphere);
             engine.run()
         });

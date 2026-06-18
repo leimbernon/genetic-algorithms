@@ -273,12 +273,14 @@ where
 
         Ok(contributions)
     }
-
 }
 
 impl<U> SmsEmoaGa<U>
 where
-    U: LinearChromosome + mutation::ValueMutable + VectorFitness,
+    U: LinearChromosome
+        + mutation::ValueMutable
+        + VectorFitness
+        + crate::traits::RealValuedMutation,
 {
     /// Initializes the population with random chromosomes and evaluates objectives in parallel.
     fn initialize_population(&self) -> Result<Vec<ParetoIndividual<U>>, GaError> {
@@ -333,7 +335,6 @@ where
         Ok(population)
     }
 
-
     /// Creates one offspring via binary tournament selection, crossover, and mutation.
     fn create_one_offspring(&self, population: &[ParetoIndividual<U>]) -> Result<U, GaError> {
         let mut rng = crate::rng::make_rng();
@@ -358,7 +359,9 @@ where
         for child in children.iter_mut() {
             let mp: f64 = rng.random();
             if mp <= mut_prob {
-                mutation_config.method.mutate(child, &mutation_config.method)?;
+                mutation_config
+                    .method
+                    .mutate(child, &mutation_config.method)?;
             }
         }
 

@@ -96,9 +96,7 @@ where
 
     let mut rng = crate::rng::make_rng();
     let dna0 = parents[0].dna();
-    let p0_vals: Vec<f64> = (0..expected)
-        .map(|i| T::to_f64(dna0[i].value))
-        .collect();
+    let p0_vals: Vec<f64> = (0..expected).map(|i| T::to_f64(dna0[i].value)).collect();
 
     // ONE Box-Muller draw per parent direction vector; accumulate across all gene dimensions
     let mut directional = vec![0.0_f64; expected];

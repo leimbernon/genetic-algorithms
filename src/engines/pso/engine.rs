@@ -265,7 +265,13 @@ where
     ///
     /// Returns `pbest_positions[winner][d]` where `winner` is the neighbor with
     /// the best personal-best fitness.
-    fn lbest_position(&self, particle_i: usize, gene_d: usize, neighborhood_size: usize, state: &PsoState) -> f64 {
+    fn lbest_position(
+        &self,
+        particle_i: usize,
+        gene_d: usize,
+        neighborhood_size: usize,
+        state: &PsoState,
+    ) -> f64 {
         let n = state.n_particles;
         // Clamp k to [1, n-1] so we never query 0 or n neighbors.
         let k = neighborhood_size.min(n - 1).max(1);
@@ -302,8 +308,7 @@ where
     /// (PSO literature standard).
     pub fn run(&mut self) -> PsoResult<U> {
         let mut rng = make_rng();
-        let is_maximization =
-            matches!(self.config.problem_solving, ProblemSolving::Maximization);
+        let is_maximization = matches!(self.config.problem_solving, ProblemSolving::Maximization);
 
         // ── Observer: run start ───────────────────────────────────────────────
         self.notify(|obs| obs.on_run_start());
@@ -340,8 +345,7 @@ where
         self.notify(|obs| obs.on_new_best(0, &best));
 
         let mut termination_cause = TerminationCause::GenerationLimitReached;
-        let mut all_stats: Vec<GenerationStats> =
-            Vec::with_capacity(self.config.max_generations);
+        let mut all_stats: Vec<GenerationStats> = Vec::with_capacity(self.config.max_generations);
 
         // ── Main loop ─────────────────────────────────────────────────────────
         for gen in 0..self.config.max_generations {
@@ -447,8 +451,7 @@ where
 
             // ── Generation stats ──────────────────────────────────────────────
             let fitness_values: Vec<f64> = pop.iter().map(|c| c.fitness()).collect();
-            let stats =
-                GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
+            let stats = GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
             self.notify(|obs| obs.on_generation_end(&stats));
             all_stats.push(stats);
 

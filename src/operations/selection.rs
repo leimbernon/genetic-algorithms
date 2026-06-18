@@ -44,14 +44,25 @@ impl SelectionOperator for Selection {
     {
         match self {
             Selection::Random => random(chromosomes, num_parents),
-            Selection::RouletteWheel => roulette_wheel_selection(chromosomes, number_of_couples, num_parents),
+            Selection::RouletteWheel => {
+                roulette_wheel_selection(chromosomes, number_of_couples, num_parents)
+            }
             Selection::StochasticUniversalSampling => {
                 stochastic_universal_sampling(chromosomes, number_of_couples, num_parents)
             }
-            Selection::Tournament => tournament(chromosomes, number_of_couples, number_of_threads, num_parents),
+            Selection::Tournament => tournament(
+                chromosomes,
+                number_of_couples,
+                number_of_threads,
+                num_parents,
+            ),
             Selection::Rank => rank_selection(chromosomes, number_of_couples, num_parents),
-            Selection::Boltzmann => boltzmann_selection(chromosomes, number_of_couples, 1.0, num_parents),
-            Selection::Truncation => truncation_selection(chromosomes, number_of_couples, num_parents),
+            Selection::Boltzmann => {
+                boltzmann_selection(chromosomes, number_of_couples, 1.0, num_parents)
+            }
+            Selection::Truncation => {
+                truncation_selection(chromosomes, number_of_couples, num_parents)
+            }
             // WARNING: The `SelectionOperator` trait does not carry operator-specific
             // configuration, so `niche_radius` defaults to 0.1 on this path.
             // Island-model and NSGA-II callers that use `Selection::Clearing` with
@@ -227,9 +238,7 @@ where
 
     // Lexicase always produces 2-parent groups
     let groups = match configuration.method {
-        Selection::Lexicase => {
-            lexicase_selection(chromosomes, configuration.number_of_couples, 2)
-        }
+        Selection::Lexicase => lexicase_selection(chromosomes, configuration.number_of_couples, 2),
         Selection::EpsilonLexicase => epsilon_lexicase_selection(
             chromosomes,
             configuration.number_of_couples,

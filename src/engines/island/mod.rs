@@ -443,7 +443,7 @@ where
 
 impl<U> IslandGa<U>
 where
-    U: LinearChromosome + mutation::ValueMutable,
+    U: LinearChromosome + mutation::ValueMutable + crate::traits::RealValuedMutation,
 {
     /// Runs the island model GA and returns the best chromosome found across all islands.
     ///
@@ -540,195 +540,201 @@ where
 
         #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
         {
-        use rayon::prelude::*;
-        self.islands
-            .par_iter_mut()
-            .enumerate()
-            .try_for_each(|(idx, island)| {
-                let (
-                    selection_config,
-                    crossover_config,
-                    mutation_config,
-                    survivor_method,
-                    limit_config,
-                    num_threads,
-                ) = island_configs[idx].clone();
-                let pop_size = limit_config.population_size;
+            use rayon::prelude::*;
+            self.islands
+                .par_iter_mut()
+                .enumerate()
+                .try_for_each(|(idx, island)| {
+                    let (
+                        selection_config,
+                        crossover_config,
+                        mutation_config,
+                        survivor_method,
+                        limit_config,
+                        num_threads,
+                    ) = island_configs[idx].clone();
+                    let pop_size = limit_config.population_size;
 
-                // Selection: returns Vec<Vec<usize>> parent index groups (island uses 2-parent crossover)
-                let parent_pairs =
-                    selection::factory(&island.chromosomes, selection_config, num_threads, 2)?;
+                    // Selection: returns Vec<Vec<usize>> parent index groups (island uses 2-parent crossover)
+                    let parent_pairs =
+                        selection::factory(&island.chromosomes, selection_config, num_threads, 2)?;
 
-                // Crossover: iterate over parent groups
-                let mut rng = crate::rng::make_rng();
-                let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
+                    // Crossover: iterate over parent groups
+                    let mut rng = crate::rng::make_rng();
+                    let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
 
-                let mut offspring: Vec<U> = Vec::new();
-                for group in &parent_pairs {
-                    let idx_a = group[0];
-                    let idx_b = group[1];
-                    let p: f64 = rng.random();
-                    if p <= crossover_prob {
-                        let children = crossover::factory(
-                            &island.chromosomes[idx_a],
-                            &island.chromosomes[idx_b],
-                            crossover_config,
-                        )?;
-                        offspring.extend(children);
-                    } else {
-                        offspring.push(island.chromosomes[idx_a].clone());
-                        offspring.push(island.chromosomes[idx_b].clone());
+                    let mut offspring: Vec<U> = Vec::new();
+                    for group in &parent_pairs {
+                        let idx_a = group[0];
+                        let idx_b = group[1];
+                        let p: f64 = rng.random();
+                        if p <= crossover_prob {
+                            let children = crossover::factory(
+                                &island.chromosomes[idx_a],
+                                &island.chromosomes[idx_b],
+                                crossover_config,
+                            )?;
+                            offspring.extend(children);
+                        } else {
+                            offspring.push(island.chromosomes[idx_a].clone());
+                            offspring.push(island.chromosomes[idx_b].clone());
+                        }
                     }
-                }
 
-                // Mutation
-                let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
-                for child in offspring.iter_mut() {
-                    let p: f64 = rng.random();
-                    if p <= mut_prob {
-                        match &mutation_config.method {
-                            crate::operations::Mutation::Insertion
-                            | crate::operations::Mutation::Deletion => {
-                                mutation::factory_with_chromosome_length(
-                                    mutation_config.method.clone(),
-                                    child,
-                                    None,
-                                    None,
-                                    None,
-                                )?;
-                            }
-                            other => {
-                                other.mutate(child, other)?;
+                    // Mutation
+                    let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
+                    for child in offspring.iter_mut() {
+                        let p: f64 = rng.random();
+                        if p <= mut_prob {
+                            match &mutation_config.method {
+                                crate::operations::Mutation::Insertion
+                                | crate::operations::Mutation::Deletion => {
+                                    mutation::factory_with_chromosome_length(
+                                        mutation_config.method.clone(),
+                                        child,
+                                        None,
+                                        None,
+                                        None,
+                                    )?;
+                                }
+                                other => {
+                                    other.mutate(child, other)?;
+                                }
                             }
                         }
                     }
-                }
 
-                // Assign fitness to offspring
-                for child in offspring.iter_mut() {
-                    let ff = Arc::clone(&fitness_fn);
-                    child.set_fitness_fn(move |genes| ff(genes));
-                    child.calculate_fitness();
-                }
+                    // Assign fitness to offspring
+                    for child in offspring.iter_mut() {
+                        let ff = Arc::clone(&fitness_fn);
+                        child.set_fitness_fn(move |genes| ff(genes));
+                        child.calculate_fitness();
+                    }
 
-                // Combine parent population with offspring
-                island.chromosomes.append(&mut offspring);
+                    // Combine parent population with offspring
+                    island.chromosomes.append(&mut offspring);
 
-                // Survivor selection: trims in-place to pop_size
-                survivor::factory(
-                    survivor_method,
-                    &mut island.chromosomes,
-                    pop_size,
-                    limit_config,
-                )?;
+                    // Survivor selection: trims in-place to pop_size
+                    survivor::factory(
+                        survivor_method,
+                        &mut island.chromosomes,
+                        pop_size,
+                        limit_config,
+                    )?;
 
-                // Fire per-island generation hook if an observer is attached
-                if let Some(ref obs) = observer_clone {
-                    let fitness_values: Vec<f64> =
-                        island.chromosomes.iter().map(|c| c.fitness()).collect();
-                    let stats =
-                        GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
-                    obs.on_island_generation_end(idx, gen, &stats);
-                }
+                    // Fire per-island generation hook if an observer is attached
+                    if let Some(ref obs) = observer_clone {
+                        let fitness_values: Vec<f64> =
+                            island.chromosomes.iter().map(|c| c.fitness()).collect();
+                        let stats = GenerationStats::from_fitness_values(
+                            gen,
+                            &fitness_values,
+                            is_maximization,
+                        );
+                        obs.on_island_generation_end(idx, gen, &stats);
+                    }
 
-                Ok(())
-            })
+                    Ok(())
+                })
         } // end #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
 
         #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
         {
-        self.islands
-            .iter_mut()
-            .enumerate()
-            .try_for_each(|(idx, island)| {
-                let (
-                    selection_config,
-                    crossover_config,
-                    mutation_config,
-                    survivor_method,
-                    limit_config,
-                    num_threads,
-                ) = island_configs[idx].clone();
-                let pop_size = limit_config.population_size;
+            self.islands
+                .iter_mut()
+                .enumerate()
+                .try_for_each(|(idx, island)| {
+                    let (
+                        selection_config,
+                        crossover_config,
+                        mutation_config,
+                        survivor_method,
+                        limit_config,
+                        num_threads,
+                    ) = island_configs[idx].clone();
+                    let pop_size = limit_config.population_size;
 
-                // Selection: returns Vec<Vec<usize>> parent index groups (island uses 2-parent crossover)
-                let parent_pairs =
-                    selection::factory(&island.chromosomes, selection_config, num_threads, 2)?;
+                    // Selection: returns Vec<Vec<usize>> parent index groups (island uses 2-parent crossover)
+                    let parent_pairs =
+                        selection::factory(&island.chromosomes, selection_config, num_threads, 2)?;
 
-                // Crossover: iterate over parent groups
-                let mut rng = crate::rng::make_rng();
-                let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
+                    // Crossover: iterate over parent groups
+                    let mut rng = crate::rng::make_rng();
+                    let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
 
-                let mut offspring: Vec<U> = Vec::new();
-                for group in &parent_pairs {
-                    let idx_a = group[0];
-                    let idx_b = group[1];
-                    let p: f64 = rng.random();
-                    if p <= crossover_prob {
-                        let children = crossover::factory(
-                            &island.chromosomes[idx_a],
-                            &island.chromosomes[idx_b],
-                            crossover_config,
-                        )?;
-                        offspring.extend(children);
-                    } else {
-                        offspring.push(island.chromosomes[idx_a].clone());
-                        offspring.push(island.chromosomes[idx_b].clone());
+                    let mut offspring: Vec<U> = Vec::new();
+                    for group in &parent_pairs {
+                        let idx_a = group[0];
+                        let idx_b = group[1];
+                        let p: f64 = rng.random();
+                        if p <= crossover_prob {
+                            let children = crossover::factory(
+                                &island.chromosomes[idx_a],
+                                &island.chromosomes[idx_b],
+                                crossover_config,
+                            )?;
+                            offspring.extend(children);
+                        } else {
+                            offspring.push(island.chromosomes[idx_a].clone());
+                            offspring.push(island.chromosomes[idx_b].clone());
+                        }
                     }
-                }
 
-                // Mutation
-                let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
-                for child in offspring.iter_mut() {
-                    let p: f64 = rng.random();
-                    if p <= mut_prob {
-                        match &mutation_config.method {
-                            crate::operations::Mutation::Insertion
-                            | crate::operations::Mutation::Deletion => {
-                                mutation::factory_with_chromosome_length(
-                                    mutation_config.method.clone(),
-                                    child,
-                                    None,
-                                    None,
-                                    None,
-                                )?;
-                            }
-                            other => {
-                                other.mutate(child, other)?;
+                    // Mutation
+                    let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
+                    for child in offspring.iter_mut() {
+                        let p: f64 = rng.random();
+                        if p <= mut_prob {
+                            match &mutation_config.method {
+                                crate::operations::Mutation::Insertion
+                                | crate::operations::Mutation::Deletion => {
+                                    mutation::factory_with_chromosome_length(
+                                        mutation_config.method.clone(),
+                                        child,
+                                        None,
+                                        None,
+                                        None,
+                                    )?;
+                                }
+                                other => {
+                                    other.mutate(child, other)?;
+                                }
                             }
                         }
                     }
-                }
 
-                // Assign fitness to offspring
-                for child in offspring.iter_mut() {
-                    let ff = Arc::clone(&fitness_fn);
-                    child.set_fitness_fn(move |genes| ff(genes));
-                    child.calculate_fitness();
-                }
+                    // Assign fitness to offspring
+                    for child in offspring.iter_mut() {
+                        let ff = Arc::clone(&fitness_fn);
+                        child.set_fitness_fn(move |genes| ff(genes));
+                        child.calculate_fitness();
+                    }
 
-                // Combine parent population with offspring
-                island.chromosomes.append(&mut offspring);
+                    // Combine parent population with offspring
+                    island.chromosomes.append(&mut offspring);
 
-                // Survivor selection: trims in-place to pop_size
-                survivor::factory(
-                    survivor_method,
-                    &mut island.chromosomes,
-                    pop_size,
-                    limit_config,
-                )?;
+                    // Survivor selection: trims in-place to pop_size
+                    survivor::factory(
+                        survivor_method,
+                        &mut island.chromosomes,
+                        pop_size,
+                        limit_config,
+                    )?;
 
-                // Fire per-island generation hook if an observer is attached
-                if let Some(ref obs) = observer_clone {
-                    let fitness_values: Vec<f64> =
-                        island.chromosomes.iter().map(|c| c.fitness()).collect();
-                    let stats =
-                        GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
-                    obs.on_island_generation_end(idx, gen, &stats);
-                }
+                    // Fire per-island generation hook if an observer is attached
+                    if let Some(ref obs) = observer_clone {
+                        let fitness_values: Vec<f64> =
+                            island.chromosomes.iter().map(|c| c.fitness()).collect();
+                        let stats = GenerationStats::from_fitness_values(
+                            gen,
+                            &fitness_values,
+                            is_maximization,
+                        );
+                        obs.on_island_generation_end(idx, gen, &stats);
+                    }
 
-                Ok(())
-            })
+                    Ok(())
+                })
         } // end #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
     }
 }

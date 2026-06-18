@@ -31,7 +31,10 @@ fn multi_range_chromosome_calculate_fitness_invokes_fn() {
     c.set_dna(Cow::Owned(dna));
     c.set_fitness_fn(|genes| genes.iter().map(|g| g.value()).sum::<f64>());
     c.calculate_fitness();
-    assert!((c.fitness() - 10.0).abs() < 1e-10, "fitness should be 3+7=10");
+    assert!(
+        (c.fitness() - 10.0).abs() < 1e-10,
+        "fitness should be 3+7=10"
+    );
 }
 
 #[test]
@@ -66,9 +69,7 @@ fn multi_range_chromosome_set_dna_cow_owned_replaces_dna() {
 #[test]
 fn multi_range_chromosome_set_dna_cow_borrowed_replaces_dna() {
     let mut c = MultiRangeChromosome::<f64>::default();
-    let dna = vec![
-        MultiRangeGenotype::new(0, 0.0_f64, 1.0, 0.3, 0.1),
-    ];
+    let dna = vec![MultiRangeGenotype::new(0, 0.0_f64, 1.0, 0.3, 0.1)];
     c.set_dna(Cow::Borrowed(dna.as_slice()));
     assert_eq!(c.dna().len(), 1);
     assert_eq!(c.dna()[0].value(), 0.3);
@@ -157,7 +158,10 @@ fn multi_range_gaussian_mutation_stays_within_per_gene_bounds() {
             assert!(
                 gene.value >= gene.lo && gene.value <= gene.hi,
                 "Gene {} value {} out of per-gene range [{}, {}]",
-                gene.id, gene.value, gene.lo, gene.hi
+                gene.id,
+                gene.value,
+                gene.lo,
+                gene.hi
             );
         }
     }
@@ -192,8 +196,14 @@ fn multi_range_gaussian_mutation_per_gene_rate_controls_noise_scale() {
         let delta_0 = (after[0] - before[0]).abs();
         let delta_1 = (after[1] - before[1]).abs();
 
-        if delta_0 > 0.0 { total_delta_0 += delta_0; count_0 += 1; }
-        if delta_1 > 0.0 { total_delta_1 += delta_1; count_1 += 1; }
+        if delta_0 > 0.0 {
+            total_delta_0 += delta_0;
+            count_0 += 1;
+        }
+        if delta_1 > 0.0 {
+            total_delta_1 += delta_1;
+            count_1 += 1;
+        }
     }
     rng::set_seed(None);
 
@@ -205,7 +215,8 @@ fn multi_range_gaussian_mutation_per_gene_rate_controls_noise_scale() {
             avg_1 > avg_0 * 10.0,
             "Gene with mutation_rate=20.0 should have much larger avg delta ({:.6}) \
              than mutation_rate=0.0001 ({:.6})",
-            avg_1, avg_0
+            avg_1,
+            avg_0
         );
     }
 }

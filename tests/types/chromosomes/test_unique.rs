@@ -42,7 +42,11 @@ fn make_ga(crossover: Crossover, mutation: Mutation) -> Result<Ga<UniqueChromoso
 fn unique_chromosome_default() {
     let c = UniqueChromosome::<i32>::default();
     assert!(c.dna.is_empty(), "default dna should be empty");
-    assert_eq!(c.alphabet.len(), 0, "default alphabet should be empty (Arc::from([]))");
+    assert_eq!(
+        c.alphabet.len(),
+        0,
+        "default alphabet should be empty (Arc::from([]))"
+    );
     assert!(c.fitness.is_nan(), "default fitness should be NaN");
     assert_eq!(c.age, 0, "default age should be 0");
 }
@@ -106,12 +110,13 @@ fn calculate_fitness_invokes_fn() {
 #[test]
 fn set_dna_cow_owned_replaces_dna() {
     let mut c = UniqueChromosome::<i32>::default();
-    let genes = vec![
-        UniqueGenotype::new(0, 1i32),
-        UniqueGenotype::new(1, 2i32),
-    ];
+    let genes = vec![UniqueGenotype::new(0, 1i32), UniqueGenotype::new(1, 2i32)];
     let ret = c.set_dna(Cow::Owned(genes.clone()));
-    assert_eq!(ret.dna(), genes.as_slice(), "set_dna should replace the dna");
+    assert_eq!(
+        ret.dna(),
+        genes.as_slice(),
+        "set_dna should replace the dna"
+    );
     assert_eq!(c.dna.len(), 2, "dna len should be 2 after set_dna");
 }
 
@@ -140,8 +145,12 @@ fn alphabet_is_arc_shared() {
 /// OperatorCompat valid_crossovers returns a restricted Some set.
 #[test]
 fn valid_crossovers_is_restricted() {
-    let valid = <UniqueChromosome<i32> as genetic_algorithms::traits::OperatorCompat>::valid_crossovers();
-    assert!(valid.is_some(), "UniqueChromosome should have a restricted crossover set");
+    let valid =
+        <UniqueChromosome<i32> as genetic_algorithms::traits::OperatorCompat>::valid_crossovers();
+    assert!(
+        valid.is_some(),
+        "UniqueChromosome should have a restricted crossover set"
+    );
     let v = valid.unwrap();
     assert!(v.contains(&Crossover::Pmx));
     assert!(v.contains(&Crossover::Order));
@@ -153,8 +162,12 @@ fn valid_crossovers_is_restricted() {
 /// OperatorCompat valid_mutations returns a restricted Some set.
 #[test]
 fn valid_mutations_is_restricted() {
-    let valid = <UniqueChromosome<i32> as genetic_algorithms::traits::OperatorCompat>::valid_mutations();
-    assert!(valid.is_some(), "UniqueChromosome should have a restricted mutation set");
+    let valid =
+        <UniqueChromosome<i32> as genetic_algorithms::traits::OperatorCompat>::valid_mutations();
+    assert!(
+        valid.is_some(),
+        "UniqueChromosome should have a restricted mutation set"
+    );
     let v = valid.unwrap();
     assert!(v.contains(&Mutation::Insertion));
     assert!(v.contains(&Mutation::Swap));

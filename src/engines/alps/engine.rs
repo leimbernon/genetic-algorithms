@@ -22,11 +22,11 @@
 use std::sync::Arc;
 
 use crate::configuration::{CrossoverConfiguration, ProblemSolving};
-use crate::operations::mutation::ValueMutable;
 use crate::operations::crossover;
-use crate::traits::MutationOperator;
+use crate::operations::mutation::ValueMutable;
 use crate::rng::make_rng;
-use crate::traits::{LinearChromosome, FitnessFn};
+use crate::traits::MutationOperator;
+use crate::traits::{FitnessFn, LinearChromosome};
 use rand::Rng;
 
 use super::configuration::AlpsConfiguration;
@@ -119,7 +119,7 @@ impl<U: LinearChromosome> AlpsEngine<U> {
 
 impl<U> AlpsEngine<U>
 where
-    U: LinearChromosome + Clone + ValueMutable + 'static,
+    U: LinearChromosome + Clone + ValueMutable + crate::traits::RealValuedMutation + 'static,
 {
     /// Run the ALPS algorithm and return the result.
     pub fn run(&mut self) -> AlpsResult<U> {
@@ -213,7 +213,10 @@ where
                             _ => layers[layer_idx][a].clone(),
                         };
 
-                    let _ = self.config.mutation.mutate(&mut offspring, &self.config.mutation);
+                    let _ = self
+                        .config
+                        .mutation
+                        .mutate(&mut offspring, &self.config.mutation);
 
                     let f = (self.fitness_fn)(offspring.dna());
                     offspring.set_fitness(f);

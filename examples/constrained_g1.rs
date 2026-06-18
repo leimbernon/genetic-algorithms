@@ -8,16 +8,16 @@
 //! cargo run --example constrained_g1
 //! ```
 
-use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
+use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::constraints::PenaltyStrategy;
 use genetic_algorithms::ga::Ga;
 use genetic_algorithms::genotypes::Range as RangeGene;
 use genetic_algorithms::initializers::range_random_initialization;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::traits::{
-    ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig, SelectionConfig,
-    StoppingConfig,
+    ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig,
+    SelectionConfig, StoppingConfig,
 };
 
 const N_VARS: usize = 13;

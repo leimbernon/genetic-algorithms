@@ -235,23 +235,15 @@ impl CmaState {
 
         // --- Strategy parameters (Hansen arXiv:1604.00772 defaults) -----------
         let nf = n as f64;
-        let cs = config
-            .cs
-            .unwrap_or((mu_eff + 2.0) / (nf + mu_eff + 5.0));
-        let ds = 1.0
-            + 2.0 * (((mu_eff - 1.0) / (nf + 1.0)).max(0.0)).sqrt()
-            + cs;
-        let chi_n = nf.sqrt()
-            * (1.0 - 1.0 / (4.0 * nf) + 1.0 / (21.0 * nf * nf));
+        let cs = config.cs.unwrap_or((mu_eff + 2.0) / (nf + mu_eff + 5.0));
+        let ds = 1.0 + 2.0 * (((mu_eff - 1.0) / (nf + 1.0)).max(0.0)).sqrt() + cs;
+        let chi_n = nf.sqrt() * (1.0 - 1.0 / (4.0 * nf) + 1.0 / (21.0 * nf * nf));
         let cc = config
             .cc
             .unwrap_or((4.0 + mu_eff / nf) / (nf + 4.0 + 2.0 * mu_eff / nf));
-        let c1 = config
-            .c1
-            .unwrap_or(2.0 / ((nf + 1.3).powi(2) + mu_eff));
+        let c1 = config.c1.unwrap_or(2.0 / ((nf + 1.3).powi(2) + mu_eff));
         let cmu = config.cmu.unwrap_or(
-            ((2.0 * (mu_eff - 2.0 + 1.0 / mu_eff)) / ((nf + 2.0).powi(2) + mu_eff))
-                .min(1.0 - c1),
+            ((2.0 * (mu_eff - 2.0 + 1.0 / mu_eff)) / ((nf + 2.0).powi(2) + mu_eff)).min(1.0 - c1),
         );
 
         // Hansen arXiv:1604.00772
@@ -530,9 +522,9 @@ where
         restart_count: usize,
     ) -> usize {
         let raw = match strategy {
-            RestartStrategy::Ipop { population_scale, .. } => {
-                ((current_lambda as f64) * population_scale).floor() as usize
-            }
+            RestartStrategy::Ipop {
+                population_scale, ..
+            } => ((current_lambda as f64) * population_scale).floor() as usize,
             RestartStrategy::Bipop {
                 population_scale,
                 small_population_size,
@@ -583,8 +575,7 @@ where
         U::Gene: Debug,
     {
         let mut rng = make_rng();
-        let is_maximization =
-            matches!(self.config.problem_solving, ProblemSolving::Maximization);
+        let is_maximization = matches!(self.config.problem_solving, ProblemSolving::Maximization);
 
         // D-05/D-06: bootstrap cache handle at run() start.
         if let Some(size) = self.config.fitness_cache_size {
@@ -617,9 +608,7 @@ where
                 target: "cma_events",
                 "CmaEngine: init_fn returned an empty population; returning empty result"
             );
-            self.notify(|obs| {
-                obs.on_run_end(TerminationCause::GenerationLimitReached, &[])
-            });
+            self.notify(|obs| obs.on_run_end(TerminationCause::GenerationLimitReached, &[]));
             panic!("CmaEngine: init_fn returned an empty population");
         }
 
@@ -650,8 +639,7 @@ where
         let mut global_best: Option<U> = None;
 
         let mut termination_cause = TerminationCause::GenerationLimitReached;
-        let mut all_stats: Vec<GenerationStats> =
-            Vec::with_capacity(self.config.max_generations);
+        let mut all_stats: Vec<GenerationStats> = Vec::with_capacity(self.config.max_generations);
 
         // ── Outer restart loop ────────────────────────────────────────────────
         // `pop` is initialised at the top of each outer iteration. We declare it
@@ -824,36 +812,24 @@ where
                 let invsqrtc_step = matvec(&state.invsqrtc, &step, n);
                 let sqrt_cs_factor = (state.cs * (2.0 - state.cs) * state.mu_eff).sqrt();
                 let ps_new: Vec<f64> = (0..n)
-                    .map(|i| {
-                        (1.0 - state.cs) * state.ps[i] + sqrt_cs_factor * invsqrtc_step[i]
-                    })
+                    .map(|i| (1.0 - state.cs) * state.ps[i] + sqrt_cs_factor * invsqrtc_step[i])
                     .collect();
                 state.ps = ps_new;
 
-                let ps_norm = state
-                    .ps
-                    .iter()
-                    .map(|x| x * x)
-                    .sum::<f64>()
-                    .sqrt();
+                let ps_norm = state.ps.iter().map(|x| x * x).sum::<f64>().sqrt();
 
                 // ── h_sigma (stall indicator) ─────────────────────────────────
                 let denom = (1.0 - (1.0 - state.cs).powi(2 * (gen + 1) as i32)).sqrt();
-                let h_sigma = if ps_norm / denom / state.chi_n
-                    < 1.4 + 2.0 / (n as f64 + 1.0)
-                {
+                let h_sigma = if ps_norm / denom / state.chi_n < 1.4 + 2.0 / (n as f64 + 1.0) {
                     1.0_f64
                 } else {
                     0.0_f64
                 };
 
                 // ── Update pc (evolution path for C) ─────────────────────────
-                let sqrt_cc_factor =
-                    (state.cc * (2.0 - state.cc) * state.mu_eff).sqrt();
+                let sqrt_cc_factor = (state.cc * (2.0 - state.cc) * state.mu_eff).sqrt();
                 let pc_new: Vec<f64> = (0..n)
-                    .map(|i| {
-                        (1.0 - state.cc) * state.pc[i] + h_sigma * sqrt_cc_factor * step[i]
-                    })
+                    .map(|i| (1.0 - state.cc) * state.pc[i] + h_sigma * sqrt_cc_factor * step[i])
                     .collect();
                 state.pc = pc_new;
 
@@ -880,9 +856,7 @@ where
                 // Rank-μ update: cmu * Σ_k w_k * y_k * y_k^T
                 for (k, &idx) in selected_indices.iter().enumerate() {
                     let y_k: Vec<f64> = (0..n)
-                        .map(|j| {
-                            (pop[idx].dna()[j].real_value() - old_mean[j]) / state.sigma
-                        })
+                        .map(|j| (pop[idx].dna()[j].real_value() - old_mean[j]) / state.sigma)
                         .collect();
                     for i in 0..n {
                         for j in 0..n {
@@ -902,8 +876,7 @@ where
                 state.c_mat = c_new;
 
                 // ── Update sigma ──────────────────────────────────────────────
-                state.sigma *=
-                    ((state.cs / state.ds) * (ps_norm / state.chi_n - 1.0)).exp();
+                state.sigma *= ((state.cs / state.ds) * (ps_norm / state.chi_n - 1.0)).exp();
                 // Clamp to prevent NaN/Inf (T-56-03-04)
                 state.sigma = state.sigma.clamp(1e-20, 1e20);
 
@@ -939,7 +912,8 @@ where
 
                 // ── Statistics ────────────────────────────────────────────────
                 let fitness_values: Vec<f64> = pop.iter().map(|c| c.fitness()).collect();
-                let mut stats = GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
+                let mut stats =
+                    GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
                 // D-07: populate per-generation cache delta stats when a cache is active.
                 if let Some(ref ch) = self.fitness_cache {
                     let c = ch.lock().expect("fitness cache lock poisoned");
@@ -952,12 +926,16 @@ where
                 // ── Restart trigger ───────────────────────────────────────────
                 if let Some(ref strategy) = self.config.restart_strategy {
                     let (threshold, max_r) = match strategy {
-                        RestartStrategy::Ipop { stagnation_threshold, max_restarts, .. } => {
-                            (*stagnation_threshold, *max_restarts)
-                        }
-                        RestartStrategy::Bipop { stagnation_threshold, max_restarts, .. } => {
-                            (*stagnation_threshold, *max_restarts)
-                        }
+                        RestartStrategy::Ipop {
+                            stagnation_threshold,
+                            max_restarts,
+                            ..
+                        } => (*stagnation_threshold, *max_restarts),
+                        RestartStrategy::Bipop {
+                            stagnation_threshold,
+                            max_restarts,
+                            ..
+                        } => (*stagnation_threshold, *max_restarts),
                     };
                     if stagnation_count >= threshold {
                         // Pitfall 1: check limit BEFORE incrementing

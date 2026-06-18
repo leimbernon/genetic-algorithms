@@ -152,8 +152,7 @@ impl GaussianConvertible for i64 {
 pub fn multi_range_gaussian_mutation<T>(
     individual: &mut crate::chromosomes::MultiRangeChromosome<T>,
     _sigma: f64,
-)
-where
+) where
     T: Sync + Send + Copy + Default + std::fmt::Debug + PartialOrd + 'static + GaussianConvertible,
 {
     use crate::traits::LinearChromosome;

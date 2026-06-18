@@ -210,7 +210,10 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
 
     /// Returns the index and fitness of the best individual in `pop`.
     fn find_best(&self, pop: &[U]) -> (usize, f64) {
-        assert!(!pop.is_empty(), "EdaEngine::find_best called with empty population");
+        assert!(
+            !pop.is_empty(),
+            "EdaEngine::find_best called with empty population"
+        );
         let mut best_idx = 0;
         let mut best_fit = pop[0].fitness();
         for (i, ind) in pop.iter().enumerate().skip(1) {
@@ -258,17 +261,18 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
     /// When `population_size` is 0, a default of 100 is used.
     pub fn run(&mut self) -> EdaResult<U> {
         let mut rng = make_rng();
-        let is_maximization =
-            matches!(self.config.problem_solving, ProblemSolving::Maximization);
+        let is_maximization = matches!(self.config.problem_solving, ProblemSolving::Maximization);
 
         // Three-way sort comparator that mirrors `is_better` for all ProblemSolving variants.
         // This ensures FixedFitness selects parents closest to the target, not lowest raw fitness.
         let cmp = |a_fit: f64, b_fit: f64| -> std::cmp::Ordering {
             match self.config.problem_solving {
-                ProblemSolving::Maximization =>
-                    b_fit.partial_cmp(&a_fit).unwrap_or(std::cmp::Ordering::Equal),
-                ProblemSolving::Minimization =>
-                    a_fit.partial_cmp(&b_fit).unwrap_or(std::cmp::Ordering::Equal),
+                ProblemSolving::Maximization => b_fit
+                    .partial_cmp(&a_fit)
+                    .unwrap_or(std::cmp::Ordering::Equal),
+                ProblemSolving::Minimization => a_fit
+                    .partial_cmp(&b_fit)
+                    .unwrap_or(std::cmp::Ordering::Equal),
                 ProblemSolving::FixedFitness => {
                     let t = self.config.fitness_target.unwrap_or(0.0);
                     let da = (a_fit - t).abs();
@@ -309,8 +313,7 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
         self.notify(|obs| obs.on_new_best(0, &best));
 
         let mut termination_cause = TerminationCause::GenerationLimitReached;
-        let mut all_stats: Vec<GenerationStats> =
-            Vec::with_capacity(self.config.max_generations);
+        let mut all_stats: Vec<GenerationStats> = Vec::with_capacity(self.config.max_generations);
         let mut learned_model = EdaModel::Bernoulli(vec![0.5; dim]);
         let mut best_model = learned_model.clone();
 
@@ -374,8 +377,7 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
 
             // Generation stats
             let fitness_values: Vec<f64> = pop.iter().map(|c| c.fitness()).collect();
-            let stats =
-                GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
+            let stats = GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
             self.notify(|obs| obs.on_generation_end(&stats));
             all_stats.push(stats);
 
@@ -510,7 +512,10 @@ where
     }
 
     fn find_best(&self, pop: &[U]) -> (usize, f64) {
-        assert!(!pop.is_empty(), "EdaRealEngine::find_best called with empty population");
+        assert!(
+            !pop.is_empty(),
+            "EdaRealEngine::find_best called with empty population"
+        );
         let mut best_idx = 0;
         let mut best_fit = pop[0].fitness();
         for (i, ind) in pop.iter().enumerate().skip(1) {
@@ -587,16 +592,17 @@ where
     /// Run the EDA engine (Gaussian model) and return the result.
     pub fn run(&mut self) -> EdaResult<U> {
         let mut rng = make_rng();
-        let is_maximization =
-            matches!(self.config.problem_solving, ProblemSolving::Maximization);
+        let is_maximization = matches!(self.config.problem_solving, ProblemSolving::Maximization);
 
         // Three-way sort comparator that mirrors `is_better` for all ProblemSolving variants.
         let cmp = |a_fit: f64, b_fit: f64| -> std::cmp::Ordering {
             match self.config.problem_solving {
-                ProblemSolving::Maximization =>
-                    b_fit.partial_cmp(&a_fit).unwrap_or(std::cmp::Ordering::Equal),
-                ProblemSolving::Minimization =>
-                    a_fit.partial_cmp(&b_fit).unwrap_or(std::cmp::Ordering::Equal),
+                ProblemSolving::Maximization => b_fit
+                    .partial_cmp(&a_fit)
+                    .unwrap_or(std::cmp::Ordering::Equal),
+                ProblemSolving::Minimization => a_fit
+                    .partial_cmp(&b_fit)
+                    .unwrap_or(std::cmp::Ordering::Equal),
                 ProblemSolving::FixedFitness => {
                     let t = self.config.fitness_target.unwrap_or(0.0);
                     let da = (a_fit - t).abs();
@@ -632,8 +638,7 @@ where
         self.notify(|obs| obs.on_new_best(0, &best));
 
         let mut termination_cause = TerminationCause::GenerationLimitReached;
-        let mut all_stats: Vec<GenerationStats> =
-            Vec::with_capacity(self.config.max_generations);
+        let mut all_stats: Vec<GenerationStats> = Vec::with_capacity(self.config.max_generations);
         let mut learned_model = EdaModel::Gaussian {
             means: vec![0.0; dim],
             stds: vec![1.0; dim],
@@ -698,8 +703,7 @@ where
             }
 
             let fitness_values: Vec<f64> = pop.iter().map(|c| c.fitness()).collect();
-            let stats =
-                GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
+            let stats = GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
             self.notify(|obs| obs.on_generation_end(&stats));
             all_stats.push(stats);
 

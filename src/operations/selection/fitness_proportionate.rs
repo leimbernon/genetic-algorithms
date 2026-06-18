@@ -35,7 +35,11 @@ use rand::Rng;
 /// let population: Vec<Binary> = vec![Binary::new(); 10];
 /// let pairs = roulette_wheel_selection(&population, 5, 2);
 /// ```
-pub fn roulette_wheel_selection<U: ChromosomeT>(chromosomes: &[U], couples: usize, num_parents: usize) -> Vec<Vec<usize>> {
+pub fn roulette_wheel_selection<U: ChromosomeT>(
+    chromosomes: &[U],
+    couples: usize,
+    num_parents: usize,
+) -> Vec<Vec<usize>> {
     let num_parents = num_parents.max(2);
     let mut mating = Vec::new();
 

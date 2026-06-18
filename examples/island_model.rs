@@ -98,10 +98,10 @@ fn main() {
 
     // --- Heterogeneous GA configs: 4 islands with different mutation probabilities ---
     // Low mutation islands exploit; high mutation islands explore broadly.
-    use genetic_algorithms::ChromosomeLength;
     use genetic_algorithms::traits::{
         ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
     };
+    use genetic_algorithms::ChromosomeLength;
     let mutation_probs = [0.01_f64, 0.05, 0.10, 0.20];
     let ga_configs: Vec<GaConfiguration> = mutation_probs
         .iter()

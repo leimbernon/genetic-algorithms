@@ -299,7 +299,10 @@ where
 
 impl<U> IslandNsga2Ga<U>
 where
-    U: LinearChromosome + mutation::ValueMutable + VectorFitness,
+    U: LinearChromosome
+        + mutation::ValueMutable
+        + VectorFitness
+        + crate::traits::RealValuedMutation,
 {
     /// Runs the Island-NSGA-II algorithm and returns the global Pareto front.
     ///
@@ -428,7 +431,9 @@ where
                 for child in children.iter_mut() {
                     let mp: f64 = rng.random();
                     if mp <= mut_prob {
-                        mutation_config.method.mutate(child, &mutation_config.method)?;
+                        mutation_config
+                            .method
+                            .mutate(child, &mutation_config.method)?;
                     }
                 }
 
@@ -490,7 +495,9 @@ where
                 for child in children.iter_mut() {
                     let mp: f64 = rng.random();
                     if mp <= mut_prob {
-                        mutation_config.method.mutate(child, &mutation_config.method)?;
+                        mutation_config
+                            .method
+                            .mutate(child, &mutation_config.method)?;
                     }
                 }
 

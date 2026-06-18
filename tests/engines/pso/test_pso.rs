@@ -12,11 +12,11 @@ use std::sync::Arc;
 
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
+use genetic_algorithms::ga::TerminationCause;
 use genetic_algorithms::genotypes::Range as RangeGene;
 use genetic_algorithms::observer::GaObserver;
 use genetic_algorithms::rng;
 use genetic_algorithms::stats::GenerationStats;
-use genetic_algorithms::ga::TerminationCause;
 use genetic_algorithms::traits::{LinearChromosome, RealGene};
 
 // ─── Test helpers ─────────────────────────────────────────────────────────────
@@ -90,16 +90,15 @@ fn test_pso_run_returns_result() {
     let config = PsoConfiguration::default()
         .with_max_generations(20)
         .with_population_size(20);
-    let mut engine = PsoEngine::new(
-        config,
-        move |_n| init_pop.clone(),
-        sphere,
-    );
+    let mut engine = PsoEngine::new(config, move |_n| init_pop.clone(), sphere);
     let result = engine.run();
     assert_eq!(result.population.len(), 20, "population size must match");
     assert_eq!(result.generations, 20, "must complete all 20 generations");
     assert_eq!(result.best.dna().len(), 10, "best must have 10 genes");
-    assert!(result.best_fitness.is_finite(), "best_fitness must be finite");
+    assert!(
+        result.best_fitness.is_finite(),
+        "best_fitness must be finite"
+    );
 }
 
 // ─── PSO-02: personal best update ────────────────────────────────────────────
@@ -118,11 +117,7 @@ fn test_pso_pbest_update() {
         .with_max_generations(5)
         .with_population_size(5)
         .with_problem_solving(ProblemSolving::Minimization);
-    let mut engine = PsoEngine::new(
-        config,
-        move |_n| init_pop.clone(),
-        sphere,
-    );
+    let mut engine = PsoEngine::new(config, move |_n| init_pop.clone(), sphere);
     let result = engine.run();
     assert!(
         result.best_fitness <= initial_best_fitness,
@@ -143,12 +138,8 @@ fn test_pso_observer_run_start() {
     let config = PsoConfiguration::default()
         .with_max_generations(10)
         .with_population_size(10);
-    let mut engine = PsoEngine::new(
-        config,
-        move |_n| init_pop.clone(),
-        sphere,
-    )
-    .with_observer(spy.clone() as Arc<dyn GaObserver<RangeChromosome<f64>> + Send + Sync>);
+    let mut engine = PsoEngine::new(config, move |_n| init_pop.clone(), sphere)
+        .with_observer(spy.clone() as Arc<dyn GaObserver<RangeChromosome<f64>> + Send + Sync>);
     let _ = engine.run();
     assert_eq!(
         spy.run_start_count.load(Ordering::SeqCst),
@@ -168,12 +159,8 @@ fn test_pso_observer_generation_count() {
     let config = PsoConfiguration::default()
         .with_max_generations(25)
         .with_population_size(10);
-    let mut engine = PsoEngine::new(
-        config,
-        move |_n| init_pop.clone(),
-        sphere,
-    )
-    .with_observer(spy.clone() as Arc<dyn GaObserver<RangeChromosome<f64>> + Send + Sync>);
+    let mut engine = PsoEngine::new(config, move |_n| init_pop.clone(), sphere)
+        .with_observer(spy.clone() as Arc<dyn GaObserver<RangeChromosome<f64>> + Send + Sync>);
     let result = engine.run();
     assert_eq!(result.generations, 25, "must complete all 25 generations");
     assert_eq!(
@@ -199,12 +186,8 @@ fn test_pso_observer_new_best() {
     let config = PsoConfiguration::default()
         .with_max_generations(50)
         .with_population_size(10);
-    let mut engine = PsoEngine::new(
-        config,
-        move |_n| init_pop.clone(),
-        sphere,
-    )
-    .with_observer(spy.clone() as Arc<dyn GaObserver<RangeChromosome<f64>> + Send + Sync>);
+    let mut engine = PsoEngine::new(config, move |_n| init_pop.clone(), sphere)
+        .with_observer(spy.clone() as Arc<dyn GaObserver<RangeChromosome<f64>> + Send + Sync>);
     let _ = engine.run();
     assert!(
         spy.new_best_count.load(Ordering::SeqCst) >= 1,
@@ -223,12 +206,8 @@ fn test_pso_observer_run_end() {
     let config = PsoConfiguration::default()
         .with_max_generations(10)
         .with_population_size(10);
-    let mut engine = PsoEngine::new(
-        config,
-        move |_n| init_pop.clone(),
-        sphere,
-    )
-    .with_observer(spy.clone() as Arc<dyn GaObserver<RangeChromosome<f64>> + Send + Sync>);
+    let mut engine = PsoEngine::new(config, move |_n| init_pop.clone(), sphere)
+        .with_observer(spy.clone() as Arc<dyn GaObserver<RangeChromosome<f64>> + Send + Sync>);
     let _ = engine.run();
     assert_eq!(
         spy.run_end_count.load(Ordering::SeqCst),
@@ -247,17 +226,19 @@ fn test_pso_ring_wrap() {
     // Use a very small swarm of 3 particles with neighborhood_size=5 (> swarm size).
     let init_pop = random_pop(3, 5, -5.12, 5.12, 7);
     let config = PsoConfiguration::default()
-        .with_topology(PsoTopology::Ring { neighborhood_size: 5 })
+        .with_topology(PsoTopology::Ring {
+            neighborhood_size: 5,
+        })
         .with_population_size(3)
         .with_max_generations(2);
-    let mut engine = PsoEngine::new(
-        config,
-        move |_n| init_pop.clone(),
-        sphere,
-    );
+    let mut engine = PsoEngine::new(config, move |_n| init_pop.clone(), sphere);
     // Should not panic — ring-wrap clamp handles neighborhood_size > n_particles.
     let result = engine.run();
-    assert_eq!(result.population.len(), 3, "population must remain 3 particles");
+    assert_eq!(
+        result.population.len(),
+        3,
+        "population must remain 3 particles"
+    );
 }
 
 // ─── PSO-08: absorbing boundary ──────────────────────────────────────────────
@@ -272,11 +253,7 @@ fn test_pso_absorbing_boundary() {
         .with_population_size(10)
         .with_max_generations(50)
         .with_problem_solving(ProblemSolving::Minimization);
-    let mut engine = PsoEngine::new(
-        config,
-        move |_n| init_pop.clone(),
-        sphere,
-    );
+    let mut engine = PsoEngine::new(config, move |_n| init_pop.clone(), sphere);
     let result = engine.run();
     // Every gene in every chromosome must be within bounds (with floating-point tolerance).
     for ind in result.population.iter() {
@@ -344,15 +321,19 @@ fn test_pso_linear_decay() {
     );
 
     // Verify PsoEngine::new compiles with PSO types.
-    let _config = PsoConfiguration::default()
-        .with_topology(PsoTopology::Ring { neighborhood_size: 3 });
+    let _config = PsoConfiguration::default().with_topology(PsoTopology::Ring {
+        neighborhood_size: 3,
+    });
     let mut eng = PsoEngine::new(
         PsoConfiguration::default().with_max_generations(1),
         |n: usize| random_pop(n, 2, -1.0, 1.0, 99),
         sphere,
     );
     let result = eng.run();
-    assert_eq!(result.generations, 1, "engine with max_generations=1 must return generations=1");
+    assert_eq!(
+        result.generations, 1,
+        "engine with max_generations=1 must return generations=1"
+    );
 }
 
 // ─── PSO-10: sphere convergence ──────────────────────────────────────────────
@@ -369,11 +350,7 @@ fn test_pso_sphere_converges() {
         .with_max_generations(500)
         .with_problem_solving(ProblemSolving::Minimization)
         .with_fitness_target(1e-2);
-    let mut engine = PsoEngine::new(
-        config,
-        move |_n| init_pop.clone(),
-        sphere,
-    );
+    let mut engine = PsoEngine::new(config, move |_n| init_pop.clone(), sphere);
     let result = engine.run();
     assert!(
         result.best_fitness < 1e-2 || result.generations < 500,

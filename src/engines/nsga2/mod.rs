@@ -276,7 +276,10 @@ where
 
 impl<U> Nsga2Ga<U>
 where
-    U: LinearChromosome + VectorFitness + mutation::ValueMutable,
+    U: LinearChromosome
+        + VectorFitness
+        + mutation::ValueMutable
+        + crate::traits::RealValuedMutation,
 {
     /// Runs the NSGA-II algorithm and returns the first Pareto front.
     ///
@@ -544,14 +547,19 @@ where
             for child in children.iter_mut() {
                 let mp: f64 = rng.random();
                 if mp <= mut_prob {
-                    if matches!(mutation_config.method, crate::operations::Mutation::Differential { .. }) {
+                    if matches!(
+                        mutation_config.method,
+                        crate::operations::Mutation::Differential { .. }
+                    ) {
                         return Err(GaError::MutationError(
                             "Differential mutation is not supported in NSGA-II; \
                              use Cauchy, LevyFlight, Polynomial, or a standard mutation method instead."
                                 .to_string(),
                         ));
                     }
-                    mutation_config.method.mutate(child, &mutation_config.method)?;
+                    mutation_config
+                        .method
+                        .mutate(child, &mutation_config.method)?;
                 }
             }
 

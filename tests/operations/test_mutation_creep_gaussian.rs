@@ -493,7 +493,11 @@ fn multi_range_gaussian_values_stay_within_per_gene_bounds_1000_iterations() {
             assert!(
                 gene.value >= gene.lo && gene.value <= gene.hi,
                 "Iteration {}: gene {} value {} out of per-gene range [{}, {}]",
-                iter, gene.id, gene.value, gene.lo, gene.hi
+                iter,
+                gene.id,
+                gene.value,
+                gene.lo,
+                gene.hi
             );
         }
     }
@@ -525,8 +529,14 @@ fn multi_range_gaussian_per_gene_rate_controls_noise_scale() {
 
         let d0 = (after[0] - before[0]).abs();
         let d1 = (after[1] - before[1]).abs();
-        if d0 > 0.0 { total_delta_0 += d0; count_0 += 1; }
-        if d1 > 0.0 { total_delta_1 += d1; count_1 += 1; }
+        if d0 > 0.0 {
+            total_delta_0 += d0;
+            count_0 += 1;
+        }
+        if d1 > 0.0 {
+            total_delta_1 += d1;
+            count_1 += 1;
+        }
     }
     rng::set_seed(None);
 
@@ -537,7 +547,8 @@ fn multi_range_gaussian_per_gene_rate_controls_noise_scale() {
         assert!(
             avg_1 > avg_0 * 10.0,
             "Gene with mutation_rate=20.0 avg delta ({:.6}) should be >> rate=0.0001 ({:.6})",
-            avg_1, avg_0
+            avg_1,
+            avg_0
         );
     }
 }
@@ -624,7 +635,9 @@ fn creep_default_step_uses_zero_point_zero_one() {
             assert!(
                 gene.value >= lo && gene.value <= hi,
                 "Value {} out of range [{}, {}] with default step",
-                gene.value, lo, hi
+                gene.value,
+                lo,
+                hi
             );
         }
     }

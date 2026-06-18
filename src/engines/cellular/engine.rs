@@ -20,8 +20,8 @@
 use std::sync::Arc;
 
 use crate::configuration::{CrossoverConfiguration, ProblemSolving};
-use crate::operations::mutation::ValueMutable;
 use crate::operations::crossover;
+use crate::operations::mutation::ValueMutable;
 use crate::rng::make_rng;
 use crate::traits::{FitnessFn, LinearChromosome, MutationOperator, SelectionOperator};
 use rand::Rng;
@@ -116,7 +116,7 @@ where
 
 impl<U> CellularEngine<U>
 where
-    U: LinearChromosome + Clone + ValueMutable + 'static,
+    U: LinearChromosome + Clone + ValueMutable + crate::traits::RealValuedMutation + 'static,
 {
     /// Run the Cellular GA and return the result.
     pub fn run(&mut self) -> CellularResult<U> {
@@ -216,7 +216,10 @@ where
                         };
 
                     // Mutate offspring
-                    let _ = self.config.mutation.mutate(&mut offspring, &self.config.mutation);
+                    let _ = self
+                        .config
+                        .mutation
+                        .mutate(&mut offspring, &self.config.mutation);
 
                     // Evaluate
                     let offspring_fitness = (self.fitness_fn)(offspring.dna());

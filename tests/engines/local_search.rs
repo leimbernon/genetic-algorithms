@@ -1,6 +1,4 @@
-use genetic_algorithms::configuration::{
-    LocalSearchConfiguration, ProblemSolving,
-};
+use genetic_algorithms::configuration::{LocalSearchConfiguration, ProblemSolving};
 use genetic_algorithms::ga::Ga;
 use genetic_algorithms::genotypes::Range as RangeGene;
 use genetic_algorithms::operations::{
@@ -111,9 +109,7 @@ fn test_local_search_every_n_generations() {
     let mut ga = make_ga()
         .with_local_search(LocalSearch::HillClimbing)
         .with_local_search_configuration(LocalSearchConfiguration {
-            application_strategy: LocalSearchApplicationStrategy::EveryNGenerations {
-                interval: 2,
-            },
+            application_strategy: LocalSearchApplicationStrategy::EveryNGenerations { interval: 2 },
             mode: LocalSearchMode::Lamarckian,
             ..Default::default()
         })
@@ -157,7 +153,9 @@ fn test_local_search_not_configured() {
         .build()
         .expect("GA build should succeed without local search");
 
-    let population = ga.run().expect("GA run should succeed without local search");
+    let population = ga
+        .run()
+        .expect("GA run should succeed without local search");
     let best = &population.best_chromosome;
     assert!(
         best.fitness().is_finite(),

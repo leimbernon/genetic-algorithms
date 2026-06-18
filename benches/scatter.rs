@@ -15,7 +15,13 @@ fn make_pop(n: usize, dim: usize) -> Vec<RangeChromosome<f64>> {
     (0..n)
         .map(|_| {
             let dna: Vec<RangeGene<f64>> = (0..dim)
-                .map(|j| RangeGene::new(j as i32, vec![(-5.0_f64, 5.0)], rng.random::<f64>() * 10.0 - 5.0))
+                .map(|j| {
+                    RangeGene::new(
+                        j as i32,
+                        vec![(-5.0_f64, 5.0)],
+                        rng.random::<f64>() * 10.0 - 5.0,
+                    )
+                })
                 .collect();
             let mut c = <RangeChromosome<f64> as Default>::default();
             c.set_dna(Cow::Owned(dna));
