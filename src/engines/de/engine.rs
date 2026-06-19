@@ -1,13 +1,15 @@
 //! `DeEngine` — the Differential Evolution execution loop.
 
 use std::borrow::Cow;
-use std::sync::Arc;
+use std::fmt::Debug;
+use std::sync::{Arc, Mutex};
 
 use super::configuration::{DeAdaptive, DeConfiguration, DeMutationStrategy};
 use super::crossover::crossover;
 use super::mutation::{mutate, DeMutationParams, JadeState, LShadeState};
 use crate::configuration::ProblemSolving;
 use crate::rng::make_rng;
+use crate::stats::GenerationStats;
 use crate::traits::RealGene;
 use crate::traits::{FitnessFn, LinearChromosome};
 use rand::Rng;
@@ -56,6 +58,7 @@ where
     config: DeConfiguration,
     init_fn: Arc<dyn Fn(usize) -> Vec<U> + Send + Sync>,
     fitness_fn: Arc<FitnessFn<U::Gene>>,
+    fitness_cache: Option<Arc<Mutex<crate::fitness::cache::FitnessCache>>>,
 }
 
 impl<U: LinearChromosome + Clone> DeEngine<U>
@@ -77,13 +80,28 @@ where
             config,
             init_fn: Arc::new(init_fn),
             fitness_fn: Arc::new(fitness_fn),
+            fitness_cache: None,
         }
     }
 
     /// Run the DE algorithm and return the result.
-    pub fn run(&mut self) -> DeResult<U> {
+    pub fn run(&mut self) -> DeResult<U>
+    where
+        U::Gene: Debug,
+    {
         let mut rng = make_rng();
         let pop_size = self.config.population_size;
+        let is_maximization = matches!(self.config.problem_solving, ProblemSolving::Maximization);
+
+        // D-05: bootstrap cache handle at run() start.
+        if let Some(size) = self.config.fitness_cache_size {
+            if self.fitness_cache.is_none() {
+                let (wrapped_fn, cache_handle) =
+                    crate::fitness::cache::wrap_with_cache(Arc::clone(&self.fitness_fn), size);
+                self.fitness_fn = wrapped_fn;
+                self.fitness_cache = Some(cache_handle);
+            }
+        }
 
         // ── Initialise ────────────────────────────────────────────────────────
         let mut pop: Vec<U> = (self.init_fn)(pop_size);
@@ -107,6 +125,16 @@ where
         let mut archive: Vec<U> = Vec::new();
 
         let mut generations = 0usize;
+        let mut all_stats: Vec<GenerationStats> = Vec::with_capacity(self.config.max_generations);
+
+        // Cache snapshot for per-generation delta stats.
+        let (mut prev_cache_hits, mut prev_cache_misses) = match &self.fitness_cache {
+            Some(ch) => {
+                let c = ch.lock().expect("fitness cache lock poisoned");
+                (c.hits(), c.misses())
+            }
+            None => (0, 0),
+        };
 
         // ── Main loop ─────────────────────────────────────────────────────────
         for _gen in 0..self.config.max_generations {
@@ -203,6 +231,19 @@ where
             }
 
             generations += 1;
+
+            // Per-generation stats + cache delta.
+            let fitness_values: Vec<f64> = pop.iter().map(|c| c.fitness()).collect();
+            let mut stats =
+                GenerationStats::from_fitness_values(generations, &fitness_values, is_maximization);
+            if let Some(ref ch) = self.fitness_cache {
+                let c = ch.lock().expect("fitness cache lock poisoned");
+                stats.cache_hits = Some(c.hits().saturating_sub(prev_cache_hits));
+                stats.cache_misses = Some(c.misses().saturating_sub(prev_cache_misses));
+                prev_cache_hits = c.hits();
+                prev_cache_misses = c.misses();
+            }
+            all_stats.push(stats);
 
             // Re-locate best (index may have shifted from swaps above)
             let (bi, bf) = self.find_best(&pop);

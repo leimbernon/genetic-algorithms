@@ -111,6 +111,7 @@ fn main() {
         problem_solving: ProblemSolving::Maximization,
         fitness_target: Some(CHROMOSOME_LEN as f64),
         selection_ratio: SELECTION_RATIO,
+        fitness_cache_size: None,
     };
 
     let mut engine = EdaEngine::bernoulli(config, init_population, trap_fitness)

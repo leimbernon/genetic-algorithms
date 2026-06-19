@@ -60,6 +60,12 @@ pub struct EdaConfiguration {
     ///
     /// Default: `0.5` (truncation selection keeping the best half).
     pub selection_ratio: f64,
+
+    /// Fitness cache capacity in entries.
+    ///
+    /// When set, `run()` wraps the scalar `fitness_fn` with an LRU cache of this
+    /// size, avoiding redundant evaluations for duplicate DNA.
+    pub fitness_cache_size: Option<usize>,
 }
 
 impl Default for EdaConfiguration {
@@ -70,6 +76,7 @@ impl Default for EdaConfiguration {
             problem_solving: ProblemSolving::Maximization,
             fitness_target: None,
             selection_ratio: 0.5,
+            fitness_cache_size: None,
         }
     }
 }
@@ -106,6 +113,16 @@ impl EdaConfiguration {
     /// Must be in `(0.0, 1.0]`. Values outside this range are clamped.
     pub fn with_selection_ratio(mut self, ratio: f64) -> Self {
         self.selection_ratio = ratio.clamp(f64::MIN_POSITIVE, 1.0);
+        self
+    }
+
+    /// Builder: enable the fitness cache.
+    ///
+    /// Sets the LRU cache capacity to `size` entries. When the engine runs,
+    /// `fitness_fn` is wrapped with the cache, avoiding redundant evaluations
+    /// for duplicate DNA.
+    pub fn with_fitness_cache_size(mut self, size: usize) -> Self {
+        self.fitness_cache_size = Some(size);
         self
     }
 }

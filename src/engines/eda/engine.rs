@@ -24,7 +24,8 @@
 //! sequential iteration on `wasm32-unknown-unknown`.
 
 use std::borrow::Cow;
-use std::sync::Arc;
+use std::fmt::Debug;
+use std::sync::{Arc, Mutex};
 
 use rand::Rng;
 
@@ -136,6 +137,7 @@ pub struct EdaEngine<U: LinearChromosome> {
     init_fn: Arc<dyn Fn(usize) -> Vec<U> + Send + Sync>,
     fitness_fn: Arc<FitnessFn<U::Gene>>,
     observer: Option<Arc<dyn GaObserver<U> + Send + Sync>>,
+    fitness_cache: Option<Arc<Mutex<crate::fitness::cache::FitnessCache>>>,
 }
 
 impl<U: LinearChromosome + Clone> EdaEngine<U> {
@@ -154,6 +156,7 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
             init_fn: Arc::new(init_fn),
             fitness_fn: Arc::new(fitness_fn),
             observer: None,
+            fitness_cache: None,
         }
     }
 
@@ -259,9 +262,22 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
     /// Run the EDA engine (Bernoulli model) and return the result.
     ///
     /// When `population_size` is 0, a default of 100 is used.
-    pub fn run(&mut self) -> EdaResult<U> {
+    pub fn run(&mut self) -> EdaResult<U>
+    where
+        U::Gene: Debug,
+    {
         let mut rng = make_rng();
         let is_maximization = matches!(self.config.problem_solving, ProblemSolving::Maximization);
+
+        // D-05: bootstrap cache handle at run() start.
+        if let Some(size) = self.config.fitness_cache_size {
+            if self.fitness_cache.is_none() {
+                let (wrapped_fn, cache_handle) =
+                    crate::fitness::cache::wrap_with_cache(Arc::clone(&self.fitness_fn), size);
+                self.fitness_fn = wrapped_fn;
+                self.fitness_cache = Some(cache_handle);
+            }
+        }
 
         // Three-way sort comparator that mirrors `is_better` for all ProblemSolving variants.
         // This ensures FixedFitness selects parents closest to the target, not lowest raw fitness.
@@ -316,6 +332,15 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
         let mut all_stats: Vec<GenerationStats> = Vec::with_capacity(self.config.max_generations);
         let mut learned_model = EdaModel::Bernoulli(vec![0.5; dim]);
         let mut best_model = learned_model.clone();
+
+        // Cache snapshot for per-generation delta stats.
+        let (mut prev_cache_hits, mut prev_cache_misses) = match &self.fitness_cache {
+            Some(ch) => {
+                let c = ch.lock().expect("fitness cache lock poisoned");
+                (c.hits(), c.misses())
+            }
+            None => (0, 0),
+        };
 
         // Main loop
         for gen in 0..self.config.max_generations {
@@ -377,7 +402,15 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
 
             // Generation stats
             let fitness_values: Vec<f64> = pop.iter().map(|c| c.fitness()).collect();
-            let stats = GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
+            let mut stats =
+                GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
+            if let Some(ref ch) = self.fitness_cache {
+                let c = ch.lock().expect("fitness cache lock poisoned");
+                stats.cache_hits = Some(c.hits().saturating_sub(prev_cache_hits));
+                stats.cache_misses = Some(c.misses().saturating_sub(prev_cache_misses));
+                prev_cache_hits = c.hits();
+                prev_cache_misses = c.misses();
+            }
             self.notify(|obs| obs.on_generation_end(&stats));
             all_stats.push(stats);
 
@@ -455,6 +488,7 @@ where
     init_fn: Arc<dyn Fn(usize) -> Vec<U> + Send + Sync>,
     fitness_fn: Arc<FitnessFn<U::Gene>>,
     observer: Option<Arc<dyn GaObserver<U> + Send + Sync>>,
+    fitness_cache: Option<Arc<Mutex<crate::fitness::cache::FitnessCache>>>,
 }
 
 impl<U: LinearChromosome + Clone> EdaRealEngine<U>
@@ -472,6 +506,7 @@ where
             init_fn: Arc::new(init_fn),
             fitness_fn: Arc::new(fitness_fn),
             observer: None,
+            fitness_cache: None,
         }
     }
 
@@ -590,9 +625,22 @@ where
     }
 
     /// Run the EDA engine (Gaussian model) and return the result.
-    pub fn run(&mut self) -> EdaResult<U> {
+    pub fn run(&mut self) -> EdaResult<U>
+    where
+        U::Gene: Debug,
+    {
         let mut rng = make_rng();
         let is_maximization = matches!(self.config.problem_solving, ProblemSolving::Maximization);
+
+        // D-05: bootstrap cache handle at run() start.
+        if let Some(size) = self.config.fitness_cache_size {
+            if self.fitness_cache.is_none() {
+                let (wrapped_fn, cache_handle) =
+                    crate::fitness::cache::wrap_with_cache(Arc::clone(&self.fitness_fn), size);
+                self.fitness_fn = wrapped_fn;
+                self.fitness_cache = Some(cache_handle);
+            }
+        }
 
         // Three-way sort comparator that mirrors `is_better` for all ProblemSolving variants.
         let cmp = |a_fit: f64, b_fit: f64| -> std::cmp::Ordering {
@@ -644,6 +692,15 @@ where
             stds: vec![1.0; dim],
         };
         let mut best_model = learned_model.clone();
+
+        // Cache snapshot for per-generation delta stats.
+        let (mut prev_cache_hits, mut prev_cache_misses) = match &self.fitness_cache {
+            Some(ch) => {
+                let c = ch.lock().expect("fitness cache lock poisoned");
+                (c.hits(), c.misses())
+            }
+            None => (0, 0),
+        };
 
         for gen in 0..self.config.max_generations {
             self.notify(|obs| obs.on_generation_start(gen));
@@ -703,7 +760,15 @@ where
             }
 
             let fitness_values: Vec<f64> = pop.iter().map(|c| c.fitness()).collect();
-            let stats = GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
+            let mut stats =
+                GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
+            if let Some(ref ch) = self.fitness_cache {
+                let c = ch.lock().expect("fitness cache lock poisoned");
+                stats.cache_hits = Some(c.hits().saturating_sub(prev_cache_hits));
+                stats.cache_misses = Some(c.misses().saturating_sub(prev_cache_misses));
+                prev_cache_hits = c.hits();
+                prev_cache_misses = c.misses();
+            }
             self.notify(|obs| obs.on_generation_end(&stats));
             all_stats.push(stats);
 

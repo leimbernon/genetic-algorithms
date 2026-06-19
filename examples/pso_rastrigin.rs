@@ -91,6 +91,7 @@ fn main() {
         c1: 2.0,
         c2: 2.0,
         topology: PsoTopology::Global,
+        fitness_cache_size: None,
     };
 
     let mut engine =

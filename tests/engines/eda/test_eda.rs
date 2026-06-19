@@ -129,6 +129,7 @@ fn eda_01_bernoulli_onemax_convergence() {
         problem_solving: ProblemSolving::Maximization,
         fitness_target: Some(CHROMOSOME_LEN as f64),
         selection_ratio: 0.5,
+        fitness_cache_size: None,
     };
 
     let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 1), onemax);
@@ -155,6 +156,7 @@ fn eda_02_gaussian_sphere_convergence() {
         problem_solving: ProblemSolving::Minimization,
         fitness_target: Some(0.1),
         selection_ratio: 0.3,
+        fitness_cache_size: None,
     };
 
     let mut engine =
@@ -184,6 +186,7 @@ fn eda_03_result_fields_populated() {
         problem_solving: ProblemSolving::Maximization,
         fitness_target: None,
         selection_ratio: 0.5,
+        fitness_cache_size: None,
     };
 
     let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 2), onemax);
@@ -280,6 +283,7 @@ fn eda_06_observer_hooks_fire() {
         problem_solving: ProblemSolving::Maximization,
         fitness_target: None,
         selection_ratio: 0.5,
+        fitness_cache_size: None,
     };
 
     let spy = Arc::new(SpyObserver::default());
@@ -328,6 +332,7 @@ fn eda_07_fitness_target_early_stop() {
         // OneMax max is CHROMOSOME_LEN; set target to a value we can easily reach
         fitness_target: Some(1.0), // any individual with at least 1 "one" stops it
         selection_ratio: 0.5,
+        fitness_cache_size: None,
     };
 
     let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 42), onemax);
@@ -358,6 +363,7 @@ fn eda_08_minimization_direction() {
         problem_solving: ProblemSolving::Minimization,
         fitness_target: None,
         selection_ratio: 0.3,
+        fitness_cache_size: None,
     };
 
     let mut engine =
@@ -385,6 +391,7 @@ fn eda_09_selection_ratio_min_one_parent() {
         problem_solving: ProblemSolving::Maximization,
         fitness_target: None,
         selection_ratio: 0.01, // 5 * 0.01 = 0.05 → floor = 0, clamped to 1
+        fitness_cache_size: None,
     };
 
     let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 88), onemax);
@@ -405,6 +412,7 @@ fn eda_10_default_population_size() {
         problem_solving: ProblemSolving::Maximization,
         fitness_target: None,
         selection_ratio: 0.5,
+        fitness_cache_size: None,
     };
 
     let mut engine = EdaEngine::new(
