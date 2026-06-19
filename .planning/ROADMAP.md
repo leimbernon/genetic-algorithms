@@ -1267,8 +1267,8 @@ Plans:
 
 Plans:
 
-- [ ] 76-01-PLAN.md — Delete duplicate nsga2 non_dominated_sort.rs + re-export from shared module (D-01, D-02)
-- [ ] 76-02-PLAN.md — Parallelize non_dominated_sort_inner and non_dominated_sort_constrained with rayon + extend benchmarks (D-03, D-04, D-05)
+- [x] 76-01-PLAN.md — Delete duplicate nsga2 non_dominated_sort.rs + re-export from shared module (D-01, D-02)
+- [x] 76-02-PLAN.md — Parallelize non_dominated_sort_inner and non_dominated_sort_constrained with rayon + extend benchmarks (D-03, D-04, D-05)
 
 ### Phase 77: Extend Fitness Cache to More Engines (Issue #260)
 
@@ -1283,7 +1283,12 @@ Plans:
   4. WASM-compatible: no threads or `std::time` in the cache path
   5. All existing tests pass; new tests verify cache hit behavior per engine
 
-**Plans**: TBD
+**Plans:** 1 plan
+
+Plans:
+
+- [ ] 77-01-PLAN.md — Wire fitness cache into PSO, EDA, and DE configs/engines + cache behavior tests
+
 **UI hint**: no
 
 ### Phase 78: Replace User-Input Panics with GaError (Issue #279)
@@ -1449,8 +1454,8 @@ Plans:
 | 73. Move Inline Test Modules (#266) | v3.0.0 | 0/4 | Pending | — |
 | 74. Add Missing Benchmarks (#267) | v3.0.0 | 3/3 | Complete | 2026-06-19 |
 | 75. Reduce Clones / Reusable Offspring Buffers (#258) | v3.0.0 | 3/3 | Complete   | 2026-06-19 |
-| 76. Parallelize Survivor Selection & Non-Dominated Sorting (#259) | v3.0.0 | 2/2 | Pending | — |
-| 77. Extend Fitness Cache to More Engines (#260) | v3.0.0 | TBD | Pending | — |
+| 76. Parallelize Survivor Selection & Non-Dominated Sorting (#259) | v3.0.0 | 2/2 | ✓ Complete | — |
+| 77. Extend Fitness Cache to More Engines (#260) | v3.0.0 | 1/1 | Pending | — |
 | 78. Replace User-Input Panics with GaError (#279) | v3.0.0 | TBD | Pending | — |
 | 79. Add Runnable Examples for GP, DE, Scatter, Cellular, ALPS (#281) | v3.0.0 | TBD | Pending | — |
 | 80. Document CmaEngine, PsoEngine, EdaEngine (#282) | v3.0.0 | TBD | Pending | — |
