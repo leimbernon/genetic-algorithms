@@ -1233,21 +1233,21 @@ Plans:
   3. No behavioral regression: all existing tests pass with identical outputs (modulo floating-point ordering ties)
   4. `cargo check --target wasm32-unknown-unknown` passes; all CI gates pass
 
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 **UI hint**: no
 
 Plans:
 **Wave 1**
 
-- [ ] 75-01-PLAN.md — Copy derives on Mutation enum + 8 *Params structs + MutationConfiguration (D-01, D-02)
+- [x] 75-01-PLAN.md — Copy derives on Mutation enum + 8 *Params structs + MutationConfiguration (D-01, D-02)
 
 **Wave 2** *(blocked on Wave 1)*
 
-- [ ] 75-02-PLAN.md — Offspring output buffer + no-crossover passthrough + 1-child parent_2 fallback + Mutation clone removal (D-03, D-04, D-05, D-06, D-07, D-08, D-09)
+- [x] 75-02-PLAN.md — Offspring output buffer + no-crossover passthrough + 1-child parent_2 fallback + Mutation clone removal (D-03, D-04, D-05, D-06, D-07, D-08, D-09)
 
 **Wave 3** *(blocked on Wave 2)*
 
-- [ ] 75-03-PLAN.md — Index-based extract_elite + snapshot-clone reinsert + rastrigin bench verification + phase gate (D-10, D-03, D-04, D-05, D-08)
+- [x] 75-03-PLAN.md — Index-based extract_elite + snapshot-clone reinsert + rastrigin bench verification + phase gate (D-10, D-03, D-04, D-05, D-08)
 
 ### Phase 76: Parallelize Survivor Selection and Non-Dominated Sorting (Issue #259)
 
@@ -1262,8 +1262,13 @@ Plans:
   4. `cargo bench` confirms measurable improvement on multi-objective benchmarks (ZDT1, DTLZ2) at population ≥200
   5. All existing tests pass; `cargo check --target wasm32-unknown-unknown` passes
 
-**Plans**: TBD
+**Plans:** 2 plans
 **UI hint**: no
+
+Plans:
+
+- [ ] 76-01-PLAN.md — Delete duplicate nsga2 non_dominated_sort.rs + re-export from shared module (D-01, D-02)
+- [ ] 76-02-PLAN.md — Parallelize non_dominated_sort_inner and non_dominated_sort_constrained with rayon + extend benchmarks (D-03, D-04, D-05)
 
 ### Phase 77: Extend Fitness Cache to More Engines (Issue #260)
 
@@ -1443,8 +1448,8 @@ Plans:
 | 72. Audit Ignored Doctests (#265) | v3.0.0 | 2/2 | Complete   | 2026-06-18 |
 | 73. Move Inline Test Modules (#266) | v3.0.0 | 0/4 | Pending | — |
 | 74. Add Missing Benchmarks (#267) | v3.0.0 | 3/3 | Complete | 2026-06-19 |
-| 75. Reduce Clones / Reusable Offspring Buffers (#258) | v3.0.0 | TBD | Pending | — |
-| 76. Parallelize Survivor Selection & Non-Dominated Sorting (#259) | v3.0.0 | TBD | Pending | — |
+| 75. Reduce Clones / Reusable Offspring Buffers (#258) | v3.0.0 | 3/3 | Complete   | 2026-06-19 |
+| 76. Parallelize Survivor Selection & Non-Dominated Sorting (#259) | v3.0.0 | 2/2 | Pending | — |
 | 77. Extend Fitness Cache to More Engines (#260) | v3.0.0 | TBD | Pending | — |
 | 78. Replace User-Input Panics with GaError (#279) | v3.0.0 | TBD | Pending | — |
 | 79. Add Runnable Examples for GP, DE, Scatter, Cellular, ALPS (#281) | v3.0.0 | TBD | Pending | — |
