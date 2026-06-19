@@ -202,3 +202,34 @@ fn test_de_early_stopping() {
     // Should have stopped well before 10,000 generations
     assert!(result.generations < 10_000);
 }
+
+// ─── DE cache tests ─────────────────────────────────────────────────────────
+
+/// DE with cache enabled completes and produces valid results.
+#[test]
+fn test_de_cache_enabled() {
+    let config = DeConfiguration::default()
+        .with_population_size(30)
+        .with_max_generations(50)
+        .with_mutation_strategy(DeMutationStrategy::Rand1)
+        .with_crossover_mode(DeCrossoverMode::Binomial)
+        .with_problem_solving(ProblemSolving::Minimization)
+        .with_fitness_cache_size(128);
+    let mut engine = DeEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 42), sphere);
+    let result = engine.run();
+    assert!(result.best_fitness.is_finite(), "best_fitness must be finite with cache");
+    assert!(result.generations > 0);
+}
+
+/// DE with cache disabled (default) works with zero overhead.
+#[test]
+fn test_de_cache_disabled_default() {
+    let config = DeConfiguration::default()
+        .with_population_size(30)
+        .with_max_generations(50)
+        .with_mutation_strategy(DeMutationStrategy::Rand1)
+        .with_problem_solving(ProblemSolving::Minimization);
+    let mut engine = DeEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 43), sphere);
+    let result = engine.run();
+    assert!(result.best_fitness < 50.0);
+}

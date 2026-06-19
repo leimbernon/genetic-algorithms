@@ -376,3 +376,37 @@ fn test_pso_wasm_compiles() {
     let _topo = PsoTopology::Global;
     let _inertia = PsoInertia::Constant(0.7);
 }
+
+// ─── PSO-12: fitness cache enabled ─────────────────────────────────────────
+
+/// PSO-12: Cache-enabled PSO run completes and produces valid results.
+/// Verifies that configuring with_fitness_cache_size does not break the run.
+#[test]
+fn test_pso_cache_enabled() {
+    rng::set_seed(Some(99));
+    let init_pop = random_pop(20, 5, -5.0, 5.0, 99);
+    let config = PsoConfiguration::default()
+        .with_population_size(20)
+        .with_max_generations(10)
+        .with_fitness_cache_size(128);
+    let mut engine = PsoEngine::new(config, move |_n| init_pop.clone(), sphere);
+    let result = engine.run();
+    assert!(result.best_fitness.is_finite(), "best_fitness must be finite with cache");
+    assert_eq!(result.generations, 10, "must complete all generations");
+    assert_eq!(result.population.len(), 20);
+}
+
+// ─── PSO-13: fitness cache disabled by default ──────────────────────────────
+
+/// PSO-13: Default config (no cache) works with zero overhead.
+#[test]
+fn test_pso_cache_disabled_default() {
+    rng::set_seed(Some(100));
+    let init_pop = random_pop(20, 5, -5.0, 5.0, 100);
+    let config = PsoConfiguration::default()
+        .with_population_size(20)
+        .with_max_generations(10);
+    let mut engine = PsoEngine::new(config, move |_n| init_pop.clone(), sphere);
+    let result = engine.run();
+    assert!(result.best_fitness >= 0.0, "sphere minimum is 0");
+}

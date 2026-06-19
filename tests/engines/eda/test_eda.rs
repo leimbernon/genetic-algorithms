@@ -428,6 +428,55 @@ fn eda_10_default_population_size() {
     assert_eq!(result.population.len(), 100);
 }
 
+// ─── EDA-12: Bernoulli cache enabled ────────────────────────────────────────
+
+/// EDA-12: Cache-enabled Bernoulli EDA run completes and produces valid results.
+#[test]
+fn eda_12_bernoulli_cache_enabled() {
+    rng::set_seed(Some(201));
+    let config = EdaConfiguration::default()
+        .with_population_size(50)
+        .with_max_generations(20)
+        .with_problem_solving(ProblemSolving::Maximization)
+        .with_fitness_cache_size(128);
+    let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 10), onemax);
+    let result = engine.run();
+    assert!(result.best_fitness >= 0.0, "best_fitness must be non-negative with cache");
+    assert_eq!(result.generations, 20);
+}
+
+// ─── EDA-13: Gaussian cache enabled ─────────────────────────────────────────
+
+/// EDA-13: Cache-enabled Gaussian EDA run completes and produces valid results.
+#[test]
+fn eda_13_gaussian_cache_enabled() {
+    rng::set_seed(Some(202));
+    let config = EdaConfiguration::default()
+        .with_population_size(50)
+        .with_max_generations(20)
+        .with_problem_solving(ProblemSolving::Minimization)
+        .with_fitness_cache_size(128);
+    let mut engine = EdaRealEngine::new(config, |n| random_range_pop(n, 5, -3.0, 3.0, 11), sphere);
+    let result = engine.run();
+    assert!(result.best_fitness.is_finite(), "best_fitness must be finite with cache");
+    assert_eq!(result.generations, 20);
+}
+
+// ─── EDA-14: cache disabled by default ──────────────────────────────────────
+
+/// EDA-14: Default config (no cache) works with zero overhead.
+#[test]
+fn eda_14_cache_disabled_default() {
+    rng::set_seed(Some(203));
+    let config = EdaConfiguration::default()
+        .with_population_size(50)
+        .with_max_generations(20)
+        .with_problem_solving(ProblemSolving::Maximization);
+    let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 10), onemax);
+    let result = engine.run();
+    assert!(result.best_fitness >= 0.0);
+}
+
 // ─── EDA-11: WASM compilation gate ────────────────────────────────────────────
 // Verified via CI (`cargo check --target wasm32-unknown-unknown`).
 // This test is ignored in the standard test suite.
