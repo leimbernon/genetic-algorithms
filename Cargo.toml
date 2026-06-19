@@ -116,6 +116,10 @@ harness = false
 name = "pso"
 harness = false
 
+[[bench]]
+name = "cma_es"
+harness = false
+
 [[example]]
 name = "sms_emoa_zdt1"
 required-features = ["benchmarks", "logging"]
