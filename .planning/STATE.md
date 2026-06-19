@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0.0
 milestone_name: — Advanced Representations, Alternative Strategies & Architecture Simplification
 status: verifying
-stopped_at: Phase 76 context gathered
-last_updated: "2026-06-19T11:09:46.315Z"
+stopped_at: Phase 77 context gathered
+last_updated: "2026-06-19T12:11:14.929Z"
 progress:
   total_phases: 51
-  completed_phases: 25
-  total_plans: 95
-  completed_plans: 136
-  percent: 49
+  completed_phases: 26
+  total_plans: 97
+  completed_plans: 138
+  percent: 51
 ---
 
 # Project State
@@ -20,13 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-18)
 
 **Core value:** Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library
-**Current focus:** Phase 75 — reduce-clones-in-generation-loop-reusable-offspring-buffers-
+**Core value:** Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library
+**Current focus:** Phase 76 — parallelize-survivor-selection-and-non-dominated-sorting-iss (COMPLETE)
 
 ## Current Position
 
-Phase: 75 (reduce-clones-in-generation-loop-reusable-offspring-buffers-) — EXECUTING
-Plan: 3 of 3
-Plans: 143/143 complete (new phases have no plans yet)
+Phase: 76 (parallelize-survivor-selection-and-non-dominated-sorting-iss) — COMPLETE
+Plan: 2 of 2
+Plans: 138/138 complete (new phases have no plans yet)
 Status: Phase complete — ready for verification
 
 Progress bar: [██████████████████░░] 45/50 phases complete
@@ -79,6 +80,13 @@ Progress bar: [██████████████████░░] 45/
 - v3.0.0: `batch_evaluate_pop` structurally replicated on CmaEngine (not shared utility) — bounded footprint; extraction deferred to refactor phase
 - v3.0.0: batch+cache partition (D-06) releases Mutex before `evaluate_batch` call to avoid blocking during expensive GPU/remote evaluations (Pitfall 2 / T-60-05)
 
+### Decisions (phase 76)
+
+- v3.0.0: Module deduplication via `pub use` re-export: delete duplicate file, add `pub use` in mod.rs — eliminates code duplication so parallel improvements in shared module apply to all engines
+- v3.0.0: Parallel NDS threshold of n >= 100 chosen to balance parallelization overhead against speedup for typical multi-objective workloads
+- v3.0.0: `domination_count` derived by inverting `dominated_set` rather than from per-thread results — the parallel split means per-thread results only capture dominators j > i
+- v3.0.0: Cross-thread merge deduplication via `sort_unstable + dedup` prevents front extraction underflow from duplicate entries
+
 ### Blockers/Concerns
 
 - Phases 70-74 have ROADMAP entries but no plans yet — next step is plan-phase for each
@@ -87,9 +95,9 @@ Progress bar: [██████████████████░░] 45/
 
 ## Session Continuity
 
-Last session: 2026-06-19T11:09:46.304Z
-Stopped at: Phase 76 context gathered
-Resume file: .planning/phases/76-parallelize-survivor-selection-and-non-dominated-sorting-iss/76-CONTEXT.md
+Last session: 2026-06-19T12:11:14.923Z
+Stopped at: Phase 77 context gathered
+Resume file: .planning/phases/77-extend-fitness-cache-to-more-engines-issue-260/77-CONTEXT.md
 
 ## Performance Metrics
 
@@ -100,3 +108,5 @@ Resume file: .planning/phases/76-parallelize-survivor-selection-and-non-dominate
 | Phase 75 P01 | 5min | 2 tasks | 2 files |
 | Phase 75 P02 | 7min | 3 tasks | 2 files |
 | Phase 75 P03 | 30min | 4 tasks | 14 files |
+| Phase 76 P01 | 1min | 1 task | 2 files |
+| Phase 76 P02 | 8min | 2 tasks | 3 files |
