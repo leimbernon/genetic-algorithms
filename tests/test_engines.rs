@@ -63,6 +63,14 @@ mod engines {
     mod aos {
         mod test_aos;
     }
+    mod multi_objective {
+        mod indicators {
+            mod test_generational_distance;
+            mod test_hypervolume;
+            mod test_inverted_generational_distance;
+            mod test_spread;
+        }
+    }
     mod pso {
         mod test_pso;
     }

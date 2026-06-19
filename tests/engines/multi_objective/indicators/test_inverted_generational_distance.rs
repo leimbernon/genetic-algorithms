@@ -1,7 +1,7 @@
 use genetic_algorithms::multi_objective::indicators::{
     generational_distance, inverted_generational_distance,
 };
-use genetic_algorithms::GaError;
+use genetic_algorithms::error::GaError;
 
 /// ZDT1 reference Pareto front: f1 in [0, 1], f2 = 1 - sqrt(f1).
 fn zdt1_reference_front(n: usize) -> Vec<Vec<f64>> {

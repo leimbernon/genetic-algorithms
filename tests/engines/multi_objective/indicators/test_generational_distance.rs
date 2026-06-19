@@ -1,5 +1,5 @@
 use genetic_algorithms::multi_objective::indicators::generational_distance;
-use genetic_algorithms::GaError;
+use genetic_algorithms::error::GaError;
 
 fn zdt1_reference_front(n: usize) -> Vec<Vec<f64>> {
     (0..n)
@@ -31,11 +31,13 @@ fn test_gd_shifted_fronts() {
 
 #[test]
 fn test_gd_zdt1_subset() {
-    let approx = zdt1_reference_front(10);
-    let true_front = zdt1_reference_front(1000);
+    // Use n=5 (f1 = i/4) vs n=10 (f1 = i/9) — not an exact subset because
+    // 9/4 is not integer, so intermediate points don't align.
+    let approx = zdt1_reference_front(5);
+    let true_front = zdt1_reference_front(10);
     let result = generational_distance(&approx, &true_front, 2.0).unwrap();
     assert!(result > 0.0, "GD should be positive for non-identical fronts");
-    assert!(result < 0.1, "GD should be small for ZDT1 subset, got {}", result);
+    assert!(result < 0.1, "GD should be small for ZDT1 near-subset, got {}", result);
 }
 
 #[test]
