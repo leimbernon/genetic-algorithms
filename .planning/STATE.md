@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v3.0.0
 milestone_name: — Advanced Representations, Alternative Strategies & Architecture Simplification
-status: executing
-stopped_at: Phase 74 context gathered
-last_updated: "2026-06-18T14:29:18.454Z"
+status: verifying
+stopped_at: Phase 76 context gathered
+last_updated: "2026-06-19T11:09:46.315Z"
 progress:
-  total_phases: 44
-  completed_phases: 21
-  total_plans: 85
-  completed_plans: 125
-  percent: 48
+  total_phases: 51
+  completed_phases: 25
+  total_plans: 95
+  completed_plans: 136
+  percent: 49
 ---
 
 # Project State
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-18)
 
 **Core value:** Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library
-**Current focus:** Phase 72 — audit-ignored-doctests
+**Current focus:** Phase 75 — reduce-clones-in-generation-loop-reusable-offspring-buffers-
 
 ## Current Position
 
-Phase: 72 (audit-ignored-doctests) — EXECUTING
-Plan: 1 of 2
+Phase: 75 (reduce-clones-in-generation-loop-reusable-offspring-buffers-) — EXECUTING
+Plan: 3 of 3
 Plans: 143/143 complete (new phases have no plans yet)
-Status: Executing Phase 72
+Status: Phase complete — ready for verification
 
 Progress bar: [██████████████████░░] 45/50 phases complete
 
@@ -50,6 +50,12 @@ Progress bar: [██████████████████░░] 45/
 - v3.0.0: `GpGa<U: TreeChromosome>` is a separate engine from `Ga<U: LinearChromosome>` — GP loop differences (ramped init, bloat control, depth limits) do not belong in the standard GA hot path
 - v3.0.0: `Box<N>` recursive enum for tree nodes (rejected arena crates) — subtree clone is O(subtree), not O(arena); arena index-remapping across arenas is too complex
 - [Phase ?]: .planning/phases/71-per-operator-mutation-params/71-01-SUMMARY.md
+- [Phase ?]: v3.0.0: Mutation and all *Params structs derive Copy (D-01); MutationConfiguration derives Copy (D-02) — zero-runtime-cost prerequisite for Plan 02 clone elimination
+- [Phase ?]: v3.0.0: offspring_buf allocated once before generation loop (Vec::with_capacity(population_size * 2)) and reused each generation via parent_crossover out: &mut Vec<U> (D-07/D-08/D-09)
+- [Phase ?]: v3.0.0: Uncrossed pairs produce no offspring — return Ok(Vec::new()) when crossover probability roll fails (D-04/D-05); offspring = crossed_pairs * 2 per generation
+- [Phase ?]: v3.0.0: 1-child multi-parent crossover fallback uses parent_2 not parent_1 (D-06)
+- [Phase ?]: v3.0.0: extract_elite returns Vec<usize> indices (D-10) — allocation-free extract phase; caller clones from pre-survivor-selection snapshot
+- [Phase ?]: v3.0.0: Discretionary local-search clone retained — >=10 elimination target met exactly (10 of 19); parallel-path clone architecturally required for rayon
 
 ### Decisions (phase 59)
 
@@ -81,9 +87,9 @@ Progress bar: [██████████████████░░] 45/
 
 ## Session Continuity
 
-Last session: 2026-06-18T14:29:18.447Z
-Stopped at: Phase 74 context gathered
-Resume file: .planning/phases/74-add-missing-benchmarks/74-CONTEXT.md
+Last session: 2026-06-19T11:09:46.304Z
+Stopped at: Phase 76 context gathered
+Resume file: .planning/phases/76-parallelize-survivor-selection-and-non-dominated-sorting-iss/76-CONTEXT.md
 
 ## Performance Metrics
 
@@ -91,3 +97,6 @@ Resume file: .planning/phases/74-add-missing-benchmarks/74-CONTEXT.md
 |-------|------|----------|-------|
 | Phase 70-replace-operator-downcasting P01 | 2min | 2 tasks | 3 files |
 | Phase 71 P01 | 50min | - tasks | - files |
+| Phase 75 P01 | 5min | 2 tasks | 2 files |
+| Phase 75 P02 | 7min | 3 tasks | 2 files |
+| Phase 75 P03 | 30min | 4 tasks | 14 files |
