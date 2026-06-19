@@ -164,7 +164,7 @@ where
             if let (Some(portfolio), Some(aos_state)) = (mutation_portfolio, aos_mutation_state) {
                 let mut state = aos_state.lock().unwrap();
                 let op_idx = state.select_operator(&mut rng, generation);
-                Some((op_idx, portfolio[op_idx].clone()))
+                Some((op_idx, portfolio[op_idx]))
             } else {
                 None
             };
@@ -210,58 +210,56 @@ where
             )
         };
 
-        let mut child_1: U;
-        let mut child_2: U;
-
-        if crossover_probability <= effective_crossover_prob {
-            // Determine the effective crossover method (AOS-selected or user-configured)
-            let effective_method = selected_crossover
-                .map(|(_, op)| op)
-                .unwrap_or(configuration.crossover_configuration.method);
-
-            // Dispatch crossover by group size: groups of 2 use the standard 2-parent path;
-            // larger groups use the multi-parent dispatch (UNDX/SPX/PCX via group.len() > 2).
-            let mut children = if group.len() > 2 {
-                // Multi-parent crossover path: collect all parents from the group
-                let mut parent_refs: Vec<&U> = Vec::with_capacity(group.len());
-                for &idx in group.iter() {
-                    let p = chromosomes.get(idx).ok_or_else(|| {
-                        GaError::SelectionError(format!(
-                            "Selection returned out-of-bounds index {} (population size {})",
-                            idx,
-                            chromosomes.len()
-                        ))
-                    })?;
-                    parent_refs.push(p);
-                }
-                let mut cx_config = configuration.crossover_configuration;
-                cx_config.method = effective_method;
-                // Returns 1 offspring per D-04 (single-offspring contract)
-                crossover::factory_multi_parent_dispatch(&parent_refs, cx_config)?
-            } else {
-                // Standard 2-parent crossover path — all variants with group.len() == 2
-                let mut cx_config = configuration.crossover_configuration;
-                cx_config.method = effective_method;
-                crossover::factory(parent_1, parent_2, cx_config)?
-            };
-
-            // factory_multi_parent_dispatch returns 1 child; factory returns 2.
-            // For the 1-child path, child_1 gets the actual offspring; child_2 falls back to
-            // parent_1.clone() (D-04 / Pitfall 1). For the 2-child path, both pops succeed.
-            child_1 = children.pop().ok_or_else(|| {
-                GaError::CrossoverError("Crossover returned no children".to_string())
-            })?;
-            child_2 = children.pop().unwrap_or_else(|| parent_1.clone());
-        } else {
-            child_1 = parent_1.clone();
-            child_2 = parent_2.clone();
+        if crossover_probability > effective_crossover_prob {
+            // Crossover probability roll failed — produce no offspring for this pair (D-04/D-05).
+            // Total offspring this generation = (crossed_pairs * 2), not (all_pairs * 2).
+            return Ok(Vec::new());
         }
+
+        // Determine the effective crossover method (AOS-selected or user-configured)
+        let effective_method = selected_crossover
+            .map(|(_, op)| op)
+            .unwrap_or(configuration.crossover_configuration.method);
+
+        // Dispatch crossover by group size: groups of 2 use the standard 2-parent path;
+        // larger groups use the multi-parent dispatch (UNDX/SPX/PCX via group.len() > 2).
+        let mut children = if group.len() > 2 {
+            // Multi-parent crossover path: collect all parents from the group
+            let mut parent_refs: Vec<&U> = Vec::with_capacity(group.len());
+            for &idx in group.iter() {
+                let p = chromosomes.get(idx).ok_or_else(|| {
+                    GaError::SelectionError(format!(
+                        "Selection returned out-of-bounds index {} (population size {})",
+                        idx,
+                        chromosomes.len()
+                    ))
+                })?;
+                parent_refs.push(p);
+            }
+            let mut cx_config = configuration.crossover_configuration;
+            cx_config.method = effective_method;
+            // Returns 1 offspring per D-04 (single-offspring contract)
+            crossover::factory_multi_parent_dispatch(&parent_refs, cx_config)?
+        } else {
+            // Standard 2-parent crossover path — all variants with group.len() == 2
+            let mut cx_config = configuration.crossover_configuration;
+            cx_config.method = effective_method;
+            crossover::factory(parent_1, parent_2, cx_config)?
+        };
+
+        // factory_multi_parent_dispatch returns 1 child; factory returns 2.
+        // For the 1-child path, child_1 gets the actual offspring; child_2 falls back to
+        // parent_2.clone() (D-06). For the 2-child path, both pops succeed.
+        let mut child_1 = children.pop().ok_or_else(|| {
+            GaError::CrossoverError("Crossover returned no children".to_string())
+        })?;
+        let mut child_2 = children.pop().unwrap_or_else(|| parent_2.clone());
 
         // Determine mutation method: AOS-selected or configured single operator
         let selected_mutation_idx = selected_mutation.as_ref().map(|(idx, _)| *idx);
         let mutation_method = selected_mutation
             .map(|(_, op)| op)
-            .unwrap_or_else(|| configuration.mutation_configuration.method.clone());
+            .unwrap_or(configuration.mutation_configuration.method);
 
         if mutation_probability <= effective_mutation_prob {
             match &mutation_method {
@@ -276,7 +274,7 @@ where
                 }
                 Mutation::Insertion | Mutation::Deletion => {
                     mutation::factory_with_chromosome_length(
-                        mutation_method.clone(),
+                        mutation_method,
                         &mut child_1,
                         Some(configuration.limit_configuration.chromosome_length),
                     )?;
@@ -301,7 +299,7 @@ where
                 }
                 Mutation::Insertion | Mutation::Deletion => {
                     mutation::factory_with_chromosome_length(
-                        mutation_method.clone(),
+                        mutation_method,
                         &mut child_2,
                         Some(configuration.limit_configuration.chromosome_length),
                     )?;
