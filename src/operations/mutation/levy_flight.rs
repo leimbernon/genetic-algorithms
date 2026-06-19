@@ -107,28 +107,3 @@ where
     );
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn mantegna_sigma_u_finite_positive_at_default_alpha() {
-        let s = mantegna_sigma_u(1.5);
-        assert!(s.is_finite() && s > 0.0, "σ_u(1.5) = {}", s);
-        // Expected ~0.6966 (Yang 2010); allow loose tolerance.
-        assert!(
-            (s - 0.6966).abs() < 0.05,
-            "σ_u(1.5) = {}, expected ~0.6966",
-            s
-        );
-    }
-
-    #[test]
-    fn gamma_approx_known_values() {
-        // Γ(1) = 1, Γ(2) = 1, Γ(3) = 2, Γ(0.5) = √π ≈ 1.7724
-        assert!((gamma_approx(1.0) - 1.0).abs() < 1e-3);
-        assert!((gamma_approx(2.0) - 1.0).abs() < 1e-3);
-        assert!((gamma_approx(3.0) - 2.0).abs() < 5e-3);
-        assert!((gamma_approx(0.5) - std::f64::consts::PI.sqrt()).abs() < 5e-3);
-    }
-}

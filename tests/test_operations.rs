@@ -28,6 +28,7 @@ mod operations {
     mod test_mutation_polynomial;
     mod test_mutation_range_value;
     mod test_mutation_self_adaptive;
+    mod test_mutation_levy_flight;
     mod test_selection;
     mod test_selection_boltzmann;
     mod test_selection_clearing;
