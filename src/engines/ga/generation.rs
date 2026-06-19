@@ -39,15 +39,18 @@ pub(crate) struct ParentCrossoverParams<'a, U: LinearChromosome> {
 /// Performs parent crossover using the configured crossover and mutation strategies.
 ///
 /// Behavior:
+/// - Clears `out` at entry and pushes (crossed_pairs * 2) offspring into it on success.
 /// - Splits work among threads considering available parent pairs.
 /// - Computes adaptive probabilities when enabled; otherwise uses static ones.
-/// - Produces children, mutates them, computes their fitness, and returns the offspring.
+/// - Produces children, mutates them, computes their fitness, and writes them into `out`.
+/// - Pairs where the crossover-probability roll fails produce no offspring (D-04/D-05).
 pub(crate) fn parent_crossover<U>(
     parents: &[Vec<usize>],
     chromosomes: &[U],
     configuration: &GaConfiguration,
     params: ParentCrossoverParams<'_, U>,
-) -> Result<Vec<U>, GaError>
+    out: &mut Vec<U>,
+) -> Result<(), GaError>
 where
     U: LinearChromosome
         + Send
@@ -57,6 +60,7 @@ where
         + mutation::ValueMutable
         + crate::traits::RealValuedMutation,
 {
+    out.clear();
     // Destructure the population-level and AOS params bundle (D-07)
     let ParentCrossoverParams {
         age,
@@ -362,10 +366,9 @@ where
     #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
     let results: Vec<Result<Vec<U>, GaError>> = parents.iter().map(process_pair).collect();
 
-    // Check for any errors and flatten the results
-    let mut offspring = Vec::new();
+    // Check for any errors and extend the output buffer (D-09)
     for result in results {
-        offspring.extend(result?);
+        out.extend(result?);
     }
 
     // Apply AOS reward updates after collecting all rewards (Phase 43)
@@ -390,7 +393,7 @@ where
         }
     }
 
-    Ok(offspring)
+    Ok(())
 }
 
 /// Extracts the top `count` individuals from the population by fitness.
