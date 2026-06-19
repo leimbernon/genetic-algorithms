@@ -219,7 +219,7 @@ impl Default for CrossoverConfiguration {
 ///     .with_mutation_method(Mutation::Gaussian(GaussianParams { sigma: Some(0.05) }))
 ///     .with_mutation_probability_max(0.1);
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MutationConfiguration {
     pub probability_max: Option<f64>,
