@@ -1298,7 +1298,7 @@ where
                 // 1. Save builder's operator settings
                 let builder_selection = self.configuration.selection_configuration.method;
                 let builder_crossover = self.configuration.crossover_configuration.method;
-                let builder_mutation = self.configuration.mutation_configuration.method.clone();
+                let builder_mutation = self.configuration.mutation_configuration.method;
                 let builder_survivor = self.configuration.survivor;
                 let builder_problem_solving =
                     self.configuration.limit_configuration.problem_solving;
@@ -1430,6 +1430,12 @@ where
             self.configuration.limit_configuration.max_generations
         };
 
+        // D-08: allocate offspring buffer once and reuse every generation (avoids a per-generation
+        // heap allocation). Capacity = population_size * 2 — the maximum possible offspring count
+        // when every parent pair passes the crossover probability roll.
+        let mut offspring_buf: Vec<U> =
+            Vec::with_capacity(self.configuration.limit_configuration.population_size * 2);
+
         for i in start_gen..total_gens {
             age += 1;
             // D-07: snapshot cache counters before this generation so we can compute deltas.
@@ -1493,7 +1499,7 @@ where
             } else {
                 self.fitness_fn.clone()
             };
-            let mut offspring = generation::parent_crossover(
+            generation::parent_crossover(
                 &parents,
                 &self.population.chromosomes,
                 &self.configuration,
@@ -1511,6 +1517,7 @@ where
                     aos_crossover_state: self.aos_crossover.as_ref(),
                     aos_mutation_state: self.aos_mutation.as_ref(),
                 },
+                &mut offspring_buf,
             )?;
             // D-08: surrogate prescreening — runs BEFORE cache/batch/repair/constraints (Pitfall 1).
             // Retains only the top max(1, floor(n * fraction)) offspring by predicted score.
@@ -1518,10 +1525,10 @@ where
             // Sequential sort only — unconditionally WASM-safe (no parallelism, no cfg gate).
             let true_fitness_calls: Option<u64> =
                 if let Some((ref surrogate, fraction)) = self.surrogate {
-                    if offspring.is_empty() {
+                    if offspring_buf.is_empty() {
                         Some(0)
                     } else {
-                        let mut scores: Vec<(usize, f64)> = offspring
+                        let mut scores: Vec<(usize, f64)> = offspring_buf
                             .iter()
                             .enumerate()
                             .map(|(idx, c)| {
@@ -1533,15 +1540,16 @@ where
                         // Sort descending: best-predicted offspring first.
                         scores.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
                         // Retain at least 1; floor formula from D-03/SC-1d.
-                        let keep = ((offspring.len() as f64 * fraction).floor() as usize).max(1);
+                        let keep =
+                            ((offspring_buf.len() as f64 * fraction).floor() as usize).max(1);
                         scores.truncate(keep);
                         // Restore original index order so downstream code sees a stable slice.
                         scores.sort_unstable_by_key(|&(idx, _)| idx);
-                        offspring = scores
+                        offspring_buf = scores
                             .into_iter()
-                            .map(|(idx, _)| offspring[idx].clone())
+                            .map(|(idx, _)| offspring_buf[idx].clone())
                             .collect();
-                        Some(offspring.len() as u64)
+                        Some(offspring_buf.len() as u64)
                     }
                 } else {
                     None
@@ -1549,11 +1557,11 @@ where
             // D-02: batch-evaluate offspring before merge (replaces calculate_fitness per child)
             if let Some(eval) = self.batch_evaluator.as_ref().map(Arc::clone) {
                 let cache = self.fitness_cache.as_ref().map(Arc::clone);
-                batch::batch_evaluate(eval, cache, &mut offspring)?;
+                batch::batch_evaluate(eval, cache, &mut offspring_buf)?;
             }
             if let Some(t) = t_cx {
                 let elapsed = t.elapsed();
-                let offspring_count = offspring.len();
+                let offspring_count = offspring_buf.len();
                 let pop_size = self.population.chromosomes.len();
                 self.notify(|obs| obs.on_crossover_complete(i, elapsed, offspring_count));
                 // NOTE: elapsed covers combined crossover+mutation+fitness time (EXT-01)
@@ -1564,7 +1572,7 @@ where
 
             // Apply repair operator to offspring if configured
             if let Some(ref repair_op) = self.repair_operator {
-                for c in offspring.iter_mut() {
+                for c in offspring_buf.iter_mut() {
                     repair_op(c)?;
                     c.calculate_fitness();
                 }
@@ -1572,7 +1580,7 @@ where
 
             // Apply constraint penalty to offspring if configured
             if let Some(ref constraint_fns) = self.constraint_fns {
-                for c in offspring.iter_mut() {
+                for c in offspring_buf.iter_mut() {
                     let dna = c.dna();
                     let total_viol: f64 = constraint_fns.iter().map(|f| f(dna)).sum();
                     if total_viol > 0.0 {
@@ -1623,19 +1631,20 @@ where
                     _ => true,
                 };
 
-                if should_apply && !offspring.is_empty() {
+                if should_apply && !offspring_buf.is_empty() {
                     // Step 2: Select candidates from offspring
                     let candidates: Vec<usize> = match strategy {
                         LocalSearchApplicationStrategy::AllOffspring => {
-                            (0..offspring.len()).collect()
+                            (0..offspring_buf.len()).collect()
                         }
                         LocalSearchApplicationStrategy::BestN { n } => {
-                            let mut indices: Vec<usize> = (0..offspring.len()).collect();
+                            let mut indices: Vec<usize> = (0..offspring_buf.len()).collect();
                             let ps = self.configuration.limit_configuration.problem_solving;
                             let k = n.min(indices.len());
                             if k > 0 {
                                 indices.select_nth_unstable_by(k.saturating_sub(1), |&a, &b| {
-                                    let (fa, fb) = (offspring[a].fitness(), offspring[b].fitness());
+                                    let (fa, fb) =
+                                        (offspring_buf[a].fitness(), offspring_buf[b].fitness());
                                     match ps {
                                         ProblemSolving::Minimization
                                         | ProblemSolving::FixedFitness => {
@@ -1652,12 +1661,12 @@ where
                         }
                         LocalSearchApplicationStrategy::Probabilistic { probability } => {
                             let mut rng = crate::rng::make_rng();
-                            (0..offspring.len())
+                            (0..offspring_buf.len())
                                 .filter(|_| rng.random::<f64>() < probability)
                                 .collect()
                         }
                         LocalSearchApplicationStrategy::EveryNGenerations { .. } => {
-                            (0..offspring.len()).collect()
+                            (0..offspring_buf.len()).collect()
                         }
                     };
 
@@ -1667,7 +1676,7 @@ where
                     let original_dnas: Vec<Vec<U::Gene>> = if is_baldwinian {
                         candidates
                             .iter()
-                            .map(|&idx| offspring[idx].dna().to_vec())
+                            .map(|&idx| offspring_buf[idx].dna().to_vec())
                             .collect()
                     } else {
                         Vec::new()
@@ -1685,19 +1694,19 @@ where
                         // Extract candidates, process in parallel, reinsert
                         let mut selected: Vec<U> = candidates
                             .iter()
-                            .map(|&idx| offspring[idx].clone())
+                            .map(|&idx| offspring_buf[idx].clone())
                             .collect();
                         selected.par_iter_mut().for_each(|individual| {
                             let _ = search_method.improve(individual, ff.as_ref());
                         });
                         for (&idx, improved) in candidates.iter().zip(selected) {
-                            offspring[idx] = improved;
+                            offspring_buf[idx] = improved;
                         }
                     }
                     #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
                     {
                         candidates.iter().for_each(|&idx| {
-                            let _ = search_method.improve(&mut offspring[idx], ff.as_ref());
+                            let _ = search_method.improve(&mut offspring_buf[idx], ff.as_ref());
                         });
                     }
 
@@ -1705,9 +1714,10 @@ where
                     if is_baldwinian {
                         for (orig_pos, &idx) in candidates.iter().enumerate() {
                             if let Some(orig_dna) = original_dnas.get(orig_pos) {
-                                let improved_fitness = offspring[idx].fitness();
-                                offspring[idx].set_dna(std::borrow::Cow::Owned(orig_dna.clone()));
-                                offspring[idx].set_fitness(improved_fitness);
+                                let improved_fitness = offspring_buf[idx].fitness();
+                                offspring_buf[idx]
+                                    .set_dna(std::borrow::Cow::Owned(orig_dna.clone()));
+                                offspring_buf[idx].set_fitness(improved_fitness);
                             }
                         }
                     }
@@ -1715,7 +1725,7 @@ where
             }
 
             //3- Insert the children in the population
-            self.population.add_chromosomes(&mut offspring);
+            self.population.add_chromosomes(&mut offspring_buf);
 
             //3b- Hall of Fame update: evaluate all population chromosomes for archive entry
             if let Some(ref mut hof) = self.hall_of_fame {
