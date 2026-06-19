@@ -1735,12 +1735,18 @@ where
             }
 
             //3.5- Elitism: preserve the top N individuals
-            let elite = if self.configuration.elitism_count > 0 {
-                generation::extract_elite(
+            // extract_elite returns indices into the CURRENT (pre-survivor-selection) population.
+            // We immediately clone the elite chromosomes out before survivor selection
+            // reorders/truncates the population — those indices would be stale afterward.
+            let elite: Vec<U> = if self.configuration.elitism_count > 0 {
+                let idx = generation::extract_elite(
                     &self.population.chromosomes,
                     self.configuration.elitism_count,
                     self.configuration.limit_configuration.problem_solving,
-                )
+                );
+                idx.iter()
+                    .map(|&i| self.population.chromosomes[i].clone())
+                    .collect()
             } else {
                 Vec::new()
             };
