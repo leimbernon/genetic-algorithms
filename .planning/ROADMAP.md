@@ -9,7 +9,7 @@
 - ✅ **v2.2.1 — Performance Optimizations** — Phases 19-24 (shipped 2026-04-23)
 - ✅ **v2.3.0 — Alternative Metaheuristics & Population Models** — Phases 25-29 (shipped 2026-04-27)
 - ✅ **v2.4.0 — Observer Integration & New Operators + Advanced Multi-Objective** — Phases 30-46 (shipped 2026-05-18)
-- 🚧 **v3.0.0 — Advanced Representations, Alternative Strategies & Architecture Simplification** — Phases 47-74 (in progress)
+- 🚧 **v3.0.0 — Advanced Representations, Alternative Strategies & Architecture Simplification** — Phases 47-82 (in progress)
 
 ## Phases
 
@@ -113,7 +113,7 @@ Full archive: `.planning/milestones/v2.3.0-ROADMAP.md`
 
 ### v3.0.0 — Advanced Representations, Alternative Strategies & Architecture Simplification (In Progress)
 
-**Milestone Goal:** Use the major semver break to simplify library architecture, introduce three new genotype types, add two alternative strategy engines, and implement advanced chromosome representations (lexicase selection, multi-parent crossover, self-adaptive mutation, variable-length chromosomes, tree chromosome for GP).
+**Milestone Goal:** Use the major semver break to simplify library architecture, introduce three new genotype types, add two alternative strategy engines, implement advanced chromosome representations (lexicase selection, multi-parent crossover, self-adaptive mutation, variable-length chromosomes, tree chromosome for GP), add three new engines (CMA-ES, PSO, EDA), and polish performance, error handling, documentation, and ergonomics.
 
 - [x] **Phase 47: Architecture Audit & ChromosomeT Split** — Reduce `ChromosomeT` to a minimal core; introduce `LinearChromosome` supertrait; remove `Reporter<U>`; apply 6 API simplifications; validate all 10 examples compile and run in CI (completed — `src/traits/linear_chromosome.rs` lands the supertrait; `Reporter<U>` removed; `MIGRATION.md` recipes published)
 - [x] **Phase 48: New Genotype Types** — `UniqueChromosome<T>` for permutation problems, `MultiRangeChromosome<T>` for per-gene bounds, `MultiUniqueChromosome<T>` for multiple independent permutation groups; migrate `job_scheduling` example (completed — types under `src/types/chromosomes/{unique,multi_range,multi_unique}.rs` and re-exported via `lib.rs`)
@@ -1159,16 +1159,16 @@ Plans:
   2. Every `pub` item in `src/` with a `# Examples` block has a compilable doctest
   3. No `#[ignore]` annotations remain on any doctest
 
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
 **Wave 1**
 
-- [ ] 72-01-PLAN.md — Fix failing CreepParams doctest + audit non-engine module doctests (lib, rng, traits, initializers, fitness, observe)
+- [x] 72-01-PLAN.md — Fix failing CreepParams doctest + audit non-engine module doctests (lib, rng, traits, initializers, fitness, observe)
 
 **Wave 2** *(blocked on Wave 1)*
 
-- [ ] 72-02-PLAN.md — Audit all engine module doctests (18 across 13 files) + feature-gated doctests + final verification gate
+- [x] 72-02-PLAN.md — Audit all engine module doctests (18 across 13 files) + feature-gated doctests + final verification gate
 
 **UI hint**: no
 
@@ -1183,8 +1183,16 @@ Plans:
   2. All moved tests pass under `cargo test`
   3. No test coverage regression — same number of tests pass before and after
 
-**Plans**: TBD
+**Plans**: 4 plans
 **UI hint**: no
+
+Plans:
+**Wave 1** *(all four parallel — disjoint files; each owns a distinct harness or none)*
+
+- [ ] 73-01-PLAN.md — Wire 4 indicator test files into test_engines.rs + delete 4 inline blocks
+- [ ] 73-02-PLAN.md — Delete AOS inline block + merge 7 local_search tests into tests/engines/local_search.rs
+- [ ] 73-03-PLAN.md — Rewrite levy_flight private-fn tests as public-API + new test_mutation_levy_flight.rs + wire in test_operations.rs
+- [ ] 73-04-PLAN.md — New tests/test_benchmarks.rs harness + 3 benchmark test files (dtlz/zdt/single_objective) + delete 3 inline blocks
 
 ### Phase 74: Add Missing Engine and Feature Benchmarks (Issue #267)
 
@@ -1197,6 +1205,170 @@ Plans:
   2. Each benchmark runs a representative problem (e.g., Rastrigin for real-valued, OneMax for binary)
   3. `cargo bench --no-run` compiles all benchmarks
   4. Benchmark groups follow existing pattern (genes_10, genes_100, genes_1000)
+
+**Plans**: 3 plans
+**Wave 1**
+
+- [x] 74-01-PLAN.md — PSO + CMA-ES engine benches (sphere + Rastrigin, dims 10/30/100)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 74-02-PLAN.md — EDA (Gaussian dims + Bernoulli OneMax) + GP (symbolic regression, pop 50/200/500) benches
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [x] 74-03-PLAN.md — AOS / surrogate / batch-fitness feature benches (on/off comparison)
+
+**UI hint**: no
+
+### Phase 75: Reduce Clones in Generation Loop — Reusable Offspring Buffers (Issue #258)
+
+**Goal**: Profile and cut redundant allocations/clones in the per-generation offspring path; reuse offspring buffers across generations via object pooling, building on the existing `Cow<[Gene]>` zero-copy work
+**Depends on**: Phase 61
+**Requirements**: None (performance — closes GitHub issue #258)
+**Success Criteria** (what must be TRUE):
+
+  1. `cargo bench --bench rastrigin` shows ≥2% wall-time improvement on population size 500 vs the Phase 61 baseline
+  2. `parent.clone()` and `offspring[idx].clone()` call sites in `src/engines/ga/generation.rs` and `src/engines/ga/mod.rs` are reduced by ≥50% — remaining clones are justified (e.g., observer snapshots)
+  3. No behavioral regression: all existing tests pass with identical outputs (modulo floating-point ordering ties)
+  4. `cargo check --target wasm32-unknown-unknown` passes; all CI gates pass
+
+**Plans:** 3 plans
+**UI hint**: no
+
+Plans:
+**Wave 1**
+
+- [ ] 75-01-PLAN.md — Copy derives on Mutation enum + 8 *Params structs + MutationConfiguration (D-01, D-02)
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [ ] 75-02-PLAN.md — Offspring output buffer + no-crossover passthrough + 1-child parent_2 fallback + Mutation clone removal (D-03, D-04, D-05, D-06, D-07, D-08, D-09)
+
+**Wave 3** *(blocked on Wave 2)*
+
+- [ ] 75-03-PLAN.md — Index-based extract_elite + snapshot-clone reinsert + rastrigin bench verification + phase gate (D-10, D-03, D-04, D-05, D-08)
+
+### Phase 76: Parallelize Survivor Selection and Non-Dominated Sorting (Issue #259)
+
+**Goal**: Parallelize survivor selection and non-dominated sorting with rayon where it pays off, keeping WASM single-threaded fallbacks (cfg-gated per CLAUDE.md)
+**Depends on**: Phase 61
+**Requirements**: None (performance — closes GitHub issue #259)
+**Success Criteria** (what must be TRUE):
+
+  1. `src/engines/multi_objective/non_dominated_sort.rs` and `src/engines/nsga2/non_dominated_sort.rs` use `rayon::par_iter` for dominance comparison on populations ≥100
+  2. `SurvivorOperator` implementations (fitness, age, mu_plus_lambda, mu_comma_lambda) use parallel ranking where order-independent
+  3. WASM fallback: `#[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]` preserves sequential path
+  4. `cargo bench` confirms measurable improvement on multi-objective benchmarks (ZDT1, DTLZ2) at population ≥200
+  5. All existing tests pass; `cargo check --target wasm32-unknown-unknown` passes
+
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 77: Extend Fitness Cache to More Engines (Issue #260)
+
+**Goal**: Audit which engines benefit from fitness caching (re-evaluations of unchanged DNA) and extend `FitnessCache` wiring beyond Ga and CmaEngine, especially for deterministic expensive fitness
+**Depends on**: Phase 60
+**Requirements**: None (performance — closes GitHub issue #260)
+**Success Criteria** (what must be TRUE):
+
+  1. `PsoEngine`, `EdaEngine`, and `DeEngine` support `with_fitness_cache_size()` builder method — cache is consulted before true fitness evaluation
+  2. Cache hit rate is exposed in engine-specific result types or `GenerationStats`
+  3. `fitness_cache_hits` and `fitness_cache_misses` counters are non-zero when cache is enabled on a deterministic problem
+  4. WASM-compatible: no threads or `std::time` in the cache path
+  5. All existing tests pass; new tests verify cache hit behavior per engine
+
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 78: Replace User-Input Panics with GaError (Issue #279)
+
+**Goal**: Eliminate all `panic!` / `.unwrap()` / `.expect()` in `src/` reachable purely from user input or configuration, replacing them with recoverable `GaError` variants
+**Depends on**: Phase 69
+**Requirements**: None (bug fix — closes GitHub issue #279; breaking-change for GP chromosome helpers)
+**Success Criteria** (what must be TRUE):
+
+  1. GP depth/size mutations/crossover return `GaError::TreeDepthExceeded` / `GaError::TreeSizeExceeded` instead of panicking (variants already defined but unused)
+  2. EDA, CMA, PSO empty-init population returns `GaError::InitializationError`
+  3. OX crossover returns `GaError::CrossoverError` on non-unique gene IDs
+  4. Cellular / ALPS grid/layer validation moves into `build()` returning `GaError::ConfigurationError`
+  5. `generation.rs` mutex locks use poison-tolerant handling that surfaces `GaError` instead of cascading panic
+  6. `grep -rn 'panic!\|\.unwrap()\|\.expect(' src/` audit in PR description confirms zero user-input-reachable panics remain
+  7. Each former panic has a test feeding bad input and asserting the matching `GaError` variant
+  8. `cargo test`, `cargo test --features serde`, `cargo clippy` clean
+
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 79: Add Runnable Examples for GP, DE, Scatter, Cellular, ALPS Engines (Issue #281)
+
+**Goal**: Every major engine has a standalone runnable example in `examples/` that users can discover via `cargo run --example`
+**Depends on**: Phase 53
+**Requirements**: None (documentation — closes GitHub issue #281)
+**Success Criteria** (what must be TRUE):
+
+  1. `examples/gp_symbolic_regression.rs` — symbolic regression with `GpGa<N>` using `MathNode` built-ins
+  2. `examples/de_rastrigin.rs` — DE on Rastrigin with a mutation strategy (JADE/L-SHADE variant)
+  3. `examples/scatter_search.rs` — Scatter Search on a continuous benchmark showing reference set
+  4. `examples/cellular_ga.rs` — Cellular GA with topology choice (Von Neumann / Moore) and sync/async
+  5. `examples/alps.rs` — ALPS showing age layers and an age scheme
+  6. Each registered in `tests/test_examples.rs` smoke-test list
+  7. README / `docs/` link to the new examples where each engine is described
+
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 80: Document CmaEngine, PsoEngine, EdaEngine in docs/engines.md (Issue #282)
+
+**Goal**: CMA-ES, PSO, and EDA engines have comprehensive guide coverage with parameter tables, when-to-use guidance, and runnable snippets in `docs/engines.md` (or dedicated pages)
+**Depends on**: Phase 65
+**Requirements**: None (documentation — closes GitHub issue #282)
+**Success Criteria** (what must be TRUE):
+
+  1. `docs/engines.md` (or new dedicated pages) covers CMA-ES: when to use, `sigma0` heuristics, population size `lambda`, restart variants (IPOP/BIPOP), minimal example snippet
+  2. PSO section: inertia strategies (Constant / LinearDecay / RandomRange), topology (Global / Ring / Von Neumann), cognitive/social coefficients, when PSO beats GA
+  3. EDA section: distribution model choice (Bernoulli vs Gaussian), selection ratio, when EDA beats crossover-based GAs
+  4. All three appear in the engine decision matrix / table in README and `docs/engines.md`
+  5. `docs/index.md` links the new pages
+  6. Zero rustdoc warnings (`cargo doc --no-deps`)
+
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 81: Add a Prelude Module for Ergonomic Imports (Issue #283)
+
+**Goal**: Users can write `use genetic_algorithms::prelude::*;` to import the high-frequency items (engines, traits, operator enums, config types) without 6-9 separate import lines
+**Depends on**: Phase 69
+**Requirements**: None (enhancement — closes GitHub issue #283; purely additive)
+**Success Criteria** (what must be TRUE):
+
+  1. `src/prelude.rs` re-exports: engine entry points (`Ga` + other engines), `ConfigurationT` + per-area config traits, operator enums (`Selection`, `Crossover`, `Mutation`, `Survivor`), `ProblemSolving`, `ChromosomeLength`, `GaError`, core traits (`ChromosomeT`, `GeneT`, `LinearChromosome`)
+  2. `pub mod prelude;` declared in `src/lib.rs`
+  3. A minimal GA can be written with only `use genetic_algorithms::prelude::*;` plus concrete chromosome/genotype types
+  4. No glob-import name collisions when the prelude is used in a fresh file
+  5. At least one example updated to use the prelude as a showcase
+  6. Documented in README / getting-started guide
+  7. `cargo doc --no-deps` clean; `cargo test` clean
+
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 82: Per-Engine Convergence Integration Tests (Issue #284)
+
+**Goal**: Every single-objective engine has at least one end-to-end convergence test asserting it reaches a known optimum within tolerance, preventing silent regressions in search dynamics
+**Depends on**: Phase 69
+**Requirements**: None (testing — closes GitHub issue #284)
+**Success Criteria** (what must be TRUE):
+
+  1. `DeEngine` convergence test — Rastrigin or Sphere → best fitness within tolerance of global minimum
+  2. `ScatterEngine` convergence test — continuous benchmark → converges
+  3. `CellularEngine` convergence test — Rastrigin/Sphere → converges
+  4. `AlpsEngine` convergence test — Rastrigin/Sphere → converges
+  5. `CmaEngine` convergence test — Rastrigin → converges; includes IPOP/BIPOP restart path
+  6. `PsoEngine` convergence test — Rastrigin/Sphere → converges
+  7. All tests use fixed RNG seed (`with_rng_seed`) for determinism and generous-but-bounded budget
+  8. Tests placed under `tests/engines/<engine>/` next to existing unit tests
+  9. `cargo test` and `cargo test --features serde` pass
 
 **Plans**: TBD
 **UI hint**: no
@@ -1268,6 +1440,14 @@ Plans:
 | 65. v3.0.0 Migration Guide | v3.0.0 | 3/3 | Complete   | 2026-06-17 |
 | 70. Replace Operator Downcasting (#247) | v3.0.0 | 2/2 | Complete   | 2026-06-18 |
 | 71. Per-Operator Mutation Params (#249) | v3.0.0 | 3/3 | Complete   | 2026-06-18 |
-| 72. Audit Ignored Doctests (#265) | v3.0.0 | 2/2 | Planning | — |
-| 73. Move Inline Test Modules (#266) | v3.0.0 | TBD | Pending | — |
-| 74. Add Missing Benchmarks (#267) | v3.0.0 | TBD | Pending | — |
+| 72. Audit Ignored Doctests (#265) | v3.0.0 | 2/2 | Complete   | 2026-06-18 |
+| 73. Move Inline Test Modules (#266) | v3.0.0 | 0/4 | Pending | — |
+| 74. Add Missing Benchmarks (#267) | v3.0.0 | 3/3 | Complete | 2026-06-19 |
+| 75. Reduce Clones / Reusable Offspring Buffers (#258) | v3.0.0 | TBD | Pending | — |
+| 76. Parallelize Survivor Selection & Non-Dominated Sorting (#259) | v3.0.0 | TBD | Pending | — |
+| 77. Extend Fitness Cache to More Engines (#260) | v3.0.0 | TBD | Pending | — |
+| 78. Replace User-Input Panics with GaError (#279) | v3.0.0 | TBD | Pending | — |
+| 79. Add Runnable Examples for GP, DE, Scatter, Cellular, ALPS (#281) | v3.0.0 | TBD | Pending | — |
+| 80. Document CmaEngine, PsoEngine, EdaEngine (#282) | v3.0.0 | TBD | Pending | — |
+| 81. Add Prelude Module (#283) | v3.0.0 | TBD | Pending | — |
+| 82. Per-Engine Convergence Integration Tests (#284) | v3.0.0 | TBD | Pending | — |
