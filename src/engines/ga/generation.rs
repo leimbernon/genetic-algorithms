@@ -149,30 +149,6 @@ where
             ))
         })?;
 
-        // Select operators via AOS if portfolios are configured (Phase 43)
-        // AOS returns (operator_index, operator_enum) for reward tracking
-        let selected_crossover: Option<(usize, Crossover)> = if let (
-            Some(portfolio),
-            Some(aos_state),
-        ) =
-            (crossover_portfolio, aos_crossover_state)
-        {
-            let mut state = aos_state.lock().unwrap();
-            let op_idx = state.select_operator(&mut rng, generation);
-            Some((op_idx, portfolio[op_idx]))
-        } else {
-            None
-        };
-
-        let selected_mutation: Option<(usize, Mutation)> =
-            if let (Some(portfolio), Some(aos_state)) = (mutation_portfolio, aos_mutation_state) {
-                let mut state = aos_state.lock().unwrap();
-                let op_idx = state.select_operator(&mut rng, generation);
-                Some((op_idx, portfolio[op_idx]))
-            } else {
-                None
-            };
-
         // Making the crossover of the parents when the random number is below or equal to the given probability
         let crossover_probability = rng.random_range(0.0..1.0);
         let effective_crossover_prob = if let Some(p) = crossover_probability_config {
@@ -219,6 +195,35 @@ where
             // Total offspring this generation = (crossed_pairs * 2), not (all_pairs * 2).
             return Ok(Vec::new());
         }
+
+        // Select operators via AOS if portfolios are configured (Phase 43).
+        // AOS operator selection is intentionally placed AFTER the crossover probability
+        // gate above. Before Phase 75, failed crossover pairs still produced parent clones
+        // and reached the reward block, keeping pull counts and rewards in sync. Phase 75's
+        // early return (Ok(Vec::new())) means skipped pairs never reach the reward block,
+        // so selecting before the gate would inflate pull counts without any reward signal
+        // — corrupting UCB1 exploration statistics over time (Phase 75 regression fix).
+        let selected_crossover: Option<(usize, Crossover)> = if let (
+            Some(portfolio),
+            Some(aos_state),
+        ) =
+            (crossover_portfolio, aos_crossover_state)
+        {
+            let mut state = aos_state.lock().unwrap();
+            let op_idx = state.select_operator(&mut rng, generation);
+            Some((op_idx, portfolio[op_idx]))
+        } else {
+            None
+        };
+
+        let selected_mutation: Option<(usize, Mutation)> =
+            if let (Some(portfolio), Some(aos_state)) = (mutation_portfolio, aos_mutation_state) {
+                let mut state = aos_state.lock().unwrap();
+                let op_idx = state.select_operator(&mut rng, generation);
+                Some((op_idx, portfolio[op_idx]))
+            } else {
+                None
+            };
 
         // Determine the effective crossover method (AOS-selected or user-configured)
         let effective_method = selected_crossover
