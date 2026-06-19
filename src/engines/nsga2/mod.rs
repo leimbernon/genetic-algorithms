@@ -106,7 +106,7 @@
 
 pub mod configuration;
 pub mod crowding_distance;
-pub mod non_dominated_sort;
+pub use crate::multi_objective::non_dominated_sort;
 pub mod pareto;
 
 use crate::configuration::GaConfiguration;
