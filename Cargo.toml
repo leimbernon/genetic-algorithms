@@ -124,6 +124,10 @@ harness = false
 name = "eda"
 harness = false
 
+[[bench]]
+name = "gp"
+harness = false
+
 [[example]]
 name = "sms_emoa_zdt1"
 required-features = ["benchmarks", "logging"]
