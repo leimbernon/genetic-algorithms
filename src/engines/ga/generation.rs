@@ -396,14 +396,16 @@ where
     Ok(())
 }
 
-/// Extracts the top `count` individuals from the population by fitness.
+/// Returns the indices of the top `count` individuals from the population by fitness.
 ///
-/// Only clones the selected elite individuals instead of the whole population.
+/// Returns a `Vec<usize>` of indices into `chromosomes` identifying the elite individuals.
+/// No chromosome clone is performed — the caller is responsible for cloning from the
+/// same (pre-survivor-selection) population snapshot before any reordering occurs.
 pub(crate) fn extract_elite<U: LinearChromosome>(
     chromosomes: &[U],
     count: usize,
     problem_solving: ProblemSolving,
-) -> Vec<U> {
+) -> Vec<usize> {
     if count == 0 || chromosomes.is_empty() {
         return Vec::new();
     }
@@ -425,7 +427,7 @@ pub(crate) fn extract_elite<U: LinearChromosome>(
     // The first `k` elements are the best (unordered among themselves).
     indices.truncate(k);
 
-    indices.iter().map(|&i| chromosomes[i].clone()).collect()
+    indices
 }
 
 /// Reinserts elite individuals into the population, replacing the worst if already at capacity.
