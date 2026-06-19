@@ -128,6 +128,18 @@ harness = false
 name = "gp"
 harness = false
 
+[[bench]]
+name = "aos"
+harness = false
+
+[[bench]]
+name = "surrogate"
+harness = false
+
+[[bench]]
+name = "batch_fitness"
+harness = false
+
 [[example]]
 name = "sms_emoa_zdt1"
 required-features = ["benchmarks", "logging"]
