@@ -251,7 +251,7 @@ pub enum Crossover {
 ///     .with_mutation_method(Mutation::Gaussian(GaussianParams { sigma: Some(0.1) }));
 /// ```
 /// Parameters for [`Mutation::Creep`] — small uniform perturbation mutation.
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CreepParams {
     /// Step size for the perturbation. Default: `0.01`.
@@ -260,7 +260,7 @@ pub struct CreepParams {
 }
 
 /// Parameters for [`Mutation::Gaussian`] — Gaussian (normal distribution) perturbation mutation.
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct GaussianParams {
     /// Standard deviation of the Gaussian noise. Default: `0.1`.
@@ -269,7 +269,7 @@ pub struct GaussianParams {
 }
 
 /// Parameters for [`Mutation::Polynomial`] — polynomial mutation (NSGA-II style).
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PolynomialParams {
     /// Distribution index η_m. Default: `20.0`.
@@ -278,7 +278,7 @@ pub struct PolynomialParams {
 }
 
 /// Parameters for [`Mutation::NonUniform`] — non-uniform mutation with generation-based decay.
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NonUniformParams {
     /// Decay parameter b. Default: `2.0`.
@@ -287,7 +287,7 @@ pub struct NonUniformParams {
 }
 
 /// Parameters for [`Mutation::Differential`] — DE-style differential mutation.
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DifferentialParams {
     /// F scale factor for the perturbation. Default: `0.5`.
@@ -296,7 +296,7 @@ pub struct DifferentialParams {
 }
 
 /// Parameters for [`Mutation::Cauchy`] — Cauchy (Lorentzian) perturbation mutation.
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CauchyParams {
     /// Scale parameter γ. Default: `1.0`.
@@ -305,7 +305,7 @@ pub struct CauchyParams {
 }
 
 /// Parameters for [`Mutation::LevyFlight`] — Lévy Flight mutation.
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LevyFlightParams {
     /// Stability index α. Default: `1.5`.
@@ -314,7 +314,7 @@ pub struct LevyFlightParams {
 }
 
 /// Parameters for [`Mutation::SelfAdaptiveGaussian`] — self-adaptive Gaussian mutation (ES-style).
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SelfAdaptiveGaussianParams {
     /// Per-dimension learning rate τ. Default: `1.0 / sqrt(2.0 * n)`.
@@ -331,7 +331,7 @@ pub struct SelfAdaptiveGaussianParams {
     pub sigma_max: Option<f64>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Mutation {
     /// Swap mutation — two random genes exchange positions.
