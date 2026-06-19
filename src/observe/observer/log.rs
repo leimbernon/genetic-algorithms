@@ -38,9 +38,9 @@ use std::time::Duration;
 /// All messages use the same target, level, KV fields, and format strings as
 /// the original hardcoded `log!()` calls in `ga.rs`. Attach with:
 ///
-/// ```rust,no_run
-/// // no_run: API illustration — ga must be a configured Ga instance
-/// // ga.with_observer(Arc::new(LogObserver));
+/// ```text
+/// // API illustration — ga must be a configured Ga instance
+/// ga.with_observer(Arc::new(LogObserver));
 /// ```
 ///
 /// **Note:** Attaching `LogObserver` alongside another observer that prints per-generation output

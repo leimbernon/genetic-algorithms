@@ -532,7 +532,7 @@ where
                 (
                     cfg.selection_configuration,
                     cfg.crossover_configuration,
-                    cfg.mutation_configuration.clone(),
+                    cfg.mutation_configuration,
                     cfg.survivor,
                     cfg.limit_configuration,
                     cfg.number_of_threads,
@@ -554,7 +554,7 @@ where
                         survivor_method,
                         limit_config,
                         num_threads,
-                    ) = island_configs[idx].clone();
+                    ) = island_configs[idx];
                     let pop_size = limit_config.population_size;
 
                     // Selection: returns Vec<Vec<usize>> parent index groups (island uses 2-parent crossover)
@@ -592,7 +592,7 @@ where
                                 crate::operations::Mutation::Insertion
                                 | crate::operations::Mutation::Deletion => {
                                     mutation::factory_with_chromosome_length(
-                                        mutation_config.method.clone(),
+                                        mutation_config.method,
                                         child,
                                         None,
                                     )?;
@@ -651,7 +651,7 @@ where
                         survivor_method,
                         limit_config,
                         num_threads,
-                    ) = island_configs[idx].clone();
+                    ) = island_configs[idx];
                     let pop_size = limit_config.population_size;
 
                     // Selection: returns Vec<Vec<usize>> parent index groups (island uses 2-parent crossover)
@@ -689,7 +689,7 @@ where
                                 crate::operations::Mutation::Insertion
                                 | crate::operations::Mutation::Deletion => {
                                     mutation::factory_with_chromosome_length(
-                                        mutation_config.method.clone(),
+                                        mutation_config.method,
                                         child,
                                         None,
                                     )?;

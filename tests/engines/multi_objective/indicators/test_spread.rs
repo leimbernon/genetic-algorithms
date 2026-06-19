@@ -1,5 +1,5 @@
-use genetic_algorithms::multi_objective::indicators::spread;
 use genetic_algorithms::error::GaError;
+use genetic_algorithms::multi_objective::indicators::spread;
 
 /// ZDT1 reference Pareto front: f1 in [0, 1], f2 = 1 - sqrt(f1).
 fn zdt1_reference_front(n: usize) -> Vec<Vec<f64>> {
@@ -25,7 +25,8 @@ fn test_spread_perfect_uniform() {
     let result = spread(&points, &extremes).unwrap();
     assert!(
         result.abs() < 1e-10,
-        "Perfect uniform spread should be 0.0, got {}", result
+        "Perfect uniform spread should be 0.0, got {}",
+        result
     );
 }
 
@@ -43,7 +44,9 @@ fn test_spread_nonuniform() {
     let expected = 8.0 / 15.0; // ≈ 0.533333...
     assert!(
         (result - expected).abs() < 1e-10,
-        "Expected spread={}, got {}", expected, result
+        "Expected spread={}, got {}",
+        expected,
+        result
     );
 }
 
@@ -54,7 +57,11 @@ fn test_spread_zdt1_even() {
     let extremes = vec![vec![0.0, 1.0], vec![1.0, 0.0]];
     let result = spread(&points, &extremes).unwrap();
     assert!(result >= 0.0, "Spread must be non-negative");
-    assert!(result < 1.0, "Evenly spaced ZDT1 should have spread < 1, got {}", result);
+    assert!(
+        result < 1.0,
+        "Evenly spaced ZDT1 should have spread < 1, got {}",
+        result
+    );
 }
 
 #[test]
@@ -62,16 +69,25 @@ fn test_spread_rejects_single_point() {
     let points = vec![vec![0.0, 0.0]];
     let extremes = vec![vec![0.0, 0.0]];
     let result = spread(&points, &extremes);
-    assert!(matches!(result, Err(GaError::InvalidIndicatorConfiguration(_))));
+    assert!(matches!(
+        result,
+        Err(GaError::InvalidIndicatorConfiguration(_))
+    ));
 }
 
 #[test]
 fn test_spread_rejects_empty() {
-    let result = spread(&vec![], &vec![vec![0.0, 0.0]]);
-    assert!(matches!(result, Err(GaError::InvalidIndicatorConfiguration(_))));
+    let result = spread(&[], &[vec![0.0, 0.0]]);
+    assert!(matches!(
+        result,
+        Err(GaError::InvalidIndicatorConfiguration(_))
+    ));
 
-    let result = spread(&vec![vec![0.0, 0.0], vec![1.0, 0.0]], &vec![]);
-    assert!(matches!(result, Err(GaError::InvalidIndicatorConfiguration(_))));
+    let result = spread(&[vec![0.0, 0.0], vec![1.0, 0.0]], &[]);
+    assert!(matches!(
+        result,
+        Err(GaError::InvalidIndicatorConfiguration(_))
+    ));
 }
 
 #[test]
@@ -79,5 +95,8 @@ fn test_spread_rejects_dimension_mismatch() {
     let points = vec![vec![0.0, 0.0], vec![1.0, 0.0]];
     let extremes = vec![vec![0.0, 0.0, 0.0]];
     let result = spread(&points, &extremes);
-    assert!(matches!(result, Err(GaError::InvalidIndicatorConfiguration(_))));
+    assert!(matches!(
+        result,
+        Err(GaError::InvalidIndicatorConfiguration(_))
+    ));
 }
