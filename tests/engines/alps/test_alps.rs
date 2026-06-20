@@ -5,6 +5,7 @@ use std::borrow::Cow;
 use genetic_algorithms::alps::{AlpsAgeScheme, AlpsConfiguration, AlpsEngine};
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
+use genetic_algorithms::error::GaError;
 use genetic_algorithms::genotypes::Range as RangeGene;
 use genetic_algorithms::operations::{Crossover, GaussianParams, Mutation};
 use genetic_algorithms::rng;
@@ -221,6 +222,46 @@ fn test_alps_mutation_gaussian_migration() {
     assert!(
         result.best_fitness >= 0.0,
         "sphere function is non-negative"
+    );
+}
+
+// ─── Error path: zero-size ConfigurationError ────────────────────────────────
+
+/// ALPS error path: AlpsEngine::new() with layer_size=0 returns
+/// Err(GaError::ConfigurationError(_)).
+#[test]
+fn test_new_rejects_zero_layer_size() {
+    let config = AlpsConfiguration::default()
+        .with_n_layers(3)
+        .with_layer_size(0)
+        .with_max_generations(10);
+    let result = AlpsEngine::new(
+        config,
+        |n| random_pop(n, 3, -5.0, 5.0, 42),
+        sphere,
+    );
+    assert!(
+        matches!(result, Err(GaError::ConfigurationError(_))),
+        "AlpsEngine::new() with layer_size=0 should return ConfigurationError"
+    );
+}
+
+/// ALPS error path: AlpsEngine::new() with n_layers=0 returns
+/// Err(GaError::ConfigurationError(_)).
+#[test]
+fn test_new_rejects_zero_n_layers() {
+    let config = AlpsConfiguration::default()
+        .with_n_layers(0)
+        .with_layer_size(10)
+        .with_max_generations(10);
+    let result = AlpsEngine::new(
+        config,
+        |n| random_pop(n, 3, -5.0, 5.0, 42),
+        sphere,
+    );
+    assert!(
+        matches!(result, Err(GaError::ConfigurationError(_))),
+        "AlpsEngine::new() with n_layers=0 should return ConfigurationError"
     );
 }
 

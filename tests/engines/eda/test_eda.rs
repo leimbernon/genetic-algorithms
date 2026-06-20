@@ -21,6 +21,7 @@ use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::eda::{EdaConfiguration, EdaEngine, EdaModel, EdaRealEngine};
+use genetic_algorithms::error::GaError;
 use genetic_algorithms::ga::TerminationCause;
 use genetic_algorithms::genotypes::Binary as BinaryGene;
 use genetic_algorithms::genotypes::Range as RangeGene;
@@ -483,3 +484,44 @@ fn eda_14_cache_disabled_default() {
 #[test]
 #[ignore = "WASM gate: verified by CI cargo check --target wasm32-unknown-unknown"]
 fn eda_11_wasm_compilation_gate() {}
+
+// ─── Error path: empty-init InitializationError ──────────────────────────────
+
+/// EDA error path: EdaEngine (Bernoulli) run() with init_fn returning empty Vec
+/// returns Err(GaError::InitializationError(_)).
+#[test]
+fn test_run_empty_init_returns_error() {
+    let config = EdaConfiguration {
+        population_size: 50,
+        max_generations: 10,
+        problem_solving: ProblemSolving::Maximization,
+        fitness_target: None,
+        selection_ratio: 0.5,
+        fitness_cache_size: None,
+    };
+    let mut engine = EdaEngine::new(config, |_n| Vec::<BinaryChromosome>::new(), onemax);
+    assert!(
+        matches!(engine.run(), Err(GaError::InitializationError(_))),
+        "EdaEngine with empty init_fn should return InitializationError"
+    );
+}
+
+/// EDA error path: EdaRealEngine (Gaussian) run() with init_fn returning empty Vec
+/// returns Err(GaError::InitializationError(_)).
+#[test]
+fn test_real_run_empty_init_returns_error() {
+    let config = EdaConfiguration {
+        population_size: 50,
+        max_generations: 10,
+        problem_solving: ProblemSolving::Minimization,
+        fitness_target: None,
+        selection_ratio: 0.5,
+        fitness_cache_size: None,
+    };
+    let mut engine =
+        EdaRealEngine::new(config, |_n| Vec::<RangeChromosome<f64>>::new(), sphere);
+    assert!(
+        matches!(engine.run(), Err(GaError::InitializationError(_))),
+        "EdaRealEngine with empty init_fn should return InitializationError"
+    );
+}

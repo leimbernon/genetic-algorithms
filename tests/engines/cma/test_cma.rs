@@ -10,6 +10,7 @@ use std::sync::{Arc, Mutex};
 
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::cma::{CmaConfiguration, CmaEngine, RestartStrategy};
+use genetic_algorithms::error::GaError;
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::TerminationCause;
 use genetic_algorithms::genotypes::Range as RangeGene;
@@ -649,6 +650,22 @@ fn test_cma_global_best_across_restarts() {
     );
     // Plan 02: additionally assert result.best_fitness <= initial_run_best
     // (global-best tracking across restarts is enforced by the engine loop)
+}
+
+// ─── Error path: empty-init InitializationError ──────────────────────────────
+
+/// CMA error path: CmaEngine run() with init_fn returning empty Vec
+/// returns Err(GaError::InitializationError(_)). Covers the peek-population guard
+/// (base), first-init guard, and restart-init guard sites from Plan 02.
+#[test]
+fn test_run_empty_init_returns_error() {
+    let config = CmaConfiguration::default_for_dim(3).with_max_generations(5);
+    let mut engine =
+        CmaEngine::new(config, |_n| Vec::<RangeChromosome<f64>>::new(), sphere);
+    assert!(
+        matches!(engine.run(), Err(GaError::InitializationError(_))),
+        "CmaEngine with empty init_fn should return InitializationError"
+    );
 }
 
 // ─── Phase 60 batch + cache tests ────────────────────────────────────────────

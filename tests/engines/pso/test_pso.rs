@@ -4,6 +4,7 @@
 //! PSO-11 (WASM gate) remains ignored and is verified via CI
 //! (`cargo check --target wasm32-unknown-unknown`) in Plan 04.
 
+use genetic_algorithms::error::GaError;
 use genetic_algorithms::pso::{PsoConfiguration, PsoEngine, PsoInertia, PsoTopology};
 
 use std::borrow::Cow;
@@ -357,6 +358,26 @@ fn test_pso_sphere_converges() {
         "PSO must converge on 10D Sphere: best_fitness={:.6} after {} generations",
         result.best_fitness,
         result.generations
+    );
+}
+
+// ─── Error path: empty-init InitializationError ──────────────────────────────
+
+/// PSO error path: PsoEngine run() with init_fn returning empty Vec
+/// returns Err(GaError::InitializationError(_)).
+#[test]
+fn test_run_empty_init_returns_error() {
+    let config = PsoConfiguration::default()
+        .with_max_generations(10)
+        .with_population_size(20);
+    let mut engine = PsoEngine::new(
+        config,
+        |_n| Vec::<RangeChromosome<f64>>::new(),
+        sphere,
+    );
+    assert!(
+        matches!(engine.run(), Err(GaError::InitializationError(_))),
+        "PsoEngine with empty init_fn should return InitializationError"
     );
 }
 

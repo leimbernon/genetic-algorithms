@@ -7,6 +7,7 @@ use genetic_algorithms::cellular::{
 };
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
+use genetic_algorithms::error::GaError;
 use genetic_algorithms::genotypes::Range as RangeGene;
 use genetic_algorithms::operations::{Crossover, GaussianParams, Mutation, Selection};
 use genetic_algorithms::rng;
@@ -225,5 +226,43 @@ fn test_cellular_mutation_gaussian_migration() {
     assert!(
         result.best_fitness >= 0.0,
         "sphere function is non-negative"
+    );
+}
+
+// ─── Error path: zero-size ConfigurationError ────────────────────────────────
+
+/// Cellular error path: CellularEngine::new() with rows=0 returns
+/// Err(GaError::ConfigurationError(_)).
+#[test]
+fn test_new_rejects_zero_rows() {
+    let config = CellularConfiguration::default()
+        .with_grid(0, 5)
+        .with_max_generations(10);
+    let result = CellularEngine::new(
+        config,
+        |n| random_pop(n, 3, -5.0, 5.0, 42),
+        sphere,
+    );
+    assert!(
+        matches!(result, Err(GaError::ConfigurationError(_))),
+        "CellularEngine::new() with rows=0 should return ConfigurationError"
+    );
+}
+
+/// Cellular error path: CellularEngine::new() with cols=0 returns
+/// Err(GaError::ConfigurationError(_)).
+#[test]
+fn test_new_rejects_zero_cols() {
+    let config = CellularConfiguration::default()
+        .with_grid(5, 0)
+        .with_max_generations(10);
+    let result = CellularEngine::new(
+        config,
+        |n| random_pop(n, 3, -5.0, 5.0, 42),
+        sphere,
+    );
+    assert!(
+        matches!(result, Err(GaError::ConfigurationError(_))),
+        "CellularEngine::new() with cols=0 should return ConfigurationError"
     );
 }
