@@ -102,7 +102,7 @@ fn main() {
     println!("inertia=LinearDecay(0.9→0.4), c1=2.0, c2=2.0, topology=Global");
     println!("--------------------------------------------------");
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     println!("Generations: {}", result.generations);
     println!("Best fitness: {:.6}", result.best_fitness);

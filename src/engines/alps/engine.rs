@@ -45,7 +45,7 @@ use super::configuration::AlpsConfiguration;
 ///     config,
 ///     |n| vec![RangeChromosome::default(); n],
 ///     |dna| dna.iter().map(|g| g.value() * g.value()).sum(),
-/// );
+/// ).unwrap();
 /// let result: AlpsResult<RangeChromosome<f64>> = engine.run();
 /// println!("Best fitness: {}", result.best_fitness);
 /// ```
@@ -88,7 +88,7 @@ pub struct AlpsResult<U: LinearChromosome> {
 ///     config,
 ///     |n| vec![RangeChromosome::default(); n],
 ///     |dna| dna.iter().map(|g| g.value() * g.value()).sum(),
-/// );
+/// ).unwrap();
 /// let result = engine.run();
 /// println!("Generations: {}", result.generations);
 /// ```

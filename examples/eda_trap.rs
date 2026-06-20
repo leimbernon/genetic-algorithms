@@ -131,7 +131,7 @@ fn main() {
     println!("target=30.0 (all-ones = global maximum)");
     println!("---------------------------------------------");
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     // Display result
     let best_dna: String = result

@@ -42,7 +42,7 @@ use super::configuration::{CellularConfiguration, Neighborhood, UpdateMode};
 ///     config,
 ///     |n| vec![RangeChromosome::default(); n],
 ///     |dna| dna.iter().map(|g| g.value() * g.value()).sum(),
-/// );
+/// ).unwrap();
 /// let result: CellularResult<RangeChromosome<f64>> = engine.run();
 /// println!("Best fitness: {}", result.best_fitness);
 /// ```
@@ -82,7 +82,7 @@ pub struct CellularResult<U: LinearChromosome> {
 ///     config,
 ///     |n| vec![RangeChromosome::default(); n],
 ///     |dna| dna.iter().map(|g| g.value() * g.value()).sum(),
-/// );
+/// ).unwrap();
 /// let result = engine.run();
 /// println!("Generations: {}", result.generations);
 /// ```

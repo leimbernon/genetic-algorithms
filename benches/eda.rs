@@ -96,8 +96,7 @@ mod eda_gaussian {
                 (config, dim)
             })
             .bench_values(|(config, dim)| {
-                let mut engine =
-                    EdaRealEngine::new(config, move |n| make_pop(n, dim), sphere);
+                let mut engine = EdaRealEngine::new(config, move |n| make_pop(n, dim), sphere);
                 let _ = engine.run();
             });
     }
@@ -121,8 +120,7 @@ mod eda_bernoulli {
                     .with_problem_solving(ProblemSolving::Maximization)
             })
             .bench_values(|config| {
-                let mut engine =
-                    EdaEngine::bernoulli(config, |n| make_binary_pop(n, 64), onemax);
+                let mut engine = EdaEngine::bernoulli(config, |n| make_binary_pop(n, 64), onemax);
                 let _ = engine.run();
             });
     }

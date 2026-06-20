@@ -90,7 +90,7 @@ fn main() {
     println!("sigma0=0.5, max_generations=300, target=1e-3");
     println!("--------------------------------------------------");
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     println!("Generations: {}", result.generations);
     println!("Best fitness: {:.6}", result.best_fitness);

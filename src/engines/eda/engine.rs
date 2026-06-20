@@ -130,7 +130,7 @@ pub struct EdaResult<U: LinearChromosome> {
 ///     |n| vec![Binary::default(); n],
 ///     |dna| dna.iter().filter(|g| g.id() == 1).count() as f64,
 /// );
-/// let result = engine.run();
+/// let result = engine.run().unwrap();
 /// println!("Generations: {}", result.generations);
 /// ```
 pub struct EdaEngine<U: LinearChromosome> {
@@ -484,7 +484,7 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
 ///     |n| vec![RangeChromosome::default(); n],
 ///     |dna| dna.iter().map(|g| g.real_value().powi(2)).sum(),
 /// );
-/// let result = engine.run();
+/// let result = engine.run().unwrap();
 /// println!("Generations: {}", result.generations);
 /// ```
 pub struct EdaRealEngine<U: LinearChromosome>

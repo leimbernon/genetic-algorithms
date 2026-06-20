@@ -79,7 +79,7 @@ fn main() {
     let mut engine =
         CmaEngine::new(config, init_population, rastrigin).with_observer(Arc::new(LogObserver));
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     println!("Total restarts: {}", result.total_restarts);
     println!("Generations:    {}", result.generations);

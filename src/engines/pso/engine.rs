@@ -169,7 +169,7 @@ impl PsoState {
 ///     |n| vec![RangeChromosome::default(); n],
 ///     |dna| dna.iter().map(|g| g.real_value().powi(2)).sum(),
 /// );
-/// let result = engine.run();
+/// let result = engine.run().unwrap();
 /// println!("Generations: {}", result.generations);
 /// ```
 pub struct PsoEngine<U: LinearChromosome>

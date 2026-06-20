@@ -49,9 +49,7 @@ mod cma_sphere {
     #[divan::bench(args = [10usize, 30, 100])]
     fn run(bencher: divan::Bencher, dim: usize) {
         bencher
-            .with_inputs(|| {
-                CmaConfiguration::default_for_dim(dim).with_max_generations(50)
-            })
+            .with_inputs(|| CmaConfiguration::default_for_dim(dim).with_max_generations(50))
             .bench_values(|config| {
                 let mut engine = CmaEngine::new(config, move |n| make_pop(n, dim), sphere);
                 let _ = engine.run();
@@ -65,9 +63,7 @@ mod cma_rastrigin {
     #[divan::bench(args = [10usize, 30, 100])]
     fn run(bencher: divan::Bencher, dim: usize) {
         bencher
-            .with_inputs(|| {
-                CmaConfiguration::default_for_dim(dim).with_max_generations(50)
-            })
+            .with_inputs(|| CmaConfiguration::default_for_dim(dim).with_max_generations(50))
             .bench_values(|config| {
                 let mut engine = CmaEngine::new(config, move |n| make_pop(n, dim), rastrigin);
                 let _ = engine.run();
