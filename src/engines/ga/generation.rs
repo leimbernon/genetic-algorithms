@@ -209,7 +209,9 @@ where
         ) =
             (crossover_portfolio, aos_crossover_state)
         {
-            let mut state = aos_state.lock().unwrap();
+            let mut state = aos_state
+                .lock()
+                .map_err(|_| GaError::InternalError("AOS state mutex poisoned".to_string()))?;
             let op_idx = state.select_operator(&mut rng, generation);
             Some((op_idx, portfolio[op_idx]))
         } else {
@@ -218,7 +220,9 @@ where
 
         let selected_mutation: Option<(usize, Mutation)> =
             if let (Some(portfolio), Some(aos_state)) = (mutation_portfolio, aos_mutation_state) {
-                let mut state = aos_state.lock().unwrap();
+                let mut state = aos_state
+                    .lock()
+                    .map_err(|_| GaError::InternalError("AOS state mutex poisoned".to_string()))?;
                 let op_idx = state.select_operator(&mut rng, generation);
                 Some((op_idx, portfolio[op_idx]))
             } else {
@@ -259,9 +263,9 @@ where
         // factory_multi_parent_dispatch returns 1 child; factory returns 2.
         // For the 1-child path, child_1 gets the actual offspring; child_2 falls back to
         // parent_2.clone() (D-06). For the 2-child path, both pops succeed.
-        let mut child_1 = children.pop().ok_or_else(|| {
-            GaError::CrossoverError("Crossover returned no children".to_string())
-        })?;
+        let mut child_1 = children
+            .pop()
+            .ok_or_else(|| GaError::CrossoverError("Crossover returned no children".to_string()))?;
         let mut child_2 = children.pop().unwrap_or_else(|| parent_2.clone());
 
         // Determine mutation method: AOS-selected or configured single operator
@@ -346,7 +350,11 @@ where
                     (parent_1.fitness(), child_1.fitness())
                 };
                 let reward = crate::aos::compute_normalized_reward(p, c, best_fitness);
-                acc.lock().unwrap().push((c_op_idx, reward));
+                acc.lock()
+                    .map_err(|_| {
+                        GaError::InternalError("AOS reward accumulator poisoned".to_string())
+                    })?
+                    .push((c_op_idx, reward));
             }
         }
         // Mutation reward: compare parent vs child fitness
@@ -358,7 +366,11 @@ where
                     (parent_1.fitness(), child_1.fitness())
                 };
                 let reward = crate::aos::compute_normalized_reward(p, c, best_fitness);
-                acc.lock().unwrap().push((m_op_idx, reward));
+                acc.lock()
+                    .map_err(|_| {
+                        GaError::InternalError("AOS reward accumulator poisoned".to_string())
+                    })?
+                    .push((m_op_idx, reward));
             }
         }
 
@@ -378,20 +390,32 @@ where
 
     // Apply AOS reward updates after collecting all rewards (Phase 43)
     if let Some(acc) = crossover_reward_acc {
-        let rewards = acc.lock().unwrap().drain(..).collect::<Vec<_>>();
+        let rewards = acc
+            .lock()
+            .map_err(|_| GaError::InternalError("AOS reward accumulator poisoned".to_string()))?
+            .drain(..)
+            .collect::<Vec<_>>();
         if !rewards.is_empty() {
             if let Some(aos_state) = aos_crossover_state {
-                let mut state = aos_state.lock().unwrap();
+                let mut state = aos_state
+                    .lock()
+                    .map_err(|_| GaError::InternalError("AOS state mutex poisoned".to_string()))?;
                 state.record_rewards(&rewards);
                 state.update();
             }
         }
     }
     if let Some(acc) = mutation_reward_acc {
-        let rewards = acc.lock().unwrap().drain(..).collect::<Vec<_>>();
+        let rewards = acc
+            .lock()
+            .map_err(|_| GaError::InternalError("AOS reward accumulator poisoned".to_string()))?
+            .drain(..)
+            .collect::<Vec<_>>();
         if !rewards.is_empty() {
             if let Some(aos_state) = aos_mutation_state {
-                let mut state = aos_state.lock().unwrap();
+                let mut state = aos_state
+                    .lock()
+                    .map_err(|_| GaError::InternalError("AOS state mutex poisoned".to_string()))?;
                 state.record_rewards(&rewards);
                 state.update();
             }
