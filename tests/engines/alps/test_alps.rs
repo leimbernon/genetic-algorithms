@@ -49,6 +49,7 @@ fn make_engine(scheme: AlpsAgeScheme) -> AlpsEngine<RangeChromosome<f64>> {
         .with_fitness_target(50.0);
 
     AlpsEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 42), sphere)
+        .expect("valid test config")
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -130,7 +131,8 @@ fn test_cross_layer_mating_produces_result() {
         .with_max_generations(50)
         .with_mutation(Mutation::Gaussian(GaussianParams { sigma: Some(0.5) }));
 
-    let mut engine = AlpsEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 42), sphere);
+    let mut engine = AlpsEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 42), sphere)
+        .expect("valid test config");
     let result = engine.run();
     assert!(result.generations > 0);
     // Engine should have run without panicking; all layers returned.
@@ -150,7 +152,8 @@ fn test_injection_enabled_runs() {
         .with_max_generations(30)
         .with_mutation(Mutation::Gaussian(GaussianParams { sigma: Some(0.5) }));
 
-    let mut engine = AlpsEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 7), sphere);
+    let mut engine = AlpsEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 7), sphere)
+        .expect("valid test config");
     let result = engine.run();
     // With injection_interval=5 and 30 generations, layer 0 is reseeded ~5 times.
     assert!(result.generations > 0);
@@ -166,7 +169,8 @@ fn test_injection_disabled_runs() {
         .with_max_generations(30)
         .with_mutation(Mutation::Gaussian(GaussianParams { sigma: Some(0.5) }));
 
-    let mut engine = AlpsEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 13), sphere);
+    let mut engine = AlpsEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 13), sphere)
+        .expect("valid test config");
     let result = engine.run();
     assert!(result.generations > 0);
 }
@@ -183,7 +187,8 @@ fn test_early_stopping() {
         .with_fitness_target(1_000.0) // trivially reachable
         .with_problem_solving(ProblemSolving::Minimization);
 
-    let mut engine = AlpsEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 99), sphere);
+    let mut engine = AlpsEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 99), sphere)
+        .expect("valid test config");
     let result = engine.run();
     assert!(
         result.generations < 100_000,
@@ -208,7 +213,8 @@ fn test_alps_mutation_gaussian_migration() {
         .with_mutation(Mutation::Gaussian(GaussianParams { sigma: Some(0.3) }))
         .with_problem_solving(ProblemSolving::Minimization);
 
-    let mut engine = AlpsEngine::new(config, |n| random_pop(n, 3, -2.0, 2.0, 123), sphere);
+    let mut engine = AlpsEngine::new(config, |n| random_pop(n, 3, -2.0, 2.0, 123), sphere)
+        .expect("valid test config");
     let result = engine.run();
     assert!(result.generations > 0, "expected at least one generation");
     assert_eq!(result.layers.len(), 3);

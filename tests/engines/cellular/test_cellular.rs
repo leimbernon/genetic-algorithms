@@ -57,6 +57,7 @@ fn make_engine(
         .with_fitness_target(50.0);
 
     CellularEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 42), sphere)
+        .expect("valid test config")
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -152,7 +153,8 @@ fn test_early_stopping_on_fitness_target() {
         // Very lenient target — engine should stop well before 10_000 gens.
         .with_fitness_target(1_000.0);
 
-    let mut engine = CellularEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 99), sphere);
+    let mut engine = CellularEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 99), sphere)
+        .expect("valid test config");
     let result = engine.run();
     // Should stop early because fitness_target=1000 is trivially reachable.
     assert!(
@@ -215,7 +217,8 @@ fn test_cellular_mutation_gaussian_migration() {
         .with_mutation(Mutation::Gaussian(GaussianParams { sigma: Some(0.3) }))
         .with_problem_solving(ProblemSolving::Minimization);
 
-    let mut engine = CellularEngine::new(config, |n| random_pop(n, 3, -2.0, 2.0, 456), sphere);
+    let mut engine = CellularEngine::new(config, |n| random_pop(n, 3, -2.0, 2.0, 456), sphere)
+        .expect("valid test config");
     let result = engine.run();
     assert!(result.generations > 0, "expected at least one generation");
     assert_eq!(result.population.len(), 16, "4x4 grid = 16 individuals");

@@ -134,7 +134,7 @@ fn eda_01_bernoulli_onemax_convergence() {
 
     let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 1), onemax);
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     assert!(
         result.best_fitness >= (CHROMOSOME_LEN as f64 * 0.9),
@@ -162,7 +162,7 @@ fn eda_02_gaussian_sphere_convergence() {
     let mut engine =
         EdaRealEngine::new(config, |n| random_range_pop(n, DIM, -5.0, 5.0, 99), sphere);
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     assert!(
         result.best_fitness < 5.0,
@@ -191,7 +191,7 @@ fn eda_03_result_fields_populated() {
 
     let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 2), onemax);
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     assert_eq!(result.generations, 10, "Should run all 10 generations");
     assert_eq!(
@@ -217,7 +217,7 @@ fn eda_04_learned_model_is_bernoulli() {
 
     let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 5), onemax);
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     match result.learned_model {
         EdaModel::Bernoulli(probs) => {
@@ -251,7 +251,7 @@ fn eda_05_learned_model_is_gaussian() {
 
     let mut engine = EdaRealEngine::new(config, |n| random_range_pop(n, DIM, -3.0, 3.0, 7), sphere);
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     match result.learned_model {
         EdaModel::Gaussian { means, stds } => {
@@ -291,7 +291,7 @@ fn eda_06_observer_hooks_fire() {
     let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 3), onemax)
         .with_observer(Arc::clone(&spy) as Arc<dyn GaObserver<BinaryChromosome> + Send + Sync>);
 
-    engine.run();
+    engine.run().expect("engine run should succeed");
 
     assert_eq!(
         spy.run_start.load(Ordering::SeqCst),
@@ -337,7 +337,7 @@ fn eda_07_fitness_target_early_stop() {
 
     let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 42), onemax);
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     assert!(
         result.generations < 1000,
@@ -369,7 +369,7 @@ fn eda_08_minimization_direction() {
     let mut engine =
         EdaRealEngine::new(config, |n| random_range_pop(n, DIM, -1.0, 1.0, 33), sphere);
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     assert!(
         result.best_fitness >= 0.0,
@@ -397,7 +397,7 @@ fn eda_09_selection_ratio_min_one_parent() {
     let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 88), onemax);
 
     // Should not panic — the engine must handle 1-parent selection
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
     assert!(result.best_fitness >= 0.0);
 }
 
@@ -424,7 +424,7 @@ fn eda_10_default_population_size() {
         onemax,
     );
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
     assert_eq!(result.population.len(), 100);
 }
 
@@ -440,7 +440,7 @@ fn eda_12_bernoulli_cache_enabled() {
         .with_problem_solving(ProblemSolving::Maximization)
         .with_fitness_cache_size(128);
     let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 10), onemax);
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
     assert!(result.best_fitness >= 0.0, "best_fitness must be non-negative with cache");
     assert_eq!(result.generations, 20);
 }
@@ -457,7 +457,7 @@ fn eda_13_gaussian_cache_enabled() {
         .with_problem_solving(ProblemSolving::Minimization)
         .with_fitness_cache_size(128);
     let mut engine = EdaRealEngine::new(config, |n| random_range_pop(n, 5, -3.0, 3.0, 11), sphere);
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
     assert!(result.best_fitness.is_finite(), "best_fitness must be finite with cache");
     assert_eq!(result.generations, 20);
 }
@@ -473,7 +473,7 @@ fn eda_14_cache_disabled_default() {
         .with_max_generations(20)
         .with_problem_solving(ProblemSolving::Maximization);
     let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 10), onemax);
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
     assert!(result.best_fitness >= 0.0);
 }
 

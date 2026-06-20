@@ -128,7 +128,7 @@ fn test_cma_sphere_converges() {
 
     let mut engine = CmaEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 42), sphere);
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     assert!(
         result.best_fitness < 5.0,
@@ -160,7 +160,7 @@ fn test_cma_early_stopping() {
 
     let mut engine = CmaEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 99), sphere);
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     // Engine must have stopped before max_generations (since 1e6 is trivially satisfied)
     assert!(
@@ -209,7 +209,7 @@ fn test_cma_result_fields() {
 
     let mut engine = CmaEngine::new(config, |n| random_pop(n, 3, -1.0, 1.0, 7), sphere);
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     assert!(
         !result.population.is_empty(),
@@ -242,7 +242,7 @@ fn test_cma_observer_new_best() {
     let mut engine = CmaEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 123), sphere)
         .with_observer(spy.clone());
 
-    let _result = engine.run();
+    let _result = engine.run().expect("engine run should succeed");
 
     assert!(
         spy.new_best_count.load(Ordering::SeqCst) >= 1,
@@ -262,7 +262,7 @@ fn test_cma_observer_lifecycle() {
     let mut engine = CmaEngine::new(config, |n| random_pop(n, 3, -1.0, 1.0, 55), sphere)
         .with_observer(spy.clone());
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     assert_eq!(
         spy.run_start_count.load(Ordering::SeqCst),
@@ -377,7 +377,7 @@ fn test_cma_maximization() {
 
     let mut engine = CmaEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 77), neg_sphere);
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     // Under maximization of negated sphere, fitness improves toward 0.
     // The engine should find a value > -5.0 (initial values typically range from -25 to -5).
@@ -413,7 +413,7 @@ fn test_cma_ipop_restarts() {
     let mut engine = CmaEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 42), sphere)
         .with_observer(spy.clone());
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     assert!(
         spy.restart_count.load(Ordering::SeqCst) >= 1,
@@ -455,7 +455,7 @@ fn test_cma_bipop_alternation() {
     let mut engine = CmaEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 43), sphere)
         .with_observer(spy.clone());
 
-    let _result = engine.run();
+    let _result = engine.run().expect("engine run should succeed");
 
     let kinds = spy.restart_kinds.lock().unwrap();
     assert_eq!(
@@ -514,7 +514,7 @@ fn test_cma_restart_observer() {
     let mut engine = CmaEngine::new(config, |n| random_pop(n, 3, -2.0, 2.0, 77), sphere)
         .with_observer(spy.clone());
 
-    let _result = engine.run();
+    let _result = engine.run().expect("engine run should succeed");
 
     let restart_count = spy.restart_count.load(Ordering::SeqCst);
     assert!(restart_count >= 1, "at least one restart should have fired");
@@ -560,7 +560,7 @@ fn test_cma_no_restart_when_none() {
     let mut engine = CmaEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 99), sphere)
         .with_observer(spy.clone());
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     assert_eq!(
         spy.restart_count.load(Ordering::SeqCst),
@@ -598,7 +598,7 @@ fn test_cma_total_restarts_count() {
     let mut engine = CmaEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 101), sphere)
         .with_observer(spy.clone());
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     assert!(
         result.total_restarts <= max_restarts,
@@ -635,7 +635,7 @@ fn test_cma_global_best_across_restarts() {
 
     let mut engine = CmaEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 13), sphere);
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     assert!(
         result.best_fitness.is_finite(),
@@ -719,7 +719,7 @@ mod batch_and_cache_tests {
             |n| make_pop(n, 3, 1),
             |dna: &[RangeGene<f64>]| dna.iter().map(|g| g.value() * g.value()).sum(),
         );
-        let result = engine.run();
+        let result = engine.run().expect("engine run should succeed");
         assert!(result.generations >= 3);
     }
 
@@ -732,7 +732,7 @@ mod batch_and_cache_tests {
             .with_problem_solving(ProblemSolving::Minimization);
         let mut engine = CmaEngine::new(config, |n| make_pop(n, 3, 2), |_: &[RangeGene<f64>]| 0.0)
             .with_batch_evaluator(evaluator);
-        let result = engine.run();
+        let result = engine.run().expect("engine run should succeed");
         assert!(result.generations >= 3);
     }
 
@@ -746,7 +746,7 @@ mod batch_and_cache_tests {
             .with_problem_solving(ProblemSolving::Minimization);
         let mut engine = CmaEngine::new(config, |n| make_pop(n, 3, 3), |_: &[RangeGene<f64>]| 0.0)
             .with_batch_evaluator(evaluator);
-        let result = engine.run();
+        let result = engine.run().expect("engine run should succeed");
         // All chromosomes in the final population should have the evaluator's value
         for c in result.population.iter() {
             assert_eq!(
@@ -774,7 +774,7 @@ mod batch_and_cache_tests {
             .with_problem_solving(ProblemSolving::Minimization);
         let mut engine = CmaEngine::new(config, |n| make_pop(n, 3, 4), |_: &[RangeGene<f64>]| 0.0)
             .with_batch_evaluator(evaluator);
-        let result = engine.run();
+        let result = engine.run().expect("engine run should succeed");
         // 1 init call + 3 generation calls = at least 4
         let calls = evaluator_ref.calls.load(Ordering::Relaxed);
         assert!(
@@ -804,7 +804,7 @@ mod batch_and_cache_tests {
             |n| make_pop(n, 3, 5),
             |dna: &[RangeGene<f64>]| dna.iter().map(|g| g.value() * g.value()).sum(),
         );
-        let result = engine.run();
+        let result = engine.run().expect("engine run should succeed");
         assert!(
             result.generations >= 3,
             "Engine should complete 3 generations (D-07)"
