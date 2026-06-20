@@ -48,9 +48,10 @@ use std::borrow::Cow;
 /// let _ = multi_group_ox(&parent1, &parent2);
 /// ```
 ///
-/// # Panics
+/// # Errors
 ///
-/// `ox_build_child` panics if gene IDs are not unique within a group slice.
+/// `ox_build_child` returns `Err(GaError::CrossoverError)` if gene IDs are not
+/// unique within a group slice; this error is propagated to the caller.
 pub fn multi_group_ox<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
     let groups = parent_1.group_ranges();
 
@@ -107,18 +108,19 @@ pub fn multi_group_ox<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result
         };
 
         // Apply OX within each group slice; reuse ox_build_child (pub(crate) since 48-01).
+        // Returns Err(GaError::CrossoverError) if gene IDs are not unique within the group.
         let slice_1 = ox_build_child(
             &p1_dna[*start..=*end],
             &p2_dna[*start..=*end],
             p1_pos,
             p2_pos,
-        );
+        )?;
         let slice_2 = ox_build_child(
             &p2_dna[*start..=*end],
             &p1_dna[*start..=*end],
             p1_pos,
             p2_pos,
-        );
+        )?;
         child_dna_1[*start..=*end].clone_from_slice(&slice_1);
         child_dna_2[*start..=*end].clone_from_slice(&slice_2);
     }

@@ -52,8 +52,8 @@ pub fn order<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, 
         std::mem::swap(&mut p1, &mut p2);
     }
 
-    let child_dna_1 = ox_build_child(parent_1.dna(), parent_2.dna(), p1, p2);
-    let child_dna_2 = ox_build_child(parent_2.dna(), parent_1.dna(), p1, p2);
+    let child_dna_1 = ox_build_child(parent_1.dna(), parent_2.dna(), p1, p2)?;
+    let child_dna_2 = ox_build_child(parent_2.dna(), parent_1.dna(), p1, p2)?;
 
     let mut child_1 = U::new();
     let mut child_2 = U::new();
@@ -69,7 +69,7 @@ pub(crate) fn ox_build_child<G: crate::traits::GeneT>(
     filler: &[G],
     p1: usize,
     p2: usize,
-) -> Vec<G> {
+) -> Result<Vec<G>, GaError> {
     let len = donor.len();
     let mut child: Vec<Option<G>> = vec![None; len];
 
@@ -103,17 +103,18 @@ pub(crate) fn ox_build_child<G: crate::traits::GeneT>(
         child_pos = (child_pos + 1) % len;
     }
 
+    // Collect into Result — an unfilled slot means non-unique gene IDs in the parents.
     child
         .into_iter()
         .enumerate()
         .map(|(i, g)| {
-            g.unwrap_or_else(|| {
-                panic!(
-                    "Order crossover: child position {} was not filled. \
-                     This indicates non-unique gene IDs in the parents.",
+            g.ok_or_else(|| {
+                GaError::CrossoverError(format!(
+                    "Order crossover: child position {} was not filled \
+                     — indicates non-unique gene IDs in the parents.",
                     i
-                )
+                ))
             })
         })
-        .collect()
+        .collect::<Result<Vec<_>, _>>()
 }
