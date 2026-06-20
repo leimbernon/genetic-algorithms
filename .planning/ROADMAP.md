@@ -1307,7 +1307,20 @@ Plans:
   7. Each former panic has a test feeding bad input and asserting the matching `GaError` variant
   8. `cargo test`, `cargo test --features serde`, `cargo clippy` clean
 
-**Plans**: TBD
+**Plans**: 1/4 plans executed
+**Wave 1**
+
+- [x] 78-01-PLAN.md — Add GaError::InternalError variant; convert GA generation-loop AOS mutex + ga/ fitness-cache locks
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 78-02-PLAN.md — EDA/PSO/CMA empty-init panics → InitializationError (run() returns Result); engine cache locks → InternalError
+- [ ] 78-03-PLAN.md — Cellular/ALPS new() → Result/ConfigurationError; SelectionOperator::select → Result (Lexicase SelectionError); OX order non-unique IDs → CrossoverError
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 78-04-PLAN.md — Update all test/bench callers; add error-path tests for every former panic; final panic audit + full-suite green gate
+
 **UI hint**: no
 
 ### Phase 79: Add Runnable Examples for GP, DE, Scatter, Cellular, ALPS Engines (Issue #281)
@@ -1456,7 +1469,7 @@ Plans:
 | 75. Reduce Clones / Reusable Offspring Buffers (#258) | v3.0.0 | 3/3 | Complete   | 2026-06-19 |
 | 76. Parallelize Survivor Selection & Non-Dominated Sorting (#259) | v3.0.0 | 2/2 | ✓ Complete | — |
 | 77. Extend Fitness Cache to More Engines (#260) | v3.0.0 | 1/1 | Complete   | 2026-06-19 |
-| 78. Replace User-Input Panics with GaError (#279) | v3.0.0 | TBD | Pending | — |
+| 78. Replace User-Input Panics with GaError (#279) | v3.0.0 | 1/4 | In Progress|  |
 | 79. Add Runnable Examples for GP, DE, Scatter, Cellular, ALPS (#281) | v3.0.0 | TBD | Pending | — |
 | 80. Document CmaEngine, PsoEngine, EdaEngine (#282) | v3.0.0 | TBD | Pending | — |
 | 81. Add Prelude Module (#283) | v3.0.0 | TBD | Pending | — |

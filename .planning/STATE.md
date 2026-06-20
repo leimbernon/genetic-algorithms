@@ -2,14 +2,16 @@
 gsd_state_version: 1.0
 milestone: v3.0.0
 milestone_name: — Advanced Representations, Alternative Strategies & Architecture Simplification
-status: verifying
+current_phase: 78
+current_phase_name: replace-user-input-panics-with-gaerror-issue-279
+status: executing
 stopped_at: Phase 78 context gathered
-last_updated: "2026-06-19T13:01:05.850Z"
+last_updated: "2026-06-20T10:07:22.396Z"
 progress:
   total_phases: 51
   completed_phases: 27
-  total_plans: 98
-  completed_plans: 139
+  total_plans: 102
+  completed_plans: 140
   percent: 53
 ---
 
@@ -21,14 +23,14 @@ See: .planning/PROJECT.md (updated 2026-05-18)
 
 **Core value:** Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library
 **Core value:** Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library
-**Current focus:** Phase 77 — extend-fitness-cache-to-more-engines-issue-260
+**Current focus:** Phase 78 — replace-user-input-panics-with-gaerror-issue-279
 
 ## Current Position
 
-Phase: 77 (extend-fitness-cache-to-more-engines-issue-260) — EXECUTING
-Plan: 1 of 1
+Phase: 78 (replace-user-input-panics-with-gaerror-issue-279) — EXECUTING
+Plan: 2 of 4
 Plans: 138/138 complete (new phases have no plans yet)
-Status: Phase complete — ready for verification
+Status: Ready to execute
 
 Progress bar: [██████████████████░░] 45/50 phases complete
 
@@ -36,6 +38,7 @@ Progress bar: [██████████████████░░] 45/
 
 ### Decisions
 
+- v3.0.0: GaError::InternalError(String) is the canonical variant for violated internal invariants (poisoned mutexes); mutex callers use map_err propagation, never unwrap/expect
 - v2.3.0: `#[path]` re-exports in lib.rs are the canonical non-breaking restructure pattern — no semver bump needed
 - v2.3.0: `mod.rs` directory form required when restructured modules have nested submodules
 - v2.3.0: New engines land in `src/engines/` with their own subdirectory; `src/lib.rs` adds the re-export
@@ -95,7 +98,7 @@ Progress bar: [██████████████████░░] 45/
 
 ## Session Continuity
 
-Last session: 2026-06-19T13:01:05.843Z
+Last session: 2026-06-20T10:07:13.850Z
 Stopped at: Phase 78 context gathered
 Resume file: .planning/phases/78-replace-user-input-panics-with-gaerror-issue-279/78-CONTEXT.md
 
@@ -110,3 +113,4 @@ Resume file: .planning/phases/78-replace-user-input-panics-with-gaerror-issue-27
 | Phase 75 P03 | 30min | 4 tasks | 14 files |
 | Phase 76 P01 | 1min | 1 task | 2 files |
 | Phase 76 P02 | 8min | 2 tasks | 3 files |
+| Phase 78 P01 | 5min | 3 tasks | 6 files |

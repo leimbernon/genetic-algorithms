@@ -30,6 +30,7 @@ use std::sync::{Arc, Mutex};
 use rand::Rng;
 
 use crate::configuration::ProblemSolving;
+use crate::error::GaError;
 use crate::ga::TerminationCause;
 use crate::observer::GaObserver;
 use crate::rng::make_rng;
@@ -89,7 +90,7 @@ pub enum EdaModel {
 ///     |n| vec![Binary::default(); n],
 ///     |dna| dna.iter().filter(|g| g.id() == 1).count() as f64,
 /// );
-/// let result: EdaResult<Binary> = engine.run();
+/// let result: EdaResult<Binary> = engine.run().unwrap();
 /// println!("Best fitness: {}", result.best_fitness);
 /// ```
 pub struct EdaResult<U: LinearChromosome> {
@@ -262,7 +263,7 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
     /// Run the EDA engine (Bernoulli model) and return the result.
     ///
     /// When `population_size` is 0, a default of 100 is used.
-    pub fn run(&mut self) -> EdaResult<U>
+    pub fn run(&mut self) -> Result<EdaResult<U>, GaError>
     where
         U::Gene: Debug,
     {
@@ -312,7 +313,9 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
         let mut pop: Vec<U> = (self.init_fn)(pop_size.max(1));
 
         if pop.is_empty() {
-            panic!("EdaEngine: init_fn returned an empty population");
+            return Err(GaError::InitializationError(
+                "EdaEngine: init_fn returned an empty population".to_string(),
+            ));
         }
 
         // Evaluate initial population
@@ -336,7 +339,9 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
         // Cache snapshot for per-generation delta stats.
         let (mut prev_cache_hits, mut prev_cache_misses) = match &self.fitness_cache {
             Some(ch) => {
-                let c = ch.lock().expect("fitness cache lock poisoned");
+                let c = ch
+                    .lock()
+                    .map_err(|_| GaError::InternalError("fitness cache mutex poisoned".to_string()))?;
                 (c.hits(), c.misses())
             }
             None => (0, 0),
@@ -405,7 +410,9 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
             let mut stats =
                 GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
             if let Some(ref ch) = self.fitness_cache {
-                let c = ch.lock().expect("fitness cache lock poisoned");
+                let c = ch
+                    .lock()
+                    .map_err(|_| GaError::InternalError("fitness cache mutex poisoned".to_string()))?;
                 stats.cache_hits = Some(c.hits().saturating_sub(prev_cache_hits));
                 stats.cache_misses = Some(c.misses().saturating_sub(prev_cache_misses));
                 prev_cache_hits = c.hits();
@@ -428,13 +435,13 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
         let all_stats_ref = all_stats.as_slice();
         self.notify(|obs| obs.on_run_end(termination_cause, all_stats_ref));
 
-        EdaResult {
+        Ok(EdaResult {
             population: pop,
             best,
             best_fitness,
             generations,
             learned_model: best_model,
-        }
+        })
     }
 
     /// Estimate Bernoulli probabilities from a slice of references.
@@ -625,7 +632,7 @@ where
     }
 
     /// Run the EDA engine (Gaussian model) and return the result.
-    pub fn run(&mut self) -> EdaResult<U>
+    pub fn run(&mut self) -> Result<EdaResult<U>, GaError>
     where
         U::Gene: Debug,
     {
@@ -671,7 +678,9 @@ where
         let mut pop: Vec<U> = (self.init_fn)(pop_size.max(1));
 
         if pop.is_empty() {
-            panic!("EdaRealEngine: init_fn returned an empty population");
+            return Err(GaError::InitializationError(
+                "EdaRealEngine: init_fn returned an empty population".to_string(),
+            ));
         }
 
         for ind in &mut pop {
@@ -696,7 +705,9 @@ where
         // Cache snapshot for per-generation delta stats.
         let (mut prev_cache_hits, mut prev_cache_misses) = match &self.fitness_cache {
             Some(ch) => {
-                let c = ch.lock().expect("fitness cache lock poisoned");
+                let c = ch
+                    .lock()
+                    .map_err(|_| GaError::InternalError("fitness cache mutex poisoned".to_string()))?;
                 (c.hits(), c.misses())
             }
             None => (0, 0),
@@ -763,7 +774,9 @@ where
             let mut stats =
                 GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
             if let Some(ref ch) = self.fitness_cache {
-                let c = ch.lock().expect("fitness cache lock poisoned");
+                let c = ch
+                    .lock()
+                    .map_err(|_| GaError::InternalError("fitness cache mutex poisoned".to_string()))?;
                 stats.cache_hits = Some(c.hits().saturating_sub(prev_cache_hits));
                 stats.cache_misses = Some(c.misses().saturating_sub(prev_cache_misses));
                 prev_cache_hits = c.hits();
@@ -784,12 +797,12 @@ where
         let all_stats_ref = all_stats.as_slice();
         self.notify(|obs| obs.on_run_end(termination_cause, all_stats_ref));
 
-        EdaResult {
+        Ok(EdaResult {
             population: pop,
             best,
             best_fitness,
             generations,
             learned_model: best_model,
-        }
+        })
     }
 }
