@@ -49,7 +49,9 @@ where
 
             // Step 1: check cache for each chromosome; collect misses
             {
-                let mut cache = cache_handle.lock().expect("fitness cache lock poisoned");
+                let mut cache = cache_handle
+                    .lock()
+                    .map_err(|_| GaError::InternalError("fitness cache mutex poisoned".to_string()))?;
                 for (i, chromosome) in pop.iter().enumerate() {
                     let key = crate::fitness::cache::hash_dna(chromosome.dna());
                     match cache.get(key) {
@@ -78,7 +80,9 @@ where
 
                 // Step 4: re-acquire cache and store miss results
                 {
-                    let mut cache = cache_handle.lock().expect("fitness cache lock poisoned");
+                    let mut cache = cache_handle
+                        .lock()
+                        .map_err(|_| GaError::InternalError("fitness cache mutex poisoned".to_string()))?;
                     for (pos, &orig_i) in miss_indices.iter().enumerate() {
                         let f = miss_values[pos];
                         fitness_values[orig_i] = f;
