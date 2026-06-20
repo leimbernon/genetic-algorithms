@@ -198,7 +198,18 @@ where
                     // Select a mate from the neighborhood using the configured operator.
                     // We ask for 1 couple with num_parents=2; take the second element of the
                     // group as the mate so we don't just pick the cell itself.
-                    let pairs = self.config.selection.select(&local, 1, 1, 2);
+                    // Degrade gracefully when the configured selection cannot run through the
+                    // trait (e.g. Lexicase requires VectorFitness, not available here).
+                    let pairs = match self.config.selection.select(&local, 1, 1, 2) {
+                        Ok(p) => p,
+                        Err(_) => {
+                            crate::log_warn!(target: "selection_events",
+                                "CellularEngine: configured selection cannot run through the \
+                                 trait (e.g. Lexicase); skipping mate selection for this cell");
+                            // Fallback: use the first neighbor as mate (index 1 in local).
+                            vec![vec![0, 1]]
+                        }
+                    };
                     let mate_local_idx = if let Some(group) = pairs.first() {
                         let a = group[0];
                         let b = group[1];

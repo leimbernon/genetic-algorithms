@@ -16,6 +16,7 @@ use crate::traits::{ChromosomeT, LinearChromosome};
 /// ```rust,no_run
 /// use genetic_algorithms::traits::SelectionOperator;
 /// use genetic_algorithms::traits::ChromosomeT;
+/// use genetic_algorithms::error::GaError;
 ///
 /// struct MySelection;
 ///
@@ -26,29 +27,34 @@ use crate::traits::{ChromosomeT, LinearChromosome};
 ///         number_of_couples: usize,
 ///         number_of_threads: usize,
 ///         num_parents: usize,
-///     ) -> Vec<Vec<usize>>
+///     ) -> Result<Vec<Vec<usize>>, GaError>
 ///     where
 ///         U: ChromosomeT + Sync + Send + 'static + Clone,
 ///     {
 ///         // Custom selection logic: return random parent pairs
-///         vec![]
+///         Ok(vec![])
 ///     }
 /// }
 /// ```
 pub trait SelectionOperator {
     /// Select N-ary parent groups from the population.
     ///
-    /// Returns a vector of groups, each containing `num_parents` population
-    /// indices representing the selected parents for one crossover operation.
-    /// For standard 2-parent crossover pass `num_parents = 2`; for multi-parent
-    /// operators (UNDX, SPX, PCX) pass the operator's `num_parents` value.
+    /// Returns `Ok` with a vector of groups, each containing `num_parents`
+    /// population indices representing the selected parents for one crossover
+    /// operation. For standard 2-parent crossover pass `num_parents = 2`; for
+    /// multi-parent operators (UNDX, SPX, PCX) pass the operator's `num_parents`
+    /// value.
+    ///
+    /// Returns `Err(GaError::SelectionError)` if the selection cannot be
+    /// performed for the given configuration (e.g., Lexicase variant called
+    /// through the trait without VectorFitness support).
     fn select<U>(
         &self,
         chromosomes: &[U],
         number_of_couples: usize,
         number_of_threads: usize,
         num_parents: usize,
-    ) -> Vec<Vec<usize>>
+    ) -> Result<Vec<Vec<usize>>, GaError>
     where
         U: ChromosomeT + Sync + Send + 'static + Clone;
 }

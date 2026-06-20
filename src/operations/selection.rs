@@ -38,30 +38,30 @@ impl SelectionOperator for Selection {
         number_of_couples: usize,
         number_of_threads: usize,
         num_parents: usize,
-    ) -> Vec<Vec<usize>>
+    ) -> Result<Vec<Vec<usize>>, GaError>
     where
         U: ChromosomeT + Sync + Send + 'static + Clone,
     {
         match self {
-            Selection::Random => random(chromosomes, num_parents),
+            Selection::Random => Ok(random(chromosomes, num_parents)),
             Selection::RouletteWheel => {
-                roulette_wheel_selection(chromosomes, number_of_couples, num_parents)
+                Ok(roulette_wheel_selection(chromosomes, number_of_couples, num_parents))
             }
             Selection::StochasticUniversalSampling => {
-                stochastic_universal_sampling(chromosomes, number_of_couples, num_parents)
+                Ok(stochastic_universal_sampling(chromosomes, number_of_couples, num_parents))
             }
-            Selection::Tournament => tournament(
+            Selection::Tournament => Ok(tournament(
                 chromosomes,
                 number_of_couples,
                 number_of_threads,
                 num_parents,
-            ),
-            Selection::Rank => rank_selection(chromosomes, number_of_couples, num_parents),
+            )),
+            Selection::Rank => Ok(rank_selection(chromosomes, number_of_couples, num_parents)),
             Selection::Boltzmann => {
-                boltzmann_selection(chromosomes, number_of_couples, 1.0, num_parents)
+                Ok(boltzmann_selection(chromosomes, number_of_couples, 1.0, num_parents))
             }
             Selection::Truncation => {
-                truncation_selection(chromosomes, number_of_couples, num_parents)
+                Ok(truncation_selection(chromosomes, number_of_couples, num_parents))
             }
             // WARNING: The `SelectionOperator` trait does not carry operator-specific
             // configuration, so `niche_radius` defaults to 0.1 on this path.
@@ -73,14 +73,15 @@ impl SelectionOperator for Selection {
                     "Selection::Clearing called through SelectionOperator trait: \
                      niche_radius defaults to 0.1 (configured value ignored). \
                      Use selection::factory for the full configuration.");
-                clearing_selection(chromosomes, 0.1, number_of_couples, num_parents)
+                Ok(clearing_selection(chromosomes, 0.1, number_of_couples, num_parents))
             }
             Selection::Lexicase | Selection::EpsilonLexicase => {
-                panic!(
-                    "Selection::Lexicase/EpsilonLexicase cannot be called through SelectionOperator \
-                     trait: use selection::factory_lexicase for Lexicase/EpsilonLexicase operators. \
+                Err(GaError::SelectionError(
+                    "Selection::Lexicase/EpsilonLexicase cannot be called through the \
+                     SelectionOperator trait: use selection::factory_lexicase. \
                      Island-model and NSGA-II paths do not support VectorFitness."
-                );
+                        .to_string(),
+                ))
             }
         }
     }
@@ -166,7 +167,7 @@ where
             configuration.number_of_couples,
             number_of_threads,
             num_parents,
-        ),
+        )?,
     };
 
     Ok(groups)
