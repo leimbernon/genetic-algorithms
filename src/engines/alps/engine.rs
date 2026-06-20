@@ -22,6 +22,7 @@
 use std::sync::Arc;
 
 use crate::configuration::{CrossoverConfiguration, ProblemSolving};
+use crate::error::GaError;
 use crate::operations::crossover;
 use crate::operations::mutation::ValueMutable;
 use crate::rng::make_rng;
@@ -104,16 +105,32 @@ impl<U: LinearChromosome> AlpsEngine<U> {
     /// * `init_fn` — called with a count `n`; must return `n` initialised
     ///   chromosomes (fitness is ignored — the engine re-evaluates).
     /// * `fitness_fn` — maps a DNA slice to a scalar fitness value.
+    ///
+    /// # Errors
+    ///
+    /// Returns `GaError::ConfigurationError` if `config.layer_size == 0` or
+    /// `config.n_layers == 0` — zero-size configs are rejected at construction
+    /// time (D-07: validation moved into `new()`).
     pub fn new(
         config: AlpsConfiguration,
         init_fn: impl Fn(usize) -> Vec<U> + Send + Sync + 'static,
         fitness_fn: impl Fn(&[U::Gene]) -> f64 + Send + Sync + 'static,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, GaError> {
+        if config.layer_size == 0 {
+            return Err(GaError::ConfigurationError(
+                "AlpsEngine: layer_size must be > 0".to_string(),
+            ));
+        }
+        if config.n_layers == 0 {
+            return Err(GaError::ConfigurationError(
+                "AlpsEngine: n_layers must be > 0".to_string(),
+            ));
+        }
+        Ok(Self {
             config,
             init_fn: Arc::new(init_fn),
             fitness_fn: Arc::new(fitness_fn),
-        }
+        })
     }
 }
 
@@ -123,12 +140,6 @@ where
 {
     /// Run the ALPS algorithm and return the result.
     pub fn run(&mut self) -> AlpsResult<U> {
-        if self.config.layer_size == 0 {
-            panic!("AlpsEngine: layer_size must be > 0");
-        }
-        if self.config.n_layers == 0 {
-            panic!("AlpsEngine: n_layers must be > 0");
-        }
         let max_ages = self.config.max_ages();
         let crossover_cfg = CrossoverConfiguration {
             method: self.config.crossover,

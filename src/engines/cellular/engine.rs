@@ -20,6 +20,7 @@
 use std::sync::Arc;
 
 use crate::configuration::{CrossoverConfiguration, ProblemSolving};
+use crate::error::GaError;
 use crate::operations::crossover;
 use crate::operations::mutation::ValueMutable;
 use crate::rng::make_rng;
@@ -101,16 +102,27 @@ where
     /// * `init_fn` — called once with `rows * cols`; must return that many
     ///   initialised chromosomes (fitness is ignored — the engine re-evaluates).
     /// * `fitness_fn` — maps a DNA slice to a scalar fitness value.
+    ///
+    /// # Errors
+    ///
+    /// Returns `GaError::ConfigurationError` if `config.rows == 0` or
+    /// `config.cols == 0` — a zero-size grid is rejected at construction time
+    /// (D-06: validation moved into `new()`).
     pub fn new(
         config: CellularConfiguration,
         init_fn: impl Fn(usize) -> Vec<U> + Send + Sync + 'static,
         fitness_fn: impl Fn(&[U::Gene]) -> f64 + Send + Sync + 'static,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, GaError> {
+        if config.rows == 0 || config.cols == 0 {
+            return Err(GaError::ConfigurationError(
+                "CellularEngine: rows and cols must both be > 0".to_string(),
+            ));
+        }
+        Ok(Self {
             config,
             init_fn: Arc::new(init_fn),
             fitness_fn: Arc::new(fitness_fn),
-        }
+        })
     }
 }
 
@@ -132,9 +144,8 @@ where
         }
 
         // ── Best tracking ─────────────────────────────────────────────────────
-        if pop.is_empty() {
-            panic!("CellularEngine: grid must have at least 1 cell (rows > 0 && cols > 0)");
-        }
+        // Validation moved to new() (D-06); pop is guaranteed non-empty here.
+        debug_assert!(!pop.is_empty(), "grid validated > 0 in new()");
         let mut best_fitness = pop[0].fitness();
         let mut best = pop[0].clone();
         for ind in &pop {
