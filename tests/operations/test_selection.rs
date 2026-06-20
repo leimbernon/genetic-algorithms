@@ -2,9 +2,11 @@
 use crate::structures::{Chromosome, Gene};
 use genetic_algorithms::{
     configuration::SelectionConfiguration,
+    error::GaError,
     fitness::FitnessFnWrapper,
     operations::selection::{self, fitness_proportionate, random, tournament},
     operations::Selection,
+    traits::SelectionOperator,
 };
 
 #[test]
@@ -1207,4 +1209,52 @@ fn test_factory_returns_groups_of_num_parents() {
             group
         );
     }
+}
+
+// ─── Error path: Lexicase / EpsilonLexicase via SelectionOperator trait ───────
+
+/// Builds a small population of Chromosome for use in trait-based selection tests.
+fn make_small_pop() -> Vec<Chromosome> {
+    vec![
+        Chromosome {
+            dna: vec![Gene { id: 1 }, Gene { id: 2 }],
+            fitness: 1.0,
+            age: 0,
+            fitness_fn: genetic_algorithms::fitness::FitnessFnWrapper::default(),
+            fitness_values: vec![1.0, 2.0],
+        },
+        Chromosome {
+            dna: vec![Gene { id: 3 }, Gene { id: 4 }],
+            fitness: 2.0,
+            age: 0,
+            fitness_fn: genetic_algorithms::fitness::FitnessFnWrapper::default(),
+            fitness_values: vec![2.0, 1.0],
+        },
+    ]
+}
+
+/// Operator error path: Selection::Lexicase invoked through SelectionOperator::select
+/// returns Err(GaError::SelectionError(_)).
+#[test]
+fn test_lexicase_selection_via_trait_returns_error() {
+    let pop = make_small_pop();
+    let result = Selection::Lexicase.select(&pop, 1, 1, 2);
+    assert!(
+        matches!(result, Err(GaError::SelectionError(_))),
+        "Selection::Lexicase via trait should return SelectionError, got {:?}",
+        result
+    );
+}
+
+/// Operator error path: Selection::EpsilonLexicase invoked through SelectionOperator::select
+/// returns Err(GaError::SelectionError(_)).
+#[test]
+fn test_epsilon_lexicase_selection_via_trait_returns_error() {
+    let pop = make_small_pop();
+    let result = Selection::EpsilonLexicase.select(&pop, 1, 1, 2);
+    assert!(
+        matches!(result, Err(GaError::SelectionError(_))),
+        "Selection::EpsilonLexicase via trait should return SelectionError, got {:?}",
+        result
+    );
 }

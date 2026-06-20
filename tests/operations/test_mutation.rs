@@ -1,7 +1,9 @@
 #[cfg(test)]
 use crate::structures::{Chromosome, Gene};
 use genetic_algorithms::{
+    error::GaError,
     fitness::FitnessFnWrapper,
+    operations::crossover::order::order,
     operations::mutation::{self, aga_probability, inversion, scramble, swap},
     operations::{CreepParams, GaussianParams, Mutation},
 };
@@ -586,7 +588,8 @@ fn test_factory_non_value_creep_returns_error() {
         fitness_fn: FitnessFnWrapper::default(),
         fitness_values: vec![],
     };
-    let result = mutation::factory_non_value(Mutation::Creep(CreepParams { step: None }), &mut chromosome);
+    let result =
+        mutation::factory_non_value(Mutation::Creep(CreepParams { step: None }), &mut chromosome);
     assert!(
         result.is_err(),
         "factory_non_value should reject Mutation::Creep"
@@ -602,7 +605,10 @@ fn test_factory_non_value_gaussian_returns_error() {
         fitness_fn: FitnessFnWrapper::default(),
         fitness_values: vec![],
     };
-    let result = mutation::factory_non_value(Mutation::Gaussian(GaussianParams { sigma: None }), &mut chromosome);
+    let result = mutation::factory_non_value(
+        Mutation::Gaussian(GaussianParams { sigma: None }),
+        &mut chromosome,
+    );
     assert!(
         result.is_err(),
         "factory_non_value should reject Mutation::Gaussian"
@@ -645,4 +651,36 @@ fn test_mutation_aga_probability_equal_parents_below_avg() {
     let prob = aga_probability(&parent, &parent, 50.0, 0.9, 0.1);
     // larger_f = 25 < f_avg = 50 => probability_max
     assert_eq!(prob, 0.9);
+}
+
+// ─── Error path: OX crossover non-unique gene IDs ─────────────────────────────
+
+/// Operator error path: order() with parents containing duplicate gene IDs
+/// (non-unique permutation) returns Err(GaError::CrossoverError(_)).
+///
+/// When ALL gene IDs are the same, ox_build_child can never fill positions outside
+/// the segment (all filler genes are filtered out), guaranteeing CrossoverError
+/// for any random crossover point selection.
+#[test]
+fn test_ox_crossover_non_unique_ids_returns_error() {
+    // Parent with all-identical gene IDs — worst-case non-unique permutation.
+    // ox_build_child: segment_ids = {1}; all filler genes have id=1 (filtered out);
+    // positions outside the segment remain None → CrossoverError guaranteed.
+    let parent_dup = Chromosome {
+        dna: vec![
+            Gene { id: 1 },
+            Gene { id: 1 },
+            Gene { id: 1 },
+            Gene { id: 1 },
+            Gene { id: 1 },
+        ],
+        fitness: 0.0,
+        age: 0,
+        fitness_fn: FitnessFnWrapper::default(),
+        fitness_values: vec![],
+    };
+    assert!(
+        matches!(order(&parent_dup, &parent_dup), Err(GaError::CrossoverError(_))),
+        "order() with non-unique gene IDs should return CrossoverError"
+    );
 }
