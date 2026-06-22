@@ -1,10 +1,10 @@
 //! Integration test: a minimal GA can be built and run using only prelude imports
 //! plus concrete chromosome/genotype types. Covers SC-3.
 
-use genetic_algorithms::prelude::*;
 use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
 use genetic_algorithms::genotypes::Binary;
 use genetic_algorithms::initializers::binary_random_initialization;
+use genetic_algorithms::prelude::*;
 
 fn count_ones(genes: &[Binary]) -> f64 {
     genes.iter().filter(|g| g.value).count() as f64
@@ -27,5 +27,8 @@ fn test_prelude_minimal_ga() {
         .expect("valid configuration");
 
     let result = ga.run();
-    assert!(result.is_ok(), "GA run should complete using prelude imports");
+    assert!(
+        result.is_ok(),
+        "GA run should complete using prelude imports"
+    );
 }

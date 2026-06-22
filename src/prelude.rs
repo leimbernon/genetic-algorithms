@@ -26,41 +26,41 @@
 //! be imported explicitly.
 
 // --- Engine entry points ---
-pub use crate::ga::Ga;
-pub use crate::de::DeEngine;
-pub use crate::scatter::ScatterEngine;
-pub use crate::cellular::CellularEngine;
 pub use crate::alps::AlpsEngine;
-pub use crate::island::IslandGa;
-pub use crate::gp::GpGa;
+pub use crate::cellular::CellularEngine;
+pub use crate::cma::CmaEngine;
+pub use crate::de::DeEngine;
 pub use crate::eda::{EdaEngine, EdaRealEngine};
+pub use crate::ga::Ga;
+pub use crate::gp::GpGa;
+pub use crate::hill_climb::HillClimbEngine;
+pub use crate::ibea::IbeaGa;
+pub use crate::island::IslandGa;
+pub use crate::moead::MoeaDGa;
 pub use crate::nsga2::Nsga2Ga;
 pub use crate::nsga3::Nsga3Ga;
-pub use crate::moead::MoeaDGa;
-pub use crate::spea2::Spea2Ga;
-pub use crate::sms_emoa::SmsEmoaGa;
-pub use crate::ibea::IbeaGa;
-pub use crate::cma::CmaEngine;
-pub use crate::pso::PsoEngine;
-pub use crate::hill_climb::HillClimbEngine;
 pub use crate::permutate::PermutateEngine;
+pub use crate::pso::PsoEngine;
+pub use crate::scatter::ScatterEngine;
+pub use crate::sms_emoa::SmsEmoaGa;
+pub use crate::spea2::Spea2Ga;
 
 // --- Engine-specific configuration structs ---
-pub use crate::cma::CmaConfiguration;
-pub use crate::pso::PsoConfiguration;
-pub use crate::eda::EdaConfiguration;
 pub use crate::alps::AlpsConfiguration;
+pub use crate::cellular::CellularConfiguration;
+pub use crate::cma::CmaConfiguration;
+pub use crate::de::DeConfiguration;
+pub use crate::eda::EdaConfiguration;
+pub use crate::gp::GpConfiguration;
 pub use crate::hill_climb::HillClimbConfiguration;
 pub use crate::permutate::PermutateConfiguration;
-pub use crate::de::DeConfiguration;
+pub use crate::pso::PsoConfiguration;
 pub use crate::scatter::ScatterConfiguration;
-pub use crate::cellular::CellularConfiguration;
-pub use crate::gp::GpConfiguration;
 
 // --- Core traits ---
 pub use crate::traits::{
-    ChromosomeT, ConfigurationT, GeneT, LinearChromosome, CrossoverConfig, ElitismConfig,
-    ExtensionConfig, LocalSearchConfig, MutationConfig, NichingConfig, SelectionConfig,
+    ChromosomeT, ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, GeneT,
+    LinearChromosome, LocalSearchConfig, MutationConfig, NichingConfig, SelectionConfig,
     StoppingConfig, SurvivorConfig,
 };
 
@@ -68,8 +68,8 @@ pub use crate::traits::{
 pub use crate::operations::{Crossover, Mutation, Selection, Survivor};
 
 // --- Configuration types ---
-pub use crate::configuration::ProblemSolving;
 pub use crate::chromosomes::ChromosomeLength;
+pub use crate::configuration::ProblemSolving;
 
 // --- Error ---
 pub use crate::error::GaError;
