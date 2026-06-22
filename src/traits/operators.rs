@@ -16,6 +16,7 @@ use crate::traits::{ChromosomeT, LinearChromosome};
 /// ```rust,no_run
 /// use genetic_algorithms::traits::SelectionOperator;
 /// use genetic_algorithms::traits::ChromosomeT;
+/// use genetic_algorithms::error::GaError;
 ///
 /// struct MySelection;
 ///
@@ -26,29 +27,34 @@ use crate::traits::{ChromosomeT, LinearChromosome};
 ///         number_of_couples: usize,
 ///         number_of_threads: usize,
 ///         num_parents: usize,
-///     ) -> Vec<Vec<usize>>
+///     ) -> Result<Vec<Vec<usize>>, GaError>
 ///     where
 ///         U: ChromosomeT + Sync + Send + 'static + Clone,
 ///     {
 ///         // Custom selection logic: return random parent pairs
-///         vec![]
+///         Ok(vec![])
 ///     }
 /// }
 /// ```
 pub trait SelectionOperator {
     /// Select N-ary parent groups from the population.
     ///
-    /// Returns a vector of groups, each containing `num_parents` population
-    /// indices representing the selected parents for one crossover operation.
-    /// For standard 2-parent crossover pass `num_parents = 2`; for multi-parent
-    /// operators (UNDX, SPX, PCX) pass the operator's `num_parents` value.
+    /// Returns `Ok` with a vector of groups, each containing `num_parents`
+    /// population indices representing the selected parents for one crossover
+    /// operation. For standard 2-parent crossover pass `num_parents = 2`; for
+    /// multi-parent operators (UNDX, SPX, PCX) pass the operator's `num_parents`
+    /// value.
+    ///
+    /// Returns `Err(GaError::SelectionError)` if the selection cannot be
+    /// performed for the given configuration (e.g., Lexicase variant called
+    /// through the trait without VectorFitness support).
     fn select<U>(
         &self,
         chromosomes: &[U],
         number_of_couples: usize,
         number_of_threads: usize,
         num_parents: usize,
-    ) -> Vec<Vec<usize>>
+    ) -> Result<Vec<Vec<usize>>, GaError>
     where
         U: ChromosomeT + Sync + Send + 'static + Clone;
 }
@@ -88,7 +94,8 @@ pub trait CrossoverOperator {
     /// **Note:** Additional parameters (e.g., `number_of_points` for
     /// multi-point crossover) are expected to be stored in the operator
     /// struct or captured from configuration.
-    fn crossover<U: LinearChromosome>(&self, parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError>;
+    fn crossover<U: LinearChromosome>(&self, parent_1: &U, parent_2: &U)
+        -> Result<Vec<U>, GaError>;
 }
 
 /// Trait for mutation operators.
@@ -133,13 +140,9 @@ pub trait MutationOperator {
     ///   `sigma.unwrap_or(0.1)`). Context-dependent variants (`Differential`,
     ///   `NonUniform`, `Insertion`, `Deletion`) are handled by the GA engine before
     ///   this trait is called and return `GaError::MutationError` when invoked directly.
-    fn mutate<U>(
-        &self,
-        individual: &mut U,
-        mutation: &Mutation,
-    ) -> Result<(), GaError>
+    fn mutate<U>(&self, individual: &mut U, mutation: &Mutation) -> Result<(), GaError>
     where
-        U: LinearChromosome + ValueMutable + 'static;
+        U: LinearChromosome + ValueMutable + crate::traits::RealValuedMutation + 'static;
 }
 
 /// Trait for survivor selection operators.

@@ -1,4 +1,4 @@
-use genetic_algorithms::spea2::configuration::{Spea2Configuration, ObjectiveDirection};
+use genetic_algorithms::spea2::configuration::{ObjectiveDirection, Spea2Configuration};
 
 #[test]
 fn test_spea2_configuration_default() {

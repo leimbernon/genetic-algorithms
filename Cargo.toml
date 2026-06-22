@@ -112,6 +112,34 @@ harness = false
 name = "rastrigin"
 harness = false
 
+[[bench]]
+name = "pso"
+harness = false
+
+[[bench]]
+name = "cma_es"
+harness = false
+
+[[bench]]
+name = "eda"
+harness = false
+
+[[bench]]
+name = "gp"
+harness = false
+
+[[bench]]
+name = "aos"
+harness = false
+
+[[bench]]
+name = "surrogate"
+harness = false
+
+[[bench]]
+name = "batch_fitness"
+harness = false
+
 [[example]]
 name = "sms_emoa_zdt1"
 required-features = ["benchmarks", "logging"]

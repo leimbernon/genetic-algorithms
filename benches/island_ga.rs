@@ -90,6 +90,7 @@ impl LinearChromosome for SimpleChromosome {
 }
 impl ValueMutable for SimpleChromosome {}
 impl OperatorCompat for SimpleChromosome {}
+impl genetic_algorithms::traits::RealValuedMutation for SimpleChromosome {}
 
 // ---------------------------------------------------------------------------
 // Setup helper

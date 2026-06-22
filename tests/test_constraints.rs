@@ -5,11 +5,14 @@ use genetic_algorithms::constraints::{
     PenaltyStrategy,
 };
 use genetic_algorithms::error::GaError;
+use genetic_algorithms::ga::Ga;
 use genetic_algorithms::genotypes::Range as RangeGene;
 use genetic_algorithms::initializers::range_random_initialization;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
-use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig, SelectionConfig, StoppingConfig};
-use genetic_algorithms::ga::Ga;
+use genetic_algorithms::traits::{
+    ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig, SelectionConfig,
+    StoppingConfig,
+};
 use std::borrow::Cow;
 
 #[test]
@@ -37,8 +40,16 @@ fn test_validate_penalty_strategy() {
     assert!(validate_penalty_strategy(&PenaltyStrategy::None).is_ok());
     assert!(validate_penalty_strategy(&PenaltyStrategy::Static { coefficient: 10.0 }).is_ok());
     assert!(validate_penalty_strategy(&PenaltyStrategy::Static { coefficient: -1.0 }).is_err());
-    assert!(validate_penalty_strategy(&PenaltyStrategy::Adaptive { initial_coefficient: 1.0, window_size: 5 }).is_ok());
-    assert!(validate_penalty_strategy(&PenaltyStrategy::Adaptive { initial_coefficient: 1.0, window_size: 0 }).is_err());
+    assert!(validate_penalty_strategy(&PenaltyStrategy::Adaptive {
+        initial_coefficient: 1.0,
+        window_size: 5
+    })
+    .is_ok());
+    assert!(validate_penalty_strategy(&PenaltyStrategy::Adaptive {
+        initial_coefficient: 1.0,
+        window_size: 0
+    })
+    .is_err());
 }
 
 #[test]
@@ -54,7 +65,9 @@ fn test_constraint_handling_ga_with_static_penalty() {
     };
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(
+            n.try_into().unwrap(),
+        ))
         .with_population_size(50)
         .with_initialization_fn(move |genes_per_chromosome, _| {
             range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
@@ -99,7 +112,9 @@ fn test_repair_operator() {
     };
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(
+            n.try_into().unwrap(),
+        ))
         .with_population_size(30)
         .with_initialization_fn(move |genes_per_chromosome, _| {
             range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
@@ -134,7 +149,9 @@ fn test_constraint_handling_adaptive_penalty() {
     };
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(
+            n.try_into().unwrap(),
+        ))
         .with_population_size(50)
         .with_initialization_fn(move |genes_per_chromosome, _| {
             range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
@@ -180,7 +197,9 @@ fn test_constraint_handling_feasibility_rules() {
     };
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(
+            n.try_into().unwrap(),
+        ))
         .with_population_size(50)
         .with_initialization_fn(move |genes_per_chromosome, _| {
             range_random_initialization(genes_per_chromosome, Some(&alleles_clone))

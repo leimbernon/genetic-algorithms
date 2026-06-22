@@ -245,9 +245,7 @@ fn ga_with_fitness_cache_range_chromosome() {
         .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(3))
         .with_alleles(alleles)
         .with_fitness_fn(|dna: &[RangeGene<f64>]| dna.iter().map(|g| g.value).sum::<f64>())
-        .with_initialization_fn(move |n, _| {
-            range_random_initialization(n, Some(&alleles_clone))
-        })
+        .with_initialization_fn(move |n, _| range_random_initialization(n, Some(&alleles_clone)))
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
         .with_mutation_method(Mutation::Value)
@@ -273,10 +271,11 @@ fn wrap_with_cache_returns_handle() {
     let call_count_clone = Arc::clone(&call_count);
 
     #[allow(clippy::type_complexity)]
-    let base_fn: Arc<dyn Fn(&[BinaryGene]) -> f64 + Send + Sync> = Arc::new(move |dna: &[BinaryGene]| {
-        call_count_clone.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        dna.len() as f64
-    });
+    let base_fn: Arc<dyn Fn(&[BinaryGene]) -> f64 + Send + Sync> =
+        Arc::new(move |dna: &[BinaryGene]| {
+            call_count_clone.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            dna.len() as f64
+        });
 
     let (wrapped_fn, cache_handle) = wrap_with_cache(base_fn, 16);
 

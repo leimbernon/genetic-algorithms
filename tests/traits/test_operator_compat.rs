@@ -211,8 +211,7 @@ fn default_none_returns() {
 fn restricted_crossover_rejected() {
     // Default crossover is Uniform; configure SinglePoint — neither is Pmx.
     let config = config_with_crossover(Crossover::SinglePoint);
-    let result =
-        generic_validator::operator_compat_check::<RestrictedCrossChromo>(&config);
+    let result = generic_validator::operator_compat_check::<RestrictedCrossChromo>(&config);
     assert!(
         matches!(result, Err(GaError::ConfigurationError(_))),
         "Expected ConfigurationError for incompatible crossover, got: {:?}",
@@ -225,8 +224,7 @@ fn restricted_crossover_rejected() {
 fn restricted_mutation_rejected() {
     // Configure Inversion — not in valid set (only Swap).
     let config = config_with_mutation(Mutation::Inversion);
-    let result =
-        generic_validator::operator_compat_check::<RestrictedMutChromo>(&config);
+    let result = generic_validator::operator_compat_check::<RestrictedMutChromo>(&config);
     assert!(
         matches!(result, Err(GaError::ConfigurationError(_))),
         "Expected ConfigurationError for incompatible mutation, got: {:?}",
@@ -238,8 +236,7 @@ fn restricted_mutation_rejected() {
 #[test]
 fn allowed_operator_accepted() {
     let config = config_with_crossover(Crossover::Pmx);
-    let result =
-        generic_validator::operator_compat_check::<RestrictedCrossChromo>(&config);
+    let result = generic_validator::operator_compat_check::<RestrictedCrossChromo>(&config);
     assert!(
         result.is_ok(),
         "Expected Ok for allowed crossover (Pmx), got: {:?}",
@@ -251,8 +248,7 @@ fn allowed_operator_accepted() {
 #[test]
 fn unrestricted_always_ok() {
     let config = default_config();
-    let result =
-        generic_validator::operator_compat_check::<BinaryChromosome>(&config);
+    let result = generic_validator::operator_compat_check::<BinaryChromosome>(&config);
     assert!(
         result.is_ok(),
         "Unrestricted chromosome should always pass operator_compat_check, got: {:?}",

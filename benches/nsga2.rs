@@ -29,6 +29,7 @@ mod non_dominated_sort {
         (50, 2), (50, 3), (50, 5),
         (100, 2), (100, 3), (100, 5),
         (500, 2), (500, 3), (500, 5),
+        (1000, 2), (1000, 5),
     ])]
     fn bench(bencher: divan::Bencher, (pop_size, n_obj): (usize, usize)) {
         let objectives = random_objectives(pop_size, n_obj);

@@ -17,18 +17,19 @@
 //!
 //! # Example
 //!
-//! ```rust,ignore
+//! ```rust,no_run
+//! // no_run: API illustration — MyChromosome is a user-defined type
 //! use genetic_algorithms::operations::{Crossover, Mutation};
 //! use genetic_algorithms::traits::OperatorCompat;
 //!
-//! impl OperatorCompat for MyChromosome {
-//!     fn valid_crossovers() -> Option<&'static [Crossover]> {
-//!         Some(&[Crossover::Pmx, Crossover::Order])
-//!     }
-//!     fn valid_mutations() -> Option<&'static [Mutation]> {
-//!         Some(&[Mutation::Swap, Mutation::Inversion])
-//!     }
-//! }
+//! // impl OperatorCompat for MyChromosome {
+//! //     fn valid_crossovers() -> Option<&'static [Crossover]> {
+//! //         Some(&[Crossover::Pmx, Crossover::Order])
+//! //     }
+//! //     fn valid_mutations() -> Option<&'static [Mutation]> {
+//! //         Some(&[Mutation::Swap, Mutation::Inversion])
+//! //     }
+//! // }
 //! ```
 //!
 //! # Design note — no blanket impl

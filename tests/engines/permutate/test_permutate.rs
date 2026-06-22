@@ -72,8 +72,7 @@ fn test_permutate_finds_best_candidate() {
         make_candidate(1.5),
         make_candidate(2.0),
     ];
-    let config = PermutateConfiguration::default()
-        .with_safety_gate(1000);
+    let config = PermutateConfiguration::default().with_safety_gate(1000);
 
     let mut engine = PermutateEngine::new(config, candidates);
     engine.run().expect("run must succeed");
@@ -93,8 +92,8 @@ fn test_permutate_maximization() {
         make_candidate(5.0),
         make_candidate(2.0),
     ];
-    let config = PermutateConfiguration::default()
-        .with_problem_solving(ProblemSolving::Maximization);
+    let config =
+        PermutateConfiguration::default().with_problem_solving(ProblemSolving::Maximization);
 
     let mut engine = PermutateEngine::new(config, candidates);
     engine.run().expect("run must succeed");
@@ -109,18 +108,21 @@ fn test_permutate_maximization() {
 
 #[test]
 fn test_permutate_safety_gate_triggers() {
-    let candidates: Vec<RangeChromosome<f64>> = (0..10)
-        .map(|i| make_candidate(i as f64))
-        .collect();
+    let candidates: Vec<RangeChromosome<f64>> = (0..10).map(|i| make_candidate(i as f64)).collect();
 
-    let config = PermutateConfiguration::default()
-        .with_safety_gate(3);
+    let config = PermutateConfiguration::default().with_safety_gate(3);
 
     let mut engine = PermutateEngine::new(config, candidates);
     let result = engine.run();
 
-    assert!(result.is_ok(), "run must return Ok even when safety gate triggers");
-    assert!(engine.best().is_some(), "best must be Some even when gate triggers");
+    assert!(
+        result.is_ok(),
+        "run must return Ok even when safety gate triggers"
+    );
+    assert!(
+        engine.best().is_some(),
+        "best must be Some even when gate triggers"
+    );
 }
 
 #[test]
@@ -145,8 +147,7 @@ fn test_permutate_observer_hooks_per_candidate() {
 
     let gen_start_count = events.iter().filter(|e| *e == "gen_start").count();
     assert_eq!(
-        gen_start_count,
-        3,
+        gen_start_count, 3,
         "gen_start must fire once per candidate (3 candidates)"
     );
 
@@ -193,8 +194,7 @@ fn test_permutate_fitness_target_early_stop() {
         make_candidate(-0.2),
     ];
 
-    let config = PermutateConfiguration::default()
-        .with_fitness_target(1.5);
+    let config = PermutateConfiguration::default().with_fitness_target(1.5);
 
     let mut engine = PermutateEngine::new(config, candidates);
     let result = engine.run();

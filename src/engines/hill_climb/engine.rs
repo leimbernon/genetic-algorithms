@@ -2,13 +2,13 @@
 
 use std::sync::Arc;
 
+use super::configuration::{HillClimbConfiguration, HillClimbMode};
 use crate::configuration::ProblemSolving;
 use crate::error::GaError;
 use crate::ga::TerminationCause;
 use crate::observer::GaObserver;
 use crate::stats::GenerationStats;
 use crate::traits::{LinearChromosome, Strategy};
-use super::configuration::{HillClimbConfiguration, HillClimbMode};
 
 /// Type alias for the neighbor-generation function stored inside [`HillClimbEngine`].
 type NeighborFn<U> = Arc<dyn Fn(&U) -> Vec<U> + Send + Sync>;
@@ -101,9 +101,7 @@ impl<U: LinearChromosome + Clone> HillClimbEngine<U> {
     /// via [`HillClimbEngine::best`] after this call.
     pub fn run(&mut self) -> Result<(), GaError> {
         let mut current = self.current.take().ok_or_else(|| {
-            GaError::ConfigurationError(
-                "HillClimbEngine: no initial solution provided".to_string(),
-            )
+            GaError::ConfigurationError("HillClimbEngine: no initial solution provided".to_string())
         })?;
 
         self.notify(|obs| obs.on_run_start());

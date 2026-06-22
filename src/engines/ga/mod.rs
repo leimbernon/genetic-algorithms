@@ -66,13 +66,14 @@
 //!
 //! ## Complete Example
 //!
-//! ```rust,ignore
-//! use genetic_algorithms::chromosomes::Range as RangeChromosome;
+//! ```rust,no_run
+//! // no_run: full GA algorithm run — illustrative API usage, not a runnable benchmark
+//! use genetic_algorithms::chromosomes::{ChromosomeLength, Range as RangeChromosome};
 //! use genetic_algorithms::ga::Ga;
 //! use genetic_algorithms::genotypes::Range as RangeGenotype;
 //! use genetic_algorithms::initializers::range_random_initialization;
 //! use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
-//! use genetic_algorithms::traits::{ChromosomeT, ConfigurationT, StoppingConfig};
+//! use genetic_algorithms::traits::{ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig, SurvivorConfig};
 //!
 //! // Rastrigin function: f(x) = A*n + sum(x_i^2 - A*cos(2*pi*x_i))
 //! fn rastrigin(dna: &[RangeGenotype<f64>]) -> f64 {
@@ -85,17 +86,17 @@
 //!
 //! let alleles = vec![RangeGenotype::new(0, vec![(-5.12, 5.12)], 0.0)];
 //!
-//! let mut ga = Ga::new()
+//! let mut ga: Ga<RangeChromosome<f64>> = Ga::new()
 //!     .with_population_size(200)
 //!     .with_max_generations(500)
-//!     .with_chromosome_length(crate::chromosomes::ChromosomeLength::Fixed(10))
+//!     .with_chromosome_length(ChromosomeLength::Fixed(10))
 //!     .with_fitness_fn(rastrigin)
 //!     .with_initialization_fn(move |n, _| {
 //!         range_random_initialization(n, Some(&alleles))
 //!     })
 //!     .with_selection_method(Selection::Tournament)
 //!     .with_crossover_method(Crossover::BlendAlpha)
-//!     .with_mutation_method(Mutation::Gaussian)
+//!     .with_mutation_method(Mutation::Gaussian(Default::default()))
 //!     .with_survivor_method(Survivor::Fitness)
 //!     .build()?;
 //!
@@ -161,8 +162,8 @@ use crate::{
     population::Population,
     traits::{
         ConfigurationT, CrossoverConfig, ElitismConfig, ExtensionConfig, GeneT, LinearChromosome,
-        LocalSearchConfig, LocalSearchOperator, MutationConfig, NichingConfig, VectorFitness,
-        OperatorCompat, SelectionConfig, StoppingConfig, Strategy, SurvivorConfig,
+        LocalSearchConfig, LocalSearchOperator, MutationConfig, NichingConfig, OperatorCompat,
+        SelectionConfig, StoppingConfig, Strategy, SurvivorConfig, VectorFitness,
     },
 };
 use rand::Rng;
@@ -356,7 +357,10 @@ where
     ///
     /// [`FitnessCache`]: crate::fitness::FitnessCache
     /// [`BatchFitnessEvaluator`]: crate::fitness::BatchFitnessEvaluator
-    surrogate: Option<(Arc<dyn crate::fitness::SurrogateModel<U> + Send + Sync>, f64)>,
+    surrogate: Option<(
+        Arc<dyn crate::fitness::SurrogateModel<U> + Send + Sync>,
+        f64,
+    )>,
 
     /// Optional structured lifecycle observer. When `None` (the default),
     /// no hook calls or timing measurements are performed (zero overhead).
@@ -777,7 +781,8 @@ where
         + mutation::ValueMutable
         + MaybeSerialize
         + MaybeDeserialize
-        + OperatorCompat,
+        + OperatorCompat
+        + crate::traits::RealValuedMutation,
     U::Gene: 'static + Debug,
 {
     /// Validates configuration and adjusts defaults, returning a ready-to-run instance.
@@ -796,13 +801,17 @@ where
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// let mut ga = Ga::new()
+    /// ```rust,no_run
+    /// // no_run: Ga::build() example — illustrative API usage
+    /// use genetic_algorithms::ga::Ga;
+    /// use genetic_algorithms::chromosomes::Binary;
+    /// use genetic_algorithms::traits::{ConfigurationT, StoppingConfig};
+    ///
+    /// let mut ga = Ga::<Binary>::new()
     ///     .with_population_size(100)
-    ///     .with_genes_per_chromosome(8)
-    ///     // ... other settings ...
+    ///     .with_max_generations(500)
     ///     .build()?;
-    /// ga.run()?;
+    /// # Ok::<_, Box<dyn std::error::Error>>(())
     /// ```
     pub fn build(mut self) -> Result<Self, GaError> {
         // Auto-set number_of_couples from population_size if not explicitly configured
@@ -862,9 +871,8 @@ where
         // Wrap fitness function with LRU cache if configured
         if let Some(cache_size) = self.fitness_cache_size {
             if let Some(fitness_fn) = self.fitness_fn.take() {
-                let (wrapped, cache_handle) = crate::fitness::cache::wrap_with_cache(
-                    fitness_fn, cache_size,
-                );
+                let (wrapped, cache_handle) =
+                    crate::fitness::cache::wrap_with_cache(fitness_fn, cache_size);
                 self.fitness_fn = Some(wrapped);
                 self.fitness_cache = Some(cache_handle);
             }
@@ -1208,7 +1216,14 @@ where
     ///
     /// # Example
     ///
-    /// ```rust,ignore
+    /// ```rust,no_run
+    /// // no_run: with_local_search example — illustrative API usage
+    /// use genetic_algorithms::ga::Ga;
+    /// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+    /// use genetic_algorithms::operations::local_search::{LocalSearch, LocalSearchApplicationStrategy};
+    /// use genetic_algorithms::configuration::LocalSearchConfiguration;
+    /// use genetic_algorithms::traits::{ConfigurationT, LocalSearchConfig};
+    ///
     /// let ga = Ga::<RangeChromosome<f64>>::new()
     ///     .with_local_search(LocalSearch::HillClimbing)
     ///     .with_local_search_configuration(LocalSearchConfiguration {
@@ -1283,7 +1298,7 @@ where
                 // 1. Save builder's operator settings
                 let builder_selection = self.configuration.selection_configuration.method;
                 let builder_crossover = self.configuration.crossover_configuration.method;
-                let builder_mutation = self.configuration.mutation_configuration.method.clone();
+                let builder_mutation = self.configuration.mutation_configuration.method;
                 let builder_survivor = self.configuration.survivor;
                 let builder_problem_solving =
                     self.configuration.limit_configuration.problem_solving;
@@ -1415,11 +1430,16 @@ where
             self.configuration.limit_configuration.max_generations
         };
 
+        // D-08: allocate offspring buffer once and reuse every generation (avoids a per-generation
+        // heap allocation). Capacity = population_size * 2 — the maximum possible offspring count
+        // when every parent pair passes the crossover probability roll.
+        let mut offspring_buf: Vec<U> =
+            Vec::with_capacity(self.configuration.limit_configuration.population_size * 2);
+
         for i in start_gen..total_gens {
             age += 1;
             // D-07: snapshot cache counters before this generation so we can compute deltas.
-            let (prev_cache_hits, prev_cache_misses) =
-                cache::cache_snapshot(&self.fitness_cache);
+            let (prev_cache_hits, prev_cache_misses) = cache::cache_snapshot(&self.fitness_cache)?;
 
             self.notify(|obs| obs.on_generation_start(i));
 
@@ -1479,7 +1499,7 @@ where
             } else {
                 self.fitness_fn.clone()
             };
-            let mut offspring = generation::parent_crossover(
+            generation::parent_crossover(
                 &parents,
                 &self.population.chromosomes,
                 &self.configuration,
@@ -1497,16 +1517,19 @@ where
                     aos_crossover_state: self.aos_crossover.as_ref(),
                     aos_mutation_state: self.aos_mutation.as_ref(),
                 },
+                &mut offspring_buf,
             )?;
             // D-08: surrogate prescreening — runs BEFORE cache/batch/repair/constraints (Pitfall 1).
             // Retains only the top max(1, floor(n * fraction)) offspring by predicted score.
             // Rejected offspring are dropped permanently (D-04) and never evaluated further.
             // Sequential sort only — unconditionally WASM-safe (no parallelism, no cfg gate).
-            let true_fitness_calls: Option<u64> = if let Some((ref surrogate, fraction)) = self.surrogate {
-                if offspring.is_empty() {
+            let true_fitness_calls: Option<u64> = if let Some((ref surrogate, fraction)) =
+                self.surrogate
+            {
+                if offspring_buf.is_empty() {
                     Some(0)
                 } else {
-                    let mut scores: Vec<(usize, f64)> = offspring
+                    let mut scores: Vec<(usize, f64)> = offspring_buf
                         .iter()
                         .enumerate()
                         .map(|(idx, c)| {
@@ -1518,12 +1541,15 @@ where
                     // Sort descending: best-predicted offspring first.
                     scores.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
                     // Retain at least 1; floor formula from D-03/SC-1d.
-                    let keep = ((offspring.len() as f64 * fraction).floor() as usize).max(1);
+                    let keep = ((offspring_buf.len() as f64 * fraction).floor() as usize).max(1);
                     scores.truncate(keep);
                     // Restore original index order so downstream code sees a stable slice.
                     scores.sort_unstable_by_key(|&(idx, _)| idx);
-                    offspring = scores.into_iter().map(|(idx, _)| offspring[idx].clone()).collect();
-                    Some(offspring.len() as u64)
+                    offspring_buf = scores
+                        .into_iter()
+                        .map(|(idx, _)| offspring_buf[idx].clone())
+                        .collect();
+                    Some(offspring_buf.len() as u64)
                 }
             } else {
                 None
@@ -1531,11 +1557,11 @@ where
             // D-02: batch-evaluate offspring before merge (replaces calculate_fitness per child)
             if let Some(eval) = self.batch_evaluator.as_ref().map(Arc::clone) {
                 let cache = self.fitness_cache.as_ref().map(Arc::clone);
-                batch::batch_evaluate(eval, cache, &mut offspring)?;
+                batch::batch_evaluate(eval, cache, &mut offspring_buf)?;
             }
             if let Some(t) = t_cx {
                 let elapsed = t.elapsed();
-                let offspring_count = offspring.len();
+                let offspring_count = offspring_buf.len();
                 let pop_size = self.population.chromosomes.len();
                 self.notify(|obs| obs.on_crossover_complete(i, elapsed, offspring_count));
                 // NOTE: elapsed covers combined crossover+mutation+fitness time (EXT-01)
@@ -1546,7 +1572,7 @@ where
 
             // Apply repair operator to offspring if configured
             if let Some(ref repair_op) = self.repair_operator {
-                for c in offspring.iter_mut() {
+                for c in offspring_buf.iter_mut() {
                     repair_op(c)?;
                     c.calculate_fitness();
                 }
@@ -1554,7 +1580,7 @@ where
 
             // Apply constraint penalty to offspring if configured
             if let Some(ref constraint_fns) = self.constraint_fns {
-                for c in offspring.iter_mut() {
+                for c in offspring_buf.iter_mut() {
                     let dna = c.dna();
                     let total_viol: f64 = constraint_fns.iter().map(|f| f(dna)).sum();
                     if total_viol > 0.0 {
@@ -1605,19 +1631,20 @@ where
                     _ => true,
                 };
 
-                if should_apply && !offspring.is_empty() {
+                if should_apply && !offspring_buf.is_empty() {
                     // Step 2: Select candidates from offspring
                     let candidates: Vec<usize> = match strategy {
                         LocalSearchApplicationStrategy::AllOffspring => {
-                            (0..offspring.len()).collect()
+                            (0..offspring_buf.len()).collect()
                         }
                         LocalSearchApplicationStrategy::BestN { n } => {
-                            let mut indices: Vec<usize> = (0..offspring.len()).collect();
+                            let mut indices: Vec<usize> = (0..offspring_buf.len()).collect();
                             let ps = self.configuration.limit_configuration.problem_solving;
                             let k = n.min(indices.len());
                             if k > 0 {
                                 indices.select_nth_unstable_by(k.saturating_sub(1), |&a, &b| {
-                                    let (fa, fb) = (offspring[a].fitness(), offspring[b].fitness());
+                                    let (fa, fb) =
+                                        (offspring_buf[a].fitness(), offspring_buf[b].fitness());
                                     match ps {
                                         ProblemSolving::Minimization
                                         | ProblemSolving::FixedFitness => {
@@ -1634,12 +1661,12 @@ where
                         }
                         LocalSearchApplicationStrategy::Probabilistic { probability } => {
                             let mut rng = crate::rng::make_rng();
-                            (0..offspring.len())
+                            (0..offspring_buf.len())
                                 .filter(|_| rng.random::<f64>() < probability)
                                 .collect()
                         }
                         LocalSearchApplicationStrategy::EveryNGenerations { .. } => {
-                            (0..offspring.len()).collect()
+                            (0..offspring_buf.len()).collect()
                         }
                     };
 
@@ -1649,7 +1676,7 @@ where
                     let original_dnas: Vec<Vec<U::Gene>> = if is_baldwinian {
                         candidates
                             .iter()
-                            .map(|&idx| offspring[idx].dna().to_vec())
+                            .map(|&idx| offspring_buf[idx].dna().to_vec())
                             .collect()
                     } else {
                         Vec::new()
@@ -1667,19 +1694,19 @@ where
                         // Extract candidates, process in parallel, reinsert
                         let mut selected: Vec<U> = candidates
                             .iter()
-                            .map(|&idx| offspring[idx].clone())
+                            .map(|&idx| offspring_buf[idx].clone())
                             .collect();
                         selected.par_iter_mut().for_each(|individual| {
                             let _ = search_method.improve(individual, ff.as_ref());
                         });
                         for (&idx, improved) in candidates.iter().zip(selected) {
-                            offspring[idx] = improved;
+                            offspring_buf[idx] = improved;
                         }
                     }
                     #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
                     {
                         candidates.iter().for_each(|&idx| {
-                            let _ = search_method.improve(&mut offspring[idx], ff.as_ref());
+                            let _ = search_method.improve(&mut offspring_buf[idx], ff.as_ref());
                         });
                     }
 
@@ -1687,9 +1714,10 @@ where
                     if is_baldwinian {
                         for (orig_pos, &idx) in candidates.iter().enumerate() {
                             if let Some(orig_dna) = original_dnas.get(orig_pos) {
-                                let improved_fitness = offspring[idx].fitness();
-                                offspring[idx].set_dna(std::borrow::Cow::Owned(orig_dna.clone()));
-                                offspring[idx].set_fitness(improved_fitness);
+                                let improved_fitness = offspring_buf[idx].fitness();
+                                offspring_buf[idx]
+                                    .set_dna(std::borrow::Cow::Owned(orig_dna.clone()));
+                                offspring_buf[idx].set_fitness(improved_fitness);
                             }
                         }
                     }
@@ -1697,7 +1725,7 @@ where
             }
 
             //3- Insert the children in the population
-            self.population.add_chromosomes(&mut offspring);
+            self.population.add_chromosomes(&mut offspring_buf);
 
             //3b- Hall of Fame update: evaluate all population chromosomes for archive entry
             if let Some(ref mut hof) = self.hall_of_fame {
@@ -1707,12 +1735,18 @@ where
             }
 
             //3.5- Elitism: preserve the top N individuals
-            let elite = if self.configuration.elitism_count > 0 {
-                generation::extract_elite(
+            // extract_elite returns indices into the CURRENT (pre-survivor-selection) population.
+            // We immediately clone the elite chromosomes out before survivor selection
+            // reorders/truncates the population — those indices would be stale afterward.
+            let elite: Vec<U> = if self.configuration.elitism_count > 0 {
+                let idx = generation::extract_elite(
                     &self.population.chromosomes,
                     self.configuration.elitism_count,
                     self.configuration.limit_configuration.problem_solving,
-                )
+                );
+                idx.iter()
+                    .map(|&i| self.population.chromosomes[i].clone())
+                    .collect()
             } else {
                 Vec::new()
             };
@@ -1878,7 +1912,7 @@ where
                 &mut gen_stats,
                 prev_cache_hits,
                 prev_cache_misses,
-            );
+            )?;
 
             // D-08: populate true_fitness_calls — Some(n) when surrogate ran this generation,
             // None otherwise (mirrors the cache delta pattern above).
@@ -2027,7 +2061,11 @@ where
                         // Exception: this log::warn! cannot migrate to LogObserver because no
                         // on_checkpoint_failed hook exists (deferred per REQUIREMENTS.md EXT-02).
                         // It is feature-gated (#[cfg(feature = "serde")]) and only fires on I/O errors.
-                        crate::log_warn!("Failed to save checkpoint at generation {}: {}", i + 1, e);
+                        crate::log_warn!(
+                            "Failed to save checkpoint at generation {}: {}",
+                            i + 1,
+                            e
+                        );
                     }
                 }
             }
@@ -2086,9 +2124,7 @@ where
                 self.notify(|obs| obs.on_stagnation(i, stagnation_count));
             }
 
-            if let Some(max_stagnation) =
-                self.configuration.stagnation_generations
-            {
+            if let Some(max_stagnation) = self.configuration.stagnation_generations {
                 if stagnation_count >= max_stagnation {
                     self.termination_cause = TerminationCause::StagnationReached;
                     if let Some(func) = &callback {
@@ -2368,8 +2404,6 @@ where
     }
 }
 
-
-
 impl<U> Strategy<U> for Ga<U>
 where
     U: LinearChromosome
@@ -2381,7 +2415,8 @@ where
         + mutation::ValueMutable
         + MaybeSerialize
         + MaybeDeserialize
-        + OperatorCompat,
+        + OperatorCompat
+        + crate::traits::RealValuedMutation,
     U::Gene: 'static + Debug,
 {
     fn run(&mut self) -> Result<(), GaError> {
@@ -2427,11 +2462,16 @@ where
     ///
     /// # Example
     ///
-    /// ```rust,ignore
-    /// // Selection::Lexicase / EpsilonLexicase reach run() only when U does not implement
-    /// // VectorFitness; factory() returns GaError::ConfigurationError for those variants per D-06.
+    /// ```rust,no_run
+    /// // no_run: select_parents_lexicase — requires VectorFitness chromosome and initialized GA
+    /// # use genetic_algorithms::ga::Ga;
+    /// # use genetic_algorithms::chromosomes::Range as RangeChromosome;
+    /// # use genetic_algorithms::traits::ConfigurationT;
+    /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
     /// // Users with VectorFitness chromosomes call select_parents_lexicase() directly.
-    /// let pairs = ga.select_parents_lexicase()?;
+    /// // let pairs = ga.select_parents_lexicase()?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn select_parents_lexicase(&mut self) -> Result<Vec<Vec<usize>>, GaError> {
         crate::operations::selection::factory_lexicase(

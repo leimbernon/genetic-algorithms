@@ -1,7 +1,7 @@
 use genetic_algorithms::chromosomes::{Binary as BinaryChromosome, Range as RangeChromosome};
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::operations::mutation;
-use genetic_algorithms::operations::Mutation;
+use genetic_algorithms::operations::{CauchyParams, LevyFlightParams, Mutation};
 use genetic_algorithms::traits::{LinearChromosome, MutationOperator};
 use std::borrow::Cow;
 
@@ -31,21 +31,24 @@ fn cauchy_mutation_via_factory_changes_value() {
     let mut changed = false;
     for _ in 0..200 {
         let before: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
-        mutation::factory(Mutation::Cauchy { scale: Some(1.0) }, &mut c).unwrap();
+        mutation::factory(Mutation::Cauchy(CauchyParams { scale: Some(1.0) }), &mut c).unwrap();
         let after: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
         if before.iter().zip(after.iter()).any(|(b, a)| b != a) {
             changed = true;
             break;
         }
     }
-    assert!(changed, "Cauchy mutation never changed a value across 200 iterations");
+    assert!(
+        changed,
+        "Cauchy mutation never changed a value across 200 iterations"
+    );
 }
 
 #[test]
 fn cauchy_mutation_via_factory_stays_in_range() {
     let mut c = build_f64_chromosome(8);
     for _ in 0..200 {
-        mutation::factory(Mutation::Cauchy { scale: Some(50.0) }, &mut c).unwrap();
+        mutation::factory(Mutation::Cauchy(CauchyParams { scale: Some(50.0) }), &mut c).unwrap();
         for gene in c.dna().iter() {
             let (lo, hi) = gene.ranges[0];
             assert!(
@@ -64,9 +67,13 @@ fn cauchy_mutation_changes_at_most_one_gene() {
     let mut c = build_f64_chromosome(10);
     for _ in 0..50 {
         let before: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
-        mutation::factory(Mutation::Cauchy { scale: Some(1.0) }, &mut c).unwrap();
+        mutation::factory(Mutation::Cauchy(CauchyParams { scale: Some(1.0) }), &mut c).unwrap();
         let after: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
-        let changed_count = before.iter().zip(after.iter()).filter(|(b, a)| b != a).count();
+        let changed_count = before
+            .iter()
+            .zip(after.iter())
+            .filter(|(b, a)| b != a)
+            .count();
         assert!(
             changed_count <= 1,
             "Cauchy changed {} genes in one call (expected <= 1)",
@@ -79,7 +86,7 @@ fn cauchy_mutation_changes_at_most_one_gene() {
 fn cauchy_mutation_works_on_i32() {
     let mut c = build_i32_chromosome(6);
     for _ in 0..200 {
-        mutation::factory(Mutation::Cauchy { scale: Some(10.0) }, &mut c).unwrap();
+        mutation::factory(Mutation::Cauchy(CauchyParams { scale: Some(10.0) }), &mut c).unwrap();
         for gene in c.dna().iter() {
             let (lo, hi) = gene.ranges[0];
             assert!(gene.value >= lo && gene.value <= hi);
@@ -91,7 +98,7 @@ fn cauchy_mutation_works_on_i32() {
 fn cauchy_mutation_default_scale_when_none() {
     let mut c = build_f64_chromosome(4);
     // scale=None must default to 1.0 inside the Cauchy variant
-    let m = Mutation::Cauchy { scale: None };
+    let m = Mutation::Cauchy(CauchyParams { scale: None });
     for _ in 0..50 {
         m.mutate(&mut c, &m).unwrap();
         for gene in c.dna().iter() {
@@ -105,7 +112,7 @@ fn cauchy_mutation_default_scale_when_none() {
 fn cauchy_mutation_errors_on_binary_chromosome() {
     let mut c = BinaryChromosome::new();
     // BinaryChromosome doesn't take Range genes; call factory and assert error.
-    let result = mutation::factory(Mutation::Cauchy { scale: Some(1.0) }, &mut c);
+    let result = mutation::factory(Mutation::Cauchy(CauchyParams { scale: Some(1.0) }), &mut c);
     assert!(
         result.is_err(),
         "Cauchy mutation must error on Binary chromosomes (got {:?})",
@@ -117,7 +124,7 @@ fn cauchy_mutation_errors_on_binary_chromosome() {
 #[test]
 fn cauchy_inline_scale_applies() {
     let mut c = build_f64_chromosome(4);
-    let m = Mutation::Cauchy { scale: Some(2.0) };
+    let m = Mutation::Cauchy(CauchyParams { scale: Some(2.0) });
     for _ in 0..50 {
         m.mutate(&mut c, &m).unwrap();
         for gene in c.dna().iter() {
@@ -135,27 +142,32 @@ fn levy_flight_mutation_via_factory_changes_value() {
     let mut changed = false;
     for _ in 0..200 {
         let before: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
-        mutation::factory(Mutation::LevyFlight { alpha: Some(1.5) }, &mut c).unwrap();
+        mutation::factory(Mutation::LevyFlight(LevyFlightParams { alpha: Some(1.5) }), &mut c).unwrap();
         let after: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
         if before.iter().zip(after.iter()).any(|(b, a)| b != a) {
             changed = true;
             break;
         }
     }
-    assert!(changed, "LevyFlight mutation never changed a value across 200 iterations");
+    assert!(
+        changed,
+        "LevyFlight mutation never changed a value across 200 iterations"
+    );
 }
 
 #[test]
 fn levy_flight_mutation_via_factory_stays_in_range() {
     let mut c = build_f64_chromosome(8);
     for _ in 0..200 {
-        mutation::factory(Mutation::LevyFlight { alpha: Some(1.5) }, &mut c).unwrap();
+        mutation::factory(Mutation::LevyFlight(LevyFlightParams { alpha: Some(1.5) }), &mut c).unwrap();
         for gene in c.dna().iter() {
             let (lo, hi) = gene.ranges[0];
             assert!(
                 gene.value >= lo && gene.value <= hi,
                 "LevyFlight: value {} out of range [{}, {}]",
-                gene.value, lo, hi
+                gene.value,
+                lo,
+                hi
             );
         }
     }
@@ -166,9 +178,13 @@ fn levy_flight_mutation_changes_at_most_one_gene() {
     let mut c = build_f64_chromosome(10);
     for _ in 0..50 {
         let before: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
-        mutation::factory(Mutation::LevyFlight { alpha: Some(1.5) }, &mut c).unwrap();
+        mutation::factory(Mutation::LevyFlight(LevyFlightParams { alpha: Some(1.5) }), &mut c).unwrap();
         let after: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
-        let changed_count = before.iter().zip(after.iter()).filter(|(b, a)| b != a).count();
+        let changed_count = before
+            .iter()
+            .zip(after.iter())
+            .filter(|(b, a)| b != a)
+            .count();
         assert!(
             changed_count <= 1,
             "LevyFlight changed {} genes in one call (expected <= 1)",
@@ -181,7 +197,7 @@ fn levy_flight_mutation_changes_at_most_one_gene() {
 fn levy_flight_mutation_works_on_i32() {
     let mut c = build_i32_chromosome(6);
     for _ in 0..200 {
-        mutation::factory(Mutation::LevyFlight { alpha: Some(1.5) }, &mut c).unwrap();
+        mutation::factory(Mutation::LevyFlight(LevyFlightParams { alpha: Some(1.5) }), &mut c).unwrap();
         for gene in c.dna().iter() {
             let (lo, hi) = gene.ranges[0];
             assert!(gene.value >= lo && gene.value <= hi);
@@ -192,7 +208,7 @@ fn levy_flight_mutation_works_on_i32() {
 #[test]
 fn levy_flight_mutation_errors_on_binary_chromosome() {
     let mut c = BinaryChromosome::new();
-    let result = mutation::factory(Mutation::LevyFlight { alpha: Some(1.5) }, &mut c);
+    let result = mutation::factory(Mutation::LevyFlight(LevyFlightParams { alpha: Some(1.5) }), &mut c);
     assert!(
         result.is_err(),
         "LevyFlight mutation must error on Binary chromosomes (got {:?})",
@@ -204,7 +220,7 @@ fn levy_flight_mutation_errors_on_binary_chromosome() {
 fn levy_flight_default_alpha_when_none() {
     let mut c = build_f64_chromosome(4);
     // alpha=None must default to 1.5 inside the LevyFlight variant
-    let m = Mutation::LevyFlight { alpha: None };
+    let m = Mutation::LevyFlight(LevyFlightParams { alpha: None });
     for _ in 0..50 {
         m.mutate(&mut c, &m).unwrap();
         for gene in c.dna().iter() {
@@ -230,7 +246,10 @@ fn uniform_mutation_via_factory_changes_value() {
             break;
         }
     }
-    assert!(changed, "Uniform mutation never changed a value across 200 iterations");
+    assert!(
+        changed,
+        "Uniform mutation never changed a value across 200 iterations"
+    );
 }
 
 #[test]
@@ -243,7 +262,9 @@ fn uniform_mutation_via_factory_stays_in_range() {
             assert!(
                 gene.value >= lo && gene.value <= hi,
                 "Uniform: value {} out of range [{}, {}]",
-                gene.value, lo, hi
+                gene.value,
+                lo,
+                hi
             );
         }
     }
@@ -256,7 +277,11 @@ fn uniform_mutation_changes_at_most_one_gene() {
         let before: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
         mutation::factory(Mutation::Uniform, &mut c).unwrap();
         let after: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
-        let changed_count = before.iter().zip(after.iter()).filter(|(b, a)| b != a).count();
+        let changed_count = before
+            .iter()
+            .zip(after.iter())
+            .filter(|(b, a)| b != a)
+            .count();
         assert!(
             changed_count <= 1,
             "Uniform changed {} genes in one call (expected <= 1)",

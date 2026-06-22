@@ -57,7 +57,8 @@
 //!
 //! ## Complete Example
 //!
-//! ```ignore
+//! ```rust,no_run
+//! // no_run: NSGA2 engine example — illustrative API usage, not a runnable benchmark
 //! use genetic_algorithms::nsga2::Nsga2Ga;
 //! use genetic_algorithms::nsga2::configuration::Nsga2Configuration;
 //! use genetic_algorithms::configuration::GaConfiguration;
@@ -68,12 +69,12 @@
 //!     .with_max_generations(250);
 //!
 //! let ga_config = GaConfiguration::default();
-//! let mut nsga2 = Nsga2Ga::<MyChromosome>::new(nsga2_config, ga_config)
-//!     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
-//!     .build()?;
-//!
-//! let pareto_front = nsga2.run()?;
-//! println!("Front size: {}", pareto_front.len());
+//! // let mut nsga2 = Nsga2Ga::<MyChromosome>::new(nsga2_config, ga_config)
+//! //     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
+//! //     .build()?;
+//! //
+//! // let pareto_front = nsga2.run()?;
+//! // println!("Front size: {}", pareto_front.len());
 //! ```
 //!
 //! ## Configuration Tips
@@ -105,7 +106,7 @@
 
 pub mod configuration;
 pub mod crowding_distance;
-pub mod non_dominated_sort;
+pub use crate::multi_objective::non_dominated_sort;
 pub mod pareto;
 
 use crate::configuration::GaConfiguration;
@@ -276,7 +277,10 @@ where
 
 impl<U> Nsga2Ga<U>
 where
-    U: LinearChromosome + VectorFitness + mutation::ValueMutable,
+    U: LinearChromosome
+        + VectorFitness
+        + mutation::ValueMutable
+        + crate::traits::RealValuedMutation,
 {
     /// Runs the NSGA-II algorithm and returns the first Pareto front.
     ///
@@ -514,7 +518,7 @@ where
 
         let pop_size = self.nsga2_config.population_size;
         let crossover_config = self.ga_config.crossover_configuration;
-        let mutation_config = self.ga_config.mutation_configuration.clone();
+        let mutation_config = self.ga_config.mutation_configuration;
         let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
         let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
 
@@ -544,14 +548,19 @@ where
             for child in children.iter_mut() {
                 let mp: f64 = rng.random();
                 if mp <= mut_prob {
-                    if matches!(mutation_config.method, crate::operations::Mutation::Differential { .. }) {
+                    if matches!(
+                        mutation_config.method,
+                        crate::operations::Mutation::Differential(..)
+                    ) {
                         return Err(GaError::MutationError(
                             "Differential mutation is not supported in NSGA-II; \
                              use Cauchy, LevyFlight, Polynomial, or a standard mutation method instead."
                                 .to_string(),
                         ));
                     }
-                    mutation_config.method.mutate(child, &mutation_config.method)?;
+                    mutation_config
+                        .method
+                        .mutate(child, &mutation_config.method)?;
                 }
             }
 

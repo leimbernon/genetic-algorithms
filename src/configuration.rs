@@ -205,21 +205,21 @@ impl Default for CrossoverConfiguration {
 /// `non_uniform_b`, `differential_f`, `cauchy_scale`, `levy_alpha`,
 /// `self_adaptive_tau`, `self_adaptive_tau_prime`, `sigma_min`, and `sigma_max`
 /// have been removed. Embed parameters in the variant directly, e.g.:
-/// `Mutation::Gaussian { sigma: Some(0.05) }`.
+/// `Mutation::Gaussian(GaussianParams { sigma: Some(0.05) })`.
 ///
 /// # Examples
 ///
 /// ```rust,no_run
 /// use genetic_algorithms::ga::Ga;
 /// use genetic_algorithms::chromosomes::Binary;
-/// use genetic_algorithms::operations::Mutation;
+/// use genetic_algorithms::operations::{Mutation, GaussianParams};
 /// use genetic_algorithms::traits::{ConfigurationT, MutationConfig};
 ///
 /// let _ga = Ga::<Binary>::new()
-///     .with_mutation_method(Mutation::Gaussian { sigma: Some(0.05) })
+///     .with_mutation_method(Mutation::Gaussian(GaussianParams { sigma: Some(0.05) }))
 ///     .with_mutation_probability_max(0.1);
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MutationConfiguration {
     pub probability_max: Option<f64>,

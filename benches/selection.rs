@@ -128,7 +128,10 @@ mod selection_methods {
         (100, 10), (100, 100), (100, 1000),
         (1000, 10), (1000, 100), (1000, 1000),
     ])]
-    fn stochastic_universal_sampling(bencher: divan::Bencher, (population_size, gene_length): (usize, usize)) {
+    fn stochastic_universal_sampling(
+        bencher: divan::Bencher,
+        (population_size, gene_length): (usize, usize),
+    ) {
         let chromosomes = setup_population(population_size, gene_length);
         let couples = population_size / 2;
         bencher.bench(|| {

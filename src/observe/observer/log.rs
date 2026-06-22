@@ -6,15 +6,16 @@
 //!
 //! # Usage
 //!
-//! ```ignore
+//! ```rust,no_run
+//! // no_run: API illustration — Ga requires full configuration to build
 //! use std::sync::Arc;
 //! use genetic_algorithms::observer::LogObserver;
 //!
-//! let mut ga = Ga::new()
-//!     // ... configuration ...
-//!     .with_observer(Arc::new(LogObserver))
-//!     .build()
-//!     .unwrap();
+//! // let mut ga = Ga::new()
+//! //     // ... configuration ...
+//! //     .with_observer(Arc::new(LogObserver))
+//! //     .build()
+//! //     .unwrap();
 //! ```
 //!
 //! # Note
@@ -37,7 +38,8 @@ use std::time::Duration;
 /// All messages use the same target, level, KV fields, and format strings as
 /// the original hardcoded `log!()` calls in `ga.rs`. Attach with:
 ///
-/// ```ignore
+/// ```text
+/// // API illustration — ga must be a configured Ga instance
 /// ga.with_observer(Arc::new(LogObserver));
 /// ```
 ///

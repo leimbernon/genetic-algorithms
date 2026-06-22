@@ -4,6 +4,7 @@
 //! PSO-11 (WASM gate) remains ignored and is verified via CI
 //! (`cargo check --target wasm32-unknown-unknown`) in Plan 04.
 
+use genetic_algorithms::error::GaError;
 use genetic_algorithms::pso::{PsoConfiguration, PsoEngine, PsoInertia, PsoTopology};
 
 use std::borrow::Cow;
@@ -12,11 +13,11 @@ use std::sync::Arc;
 
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
+use genetic_algorithms::ga::TerminationCause;
 use genetic_algorithms::genotypes::Range as RangeGene;
 use genetic_algorithms::observer::GaObserver;
 use genetic_algorithms::rng;
 use genetic_algorithms::stats::GenerationStats;
-use genetic_algorithms::ga::TerminationCause;
 use genetic_algorithms::traits::{LinearChromosome, RealGene};
 
 // ─── Test helpers ─────────────────────────────────────────────────────────────
@@ -90,16 +91,15 @@ fn test_pso_run_returns_result() {
     let config = PsoConfiguration::default()
         .with_max_generations(20)
         .with_population_size(20);
-    let mut engine = PsoEngine::new(
-        config,
-        move |_n| init_pop.clone(),
-        sphere,
-    );
-    let result = engine.run();
+    let mut engine = PsoEngine::new(config, move |_n| init_pop.clone(), sphere);
+    let result = engine.run().expect("engine run should succeed");
     assert_eq!(result.population.len(), 20, "population size must match");
     assert_eq!(result.generations, 20, "must complete all 20 generations");
     assert_eq!(result.best.dna().len(), 10, "best must have 10 genes");
-    assert!(result.best_fitness.is_finite(), "best_fitness must be finite");
+    assert!(
+        result.best_fitness.is_finite(),
+        "best_fitness must be finite"
+    );
 }
 
 // ─── PSO-02: personal best update ────────────────────────────────────────────
@@ -118,12 +118,8 @@ fn test_pso_pbest_update() {
         .with_max_generations(5)
         .with_population_size(5)
         .with_problem_solving(ProblemSolving::Minimization);
-    let mut engine = PsoEngine::new(
-        config,
-        move |_n| init_pop.clone(),
-        sphere,
-    );
-    let result = engine.run();
+    let mut engine = PsoEngine::new(config, move |_n| init_pop.clone(), sphere);
+    let result = engine.run().expect("engine run should succeed");
     assert!(
         result.best_fitness <= initial_best_fitness,
         "best fitness after 5 gens ({}) should be <= initial best ({})",
@@ -143,13 +139,9 @@ fn test_pso_observer_run_start() {
     let config = PsoConfiguration::default()
         .with_max_generations(10)
         .with_population_size(10);
-    let mut engine = PsoEngine::new(
-        config,
-        move |_n| init_pop.clone(),
-        sphere,
-    )
-    .with_observer(spy.clone() as Arc<dyn GaObserver<RangeChromosome<f64>> + Send + Sync>);
-    let _ = engine.run();
+    let mut engine = PsoEngine::new(config, move |_n| init_pop.clone(), sphere)
+        .with_observer(spy.clone() as Arc<dyn GaObserver<RangeChromosome<f64>> + Send + Sync>);
+    let _ = engine.run().expect("engine run should succeed");
     assert_eq!(
         spy.run_start_count.load(Ordering::SeqCst),
         1,
@@ -168,13 +160,9 @@ fn test_pso_observer_generation_count() {
     let config = PsoConfiguration::default()
         .with_max_generations(25)
         .with_population_size(10);
-    let mut engine = PsoEngine::new(
-        config,
-        move |_n| init_pop.clone(),
-        sphere,
-    )
-    .with_observer(spy.clone() as Arc<dyn GaObserver<RangeChromosome<f64>> + Send + Sync>);
-    let result = engine.run();
+    let mut engine = PsoEngine::new(config, move |_n| init_pop.clone(), sphere)
+        .with_observer(spy.clone() as Arc<dyn GaObserver<RangeChromosome<f64>> + Send + Sync>);
+    let result = engine.run().expect("engine run should succeed");
     assert_eq!(result.generations, 25, "must complete all 25 generations");
     assert_eq!(
         spy.generation_start_count.load(Ordering::SeqCst),
@@ -199,13 +187,9 @@ fn test_pso_observer_new_best() {
     let config = PsoConfiguration::default()
         .with_max_generations(50)
         .with_population_size(10);
-    let mut engine = PsoEngine::new(
-        config,
-        move |_n| init_pop.clone(),
-        sphere,
-    )
-    .with_observer(spy.clone() as Arc<dyn GaObserver<RangeChromosome<f64>> + Send + Sync>);
-    let _ = engine.run();
+    let mut engine = PsoEngine::new(config, move |_n| init_pop.clone(), sphere)
+        .with_observer(spy.clone() as Arc<dyn GaObserver<RangeChromosome<f64>> + Send + Sync>);
+    let _ = engine.run().expect("engine run should succeed");
     assert!(
         spy.new_best_count.load(Ordering::SeqCst) >= 1,
         "on_new_best must fire at least once (initial best at gen 0)"
@@ -223,13 +207,9 @@ fn test_pso_observer_run_end() {
     let config = PsoConfiguration::default()
         .with_max_generations(10)
         .with_population_size(10);
-    let mut engine = PsoEngine::new(
-        config,
-        move |_n| init_pop.clone(),
-        sphere,
-    )
-    .with_observer(spy.clone() as Arc<dyn GaObserver<RangeChromosome<f64>> + Send + Sync>);
-    let _ = engine.run();
+    let mut engine = PsoEngine::new(config, move |_n| init_pop.clone(), sphere)
+        .with_observer(spy.clone() as Arc<dyn GaObserver<RangeChromosome<f64>> + Send + Sync>);
+    let _ = engine.run().expect("engine run should succeed");
     assert_eq!(
         spy.run_end_count.load(Ordering::SeqCst),
         1,
@@ -247,17 +227,19 @@ fn test_pso_ring_wrap() {
     // Use a very small swarm of 3 particles with neighborhood_size=5 (> swarm size).
     let init_pop = random_pop(3, 5, -5.12, 5.12, 7);
     let config = PsoConfiguration::default()
-        .with_topology(PsoTopology::Ring { neighborhood_size: 5 })
+        .with_topology(PsoTopology::Ring {
+            neighborhood_size: 5,
+        })
         .with_population_size(3)
         .with_max_generations(2);
-    let mut engine = PsoEngine::new(
-        config,
-        move |_n| init_pop.clone(),
-        sphere,
-    );
+    let mut engine = PsoEngine::new(config, move |_n| init_pop.clone(), sphere);
     // Should not panic — ring-wrap clamp handles neighborhood_size > n_particles.
-    let result = engine.run();
-    assert_eq!(result.population.len(), 3, "population must remain 3 particles");
+    let result = engine.run().expect("engine run should succeed");
+    assert_eq!(
+        result.population.len(),
+        3,
+        "population must remain 3 particles"
+    );
 }
 
 // ─── PSO-08: absorbing boundary ──────────────────────────────────────────────
@@ -272,12 +254,8 @@ fn test_pso_absorbing_boundary() {
         .with_population_size(10)
         .with_max_generations(50)
         .with_problem_solving(ProblemSolving::Minimization);
-    let mut engine = PsoEngine::new(
-        config,
-        move |_n| init_pop.clone(),
-        sphere,
-    );
-    let result = engine.run();
+    let mut engine = PsoEngine::new(config, move |_n| init_pop.clone(), sphere);
+    let result = engine.run().expect("engine run should succeed");
     // Every gene in every chromosome must be within bounds (with floating-point tolerance).
     for ind in result.population.iter() {
         for g in ind.dna() {
@@ -344,15 +322,19 @@ fn test_pso_linear_decay() {
     );
 
     // Verify PsoEngine::new compiles with PSO types.
-    let _config = PsoConfiguration::default()
-        .with_topology(PsoTopology::Ring { neighborhood_size: 3 });
+    let _config = PsoConfiguration::default().with_topology(PsoTopology::Ring {
+        neighborhood_size: 3,
+    });
     let mut eng = PsoEngine::new(
         PsoConfiguration::default().with_max_generations(1),
         |n: usize| random_pop(n, 2, -1.0, 1.0, 99),
         sphere,
     );
-    let result = eng.run();
-    assert_eq!(result.generations, 1, "engine with max_generations=1 must return generations=1");
+    let result = eng.run().expect("engine run should succeed");
+    assert_eq!(
+        result.generations, 1,
+        "engine with max_generations=1 must return generations=1"
+    );
 }
 
 // ─── PSO-10: sphere convergence ──────────────────────────────────────────────
@@ -369,17 +351,33 @@ fn test_pso_sphere_converges() {
         .with_max_generations(500)
         .with_problem_solving(ProblemSolving::Minimization)
         .with_fitness_target(1e-2);
-    let mut engine = PsoEngine::new(
-        config,
-        move |_n| init_pop.clone(),
-        sphere,
-    );
-    let result = engine.run();
+    let mut engine = PsoEngine::new(config, move |_n| init_pop.clone(), sphere);
+    let result = engine.run().expect("engine run should succeed");
     assert!(
         result.best_fitness < 1e-2 || result.generations < 500,
         "PSO must converge on 10D Sphere: best_fitness={:.6} after {} generations",
         result.best_fitness,
         result.generations
+    );
+}
+
+// ─── Error path: empty-init InitializationError ──────────────────────────────
+
+/// PSO error path: PsoEngine run() with init_fn returning empty Vec
+/// returns Err(GaError::InitializationError(_)).
+#[test]
+fn test_run_empty_init_returns_error() {
+    let config = PsoConfiguration::default()
+        .with_max_generations(10)
+        .with_population_size(20);
+    let mut engine = PsoEngine::new(
+        config,
+        |_n| Vec::<RangeChromosome<f64>>::new(),
+        sphere,
+    );
+    assert!(
+        matches!(engine.run(), Err(GaError::InitializationError(_))),
+        "PsoEngine with empty init_fn should return InitializationError"
     );
 }
 
@@ -398,4 +396,38 @@ fn test_pso_wasm_compiles() {
     let _config = PsoConfiguration::default();
     let _topo = PsoTopology::Global;
     let _inertia = PsoInertia::Constant(0.7);
+}
+
+// ─── PSO-12: fitness cache enabled ─────────────────────────────────────────
+
+/// PSO-12: Cache-enabled PSO run completes and produces valid results.
+/// Verifies that configuring with_fitness_cache_size does not break the run.
+#[test]
+fn test_pso_cache_enabled() {
+    rng::set_seed(Some(99));
+    let init_pop = random_pop(20, 5, -5.0, 5.0, 99);
+    let config = PsoConfiguration::default()
+        .with_population_size(20)
+        .with_max_generations(10)
+        .with_fitness_cache_size(128);
+    let mut engine = PsoEngine::new(config, move |_n| init_pop.clone(), sphere);
+    let result = engine.run().expect("engine run should succeed");
+    assert!(result.best_fitness.is_finite(), "best_fitness must be finite with cache");
+    assert_eq!(result.generations, 10, "must complete all generations");
+    assert_eq!(result.population.len(), 20);
+}
+
+// ─── PSO-13: fitness cache disabled by default ──────────────────────────────
+
+/// PSO-13: Default config (no cache) works with zero overhead.
+#[test]
+fn test_pso_cache_disabled_default() {
+    rng::set_seed(Some(100));
+    let init_pop = random_pop(20, 5, -5.0, 5.0, 100);
+    let config = PsoConfiguration::default()
+        .with_population_size(20)
+        .with_max_generations(10);
+    let mut engine = PsoEngine::new(config, move |_n| init_pop.clone(), sphere);
+    let result = engine.run().expect("engine run should succeed");
+    assert!(result.best_fitness >= 0.0, "sphere minimum is 0");
 }

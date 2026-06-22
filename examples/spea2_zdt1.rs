@@ -48,7 +48,7 @@ use std::sync::Arc;
 use genetic_algorithms::configuration::GaConfiguration;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::initializers::range_random_initialization;
-use genetic_algorithms::spea2::configuration::{Spea2Configuration, ObjectiveDirection};
+use genetic_algorithms::spea2::configuration::{ObjectiveDirection, Spea2Configuration};
 use genetic_algorithms::spea2::Spea2Ga;
 use genetic_algorithms::traits::{ChromosomeT, LinearChromosome, VectorFitness};
 use genetic_algorithms::{LogObserver, Spea2Observer};
@@ -65,10 +65,19 @@ struct Zdt1Chromosome {
 
 impl ChromosomeT for Zdt1Chromosome {
     type Gene = RangeGenotype<f64>;
-    fn fitness(&self) -> f64 { self.fitness }
-    fn set_fitness(&mut self, v: f64) -> &mut Self { self.fitness = v; self }
-    fn set_age(&mut self, _: usize) -> &mut Self { self }
-    fn age(&self) -> usize { 0 }
+    fn fitness(&self) -> f64 {
+        self.fitness
+    }
+    fn set_fitness(&mut self, v: f64) -> &mut Self {
+        self.fitness = v;
+        self
+    }
+    fn set_age(&mut self, _: usize) -> &mut Self {
+        self
+    }
+    fn age(&self) -> usize {
+        0
+    }
     fn calculate_fitness(&mut self) {
         if self.dna.is_empty() {
             self.fitness_values = vec![0.0, 0.0];
@@ -85,22 +94,36 @@ impl ChromosomeT for Zdt1Chromosome {
 }
 
 impl LinearChromosome for Zdt1Chromosome {
-    fn dna(&self) -> &[Self::Gene] { &self.dna }
-    fn dna_mut(&mut self) -> &mut [Self::Gene] { &mut self.dna }
+    fn dna(&self) -> &[Self::Gene] {
+        &self.dna
+    }
+    fn dna_mut(&mut self) -> &mut [Self::Gene] {
+        &mut self.dna
+    }
     fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
-        self.dna = dna.into_owned(); self
+        self.dna = dna.into_owned();
+        self
     }
     fn set_fitness_fn<F>(&mut self, _: F) -> &mut Self
-    where F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static { self }
+    where
+        F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static,
+    {
+        self
+    }
 }
 
 impl VectorFitness for Zdt1Chromosome {
-    fn fitness_values(&self) -> &[f64] { &self.fitness_values }
-    fn set_fitness_values(&mut self, values: Vec<f64>) { self.fitness_values = values; }
+    fn fitness_values(&self) -> &[f64] {
+        &self.fitness_values
+    }
+    fn set_fitness_values(&mut self, values: Vec<f64>) {
+        self.fitness_values = values;
+    }
 }
 
 impl genetic_algorithms::operations::mutation::ValueMutable for Zdt1Chromosome {}
 impl genetic_algorithms::traits::OperatorCompat for Zdt1Chromosome {}
+impl genetic_algorithms::traits::RealValuedMutation for Zdt1Chromosome {}
 
 fn main() {
     let _ = env_logger::try_init();
@@ -118,24 +141,25 @@ fn main() {
             ObjectiveDirection::Minimize,
         ]);
 
-    use genetic_algorithms::ChromosomeLength;
     use genetic_algorithms::traits::ConfigurationT;
-    let ga_config = GaConfiguration::default()
-        .with_chromosome_length(ChromosomeLength::Fixed(N_VARS));
+    use genetic_algorithms::ChromosomeLength;
+    let ga_config =
+        GaConfiguration::default().with_chromosome_length(ChromosomeLength::Fixed(N_VARS));
 
     let alleles = vec![RangeGenotype::new(0, vec![(0.0_f64, 1.0_f64)], 0.0_f64)];
     let alleles_clone = alleles.clone();
 
-    let mut spea2 = Spea2Ga::<Zdt1Chromosome>::new(spea2_config, ga_config)
-        .with_alleles(alleles)
-        .with_initialization_fn(move |n, _| {
-            range_random_initialization(n, Some(&alleles_clone))
-        })
-        .with_observer(
-            Arc::new(LogObserver) as Arc<dyn Spea2Observer<Zdt1Chromosome> + Send + Sync>
-        )
-        .build()
-        .expect("Failed to build SPEA2");
+    let mut spea2 =
+        Spea2Ga::<Zdt1Chromosome>::new(spea2_config, ga_config)
+            .with_alleles(alleles)
+            .with_initialization_fn(move |n, _| {
+                range_random_initialization(n, Some(&alleles_clone))
+            })
+            .with_observer(
+                Arc::new(LogObserver) as Arc<dyn Spea2Observer<Zdt1Chromosome> + Send + Sync>
+            )
+            .build()
+            .expect("Failed to build SPEA2");
 
     println!("== SPEA2 ZDT1 Multi-Objective Optimization ==");
     println!(
@@ -153,9 +177,11 @@ fn main() {
                 front.len()
             );
 
-            front
-                .individuals
-                .sort_by(|a, b| a.objectives[0].partial_cmp(&b.objectives[0]).unwrap_or(std::cmp::Ordering::Equal));
+            front.individuals.sort_by(|a, b| {
+                a.objectives[0]
+                    .partial_cmp(&b.objectives[0])
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            });
 
             let n = front.len();
             let step = (n / 10).max(1);
@@ -174,7 +200,9 @@ fn main() {
             #[cfg(feature = "visualization")]
             if std::env::args().any(|a| a == "--plot") {
                 // requires --features visualization
-                let points: Vec<(f64, f64)> = front.individuals.iter()
+                let points: Vec<(f64, f64)> = front
+                    .individuals
+                    .iter()
                     .map(|ind| (ind.objectives[0], ind.objectives[1]))
                     .collect();
                 std::fs::create_dir_all("docs/images").expect("failed to create docs/images");

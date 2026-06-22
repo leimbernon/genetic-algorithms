@@ -66,7 +66,8 @@
 //!
 //! ## Complete Example
 //!
-//! ```ignore
+//! ```rust,no_run
+//! // no_run: MOEA/D engine example — illustrative API usage, not a runnable benchmark
 //! use genetic_algorithms::moead::MoeaDGa;
 //! use genetic_algorithms::moead::configuration::{
 //!     MoeaDConfiguration, ScalarizationFn,
@@ -83,12 +84,12 @@
 //!     .with_max_neighbor_replacements(2);
 //!
 //! let ga_config = GaConfiguration::default();
-//! let mut moead = MoeaDGa::<MyChromosome>::new(moead_config, ga_config)
-//!     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
-//!     .build()?;
-//!
-//! let pareto_front = moead.run()?;
-//! println!("Front size: {}", pareto_front.len());
+//! // let mut moead = MoeaDGa::<MyChromosome>::new(moead_config, ga_config)
+//! //     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
+//! //     .build()?;
+//! //
+//! // let pareto_front = moead.run()?;
+//! // println!("Front size: {}", pareto_front.len());
 //! ```
 //!
 //! ## Configuration Tips
@@ -355,7 +356,10 @@ where
 
 impl<U> MoeaDGa<U>
 where
-    U: LinearChromosome + VectorFitness + mutation::ValueMutable,
+    U: LinearChromosome
+        + VectorFitness
+        + mutation::ValueMutable
+        + crate::traits::RealValuedMutation,
 {
     /// Runs the MOEA/D algorithm and returns the post-hoc Pareto front.
     ///
@@ -600,7 +604,7 @@ where
         rng: &mut impl Rng,
     ) -> Result<U, GaError> {
         let crossover_config = self.ga_config.crossover_configuration;
-        let mutation_config = self.ga_config.mutation_configuration.clone();
+        let mutation_config = self.ga_config.mutation_configuration;
         let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
         let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
 
@@ -619,14 +623,19 @@ where
         // Mutation dispatch — trait-based single call (params are in the variant).
         let mp: f64 = rng.random();
         if mp <= mut_prob {
-            if matches!(mutation_config.method, crate::operations::Mutation::Differential { .. }) {
+            if matches!(
+                mutation_config.method,
+                crate::operations::Mutation::Differential(..)
+            ) {
                 return Err(GaError::MutationError(
                     "Differential mutation is not supported in MOEA/D; \
                      use Cauchy, LevyFlight, Polynomial, or a standard mutation method instead."
                         .to_string(),
                 ));
             }
-            mutation_config.method.mutate(&mut child, &mutation_config.method)?;
+            mutation_config
+                .method
+                .mutate(&mut child, &mutation_config.method)?;
         }
 
         Ok(child)

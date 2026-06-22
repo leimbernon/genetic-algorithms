@@ -88,7 +88,10 @@ fn init_population(n: usize) -> Vec<BinaryChromosome> {
             let dna: Vec<BinaryGene> = (0..CHROMOSOME_LEN)
                 .map(|_| {
                     let v = rng.random::<bool>();
-                    BinaryGene { id: if v { 1 } else { 0 }, value: v }
+                    BinaryGene {
+                        id: if v { 1 } else { 0 },
+                        value: v,
+                    }
                 })
                 .collect();
             let mut c = BinaryChromosome::default();
@@ -108,6 +111,7 @@ fn main() {
         problem_solving: ProblemSolving::Maximization,
         fitness_target: Some(CHROMOSOME_LEN as f64),
         selection_ratio: SELECTION_RATIO,
+        fitness_cache_size: None,
     };
 
     let mut engine = EdaEngine::bernoulli(config, init_population, trap_fitness)
@@ -127,7 +131,7 @@ fn main() {
     println!("target=30.0 (all-ones = global maximum)");
     println!("---------------------------------------------");
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     // Display result
     let best_dna: String = result
@@ -148,7 +152,11 @@ fn main() {
             println!("Learned probs: [{}]", probs_str.join(", "));
 
             let converged = probs.iter().filter(|&&p| !(0.1..=0.9).contains(&p)).count();
-            println!("Converged positions (p > 0.9 or p < 0.1): {}/{}", converged, probs.len());
+            println!(
+                "Converged positions (p > 0.9 or p < 0.1): {}/{}",
+                converged,
+                probs.len()
+            );
         }
         _ => unreachable!("Binary chromosomes always use Bernoulli model"),
     }

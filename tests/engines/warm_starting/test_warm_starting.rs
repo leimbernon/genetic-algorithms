@@ -13,8 +13,8 @@ use genetic_algorithms::genotypes::Range as RangeGene;
 use genetic_algorithms::initializers::range_random_initialization;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::traits::{
-    ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig, SelectionConfig,
-    StoppingConfig,
+    ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig,
+    SelectionConfig, StoppingConfig,
 };
 
 /// Helper: build a basic GA configuration (no seeds or checkpoint).
@@ -24,7 +24,9 @@ fn base_ga() -> Ga<RangeChromosome<i32>> {
     let alleles_clone = alleles.clone();
 
     Ga::new()
-        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(
+            n.try_into().unwrap(),
+        ))
         .with_population_size(30)
         .with_initialization_fn(move |genes_per_chromosome, _| {
             range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
@@ -44,10 +46,7 @@ fn create_seeds(count: usize, gene_value_start: i32) -> Vec<RangeChromosome<i32>
     (0..count)
         .map(|i| {
             let val = gene_value_start + i as i32;
-            let dna = std::borrow::Cow::Owned(vec![
-                RangeGene::new(val, vec![(0, 100)], 0);
-                8
-            ]);
+            let dna = std::borrow::Cow::Owned(vec![RangeGene::new(val, vec![(0, 100)], 0); 8]);
             let mut c = RangeChromosome::<i32>::new();
             c.set_dna(dna);
             // Trusted fitness: sum of gene values
@@ -74,7 +73,10 @@ fn test_wsm_with_seeds_builds_successfully() {
 fn test_wsm_with_seeds_exceeds_population_errors() {
     let seeds = create_seeds(100, 10);
     let result = base_ga().with_seeds(seeds).build();
-    assert!(result.is_err(), "Seeds exceeding population_size should error");
+    assert!(
+        result.is_err(),
+        "Seeds exceeding population_size should error"
+    );
     let err_msg = match result {
         Err(e) => e.to_string(),
         _ => unreachable!(),
@@ -91,10 +93,7 @@ fn test_wsm_with_checkpoint_path_not_found_errors() {
     let result = base_ga()
         .with_checkpoint("/nonexistent/checkpoint.json")
         .build();
-    assert!(
-        result.is_err(),
-        "Non-existent checkpoint path should error"
-    );
+    assert!(result.is_err(), "Non-existent checkpoint path should error");
 }
 
 #[test]
@@ -104,10 +103,7 @@ fn test_wsm_seeds_and_checkpoint_mutually_exclusive() {
         .with_seeds(seeds)
         .with_checkpoint("/tmp/test_checkpoint.json")
         .build();
-    assert!(
-        result.is_err(),
-        "Both seeds and checkpoint should error"
-    );
+    assert!(result.is_err(), "Both seeds and checkpoint should error");
     let err_msg = match result {
         Err(e) => e.to_string(),
         _ => unreachable!(),
@@ -134,7 +130,9 @@ fn test_wsm_seeds_population_size_matches() {
     let seeds = create_seeds(2, 100);
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(
+            n.try_into().unwrap(),
+        ))
         .with_population_size(2)
         .with_initialization_fn(move |genes_per_chromosome, _| {
             range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
@@ -187,7 +185,9 @@ fn test_wsm_seeds_admitted_to_hall_of_fame() {
     };
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(
+            n.try_into().unwrap(),
+        ))
         .with_population_size(2)
         .with_number_of_couples(1)
         .with_initialization_fn(move |genes_per_chromosome, _| {
@@ -233,7 +233,9 @@ fn test_wsm_seeds_without_hall_of_fame() {
     let seeds = create_seeds(3, 5);
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(
+            n.try_into().unwrap(),
+        ))
         .with_population_size(3)
         .with_initialization_fn(move |genes_per_chromosome, _| {
             range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
@@ -279,7 +281,9 @@ fn test_wsm_checkpoint_save_and_resume() {
 
     // --- Initial run ---
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(
+            n.try_into().unwrap(),
+        ))
         .with_population_size(20)
         .with_initialization_fn(move |genes_per_chromosome, _| {
             range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
@@ -320,7 +324,9 @@ fn test_wsm_checkpoint_save_and_resume() {
     let alleles2_clone = alleles2.clone();
 
     let mut resumed: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(
+            n.try_into().unwrap(),
+        ))
         .with_population_size(20)
         .with_initialization_fn(move |genes_per_chromosome, _| {
             range_random_initialization(genes_per_chromosome, Some(&alleles2_clone))
@@ -346,9 +352,15 @@ fn test_wsm_checkpoint_save_and_resume() {
     // After resumption, stats = checkpoint.stats + new generation stats
     // checkpoint had initial_stats_len entries
     // resumed run adds 5 more entries (max_generations=5)
-    assert_eq!(total_stats, initial_stats_len + 5,
-        "Stats should preserve checkpoint entries and append resumed entries");
-    assert!(total_stats >= 8, "Total stats should reflect resumed generations");
+    assert_eq!(
+        total_stats,
+        initial_stats_len + 5,
+        "Stats should preserve checkpoint entries and append resumed entries"
+    );
+    assert!(
+        total_stats >= 8,
+        "Total stats should reflect resumed generations"
+    );
 
     // Clean up checkpoint file
     let _ = std::fs::remove_file(&checkpoint_path);
@@ -364,7 +376,9 @@ fn test_wsm_checkpoint_hybrid_config_override() {
     use genetic_algorithms::genotypes::Range as RangeGene;
     use genetic_algorithms::initializers::range_random_initialization;
     use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
-    use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig};
+    use genetic_algorithms::traits::{
+        ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+    };
 
     let n: i32 = 8;
     let alleles = vec![RangeGene::new(0, vec![(0, n - 1)], 0)];
@@ -374,7 +388,9 @@ fn test_wsm_checkpoint_hybrid_config_override() {
 
     // --- Initial run (with specific operators) ---
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(
+            n.try_into().unwrap(),
+        ))
         .with_population_size(20)
         .with_initialization_fn(move |genes_per_chromosome, _| {
             range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
@@ -405,18 +421,20 @@ fn test_wsm_checkpoint_hybrid_config_override() {
     let alleles2_clone = alleles2.clone();
 
     let mut resumed: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(
+            n.try_into().unwrap(),
+        ))
         .with_population_size(20)
         .with_initialization_fn(move |genes_per_chromosome, _| {
             range_random_initialization(genes_per_chromosome, Some(&alleles2_clone))
         })
         .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum())
         // Use DIFFERENT operators to verify hybrid override
-        .with_selection_method(Selection::Random)  // Changed from Tournament
-        .with_crossover_method(Crossover::SinglePoint)  // Changed from Uniform
-        .with_mutation_method(Mutation::BitFlip)  // Changed from Swap
+        .with_selection_method(Selection::Random) // Changed from Tournament
+        .with_crossover_method(Crossover::SinglePoint) // Changed from Uniform
+        .with_mutation_method(Mutation::BitFlip) // Changed from Swap
         .with_problem_solving(ProblemSolving::Maximization)
-        .with_survivor_method(Survivor::MuPlusLambda)  // Changed from Fitness
+        .with_survivor_method(Survivor::MuPlusLambda) // Changed from Fitness
         .with_max_generations(2)
         .with_checkpoint(checkpoint_path.clone())
         .build()
@@ -442,8 +460,14 @@ fn test_wsm_checkpoint_hybrid_config_override() {
 
     // Run the resumed GA to verify it works with the different operators
     let result = resumed.run();
-    assert!(result.is_ok(), "Resumed GA with different operators should succeed");
-    assert!(resumed.stats().len() >= 3 + 2, "Stats should include checkpoint + resumed generations");
+    assert!(
+        result.is_ok(),
+        "Resumed GA with different operators should succeed"
+    );
+    assert!(
+        resumed.stats().len() >= 3 + 2,
+        "Stats should include checkpoint + resumed generations"
+    );
 
     // Clean up
     let _ = std::fs::remove_file(&checkpoint_path);
@@ -461,7 +485,8 @@ fn test_wsm_checkpoint_example_end_to_end() {
     use genetic_algorithms::initializers::range_random_initialization;
     use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
     use genetic_algorithms::traits::{
-        ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+        ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig,
+        StoppingConfig,
     };
 
     let n: i32 = 8;
@@ -472,7 +497,9 @@ fn test_wsm_checkpoint_example_end_to_end() {
 
     // Run 5 generations, save checkpoint
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(
+            n.try_into().unwrap(),
+        ))
         .with_population_size(25)
         .with_initialization_fn(move |genes_per_chromosome, _| {
             range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
@@ -496,15 +523,16 @@ fn test_wsm_checkpoint_example_end_to_end() {
         generation: 5,
         stats: ga.stats().to_vec(),
     };
-    genetic_algorithms::checkpoint::save_checkpoint(&ckpt, &checkpoint_path)
-        .expect("save");
+    genetic_algorithms::checkpoint::save_checkpoint(&ckpt, &checkpoint_path).expect("save");
 
     // Resume with more generations
     let alleles2 = vec![RangeGene::new(0, vec![(0, n - 1)], 0)];
     let alleles2_clone = alleles2.clone();
 
     let mut resumed: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(
+            n.try_into().unwrap(),
+        ))
         .with_population_size(25)
         .with_initialization_fn(move |genes_per_chromosome, _| {
             range_random_initialization(genes_per_chromosome, Some(&alleles2_clone))
@@ -523,12 +551,18 @@ fn test_wsm_checkpoint_example_end_to_end() {
     let _ = resumed.run();
 
     // Total stats should be ~10 (5 initial + 5 resumed)
-    assert!(resumed.stats().len() >= 8, "Should have at least 8 stats entries (5 initial + some resumed)");
+    assert!(
+        resumed.stats().len() >= 8,
+        "Should have at least 8 stats entries (5 initial + some resumed)"
+    );
     // Best fitness should NOT decrease (maximization, warm start preserves population)
     let final_best = resumed.population.best_chromosome.fitness();
-    assert!(final_best >= initial_best,
+    assert!(
+        final_best >= initial_best,
         "Best fitness should not decrease after resumption: initial={}, final={}",
-        initial_best, final_best);
+        initial_best,
+        final_best
+    );
 
     // Clean up
     let _ = std::fs::remove_file(&checkpoint_path);

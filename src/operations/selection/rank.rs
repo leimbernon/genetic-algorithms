@@ -38,7 +38,11 @@ use rand::Rng;
 /// let population: Vec<Binary> = vec![Binary::new(); 10];
 /// let pairs = rank_selection(&population, 5, 2);
 /// ```
-pub fn rank_selection<U: ChromosomeT>(chromosomes: &[U], couples: usize, num_parents: usize) -> Vec<Vec<usize>> {
+pub fn rank_selection<U: ChromosomeT>(
+    chromosomes: &[U],
+    couples: usize,
+    num_parents: usize,
+) -> Vec<Vec<usize>> {
     let num_parents = num_parents.max(2);
     crate::log_debug!(target="selection_events", method="rank_selection"; "Starting rank-based selection");
 

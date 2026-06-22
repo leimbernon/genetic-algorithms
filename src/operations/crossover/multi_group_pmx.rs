@@ -40,10 +40,7 @@ use std::borrow::Cow;
 /// let parent2 = Binary::new();
 /// let _ = multi_group_pmx(&parent1, &parent2);
 /// ```
-pub fn multi_group_pmx<U: LinearChromosome>(
-    parent_1: &U,
-    parent_2: &U,
-) -> Result<Vec<U>, GaError> {
+pub fn multi_group_pmx<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
     let groups = parent_1.group_ranges();
 
     if groups.is_empty() {
@@ -73,10 +70,8 @@ pub fn multi_group_pmx<U: LinearChromosome>(
     for (start, end) in &groups {
         let group_len = end - start;
         // Apply PMX within each group slice; reuse pmx_build_child (pub(crate) since 48-01)
-        let slice_1 =
-            pmx_build_child(&p1_dna[*start..=*end], &p2_dna[*start..=*end], 0, group_len);
-        let slice_2 =
-            pmx_build_child(&p2_dna[*start..=*end], &p1_dna[*start..=*end], 0, group_len);
+        let slice_1 = pmx_build_child(&p1_dna[*start..=*end], &p2_dna[*start..=*end], 0, group_len);
+        let slice_2 = pmx_build_child(&p2_dna[*start..=*end], &p1_dna[*start..=*end], 0, group_len);
         child_dna_1[*start..=*end].clone_from_slice(&slice_1);
         child_dna_2[*start..=*end].clone_from_slice(&slice_2);
     }

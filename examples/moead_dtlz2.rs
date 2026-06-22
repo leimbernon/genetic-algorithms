@@ -52,7 +52,7 @@ const N_VARS: usize = 12;
 const POP_SIZE: usize = 91; // C(14, 2) = 91 weight vectors with p=12, M=3
 const MAX_GENERATIONS: usize = 300;
 const DAS_DENNIS_P: usize = 12;
-const NEIGHBORHOOD_SIZE: usize = 20;        // Zhang & Li 2007 baseline
+const NEIGHBORHOOD_SIZE: usize = 20; // Zhang & Li 2007 baseline
 const MAX_NEIGHBOR_REPLACEMENTS: usize = 2; // Zhang & Li 2007 baseline
 
 // Custom chromosome that encodes DTLZ2 objectives directly in calculate_fitness().
@@ -65,19 +65,35 @@ struct Dtlz2Chromosome {
 
 impl ChromosomeT for Dtlz2Chromosome {
     type Gene = RangeGenotype<f64>;
-    fn fitness(&self) -> f64 { self.fitness }
-    fn set_fitness(&mut self, v: f64) -> &mut Self { self.fitness = v; self }
-    fn set_age(&mut self, _: usize) -> &mut Self { self }
-    fn age(&self) -> usize { 0 }
+    fn fitness(&self) -> f64 {
+        self.fitness
+    }
+    fn set_fitness(&mut self, v: f64) -> &mut Self {
+        self.fitness = v;
+        self
+    }
+    fn set_age(&mut self, _: usize) -> &mut Self {
+        self
+    }
+    fn age(&self) -> usize {
+        0
+    }
     fn calculate_fitness(&mut self) {
         if self.dna.len() < 3 {
             self.fitness_values = vec![0.0, 0.0, 0.0];
             self.fitness = 0.0;
             return;
         }
-        let g: f64 = self.dna[2..].iter().map(|gene| (gene.value - 0.5).powi(2)).sum();
-        let f1 = (self.dna[0].value * FRAC_PI_2).cos() * (self.dna[1].value * FRAC_PI_2).cos() * (1.0 + g);
-        let f2 = (self.dna[0].value * FRAC_PI_2).cos() * (self.dna[1].value * FRAC_PI_2).sin() * (1.0 + g);
+        let g: f64 = self.dna[2..]
+            .iter()
+            .map(|gene| (gene.value - 0.5).powi(2))
+            .sum();
+        let f1 = (self.dna[0].value * FRAC_PI_2).cos()
+            * (self.dna[1].value * FRAC_PI_2).cos()
+            * (1.0 + g);
+        let f2 = (self.dna[0].value * FRAC_PI_2).cos()
+            * (self.dna[1].value * FRAC_PI_2).sin()
+            * (1.0 + g);
         let f3 = (self.dna[0].value * FRAC_PI_2).sin() * (1.0 + g);
         self.fitness_values = vec![f1, f2, f3];
         self.fitness = f1 + f2 + f3;
@@ -85,22 +101,36 @@ impl ChromosomeT for Dtlz2Chromosome {
 }
 
 impl LinearChromosome for Dtlz2Chromosome {
-    fn dna(&self) -> &[Self::Gene] { &self.dna }
-    fn dna_mut(&mut self) -> &mut [Self::Gene] { &mut self.dna }
+    fn dna(&self) -> &[Self::Gene] {
+        &self.dna
+    }
+    fn dna_mut(&mut self) -> &mut [Self::Gene] {
+        &mut self.dna
+    }
     fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
-        self.dna = dna.into_owned(); self
+        self.dna = dna.into_owned();
+        self
     }
     fn set_fitness_fn<F>(&mut self, _: F) -> &mut Self
-    where F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static { self }
+    where
+        F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static,
+    {
+        self
+    }
 }
 
 impl VectorFitness for Dtlz2Chromosome {
-    fn fitness_values(&self) -> &[f64] { &self.fitness_values }
-    fn set_fitness_values(&mut self, values: Vec<f64>) { self.fitness_values = values; }
+    fn fitness_values(&self) -> &[f64] {
+        &self.fitness_values
+    }
+    fn set_fitness_values(&mut self, values: Vec<f64>) {
+        self.fitness_values = values;
+    }
 }
 
 impl genetic_algorithms::operations::mutation::ValueMutable for Dtlz2Chromosome {}
 impl genetic_algorithms::traits::OperatorCompat for Dtlz2Chromosome {}
+impl genetic_algorithms::traits::RealValuedMutation for Dtlz2Chromosome {}
 
 fn main() {
     let _ = env_logger::try_init();
@@ -120,10 +150,10 @@ fn main() {
         .with_max_neighbor_replacements(MAX_NEIGHBOR_REPLACEMENTS);
 
     // --- Base GA configuration ---
-    use genetic_algorithms::ChromosomeLength;
     use genetic_algorithms::traits::ConfigurationT;
-    let ga_config = GaConfiguration::default()
-        .with_chromosome_length(ChromosomeLength::Fixed(N_VARS));
+    use genetic_algorithms::ChromosomeLength;
+    let ga_config =
+        GaConfiguration::default().with_chromosome_length(ChromosomeLength::Fixed(N_VARS));
 
     // --- Allele definition: each of the 12 variables lives in [0.0, 1.0] ---
     let alleles = vec![RangeGenotype::new(0, vec![(0.0_f64, 1.0_f64)], 0.0_f64)];
@@ -132,11 +162,9 @@ fn main() {
     // --- Build the MOEA/D optimizer ---
     let mut moead = MoeaDGa::<Dtlz2Chromosome>::new(moead_config, ga_config)
         .with_alleles(alleles)
-        .with_initialization_fn(move |n, _| {
-            range_random_initialization(n, Some(&alleles_clone))
-        })
+        .with_initialization_fn(move |n, _| range_random_initialization(n, Some(&alleles_clone)))
         .with_observer(
-            Arc::new(LogObserver) as Arc<dyn MoeaDObserver<Dtlz2Chromosome> + Send + Sync>,
+            Arc::new(LogObserver) as Arc<dyn MoeaDObserver<Dtlz2Chromosome> + Send + Sync>
         )
         .build()
         .expect("Failed to build MOEA/D");
@@ -176,7 +204,10 @@ fn main() {
                 let f2 = ind.objectives[1];
                 let f3 = ind.objectives[2];
                 let norm_sq = f1 * f1 + f2 * f2 + f3 * f3;
-                println!("  {:>8.4}   {:>8.4}   {:>8.4}   {:>8.4}", f1, f2, f3, norm_sq);
+                println!(
+                    "  {:>8.4}   {:>8.4}   {:>8.4}   {:>8.4}",
+                    f1, f2, f3, norm_sq
+                );
             }
         }
         Err(e) => {

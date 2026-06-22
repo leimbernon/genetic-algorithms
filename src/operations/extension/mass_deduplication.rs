@@ -5,7 +5,7 @@
 //! population back to its target size.
 
 use crate::configuration::ProblemSolving;
-use crate::traits::{LinearChromosome, GeneT};
+use crate::traits::{GeneT, LinearChromosome};
 use std::collections::HashMap;
 use std::hash::{DefaultHasher, Hash, Hasher};
 

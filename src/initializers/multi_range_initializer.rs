@@ -17,8 +17,8 @@
 //! a non-empty range. Ensure all bounds satisfy `lo < hi`.
 
 use crate::genotypes::MultiRangeGenotype;
-use rand::Rng;
 use rand::distr::uniform::SampleUniform;
+use rand::Rng;
 use std::fmt::Debug;
 
 /// Initializes a vector of `MultiRangeGenotype` where each gene is sampled

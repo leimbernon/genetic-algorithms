@@ -61,7 +61,8 @@
 //!
 //! ## Complete Example
 //!
-//! ```ignore
+//! ```rust,no_run
+//! // no_run: SPEA2 engine example — illustrative API usage, not a runnable benchmark
 //! use genetic_algorithms::spea2::Spea2Ga;
 //! use genetic_algorithms::spea2::configuration::Spea2Configuration;
 //! use genetic_algorithms::configuration::GaConfiguration;
@@ -73,16 +74,16 @@
 //!     .with_max_generations(250);
 //!
 //! let ga_config = GaConfiguration::default();
-//! let mut spea2 = Spea2Ga::<MyChromosome>::new(spea2_config, ga_config)
-//!     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
-//!     .with_objective_fns(vec![
-//!         Box::new(|dna| { /* ZDT1 f1 */ 0.0 }),
-//!         Box::new(|dna| { /* ZDT1 f2 */ 0.0 }),
-//!     ])
-//!     .build()?;
-//!
-//! let pareto_front = spea2.run()?;
-//! println!("Front size: {}", pareto_front.len());
+//! // let mut spea2 = Spea2Ga::<MyChromosome>::new(spea2_config, ga_config)
+//! //     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
+//! //     .with_objective_fns(vec![
+//! //         Box::new(|dna| { /* ZDT1 f1 */ 0.0 }),
+//! //         Box::new(|dna| { /* ZDT1 f2 */ 0.0 }),
+//! //     ])
+//! //     .build()?;
+//! //
+//! // let pareto_front = spea2.run()?;
+//! // println!("Front size: {}", pareto_front.len());
 //! ```
 //!
 //! ## Configuration Tips
@@ -463,7 +464,10 @@ where
 
 impl<U> Spea2Ga<U>
 where
-    U: LinearChromosome + mutation::ValueMutable + VectorFitness,
+    U: LinearChromosome
+        + mutation::ValueMutable
+        + VectorFitness
+        + crate::traits::RealValuedMutation,
 {
     /// Runs the SPEA2 algorithm and returns the Pareto front from the final archive.
     ///
@@ -572,8 +576,7 @@ where
             // Tag each archive member with its SPEA2 fitness so binary_tournament_from_archive
             // can compare by fitness (lower = better) instead of rank which is always 0 here.
             // We use `crowding_distance` as a scratch field since the SPEA2 loop does not use it.
-            let archive_fitness =
-                Self::assign_spea2_fitness(&archive, &[], &directions);
+            let archive_fitness = Self::assign_spea2_fitness(&archive, &[], &directions);
             for (i, ind) in archive.iter_mut().enumerate() {
                 ind.crowding_distance = archive_fitness[i];
             }
@@ -667,7 +670,7 @@ where
         let population: Vec<ParetoIndividual<U>> = Vec::new();
 
         let crossover_config = self.ga_config.crossover_configuration;
-        let mutation_config = self.ga_config.mutation_configuration.clone();
+        let mutation_config = self.ga_config.mutation_configuration;
         let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
         let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
 
@@ -692,7 +695,9 @@ where
             for mut child in children {
                 let mp: f64 = rng.random();
                 if mp <= mut_prob {
-                    mutation_config.method.mutate(&mut child, &mutation_config.method)?;
+                    mutation_config
+                        .method
+                        .mutate(&mut child, &mutation_config.method)?;
                 }
                 offspring.push(child);
                 if offspring.len() >= pop_size {

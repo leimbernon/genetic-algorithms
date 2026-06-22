@@ -1,7 +1,7 @@
 //! Partially Mapped Crossover (PMX) implementation.
 
 use crate::error::GaError;
-use crate::traits::{LinearChromosome, GeneT};
+use crate::traits::{GeneT, LinearChromosome};
 use rand::Rng;
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -76,7 +76,12 @@ pub fn pmx<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, Ga
 ///
 /// `donor` provides the copied segment; `other` provides the remaining genes
 /// and the mapping source.
-pub(crate) fn pmx_build_child<G: GeneT>(donor: &[G], other: &[G], start: usize, end: usize) -> Vec<G> {
+pub(crate) fn pmx_build_child<G: GeneT>(
+    donor: &[G],
+    other: &[G],
+    start: usize,
+    end: usize,
+) -> Vec<G> {
     // Pre-fill child from `other`; the segment will be overwritten from `donor`.
     let mut child = other.to_vec();
 

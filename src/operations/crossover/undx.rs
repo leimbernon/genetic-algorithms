@@ -121,7 +121,11 @@ where
 
     // Project out the primary-direction component so xi is orthogonal to dir.
     // dir is already a unit vector; dot product gives the projection coefficient.
-    let dot: f64 = raw_xi.iter().zip(dir.iter()).map(|(n, d)| n * d).sum::<f64>();
+    let dot: f64 = raw_xi
+        .iter()
+        .zip(dir.iter())
+        .map(|(n, d)| n * d)
+        .sum::<f64>();
     let xi_perp: Vec<f64> = raw_xi
         .iter()
         .zip(dir.iter())

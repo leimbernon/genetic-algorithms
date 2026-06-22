@@ -52,9 +52,7 @@ impl<U: ChromosomeT> GaObserver<U> for RecordingObserver {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-fn make_neighbor_fn(
-    step: f64,
-) -> impl Fn(&RangeChromosome<f64>) -> Vec<RangeChromosome<f64>> {
+fn make_neighbor_fn(step: f64) -> impl Fn(&RangeChromosome<f64>) -> Vec<RangeChromosome<f64>> {
     move |c| {
         let current_val = c.dna()[0].value();
         let lo = -100.0;
@@ -63,7 +61,11 @@ fn make_neighbor_fn(
         let val_up = current_val + step;
 
         let mut n_down = <RangeChromosome<f64>>::default();
-        n_down.set_dna(Cow::Owned(vec![RangeGene::new(0, vec![(lo, hi)], val_down)]));
+        n_down.set_dna(Cow::Owned(vec![RangeGene::new(
+            0,
+            vec![(lo, hi)],
+            val_down,
+        )]));
         n_down.set_fitness(val_down.abs());
 
         let mut n_up = <RangeChromosome<f64>>::default();
@@ -120,7 +122,11 @@ fn test_stochastic_stops_on_no_improvement_limit() {
         // Return a neighbor with strictly worse fitness (higher abs value)
         let worse_val = val + 10.0;
         let mut n = <RangeChromosome<f64>>::default();
-        n.set_dna(Cow::Owned(vec![RangeGene::new(0, vec![(lo, hi)], worse_val)]));
+        n.set_dna(Cow::Owned(vec![RangeGene::new(
+            0,
+            vec![(lo, hi)],
+            worse_val,
+        )]));
         n.set_fitness(worse_val.abs());
         vec![n]
     });
@@ -141,9 +147,8 @@ fn test_stochastic_observer_hooks_order() {
         .with_mode(HillClimbMode::Stochastic)
         .with_no_improvement_limit(1);
 
-    let mut engine =
-        HillClimbEngine::new(config, initial, make_neighbor_fn(0.1))
-            .with_observer(observer.clone() as Arc<dyn GaObserver<RangeChromosome<f64>> + Send + Sync>);
+    let mut engine = HillClimbEngine::new(config, initial, make_neighbor_fn(0.1))
+        .with_observer(observer.clone() as Arc<dyn GaObserver<RangeChromosome<f64>> + Send + Sync>);
 
     engine.run().expect("run must succeed");
 
@@ -160,15 +165,33 @@ fn test_stochastic_observer_hooks_order() {
     );
 
     // gen_start must appear before gen_end
-    let gen_start_pos = events.iter().position(|e| e == "gen_start").expect("gen_start missing");
-    let gen_end_pos = events.iter().position(|e| e == "gen_end").expect("gen_end missing");
-    assert!(gen_start_pos < gen_end_pos, "gen_start must precede gen_end");
+    let gen_start_pos = events
+        .iter()
+        .position(|e| e == "gen_start")
+        .expect("gen_start missing");
+    let gen_end_pos = events
+        .iter()
+        .position(|e| e == "gen_end")
+        .expect("gen_end missing");
+    assert!(
+        gen_start_pos < gen_end_pos,
+        "gen_start must precede gen_end"
+    );
 
     // GA-specific hooks must NOT appear
     for event in &events {
-        assert_ne!(event, "selection_complete", "selection_complete must not fire");
-        assert_ne!(event, "crossover_complete", "crossover_complete must not fire");
-        assert_ne!(event, "mutation_complete", "mutation_complete must not fire");
+        assert_ne!(
+            event, "selection_complete",
+            "selection_complete must not fire"
+        );
+        assert_ne!(
+            event, "crossover_complete",
+            "crossover_complete must not fire"
+        );
+        assert_ne!(
+            event, "mutation_complete",
+            "mutation_complete must not fire"
+        );
     }
 }
 
@@ -225,7 +248,11 @@ fn test_steepest_ascent_stops_on_no_improvement() {
         let hi = 100.0;
         let worse_val = val + 1.0;
         let mut n = <RangeChromosome<f64>>::default();
-        n.set_dna(Cow::Owned(vec![RangeGene::new(0, vec![(lo, hi)], worse_val)]));
+        n.set_dna(Cow::Owned(vec![RangeGene::new(
+            0,
+            vec![(lo, hi)],
+            worse_val,
+        )]));
         n.set_fitness(worse_val.abs());
         vec![n]
     });
@@ -251,7 +278,10 @@ fn test_steepest_ascent_empty_neighbor_list() {
     engine.run().expect("empty neighbors must not panic");
 
     let best = engine.best();
-    assert!(best.is_some(), "best() must return Some (the initial chromosome)");
+    assert!(
+        best.is_some(),
+        "best() must return Some (the initial chromosome)"
+    );
     assert_eq!(
         best.unwrap().fitness(),
         3.0,

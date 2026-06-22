@@ -64,7 +64,8 @@
 //!
 //! ## Complete Example
 //!
-//! ```ignore
+//! ```rust,no_run
+//! // no_run: IBEA engine example — illustrative API usage, not a runnable benchmark
 //! use genetic_algorithms::ibea::IbeaGa;
 //! use genetic_algorithms::ibea::configuration::IbeaConfiguration;
 //! use genetic_algorithms::configuration::GaConfiguration;
@@ -75,16 +76,16 @@
 //!     .with_max_generations(250);
 //!
 //! let ga_config = GaConfiguration::default();
-//! let mut ibea = IbeaGa::<MyChromosome>::new(ibea_config, ga_config)
-//!     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
-//!     .with_objective_fns(vec![
-//!         Box::new(|dna| { /* ZDT1 f1 */ 0.0 }),
-//!         Box::new(|dna| { /* ZDT1 f2 */ 0.0 }),
-//!     ])
-//!     .build()?;
-//!
-//! let pareto_front = ibea.run()?;
-//! println!("Front size: {}", pareto_front.len());
+//! // let mut ibea = IbeaGa::<MyChromosome>::new(ibea_config, ga_config)
+//! //     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
+//! //     .with_objective_fns(vec![
+//! //         Box::new(|dna| { /* ZDT1 f1 */ 0.0 }),
+//! //         Box::new(|dna| { /* ZDT1 f2 */ 0.0 }),
+//! //     ])
+//! //     .build()?;
+//! //
+//! // let pareto_front = ibea.run()?;
+//! // println!("Front size: {}", pareto_front.len());
 //! ```
 //!
 //! ## Configuration Tips
@@ -344,12 +345,14 @@ where
         }
         total_removed
     }
-
 }
 
 impl<U> IbeaGa<U>
 where
-    U: LinearChromosome + mutation::ValueMutable + VectorFitness,
+    U: LinearChromosome
+        + mutation::ValueMutable
+        + VectorFitness
+        + crate::traits::RealValuedMutation,
 {
     /// Initializes the population with random chromosomes and evaluates objectives in parallel.
     fn initialize_population(&self) -> Result<Vec<ParetoIndividual<U>>, GaError> {
@@ -404,7 +407,6 @@ where
         Ok(population)
     }
 
-
     /// Produces offspring chromosomes via binary tournament selection from population,
     /// followed by crossover + mutation on each selected pair.
     fn create_offspring(
@@ -416,7 +418,7 @@ where
         let n = population.len();
 
         let crossover_config = self.ga_config.crossover_configuration;
-        let mutation_config = self.ga_config.mutation_configuration.clone();
+        let mutation_config = self.ga_config.mutation_configuration;
         let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
         let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
 
@@ -439,7 +441,9 @@ where
             for mut child in children {
                 let mp: f64 = rng.random();
                 if mp <= mut_prob {
-                    mutation_config.method.mutate(&mut child, &mutation_config.method)?;
+                    mutation_config
+                        .method
+                        .mutate(&mut child, &mutation_config.method)?;
                 }
                 offspring.push(child);
                 if offspring.len() >= pop_size {

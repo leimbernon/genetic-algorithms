@@ -84,8 +84,14 @@ fn test_lexicase_case_order_is_shuffled() {
     let saw_0 = all_selected.contains(&0);
     let saw_1 = all_selected.contains(&1);
 
-    assert!(saw_0, "Individual 0 (case-0 specialist) was never selected in 200 pairs");
-    assert!(saw_1, "Individual 1 (case-1 specialist) was never selected in 200 pairs");
+    assert!(
+        saw_0,
+        "Individual 0 (case-0 specialist) was never selected in 200 pairs"
+    );
+    assert!(
+        saw_1,
+        "Individual 1 (case-1 specialist) was never selected in 200 pairs"
+    );
 }
 
 #[test]
@@ -179,7 +185,10 @@ fn test_epsilon_lexicase_fixed_tolerance() {
         vec![0.50], // index 3 — excluded
     ]);
     let pairs = epsilon_lexicase_selection(&pop, 100, Some(0.05), 2);
-    let all_selected: Vec<usize> = pairs.iter().flat_map(|group| [group[0], group[1]]).collect();
+    let all_selected: Vec<usize> = pairs
+        .iter()
+        .flat_map(|group| [group[0], group[1]])
+        .collect();
 
     assert!(
         !all_selected.contains(&3),
@@ -211,14 +220,21 @@ fn test_epsilon_lexicase_dynamic_mad() {
         vec![0.0, 1.0],
     ]);
     let pairs = epsilon_lexicase_selection(&pop, 50, None, 2);
-    assert_eq!(pairs.len(), 50, "Expected 50 pairs from dynamic MAD epsilon-lexicase");
+    assert_eq!(
+        pairs.len(),
+        50,
+        "Expected 50 pairs from dynamic MAD epsilon-lexicase"
+    );
     for group in &pairs {
         assert!(group[0] < pop.len(), "Index {} out of bounds", group[0]);
         assert!(group[1] < pop.len(), "Index {} out of bounds", group[1]);
     }
     // Confirm that both extreme specialists (index 0 and 4) can be selected,
     // as they are each best on at least one case.
-    let all: Vec<usize> = pairs.iter().flat_map(|group| [group[0], group[1]]).collect();
+    let all: Vec<usize> = pairs
+        .iter()
+        .flat_map(|group| [group[0], group[1]])
+        .collect();
     assert!(
         all.contains(&0) || all.contains(&4),
         "At least one extreme specialist should appear in 50 pairs"
@@ -227,14 +243,14 @@ fn test_epsilon_lexicase_dynamic_mad() {
 
 #[test]
 fn test_ga_engine_runs_with_lexicase_dispatch() {
+    use crate::structures::{Gene, MultiCaseChromosome};
     use genetic_algorithms::{
         ga::Ga,
         operations::Selection,
         population::Population,
-        traits::{ConfigurationT, VectorFitness, SelectionConfig, StoppingConfig},
+        traits::{ConfigurationT, SelectionConfig, StoppingConfig, VectorFitness},
         ChromosomeLength,
     };
-    use crate::structures::{Gene, MultiCaseChromosome};
 
     // Build a small population of MultiCaseChromosome directly
     let make_chrom = |scores: Vec<f64>| -> MultiCaseChromosome {
@@ -270,7 +286,11 @@ fn test_ga_engine_runs_with_lexicase_dispatch() {
     ga.population = Population::new(chromosomes);
 
     let result = ga.select_parents_lexicase();
-    assert!(result.is_ok(), "select_parents_lexicase failed: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "select_parents_lexicase failed: {:?}",
+        result
+    );
     let pairs = result.unwrap();
     assert_eq!(pairs.len(), 3, "Expected 3 parent pairs");
     for group in &pairs {

@@ -16,7 +16,13 @@ fn make_pop(n: usize, dim: usize) -> Vec<RangeChromosome<f64>> {
     (0..n)
         .map(|_| {
             let dna: Vec<RangeGene<f64>> = (0..dim)
-                .map(|j| RangeGene::new(j as i32, vec![(-5.0_f64, 5.0)], rng.random::<f64>() * 10.0 - 5.0))
+                .map(|j| {
+                    RangeGene::new(
+                        j as i32,
+                        vec![(-5.0_f64, 5.0)],
+                        rng.random::<f64>() * 10.0 - 5.0,
+                    )
+                })
                 .collect();
             let mut c = <RangeChromosome<f64> as Default>::default();
             c.set_dna(Cow::Owned(dna));
@@ -38,8 +44,11 @@ mod alps_vs_de {
                 .with_age_gap(5)
                 .with_injection_interval(10)
                 .with_max_generations(100)
-                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian { sigma: Some(0.3) });
-            let mut engine = AlpsEngine::new(config, |n| make_pop(n, 5), sphere);
+                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian(
+                    genetic_algorithms::operations::GaussianParams { sigma: Some(0.3) },
+                ));
+            let mut engine = AlpsEngine::new(config, |n| make_pop(n, 5), sphere)
+                .expect("valid bench config");
             engine.run()
         });
     }
@@ -71,8 +80,11 @@ mod alps_age_schemes {
                 .with_age_scheme(AlpsAgeScheme::Linear)
                 .with_age_gap(5)
                 .with_max_generations(100)
-                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian { sigma: Some(0.3) });
-            let mut engine = AlpsEngine::new(config, |n| make_pop(n, 5), sphere);
+                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian(
+                    genetic_algorithms::operations::GaussianParams { sigma: Some(0.3) },
+                ));
+            let mut engine = AlpsEngine::new(config, |n| make_pop(n, 5), sphere)
+                .expect("valid bench config");
             engine.run()
         });
     }
@@ -86,8 +98,11 @@ mod alps_age_schemes {
                 .with_age_scheme(AlpsAgeScheme::Fibonacci)
                 .with_age_gap(5)
                 .with_max_generations(100)
-                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian { sigma: Some(0.3) });
-            let mut engine = AlpsEngine::new(config, |n| make_pop(n, 5), sphere);
+                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian(
+                    genetic_algorithms::operations::GaussianParams { sigma: Some(0.3) },
+                ));
+            let mut engine = AlpsEngine::new(config, |n| make_pop(n, 5), sphere)
+                .expect("valid bench config");
             engine.run()
         });
     }
@@ -101,8 +116,11 @@ mod alps_age_schemes {
                 .with_age_scheme(AlpsAgeScheme::Polynomial)
                 .with_age_gap(5)
                 .with_max_generations(100)
-                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian { sigma: Some(0.3) });
-            let mut engine = AlpsEngine::new(config, |n| make_pop(n, 5), sphere);
+                .with_mutation(genetic_algorithms::operations::Mutation::Gaussian(
+                    genetic_algorithms::operations::GaussianParams { sigma: Some(0.3) },
+                ));
+            let mut engine = AlpsEngine::new(config, |n| make_pop(n, 5), sphere)
+                .expect("valid bench config");
             engine.run()
         });
     }

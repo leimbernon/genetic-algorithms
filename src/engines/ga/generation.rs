@@ -1,6 +1,7 @@
 //! Extracted from src/engines/ga.rs in phase 69-04 — Per-generation loop body (parent_crossover, extract_elite, reinsert_elite).
 
 use super::*;
+use crate::operations::DifferentialParams;
 
 /// AOS and fitness parameters bundled for `parent_crossover` (D-07).
 ///
@@ -38,18 +39,28 @@ pub(crate) struct ParentCrossoverParams<'a, U: LinearChromosome> {
 /// Performs parent crossover using the configured crossover and mutation strategies.
 ///
 /// Behavior:
+/// - Clears `out` at entry and pushes (crossed_pairs * 2) offspring into it on success.
 /// - Splits work among threads considering available parent pairs.
 /// - Computes adaptive probabilities when enabled; otherwise uses static ones.
-/// - Produces children, mutates them, computes their fitness, and returns the offspring.
+/// - Produces children, mutates them, computes their fitness, and writes them into `out`.
+/// - Pairs where the crossover-probability roll fails produce no offspring (D-04/D-05).
 pub(crate) fn parent_crossover<U>(
     parents: &[Vec<usize>],
     chromosomes: &[U],
     configuration: &GaConfiguration,
     params: ParentCrossoverParams<'_, U>,
-) -> Result<Vec<U>, GaError>
+    out: &mut Vec<U>,
+) -> Result<(), GaError>
 where
-    U: LinearChromosome + Send + Sync + 'static + Clone + mutation::ValueMutable,
+    U: LinearChromosome
+        + Send
+        + Sync
+        + 'static
+        + Clone
+        + mutation::ValueMutable
+        + crate::traits::RealValuedMutation,
 {
+    out.clear();
     // Destructure the population-level and AOS params bundle (D-07)
     let ParentCrossoverParams {
         age,
@@ -138,30 +149,6 @@ where
             ))
         })?;
 
-        // Select operators via AOS if portfolios are configured (Phase 43)
-        // AOS returns (operator_index, operator_enum) for reward tracking
-        let selected_crossover: Option<(usize, Crossover)> = if let (
-            Some(portfolio),
-            Some(aos_state),
-        ) =
-            (crossover_portfolio, aos_crossover_state)
-        {
-            let mut state = aos_state.lock().unwrap();
-            let op_idx = state.select_operator(&mut rng, generation);
-            Some((op_idx, portfolio[op_idx]))
-        } else {
-            None
-        };
-
-        let selected_mutation: Option<(usize, Mutation)> =
-            if let (Some(portfolio), Some(aos_state)) = (mutation_portfolio, aos_mutation_state) {
-                let mut state = aos_state.lock().unwrap();
-                let op_idx = state.select_operator(&mut rng, generation);
-                Some((op_idx, portfolio[op_idx].clone()))
-            } else {
-                None
-            };
-
         // Making the crossover of the parents when the random number is below or equal to the given probability
         let crossover_probability = rng.random_range(0.0..1.0);
         let effective_crossover_prob = if let Some(p) = crossover_probability_config {
@@ -203,62 +190,93 @@ where
             )
         };
 
-        let mut child_1: U;
-        let mut child_2: U;
+        if crossover_probability > effective_crossover_prob {
+            // Crossover probability roll failed — produce no offspring for this pair (D-04/D-05).
+            // Total offspring this generation = (crossed_pairs * 2), not (all_pairs * 2).
+            return Ok(Vec::new());
+        }
 
-        if crossover_probability <= effective_crossover_prob {
-            // Determine the effective crossover method (AOS-selected or user-configured)
-            let effective_method = selected_crossover
-                .map(|(_, op)| op)
-                .unwrap_or(configuration.crossover_configuration.method);
+        // Select operators via AOS if portfolios are configured (Phase 43).
+        // AOS operator selection is intentionally placed AFTER the crossover probability
+        // gate above. Before Phase 75, failed crossover pairs still produced parent clones
+        // and reached the reward block, keeping pull counts and rewards in sync. Phase 75's
+        // early return (Ok(Vec::new())) means skipped pairs never reach the reward block,
+        // so selecting before the gate would inflate pull counts without any reward signal
+        // — corrupting UCB1 exploration statistics over time (Phase 75 regression fix).
+        let selected_crossover: Option<(usize, Crossover)> = if let (
+            Some(portfolio),
+            Some(aos_state),
+        ) =
+            (crossover_portfolio, aos_crossover_state)
+        {
+            let mut state = aos_state
+                .lock()
+                .map_err(|_| GaError::InternalError("AOS state mutex poisoned".to_string()))?;
+            let op_idx = state.select_operator(&mut rng, generation);
+            Some((op_idx, portfolio[op_idx]))
+        } else {
+            None
+        };
 
-            // Dispatch crossover by group size: groups of 2 use the standard 2-parent path;
-            // larger groups use the multi-parent dispatch (UNDX/SPX/PCX via group.len() > 2).
-            let mut children = if group.len() > 2 {
-                // Multi-parent crossover path: collect all parents from the group
-                let mut parent_refs: Vec<&U> = Vec::with_capacity(group.len());
-                for &idx in group.iter() {
-                    let p = chromosomes.get(idx).ok_or_else(|| {
-                        GaError::SelectionError(format!(
-                            "Selection returned out-of-bounds index {} (population size {})",
-                            idx,
-                            chromosomes.len()
-                        ))
-                    })?;
-                    parent_refs.push(p);
-                }
-                let mut cx_config = configuration.crossover_configuration;
-                cx_config.method = effective_method;
-                // Returns 1 offspring per D-04 (single-offspring contract)
-                crossover::factory_multi_parent_dispatch(&parent_refs, cx_config)?
+        let selected_mutation: Option<(usize, Mutation)> =
+            if let (Some(portfolio), Some(aos_state)) = (mutation_portfolio, aos_mutation_state) {
+                let mut state = aos_state
+                    .lock()
+                    .map_err(|_| GaError::InternalError("AOS state mutex poisoned".to_string()))?;
+                let op_idx = state.select_operator(&mut rng, generation);
+                Some((op_idx, portfolio[op_idx]))
             } else {
-                // Standard 2-parent crossover path — all variants with group.len() == 2
-                let mut cx_config = configuration.crossover_configuration;
-                cx_config.method = effective_method;
-                crossover::factory(parent_1, parent_2, cx_config)?
+                None
             };
 
-            // factory_multi_parent_dispatch returns 1 child; factory returns 2.
-            // For the 1-child path, child_1 gets the actual offspring; child_2 falls back to
-            // parent_1.clone() (D-04 / Pitfall 1). For the 2-child path, both pops succeed.
-            child_1 = children.pop().ok_or_else(|| {
-                GaError::CrossoverError("Crossover returned no children".to_string())
-            })?;
-            child_2 = children.pop().unwrap_or_else(|| parent_1.clone());
+        // Determine the effective crossover method (AOS-selected or user-configured)
+        let effective_method = selected_crossover
+            .map(|(_, op)| op)
+            .unwrap_or(configuration.crossover_configuration.method);
+
+        // Dispatch crossover by group size: groups of 2 use the standard 2-parent path;
+        // larger groups use the multi-parent dispatch (UNDX/SPX/PCX via group.len() > 2).
+        let mut children = if group.len() > 2 {
+            // Multi-parent crossover path: collect all parents from the group
+            let mut parent_refs: Vec<&U> = Vec::with_capacity(group.len());
+            for &idx in group.iter() {
+                let p = chromosomes.get(idx).ok_or_else(|| {
+                    GaError::SelectionError(format!(
+                        "Selection returned out-of-bounds index {} (population size {})",
+                        idx,
+                        chromosomes.len()
+                    ))
+                })?;
+                parent_refs.push(p);
+            }
+            let mut cx_config = configuration.crossover_configuration;
+            cx_config.method = effective_method;
+            // Returns 1 offspring per D-04 (single-offspring contract)
+            crossover::factory_multi_parent_dispatch(&parent_refs, cx_config)?
         } else {
-            child_1 = parent_1.clone();
-            child_2 = parent_2.clone();
-        }
+            // Standard 2-parent crossover path — all variants with group.len() == 2
+            let mut cx_config = configuration.crossover_configuration;
+            cx_config.method = effective_method;
+            crossover::factory(parent_1, parent_2, cx_config)?
+        };
+
+        // factory_multi_parent_dispatch returns 1 child; factory returns 2.
+        // For the 1-child path, child_1 gets the actual offspring; child_2 falls back to
+        // parent_2.clone() (D-06). For the 2-child path, both pops succeed.
+        let mut child_1 = children
+            .pop()
+            .ok_or_else(|| GaError::CrossoverError("Crossover returned no children".to_string()))?;
+        let mut child_2 = children.pop().unwrap_or_else(|| parent_2.clone());
 
         // Determine mutation method: AOS-selected or configured single operator
         let selected_mutation_idx = selected_mutation.as_ref().map(|(idx, _)| *idx);
         let mutation_method = selected_mutation
             .map(|(_, op)| op)
-            .unwrap_or_else(|| configuration.mutation_configuration.method.clone());
+            .unwrap_or(configuration.mutation_configuration.method);
 
         if mutation_probability <= effective_mutation_prob {
             match &mutation_method {
-                Mutation::Differential { f } => {
+                Mutation::Differential(DifferentialParams { f }) => {
                     let f_val = f.unwrap_or(0.5);
                     crate::operations::mutation::differential::differential_mutation(
                         &mut child_1,
@@ -269,11 +287,9 @@ where
                 }
                 Mutation::Insertion | Mutation::Deletion => {
                     mutation::factory_with_chromosome_length(
-                        mutation_method.clone(),
+                        mutation_method,
                         &mut child_1,
                         Some(configuration.limit_configuration.chromosome_length),
-                        None,
-                        None,
                     )?;
                 }
                 _ => {
@@ -285,7 +301,7 @@ where
         mutation_probability = rng.random_range(0.0..1.0);
         if mutation_probability <= effective_mutation_prob {
             match &mutation_method {
-                Mutation::Differential { f } => {
+                Mutation::Differential(DifferentialParams { f }) => {
                     let f_val = f.unwrap_or(0.5);
                     crate::operations::mutation::differential::differential_mutation(
                         &mut child_2,
@@ -296,11 +312,9 @@ where
                 }
                 Mutation::Insertion | Mutation::Deletion => {
                     mutation::factory_with_chromosome_length(
-                        mutation_method.clone(),
+                        mutation_method,
                         &mut child_2,
                         Some(configuration.limit_configuration.chromosome_length),
-                        None,
-                        None,
                     )?;
                 }
                 _ => {
@@ -336,7 +350,11 @@ where
                     (parent_1.fitness(), child_1.fitness())
                 };
                 let reward = crate::aos::compute_normalized_reward(p, c, best_fitness);
-                acc.lock().unwrap().push((c_op_idx, reward));
+                acc.lock()
+                    .map_err(|_| {
+                        GaError::InternalError("AOS reward accumulator poisoned".to_string())
+                    })?
+                    .push((c_op_idx, reward));
             }
         }
         // Mutation reward: compare parent vs child fitness
@@ -348,7 +366,11 @@ where
                     (parent_1.fitness(), child_1.fitness())
                 };
                 let reward = crate::aos::compute_normalized_reward(p, c, best_fitness);
-                acc.lock().unwrap().push((m_op_idx, reward));
+                acc.lock()
+                    .map_err(|_| {
+                        GaError::InternalError("AOS reward accumulator poisoned".to_string())
+                    })?
+                    .push((m_op_idx, reward));
             }
         }
 
@@ -361,45 +383,58 @@ where
     #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
     let results: Vec<Result<Vec<U>, GaError>> = parents.iter().map(process_pair).collect();
 
-    // Check for any errors and flatten the results
-    let mut offspring = Vec::new();
+    // Check for any errors and extend the output buffer (D-09)
     for result in results {
-        offspring.extend(result?);
+        out.extend(result?);
     }
 
     // Apply AOS reward updates after collecting all rewards (Phase 43)
     if let Some(acc) = crossover_reward_acc {
-        let rewards = acc.lock().unwrap().drain(..).collect::<Vec<_>>();
+        let rewards = acc
+            .lock()
+            .map_err(|_| GaError::InternalError("AOS reward accumulator poisoned".to_string()))?
+            .drain(..)
+            .collect::<Vec<_>>();
         if !rewards.is_empty() {
             if let Some(aos_state) = aos_crossover_state {
-                let mut state = aos_state.lock().unwrap();
+                let mut state = aos_state
+                    .lock()
+                    .map_err(|_| GaError::InternalError("AOS state mutex poisoned".to_string()))?;
                 state.record_rewards(&rewards);
                 state.update();
             }
         }
     }
     if let Some(acc) = mutation_reward_acc {
-        let rewards = acc.lock().unwrap().drain(..).collect::<Vec<_>>();
+        let rewards = acc
+            .lock()
+            .map_err(|_| GaError::InternalError("AOS reward accumulator poisoned".to_string()))?
+            .drain(..)
+            .collect::<Vec<_>>();
         if !rewards.is_empty() {
             if let Some(aos_state) = aos_mutation_state {
-                let mut state = aos_state.lock().unwrap();
+                let mut state = aos_state
+                    .lock()
+                    .map_err(|_| GaError::InternalError("AOS state mutex poisoned".to_string()))?;
                 state.record_rewards(&rewards);
                 state.update();
             }
         }
     }
 
-    Ok(offspring)
+    Ok(())
 }
 
-/// Extracts the top `count` individuals from the population by fitness.
+/// Returns the indices of the top `count` individuals from the population by fitness.
 ///
-/// Only clones the selected elite individuals instead of the whole population.
+/// Returns a `Vec<usize>` of indices into `chromosomes` identifying the elite individuals.
+/// No chromosome clone is performed — the caller is responsible for cloning from the
+/// same (pre-survivor-selection) population snapshot before any reordering occurs.
 pub(crate) fn extract_elite<U: LinearChromosome>(
     chromosomes: &[U],
     count: usize,
     problem_solving: ProblemSolving,
-) -> Vec<U> {
+) -> Vec<usize> {
     if count == 0 || chromosomes.is_empty() {
         return Vec::new();
     }
@@ -421,7 +456,7 @@ pub(crate) fn extract_elite<U: LinearChromosome>(
     // The first `k` elements are the best (unordered among themselves).
     indices.truncate(k);
 
-    indices.iter().map(|&i| chromosomes[i].clone()).collect()
+    indices
 }
 
 /// Reinserts elite individuals into the population, replacing the worst if already at capacity.

@@ -91,17 +91,18 @@ fn main() {
         c1: 2.0,
         c2: 2.0,
         topology: PsoTopology::Global,
+        fitness_cache_size: None,
     };
 
-    let mut engine = PsoEngine::new(config, init_population, rastrigin)
-        .with_observer(Arc::new(LogObserver));
+    let mut engine =
+        PsoEngine::new(config, init_population, rastrigin).with_observer(Arc::new(LogObserver));
 
     println!("== PSO: {DIMENSIONS}D Rastrigin Minimization ==");
     println!("particles=200, max_generations=1000, target=1e-3");
     println!("inertia=LinearDecay(0.9→0.4), c1=2.0, c2=2.0, topology=Global");
     println!("--------------------------------------------------");
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     println!("Generations: {}", result.generations);
     println!("Best fitness: {:.6}", result.best_fitness);

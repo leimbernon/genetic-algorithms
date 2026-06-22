@@ -8,7 +8,11 @@ fn test_das_dennis_m3_p2() {
     for pt in &pts {
         assert_eq!(pt.len(), 3);
         let sum: f64 = pt.iter().sum();
-        assert!((sum - 1.0).abs() < 1e-9, "point sum was {}, expected 1.0", sum);
+        assert!(
+            (sum - 1.0).abs() < 1e-9,
+            "point sum was {}, expected 1.0",
+            sum
+        );
     }
 }
 

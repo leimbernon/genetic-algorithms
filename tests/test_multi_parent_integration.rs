@@ -12,8 +12,10 @@ use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::Ga;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::initializers::range_random_initialization;
-use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
-use genetic_algorithms::traits::{ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig};
+use genetic_algorithms::operations::{Crossover, GaussianParams, Mutation, SelfAdaptiveGaussianParams, Selection, Survivor};
+use genetic_algorithms::traits::{
+    ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
+};
 use genetic_algorithms::ChromosomeLength;
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
@@ -34,14 +36,12 @@ fn build_ga_with_crossover(method: Crossover) -> Ga<RangeChromosome<f64>> {
     Ga::new()
         .with_population_size(20)
         .with_chromosome_length(ChromosomeLength::Fixed(5))
-        .with_initialization_fn(move |n, _| {
-            range_random_initialization(n, Some(&alleles_clone))
-        })
+        .with_initialization_fn(move |n, _| range_random_initialization(n, Some(&alleles_clone)))
         .with_fitness_fn(sphere_fitness)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(method)
         .with_crossover_probability_max(0.9)
-        .with_mutation_method(Mutation::Gaussian { sigma: None })
+        .with_mutation_method(Mutation::Gaussian(GaussianParams { sigma: None }))
         .with_mutation_probability_max(0.1)
         .with_survivor_method(Survivor::Fitness)
         .with_problem_solving(ProblemSolving::Maximization)
@@ -117,14 +117,17 @@ fn end_to_end_self_adaptive_gaussian_sigmas_evolve() {
     let mut ga: Ga<RangeChromosome<f64>> = Ga::new()
         .with_population_size(20)
         .with_chromosome_length(ChromosomeLength::Fixed(5))
-        .with_initialization_fn(move |n, _| {
-            range_random_initialization(n, Some(&alleles_clone))
-        })
+        .with_initialization_fn(move |n, _| range_random_initialization(n, Some(&alleles_clone)))
         .with_fitness_fn(sphere_fitness)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
         .with_crossover_probability_max(0.9)
-        .with_mutation_method(Mutation::SelfAdaptiveGaussian { tau: None, tau_prime: None, sigma_min: None, sigma_max: None })
+        .with_mutation_method(Mutation::SelfAdaptiveGaussian(SelfAdaptiveGaussianParams {
+            tau: None,
+            tau_prime: None,
+            sigma_min: None,
+            sigma_max: None,
+        }))
         .with_mutation_probability_max(0.9) // high probability to ensure mutations fire
         .with_survivor_method(Survivor::Fitness)
         .with_problem_solving(ProblemSolving::Maximization)
@@ -146,9 +149,10 @@ fn end_to_end_self_adaptive_gaussian_sigmas_evolve() {
     // in the population should have sigma values that have drifted from 1.0.
     // We check the entire population because the best chromosome may have remained
     // a parent that was never selected as an offspring (and thus never mutated in place).
-    let any_sigma_drifted = population.chromosomes.iter().any(|c| {
-        c.strategy_params.iter().any(|&s| (s - 1.0).abs() > 1e-9)
-    });
+    let any_sigma_drifted = population
+        .chromosomes
+        .iter()
+        .any(|c| c.strategy_params.iter().any(|&s| (s - 1.0).abs() > 1e-9));
     assert!(
         any_sigma_drifted,
         "No sigma drift detected in any chromosome after 50 generations. \
@@ -156,9 +160,10 @@ fn end_to_end_self_adaptive_gaussian_sigmas_evolve() {
     );
 
     // All sigmas in all population chromosomes must respect the sigma_min floor (1e-5)
-    let all_above_min = population.chromosomes.iter().all(|c| {
-        c.strategy_params.iter().all(|&s| s >= 1e-5)
-    });
+    let all_above_min = population
+        .chromosomes
+        .iter()
+        .all(|c| c.strategy_params.iter().all(|&s| s >= 1e-5));
     assert!(
         all_above_min,
         "At least one sigma is below sigma_min 1e-5 in the final population."

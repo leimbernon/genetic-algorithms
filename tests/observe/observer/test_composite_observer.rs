@@ -20,8 +20,8 @@ use genetic_algorithms::observer::LogObserver;
 use genetic_algorithms::observer::{GaObserver, IslandGaObserver, Nsga2Observer};
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::traits::{
-    ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig, SelectionConfig,
-    StoppingConfig, VectorFitness,
+    ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig,
+    SelectionConfig, StoppingConfig, VectorFitness,
 };
 use genetic_algorithms::{AllObserver, CompositeObserver};
 
@@ -35,10 +35,19 @@ struct MoBinaryChromosome {
 
 impl ChromosomeT for MoBinaryChromosome {
     type Gene = BinaryGene;
-    fn fitness(&self) -> f64 { self.fitness }
-    fn set_fitness(&mut self, v: f64) -> &mut Self { self.fitness = v; self }
-    fn set_age(&mut self, _: usize) -> &mut Self { self }
-    fn age(&self) -> usize { 0 }
+    fn fitness(&self) -> f64 {
+        self.fitness
+    }
+    fn set_fitness(&mut self, v: f64) -> &mut Self {
+        self.fitness = v;
+        self
+    }
+    fn set_age(&mut self, _: usize) -> &mut Self {
+        self
+    }
+    fn age(&self) -> usize {
+        0
+    }
     fn calculate_fitness(&mut self) {
         let true_count = self.dna.iter().filter(|g| g.value).count() as f64;
         let false_count = self.dna.len() as f64 - true_count;
@@ -48,22 +57,36 @@ impl ChromosomeT for MoBinaryChromosome {
 }
 
 impl LinearChromosome for MoBinaryChromosome {
-    fn dna(&self) -> &[Self::Gene] { &self.dna }
-    fn dna_mut(&mut self) -> &mut [Self::Gene] { &mut self.dna }
+    fn dna(&self) -> &[Self::Gene] {
+        &self.dna
+    }
+    fn dna_mut(&mut self) -> &mut [Self::Gene] {
+        &mut self.dna
+    }
     fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
-        self.dna = dna.into_owned(); self
+        self.dna = dna.into_owned();
+        self
     }
     fn set_fitness_fn<F>(&mut self, _: F) -> &mut Self
-    where F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static { self }
+    where
+        F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static,
+    {
+        self
+    }
 }
 
 impl VectorFitness for MoBinaryChromosome {
-    fn fitness_values(&self) -> &[f64] { &self.fitness_values }
-    fn set_fitness_values(&mut self, values: Vec<f64>) { self.fitness_values = values; }
+    fn fitness_values(&self) -> &[f64] {
+        &self.fitness_values
+    }
+    fn set_fitness_values(&mut self, values: Vec<f64>) {
+        self.fitness_values = values;
+    }
 }
 
 impl genetic_algorithms::operations::mutation::ValueMutable for MoBinaryChromosome {}
 impl genetic_algorithms::traits::OperatorCompat for MoBinaryChromosome {}
+impl genetic_algorithms::traits::RealValuedMutation for MoBinaryChromosome {}
 
 // ============================================================================
 // CountingAllObserver — implements all three traits
@@ -239,7 +262,7 @@ fn test_composite_observer_nsga2_hooks() {
     let mut nsga2 = Nsga2Ga::<MoBinaryChromosome>::new(nsga2_config, ga_config)
         .with_initialization_fn(binary_random_initialization)
         .with_observer(
-            Arc::new(composite) as Arc<dyn Nsga2Observer<MoBinaryChromosome> + Send + Sync>,
+            Arc::new(composite) as Arc<dyn Nsga2Observer<MoBinaryChromosome> + Send + Sync>
         );
 
     nsga2.run().expect("Nsga2Ga run should succeed");

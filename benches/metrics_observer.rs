@@ -44,9 +44,7 @@ fn bench_metrics_observer_island(bencher: divan::Bencher) {
         let mut island_ga = IslandGa::<BinaryChromosome>::new(island_config, ga_config)
             .with_initialization_fn(binary_random_initialization)
             .with_fitness_fn(|dna: &[BinaryGene]| dna.iter().filter(|g| g.value).count() as f64)
-            .with_observer(
-                observer as Arc<dyn IslandGaObserver<BinaryChromosome> + Send + Sync>,
-            )
+            .with_observer(observer as Arc<dyn IslandGaObserver<BinaryChromosome> + Send + Sync>)
             .build()
             .expect("IslandGa configuration should be valid");
 

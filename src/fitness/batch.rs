@@ -35,7 +35,8 @@ use crate::traits::ChromosomeT;
 ///
 /// # Example
 ///
-/// ```rust,ignore
+/// ```rust,no_run
+/// // no_run: stub implementation — not a runnable example
 /// use genetic_algorithms::BatchFitnessEvaluator;
 /// use genetic_algorithms::chromosomes::Range as RangeChromosome;
 ///
@@ -43,7 +44,8 @@ use crate::traits::ChromosomeT;
 ///
 /// impl BatchFitnessEvaluator<RangeChromosome<f64>> for MyBatchEval {
 ///     fn evaluate_batch(&self, chromosomes: &[RangeChromosome<f64>]) -> Vec<f64> {
-///         chromosomes.iter().map(|c| c.fitness()).collect()
+///         // chromosomes.iter().map(|c| c.fitness).collect()
+///         todo!()
 ///     }
 /// }
 /// ```

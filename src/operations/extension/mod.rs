@@ -12,7 +12,7 @@ pub mod mass_genesis;
 use crate::configuration::ProblemSolving;
 use crate::error::GaError;
 use crate::extension::configuration::ExtensionConfiguration;
-use crate::traits::{LinearChromosome, ExtensionOperator};
+use crate::traits::{ExtensionOperator, LinearChromosome};
 
 use super::Extension;
 

@@ -24,11 +24,13 @@
 //! sequential iteration on `wasm32-unknown-unknown`.
 
 use std::borrow::Cow;
-use std::sync::Arc;
+use std::fmt::Debug;
+use std::sync::{Arc, Mutex};
 
 use rand::Rng;
 
 use crate::configuration::ProblemSolving;
+use crate::error::GaError;
 use crate::ga::TerminationCause;
 use crate::observer::GaObserver;
 use crate::rng::make_rng;
@@ -88,7 +90,7 @@ pub enum EdaModel {
 ///     |n| vec![Binary::default(); n],
 ///     |dna| dna.iter().filter(|g| g.id() == 1).count() as f64,
 /// );
-/// let result: EdaResult<Binary> = engine.run();
+/// let result: EdaResult<Binary> = engine.run().unwrap();
 /// println!("Best fitness: {}", result.best_fitness);
 /// ```
 pub struct EdaResult<U: LinearChromosome> {
@@ -128,7 +130,7 @@ pub struct EdaResult<U: LinearChromosome> {
 ///     |n| vec![Binary::default(); n],
 ///     |dna| dna.iter().filter(|g| g.id() == 1).count() as f64,
 /// );
-/// let result = engine.run();
+/// let result = engine.run().unwrap();
 /// println!("Generations: {}", result.generations);
 /// ```
 pub struct EdaEngine<U: LinearChromosome> {
@@ -136,6 +138,7 @@ pub struct EdaEngine<U: LinearChromosome> {
     init_fn: Arc<dyn Fn(usize) -> Vec<U> + Send + Sync>,
     fitness_fn: Arc<FitnessFn<U::Gene>>,
     observer: Option<Arc<dyn GaObserver<U> + Send + Sync>>,
+    fitness_cache: Option<Arc<Mutex<crate::fitness::cache::FitnessCache>>>,
 }
 
 impl<U: LinearChromosome + Clone> EdaEngine<U> {
@@ -154,6 +157,7 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
             init_fn: Arc::new(init_fn),
             fitness_fn: Arc::new(fitness_fn),
             observer: None,
+            fitness_cache: None,
         }
     }
 
@@ -210,7 +214,10 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
 
     /// Returns the index and fitness of the best individual in `pop`.
     fn find_best(&self, pop: &[U]) -> (usize, f64) {
-        assert!(!pop.is_empty(), "EdaEngine::find_best called with empty population");
+        assert!(
+            !pop.is_empty(),
+            "EdaEngine::find_best called with empty population"
+        );
         let mut best_idx = 0;
         let mut best_fit = pop[0].fitness();
         for (i, ind) in pop.iter().enumerate().skip(1) {
@@ -256,19 +263,33 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
     /// Run the EDA engine (Bernoulli model) and return the result.
     ///
     /// When `population_size` is 0, a default of 100 is used.
-    pub fn run(&mut self) -> EdaResult<U> {
+    pub fn run(&mut self) -> Result<EdaResult<U>, GaError>
+    where
+        U::Gene: Debug,
+    {
         let mut rng = make_rng();
-        let is_maximization =
-            matches!(self.config.problem_solving, ProblemSolving::Maximization);
+        let is_maximization = matches!(self.config.problem_solving, ProblemSolving::Maximization);
+
+        // D-05: bootstrap cache handle at run() start.
+        if let Some(size) = self.config.fitness_cache_size {
+            if self.fitness_cache.is_none() {
+                let (wrapped_fn, cache_handle) =
+                    crate::fitness::cache::wrap_with_cache(Arc::clone(&self.fitness_fn), size);
+                self.fitness_fn = wrapped_fn;
+                self.fitness_cache = Some(cache_handle);
+            }
+        }
 
         // Three-way sort comparator that mirrors `is_better` for all ProblemSolving variants.
         // This ensures FixedFitness selects parents closest to the target, not lowest raw fitness.
         let cmp = |a_fit: f64, b_fit: f64| -> std::cmp::Ordering {
             match self.config.problem_solving {
-                ProblemSolving::Maximization =>
-                    b_fit.partial_cmp(&a_fit).unwrap_or(std::cmp::Ordering::Equal),
-                ProblemSolving::Minimization =>
-                    a_fit.partial_cmp(&b_fit).unwrap_or(std::cmp::Ordering::Equal),
+                ProblemSolving::Maximization => b_fit
+                    .partial_cmp(&a_fit)
+                    .unwrap_or(std::cmp::Ordering::Equal),
+                ProblemSolving::Minimization => a_fit
+                    .partial_cmp(&b_fit)
+                    .unwrap_or(std::cmp::Ordering::Equal),
                 ProblemSolving::FixedFitness => {
                     let t = self.config.fitness_target.unwrap_or(0.0);
                     let da = (a_fit - t).abs();
@@ -292,7 +313,9 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
         let mut pop: Vec<U> = (self.init_fn)(pop_size.max(1));
 
         if pop.is_empty() {
-            panic!("EdaEngine: init_fn returned an empty population");
+            return Err(GaError::InitializationError(
+                "EdaEngine: init_fn returned an empty population".to_string(),
+            ));
         }
 
         // Evaluate initial population
@@ -309,10 +332,20 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
         self.notify(|obs| obs.on_new_best(0, &best));
 
         let mut termination_cause = TerminationCause::GenerationLimitReached;
-        let mut all_stats: Vec<GenerationStats> =
-            Vec::with_capacity(self.config.max_generations);
+        let mut all_stats: Vec<GenerationStats> = Vec::with_capacity(self.config.max_generations);
         let mut learned_model = EdaModel::Bernoulli(vec![0.5; dim]);
         let mut best_model = learned_model.clone();
+
+        // Cache snapshot for per-generation delta stats.
+        let (mut prev_cache_hits, mut prev_cache_misses) = match &self.fitness_cache {
+            Some(ch) => {
+                let c = ch
+                    .lock()
+                    .map_err(|_| GaError::InternalError("fitness cache mutex poisoned".to_string()))?;
+                (c.hits(), c.misses())
+            }
+            None => (0, 0),
+        };
 
         // Main loop
         for gen in 0..self.config.max_generations {
@@ -374,8 +407,17 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
 
             // Generation stats
             let fitness_values: Vec<f64> = pop.iter().map(|c| c.fitness()).collect();
-            let stats =
+            let mut stats =
                 GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
+            if let Some(ref ch) = self.fitness_cache {
+                let c = ch
+                    .lock()
+                    .map_err(|_| GaError::InternalError("fitness cache mutex poisoned".to_string()))?;
+                stats.cache_hits = Some(c.hits().saturating_sub(prev_cache_hits));
+                stats.cache_misses = Some(c.misses().saturating_sub(prev_cache_misses));
+                prev_cache_hits = c.hits();
+                prev_cache_misses = c.misses();
+            }
             self.notify(|obs| obs.on_generation_end(&stats));
             all_stats.push(stats);
 
@@ -393,13 +435,13 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
         let all_stats_ref = all_stats.as_slice();
         self.notify(|obs| obs.on_run_end(termination_cause, all_stats_ref));
 
-        EdaResult {
+        Ok(EdaResult {
             population: pop,
             best,
             best_fitness,
             generations,
             learned_model: best_model,
-        }
+        })
     }
 
     /// Estimate Bernoulli probabilities from a slice of references.
@@ -442,7 +484,7 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
 ///     |n| vec![RangeChromosome::default(); n],
 ///     |dna| dna.iter().map(|g| g.real_value().powi(2)).sum(),
 /// );
-/// let result = engine.run();
+/// let result = engine.run().unwrap();
 /// println!("Generations: {}", result.generations);
 /// ```
 pub struct EdaRealEngine<U: LinearChromosome>
@@ -453,6 +495,7 @@ where
     init_fn: Arc<dyn Fn(usize) -> Vec<U> + Send + Sync>,
     fitness_fn: Arc<FitnessFn<U::Gene>>,
     observer: Option<Arc<dyn GaObserver<U> + Send + Sync>>,
+    fitness_cache: Option<Arc<Mutex<crate::fitness::cache::FitnessCache>>>,
 }
 
 impl<U: LinearChromosome + Clone> EdaRealEngine<U>
@@ -470,6 +513,7 @@ where
             init_fn: Arc::new(init_fn),
             fitness_fn: Arc::new(fitness_fn),
             observer: None,
+            fitness_cache: None,
         }
     }
 
@@ -510,7 +554,10 @@ where
     }
 
     fn find_best(&self, pop: &[U]) -> (usize, f64) {
-        assert!(!pop.is_empty(), "EdaRealEngine::find_best called with empty population");
+        assert!(
+            !pop.is_empty(),
+            "EdaRealEngine::find_best called with empty population"
+        );
         let mut best_idx = 0;
         let mut best_fit = pop[0].fitness();
         for (i, ind) in pop.iter().enumerate().skip(1) {
@@ -585,18 +632,32 @@ where
     }
 
     /// Run the EDA engine (Gaussian model) and return the result.
-    pub fn run(&mut self) -> EdaResult<U> {
+    pub fn run(&mut self) -> Result<EdaResult<U>, GaError>
+    where
+        U::Gene: Debug,
+    {
         let mut rng = make_rng();
-        let is_maximization =
-            matches!(self.config.problem_solving, ProblemSolving::Maximization);
+        let is_maximization = matches!(self.config.problem_solving, ProblemSolving::Maximization);
+
+        // D-05: bootstrap cache handle at run() start.
+        if let Some(size) = self.config.fitness_cache_size {
+            if self.fitness_cache.is_none() {
+                let (wrapped_fn, cache_handle) =
+                    crate::fitness::cache::wrap_with_cache(Arc::clone(&self.fitness_fn), size);
+                self.fitness_fn = wrapped_fn;
+                self.fitness_cache = Some(cache_handle);
+            }
+        }
 
         // Three-way sort comparator that mirrors `is_better` for all ProblemSolving variants.
         let cmp = |a_fit: f64, b_fit: f64| -> std::cmp::Ordering {
             match self.config.problem_solving {
-                ProblemSolving::Maximization =>
-                    b_fit.partial_cmp(&a_fit).unwrap_or(std::cmp::Ordering::Equal),
-                ProblemSolving::Minimization =>
-                    a_fit.partial_cmp(&b_fit).unwrap_or(std::cmp::Ordering::Equal),
+                ProblemSolving::Maximization => b_fit
+                    .partial_cmp(&a_fit)
+                    .unwrap_or(std::cmp::Ordering::Equal),
+                ProblemSolving::Minimization => a_fit
+                    .partial_cmp(&b_fit)
+                    .unwrap_or(std::cmp::Ordering::Equal),
                 ProblemSolving::FixedFitness => {
                     let t = self.config.fitness_target.unwrap_or(0.0);
                     let da = (a_fit - t).abs();
@@ -617,7 +678,9 @@ where
         let mut pop: Vec<U> = (self.init_fn)(pop_size.max(1));
 
         if pop.is_empty() {
-            panic!("EdaRealEngine: init_fn returned an empty population");
+            return Err(GaError::InitializationError(
+                "EdaRealEngine: init_fn returned an empty population".to_string(),
+            ));
         }
 
         for ind in &mut pop {
@@ -632,13 +695,23 @@ where
         self.notify(|obs| obs.on_new_best(0, &best));
 
         let mut termination_cause = TerminationCause::GenerationLimitReached;
-        let mut all_stats: Vec<GenerationStats> =
-            Vec::with_capacity(self.config.max_generations);
+        let mut all_stats: Vec<GenerationStats> = Vec::with_capacity(self.config.max_generations);
         let mut learned_model = EdaModel::Gaussian {
             means: vec![0.0; dim],
             stds: vec![1.0; dim],
         };
         let mut best_model = learned_model.clone();
+
+        // Cache snapshot for per-generation delta stats.
+        let (mut prev_cache_hits, mut prev_cache_misses) = match &self.fitness_cache {
+            Some(ch) => {
+                let c = ch
+                    .lock()
+                    .map_err(|_| GaError::InternalError("fitness cache mutex poisoned".to_string()))?;
+                (c.hits(), c.misses())
+            }
+            None => (0, 0),
+        };
 
         for gen in 0..self.config.max_generations {
             self.notify(|obs| obs.on_generation_start(gen));
@@ -698,8 +771,17 @@ where
             }
 
             let fitness_values: Vec<f64> = pop.iter().map(|c| c.fitness()).collect();
-            let stats =
+            let mut stats =
                 GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
+            if let Some(ref ch) = self.fitness_cache {
+                let c = ch
+                    .lock()
+                    .map_err(|_| GaError::InternalError("fitness cache mutex poisoned".to_string()))?;
+                stats.cache_hits = Some(c.hits().saturating_sub(prev_cache_hits));
+                stats.cache_misses = Some(c.misses().saturating_sub(prev_cache_misses));
+                prev_cache_hits = c.hits();
+                prev_cache_misses = c.misses();
+            }
             self.notify(|obs| obs.on_generation_end(&stats));
             all_stats.push(stats);
 
@@ -715,12 +797,12 @@ where
         let all_stats_ref = all_stats.as_slice();
         self.notify(|obs| obs.on_run_end(termination_cause, all_stats_ref));
 
-        EdaResult {
+        Ok(EdaResult {
             population: pop,
             best,
             best_fitness,
             generations,
             learned_model: best_model,
-        }
+        })
     }
 }

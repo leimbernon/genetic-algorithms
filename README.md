@@ -43,6 +43,7 @@ Key capabilities:
   - [Initializers](#initializers)
   - [Operators](#operators)
   - [Engines](#engines)
+    - [Which engine should I use?](#which-engine-should-i-use)
   - [Observer (GaObserver)](#observer-gaobserver)
   - [Visualization](#visualization)
   - [GA Configuration](#ga-configuration)
@@ -190,6 +191,27 @@ Custom chromosomes can be added by implementing `ChromosomeT`.
 - **Extension:** `Noop`, `MassExtinction`, `MassGenesis`, `MassDegeneration`, `MassDeduplication`
 
 ### Engines
+
+#### Which engine should I use?
+
+Start from your problem, not from the algorithm. Pick the first row that matches; the *Description* table below has the details.
+
+| Your problem | Use | Why |
+|--------------|-----|-----|
+| Real-valued, expensive/black-box, ≤ ~40 dims | `CmaEngine<U>` | Self-adapting covariance; strongest general real-valued optimizer. Add `RestartStrategy::Ipop`/`Bipop` if multimodal |
+| Real-valued, fast to evaluate, want a swarm | `PsoEngine<U>` | Few parameters, quick convergence on smooth landscapes |
+| Real-valued, rugged/multimodal, robust default | `DeEngine<U>` | Differential Evolution; JADE/L-SHADE self-tune the rates |
+| Binary or categorical (feature selection, OneMax…) | `Ga<U>` or `EdaEngine<U>` | `Ga` for general use; `EdaEngine` (UMDA) when the variables are near-independent |
+| Permutation (TSP, scheduling, routing) | `Ga<U>` with `UniqueChromosome<T>` + `Crossover::Ox`/`Pmx` | Permutation-safe genotype and operators; multiple groups → `MultiUniqueChromosome<T>` |
+| Per-gene different bounds (heterogeneous reals) | `Ga<U>` with `MultiRangeChromosome<T>` | Each gene clamps to its own `(lo, hi)` |
+| Evolving programs / symbolic expressions | `GpGa<N>` | Tree chromosomes, bloat control, ramped half-and-half init |
+| 2–3 objectives (trade-off front) | `Nsga2Ga<U>` | The standard, well-understood MOO baseline |
+| 4+ objectives (many-objective) | `Nsga3Ga<U>` or `MoeaDGa<U>` | Reference-point / decomposition based; NSGA-II degrades past 3 |
+| Multi-objective, want explicit hypervolume quality | `SmsEmoaGa<U>` / `IbeaGa<U>` | Indicator-driven selection |
+| Large/structured population, premature-convergence concerns | `IslandGa<U>`, `CellularEngine<U>`, or `AlpsEngine<U>` | Migration / spatial / age-layering preserve diversity |
+| Just need a local-search or exhaustive baseline | `HillClimbEngine<U>` / `PermutateEngine<U>` | Sanity-check baselines; `Permutate` only for tiny spaces |
+
+> Anything `RealGene`-bound (`CmaEngine`, `PsoEngine`, real `EdaEngine`) needs a real-valued genotype such as `RangeChromosome<f64>` or `MultiRangeChromosome<f64>`.
 
 | Engine | Module | Objectives | Description |
 |--------|--------|------------|-------------|
@@ -551,6 +573,11 @@ Run any example directly with `cargo run --example <name>`:
 | `pso_rastrigin` | Particle Swarm Optimization | `cargo run --example pso_rastrigin` |
 | `eda_trap` | Estimation of Distribution (UMDA) | `cargo run --example eda_trap` |
 | `surrogate_rastrigin` | Surrogate-assisted evaluation | `cargo run --example surrogate_rastrigin` |
+| `de_rastrigin` | Differential Evolution (L-SHADE) | `cargo run --example de_rastrigin` |
+| `scatter_search` | Scatter Search with local search | `cargo run --example scatter_search` |
+| `cellular_ga` | Cellular GA (Moore neighborhood) | `cargo run --example cellular_ga` |
+| `alps` | ALPS age-layered evolution | `cargo run --example alps` |
+| `gp_symbolic_regression` | GP symbolic regression (MathNode) | `cargo run --example gp_symbolic_regression` |
 
 ## Development
 

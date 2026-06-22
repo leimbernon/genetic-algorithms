@@ -25,7 +25,7 @@ use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::{Ga, TerminationCause};
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::initializers::range_random_initialization;
-use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+use genetic_algorithms::operations::{Crossover, GaussianParams, Mutation, Selection, Survivor};
 use genetic_algorithms::population::Population;
 use genetic_algorithms::stats::GenerationStats;
 use genetic_algorithms::traits::{
@@ -104,7 +104,7 @@ fn main() {
         // Crossover: Uniform blend
         .with_crossover_method(Crossover::Uniform)
         // Mutation: Gaussian perturbation (appropriate for continuous optimization)
-        .with_mutation_method(Mutation::Gaussian { sigma: None })
+        .with_mutation_method(Mutation::Gaussian(GaussianParams { sigma: None }))
         // Survivor selection: Fitness-based
         .with_survivor_method(Survivor::Fitness)
         // Problem: minimize fitness toward 0.0
@@ -118,7 +118,9 @@ fn main() {
         ga_builder = ga_builder.with_rng_seed(s);
     }
 
-    let mut ga = ga_builder.build().expect("Failed to build GA configuration");
+    let mut ga = ga_builder
+        .build()
+        .expect("Failed to build GA configuration");
 
     println!("== Rastrigin Continuous Optimization ==");
     println!(
@@ -133,18 +135,19 @@ fn main() {
 
     // Stats accumulator for --plot (visualization feature); move added for accumulator capture
     #[cfg(feature = "visualization")]
-    let plot_stats: std::sync::Arc<std::sync::Mutex<Vec<genetic_algorithms::stats::GenerationStats>>> =
-        std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+    let plot_stats: std::sync::Arc<
+        std::sync::Mutex<Vec<genetic_algorithms::stats::GenerationStats>>,
+    > = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
     #[cfg(feature = "visualization")]
     let plot_stats_clone = plot_stats.clone();
 
     let result = ga.run_with_callback(
         Some(
             move |gen: &usize,
-             pop: &Population<RangeChromosome<f64>>,
-             _stats: &GenerationStats,
-             _cause: &TerminationCause|
-             -> std::ops::ControlFlow<()> {
+                  pop: &Population<RangeChromosome<f64>>,
+                  _stats: &GenerationStats,
+                  _cause: &TerminationCause|
+                  -> std::ops::ControlFlow<()> {
                 let avg_fitness =
                     pop.chromosomes.iter().map(|c| c.fitness()).sum::<f64>() / pop.size() as f64;
                 println!(
@@ -181,11 +184,8 @@ fn main() {
                 let stats_guard = plot_stats.lock().unwrap_or_else(|e| e.into_inner());
                 let stats = &*stats_guard;
                 std::fs::create_dir_all("docs/images").expect("failed to create docs/images");
-                genetic_algorithms::visualization::plot_fitness(
-                    stats,
-                    "docs/images/rastrigin.png",
-                )
-                .expect("plot failed");
+                genetic_algorithms::visualization::plot_fitness(stats, "docs/images/rastrigin.png")
+                    .expect("plot failed");
                 println!("Fitness plot saved to docs/images/rastrigin.png");
             }
         }

@@ -144,6 +144,12 @@ pub struct PsoConfiguration {
     /// same best-known position. `PsoTopology::Ring` uses a smaller local
     /// neighborhood for improved multimodal exploration.
     pub topology: PsoTopology,
+
+    /// Fitness cache capacity in entries.
+    ///
+    /// When set, `run()` wraps the scalar `fitness_fn` with an LRU cache of this
+    /// size, avoiding redundant evaluations for duplicate DNA.
+    pub fitness_cache_size: Option<usize>,
 }
 
 impl Default for PsoConfiguration {
@@ -160,6 +166,7 @@ impl Default for PsoConfiguration {
             c1: 2.0,
             c2: 2.0,
             topology: PsoTopology::Global,
+            fitness_cache_size: None,
         }
     }
 }
@@ -215,6 +222,16 @@ impl PsoConfiguration {
     /// Builder: set neighborhood topology.
     pub fn with_topology(mut self, topology: PsoTopology) -> Self {
         self.topology = topology;
+        self
+    }
+
+    /// Builder: enable the fitness cache.
+    ///
+    /// Sets the LRU cache capacity to `size` entries. When the engine runs,
+    /// `fitness_fn` is wrapped with the cache, avoiding redundant evaluations
+    /// for duplicate DNA.
+    pub fn with_fitness_cache_size(mut self, size: usize) -> Self {
+        self.fitness_cache_size = Some(size);
         self
     }
 }

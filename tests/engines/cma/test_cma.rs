@@ -10,13 +10,14 @@ use std::sync::{Arc, Mutex};
 
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::cma::{CmaConfiguration, CmaEngine, RestartStrategy};
+use genetic_algorithms::error::GaError;
 use genetic_algorithms::configuration::ProblemSolving;
+use genetic_algorithms::ga::TerminationCause;
 use genetic_algorithms::genotypes::Range as RangeGene;
 use genetic_algorithms::observer::GaObserver;
 use genetic_algorithms::rng;
 use genetic_algorithms::stats::GenerationStats;
 use genetic_algorithms::traits::{ChromosomeT, GeneT, LinearChromosome, RealGene};
-use genetic_algorithms::ga::TerminationCause;
 use genetic_algorithms::{RestartEvent, RestartKind};
 use rand::Rng;
 
@@ -109,8 +110,10 @@ impl GaObserver<RangeChromosome<f64>> for SpyObserver {
         self.restart_count.fetch_add(1, Ordering::SeqCst);
         *self.last_restart_kind.lock().unwrap() = Some(event.kind);
         self.restart_kinds.lock().unwrap().push(event.kind);
-        self.last_restart_number.store(event.restart_number, Ordering::SeqCst);
-        self.last_population_size_after.store(event.population_size_after, Ordering::SeqCst);
+        self.last_restart_number
+            .store(event.restart_number, Ordering::SeqCst);
+        self.last_population_size_after
+            .store(event.population_size_after, Ordering::SeqCst);
     }
 }
 
@@ -124,21 +127,23 @@ fn test_cma_sphere_converges() {
         .with_problem_solving(ProblemSolving::Minimization)
         .with_sigma0(0.3);
 
-    let mut engine = CmaEngine::new(
-        config,
-        |n| random_pop(n, 5, -5.0, 5.0, 42),
-        sphere,
-    );
+    let mut engine = CmaEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 42), sphere);
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     assert!(
         result.best_fitness < 5.0,
         "CMA-ES should converge to < 5.0 on 5D sphere within 500 generations, got {}",
         result.best_fitness
     );
-    assert!(result.generations > 0, "Should have run at least one generation");
-    assert!(!result.population.is_empty(), "Population should be non-empty");
+    assert!(
+        result.generations > 0,
+        "Should have run at least one generation"
+    );
+    assert!(
+        !result.population.is_empty(),
+        "Population should be non-empty"
+    );
 }
 
 // ─── CMA-02: early stopping ───────────────────────────────────────────────────
@@ -154,13 +159,9 @@ fn test_cma_early_stopping() {
         .with_fitness_target(1e6)
         .with_problem_solving(ProblemSolving::Minimization);
 
-    let mut engine = CmaEngine::new(
-        config,
-        |n| random_pop(n, 5, -5.0, 5.0, 99),
-        sphere,
-    );
+    let mut engine = CmaEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 99), sphere);
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     // Engine must have stopped before max_generations (since 1e6 is trivially satisfied)
     assert!(
@@ -194,7 +195,10 @@ fn test_cma_default_for_dim() {
 
     // n = 1: ln(1) = 0, so lambda = 4 + 0 = 4
     let cfg1 = CmaConfiguration::default_for_dim(1);
-    assert_eq!(cfg1.population_size, 4, "default_for_dim(1) should give population_size = 4");
+    assert_eq!(
+        cfg1.population_size, 4,
+        "default_for_dim(1) should give population_size = 4"
+    );
 }
 
 // ─── CMA-04: result fields ────────────────────────────────────────────────────
@@ -204,15 +208,14 @@ fn test_cma_default_for_dim() {
 fn test_cma_result_fields() {
     let config = CmaConfiguration::default_for_dim(3).with_max_generations(5);
 
-    let mut engine = CmaEngine::new(
-        config,
-        |n| random_pop(n, 3, -1.0, 1.0, 7),
-        sphere,
+    let mut engine = CmaEngine::new(config, |n| random_pop(n, 3, -1.0, 1.0, 7), sphere);
+
+    let result = engine.run().expect("engine run should succeed");
+
+    assert!(
+        !result.population.is_empty(),
+        "population should be non-empty"
     );
-
-    let result = engine.run();
-
-    assert!(!result.population.is_empty(), "population should be non-empty");
     assert!(result.generations > 0, "generations should be > 0");
     assert!(
         result.best_fitness.is_finite(),
@@ -237,14 +240,10 @@ fn test_cma_observer_new_best() {
 
     let spy = Arc::new(SpyObserver::default());
 
-    let mut engine = CmaEngine::new(
-        config,
-        |n| random_pop(n, 5, -5.0, 5.0, 123),
-        sphere,
-    )
-    .with_observer(spy.clone());
+    let mut engine = CmaEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 123), sphere)
+        .with_observer(spy.clone());
 
-    let _result = engine.run();
+    let _result = engine.run().expect("engine run should succeed");
 
     assert!(
         spy.new_best_count.load(Ordering::SeqCst) >= 1,
@@ -261,14 +260,10 @@ fn test_cma_observer_lifecycle() {
 
     let spy = Arc::new(SpyObserver::default());
 
-    let mut engine = CmaEngine::new(
-        config,
-        |n| random_pop(n, 3, -1.0, 1.0, 55),
-        sphere,
-    )
-    .with_observer(spy.clone());
+    let mut engine = CmaEngine::new(config, |n| random_pop(n, 3, -1.0, 1.0, 55), sphere)
+        .with_observer(spy.clone());
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     assert_eq!(
         spy.run_start_count.load(Ordering::SeqCst),
@@ -335,7 +330,11 @@ fn test_cma_wasm_compiles() {
 #[test]
 fn test_real_gene_range_f64() {
     let g = RangeGene::<f64>::new(0, vec![(-1.0, 1.0)], 0.5);
-    assert_eq!(g.real_value(), 0.5, "real_value() should return the gene's value");
+    assert_eq!(
+        g.real_value(),
+        0.5,
+        "real_value() should return the gene's value"
+    );
 
     let g2 = g.with_real_value(0.75);
     assert_eq!(
@@ -377,13 +376,9 @@ fn test_cma_maximization() {
         .with_problem_solving(ProblemSolving::Maximization)
         .with_sigma0(0.3);
 
-    let mut engine = CmaEngine::new(
-        config,
-        |n| random_pop(n, 5, -5.0, 5.0, 77),
-        neg_sphere,
-    );
+    let mut engine = CmaEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 77), neg_sphere);
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     // Under maximization of negated sphere, fitness improves toward 0.
     // The engine should find a value > -5.0 (initial values typically range from -25 to -5).
@@ -416,14 +411,10 @@ fn test_cma_ipop_restarts() {
 
     let spy = Arc::new(SpyObserver::default());
 
-    let mut engine = CmaEngine::new(
-        config,
-        |n| random_pop(n, 5, -5.0, 5.0, 42),
-        sphere,
-    )
-    .with_observer(spy.clone());
+    let mut engine = CmaEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 42), sphere)
+        .with_observer(spy.clone());
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     assert!(
         spy.restart_count.load(Ordering::SeqCst) >= 1,
@@ -462,14 +453,10 @@ fn test_cma_bipop_alternation() {
 
     let spy = Arc::new(SpyObserver::default());
 
-    let mut engine = CmaEngine::new(
-        config,
-        |n| random_pop(n, 5, -5.0, 5.0, 43),
-        sphere,
-    )
-    .with_observer(spy.clone());
+    let mut engine = CmaEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 43), sphere)
+        .with_observer(spy.clone());
 
-    let _result = engine.run();
+    let _result = engine.run().expect("engine run should succeed");
 
     let kinds = spy.restart_kinds.lock().unwrap();
     assert_eq!(
@@ -479,10 +466,26 @@ fn test_cma_bipop_alternation() {
         kinds.len()
     );
     // Odd-numbered restarts (1st, 3rd) → BipopLarge; even-numbered (2nd, 4th) → BipopSmall
-    assert_eq!(kinds[0], RestartKind::BipopLarge, "restart 1 should be BipopLarge");
-    assert_eq!(kinds[1], RestartKind::BipopSmall, "restart 2 should be BipopSmall");
-    assert_eq!(kinds[2], RestartKind::BipopLarge, "restart 3 should be BipopLarge");
-    assert_eq!(kinds[3], RestartKind::BipopSmall, "restart 4 should be BipopSmall");
+    assert_eq!(
+        kinds[0],
+        RestartKind::BipopLarge,
+        "restart 1 should be BipopLarge"
+    );
+    assert_eq!(
+        kinds[1],
+        RestartKind::BipopSmall,
+        "restart 2 should be BipopSmall"
+    );
+    assert_eq!(
+        kinds[2],
+        RestartKind::BipopLarge,
+        "restart 3 should be BipopLarge"
+    );
+    assert_eq!(
+        kinds[3],
+        RestartKind::BipopSmall,
+        "restart 4 should be BipopSmall"
+    );
 }
 
 // ─── CMA-14: on_restart fires with correct RestartEvent fields ────────────────
@@ -509,14 +512,10 @@ fn test_cma_restart_observer() {
 
     let spy = Arc::new(SpyObserver::default());
 
-    let mut engine = CmaEngine::new(
-        config,
-        |n| random_pop(n, 3, -2.0, 2.0, 77),
-        sphere,
-    )
-    .with_observer(spy.clone());
+    let mut engine = CmaEngine::new(config, |n| random_pop(n, 3, -2.0, 2.0, 77), sphere)
+        .with_observer(spy.clone());
 
-    let _result = engine.run();
+    let _result = engine.run().expect("engine run should succeed");
 
     let restart_count = spy.restart_count.load(Ordering::SeqCst);
     assert!(restart_count >= 1, "at least one restart should have fired");
@@ -559,14 +558,10 @@ fn test_cma_no_restart_when_none() {
 
     let spy = Arc::new(SpyObserver::default());
 
-    let mut engine = CmaEngine::new(
-        config,
-        |n| random_pop(n, 5, -5.0, 5.0, 99),
-        sphere,
-    )
-    .with_observer(spy.clone());
+    let mut engine = CmaEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 99), sphere)
+        .with_observer(spy.clone());
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     assert_eq!(
         spy.restart_count.load(Ordering::SeqCst),
@@ -574,8 +569,7 @@ fn test_cma_no_restart_when_none() {
         "on_restart should never fire when restart_strategy is None"
     );
     assert_eq!(
-        result.total_restarts,
-        0,
+        result.total_restarts, 0,
         "total_restarts should be 0 when restart_strategy is None"
     );
 }
@@ -602,14 +596,10 @@ fn test_cma_total_restarts_count() {
 
     let spy = Arc::new(SpyObserver::default());
 
-    let mut engine = CmaEngine::new(
-        config,
-        |n| random_pop(n, 5, -5.0, 5.0, 101),
-        sphere,
-    )
-    .with_observer(spy.clone());
+    let mut engine = CmaEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 101), sphere)
+        .with_observer(spy.clone());
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     assert!(
         result.total_restarts <= max_restarts,
@@ -644,13 +634,9 @@ fn test_cma_global_best_across_restarts() {
             max_restarts: 2,
         });
 
-    let mut engine = CmaEngine::new(
-        config,
-        |n| random_pop(n, 5, -5.0, 5.0, 13),
-        sphere,
-    );
+    let mut engine = CmaEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 13), sphere);
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     assert!(
         result.best_fitness.is_finite(),
@@ -666,6 +652,22 @@ fn test_cma_global_best_across_restarts() {
     // (global-best tracking across restarts is enforced by the engine loop)
 }
 
+// ─── Error path: empty-init InitializationError ──────────────────────────────
+
+/// CMA error path: CmaEngine run() with init_fn returning empty Vec
+/// returns Err(GaError::InitializationError(_)). Covers the peek-population guard
+/// (base), first-init guard, and restart-init guard sites from Plan 02.
+#[test]
+fn test_run_empty_init_returns_error() {
+    let config = CmaConfiguration::default_for_dim(3).with_max_generations(5);
+    let mut engine =
+        CmaEngine::new(config, |_n| Vec::<RangeChromosome<f64>>::new(), sphere);
+    assert!(
+        matches!(engine.run(), Err(GaError::InitializationError(_))),
+        "CmaEngine with empty init_fn should return InitializationError"
+    );
+}
+
 // ─── Phase 60 batch + cache tests ────────────────────────────────────────────
 
 mod batch_and_cache_tests {
@@ -673,8 +675,8 @@ mod batch_and_cache_tests {
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Arc;
 
-    use genetic_algorithms::cma::{CmaConfiguration, CmaEngine};
     use genetic_algorithms::chromosomes::Range as RangeChromosome;
+    use genetic_algorithms::cma::{CmaConfiguration, CmaEngine};
     use genetic_algorithms::configuration::ProblemSolving;
     use genetic_algorithms::fitness::BatchFitnessEvaluator;
     use genetic_algorithms::genotypes::Range as RangeGene;
@@ -690,7 +692,10 @@ mod batch_and_cache_tests {
 
     impl CountingEvaluator {
         fn new(v: f64) -> Self {
-            Self { calls: AtomicUsize::new(0), return_value: v }
+            Self {
+                calls: AtomicUsize::new(0),
+                return_value: v,
+            }
         }
     }
 
@@ -731,7 +736,7 @@ mod batch_and_cache_tests {
             |n| make_pop(n, 3, 1),
             |dna: &[RangeGene<f64>]| dna.iter().map(|g| g.value() * g.value()).sum(),
         );
-        let result = engine.run();
+        let result = engine.run().expect("engine run should succeed");
         assert!(result.generations >= 3);
     }
 
@@ -742,13 +747,9 @@ mod batch_and_cache_tests {
         let config = CmaConfiguration::default_for_dim(3)
             .with_max_generations(3)
             .with_problem_solving(ProblemSolving::Minimization);
-        let mut engine = CmaEngine::new(
-            config,
-            |n| make_pop(n, 3, 2),
-            |_: &[RangeGene<f64>]| 0.0,
-        )
-        .with_batch_evaluator(evaluator);
-        let result = engine.run();
+        let mut engine = CmaEngine::new(config, |n| make_pop(n, 3, 2), |_: &[RangeGene<f64>]| 0.0)
+            .with_batch_evaluator(evaluator);
+        let result = engine.run().expect("engine run should succeed");
         assert!(result.generations >= 3);
     }
 
@@ -760,20 +761,24 @@ mod batch_and_cache_tests {
         let config = CmaConfiguration::default_for_dim(3)
             .with_max_generations(1)
             .with_problem_solving(ProblemSolving::Minimization);
-        let mut engine = CmaEngine::new(
-            config,
-            |n| make_pop(n, 3, 3),
-            |_: &[RangeGene<f64>]| 0.0,
-        )
-        .with_batch_evaluator(evaluator);
-        let result = engine.run();
+        let mut engine = CmaEngine::new(config, |n| make_pop(n, 3, 3), |_: &[RangeGene<f64>]| 0.0)
+            .with_batch_evaluator(evaluator);
+        let result = engine.run().expect("engine run should succeed");
         // All chromosomes in the final population should have the evaluator's value
         for c in result.population.iter() {
-            assert_eq!(c.fitness(), 7.0, "Initial pop must be batch-evaluated (D-04)");
+            assert_eq!(
+                c.fitness(),
+                7.0,
+                "Initial pop must be batch-evaluated (D-04)"
+            );
         }
         // At least 2 evaluate_batch calls: 1 for init + 1 for gen 0 offspring
         let calls = evaluator_ref.calls.load(Ordering::Relaxed);
-        assert!(calls >= 2, "Expected >= 2 evaluate_batch calls, got {}", calls);
+        assert!(
+            calls >= 2,
+            "Expected >= 2 evaluate_batch calls, got {}",
+            calls
+        );
     }
 
     #[test]
@@ -784,19 +789,23 @@ mod batch_and_cache_tests {
         let config = CmaConfiguration::default_for_dim(3)
             .with_max_generations(3)
             .with_problem_solving(ProblemSolving::Minimization);
-        let mut engine = CmaEngine::new(
-            config,
-            |n| make_pop(n, 3, 4),
-            |_: &[RangeGene<f64>]| 0.0,
-        )
-        .with_batch_evaluator(evaluator);
-        let result = engine.run();
+        let mut engine = CmaEngine::new(config, |n| make_pop(n, 3, 4), |_: &[RangeGene<f64>]| 0.0)
+            .with_batch_evaluator(evaluator);
+        let result = engine.run().expect("engine run should succeed");
         // 1 init call + 3 generation calls = at least 4
         let calls = evaluator_ref.calls.load(Ordering::Relaxed);
-        assert!(calls >= 4, "Expected >= 4 evaluate_batch calls (1 init + 3 gens), got {}", calls);
+        assert!(
+            calls >= 4,
+            "Expected >= 4 evaluate_batch calls (1 init + 3 gens), got {}",
+            calls
+        );
         // All final chromosomes must have the evaluator's deterministic value
         for c in result.population.iter() {
-            assert_eq!(c.fitness(), 3.0, "All offspring must be batch-evaluated (D-04)");
+            assert_eq!(
+                c.fitness(),
+                3.0,
+                "All offspring must be batch-evaluated (D-04)"
+            );
         }
     }
 
@@ -812,7 +821,10 @@ mod batch_and_cache_tests {
             |n| make_pop(n, 3, 5),
             |dna: &[RangeGene<f64>]| dna.iter().map(|g| g.value() * g.value()).sum(),
         );
-        let result = engine.run();
-        assert!(result.generations >= 3, "Engine should complete 3 generations (D-07)");
+        let result = engine.run().expect("engine run should succeed");
+        assert!(
+            result.generations >= 3,
+            "Engine should complete 3 generations (D-07)"
+        );
     }
 }

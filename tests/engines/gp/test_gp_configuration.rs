@@ -51,7 +51,12 @@ fn gp_configuration_with_crossover() {
 #[test]
 fn gp_configuration_with_mutations() {
     let cfg = GpConfiguration::new().with_mutations(vec![
-        (GpMutation::SubtreeMutation { mutation_max_depth: 3 }, 0.2),
+        (
+            GpMutation::SubtreeMutation {
+                mutation_max_depth: 3,
+            },
+            0.2,
+        ),
         (GpMutation::PointMutation { p_per_node: 0.05 }, 0.05),
     ]);
     assert!(cfg.build().is_ok());

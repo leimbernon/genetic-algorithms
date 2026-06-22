@@ -11,7 +11,8 @@
 //!
 //! # Example
 //!
-//! ```ignore
+//! ```rust,no_run
+//! // no_run: Island NSGA2 example — illustrative API usage, not a runnable benchmark
 //! use genetic_algorithms::island::nsga2::IslandNsga2Ga;
 //! use genetic_algorithms::island::configuration::IslandConfiguration;
 //! use genetic_algorithms::island::topology::MigrationTopology;
@@ -31,16 +32,16 @@
 //!
 //! let ga_config = GaConfiguration::default();
 //!
-//! let mut ga = IslandNsga2Ga::<MyChromosome>::new(island_config, nsga2_config, ga_config)
-//!     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
-//!     .with_objective_fns(vec![
-//!         Box::new(|dna| { /* objective 1 */ 0.0 }),
-//!         Box::new(|dna| { /* objective 2 */ 0.0 }),
-//!     ])
-//!     .build()
-//!     .expect("Invalid configuration");
-//!
-//! let pareto_front = ga.run().unwrap();
+//! // let mut ga = IslandNsga2Ga::<MyChromosome>::new(island_config, nsga2_config, ga_config)
+//! //     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
+//! //     .with_objective_fns(vec![
+//! //         Box::new(|dna| { /* objective 1 */ 0.0 }),
+//! //         Box::new(|dna| { /* objective 2 */ 0.0 }),
+//! //     ])
+//! //     .build()
+//! //     .expect("Invalid configuration");
+//! //
+//! // let pareto_front = ga.run().unwrap();
 //! ```
 
 use crate::configuration::GaConfiguration;
@@ -299,7 +300,10 @@ where
 
 impl<U> IslandNsga2Ga<U>
 where
-    U: LinearChromosome + mutation::ValueMutable + VectorFitness,
+    U: LinearChromosome
+        + mutation::ValueMutable
+        + VectorFitness
+        + crate::traits::RealValuedMutation,
 {
     /// Runs the Island-NSGA-II algorithm and returns the global Pareto front.
     ///
@@ -396,7 +400,7 @@ where
         use crate::operations::crossover;
 
         let crossover_config = self.ga_config.crossover_configuration;
-        let mutation_config = self.ga_config.mutation_configuration.clone();
+        let mutation_config = self.ga_config.mutation_configuration;
         let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
         let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
 
@@ -428,7 +432,9 @@ where
                 for child in children.iter_mut() {
                     let mp: f64 = rng.random();
                     if mp <= mut_prob {
-                        mutation_config.method.mutate(child, &mutation_config.method)?;
+                        mutation_config
+                            .method
+                            .mutate(child, &mutation_config.method)?;
                     }
                 }
 
@@ -490,7 +496,9 @@ where
                 for child in children.iter_mut() {
                     let mp: f64 = rng.random();
                     if mp <= mut_prob {
-                        mutation_config.method.mutate(child, &mutation_config.method)?;
+                        mutation_config
+                            .method
+                            .mutate(child, &mutation_config.method)?;
                     }
                 }
 

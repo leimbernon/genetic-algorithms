@@ -86,6 +86,7 @@ impl LinearChromosome for SimpleChromosome {
 }
 impl ValueMutable for SimpleChromosome {}
 impl OperatorCompat for SimpleChromosome {}
+impl genetic_algorithms::traits::RealValuedMutation for SimpleChromosome {}
 
 // ---------------------------------------------------------------------------
 // Setup helpers
@@ -149,7 +150,10 @@ mod ga_run {
         (50, 50, 10),
         (50, 10, 50),
     ])]
-    fn benchmark_ga_run(bencher: divan::Bencher, (pop_size, gene_len, max_gen): (usize, usize, usize)) {
+    fn benchmark_ga_run(
+        bencher: divan::Bencher,
+        (pop_size, gene_len, max_gen): (usize, usize, usize),
+    ) {
         bencher
             .with_inputs(|| build_ga(pop_size, gene_len, max_gen))
             .bench_values(|mut ga| {

@@ -22,15 +22,16 @@
 //!
 //! # Usage
 //!
-//! ```ignore
+//! ```rust,no_run
+//! // no_run: MetricsObserver usage — illustrative API example, requires observer-metrics feature
 //! use std::sync::Arc;
 //! use genetic_algorithms::MetricsObserver;
 //!
-//! let mut ga = Ga::new()
-//!     // ... configuration ...
-//!     .with_observer(Arc::new(MetricsObserver::new("experiment_42")))
-//!     .build()
-//!     .unwrap();
+//! // let mut ga = Ga::new()
+//! //     // ... configuration ...
+//! //     .with_observer(Arc::new(MetricsObserver::new("experiment_42")))
+//! //     .build()
+//! //     .unwrap();
 //! ```
 
 use crate::observer::{ExtensionEvent, GaObserver, IslandGaObserver, Nsga2Observer};

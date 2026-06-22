@@ -60,16 +60,18 @@ use crate::traits::ChromosomeT;
 ///
 /// # Example
 ///
-/// ```rust,ignore
+/// ```rust,no_run
+/// // no_run: stub implementation — not a runnable example
 /// use genetic_algorithms::SurrogateModel;
 /// use genetic_algorithms::chromosomes::Range as RangeChromosome;
 ///
 /// struct LinearSurrogate;
 ///
 /// impl SurrogateModel<RangeChromosome<f64>> for LinearSurrogate {
-///     fn predict(&self, chromosome: &RangeChromosome<f64>) -> f64 {
+///     fn predict(&self, _chromosome: &RangeChromosome<f64>) -> f64 {
 ///         // Cheap approximation: sum of gene values
-///         chromosome.dna().iter().map(|g| g.value()).sum()
+///         // chromosome.dna().iter().map(|g| g.value()).sum()
+///         todo!()
 ///     }
 /// }
 /// ```

@@ -1,4 +1,4 @@
-use genetic_algorithms::sms_emoa::configuration::{SmsEmoaConfiguration, ObjectiveDirection};
+use genetic_algorithms::sms_emoa::configuration::{ObjectiveDirection, SmsEmoaConfiguration};
 
 #[test]
 fn test_sms_emoa_configuration_default() {
@@ -46,7 +46,6 @@ fn test_sms_emoa_effective_directions_explicit() {
 
 #[test]
 fn test_sms_emoa_with_hypervolume_reference_point() {
-    let config = SmsEmoaConfiguration::new()
-        .with_hypervolume_reference_point(vec![2.0, 2.0]);
+    let config = SmsEmoaConfiguration::new().with_hypervolume_reference_point(vec![2.0, 2.0]);
     assert_eq!(config.hypervolume_reference_point, Some(vec![2.0, 2.0]));
 }

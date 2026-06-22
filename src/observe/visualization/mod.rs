@@ -17,12 +17,13 @@
 //!
 //! # Example
 //!
-//! ```ignore
+//! ```rust,no_run
+//! // no_run: visualization usage — illustrative API example, requires visualization feature
 //! use genetic_algorithms::visualization::plot_fitness;
 //! use genetic_algorithms::stats::GenerationStats;
 //!
-//! let stats: Vec<GenerationStats> = /* ... collect from ga.run() ... */ vec![];
-//! plot_fitness(&stats, "fitness_chart.png").expect("chart failed");
+//! // let stats: Vec<GenerationStats> = /* ... collect from ga.run() ... */ vec![];
+//! // plot_fitness(&stats, "fitness_chart.png").expect("chart failed");
 //! ```
 
 use std::fmt;
@@ -198,7 +199,10 @@ where
     let (y_min, y_max) = compute_diversity_range(stats);
 
     let mut chart = ChartBuilder::on(root)
-        .caption("Population Diversity over Generations", (FontFamily::SansSerif, 20))
+        .caption(
+            "Population Diversity over Generations",
+            (FontFamily::SansSerif, 20),
+        )
         .margin(20)
         .x_label_area_size(40)
         .y_label_area_size(60)
@@ -263,10 +267,7 @@ where
         .margin(20)
         .x_label_area_size(50)
         .y_label_area_size(60)
-        .build_cartesian_2d(
-            (0u32..NUM_BINS).into_segmented(),
-            0u32..max_count,
-        )?;
+        .build_cartesian_2d((0u32..NUM_BINS).into_segmented(), 0u32..max_count)?;
 
     chart
         .configure_mesh()
@@ -560,7 +561,11 @@ where
     ))?;
 
     chart
-        .draw_series(points.iter().map(|&(x, y)| Circle::new((x, y), 3, BLUE.filled())))?
+        .draw_series(
+            points
+                .iter()
+                .map(|&(x, y)| Circle::new((x, y), 3, BLUE.filled())),
+        )?
         .label("Pareto front")
         .legend(|(x, y)| Circle::new((x + 10, y), 3, BLUE.filled()));
 
@@ -799,7 +804,10 @@ where
     let (y_min, y_max) = compute_pareto_range(data.iter().map(|&(_, v)| v as f64));
 
     let mut chart = ChartBuilder::on(root)
-        .caption("True Fitness Calls over Generations", (FontFamily::SansSerif, 20))
+        .caption(
+            "True Fitness Calls over Generations",
+            (FontFamily::SansSerif, 20),
+        )
         .margin(20)
         .x_label_area_size(40)
         .y_label_area_size(60)

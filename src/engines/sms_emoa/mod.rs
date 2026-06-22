@@ -60,7 +60,8 @@
 //!
 //! ## Complete Example
 //!
-//! ```ignore
+//! ```rust,no_run
+//! // no_run: SMS-EMOA engine example — illustrative API usage, not a runnable benchmark
 //! use genetic_algorithms::sms_emoa::SmsEmoaGa;
 //! use genetic_algorithms::sms_emoa::configuration::SmsEmoaConfiguration;
 //! use genetic_algorithms::configuration::GaConfiguration;
@@ -71,16 +72,16 @@
 //!     .with_max_generations(250);
 //!
 //! let ga_config = GaConfiguration::default();
-//! let mut sms_emoa = SmsEmoaGa::<MyChromosome>::new(sms_config, ga_config)
-//!     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
-//!     .with_objective_fns(vec![
-//!         Box::new(|dna| { /* ZDT1 f1 */ 0.0 }),
-//!         Box::new(|dna| { /* ZDT1 f2 */ 0.0 }),
-//!     ])
-//!     .build()?;
-//!
-//! let pareto_front = sms_emoa.run()?;
-//! println!("Front size: {}", pareto_front.len());
+//! // let mut sms_emoa = SmsEmoaGa::<MyChromosome>::new(sms_config, ga_config)
+//! //     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
+//! //     .with_objective_fns(vec![
+//! //         Box::new(|dna| { /* ZDT1 f1 */ 0.0 }),
+//! //         Box::new(|dna| { /* ZDT1 f2 */ 0.0 }),
+//! //     ])
+//! //     .build()?;
+//! //
+//! // let pareto_front = sms_emoa.run()?;
+//! // println!("Front size: {}", pareto_front.len());
 //! ```
 //!
 //! ## Configuration Tips
@@ -273,12 +274,14 @@ where
 
         Ok(contributions)
     }
-
 }
 
 impl<U> SmsEmoaGa<U>
 where
-    U: LinearChromosome + mutation::ValueMutable + VectorFitness,
+    U: LinearChromosome
+        + mutation::ValueMutable
+        + VectorFitness
+        + crate::traits::RealValuedMutation,
 {
     /// Initializes the population with random chromosomes and evaluates objectives in parallel.
     fn initialize_population(&self) -> Result<Vec<ParetoIndividual<U>>, GaError> {
@@ -333,7 +336,6 @@ where
         Ok(population)
     }
 
-
     /// Creates one offspring via binary tournament selection, crossover, and mutation.
     fn create_one_offspring(&self, population: &[ParetoIndividual<U>]) -> Result<U, GaError> {
         let mut rng = crate::rng::make_rng();
@@ -358,7 +360,9 @@ where
         for child in children.iter_mut() {
             let mp: f64 = rng.random();
             if mp <= mut_prob {
-                mutation_config.method.mutate(child, &mutation_config.method)?;
+                mutation_config
+                    .method
+                    .mutate(child, &mutation_config.method)?;
             }
         }
 

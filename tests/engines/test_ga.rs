@@ -1,9 +1,8 @@
-
 use crate::structures::{Chromosome, Gene};
-use genetic_algorithms::ChromosomeLength;
 use genetic_algorithms::ga::Ga;
 use genetic_algorithms::ga::TerminationCause;
 use genetic_algorithms::stats::GenerationStats;
+use genetic_algorithms::ChromosomeLength;
 use genetic_algorithms::{
     configuration::ProblemSolving,
     fitness::FitnessFnWrapper,
@@ -1258,8 +1257,7 @@ fn test_island_nsga2_build_validates() {
     let nsga2_config = Nsga2Configuration::new().with_num_objectives(2);
     let ga_config = GaConfiguration::default();
 
-    let result = IslandNsga2Ga::<Chromosome>::new(island_config, nsga2_config, ga_config)
-        .build();
+    let result = IslandNsga2Ga::<Chromosome>::new(island_config, nsga2_config, ga_config).build();
 
     assert!(
         result.is_err(),
@@ -2066,24 +2064,8 @@ fn test_ga_with_dynamic_mutation() {
 
     // Verify configuration was stored correctly
     assert!(ga.configuration().mutation().dynamic_mutation);
-    assert!(
-        (ga.configuration()
-            .mutation()
-            .target_cardinality
-            .unwrap()
-            - 0.5)
-            .abs()
-            < f64::EPSILON
-    );
-    assert!(
-        (ga.configuration()
-            .mutation()
-            .probability_step
-            .unwrap()
-            - 0.02)
-            .abs()
-            < f64::EPSILON
-    );
+    assert!((ga.configuration().mutation().target_cardinality.unwrap() - 0.5).abs() < f64::EPSILON);
+    assert!((ga.configuration().mutation().probability_step.unwrap() - 0.02).abs() < f64::EPSILON);
 }
 
 #[test]
@@ -2264,10 +2246,19 @@ fn test_local_search_configuration_serde_roundtrip() -> Result<(), Box<dyn std::
     let deserialized: LocalSearchConfiguration = serde_json::from_str(&serialized)?;
 
     assert_eq!(config.method, deserialized.method);
-    assert_eq!(config.application_strategy, deserialized.application_strategy);
+    assert_eq!(
+        config.application_strategy,
+        deserialized.application_strategy
+    );
     assert_eq!(config.mode, deserialized.mode);
-    assert_eq!(config.hill_climbing.step_size, deserialized.hill_climbing.step_size);
-    assert_eq!(config.hill_climbing.max_iterations, deserialized.hill_climbing.max_iterations);
+    assert_eq!(
+        config.hill_climbing.step_size,
+        deserialized.hill_climbing.step_size
+    );
+    assert_eq!(
+        config.hill_climbing.max_iterations,
+        deserialized.hill_climbing.max_iterations
+    );
 
     // Verify serialized string contains key fields
     assert!(serialized.contains("HillClimbing"));
@@ -2336,7 +2327,10 @@ mod batch_evaluator_tests {
 
         let result = ga.run();
         assert!(result.is_ok(), "run should succeed: {:?}", result.err());
-        assert!(!ga.population.chromosomes.is_empty(), "population should be non-empty");
+        assert!(
+            !ga.population.chromosomes.is_empty(),
+            "population should be non-empty"
+        );
     }
 
     #[test]
@@ -2355,7 +2349,10 @@ mod batch_evaluator_tests {
             .with_max_generations(1)
             .build();
 
-        assert!(result.is_err(), "build should fail with mutual exclusivity error");
+        assert!(
+            result.is_err(),
+            "build should fail with mutual exclusivity error"
+        );
         match result.err().unwrap() {
             genetic_algorithms::error::GaError::ConfigurationError(msg) => {
                 assert!(
@@ -2463,11 +2460,19 @@ mod batch_evaluator_tests {
 
         // At least 2 calls: 1 for initial population, 1 for generation 0 offspring
         let calls = evaluator_ref.calls.load(Ordering::Relaxed);
-        assert!(calls >= 2, "Expected >= 2 evaluate_batch calls (init + gen), got {}", calls);
+        assert!(
+            calls >= 2,
+            "Expected >= 2 evaluate_batch calls (init + gen), got {}",
+            calls
+        );
 
         // Every chromosome has the evaluator's value, not the zero default
         for c in ga.population.chromosomes.iter() {
-            assert_eq!(c.fitness(), 7.0, "Initial population must be batch-evaluated (D-02)");
+            assert_eq!(
+                c.fitness(),
+                7.0,
+                "Initial population must be batch-evaluated (D-02)"
+            );
         }
     }
 
@@ -2499,10 +2504,19 @@ mod batch_evaluator_tests {
         // D-07: every generation stat must carry Some(delta) when cache is active.
         // Delta = 0 is valid (no new lookups that generation); None means cache was inactive.
         for stat in ga.stats() {
-            assert!(stat.cache_hits.is_some(), "cache_hits should be Some when cache is active (D-07)");
-            assert!(stat.cache_misses.is_some(), "cache_misses should be Some when cache is active (D-07)");
+            assert!(
+                stat.cache_hits.is_some(),
+                "cache_hits should be Some when cache is active (D-07)"
+            );
+            assert!(
+                stat.cache_misses.is_some(),
+                "cache_misses should be Some when cache is active (D-07)"
+            );
         }
-        assert!(!ga.stats().is_empty(), "should have at least one generation stat");
+        assert!(
+            !ga.stats().is_empty(),
+            "should have at least one generation stat"
+        );
     }
 
     #[test]
@@ -2525,8 +2539,14 @@ mod batch_evaluator_tests {
         ga.run().expect("run should succeed");
 
         for stat in ga.stats() {
-            assert!(stat.cache_hits.is_none(), "cache_hits must be None when no cache is configured (D-07)");
-            assert!(stat.cache_misses.is_none(), "cache_misses must be None when no cache is configured (D-07)");
+            assert!(
+                stat.cache_hits.is_none(),
+                "cache_hits must be None when no cache is configured (D-07)"
+            );
+            assert!(
+                stat.cache_misses.is_none(),
+                "cache_misses must be None when no cache is configured (D-07)"
+            );
         }
     }
 

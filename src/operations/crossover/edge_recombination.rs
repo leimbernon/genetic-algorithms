@@ -1,7 +1,7 @@
 //! Edge Recombination Crossover (ERX) implementation.
 
 use crate::error::GaError;
-use crate::traits::{LinearChromosome, GeneT};
+use crate::traits::{GeneT, LinearChromosome};
 use rand::Rng;
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};

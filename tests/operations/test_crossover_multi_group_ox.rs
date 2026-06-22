@@ -13,11 +13,8 @@ use std::collections::HashSet;
 
 /// Build parent 1: groups [3, 3, 2], identity permutations.
 fn make_parent_1() -> MultiUniqueChromosome<i32> {
-    let mut c = MultiUniqueChromosome::<i32>::new(vec![
-        vec![0, 1, 2],
-        vec![10, 20, 30],
-        vec![100, 200],
-    ]);
+    let mut c =
+        MultiUniqueChromosome::<i32>::new(vec![vec![0, 1, 2], vec![10, 20, 30], vec![100, 200]]);
     let genes = vec![
         UniqueGenotype::new(0, 0),
         UniqueGenotype::new(1, 1),
@@ -34,11 +31,8 @@ fn make_parent_1() -> MultiUniqueChromosome<i32> {
 
 /// Build parent 2: groups [3, 3, 2], reversed permutations.
 fn make_parent_2() -> MultiUniqueChromosome<i32> {
-    let mut c = MultiUniqueChromosome::<i32>::new(vec![
-        vec![0, 1, 2],
-        vec![10, 20, 30],
-        vec![100, 200],
-    ]);
+    let mut c =
+        MultiUniqueChromosome::<i32>::new(vec![vec![0, 1, 2], vec![10, 20, 30], vec![100, 200]]);
     let genes = vec![
         UniqueGenotype::new(2, 2),
         UniqueGenotype::new(1, 1),
@@ -144,21 +138,24 @@ fn multi_group_ox_no_gene_crosses_group_boundary() {
             assert!(
                 group0_values.contains(&g.value),
                 "child {} group-0 gene value {} is out of group-0 alphabet",
-                i, g.value
+                i,
+                g.value
             );
         }
         for g in &dna[3..=5] {
             assert!(
                 group1_values.contains(&g.value),
                 "child {} group-1 gene value {} is out of group-1 alphabet",
-                i, g.value
+                i,
+                g.value
             );
         }
         for g in &dna[6..=7] {
             assert!(
                 group2_values.contains(&g.value),
                 "child {} group-2 gene value {} is out of group-2 alphabet",
-                i, g.value
+                i,
+                g.value
             );
         }
     }
@@ -171,7 +168,10 @@ fn multi_group_ox_empty_groups_returns_error() {
     let p2 = MultiUniqueChromosome::<i32>::default();
     let result = multi_group_ox(&p1, &p2);
     assert!(
-        matches!(result, Err(genetic_algorithms::error::GaError::ConfigurationError(_))),
+        matches!(
+            result,
+            Err(genetic_algorithms::error::GaError::ConfigurationError(_))
+        ),
         "Expected ConfigurationError for empty-groups OX; got {:?}",
         result
     );
@@ -199,7 +199,10 @@ fn multi_group_ox_mismatched_group_structures_returns_error() {
     ]));
     let result = multi_group_ox(&p1, &p2);
     assert!(
-        matches!(result, Err(genetic_algorithms::error::GaError::ConfigurationError(_))),
+        matches!(
+            result,
+            Err(genetic_algorithms::error::GaError::ConfigurationError(_))
+        ),
         "Expected ConfigurationError for mismatched group structures; got {:?}",
         result
     );

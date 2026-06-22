@@ -1,6 +1,8 @@
 use genetic_algorithms::fitness::FitnessFnWrapper;
 use genetic_algorithms::operations::mutation::ValueMutable;
-use genetic_algorithms::traits::{ChromosomeT, GeneT, LinearChromosome, OperatorCompat, VectorFitness};
+use genetic_algorithms::traits::{
+    ChromosomeT, GeneT, LinearChromosome, OperatorCompat, VectorFitness,
+};
 use std::borrow::Cow;
 
 //Structures definition
@@ -52,7 +54,10 @@ impl ChromosomeT for Chromosome {
     }
 
     fn calculate_fitness(&mut self) {
-        let sum: f64 = self.dna.iter().enumerate()
+        let sum: f64 = self
+            .dna
+            .iter()
+            .enumerate()
             .map(|(i, gene)| f64::from(gene.id() * i as i32))
             .sum();
         self.fitness = sum;
@@ -99,6 +104,8 @@ impl VectorFitness for Chromosome {
 impl ValueMutable for Chromosome {}
 
 impl OperatorCompat for Chromosome {}
+
+impl genetic_algorithms::traits::RealValuedMutation for Chromosome {}
 
 /// Test fixture for lexicase selection and multi-objective engines.
 /// Extends `Chromosome` with per-case / per-objective fitness scores via VectorFitness.
@@ -187,3 +194,5 @@ impl VectorFitness for MultiCaseChromosome {
 impl ValueMutable for MultiCaseChromosome {}
 
 impl OperatorCompat for MultiCaseChromosome {}
+
+impl genetic_algorithms::traits::RealValuedMutation for MultiCaseChromosome {}

@@ -12,7 +12,10 @@ fn make_chromosome(genes: &[(i32, bool)]) -> BinaryChromosome {
     c.set_dna(Cow::Owned(
         genes
             .iter()
-            .map(|(id, value)| BinaryGenotype { id: *id, value: *value })
+            .map(|(id, value)| BinaryGenotype {
+                id: *id,
+                value: *value,
+            })
             .collect(),
     ));
     c

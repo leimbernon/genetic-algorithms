@@ -1,8 +1,8 @@
 //! DE mutation strategies and adaptive parameter generation.
 
 use super::configuration::DeMutationStrategy;
-use crate::traits::RealGene;
 use crate::traits::LinearChromosome;
+use crate::traits::RealGene;
 use rand::Rng;
 
 // ─── Utility distributions ───────────────────────────────────────────────────
@@ -76,12 +76,23 @@ where
     U: LinearChromosome,
     U::Gene: RealGene,
 {
-    let DeMutationParams { strategy, target_idx: i, best_idx, f } = params;
+    let DeMutationParams {
+        strategy,
+        target_idx: i,
+        best_idx,
+        f,
+    } = params;
     let dim = pop[*i].dna().len();
     match strategy {
         DeMutationStrategy::Rand1 => {
             let rs = pick_distinct(rng, pop.len(), *i, 3);
-            mutant_from_base(pop[rs[0]].dna(), pop[rs[1]].dna(), pop[rs[2]].dna(), *f, dim)
+            mutant_from_base(
+                pop[rs[0]].dna(),
+                pop[rs[1]].dna(),
+                pop[rs[2]].dna(),
+                *f,
+                dim,
+            )
         }
         DeMutationStrategy::Best1 => {
             let rs = pick_distinct(rng, pop.len(), *i, 2);
@@ -136,7 +147,8 @@ where
 fn mutant_from_base<G: RealGene>(base: &[G], a: &[G], b: &[G], f: f64, dim: usize) -> Vec<G> {
     (0..dim)
         .map(|j| {
-            base[j].with_real_value(base[j].real_value() + f * (a[j].real_value() - b[j].real_value()))
+            base[j]
+                .with_real_value(base[j].real_value() + f * (a[j].real_value() - b[j].real_value()))
         })
         .collect()
 }

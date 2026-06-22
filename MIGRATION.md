@@ -609,13 +609,13 @@ impl SelectionOperator for MySelection {
 ### Compiler error
 
 ```
-error[E0053]: method `select` has an incompatible type for trait
+error[E0050]: method `select` has 4 parameters but the declaration in trait `select` has 5
   --> src/my_selection.rs:5:5
    |
 5  |     fn select<U>(&self, chromosomes: &[U], number_of_couples: usize, number_of_threads: usize) -> Vec<(usize, usize)>
-   |                                                                                                    ^^^^^^^^^^^^^^^^^^
-   |                                            expected `fn(&Self, &[U], usize, usize, usize) -> Vec<Vec<usize>>`
-   |                                                 found `fn(&Self, &[U], usize, usize) -> Vec<(usize, usize)>`
+   |         ^^^^^^ expected 5 parameters, found 4
+   |
+   = note: `select` from trait: `fn(&Self, &[U], usize, usize, usize) -> Vec<Vec<usize>>`
 ```
 
 **Fix:** Add `num_parents: usize` as the fourth parameter; change return type to `Vec<Vec<usize>>`; wrap each pair `(a, b)` as `vec![a, b]`. For multi-parent operators, collect `num_parents` indices per group instead of two.

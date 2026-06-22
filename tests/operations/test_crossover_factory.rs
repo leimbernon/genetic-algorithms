@@ -87,14 +87,24 @@ fn crossover_operator_single_point_via_enum() {
     use crate::structures::{Chromosome, Gene};
     use genetic_algorithms::fitness::FitnessFnWrapper;
     let p1 = Chromosome {
-        dna: vec![Gene { id: 1 }, Gene { id: 2 }, Gene { id: 3 }, Gene { id: 4 }],
+        dna: vec![
+            Gene { id: 1 },
+            Gene { id: 2 },
+            Gene { id: 3 },
+            Gene { id: 4 },
+        ],
         fitness: 0.0,
         age: 0,
         fitness_values: vec![],
         fitness_fn: FitnessFnWrapper::default(),
     };
     let p2 = Chromosome {
-        dna: vec![Gene { id: 5 }, Gene { id: 6 }, Gene { id: 7 }, Gene { id: 8 }],
+        dna: vec![
+            Gene { id: 5 },
+            Gene { id: 6 },
+            Gene { id: 7 },
+            Gene { id: 8 },
+        ],
         fitness: 0.0,
         age: 0,
         fitness_values: vec![],
@@ -131,14 +141,24 @@ fn crossover_operator_multipoint_via_configuration() {
     use crate::structures::{Chromosome, Gene};
     use genetic_algorithms::fitness::FitnessFnWrapper;
     let p1 = Chromosome {
-        dna: vec![Gene { id: 1 }, Gene { id: 2 }, Gene { id: 3 }, Gene { id: 4 }],
+        dna: vec![
+            Gene { id: 1 },
+            Gene { id: 2 },
+            Gene { id: 3 },
+            Gene { id: 4 },
+        ],
         fitness: 0.0,
         age: 0,
         fitness_values: vec![],
         fitness_fn: FitnessFnWrapper::default(),
     };
     let p2 = Chromosome {
-        dna: vec![Gene { id: 5 }, Gene { id: 6 }, Gene { id: 7 }, Gene { id: 8 }],
+        dna: vec![
+            Gene { id: 5 },
+            Gene { id: 6 },
+            Gene { id: 7 },
+            Gene { id: 8 },
+        ],
         fitness: 0.0,
         age: 0,
         fitness_values: vec![],
@@ -150,7 +170,11 @@ fn crossover_operator_multipoint_via_configuration() {
         ..CrossoverConfiguration::default()
     };
     let result = config.crossover(&p1, &p2);
-    assert!(result.is_ok(), "MultiPoint via config should succeed, got: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "MultiPoint via config should succeed, got: {:?}",
+        result
+    );
     assert_eq!(result.unwrap().len(), 2);
 }
 
@@ -168,7 +192,11 @@ fn crossover_operator_sbx_via_enum() {
 fn crossover_operator_blend_alpha_via_enum() {
     let (p1, p2) = make_f64_parents();
     let result = Crossover::BlendAlpha.crossover(&p1, &p2);
-    assert!(result.is_ok(), "BlendAlpha via enum should succeed: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "BlendAlpha via enum should succeed: {:?}",
+        result
+    );
     assert_eq!(result.unwrap().len(), 2);
 }
 
@@ -176,7 +204,11 @@ fn crossover_operator_blend_alpha_via_enum() {
 fn crossover_operator_arithmetic_via_enum() {
     let (p1, p2) = make_f64_parents();
     let result = Crossover::Arithmetic.crossover(&p1, &p2);
-    assert!(result.is_ok(), "Arithmetic via enum should succeed: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Arithmetic via enum should succeed: {:?}",
+        result
+    );
     assert_eq!(result.unwrap().len(), 2);
 }
 
@@ -288,7 +320,11 @@ fn crossover_config_sbx_with_custom_eta() {
         ..CrossoverConfiguration::default()
     };
     let result = config.crossover(&p1, &p2);
-    assert!(result.is_ok(), "SBX config with eta=5.0 should succeed: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "SBX config with eta=5.0 should succeed: {:?}",
+        result
+    );
     let children = result.unwrap();
     assert_eq!(children.len(), 2);
     // Children must stay within declared range [0.0, 100.0]
@@ -315,7 +351,11 @@ fn crossover_config_blend_alpha_with_custom_alpha() {
         ..CrossoverConfiguration::default()
     };
     let result = config.crossover(&p1, &p2);
-    assert!(result.is_ok(), "BLX-alpha config should succeed: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "BLX-alpha config should succeed: {:?}",
+        result
+    );
     assert_eq!(result.unwrap().len(), 2);
 }
 
@@ -328,7 +368,11 @@ fn crossover_config_arithmetic_with_custom_alpha() {
         ..CrossoverConfiguration::default()
     };
     let result = config.crossover(&p1, &p2);
-    assert!(result.is_ok(), "Arithmetic config should succeed: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Arithmetic config should succeed: {:?}",
+        result
+    );
     assert_eq!(result.unwrap().len(), 2);
 }
 

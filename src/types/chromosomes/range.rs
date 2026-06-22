@@ -5,9 +5,20 @@
 //! for continuous or integer optimization problems (function optimization,
 //! parameter tuning, etc.).
 
+use crate::error::GaError;
 use crate::fitness::FitnessFnWrapper;
 use crate::genotypes::Range as RangeGenotype;
-use crate::traits::{ChromosomeT, LinearChromosome, OperatorCompat, RealValued, SelfAdaptive, VectorFitness};
+use crate::operations::mutation::cauchy;
+use crate::operations::mutation::gaussian::GaussianConvertible;
+use crate::operations::mutation::levy_flight;
+use crate::operations::mutation::polynomial;
+use crate::operations::mutation::polynomial::PolynomialConvertible;
+use crate::operations::mutation::self_adaptive_gaussian;
+use crate::operations::mutation::uniform;
+use crate::traits::{
+    ChromosomeT, LinearChromosome, OperatorCompat, RealValued, RealValuedMutation, SelfAdaptive,
+    VectorFitness,
+};
 use std::borrow::Cow;
 use std::fmt;
 use std::fmt::Debug;
@@ -208,6 +219,50 @@ impl<T: Sync + Send + Copy + Default + Debug + 'static> SelfAdaptive for Range<T
 
     fn set_strategy_params(&mut self, params: Vec<f64>) {
         self.strategy_params = params;
+    }
+}
+
+impl<T> RealValuedMutation for Range<T>
+where
+    T: Sync
+        + Send
+        + Copy
+        + Default
+        + Debug
+        + PartialOrd
+        + 'static
+        + GaussianConvertible
+        + PolynomialConvertible,
+{
+    fn polynomial_mutation(&mut self, eta_m: f64) -> Result<(), GaError> {
+        polynomial::polynomial_mutation(self, eta_m)
+    }
+
+    fn cauchy_mutation(&mut self, scale: f64) -> Result<(), GaError> {
+        cauchy::cauchy_mutation(self, scale);
+        Ok(())
+    }
+
+    fn levy_flight_mutation(&mut self, alpha: f64) -> Result<(), GaError> {
+        levy_flight::levy_flight_mutation(self, alpha);
+        Ok(())
+    }
+
+    fn uniform_mutation(&mut self) -> Result<(), GaError> {
+        uniform::uniform_mutation(self);
+        Ok(())
+    }
+
+    fn self_adaptive_gaussian_mutation(
+        &mut self,
+        tau: f64,
+        tau_prime: f64,
+        sigma_min: f64,
+        sigma_max: Option<f64>,
+    ) -> Result<(), GaError> {
+        self_adaptive_gaussian::self_adaptive_gaussian_mutation(
+            self, tau, tau_prime, sigma_min, sigma_max,
+        )
     }
 }
 

@@ -201,9 +201,7 @@ impl<T: Sync + Send + Clone + Default + Debug + 'static> OperatorCompat
     }
 }
 
-impl<T: Sync + Send + Clone + Default + Debug + 'static> ChromosomeT
-    for MultiUniqueChromosome<T>
-{
+impl<T: Sync + Send + Clone + Default + Debug + 'static> ChromosomeT for MultiUniqueChromosome<T> {
     type Gene = UniqueGenotype<T>;
 
     fn calculate_fitness(&mut self) {
@@ -229,7 +227,9 @@ impl<T: Sync + Send + Clone + Default + Debug + 'static> ChromosomeT
     }
 }
 
-impl<T: Sync + Send + Clone + Default + Debug + 'static> VectorFitness for MultiUniqueChromosome<T> {
+impl<T: Sync + Send + Clone + Default + Debug + 'static> VectorFitness
+    for MultiUniqueChromosome<T>
+{
     fn fitness_values(&self) -> &[f64] {
         &self.fitness_values
     }
@@ -289,8 +289,9 @@ impl<T: Sync + Send + Clone + Default + Debug> fmt::Display for MultiUniqueChrom
 /// `MultiUniqueChromosome<T>` inherits the default fallback behavior from `ValueMutable`.
 /// The `OperatorCompat` restriction ensures that incompatible mutations are rejected
 /// at `Ga::build()` before any generation runs.
-impl<T: Sync + Send + Clone + Default + Debug + 'static> ValueMutable
+impl<T: Sync + Send + Clone + Default + Debug + 'static> ValueMutable for MultiUniqueChromosome<T> {}
+
+impl<T: Sync + Send + Clone + Default + Debug + 'static> crate::traits::RealValuedMutation
     for MultiUniqueChromosome<T>
 {
 }
-

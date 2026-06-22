@@ -55,7 +55,7 @@ fn test_mutation_permutation_insert_renames_correctly() {
     let mut moved = false;
     for _ in 0..200 {
         let before: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
-        let result = mutation::factory_with_params(Mutation::PermutationInsert, &mut c, None, None);
+        let result = mutation::factory(Mutation::PermutationInsert, &mut c);
         assert!(result.is_ok(), "PermutationInsert should succeed");
         // Length must never change
         assert_eq!(

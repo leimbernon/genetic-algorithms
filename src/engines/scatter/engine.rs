@@ -10,9 +10,9 @@ use std::sync::Arc;
 
 use super::configuration::ScatterConfiguration;
 use crate::configuration::ProblemSolving;
-use crate::traits::RealGene;
 use crate::rng::make_rng;
-use crate::traits::{LinearChromosome, FitnessFn};
+use crate::traits::RealGene;
+use crate::traits::{FitnessFn, LinearChromosome};
 use rand::Rng;
 
 /// Result returned by [`ScatterEngine::run`].

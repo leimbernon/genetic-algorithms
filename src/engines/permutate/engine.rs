@@ -2,13 +2,13 @@
 
 use std::sync::Arc;
 
+use super::configuration::PermutateConfiguration;
 use crate::configuration::ProblemSolving;
 use crate::error::GaError;
 use crate::ga::TerminationCause;
 use crate::observer::GaObserver;
 use crate::stats::GenerationStats;
 use crate::traits::{ChromosomeT, Strategy};
-use super::configuration::PermutateConfiguration;
 
 /// Exhaustive permutation search engine.
 ///

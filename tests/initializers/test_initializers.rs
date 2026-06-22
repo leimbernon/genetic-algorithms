@@ -1,4 +1,3 @@
-
 use crate::structures::{Chromosome, Gene};
 use genetic_algorithms::chromosomes::Binary;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
@@ -39,10 +38,7 @@ fn test_initializers_generic_random_initialization_without_repetitions() {
         Gene { id: 8 },
     ];
     let alleles = binding.as_slice();
-    let genes = generic_random_initialization_without_repetitions::<Chromosome>(
-        6,
-        Some(alleles),
-    );
+    let genes = generic_random_initialization_without_repetitions::<Chromosome>(6, Some(alleles));
 
     //Checks that any allele is repeated
     let mut alleles_ids = Vec::new();
@@ -207,7 +203,11 @@ fn unique_initializer_empty_alphabet() {
 fn unique_initializer_correct_length() {
     let alphabet = vec![10, 20, 30, 40, 50];
     let dna = unique_random_initialization(&alphabet);
-    assert_eq!(dna.len(), alphabet.len(), "result length must equal alphabet length");
+    assert_eq!(
+        dna.len(),
+        alphabet.len(),
+        "result length must equal alphabet length"
+    );
 }
 
 /// Permutation property: every alphabet element appears exactly once.
@@ -255,7 +255,10 @@ fn multi_range_initialization_per_gene_bounds_enforcement() {
             assert!(
                 gene.value >= gene.lo && gene.value < gene.hi,
                 "Gene {} value {} out of range [{}, {})",
-                i, gene.value, gene.lo, gene.hi
+                i,
+                gene.value,
+                gene.lo,
+                gene.hi
             );
             // Also verify the lo/hi fields themselves were set correctly
             assert_eq!(gene.lo, bounds[i].0, "Gene {} lo mismatch", i);

@@ -81,3 +81,29 @@ fn implements_std_error_trait() {
     // Display should still work via the trait object
     assert!(e.to_string().contains("Validation error"));
 }
+
+#[test]
+fn internal_error_constructs() {
+    let e = GaError::InternalError("boom".to_string());
+    let _ = e; // must compile
+}
+
+#[test]
+fn internal_error_display() {
+    let e = GaError::InternalError("boom".to_string());
+    assert_eq!(e.to_string(), "Internal error: boom");
+}
+
+#[test]
+fn internal_error_derives_clone_partial_eq() {
+    let e1 = GaError::InternalError("x".to_string());
+    let e2 = e1.clone();
+    assert_eq!(e1, e2);
+}
+
+#[test]
+fn internal_error_debug_contains_variant_name() {
+    let e = GaError::InternalError("test".to_string());
+    let debug = format!("{:?}", e);
+    assert!(debug.contains("InternalError"), "got: {debug}");
+}

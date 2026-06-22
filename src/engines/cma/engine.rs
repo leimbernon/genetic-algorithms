@@ -235,23 +235,15 @@ impl CmaState {
 
         // --- Strategy parameters (Hansen arXiv:1604.00772 defaults) -----------
         let nf = n as f64;
-        let cs = config
-            .cs
-            .unwrap_or((mu_eff + 2.0) / (nf + mu_eff + 5.0));
-        let ds = 1.0
-            + 2.0 * (((mu_eff - 1.0) / (nf + 1.0)).max(0.0)).sqrt()
-            + cs;
-        let chi_n = nf.sqrt()
-            * (1.0 - 1.0 / (4.0 * nf) + 1.0 / (21.0 * nf * nf));
+        let cs = config.cs.unwrap_or((mu_eff + 2.0) / (nf + mu_eff + 5.0));
+        let ds = 1.0 + 2.0 * (((mu_eff - 1.0) / (nf + 1.0)).max(0.0)).sqrt() + cs;
+        let chi_n = nf.sqrt() * (1.0 - 1.0 / (4.0 * nf) + 1.0 / (21.0 * nf * nf));
         let cc = config
             .cc
             .unwrap_or((4.0 + mu_eff / nf) / (nf + 4.0 + 2.0 * mu_eff / nf));
-        let c1 = config
-            .c1
-            .unwrap_or(2.0 / ((nf + 1.3).powi(2) + mu_eff));
+        let c1 = config.c1.unwrap_or(2.0 / ((nf + 1.3).powi(2) + mu_eff));
         let cmu = config.cmu.unwrap_or(
-            ((2.0 * (mu_eff - 2.0 + 1.0 / mu_eff)) / ((nf + 2.0).powi(2) + mu_eff))
-                .min(1.0 - c1),
+            ((2.0 * (mu_eff - 2.0 + 1.0 / mu_eff)) / ((nf + 2.0).powi(2) + mu_eff)).min(1.0 - c1),
         );
 
         // Hansen arXiv:1604.00772
@@ -323,20 +315,22 @@ pub struct CmaResult<U: LinearChromosome> {
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```rust,no_run
+/// // no_run: CMA-ES engine example — illustrative API usage, requires full initialization
 /// use genetic_algorithms::cma::{CmaConfiguration, CmaEngine};
 /// use genetic_algorithms::chromosomes::Range as RangeChromosome;
 /// use genetic_algorithms::genotypes::Range as RangeGene;
+/// use genetic_algorithms::traits::RealGene;
 ///
 /// let config = CmaConfiguration::default_for_dim(5)
 ///     .with_max_generations(500);
 ///
-/// let mut engine = CmaEngine::new(
+/// let mut engine: CmaEngine<RangeChromosome<f64>> = CmaEngine::new(
 ///     config,
 ///     |n| { /* return Vec<RangeChromosome<f64>> of length n */ todo!() },
-///     |dna| dna.iter().map(|g| g.real_value().powi(2)).sum(),
+///     |dna: &[RangeGene<f64>]| dna.iter().map(|g| g.real_value().powi(2)).sum(),
 /// );
-/// let result = engine.run();
+/// let result = engine.run().unwrap();
 /// ```
 pub struct CmaEngine<U: LinearChromosome>
 where
@@ -432,7 +426,9 @@ where
                 let mut miss_indices: Vec<usize> = Vec::new();
 
                 {
-                    let mut cache = cache_handle.lock().expect("fitness cache lock poisoned");
+                    let mut cache = cache_handle
+                        .lock()
+                        .map_err(|_| GaError::InternalError("fitness cache mutex poisoned".to_string()))?;
                     for (i, chromosome) in pop.iter().enumerate() {
                         let key = crate::fitness::cache::hash_dna(chromosome.dna());
                         match cache.get(key) {
@@ -454,7 +450,9 @@ where
                         miss_indices.len()
                     );
 
-                    let mut cache = cache_handle.lock().expect("fitness cache lock poisoned");
+                    let mut cache = cache_handle
+                        .lock()
+                        .map_err(|_| GaError::InternalError("fitness cache mutex poisoned".to_string()))?;
                     for (pos, &orig_i) in miss_indices.iter().enumerate() {
                         let f = miss_values[pos];
                         fitness_values[orig_i] = f;
@@ -530,9 +528,9 @@ where
         restart_count: usize,
     ) -> usize {
         let raw = match strategy {
-            RestartStrategy::Ipop { population_scale, .. } => {
-                ((current_lambda as f64) * population_scale).floor() as usize
-            }
+            RestartStrategy::Ipop {
+                population_scale, ..
+            } => ((current_lambda as f64) * population_scale).floor() as usize,
             RestartStrategy::Bipop {
                 population_scale,
                 small_population_size,
@@ -578,13 +576,12 @@ where
     /// population and `CmaState` with an updated `current_lambda` (per IPOP or BIPOP
     /// rules). The `max_generations` budget applies **per restart**, not in total;
     /// `result.generations` is the sum of all generations completed across all restarts.
-    pub fn run(&mut self) -> CmaResult<U>
+    pub fn run(&mut self) -> Result<CmaResult<U>, GaError>
     where
         U::Gene: Debug,
     {
         let mut rng = make_rng();
-        let is_maximization =
-            matches!(self.config.problem_solving, ProblemSolving::Maximization);
+        let is_maximization = matches!(self.config.problem_solving, ProblemSolving::Maximization);
 
         // D-05/D-06: bootstrap cache handle at run() start.
         if let Some(size) = self.config.fitness_cache_size {
@@ -617,10 +614,10 @@ where
                 target: "cma_events",
                 "CmaEngine: init_fn returned an empty population; returning empty result"
             );
-            self.notify(|obs| {
-                obs.on_run_end(TerminationCause::GenerationLimitReached, &[])
-            });
-            panic!("CmaEngine: init_fn returned an empty population");
+            self.notify(|obs| obs.on_run_end(TerminationCause::GenerationLimitReached, &[]));
+            return Err(GaError::InitializationError(
+                "CmaEngine: init_fn returned an empty population".to_string(),
+            ));
         }
 
         let n = peek_pop[0].dna().len();
@@ -650,8 +647,7 @@ where
         let mut global_best: Option<U> = None;
 
         let mut termination_cause = TerminationCause::GenerationLimitReached;
-        let mut all_stats: Vec<GenerationStats> =
-            Vec::with_capacity(self.config.max_generations);
+        let mut all_stats: Vec<GenerationStats> = Vec::with_capacity(self.config.max_generations);
 
         // ── Outer restart loop ────────────────────────────────────────────────
         // `pop` is initialised at the top of each outer iteration. We declare it
@@ -660,7 +656,9 @@ where
         // always initialised before use (avoids unused-assignment lint).
         let mut pop: Vec<U> = (self.init_fn)(current_lambda);
         if pop.is_empty() {
-            panic!("CmaEngine: init_fn returned an empty population (first init)");
+            return Err(GaError::InitializationError(
+                "CmaEngine: init_fn returned an empty population (first init)".to_string(),
+            ));
         }
 
         'restart_loop: loop {
@@ -670,7 +668,9 @@ where
             if total_restarts > 0 {
                 pop = (self.init_fn)(current_lambda);
                 if pop.is_empty() {
-                    panic!("CmaEngine: init_fn returned an empty population (restart)");
+                    return Err(GaError::InitializationError(
+                        "CmaEngine: init_fn returned an empty population (restart)".to_string(),
+                    ));
                 }
             }
 
@@ -730,7 +730,9 @@ where
                 // D-07: snapshot cache counters before this generation to compute deltas.
                 let (prev_cache_hits, prev_cache_misses) = match &self.fitness_cache {
                     Some(ch) => {
-                        let c = ch.lock().expect("fitness cache lock poisoned");
+                        let c = ch
+                            .lock()
+                            .map_err(|_| GaError::InternalError("fitness cache mutex poisoned".to_string()))?;
                         (c.hits(), c.misses())
                     }
                     None => (0, 0),
@@ -824,36 +826,24 @@ where
                 let invsqrtc_step = matvec(&state.invsqrtc, &step, n);
                 let sqrt_cs_factor = (state.cs * (2.0 - state.cs) * state.mu_eff).sqrt();
                 let ps_new: Vec<f64> = (0..n)
-                    .map(|i| {
-                        (1.0 - state.cs) * state.ps[i] + sqrt_cs_factor * invsqrtc_step[i]
-                    })
+                    .map(|i| (1.0 - state.cs) * state.ps[i] + sqrt_cs_factor * invsqrtc_step[i])
                     .collect();
                 state.ps = ps_new;
 
-                let ps_norm = state
-                    .ps
-                    .iter()
-                    .map(|x| x * x)
-                    .sum::<f64>()
-                    .sqrt();
+                let ps_norm = state.ps.iter().map(|x| x * x).sum::<f64>().sqrt();
 
                 // ── h_sigma (stall indicator) ─────────────────────────────────
                 let denom = (1.0 - (1.0 - state.cs).powi(2 * (gen + 1) as i32)).sqrt();
-                let h_sigma = if ps_norm / denom / state.chi_n
-                    < 1.4 + 2.0 / (n as f64 + 1.0)
-                {
+                let h_sigma = if ps_norm / denom / state.chi_n < 1.4 + 2.0 / (n as f64 + 1.0) {
                     1.0_f64
                 } else {
                     0.0_f64
                 };
 
                 // ── Update pc (evolution path for C) ─────────────────────────
-                let sqrt_cc_factor =
-                    (state.cc * (2.0 - state.cc) * state.mu_eff).sqrt();
+                let sqrt_cc_factor = (state.cc * (2.0 - state.cc) * state.mu_eff).sqrt();
                 let pc_new: Vec<f64> = (0..n)
-                    .map(|i| {
-                        (1.0 - state.cc) * state.pc[i] + h_sigma * sqrt_cc_factor * step[i]
-                    })
+                    .map(|i| (1.0 - state.cc) * state.pc[i] + h_sigma * sqrt_cc_factor * step[i])
                     .collect();
                 state.pc = pc_new;
 
@@ -880,9 +870,7 @@ where
                 // Rank-μ update: cmu * Σ_k w_k * y_k * y_k^T
                 for (k, &idx) in selected_indices.iter().enumerate() {
                     let y_k: Vec<f64> = (0..n)
-                        .map(|j| {
-                            (pop[idx].dna()[j].real_value() - old_mean[j]) / state.sigma
-                        })
+                        .map(|j| (pop[idx].dna()[j].real_value() - old_mean[j]) / state.sigma)
                         .collect();
                     for i in 0..n {
                         for j in 0..n {
@@ -902,8 +890,7 @@ where
                 state.c_mat = c_new;
 
                 // ── Update sigma ──────────────────────────────────────────────
-                state.sigma *=
-                    ((state.cs / state.ds) * (ps_norm / state.chi_n - 1.0)).exp();
+                state.sigma *= ((state.cs / state.ds) * (ps_norm / state.chi_n - 1.0)).exp();
                 // Clamp to prevent NaN/Inf (T-56-03-04)
                 state.sigma = state.sigma.clamp(1e-20, 1e20);
 
@@ -939,10 +926,13 @@ where
 
                 // ── Statistics ────────────────────────────────────────────────
                 let fitness_values: Vec<f64> = pop.iter().map(|c| c.fitness()).collect();
-                let mut stats = GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
+                let mut stats =
+                    GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
                 // D-07: populate per-generation cache delta stats when a cache is active.
                 if let Some(ref ch) = self.fitness_cache {
-                    let c = ch.lock().expect("fitness cache lock poisoned");
+                    let c = ch
+                        .lock()
+                        .map_err(|_| GaError::InternalError("fitness cache mutex poisoned".to_string()))?;
                     stats.cache_hits = Some(c.hits().saturating_sub(prev_cache_hits));
                     stats.cache_misses = Some(c.misses().saturating_sub(prev_cache_misses));
                 }
@@ -952,12 +942,16 @@ where
                 // ── Restart trigger ───────────────────────────────────────────
                 if let Some(ref strategy) = self.config.restart_strategy {
                     let (threshold, max_r) = match strategy {
-                        RestartStrategy::Ipop { stagnation_threshold, max_restarts, .. } => {
-                            (*stagnation_threshold, *max_restarts)
-                        }
-                        RestartStrategy::Bipop { stagnation_threshold, max_restarts, .. } => {
-                            (*stagnation_threshold, *max_restarts)
-                        }
+                        RestartStrategy::Ipop {
+                            stagnation_threshold,
+                            max_restarts,
+                            ..
+                        } => (*stagnation_threshold, *max_restarts),
+                        RestartStrategy::Bipop {
+                            stagnation_threshold,
+                            max_restarts,
+                            ..
+                        } => (*stagnation_threshold, *max_restarts),
                     };
                     if stagnation_count >= threshold {
                         // Pitfall 1: check limit BEFORE incrementing
@@ -1032,22 +1026,25 @@ where
         }
 
         // Unwrap global best (always set after at least one iteration)
-        let final_best = global_best.unwrap_or_else(|| {
-            // Defensive fallback; should never be reached in practice since
-            // we always init at least one pop above.
-            panic!("CmaEngine: no best chromosome found (empty run)")
-        });
+        let final_best = global_best
+            .ok_or_else(|| {
+                // Defensive fallback; should never be reached in practice since
+                // we always init at least one pop above.
+                GaError::InternalError(
+                    "CmaEngine: no best chromosome found (empty run)".to_string(),
+                )
+            })?;
 
         let generations = all_stats.len();
         let all_stats_ref = all_stats.as_slice();
         self.notify(|obs| obs.on_run_end(termination_cause, all_stats_ref));
 
-        CmaResult {
+        Ok(CmaResult {
             population: pop,
             best: final_best,
             best_fitness: global_best_fitness,
             generations,
             total_restarts,
-        }
+        })
     }
 }

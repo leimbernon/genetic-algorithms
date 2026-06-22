@@ -31,7 +31,10 @@ fn multi_range_chromosome_calculate_fitness_invokes_fn() {
     c.set_dna(Cow::Owned(dna));
     c.set_fitness_fn(|genes| genes.iter().map(|g| g.value()).sum::<f64>());
     c.calculate_fitness();
-    assert!((c.fitness() - 10.0).abs() < 1e-10, "fitness should be 3+7=10");
+    assert!(
+        (c.fitness() - 10.0).abs() < 1e-10,
+        "fitness should be 3+7=10"
+    );
 }
 
 #[test]
@@ -66,9 +69,7 @@ fn multi_range_chromosome_set_dna_cow_owned_replaces_dna() {
 #[test]
 fn multi_range_chromosome_set_dna_cow_borrowed_replaces_dna() {
     let mut c = MultiRangeChromosome::<f64>::default();
-    let dna = vec![
-        MultiRangeGenotype::new(0, 0.0_f64, 1.0, 0.3, 0.1),
-    ];
+    let dna = vec![MultiRangeGenotype::new(0, 0.0_f64, 1.0, 0.3, 0.1)];
     c.set_dna(Cow::Borrowed(dna.as_slice()));
     assert_eq!(c.dna().len(), 1);
     assert_eq!(c.dna()[0].value(), 0.3);
@@ -101,7 +102,7 @@ fn multi_range_chromosome_operator_compat_no_restriction_mutations() {
 fn multi_range_chromosome_single_point_crossover_accepted_at_build() {
     use genetic_algorithms::configuration::ProblemSolving;
     use genetic_algorithms::ga::Ga;
-    use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+    use genetic_algorithms::operations::{Crossover, GaussianParams, Mutation, Selection, Survivor};
     use genetic_algorithms::traits::{
         ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
     };
@@ -119,7 +120,7 @@ fn multi_range_chromosome_single_point_crossover_accepted_at_build() {
         .with_fitness_fn(|dna: &[MultiRangeGenotype<f64>]| dna.iter().map(|g| g.value()).sum())
         .with_selection_method(Selection::Random)
         .with_crossover_method(Crossover::SinglePoint)
-        .with_mutation_method(Mutation::Gaussian { sigma: None })
+        .with_mutation_method(Mutation::Gaussian(GaussianParams { sigma: None }))
         .with_survivor_method(Survivor::Fitness)
         .with_problem_solving(ProblemSolving::Maximization)
         .with_max_generations(1)
@@ -147,17 +148,20 @@ fn build_multi_range_chromosome() -> MultiRangeChromosome<f64> {
 #[test]
 fn multi_range_gaussian_mutation_stays_within_per_gene_bounds() {
     use genetic_algorithms::operations::mutation;
-    use genetic_algorithms::operations::Mutation;
+    use genetic_algorithms::operations::{GaussianParams, Mutation};
 
     let mut c = build_multi_range_chromosome();
     // Run 1000 iterations and verify every value stays within its gene's (lo, hi)
     for _ in 0..1000 {
-        mutation::factory(Mutation::Gaussian { sigma: Some(10.0) }, &mut c).unwrap();
+        mutation::factory(Mutation::Gaussian(GaussianParams { sigma: Some(10.0) }), &mut c).unwrap();
         for gene in c.dna() {
             assert!(
                 gene.value >= gene.lo && gene.value <= gene.hi,
                 "Gene {} value {} out of per-gene range [{}, {}]",
-                gene.id, gene.value, gene.lo, gene.hi
+                gene.id,
+                gene.value,
+                gene.lo,
+                gene.hi
             );
         }
     }
@@ -166,7 +170,7 @@ fn multi_range_gaussian_mutation_stays_within_per_gene_bounds() {
 #[test]
 fn multi_range_gaussian_mutation_per_gene_rate_controls_noise_scale() {
     use genetic_algorithms::operations::mutation;
-    use genetic_algorithms::operations::Mutation;
+    use genetic_algorithms::operations::{GaussianParams, Mutation};
     use genetic_algorithms::rng;
 
     // Gene 0: mutation_rate=0.0001 (tiny perturbations)
@@ -186,14 +190,20 @@ fn multi_range_gaussian_mutation_per_gene_rate_controls_noise_scale() {
     rng::set_seed(Some(42));
     for _ in 0..2000 {
         let before: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
-        mutation::factory(Mutation::Gaussian { sigma: Some(1.0) }, &mut c).unwrap();
+        mutation::factory(Mutation::Gaussian(GaussianParams { sigma: Some(1.0) }), &mut c).unwrap();
         let after: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
 
         let delta_0 = (after[0] - before[0]).abs();
         let delta_1 = (after[1] - before[1]).abs();
 
-        if delta_0 > 0.0 { total_delta_0 += delta_0; count_0 += 1; }
-        if delta_1 > 0.0 { total_delta_1 += delta_1; count_1 += 1; }
+        if delta_0 > 0.0 {
+            total_delta_0 += delta_0;
+            count_0 += 1;
+        }
+        if delta_1 > 0.0 {
+            total_delta_1 += delta_1;
+            count_1 += 1;
+        }
     }
     rng::set_seed(None);
 
@@ -205,7 +215,8 @@ fn multi_range_gaussian_mutation_per_gene_rate_controls_noise_scale() {
             avg_1 > avg_0 * 10.0,
             "Gene with mutation_rate=20.0 should have much larger avg delta ({:.6}) \
              than mutation_rate=0.0001 ({:.6})",
-            avg_1, avg_0
+            avg_1,
+            avg_0
         );
     }
 }

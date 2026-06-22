@@ -21,6 +21,7 @@ use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::eda::{EdaConfiguration, EdaEngine, EdaModel, EdaRealEngine};
+use genetic_algorithms::error::GaError;
 use genetic_algorithms::ga::TerminationCause;
 use genetic_algorithms::genotypes::Binary as BinaryGene;
 use genetic_algorithms::genotypes::Range as RangeGene;
@@ -54,7 +55,13 @@ fn random_binary_pop(n: usize, seed: u64) -> Vec<BinaryChromosome> {
 }
 
 /// Build a random range population of `n` chromosomes of length `dim`.
-fn random_range_pop(n: usize, dim: usize, lo: f64, hi: f64, seed: u64) -> Vec<RangeChromosome<f64>> {
+fn random_range_pop(
+    n: usize,
+    dim: usize,
+    lo: f64,
+    hi: f64,
+    seed: u64,
+) -> Vec<RangeChromosome<f64>> {
     rng::set_seed(Some(seed));
     let mut r = rng::make_rng();
     use rand::Rng;
@@ -95,13 +102,21 @@ struct SpyObserver {
 }
 
 impl GaObserver<BinaryChromosome> for SpyObserver {
-    fn on_run_start(&self) { self.run_start.fetch_add(1, Ordering::SeqCst); }
+    fn on_run_start(&self) {
+        self.run_start.fetch_add(1, Ordering::SeqCst);
+    }
     fn on_run_end(&self, _cause: TerminationCause, _stats: &[GenerationStats]) {
         self.run_end.fetch_add(1, Ordering::SeqCst);
     }
-    fn on_generation_start(&self, _gen: usize) { self.generation_start.fetch_add(1, Ordering::SeqCst); }
-    fn on_generation_end(&self, _stats: &GenerationStats) { self.generation_end.fetch_add(1, Ordering::SeqCst); }
-    fn on_new_best(&self, _gen: usize, _best: &BinaryChromosome) { self.new_best.fetch_add(1, Ordering::SeqCst); }
+    fn on_generation_start(&self, _gen: usize) {
+        self.generation_start.fetch_add(1, Ordering::SeqCst);
+    }
+    fn on_generation_end(&self, _stats: &GenerationStats) {
+        self.generation_end.fetch_add(1, Ordering::SeqCst);
+    }
+    fn on_new_best(&self, _gen: usize, _best: &BinaryChromosome) {
+        self.new_best.fetch_add(1, Ordering::SeqCst);
+    }
 }
 
 // ─── EDA-01: Bernoulli OneMax convergence ─────────────────────────────────────
@@ -115,15 +130,12 @@ fn eda_01_bernoulli_onemax_convergence() {
         problem_solving: ProblemSolving::Maximization,
         fitness_target: Some(CHROMOSOME_LEN as f64),
         selection_ratio: 0.5,
+        fitness_cache_size: None,
     };
 
-    let mut engine = EdaEngine::new(
-        config,
-        |n| random_binary_pop(n, 1),
-        onemax,
-    );
+    let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 1), onemax);
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     assert!(
         result.best_fitness >= (CHROMOSOME_LEN as f64 * 0.9),
@@ -145,22 +157,23 @@ fn eda_02_gaussian_sphere_convergence() {
         problem_solving: ProblemSolving::Minimization,
         fitness_target: Some(0.1),
         selection_ratio: 0.3,
+        fitness_cache_size: None,
     };
 
-    let mut engine = EdaRealEngine::new(
-        config,
-        |n| random_range_pop(n, DIM, -5.0, 5.0, 99),
-        sphere,
-    );
+    let mut engine =
+        EdaRealEngine::new(config, |n| random_range_pop(n, DIM, -5.0, 5.0, 99), sphere);
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     assert!(
         result.best_fitness < 5.0,
         "Expected best fitness < 5.0 for sphere, got {}",
         result.best_fitness
     );
-    assert!(result.best_fitness.is_finite(), "best_fitness must be finite");
+    assert!(
+        result.best_fitness.is_finite(),
+        "best_fitness must be finite"
+    );
 }
 
 // ─── EDA-03: EdaResult fields ─────────────────────────────────────────────────
@@ -174,19 +187,23 @@ fn eda_03_result_fields_populated() {
         problem_solving: ProblemSolving::Maximization,
         fitness_target: None,
         selection_ratio: 0.5,
+        fitness_cache_size: None,
     };
 
-    let mut engine = EdaEngine::new(
-        config,
-        |n| random_binary_pop(n, 2),
-        onemax,
-    );
+    let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 2), onemax);
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     assert_eq!(result.generations, 10, "Should run all 10 generations");
-    assert_eq!(result.population.len(), 20, "Final population size should be 20");
-    assert!(result.best_fitness.is_finite(), "best_fitness must be finite");
+    assert_eq!(
+        result.population.len(),
+        20,
+        "Final population size should be 20"
+    );
+    assert!(
+        result.best_fitness.is_finite(),
+        "best_fitness must be finite"
+    );
     assert_eq!(result.best.dna().len(), CHROMOSOME_LEN);
 }
 
@@ -199,19 +216,23 @@ fn eda_04_learned_model_is_bernoulli() {
         .with_population_size(50)
         .with_max_generations(20);
 
-    let mut engine = EdaEngine::new(
-        config,
-        |n| random_binary_pop(n, 5),
-        onemax,
-    );
+    let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 5), onemax);
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     match result.learned_model {
         EdaModel::Bernoulli(probs) => {
-            assert_eq!(probs.len(), CHROMOSOME_LEN, "Bernoulli probs length should equal chromosome length");
+            assert_eq!(
+                probs.len(),
+                CHROMOSOME_LEN,
+                "Bernoulli probs length should equal chromosome length"
+            );
             for p in &probs {
-                assert!(*p >= 0.01 && *p <= 0.99, "Bernoulli prob {} out of [0.01, 0.99]", p);
+                assert!(
+                    *p >= 0.01 && *p <= 0.99,
+                    "Bernoulli prob {} out of [0.01, 0.99]",
+                    p
+                );
             }
         }
         EdaModel::Gaussian { .. } => panic!("Expected Bernoulli model for binary chromosomes"),
@@ -229,18 +250,22 @@ fn eda_05_learned_model_is_gaussian() {
         .with_max_generations(20)
         .with_problem_solving(ProblemSolving::Minimization);
 
-    let mut engine = EdaRealEngine::new(
-        config,
-        |n| random_range_pop(n, DIM, -3.0, 3.0, 7),
-        sphere,
-    );
+    let mut engine = EdaRealEngine::new(config, |n| random_range_pop(n, DIM, -3.0, 3.0, 7), sphere);
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     match result.learned_model {
         EdaModel::Gaussian { means, stds } => {
-            assert_eq!(means.len(), DIM, "means length should equal chromosome length");
-            assert_eq!(stds.len(), DIM, "stds length should equal chromosome length");
+            assert_eq!(
+                means.len(),
+                DIM,
+                "means length should equal chromosome length"
+            );
+            assert_eq!(
+                stds.len(),
+                DIM,
+                "stds length should equal chromosome length"
+            );
             for std in &stds {
                 assert!(*std >= 1e-6, "std {} below floor", std);
             }
@@ -259,21 +284,26 @@ fn eda_06_observer_hooks_fire() {
         problem_solving: ProblemSolving::Maximization,
         fitness_target: None,
         selection_ratio: 0.5,
+        fitness_cache_size: None,
     };
 
     let spy = Arc::new(SpyObserver::default());
 
-    let mut engine = EdaEngine::new(
-        config,
-        |n| random_binary_pop(n, 3),
-        onemax,
-    )
-    .with_observer(Arc::clone(&spy) as Arc<dyn GaObserver<BinaryChromosome> + Send + Sync>);
+    let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 3), onemax)
+        .with_observer(Arc::clone(&spy) as Arc<dyn GaObserver<BinaryChromosome> + Send + Sync>);
 
-    engine.run();
+    engine.run().expect("engine run should succeed");
 
-    assert_eq!(spy.run_start.load(Ordering::SeqCst), 1, "on_run_start should fire once");
-    assert_eq!(spy.run_end.load(Ordering::SeqCst), 1, "on_run_end should fire once");
+    assert_eq!(
+        spy.run_start.load(Ordering::SeqCst),
+        1,
+        "on_run_start should fire once"
+    );
+    assert_eq!(
+        spy.run_end.load(Ordering::SeqCst),
+        1,
+        "on_run_end should fire once"
+    );
     assert_eq!(
         spy.generation_start.load(Ordering::SeqCst),
         5,
@@ -303,22 +333,22 @@ fn eda_07_fitness_target_early_stop() {
         // OneMax max is CHROMOSOME_LEN; set target to a value we can easily reach
         fitness_target: Some(1.0), // any individual with at least 1 "one" stops it
         selection_ratio: 0.5,
+        fitness_cache_size: None,
     };
 
-    let mut engine = EdaEngine::new(
-        config,
-        |n| random_binary_pop(n, 42),
-        onemax,
-    );
+    let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 42), onemax);
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     assert!(
         result.generations < 1000,
         "Engine should stop early when target is reached, ran {} generations",
         result.generations
     );
-    assert!(result.best_fitness >= 1.0, "Best fitness should satisfy the target");
+    assert!(
+        result.best_fitness >= 1.0,
+        "Best fitness should satisfy the target"
+    );
 }
 
 // ─── EDA-08: Minimization direction ──────────────────────────────────────────
@@ -334,17 +364,19 @@ fn eda_08_minimization_direction() {
         problem_solving: ProblemSolving::Minimization,
         fitness_target: None,
         selection_ratio: 0.3,
+        fitness_cache_size: None,
     };
 
-    let mut engine = EdaRealEngine::new(
-        config,
-        |n| random_range_pop(n, DIM, -1.0, 1.0, 33),
-        sphere,
+    let mut engine =
+        EdaRealEngine::new(config, |n| random_range_pop(n, DIM, -1.0, 1.0, 33), sphere);
+
+    let result = engine.run().expect("engine run should succeed");
+
+    assert!(
+        result.best_fitness >= 0.0,
+        "Sphere minimum is 0, got {}",
+        result.best_fitness
     );
-
-    let result = engine.run();
-
-    assert!(result.best_fitness >= 0.0, "Sphere minimum is 0, got {}", result.best_fitness);
     assert!(result.best_fitness.is_finite());
 }
 
@@ -360,16 +392,13 @@ fn eda_09_selection_ratio_min_one_parent() {
         problem_solving: ProblemSolving::Maximization,
         fitness_target: None,
         selection_ratio: 0.01, // 5 * 0.01 = 0.05 → floor = 0, clamped to 1
+        fitness_cache_size: None,
     };
 
-    let mut engine = EdaEngine::new(
-        config,
-        |n| random_binary_pop(n, 88),
-        onemax,
-    );
+    let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 88), onemax);
 
     // Should not panic — the engine must handle 1-parent selection
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
     assert!(result.best_fitness >= 0.0);
 }
 
@@ -384,6 +413,7 @@ fn eda_10_default_population_size() {
         problem_solving: ProblemSolving::Maximization,
         fitness_target: None,
         selection_ratio: 0.5,
+        fitness_cache_size: None,
     };
 
     let mut engine = EdaEngine::new(
@@ -395,8 +425,57 @@ fn eda_10_default_population_size() {
         onemax,
     );
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
     assert_eq!(result.population.len(), 100);
+}
+
+// ─── EDA-12: Bernoulli cache enabled ────────────────────────────────────────
+
+/// EDA-12: Cache-enabled Bernoulli EDA run completes and produces valid results.
+#[test]
+fn eda_12_bernoulli_cache_enabled() {
+    rng::set_seed(Some(201));
+    let config = EdaConfiguration::default()
+        .with_population_size(50)
+        .with_max_generations(20)
+        .with_problem_solving(ProblemSolving::Maximization)
+        .with_fitness_cache_size(128);
+    let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 10), onemax);
+    let result = engine.run().expect("engine run should succeed");
+    assert!(result.best_fitness >= 0.0, "best_fitness must be non-negative with cache");
+    assert_eq!(result.generations, 20);
+}
+
+// ─── EDA-13: Gaussian cache enabled ─────────────────────────────────────────
+
+/// EDA-13: Cache-enabled Gaussian EDA run completes and produces valid results.
+#[test]
+fn eda_13_gaussian_cache_enabled() {
+    rng::set_seed(Some(202));
+    let config = EdaConfiguration::default()
+        .with_population_size(50)
+        .with_max_generations(20)
+        .with_problem_solving(ProblemSolving::Minimization)
+        .with_fitness_cache_size(128);
+    let mut engine = EdaRealEngine::new(config, |n| random_range_pop(n, 5, -3.0, 3.0, 11), sphere);
+    let result = engine.run().expect("engine run should succeed");
+    assert!(result.best_fitness.is_finite(), "best_fitness must be finite with cache");
+    assert_eq!(result.generations, 20);
+}
+
+// ─── EDA-14: cache disabled by default ──────────────────────────────────────
+
+/// EDA-14: Default config (no cache) works with zero overhead.
+#[test]
+fn eda_14_cache_disabled_default() {
+    rng::set_seed(Some(203));
+    let config = EdaConfiguration::default()
+        .with_population_size(50)
+        .with_max_generations(20)
+        .with_problem_solving(ProblemSolving::Maximization);
+    let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 10), onemax);
+    let result = engine.run().expect("engine run should succeed");
+    assert!(result.best_fitness >= 0.0);
 }
 
 // ─── EDA-11: WASM compilation gate ────────────────────────────────────────────
@@ -405,3 +484,44 @@ fn eda_10_default_population_size() {
 #[test]
 #[ignore = "WASM gate: verified by CI cargo check --target wasm32-unknown-unknown"]
 fn eda_11_wasm_compilation_gate() {}
+
+// ─── Error path: empty-init InitializationError ──────────────────────────────
+
+/// EDA error path: EdaEngine (Bernoulli) run() with init_fn returning empty Vec
+/// returns Err(GaError::InitializationError(_)).
+#[test]
+fn test_run_empty_init_returns_error() {
+    let config = EdaConfiguration {
+        population_size: 50,
+        max_generations: 10,
+        problem_solving: ProblemSolving::Maximization,
+        fitness_target: None,
+        selection_ratio: 0.5,
+        fitness_cache_size: None,
+    };
+    let mut engine = EdaEngine::new(config, |_n| Vec::<BinaryChromosome>::new(), onemax);
+    assert!(
+        matches!(engine.run(), Err(GaError::InitializationError(_))),
+        "EdaEngine with empty init_fn should return InitializationError"
+    );
+}
+
+/// EDA error path: EdaRealEngine (Gaussian) run() with init_fn returning empty Vec
+/// returns Err(GaError::InitializationError(_)).
+#[test]
+fn test_real_run_empty_init_returns_error() {
+    let config = EdaConfiguration {
+        population_size: 50,
+        max_generations: 10,
+        problem_solving: ProblemSolving::Minimization,
+        fitness_target: None,
+        selection_ratio: 0.5,
+        fitness_cache_size: None,
+    };
+    let mut engine =
+        EdaRealEngine::new(config, |_n| Vec::<RangeChromosome<f64>>::new(), sphere);
+    assert!(
+        matches!(engine.run(), Err(GaError::InitializationError(_))),
+        "EdaRealEngine with empty init_fn should return InitializationError"
+    );
+}

@@ -29,9 +29,7 @@ fn compute_mad_epsilons<U: VectorFitness>(chromosomes: &[U], num_cases: usize) -
                 .iter()
                 .map(|c| c.fitness_values()[case_i])
                 .collect();
-            scores.sort_unstable_by(|a, b| {
-                a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal)
-            });
+            scores.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
 
             let n = scores.len();
             let median = if n % 2 == 1 {
@@ -41,9 +39,7 @@ fn compute_mad_epsilons<U: VectorFitness>(chromosomes: &[U], num_cases: usize) -
             };
 
             let mut abs_devs: Vec<f64> = scores.iter().map(|&s| (s - median).abs()).collect();
-            abs_devs.sort_unstable_by(|a, b| {
-                a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal)
-            });
+            abs_devs.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
 
             if n % 2 == 1 {
                 abs_devs[n / 2]
@@ -139,7 +135,10 @@ where
     }
 
     let num_cases = chromosomes[0].fitness_values().len();
-    if chromosomes.iter().any(|c| c.fitness_values().len() != num_cases) {
+    if chromosomes
+        .iter()
+        .any(|c| c.fitness_values().len() != num_cases)
+    {
         crate::log_warn!(target: "selection_events", "lexicase: fitness_values length mismatch — returning empty selection");
         return Vec::new();
     }
@@ -150,7 +149,12 @@ where
     while mating.len() < number_of_couples {
         let mut group = Vec::with_capacity(num_parents);
         for _ in 0..num_parents {
-            group.push(select_one_winner(chromosomes, num_cases, &zero_eps, &mut rng));
+            group.push(select_one_winner(
+                chromosomes,
+                num_cases,
+                &zero_eps,
+                &mut rng,
+            ));
         }
         crate::log_trace!(target = "selection_events", method = "lexicase"; "Group: {:?}", group);
         mating.push(group);
@@ -203,7 +207,10 @@ where
     }
 
     let num_cases = chromosomes[0].fitness_values().len();
-    if chromosomes.iter().any(|c| c.fitness_values().len() != num_cases) {
+    if chromosomes
+        .iter()
+        .any(|c| c.fitness_values().len() != num_cases)
+    {
         crate::log_warn!(target: "selection_events", "epsilon_lexicase: fitness_values length mismatch — returning empty selection");
         return Vec::new();
     }
@@ -217,7 +224,12 @@ where
     while mating.len() < number_of_couples {
         let mut group = Vec::with_capacity(num_parents);
         for _ in 0..num_parents {
-            group.push(select_one_winner(chromosomes, num_cases, &per_case_eps, &mut rng));
+            group.push(select_one_winner(
+                chromosomes,
+                num_cases,
+                &per_case_eps,
+                &mut rng,
+            ));
         }
         crate::log_trace!(target = "selection_events", method = "epsilon_lexicase"; "Group: {:?}", group);
         mating.push(group);

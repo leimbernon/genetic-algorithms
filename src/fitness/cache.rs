@@ -146,7 +146,8 @@ pub fn hash_dna<G: Debug>(dna: &[G]) -> u64 {
 ///
 /// # Example
 ///
-/// ```rust,ignore
+/// ```text
+/// // API illustration — my_fitness_fn must be defined by the user
 /// let (cached_fn, cache) = wrap_with_cache(my_fitness_fn, 1024);
 /// // After a run:
 /// let stats = cache.lock().unwrap();
