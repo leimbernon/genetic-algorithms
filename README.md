@@ -573,6 +573,11 @@ Run any example directly with `cargo run --example <name>`:
 | `pso_rastrigin` | Particle Swarm Optimization | `cargo run --example pso_rastrigin` |
 | `eda_trap` | Estimation of Distribution (UMDA) | `cargo run --example eda_trap` |
 | `surrogate_rastrigin` | Surrogate-assisted evaluation | `cargo run --example surrogate_rastrigin` |
+| `de_rastrigin` | Differential Evolution (L-SHADE) | `cargo run --example de_rastrigin` |
+| `scatter_search` | Scatter Search with local search | `cargo run --example scatter_search` |
+| `cellular_ga` | Cellular GA (Moore neighborhood) | `cargo run --example cellular_ga` |
+| `alps` | ALPS age-layered evolution | `cargo run --example alps` |
+| `gp_symbolic_regression` | GP symbolic regression (MathNode) | `cargo run --example gp_symbolic_regression` |
 
 ## Development
 
