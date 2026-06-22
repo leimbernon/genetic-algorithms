@@ -130,6 +130,21 @@ Expected output (generation count will vary):
 Best fitness: 100
 ```
 
+## Using the Prelude
+
+For a cleaner import experience, use the prelude module:
+
+```rust
+use genetic_algorithms::prelude::*;
+use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
+use genetic_algorithms::genotypes::Binary;
+use genetic_algorithms::initializers::binary_random_initialization;
+```
+
+The prelude re-exports all high-frequency items: engine entry points, core traits,
+operator enums, configuration types, and error types. Concrete types and initializer
+functions remain explicit imports.
+
 ## Disabling logging for ultra-lean builds
 
 The `logging` feature is enabled by default. It activates the `log` crate dependency and makes

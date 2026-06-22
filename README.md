@@ -152,6 +152,21 @@ let population = ga.run().expect("GA run failed");
 println!("Best fitness: {:.4}", population.best_chromosome.fitness);
 ```
 
+### Ergonomic Imports
+
+Instead of multiple import lines, use the prelude for a single glob import:
+
+```rust
+use genetic_algorithms::prelude::*;
+use genetic_algorithms::chromosomes::Range as RangeChromosome;
+use genetic_algorithms::genotypes::Range as RangeGenotype;
+use genetic_algorithms::initializers::range_random_initialization;
+```
+
+The prelude includes all engine entry points, configuration traits, operator enums,
+core traits, and error types. Concrete chromosome/genotype types and initializer
+functions are imported separately since they are problem-specific.
+
 ## Features
 
 ### Traits
