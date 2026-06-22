@@ -340,6 +340,7 @@ pub mod initializers;
 pub mod observer;
 pub mod operations;
 pub mod population;
+pub mod prelude;
 pub mod rng;
 pub mod stats;
 pub mod traits;
