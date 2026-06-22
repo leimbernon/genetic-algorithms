@@ -148,3 +148,24 @@ fn test_scatter_result_fields() {
     assert!((recomputed - result.best_fitness).abs() < 1e-9);
     assert!(result.iterations > 0);
 }
+
+/// Convergence regression test: Scatter must reach sphere minimum < 1.0
+/// on 5 dimensions within 300 iterations. Prevents silent regressions in search dynamics.
+#[test]
+fn test_scatter_convergence() {
+    let config = ScatterConfiguration::default()
+        .with_population_size(30)
+        .with_reference_set_size(6)
+        .with_max_iterations(300)
+        .with_problem_solving(ProblemSolving::Minimization)
+        .with_fitness_target(1.0);
+
+    let mut engine = ScatterEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 42), sphere);
+    let result = engine.run();
+
+    assert!(
+        result.best_fitness < 1.0,
+        "Scatter should converge to sphere minimum < 1.0; got {}",
+        result.best_fitness
+    );
+}

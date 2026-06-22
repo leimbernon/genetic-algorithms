@@ -49,8 +49,7 @@ fn make_engine(scheme: AlpsAgeScheme) -> AlpsEngine<RangeChromosome<f64>> {
         .with_problem_solving(ProblemSolving::Minimization)
         .with_fitness_target(50.0);
 
-    AlpsEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 42), sphere)
-        .expect("valid test config")
+    AlpsEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 42), sphere).expect("valid test config")
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -235,11 +234,7 @@ fn test_new_rejects_zero_layer_size() {
         .with_n_layers(3)
         .with_layer_size(0)
         .with_max_generations(10);
-    let result = AlpsEngine::new(
-        config,
-        |n| random_pop(n, 3, -5.0, 5.0, 42),
-        sphere,
-    );
+    let result = AlpsEngine::new(config, |n| random_pop(n, 3, -5.0, 5.0, 42), sphere);
     assert!(
         matches!(result, Err(GaError::ConfigurationError(_))),
         "AlpsEngine::new() with layer_size=0 should return ConfigurationError"
@@ -254,11 +249,7 @@ fn test_new_rejects_zero_n_layers() {
         .with_n_layers(0)
         .with_layer_size(10)
         .with_max_generations(10);
-    let result = AlpsEngine::new(
-        config,
-        |n| random_pop(n, 3, -5.0, 5.0, 42),
-        sphere,
-    );
+    let result = AlpsEngine::new(config, |n| random_pop(n, 3, -5.0, 5.0, 42), sphere);
     assert!(
         matches!(result, Err(GaError::ConfigurationError(_))),
         "AlpsEngine::new() with n_layers=0 should return ConfigurationError"
@@ -287,5 +278,32 @@ fn test_best_fitness_consistent() {
         "reported best {} is worse than population best {}",
         result.best_fitness,
         pop_best
+    );
+}
+
+/// Convergence regression test: ALPS must reach sphere minimum < 1.0
+/// on 5 dimensions within 300 generations. Prevents silent regressions in search dynamics.
+#[test]
+fn test_alps_convergence() {
+    let config = AlpsConfiguration::default()
+        .with_n_layers(4)
+        .with_layer_size(15)
+        .with_age_scheme(AlpsAgeScheme::Linear)
+        .with_age_gap(5)
+        .with_injection_interval(10)
+        .with_max_generations(300)
+        .with_crossover(Crossover::Uniform)
+        .with_mutation(Mutation::Gaussian(GaussianParams { sigma: Some(0.5) }))
+        .with_problem_solving(ProblemSolving::Minimization)
+        .with_fitness_target(1.0);
+
+    let mut engine = AlpsEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 42), sphere)
+        .expect("valid test config");
+    let result = engine.run();
+
+    assert!(
+        result.best_fitness < 1.0,
+        "ALPS should converge to sphere minimum < 1.0; got {}",
+        result.best_fitness
     );
 }
