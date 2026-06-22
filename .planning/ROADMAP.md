@@ -1384,11 +1384,11 @@ Plans:
 
 **Wave 1**
 
-- [ ] 81-01-PLAN.md — Create prelude module + lib.rs declaration + tests
+- [x] 81-01-PLAN.md — Create prelude module + lib.rs declaration + tests
 
 **Wave 2** *(blocked on Wave 1)*
 
-- [ ] 81-02-PLAN.md — Update rastrigin example + documentation
+- [x] 81-02-PLAN.md — Update rastrigin example + documentation
 
 **UI hint**: no
 
@@ -1488,5 +1488,5 @@ Plans:
 | 78. Replace User-Input Panics with GaError (#279) | v3.0.0 | 1/4 | In Progress|  |
 | 79. Add Runnable Examples for GP, DE, Scatter, Cellular, ALPS (#281) | v3.0.0 | TBD | Pending | — |
 | 80. Document CmaEngine, PsoEngine, EdaEngine (#282) | v3.0.0 | 3/3 | Complete   | 2026-06-22 |
-| 81. Add Prelude Module (#283) | v3.0.0 | TBD | Pending | — |
+| 81. Add Prelude Module (#283) | v3.0.0 | 2/2 | Complete    | 2026-06-22 |
 | 82. Per-Engine Convergence Integration Tests (#284) | v3.0.0 | TBD | Pending | — |
