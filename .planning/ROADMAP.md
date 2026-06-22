@@ -1355,7 +1355,12 @@ Plans:
   5. `docs/index.md` links the new pages
   6. Zero rustdoc warnings (`cargo doc --no-deps`)
 
-**Plans**: TBD
+**Plans**: 3/3 plans complete
+
+- [x] 80-01-PLAN.md — Create docs/cma.md + docs/pso.md dedicated pages
+- [x] 80-02-PLAN.md — Create docs/eda.md dedicated page (Bernoulli + Gaussian)
+- [x] 80-03-PLAN.md — engines.md overview table + stubs, index.md links, rustdoc gate
+
 **UI hint**: no
 
 ### Phase 81: Add a Prelude Module for Ergonomic Imports (Issue #283)
@@ -1373,7 +1378,18 @@ Plans:
   6. Documented in README / getting-started guide
   7. `cargo doc --no-deps` clean; `cargo test` clean
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+
+**Wave 1**
+
+- [ ] 81-01-PLAN.md — Create prelude module + lib.rs declaration + tests
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [ ] 81-02-PLAN.md — Update rastrigin example + documentation
+
 **UI hint**: no
 
 ### Phase 82: Per-Engine Convergence Integration Tests (Issue #284)
@@ -1471,6 +1487,6 @@ Plans:
 | 77. Extend Fitness Cache to More Engines (#260) | v3.0.0 | 1/1 | Complete   | 2026-06-19 |
 | 78. Replace User-Input Panics with GaError (#279) | v3.0.0 | 1/4 | In Progress|  |
 | 79. Add Runnable Examples for GP, DE, Scatter, Cellular, ALPS (#281) | v3.0.0 | TBD | Pending | — |
-| 80. Document CmaEngine, PsoEngine, EdaEngine (#282) | v3.0.0 | TBD | Pending | — |
+| 80. Document CmaEngine, PsoEngine, EdaEngine (#282) | v3.0.0 | 3/3 | Complete   | 2026-06-22 |
 | 81. Add Prelude Module (#283) | v3.0.0 | TBD | Pending | — |
 | 82. Per-Engine Convergence Integration Tests (#284) | v3.0.0 | TBD | Pending | — |
