@@ -4,7 +4,7 @@
 
 ## Overview
 
-The library provides twelve engines for different problem structures and evolutionary strategies:
+The library provides fifteen engines for different problem structures and evolutionary strategies:
 
 | Engine | Module | Output type | Use case |
 |--------|--------|-------------|----------|
@@ -15,6 +15,9 @@ The library provides twelve engines for different problem structures and evoluti
 | `CellularEngine<U>` | `cellular` | Best + final grid | Spatial locality — neighbourhood-only competition |
 | `AlpsEngine<U>` | `alps` | Best + layer results | Prevent premature convergence via age layers |
 | `GpGa<N>` | `gp` | `GpResult<N>` (best tree + population) | Genetic Programming — symbolic regression, program synthesis |
+| `CmaEngine<U>` | `cma` | Best f64 vector | Continuous optimisation — self-adaptive covariance matrix |
+| `PsoEngine<U>` | `pso` | Best vector | Swarm-based continuous optimisation — few hyperparameters |
+| `EdaEngine<U>` / `EdaRealEngine<U>` | `eda` | Best individual | Probabilistic model-building — binary (Bernoulli) or continuous (Gaussian) |
 | `Nsga2Ga<U>` | `nsga2` | Pareto front | 2-objective optimisation |
 | `Nsga3Ga<U>` | `nsga3` | Pareto front | 3+ objective (many-objective) optimisation |
 | `MoeaDGa<U>` | `moead` | Pareto front | Decomposition-based multi-objective |
@@ -127,6 +130,145 @@ println!("Best: {} (fitness={:.4})", result.best, result.best_fitness);
 ```
 
 **Added in:** v3.0.0
+
+---
+
+## `CmaEngine<U>` — CMA-ES
+
+Covariance Matrix Adaptation Evolution Strategy. Evolves a multivariate Gaussian search distribution over continuous real-valued space, self-adapting the covariance matrix to handle non-separable and correlated fitness landscapes. Uses Jacobi eigendecomposition — no LAPACK, fully WASM-compatible.
+
+**Entry point:** `src/engines/cma/`
+
+### When to Use
+
+- **Problem type:** Continuous real-valued optimization (sphere, Rosenbrock, Rastrigin, etc.)
+- **Variable type:** `RangeChromosome<f64>` with `RealGene`-bounded genes
+- **Key strength:** Self-adapts to non-separable and correlated landscapes; most internal parameters auto-tune (Hansen's formulas)
+- **Key weakness:** O(n²) memory and update cost — practical upper bound ~40 dimensions; prefer PSO for higher dimensions
+
+### Configuration
+
+```rust,ignore
+use genetic_algorithms::cma::{CmaConfiguration, CmaEngine, RestartStrategy};
+use genetic_algorithms::configuration::ProblemSolving;
+
+let config = CmaConfiguration::default_for_dim(10)
+    .with_sigma0(3.4)
+    .with_restart_strategy(RestartStrategy::Ipop {
+        population_scale: 2,
+        stagnation_threshold: 50,
+        max_restarts: 3,
+    })
+    .with_fitness_cache(200)
+    .with_problem_solving(ProblemSolving::Minimization);
+```
+
+### Key Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `sigma0` | `f64` | `0.3` | Initial step size; heuristic: 1/5 to 1/3 of expected search range per dimension |
+| `population_size` | `usize` | `0` (auto) | λ. Auto-computes `4 + floor(3·ln(n))` at `run()` if 0 |
+| `max_generations` | `usize` | `1000` | Generation limit |
+| `restart_strategy` | `Option<RestartStrategy>` | `None` | IPOP or BIPOP restarts; `None` = no restarts |
+| `fitness_cache_size` | `Option<usize>` | `None` | LRU cache capacity for fitness evaluations |
+
+### See Also
+
+- [Full CMA-ES guide](cma.md)
+- [Example: cma_es_rastrigin](../examples/cma_es_rastrigin.rs)
+
+---
+
+## `PsoEngine<U>` — Particle Swarm Optimization
+
+Swarm-based continuous optimizer. Each particle tracks its personal best and is attracted toward the neighborhood best, balancing exploration (inertia) and exploitation (cognitive + social terms). Scales to higher dimensions than CMA-ES since there is no covariance matrix.
+
+**Entry point:** `src/engines/pso/`
+
+### When to Use
+
+- **Problem type:** Continuous real-valued optimization where gradients are unavailable
+- **Variable type:** `RangeChromosome<f64>` with `RealGene`-bounded genes
+- **Key strength:** Few hyperparameters; fast convergence on smooth/unimodal landscapes; no covariance matrix overhead
+- **Key weakness:** Prone to premature convergence on multimodal problems with Global topology; no correlation modeling
+
+### Configuration
+
+```rust,ignore
+use genetic_algorithms::pso::{PsoConfiguration, PsoEngine, PsoInertia, PsoTopology};
+use genetic_algorithms::configuration::ProblemSolving;
+
+let config = PsoConfiguration::default()
+    .with_inertia(PsoInertia::LinearDecay { w_start: 0.9, w_end: 0.4 })
+    .with_topology(PsoTopology::Ring { neighborhood_size: 2 })
+    .with_c1(1.49445)
+    .with_c2(1.49445)
+    .with_problem_solving(ProblemSolving::Minimization);
+```
+
+### Key Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `population_size` | `usize` | `30` | Number of particles in the swarm |
+| `inertia` | `PsoInertia` | `LinearDecay { 0.9, 0.4 }` | `Constant(f64)` or `LinearDecay { w_start, w_end }` |
+| `c1` | `f64` | `2.0` | Cognitive coefficient — personal-best attraction strength |
+| `c2` | `f64` | `2.0` | Social coefficient — neighborhood-best attraction strength |
+| `topology` | `PsoTopology` | `Global` | `Global` (gbest) or `Ring { neighborhood_size }` (lbest) |
+
+### See Also
+
+- [Full PSO guide](pso.md)
+- [Example: pso_rastrigin](../examples/pso_rastrigin.rs)
+
+---
+
+## `EdaEngine<U>` / `EdaRealEngine<U>` — Estimation of Distribution
+
+Probabilistic model-building optimization (UMDA). No crossover or mutation operators — offspring are sampled entirely from a learned probability model. `EdaEngine<U>` uses a Bernoulli model for binary chromosomes; `EdaRealEngine<U>` uses a Gaussian univariate model for real-valued chromosomes. Both share `EdaConfiguration`.
+
+**Entry point:** `src/engines/eda/`
+
+### When to Use
+
+- **Problem type (Bernoulli):** Binary deceptive/epistasis problems (trap functions, feature selection)
+- **Problem type (Gaussian):** Continuous separable problems where univariate Gaussian marginals suffice
+- **Key strength:** Model-building preserves building blocks, naturally handling deceptive binary landscapes
+- **Key weakness:** Univariate model — captures only marginal distributions; no inter-variable linkage (epistasis)
+
+### Configuration
+
+```rust,ignore
+use genetic_algorithms::eda::{EdaConfiguration, EdaEngine, EdaRealEngine};
+use genetic_algorithms::configuration::ProblemSolving;
+
+// Binary → Bernoulli model
+let bin_config = EdaConfiguration::default()
+    .with_population_size(300)
+    .with_selection_ratio(0.3)
+    .with_problem_solving(ProblemSolving::Maximization); // EDA defaults to Maximization
+
+// Continuous → Gaussian model
+let real_config = EdaConfiguration::default()
+    .with_population_size(200)
+    .with_problem_solving(ProblemSolving::Minimization);
+```
+
+### Key Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `population_size` | `usize` | `100` | Population size; EDA needs larger populations than standard GA |
+| `max_generations` | `usize` | `500` | Generation limit |
+| `problem_solving` | `ProblemSolving` | `Maximization` | **Note:** Defaults to Maximization — set explicitly for minimization |
+| `selection_ratio` | `f64` | `0.5` | Fraction of top individuals used for model estimation (truncation selection) |
+| `fitness_cache_size` | `Option<usize>` | `None` | LRU cache capacity for fitness evaluations |
+
+### See Also
+
+- [Full EDA guide](eda.md)
+- [Example: eda_trap](../examples/eda_trap.rs)
 
 ---
 
