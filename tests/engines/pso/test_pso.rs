@@ -370,11 +370,7 @@ fn test_run_empty_init_returns_error() {
     let config = PsoConfiguration::default()
         .with_max_generations(10)
         .with_population_size(20);
-    let mut engine = PsoEngine::new(
-        config,
-        |_n| Vec::<RangeChromosome<f64>>::new(),
-        sphere,
-    );
+    let mut engine = PsoEngine::new(config, |_n| Vec::<RangeChromosome<f64>>::new(), sphere);
     assert!(
         matches!(engine.run(), Err(GaError::InitializationError(_))),
         "PsoEngine with empty init_fn should return InitializationError"
@@ -412,7 +408,10 @@ fn test_pso_cache_enabled() {
         .with_fitness_cache_size(128);
     let mut engine = PsoEngine::new(config, move |_n| init_pop.clone(), sphere);
     let result = engine.run().expect("engine run should succeed");
-    assert!(result.best_fitness.is_finite(), "best_fitness must be finite with cache");
+    assert!(
+        result.best_fitness.is_finite(),
+        "best_fitness must be finite with cache"
+    );
     assert_eq!(result.generations, 10, "must complete all generations");
     assert_eq!(result.population.len(), 20);
 }
@@ -430,4 +429,24 @@ fn test_pso_cache_disabled_default() {
     let mut engine = PsoEngine::new(config, move |_n| init_pop.clone(), sphere);
     let result = engine.run().expect("engine run should succeed");
     assert!(result.best_fitness >= 0.0, "sphere minimum is 0");
+}
+
+/// Convergence regression test: PSO must reach sphere minimum < 1.0
+/// on 5 dimensions within 300 generations. Prevents silent regressions in search dynamics.
+#[test]
+fn test_pso_convergence() {
+    rng::set_seed(Some(42));
+    let init_pop = random_pop(30, 5, -5.0, 5.0, 42);
+    let config = PsoConfiguration::default()
+        .with_population_size(30)
+        .with_max_generations(300)
+        .with_problem_solving(ProblemSolving::Minimization)
+        .with_fitness_target(1.0);
+    let mut engine = PsoEngine::new(config, move |_n| init_pop.clone(), sphere);
+    let result = engine.run().expect("engine run should succeed");
+    assert!(
+        result.best_fitness < 1.0,
+        "PSO should converge to sphere minimum < 1.0; got {}",
+        result.best_fitness
+    );
 }
