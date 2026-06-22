@@ -26,3 +26,33 @@ fn moead_dtlz2() {
     cargo_build_example("moead_dtlz2");
     cargo_run_example("moead_dtlz2");
 }
+
+#[test]
+fn de_rastrigin() {
+    cargo_build_example("de_rastrigin");
+    cargo_run_example("de_rastrigin");
+}
+
+#[test]
+fn scatter_search() {
+    cargo_build_example("scatter_search");
+    cargo_run_example("scatter_search");
+}
+
+#[test]
+fn cellular_ga() {
+    cargo_build_example("cellular_ga");
+    cargo_run_example("cellular_ga");
+}
+
+#[test]
+fn alps() {
+    cargo_build_example("alps");
+    cargo_run_example("alps");
+}
+
+#[test]
+fn gp_symbolic_regression() {
+    cargo_build_example("gp_symbolic_regression");
+    cargo_run_example("gp_symbolic_regression");
+}
