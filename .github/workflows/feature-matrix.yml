@@ -58,6 +58,10 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
+      - name: Install system dependencies for visualization
+        if: matrix.name == 'visualization' || matrix.name == 'all-features'
+        run: sudo apt-get update && sudo apt-get install -y libfontconfig1-dev
+
       - name: Cache cargo registry and target
         uses: Swatinem/rust-cache@v2
         with:
