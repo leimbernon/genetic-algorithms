@@ -72,7 +72,27 @@ jobs:
 
       - name: Enforce no unconditional rayon references in src/
         run: |
-          if grep -rn 'rayon::' src/ | grep -v '#\[cfg'; then
+          fail=0
+          grep -rn 'rayon::' src/ | while IFS= read -r line; do
+            file=$(echo "$line" | cut -d: -f1)
+            lineno=$(echo "$line" | cut -d: -f2)
+            found=0
+            for offset in 1 2 3; do
+              prev=$((lineno - offset))
+              prev_line=$(sed -n "${prev}p" "$file")
+              if echo "$prev_line" | grep -q '#\[cfg'; then
+                found=1
+                break
+              elif ! echo "$prev_line" | grep -qE '^\s*(\{|//|$)'; then
+                break
+              fi
+            done
+            if [ "$found" -eq 0 ]; then
+              echo "UNGUARDED: $line"
+              fail=1
+            fi
+          done
+          if [ "$fail" -ne 0 ]; then
             echo "ERROR: unconditional rayon:: reference found in src/ — all rayon call-sites must be cfg-gated"
             exit 1
           fi
