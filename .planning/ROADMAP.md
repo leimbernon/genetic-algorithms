@@ -1355,7 +1355,12 @@ Plans:
   5. `docs/index.md` links the new pages
   6. Zero rustdoc warnings (`cargo doc --no-deps`)
 
-**Plans**: TBD
+**Plans**: 3/3 plans complete
+
+- [x] 80-01-PLAN.md — Create docs/cma.md + docs/pso.md dedicated pages
+- [x] 80-02-PLAN.md — Create docs/eda.md dedicated page (Bernoulli + Gaussian)
+- [x] 80-03-PLAN.md — engines.md overview table + stubs, index.md links, rustdoc gate
+
 **UI hint**: no
 
 ### Phase 81: Add a Prelude Module for Ergonomic Imports (Issue #283)
@@ -1373,7 +1378,18 @@ Plans:
   6. Documented in README / getting-started guide
   7. `cargo doc --no-deps` clean; `cargo test` clean
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+
+**Wave 1**
+
+- [x] 81-01-PLAN.md — Create prelude module + lib.rs declaration + tests
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [x] 81-02-PLAN.md — Update rastrigin example + documentation
+
 **UI hint**: no
 
 ### Phase 82: Per-Engine Convergence Integration Tests (Issue #284)
@@ -1383,17 +1399,22 @@ Plans:
 **Requirements**: None (testing — closes GitHub issue #284)
 **Success Criteria** (what must be TRUE):
 
-  1. `DeEngine` convergence test — Rastrigin or Sphere → best fitness within tolerance of global minimum
-  2. `ScatterEngine` convergence test — continuous benchmark → converges
-  3. `CellularEngine` convergence test — Rastrigin/Sphere → converges
-  4. `AlpsEngine` convergence test — Rastrigin/Sphere → converges
-  5. `CmaEngine` convergence test — Rastrigin → converges; includes IPOP/BIPOP restart path
-  6. `PsoEngine` convergence test — Rastrigin/Sphere → converges
-  7. All tests use fixed RNG seed (`with_rng_seed`) for determinism and generous-but-bounded budget
-  8. Tests placed under `tests/engines/<engine>/` next to existing unit tests
+  1. `DeEngine` convergence test — Sphere 5D → best_fitness < 1.0 within 300 generations
+  2. `ScatterEngine` convergence test — Sphere 5D → best_fitness < 1.0 within 300 iterations
+  3. `CellularEngine` convergence test — Sphere 5D → best_fitness < 1.0 within 300 generations
+  4. `AlpsEngine` convergence test — Sphere 5D → best_fitness < 1.0 within 300 generations
+  5. `CmaEngine` convergence test — Sphere 5D → best_fitness < 1.0 within 300 generations; separate IPOP restart convergence test
+  6. `PsoEngine` convergence test — Sphere 5D → best_fitness < 1.0 within 300 generations
+  7. All tests use fixed RNG seed 42 for determinism
+  8. Tests placed under `tests/engines/<engine>/` in existing test files
   9. `cargo test` and `cargo test --features serde` pass
 
-**Plans**: TBD
+**Plans:** 1 plan
+
+Plans:
+
+- [ ] 82-01-PLAN.md — Add 7 convergence tests across 6 engine test files (DE, Scatter, Cellular, ALPS, CMA+IPOP, PSO)
+
 **UI hint**: no
 
 ## Progress
@@ -1471,6 +1492,6 @@ Plans:
 | 77. Extend Fitness Cache to More Engines (#260) | v3.0.0 | 1/1 | Complete   | 2026-06-19 |
 | 78. Replace User-Input Panics with GaError (#279) | v3.0.0 | 1/4 | In Progress|  |
 | 79. Add Runnable Examples for GP, DE, Scatter, Cellular, ALPS (#281) | v3.0.0 | TBD | Pending | — |
-| 80. Document CmaEngine, PsoEngine, EdaEngine (#282) | v3.0.0 | TBD | Pending | — |
-| 81. Add Prelude Module (#283) | v3.0.0 | TBD | Pending | — |
-| 82. Per-Engine Convergence Integration Tests (#284) | v3.0.0 | TBD | Pending | — |
+| 80. Document CmaEngine, PsoEngine, EdaEngine (#282) | v3.0.0 | 3/3 | Complete   | 2026-06-22 |
+| 81. Add Prelude Module (#283) | v3.0.0 | 2/2 | Complete    | 2026-06-22 |
+| 82. Per-Engine Convergence Integration Tests (#284) | v3.0.0 | 1/1 | Planned | — |

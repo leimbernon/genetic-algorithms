@@ -12,7 +12,7 @@ All guides are written following the Single Source of Truth (SSOT) principle, wh
 ### Getting Started
 - [Getting Started](getting-started.md) — Installation, quickstart, and basic concepts for new users
 
-### Engines (12 total)
+### Engines (15 total)
 
 Each engine has a dedicated guide covering algorithm description, when-to-use guidance, parameter tables, and complete examples:
 
@@ -24,6 +24,9 @@ Each engine has a dedicated guide covering algorithm description, when-to-use gu
 - [ALPS](engines.md#alpsengineu--age-layered-population-structure) — Age-layered diversity with 3 age schemes (Linear, Fibonacci, Polynomial)
 - [Island Model](engines.md#islandgau--island-model) — Parallel sub-populations with configurable migration topologies
 - [Genetic Programming](gp.md) — Tree chromosome evolution with `GpGa<N>`, subtree/point/hoist mutation, bloat control, and built-in primitive sets
+- [CMA-ES](cma.md) — Covariance Matrix Adaptation Evolution Strategy for continuous optimization
+- [PSO](pso.md) — Particle Swarm Optimization with configurable inertia and topology
+- [EDA](eda.md) — Univariate Marginal Distribution Algorithm (Bernoulli and Gaussian models)
 - [NSGA-II](engines.md#nsga2gau--nsga-ii) — Pareto-ranking multi-objective optimization (2 objectives)
 - [NSGA-III](nsga3.md) — Reference-point based many-objective optimization (3+ objectives)
 - [MOEA/D](moead.md) — Decomposition-based multi-objective optimization
