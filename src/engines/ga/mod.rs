@@ -2458,7 +2458,8 @@ where
         + mutation::ValueMutable
         + MaybeSerialize
         + MaybeDeserialize
-        + OperatorCompat,
+        + OperatorCompat
+        + crate::traits::RealValuedMutation,
     U::Gene: 'static + Debug,
 {
     /// Selects parents using lexicase or epsilon-lexicase selection.
@@ -2493,5 +2494,960 @@ where
             self.configuration.selection_configuration,
             self.configuration.number_of_threads,
         )
+    }
+
+    /// Runs the GA using lexicase or epsilon-lexicase selection and returns a reference
+    /// to the final population.
+    ///
+    /// This is the entry point for `Selection::Lexicase` and `Selection::EpsilonLexicase`.
+    /// `U` must implement [`VectorFitness`] and populate per-case scores inside
+    /// `calculate_fitness()`. Equivalent to `run_lexicase_with_callback(None, 0)`.
+    pub fn run_lexicase(&mut self) -> Result<&Population<U>, GaError> {
+        self.run_lexicase_with_callback(
+            None::<
+                fn(&usize, &Population<U>, &GenerationStats, &TerminationCause) -> ControlFlow<()>,
+            >,
+            0,
+        )
+    }
+
+    // TODO Phase N: consolidate run_lexicase_with_callback with run_with_callback via a parameterized inner loop
+    /// Runs the GA using lexicase or epsilon-lexicase selection and optionally invokes a callback
+    /// every `generations_to_callback` generations.
+    ///
+    /// This is the entry point for `Selection::Lexicase` and `Selection::EpsilonLexicase`.
+    /// `U` must implement [`VectorFitness`] and populate per-case scores inside
+    /// `calculate_fitness()`. Unlike `run_with_callback`, this method routes parent selection
+    /// through `factory_lexicase` (which requires `&mut [U]` to sync scalar fitness to mean
+    /// case score) and forces `num_parents = 2` regardless of crossover configuration.
+    pub fn run_lexicase_with_callback<F>(
+        &mut self,
+        callback: Option<F>,
+        generations_to_callback: usize,
+    ) -> Result<&Population<U>, GaError>
+    where
+        U: LinearChromosome + Send + Sync + 'static + Clone + MaybeDeserialize,
+        F: Fn(&usize, &Population<U>, &GenerationStats, &TerminationCause) -> ControlFlow<()>,
+    {
+        //Before starting the run, we will check the conditions
+        ValidatorFactory::validate::<U>(Some(&self.configuration), None, Some(&self.alleles))?;
+
+        // Apply RNG seed if configured (must be done before any random operations)
+        crate::rng::set_seed(self.configuration.rng_seed);
+
+        // Checkpoint resumption: load checkpoint if configured
+        // `checkpoint_generation` is only mutated inside the `#[cfg(feature = "serde")]` block.
+        // Without serde the mut is valid but unused — suppress only on non-serde builds (Pitfall 4).
+        #[cfg_attr(not(feature = "serde"), allow(unused_mut))]
+        let mut checkpoint_generation: Option<usize> = None;
+        if self.checkpoint_path.is_some() {
+            #[cfg(feature = "serde")]
+            {
+                let path = self.checkpoint_path.take().unwrap();
+                let ckpt = crate::checkpoint::load_checkpoint::<U>(&path).map_err(|e| {
+                    GaError::CheckpointError(format!(
+                        "Failed to load checkpoint '{}': {}",
+                        path.display(),
+                        e
+                    ))
+                })?;
+
+                // Hybrid config override (D-04): builder operators win, checkpoint state wins
+                // 1. Save builder's operator settings
+                let builder_selection = self.configuration.selection_configuration.method;
+                let builder_crossover = self.configuration.crossover_configuration.method;
+                let builder_mutation = self.configuration.mutation_configuration.method;
+                let builder_survivor = self.configuration.survivor;
+                let builder_problem_solving =
+                    self.configuration.limit_configuration.problem_solving;
+
+                // 2. Override configuration from checkpoint (but keep builder's max_generations)
+                let builder_max_generations =
+                    self.configuration.limit_configuration.max_generations;
+                let builder_population_size =
+                    self.configuration.limit_configuration.population_size;
+                self.configuration = ckpt.configuration;
+
+                // 3. Restore builder's operator settings (D-04)
+                self.configuration.selection_configuration.method = builder_selection;
+                self.configuration.crossover_configuration.method = builder_crossover;
+                self.configuration.mutation_configuration.method = builder_mutation;
+                self.configuration.survivor = builder_survivor;
+                self.configuration.limit_configuration.problem_solving = builder_problem_solving;
+
+                // 4. Restore builder's max_generations (user controls this, D-05)
+                self.configuration.limit_configuration.max_generations = builder_max_generations;
+                self.configuration.limit_configuration.population_size = builder_population_size;
+
+                // 5. Restore checkpoint population and stats
+                self.population = ckpt.population;
+                self.stats = ckpt.stats; // Preserve accumulated stats (D-06)
+                checkpoint_generation = Some(ckpt.generation);
+            }
+            #[cfg(not(feature = "serde"))]
+            {
+                return Err(GaError::CheckpointError(
+                    "Checkpoint loading requires the 'serde' feature. Enable it in Cargo.toml: genetic_algorithms = { features = [\"serde\"] }".to_string(),
+                ));
+            }
+        } else if self.population.size() == 0 && self.initialization_fn.is_some() {
+            // Standard initialization (no checkpoint, no population)
+            self.initialization()?;
+            // D-02 / Pitfall 4: batch-evaluate initial population when batch mode is active
+            if let Some(eval) = self.batch_evaluator.as_ref().map(Arc::clone) {
+                let cache = self.fitness_cache.as_ref().map(Arc::clone);
+                batch::batch_evaluate(eval, cache, &mut self.population.chromosomes)?;
+            }
+        } else if self.population.size() == 0 && self.initialization_fn.is_none() {
+            return Err(GaError::InitializationError(
+                "No initialization function set".to_string(),
+            ));
+        }
+
+        //Initialize the adaptive ga
+        if self.configuration.adaptive_ga {
+            self.population.recalculate_aga();
+        }
+
+        // Initialize AOS state if portfolios are configured (Phase 43)
+        aos::init_aos_state(
+            &self.configuration,
+            &mut self.aos_crossover,
+            &mut self.aos_mutation,
+        );
+
+        // Initialize dynamic mutation probability
+        if self.configuration.mutation_configuration.dynamic_mutation {
+            self.dynamic_mutation_probability = self
+                .configuration
+                .mutation_configuration
+                .probability_max
+                .unwrap_or(1.0);
+        }
+
+        // D-06: bootstrap cache for batch-only-with-cache case (fitness_fn is absent,
+        // so build() never called wrap_with_cache; create the cache handle here).
+        if self.batch_evaluator.is_some() && self.fitness_cache.is_none() {
+            if let Some(size) = self.fitness_cache_size {
+                self.fitness_cache = Some(Arc::new(Mutex::new(
+                    crate::fitness::cache::FitnessCache::new(size),
+                )));
+            }
+        }
+
+        //Best chromosome within the generations and population returned
+        let initial_population_size = self.population.size();
+        let mut age = 0usize;
+
+        //Calculation of the fitness and the best chromosome
+        self.population.fitness_calculation(
+            self.configuration.number_of_threads,
+            self.configuration.limit_configuration.problem_solving,
+        );
+
+        // Apply constraint processing to initial population if configured
+        if self.constraint_fns.is_some() {
+            self.process_constraints_population(0)?;
+        }
+
+        // Starting counting the generations for the callback
+        let mut generation_callback_count = 0usize;
+
+        // Reset per-generation stats (only when not resuming from checkpoint, D-06)
+        if checkpoint_generation.is_none() {
+            self.stats.clear();
+        }
+
+        // Determine if this is a maximization problem
+        let is_maximization = matches!(
+            self.configuration.limit_configuration.problem_solving,
+            ProblemSolving::Maximization
+        );
+
+        // Compound stopping criteria tracking
+        #[cfg(not(target_arch = "wasm32"))]
+        let start_time = Instant::now();
+        #[cfg(target_arch = "wasm32")]
+        if self.configuration.max_duration_secs.is_some() {
+            crate::log_warn!(target: "ga_events", "max_duration_secs is not supported on wasm32 — time limit will be ignored");
+        }
+        let mut best_fitness_so_far = self.population.best_chromosome.fitness();
+        let mut stagnation_count: usize = 0;
+
+        self.notify(|obs| obs.on_run_start());
+
+        //We start the cycles
+        // Absolute generation counting (D-05):
+        // When resuming from checkpoint, the effective total generations is
+        // checkpoint.generation + max_generations. The loop variable `i` is the
+        // absolute generation number used in observer hooks, statistics, and HOF.
+        let start_gen = checkpoint_generation.unwrap_or(0);
+        let total_gens = if checkpoint_generation.is_some() {
+            start_gen + self.configuration.limit_configuration.max_generations
+        } else {
+            self.configuration.limit_configuration.max_generations
+        };
+
+        // D-08: allocate offspring buffer once and reuse every generation (avoids a per-generation
+        // heap allocation). Capacity = population_size * 2 — the maximum possible offspring count
+        // when every parent pair passes the crossover probability roll.
+        let mut offspring_buf: Vec<U> =
+            Vec::with_capacity(self.configuration.limit_configuration.population_size * 2);
+
+        for i in start_gen..total_gens {
+            age += 1;
+            // D-07: snapshot cache counters before this generation so we can compute deltas.
+            let (prev_cache_hits, prev_cache_misses) = cache::cache_snapshot(&self.fitness_cache)?;
+
+            self.notify(|obs| obs.on_generation_start(i));
+
+            //1- Parent selection for reproduction
+            let t_sel: Option<Instant> = if self.observer.is_some() {
+                #[cfg(not(target_arch = "wasm32"))]
+                {
+                    Some(Instant::now())
+                }
+                #[cfg(target_arch = "wasm32")]
+                {
+                    None
+                }
+            } else {
+                None
+            };
+            // Lexicase always produces 2-parent groups (Pitfall 3): num_parents is fixed to 2
+            // regardless of crossover configuration so multi-parent UNDX/SPX/PCX group sizes
+            // cannot silently desync from factory_lexicase output. factory_lexicase does not
+            // accept a num_parents argument — the 2-parent constraint is enforced internally.
+            let parents = crate::operations::selection::factory_lexicase(
+                &mut self.population.chromosomes,
+                self.configuration.selection_configuration,
+                self.configuration.number_of_threads,
+            )?;
+            if let Some(t) = t_sel {
+                self.notify(|obs| obs.on_selection_complete(i, t.elapsed(), parents.len()));
+            }
+            //2- Getting the offspring
+            let dynamic_prob = if self.configuration.mutation_configuration.dynamic_mutation {
+                Some(self.dynamic_mutation_probability)
+            } else {
+                None
+            };
+            let t_cx: Option<Instant> = if self.observer.is_some() {
+                #[cfg(not(target_arch = "wasm32"))]
+                {
+                    Some(Instant::now())
+                }
+                #[cfg(target_arch = "wasm32")]
+                {
+                    None
+                }
+            } else {
+                None
+            };
+            // D-02: In batch mode, pass None for fitness_fn so parent_crossover does not
+            // call calculate_fitness per-child; batch_evaluate runs on the returned offspring
+            // slice instead.
+            let crossover_fitness_fn = if self.batch_evaluator.is_some() {
+                None
+            } else {
+                self.fitness_fn.clone()
+            };
+            generation::parent_crossover(
+                &parents,
+                &self.population.chromosomes,
+                &self.configuration,
+                generation::ParentCrossoverParams {
+                    age,
+                    f_max: self.population.f_max,
+                    f_avg: self.population.f_avg,
+                    dynamic_mutation_prob: dynamic_prob,
+                    generation: i,
+                    best_fitness: best_fitness_so_far,
+                    is_maximization,
+                    fitness_fn: crossover_fitness_fn,
+                    crossover_portfolio: self.configuration.crossover_portfolio.as_ref(),
+                    mutation_portfolio: self.configuration.mutation_portfolio.as_ref(),
+                    aos_crossover_state: self.aos_crossover.as_ref(),
+                    aos_mutation_state: self.aos_mutation.as_ref(),
+                },
+                &mut offspring_buf,
+            )?;
+            // D-08: surrogate prescreening — runs BEFORE cache/batch/repair/constraints (Pitfall 1).
+            // Retains only the top max(1, floor(n * fraction)) offspring by predicted score.
+            // Rejected offspring are dropped permanently (D-04) and never evaluated further.
+            // Sequential sort only — unconditionally WASM-safe (no parallelism, no cfg gate).
+            let true_fitness_calls: Option<u64> = if let Some((ref surrogate, fraction)) =
+                self.surrogate
+            {
+                if offspring_buf.is_empty() {
+                    Some(0)
+                } else {
+                    let mut scores: Vec<(usize, f64)> = offspring_buf
+                        .iter()
+                        .enumerate()
+                        .map(|(idx, c)| {
+                            let raw = surrogate.predict(c);
+                            let score = if raw.is_nan() { f64::NEG_INFINITY } else { raw };
+                            (idx, score)
+                        })
+                        .collect();
+                    // Sort descending: best-predicted offspring first.
+                    scores.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+                    // Retain at least 1; floor formula from D-03/SC-1d.
+                    let keep = ((offspring_buf.len() as f64 * fraction).floor() as usize).max(1);
+                    scores.truncate(keep);
+                    // Restore original index order so downstream code sees a stable slice.
+                    scores.sort_unstable_by_key(|&(idx, _)| idx);
+                    offspring_buf = scores
+                        .into_iter()
+                        .map(|(idx, _)| offspring_buf[idx].clone())
+                        .collect();
+                    Some(offspring_buf.len() as u64)
+                }
+            } else {
+                None
+            };
+            // D-02: batch-evaluate offspring before merge (replaces calculate_fitness per child)
+            if let Some(eval) = self.batch_evaluator.as_ref().map(Arc::clone) {
+                let cache = self.fitness_cache.as_ref().map(Arc::clone);
+                batch::batch_evaluate(eval, cache, &mut offspring_buf)?;
+            }
+            if let Some(t) = t_cx {
+                let elapsed = t.elapsed();
+                let offspring_count = offspring_buf.len();
+                let pop_size = self.population.chromosomes.len();
+                self.notify(|obs| obs.on_crossover_complete(i, elapsed, offspring_count));
+                // NOTE: elapsed covers combined crossover+mutation+fitness time (EXT-01)
+                self.notify(|obs| obs.on_mutation_complete(i, elapsed, pop_size));
+                // NOTE: elapsed covers combined crossover+mutation+fitness time (EXT-01)
+                self.notify(|obs| obs.on_fitness_evaluation_complete(i, elapsed, pop_size));
+            }
+
+            // Apply repair operator to offspring if configured
+            if let Some(ref repair_op) = self.repair_operator {
+                for c in offspring_buf.iter_mut() {
+                    repair_op(c)?;
+                    c.calculate_fitness();
+                }
+            }
+
+            // Apply constraint penalty to offspring if configured
+            if let Some(ref constraint_fns) = self.constraint_fns {
+                for c in offspring_buf.iter_mut() {
+                    let dna = c.dna();
+                    let total_viol: f64 = constraint_fns.iter().map(|f| f(dna)).sum();
+                    if total_viol > 0.0 {
+                        match self.penalty_strategy {
+                            PenaltyStrategy::None => {}
+                            PenaltyStrategy::Static { coefficient } => {
+                                c.set_fitness(c.fitness() + coefficient * total_viol);
+                            }
+                            PenaltyStrategy::Dynamic { c: dc, alpha, beta } => {
+                                let penalized = crate::constraints::apply_dynamic_penalty(
+                                    c.fitness(),
+                                    total_viol,
+                                    age,
+                                    dc,
+                                    alpha,
+                                    beta,
+                                );
+                                c.set_fitness(penalized);
+                            }
+                            PenaltyStrategy::Adaptive {
+                                initial_coefficient,
+                                ..
+                            } => {
+                                // Bootstrap: use initial_coefficient if the generation-boundary
+                                // update has not yet run (penalty_coefficient is still 0.0).
+                                let coeff = if self.penalty_coefficient == 0.0 {
+                                    initial_coefficient
+                                } else {
+                                    self.penalty_coefficient
+                                };
+                                c.set_fitness(c.fitness() + coeff * total_viol);
+                            }
+                        }
+                    }
+                }
+            }
+
+            //3a- Apply local search refinement to selected offspring before merge (Phase 45)
+            if let Some(ref ls_config) = self.configuration.local_search_configuration {
+                let strategy = ls_config.application_strategy;
+                let mode = ls_config.mode;
+
+                // Step 1: Should we apply local search this generation?
+                let should_apply = match strategy {
+                    LocalSearchApplicationStrategy::EveryNGenerations { interval } => {
+                        interval == 0 || (i + 1) % interval == 0
+                    }
+                    _ => true,
+                };
+
+                if should_apply && !offspring_buf.is_empty() {
+                    // Step 2: Select candidates from offspring
+                    let candidates: Vec<usize> = match strategy {
+                        LocalSearchApplicationStrategy::AllOffspring => {
+                            (0..offspring_buf.len()).collect()
+                        }
+                        LocalSearchApplicationStrategy::BestN { n } => {
+                            let mut indices: Vec<usize> = (0..offspring_buf.len()).collect();
+                            let ps = self.configuration.limit_configuration.problem_solving;
+                            let k = n.min(indices.len());
+                            if k > 0 {
+                                indices.select_nth_unstable_by(k.saturating_sub(1), |&a, &b| {
+                                    let (fa, fb) =
+                                        (offspring_buf[a].fitness(), offspring_buf[b].fitness());
+                                    match ps {
+                                        ProblemSolving::Minimization
+                                        | ProblemSolving::FixedFitness => {
+                                            fa.partial_cmp(&fb).unwrap_or(std::cmp::Ordering::Equal)
+                                        }
+                                        ProblemSolving::Maximization => {
+                                            fb.partial_cmp(&fa).unwrap_or(std::cmp::Ordering::Equal)
+                                        }
+                                    }
+                                });
+                            }
+                            indices.truncate(k);
+                            indices
+                        }
+                        LocalSearchApplicationStrategy::Probabilistic { probability } => {
+                            let mut rng = crate::rng::make_rng();
+                            (0..offspring_buf.len())
+                                .filter(|_| rng.random::<f64>() < probability)
+                                .collect()
+                        }
+                        LocalSearchApplicationStrategy::EveryNGenerations { .. } => {
+                            (0..offspring_buf.len()).collect()
+                        }
+                    };
+
+                    let is_baldwinian = matches!(mode, LocalSearchMode::Baldwinian);
+
+                    // Save original DNA for Baldwinian restore if needed
+                    let original_dnas: Vec<Vec<U::Gene>> = if is_baldwinian {
+                        candidates
+                            .iter()
+                            .map(|&idx| offspring_buf[idx].dna().to_vec())
+                            .collect()
+                    } else {
+                        Vec::new()
+                    };
+
+                    let ff = Arc::clone(
+                        self.fitness_fn
+                            .as_ref()
+                            .expect("Fitness function required when local search is configured"),
+                    );
+                    let search_method = ls_config.method;
+
+                    #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
+                    {
+                        // Extract candidates, process in parallel, reinsert
+                        let mut selected: Vec<U> = candidates
+                            .iter()
+                            .map(|&idx| offspring_buf[idx].clone())
+                            .collect();
+                        selected.par_iter_mut().for_each(|individual| {
+                            let _ = search_method.improve(individual, ff.as_ref());
+                        });
+                        for (&idx, improved) in candidates.iter().zip(selected) {
+                            offspring_buf[idx] = improved;
+                        }
+                    }
+                    #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
+                    {
+                        candidates.iter().for_each(|&idx| {
+                            let _ = search_method.improve(&mut offspring_buf[idx], ff.as_ref());
+                        });
+                    }
+
+                    // Baldwinian restore: restore original DNA, keep improved fitness
+                    if is_baldwinian {
+                        for (orig_pos, &idx) in candidates.iter().enumerate() {
+                            if let Some(orig_dna) = original_dnas.get(orig_pos) {
+                                let improved_fitness = offspring_buf[idx].fitness();
+                                offspring_buf[idx]
+                                    .set_dna(std::borrow::Cow::Owned(orig_dna.clone()));
+                                offspring_buf[idx].set_fitness(improved_fitness);
+                            }
+                        }
+                    }
+                }
+            }
+
+            //3- Insert the children in the population
+            self.population.add_chromosomes(&mut offspring_buf);
+
+            //3b- Hall of Fame update: evaluate all population chromosomes for archive entry
+            if let Some(ref mut hof) = self.hall_of_fame {
+                for c in self.population.chromosomes.iter() {
+                    hof.try_insert(c, i as u64);
+                }
+            }
+
+            //3.5- Elitism: preserve the top N individuals
+            // extract_elite returns indices into the CURRENT (pre-survivor-selection) population.
+            // We immediately clone the elite chromosomes out before survivor selection
+            // reorders/truncates the population — those indices would be stale afterward.
+            let elite: Vec<U> = if self.configuration.elitism_count > 0 {
+                let idx = generation::extract_elite(
+                    &self.population.chromosomes,
+                    self.configuration.elitism_count,
+                    self.configuration.limit_configuration.problem_solving,
+                );
+                idx.iter()
+                    .map(|&i| self.population.chromosomes[i].clone())
+                    .collect()
+            } else {
+                Vec::new()
+            };
+
+            //4- Survivor selection
+            let t_surv: Option<Instant> = if self.observer.is_some() {
+                #[cfg(not(target_arch = "wasm32"))]
+                {
+                    Some(Instant::now())
+                }
+                #[cfg(target_arch = "wasm32")]
+                {
+                    None
+                }
+            } else {
+                None
+            };
+            if let Some(penalty) = self.configuration.length_penalty {
+                survivor::apply_parsimony_pressure(
+                    self.configuration.survivor,
+                    &mut self.population.chromosomes,
+                    initial_population_size,
+                    self.configuration.limit_configuration,
+                    penalty,
+                )?;
+            } else {
+                survivor::factory(
+                    self.configuration.survivor,
+                    &mut self.population.chromosomes,
+                    initial_population_size,
+                    self.configuration.limit_configuration,
+                )?;
+            }
+            if let Some(t) = t_surv {
+                let pop_size = self.population.chromosomes.len();
+                self.notify(|obs| obs.on_survivor_selection_complete(i, t.elapsed(), pop_size));
+            }
+
+            // Reinsert elite individuals, replacing the worst survivors if needed
+            if !elite.is_empty() {
+                generation::reinsert_elite(
+                    &mut self.population.chromosomes,
+                    elite,
+                    self.configuration.limit_configuration.problem_solving,
+                );
+            }
+            if self.configuration.adaptive_ga {
+                self.population.recalculate_aga();
+            }
+
+            // Collect fitness values once per generation; reused by niching and stats.
+            let mut fitness_values: Vec<f64> = self
+                .population
+                .chromosomes
+                .iter()
+                .map(|c| c.fitness())
+                .collect();
+
+            // Apply niching / fitness sharing if configured
+            if let Some(ref niching_config) = self.configuration.niching_configuration {
+                if niching_config.enabled {
+                    // Extract DNA slices for distance computation
+                    let dna_slices: Vec<&[U::Gene]> = self
+                        .population
+                        .chromosomes
+                        .iter()
+                        .map(|c| c.dna())
+                        .collect();
+
+                    // Compute fitness sharing on-the-fly (no O(n^2) matrix allocation)
+                    crate::niching::sharing::apply_fitness_sharing_with_dna(
+                        &mut fitness_values,
+                        &dna_slices,
+                        |dna_a: &[U::Gene], dna_b: &[U::Gene]| {
+                            let max_len = dna_a.len().max(dna_b.len());
+                            if max_len == 0 {
+                                return 0.0;
+                            }
+                            let mut diff = 0usize;
+                            for idx in 0..max_len {
+                                let id_a = dna_a.get(idx).map(|g| g.id()).unwrap_or(-1);
+                                let id_b = dna_b.get(idx).map(|g| g.id()).unwrap_or(-1);
+                                if id_a != id_b {
+                                    diff += 1;
+                                }
+                            }
+                            diff as f64
+                        },
+                        niching_config.sigma_share,
+                        niching_config.alpha,
+                    );
+
+                    // Write adjusted fitness back
+                    for (chromosome, &shared_fitness) in self
+                        .population
+                        .chromosomes
+                        .iter_mut()
+                        .zip(fitness_values.iter())
+                    {
+                        chromosome.set_fitness(shared_fitness);
+                    }
+                }
+            }
+
+            //5- Sets the best chromosome (scan fitness_values, no second chromosome traversal)
+            {
+                let ps = self.configuration.limit_configuration.problem_solving;
+                if !fitness_values.is_empty() {
+                    let best_idx =
+                        fitness_values
+                            .iter()
+                            .enumerate()
+                            .fold(0usize, |best, (i, &f)| {
+                                let best_f = fitness_values[best];
+                                let is_better = match ps {
+                                    ProblemSolving::Maximization | ProblemSolving::FixedFitness => {
+                                        f > best_f
+                                    }
+                                    ProblemSolving::Minimization => f < best_f,
+                                };
+                                if is_better {
+                                    i
+                                } else {
+                                    best
+                                }
+                            });
+
+                    if !self.population.best_chromosome_is_set {
+                        self.population.best_chromosome =
+                            self.population.chromosomes[best_idx].clone();
+                        self.population.best_chromosome_is_set = true;
+                    } else {
+                        let candidate = fitness_values[best_idx];
+                        let current = self.population.best_chromosome.fitness();
+                        let better = match ps {
+                            ProblemSolving::Maximization | ProblemSolving::FixedFitness => {
+                                candidate > current
+                            }
+                            ProblemSolving::Minimization => candidate < current,
+                        };
+                        if better {
+                            self.population.best_chromosome =
+                                self.population.chromosomes[best_idx].clone();
+                        }
+                    }
+                }
+            }
+
+            // Collect per-generation statistics
+            let mut gen_stats =
+                stats::collect_generation_stats(i, &fitness_values, is_maximization);
+
+            // Update dynamic mutation probability based on population diversity
+            adaptive::update_dynamic_mutation(
+                &self.configuration.mutation_configuration,
+                &mut self.dynamic_mutation_probability,
+                &mut gen_stats,
+            );
+
+            // D-07: populate per-generation cache delta stats when a cache is active.
+            cache::cache_fill_stats(
+                &self.fitness_cache,
+                &mut gen_stats,
+                prev_cache_hits,
+                prev_cache_misses,
+            )?;
+
+            // D-08: populate true_fitness_calls — Some(n) when surrogate ran this generation,
+            // None otherwise (mirrors the cache delta pattern above).
+            gen_stats.true_fitness_calls = true_fitness_calls;
+
+            // Apply extension strategy if configured and diversity is low
+            if let Some(ref ext_config) = self.configuration.extension_configuration {
+                if extension::should_trigger_extension(ext_config, gen_stats.diversity) {
+                    extension_ops::factory(
+                        ext_config.method,
+                        &mut self.population.chromosomes,
+                        initial_population_size,
+                        self.configuration.limit_configuration.problem_solving,
+                        ext_config,
+                    )?;
+                    self.notify(|obs| {
+                        obs.on_extension_triggered(ExtensionEvent {
+                            generation: i,
+                            diversity: gen_stats.diversity,
+                            extension_type: ext_config.method.as_str(),
+                            threshold: ext_config.diversity_threshold,
+                        })
+                    });
+
+                    // Regrow population if extension reduced it
+                    if self.population.chromosomes.len() < initial_population_size {
+                        if let Some(ref init_fn) = self.initialization_fn {
+                            let deficit =
+                                initial_population_size - self.population.chromosomes.len();
+                            let chromosome_length =
+                                self.configuration.limit_configuration.chromosome_length;
+                            let alleles_ref: Option<&[U::Gene]> = if self.alleles.is_empty() {
+                                None
+                            } else {
+                                Some(self.alleles.as_slice())
+                            };
+                            let ff = self.fitness_fn.as_ref().map(Arc::clone);
+
+                            // For variable-length chromosomes, sample regrowth lengths from
+                            // [min_observed, max_observed] of the surviving population.
+                            // Decision: Phase 52 discussion log — adaptive range from survivors.
+                            let (min_obs, max_obs): (usize, usize) = match chromosome_length {
+                                crate::chromosomes::ChromosomeLength::Variable { min, max } => {
+                                    let observed_min = self
+                                        .population
+                                        .chromosomes
+                                        .iter()
+                                        .map(|c| c.dna().len())
+                                        .min()
+                                        .unwrap_or(min);
+                                    let observed_max = self
+                                        .population
+                                        .chromosomes
+                                        .iter()
+                                        .map(|c| c.dna().len())
+                                        .max()
+                                        .unwrap_or(max);
+                                    // Clamp to configured bounds
+                                    (observed_min.max(min), observed_max.min(max))
+                                }
+                                crate::chromosomes::ChromosomeLength::Fixed(n) => (n, n),
+                            };
+
+                            #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
+                            let new_chromosomes: Vec<U> = (0..deficit)
+                                .into_par_iter()
+                                .map(|_| {
+                                    let len = if min_obs == max_obs {
+                                        min_obs
+                                    } else {
+                                        let mut rng = crate::rng::make_rng();
+                                        rng.random_range(min_obs..=max_obs)
+                                    };
+                                    let genes = init_fn(len, alleles_ref);
+                                    let mut new_chromosome = U::new();
+                                    new_chromosome.set_dna(std::borrow::Cow::Owned(genes));
+                                    if let Some(ref ff) = ff {
+                                        let ff_clone = Arc::clone(ff);
+                                        new_chromosome.set_fitness_fn(move |genes| ff_clone(genes));
+                                    }
+                                    new_chromosome.calculate_fitness();
+                                    new_chromosome.set_age(0);
+                                    new_chromosome
+                                })
+                                .collect();
+                            #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
+                            let new_chromosomes: Vec<U> = (0..deficit)
+                                .map(|_| {
+                                    let len = if min_obs == max_obs {
+                                        min_obs
+                                    } else {
+                                        let mut rng = crate::rng::make_rng();
+                                        rng.random_range(min_obs..=max_obs)
+                                    };
+                                    let genes = init_fn(len, alleles_ref);
+                                    let mut new_chromosome = U::new();
+                                    new_chromosome.set_dna(std::borrow::Cow::Owned(genes));
+                                    if let Some(ref ff) = ff {
+                                        let ff_clone = Arc::clone(ff);
+                                        new_chromosome.set_fitness_fn(move |genes| ff_clone(genes));
+                                    }
+                                    new_chromosome.calculate_fitness();
+                                    new_chromosome.set_age(0);
+                                    new_chromosome
+                                })
+                                .collect();
+                            self.population.chromosomes.extend(new_chromosomes);
+                        }
+                    }
+
+                    // Recalculate fitness for chromosomes marked with NaN
+                    // (e.g., after MassDegeneration)
+                    for c in self.population.chromosomes.iter_mut() {
+                        if c.fitness().is_nan() {
+                            c.calculate_fitness();
+                        }
+                    }
+                }
+            }
+
+            // Move gen_stats into the history vec (no clone)
+            self.stats.push(gen_stats);
+
+            // Notify with the pushed stats entry that includes dynamic_mutation_probability
+            // Snapshot into local to avoid nested borrow of self (notify takes &self)
+            let notify_stats = self.stats.last().unwrap().clone();
+            self.notify(|obs| obs.on_generation_end(&notify_stats));
+
+            // Save checkpoint to disk if configured (requires serde feature)
+            #[cfg(feature = "serde")]
+            {
+                let spc = &self.configuration.save_progress_configuration;
+                if spc.save_progress
+                    && spc.save_progress_interval > 0
+                    && (i + 1) % spc.save_progress_interval == 0
+                {
+                    let ckpt = crate::checkpoint::Checkpoint {
+                        population: self.population.clone(),
+                        configuration: self.configuration.clone(),
+                        generation: i,
+                        stats: self.stats.clone(),
+                    };
+                    let path = std::path::Path::new(&spc.save_progress_path)
+                        .join(format!("checkpoint_gen_{}.json", i + 1));
+                    if let Err(e) = crate::checkpoint::save_checkpoint(&ckpt, &path) {
+                        // Exception: this log::warn! cannot migrate to LogObserver because no
+                        // on_checkpoint_failed hook exists (deferred per REQUIREMENTS.md EXT-02).
+                        // It is feature-gated (#[cfg(feature = "serde")]) and only fires on I/O errors.
+                        crate::log_warn!(
+                            "Failed to save checkpoint at generation {}: {}",
+                            i + 1,
+                            e
+                        );
+                    }
+                }
+            }
+
+            // If we want to perform a periodic callback
+            if let Some(func) = &callback {
+                if (generation_callback_count + 1) == generations_to_callback {
+                    if func(
+                        &i,
+                        &self.population,
+                        self.stats.last().unwrap(),
+                        &self.termination_cause,
+                    )
+                    .is_break()
+                    {
+                        self.termination_cause = TerminationCause::CallbackRequested;
+                        break;
+                    }
+                    generation_callback_count = 0;
+                } else {
+                    generation_callback_count += 1;
+                }
+            }
+
+            //6- Identifies if the limit has been reached or not
+            if stopping::limit_reached(
+                self.configuration.limit_configuration,
+                &self.population.chromosomes,
+            ) {
+                self.termination_cause = TerminationCause::FitnessTargetReached;
+                if let Some(func) = &callback {
+                    let _ = func(
+                        &i,
+                        &self.population,
+                        self.stats.last().unwrap(),
+                        &self.termination_cause,
+                    );
+                }
+                break;
+            }
+
+            //7- Compound stopping criteria
+            // Stagnation check
+            let current_best = self.population.best_chromosome.fitness();
+            let improved = match self.configuration.limit_configuration.problem_solving {
+                ProblemSolving::Maximization => current_best > best_fitness_so_far,
+                ProblemSolving::Minimization => current_best < best_fitness_so_far,
+                _ => (current_best - best_fitness_so_far).abs() > f64::EPSILON,
+            };
+            if improved {
+                best_fitness_so_far = current_best;
+                stagnation_count = 0;
+                self.notify(|obs| obs.on_new_best(i, &self.population.best_chromosome));
+            } else {
+                stagnation_count += 1;
+                self.notify(|obs| obs.on_stagnation(i, stagnation_count));
+            }
+
+            if let Some(max_stagnation) = self.configuration.stagnation_generations {
+                if stagnation_count >= max_stagnation {
+                    self.termination_cause = TerminationCause::StagnationReached;
+                    if let Some(func) = &callback {
+                        let _ = func(
+                            &i,
+                            &self.population,
+                            self.stats.last().unwrap(),
+                            &self.termination_cause,
+                        );
+                    }
+                    break;
+                }
+            }
+
+            // Convergence check (fitness std dev below threshold)
+            if let Some(threshold) = self.configuration.convergence_threshold {
+                if self.stats.last().unwrap().fitness_std_dev < threshold {
+                    self.termination_cause = TerminationCause::ConvergenceReached;
+                    if let Some(func) = &callback {
+                        let _ = func(
+                            &i,
+                            &self.population,
+                            self.stats.last().unwrap(),
+                            &self.termination_cause,
+                        );
+                    }
+                    break;
+                }
+            }
+
+            // Time limit check (not available on wasm32 — see warning emitted at run start)
+            #[cfg(not(target_arch = "wasm32"))]
+            if let Some(max_secs) = self.configuration.max_duration_secs {
+                if start_time.elapsed().as_secs_f64() >= max_secs {
+                    self.termination_cause = TerminationCause::TimeLimitReached;
+                    if let Some(func) = &callback {
+                        let _ = func(
+                            &i,
+                            &self.population,
+                            self.stats.last().unwrap(),
+                            &self.termination_cause,
+                        );
+                    }
+                    break;
+                }
+            }
+        }
+
+        // Set termination cause when generation limit is reached (regardless of callback)
+        if self.termination_cause == TerminationCause::NotTerminated {
+            self.termination_cause = TerminationCause::GenerationLimitReached;
+        }
+
+        self.notify(|obs| obs.on_run_end(self.termination_cause, &self.stats));
+
+        // If we want to perform a callback and the generation limit was just reached
+        if let Some(func) = &callback {
+            if self.termination_cause == TerminationCause::GenerationLimitReached {
+                let final_stats = self.stats.last().cloned().unwrap_or_else(|| {
+                    GenerationStats::from_fitness_values(0, &[], is_maximization)
+                });
+                let _ = func(
+                    &self.configuration.limit_configuration.max_generations,
+                    &self.population,
+                    &final_stats,
+                    &self.termination_cause,
+                );
+            }
+        }
+
+        Ok(&self.population)
     }
 }
