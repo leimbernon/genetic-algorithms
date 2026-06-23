@@ -58,6 +58,7 @@ Progress bar: [██████████████████░░] 45/
 - [Phase ?]: v3.0.0: 1-child multi-parent crossover fallback uses parent_2 not parent_1 (D-06)
 - [Phase ?]: v3.0.0: extract_elite returns Vec<usize> indices (D-10) — allocation-free extract phase; caller clones from pre-survivor-selection snapshot
 - [Phase ?]: v3.0.0: Discretionary local-search clone retained — >=10 elimination target met exactly (10 of 19); parallel-path clone architecturally required for rayon
+- [Phase ?]: with_fitness_fn trigger pattern for calculate_fitness during init
 
 ### Decisions (phase 59)
 
