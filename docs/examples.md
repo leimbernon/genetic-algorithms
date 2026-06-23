@@ -4,7 +4,7 @@
 
 ## Overview
 
-The `examples/` directory contains **19 runnable examples** covering 11 of the 12 engines (GP runnable patterns live in `tests/gp.rs`), problem
+The `examples/` directory contains **19 runnable examples** covering 12 of the 15 engines (GP, CMA-ES, and EDA runnable patterns live in `tests/`), problem
 types, and framework features. Each example demonstrates the full workflow: problem definition,
 chromosome configuration, operator selection, engine setup, execution, and result interpretation.
 

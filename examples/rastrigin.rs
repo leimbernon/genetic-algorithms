@@ -20,18 +20,18 @@ cargo run --example rastrigin
 ```
 */
 
-use genetic_algorithms::prelude::*;
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::initializers::range_random_initialization;
+use genetic_algorithms::prelude::*;
 // Non-prelude items used only in this example:
 use genetic_algorithms::ga::TerminationCause;
 use genetic_algorithms::operations::GaussianParams;
 use genetic_algorithms::population::Population;
 use genetic_algorithms::stats::GenerationStats;
-use genetic_algorithms::{rng, CompositeObserver};
 #[cfg(feature = "observer-metrics")]
 use genetic_algorithms::MetricsObserver;
+use genetic_algorithms::{rng, CompositeObserver};
 use std::sync::Arc;
 
 fn main() {

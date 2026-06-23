@@ -47,8 +47,8 @@ mod alps_vs_de {
                 .with_mutation(genetic_algorithms::operations::Mutation::Gaussian(
                     genetic_algorithms::operations::GaussianParams { sigma: Some(0.3) },
                 ));
-            let mut engine = AlpsEngine::new(config, |n| make_pop(n, 5), sphere)
-                .expect("valid bench config");
+            let mut engine =
+                AlpsEngine::new(config, |n| make_pop(n, 5), sphere).expect("valid bench config");
             engine.run()
         });
     }
@@ -83,8 +83,8 @@ mod alps_age_schemes {
                 .with_mutation(genetic_algorithms::operations::Mutation::Gaussian(
                     genetic_algorithms::operations::GaussianParams { sigma: Some(0.3) },
                 ));
-            let mut engine = AlpsEngine::new(config, |n| make_pop(n, 5), sphere)
-                .expect("valid bench config");
+            let mut engine =
+                AlpsEngine::new(config, |n| make_pop(n, 5), sphere).expect("valid bench config");
             engine.run()
         });
     }
@@ -101,8 +101,8 @@ mod alps_age_schemes {
                 .with_mutation(genetic_algorithms::operations::Mutation::Gaussian(
                     genetic_algorithms::operations::GaussianParams { sigma: Some(0.3) },
                 ));
-            let mut engine = AlpsEngine::new(config, |n| make_pop(n, 5), sphere)
-                .expect("valid bench config");
+            let mut engine =
+                AlpsEngine::new(config, |n| make_pop(n, 5), sphere).expect("valid bench config");
             engine.run()
         });
     }
@@ -119,8 +119,8 @@ mod alps_age_schemes {
                 .with_mutation(genetic_algorithms::operations::Mutation::Gaussian(
                     genetic_algorithms::operations::GaussianParams { sigma: Some(0.3) },
                 ));
-            let mut engine = AlpsEngine::new(config, |n| make_pop(n, 5), sphere)
-                .expect("valid bench config");
+            let mut engine =
+                AlpsEngine::new(config, |n| make_pop(n, 5), sphere).expect("valid bench config");
             engine.run()
         });
     }

@@ -142,7 +142,11 @@ fn levy_flight_mutation_via_factory_changes_value() {
     let mut changed = false;
     for _ in 0..200 {
         let before: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
-        mutation::factory(Mutation::LevyFlight(LevyFlightParams { alpha: Some(1.5) }), &mut c).unwrap();
+        mutation::factory(
+            Mutation::LevyFlight(LevyFlightParams { alpha: Some(1.5) }),
+            &mut c,
+        )
+        .unwrap();
         let after: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
         if before.iter().zip(after.iter()).any(|(b, a)| b != a) {
             changed = true;
@@ -159,7 +163,11 @@ fn levy_flight_mutation_via_factory_changes_value() {
 fn levy_flight_mutation_via_factory_stays_in_range() {
     let mut c = build_f64_chromosome(8);
     for _ in 0..200 {
-        mutation::factory(Mutation::LevyFlight(LevyFlightParams { alpha: Some(1.5) }), &mut c).unwrap();
+        mutation::factory(
+            Mutation::LevyFlight(LevyFlightParams { alpha: Some(1.5) }),
+            &mut c,
+        )
+        .unwrap();
         for gene in c.dna().iter() {
             let (lo, hi) = gene.ranges[0];
             assert!(
@@ -178,7 +186,11 @@ fn levy_flight_mutation_changes_at_most_one_gene() {
     let mut c = build_f64_chromosome(10);
     for _ in 0..50 {
         let before: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
-        mutation::factory(Mutation::LevyFlight(LevyFlightParams { alpha: Some(1.5) }), &mut c).unwrap();
+        mutation::factory(
+            Mutation::LevyFlight(LevyFlightParams { alpha: Some(1.5) }),
+            &mut c,
+        )
+        .unwrap();
         let after: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
         let changed_count = before
             .iter()
@@ -197,7 +209,11 @@ fn levy_flight_mutation_changes_at_most_one_gene() {
 fn levy_flight_mutation_works_on_i32() {
     let mut c = build_i32_chromosome(6);
     for _ in 0..200 {
-        mutation::factory(Mutation::LevyFlight(LevyFlightParams { alpha: Some(1.5) }), &mut c).unwrap();
+        mutation::factory(
+            Mutation::LevyFlight(LevyFlightParams { alpha: Some(1.5) }),
+            &mut c,
+        )
+        .unwrap();
         for gene in c.dna().iter() {
             let (lo, hi) = gene.ranges[0];
             assert!(gene.value >= lo && gene.value <= hi);
@@ -208,7 +224,10 @@ fn levy_flight_mutation_works_on_i32() {
 #[test]
 fn levy_flight_mutation_errors_on_binary_chromosome() {
     let mut c = BinaryChromosome::new();
-    let result = mutation::factory(Mutation::LevyFlight(LevyFlightParams { alpha: Some(1.5) }), &mut c);
+    let result = mutation::factory(
+        Mutation::LevyFlight(LevyFlightParams { alpha: Some(1.5) }),
+        &mut c,
+    );
     assert!(
         result.is_err(),
         "LevyFlight mutation must error on Binary chromosomes (got {:?})",

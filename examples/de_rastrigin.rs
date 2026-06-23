@@ -15,7 +15,7 @@ use std::borrow::Cow;
 use std::f64::consts::PI;
 
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
-use genetic_algorithms::de::{DeAdaptive, DeConfiguration, DeMutationStrategy, DeEngine};
+use genetic_algorithms::de::{DeAdaptive, DeConfiguration, DeEngine, DeMutationStrategy};
 use genetic_algorithms::genotypes::Range as RangeGene;
 use genetic_algorithms::rng;
 use genetic_algorithms::traits::{LinearChromosome, RealGene};
@@ -28,23 +28,30 @@ const SEARCH_HI: f64 = 5.12;
 fn rastrigin(dna: &[RangeGene<f64>]) -> f64 {
     let n = dna.len() as f64;
     10.0 * n
-        + dna.iter().map(|g| {
-            let x = g.real_value();
-            x * x - 10.0 * (2.0 * PI * x).cos()
-        }).sum::<f64>()
+        + dna
+            .iter()
+            .map(|g| {
+                let x = g.real_value();
+                x * x - 10.0 * (2.0 * PI * x).cos()
+            })
+            .sum::<f64>()
 }
 
 fn init_population(n: usize) -> Vec<RangeChromosome<f64>> {
     let mut r = rng::make_rng();
-    (0..n).map(|_| {
-        let dna: Vec<RangeGene<f64>> = (0..DIMENSIONS).map(|j| {
-            let v = r.random::<f64>() * (SEARCH_HI - SEARCH_LO) + SEARCH_LO;
-            RangeGene::new(j as i32, vec![(SEARCH_LO, SEARCH_HI)], v)
-        }).collect();
-        let mut c = <RangeChromosome<f64> as Default>::default();
-        c.set_dna(Cow::Owned(dna));
-        c
-    }).collect()
+    (0..n)
+        .map(|_| {
+            let dna: Vec<RangeGene<f64>> = (0..DIMENSIONS)
+                .map(|j| {
+                    let v = r.random::<f64>() * (SEARCH_HI - SEARCH_LO) + SEARCH_LO;
+                    RangeGene::new(j as i32, vec![(SEARCH_LO, SEARCH_HI)], v)
+                })
+                .collect();
+            let mut c = <RangeChromosome<f64> as Default>::default();
+            c.set_dna(Cow::Owned(dna));
+            c
+        })
+        .collect()
 }
 
 fn main() {
@@ -69,9 +76,15 @@ fn main() {
 
     println!("Generations: {}", result.generations);
     println!("Best fitness: {:.6}", result.best_fitness);
-    let dna_str: Vec<String> = result.best.dna().iter()
+    let dna_str: Vec<String> = result
+        .best
+        .dna()
+        .iter()
         .map(|g| format!("{:.4}", g.real_value()))
         .collect();
     println!("Best DNA:    [{}]", dna_str.join(", "));
-    assert!(result.best_fitness.is_finite(), "best_fitness must be finite");
+    assert!(
+        result.best_fitness.is_finite(),
+        "best_fitness must be finite"
+    );
 }

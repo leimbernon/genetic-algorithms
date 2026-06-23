@@ -97,6 +97,11 @@ where
 
     /// Recalculate `f_avg` and `f_max` (used by adaptive GA probabilities).
     pub fn recalculate_aga(&mut self) {
+        if self.chromosomes.is_empty() {
+            self.f_avg = 0.0;
+            self.f_max = 0.0;
+            return;
+        }
         self.f_max = f64::NEG_INFINITY;
         self.f_avg = 0.0;
         for chromosome in self.chromosomes.as_slice() {

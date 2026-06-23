@@ -3,7 +3,7 @@
 > Comprehensive guides for every algorithm, operator, and feature.
 > Use this index to navigate the per-engine guides, operator documentation, core concepts, and framework extensions.
 
-This directory contains 30+ guide files that document all 12 optimization engines, all 50+ operators (selection, crossover, mutation, survivor, extension), core abstractions (traits, chromosomes, genotypes, configuration, population), and framework extensions (constraints, hall of fame, AOS, benchmarks, memetic algorithms, niching, error handling, initializers, observer system).
+This directory contains 30+ guide files that document all 15 optimization engines, all 50+ operators (selection, crossover, mutation, survivor, extension), core abstractions (traits, chromosomes, genotypes, configuration, population), and framework extensions (constraints, hall of fame, AOS, benchmarks, memetic algorithms, niching, error handling, initializers, observer system).
 
 All guides are written following the Single Source of Truth (SSOT) principle, where `src/lib.rs` provides the crate-level overview, this `docs/` directory provides per-topic deep dives, and the README provides the complete feature catalog.
 

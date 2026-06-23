@@ -680,7 +680,10 @@ fn test_ox_crossover_non_unique_ids_returns_error() {
         fitness_values: vec![],
     };
     assert!(
-        matches!(order(&parent_dup, &parent_dup), Err(GaError::CrossoverError(_))),
+        matches!(
+            order(&parent_dup, &parent_dup),
+            Err(GaError::CrossoverError(_))
+        ),
         "order() with non-unique gene IDs should return CrossoverError"
     );
 }

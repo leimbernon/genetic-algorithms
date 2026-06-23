@@ -174,6 +174,8 @@ fn test_clearing_via_selection_enum() {
     let pop = pop_distinct(&[10.0, 9.0, 5.0, 4.0]);
     // SelectionOperator uses the default niche_radius (0.1); all fitnesses are
     // well-separated so all 4 are eligible. number_of_couples=4 is honored -> 4 pairs.
-    let pairs = Selection::Clearing.select(&pop, 4, 1, 2).expect("clearing selection should succeed");
+    let pairs = Selection::Clearing
+        .select(&pop, 4, 1, 2)
+        .expect("clearing selection should succeed");
     assert_eq!(pairs.len(), 4);
 }

@@ -32,10 +32,15 @@ fn main() {
     let targets: Vec<f64> = training.iter().map(|&x| target(x)).collect();
 
     let fitness_fn = move |tree: &Node<MathNode>| -> f64 {
-        let mse: f64 = training.iter().zip(targets.iter()).map(|(&x, &y)| {
-            let pred = tree.eval_with_vars(&[x]);
-            (pred - y).powi(2)
-        }).sum::<f64>() / training.len() as f64;
+        let mse: f64 = training
+            .iter()
+            .zip(targets.iter())
+            .map(|(&x, &y)| {
+                let pred = tree.eval_with_vars(&[x]);
+                (pred - y).powi(2)
+            })
+            .sum::<f64>()
+            / training.len() as f64;
         mse
     };
 
@@ -47,8 +52,7 @@ fn main() {
         .with_max_node_count(150)
         .with_fitness_target(Some(1e-4));
 
-    let mut engine: GpGa<MathNode> =
-        GpGa::with_ramped_half_and_half(config, fitness_fn);
+    let mut engine: GpGa<MathNode> = GpGa::with_ramped_half_and_half(config, fitness_fn);
 
     println!("== GP Symbolic Regression: f(x) = x² + x ==");
     println!("population=200, max_generations=80, target_mse=1e-4");
@@ -59,6 +63,9 @@ fn main() {
     println!("Generations: {}", result.generations);
     println!("Best MSE:    {:.8}", result.best_fitness);
     println!("Best expr:   {}", result.best);
-    assert!(result.best_fitness.is_finite(), "best_fitness must be finite");
+    assert!(
+        result.best_fitness.is_finite(),
+        "best_fitness must be finite"
+    );
     assert!(result.best_fitness >= 0.0, "MSE must be non-negative");
 }

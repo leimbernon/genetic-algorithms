@@ -90,7 +90,11 @@ fn gaussian_mutation_via_factory_changes_value() {
     let mut changed = false;
     for _ in 0..200 {
         let before = c.dna().to_vec();
-        mutation::factory(Mutation::Gaussian(GaussianParams { sigma: Some(10.0) }), &mut c).unwrap();
+        mutation::factory(
+            Mutation::Gaussian(GaussianParams { sigma: Some(10.0) }),
+            &mut c,
+        )
+        .unwrap();
         if before.iter().zip(c.dna()).any(|(b, a)| b.value != a.value) {
             changed = true;
             break;
@@ -106,7 +110,11 @@ fn gaussian_mutation_via_factory_changes_value() {
 fn gaussian_mutation_via_factory_stays_in_range() {
     let mut c = build_f64_chromosome(8);
     for _ in 0..200 {
-        mutation::factory(Mutation::Gaussian(GaussianParams { sigma: Some(20.0) }), &mut c).unwrap();
+        mutation::factory(
+            Mutation::Gaussian(GaussianParams { sigma: Some(20.0) }),
+            &mut c,
+        )
+        .unwrap();
         for gene in c.dna() {
             let (lo, hi) = gene.ranges[0];
             assert!(
@@ -126,7 +134,11 @@ fn gaussian_mutation_i32_via_factory() {
     let mut changed = false;
     for _ in 0..200 {
         let before = c.dna().to_vec();
-        mutation::factory(Mutation::Gaussian(GaussianParams { sigma: Some(5.0) }), &mut c).unwrap();
+        mutation::factory(
+            Mutation::Gaussian(GaussianParams { sigma: Some(5.0) }),
+            &mut c,
+        )
+        .unwrap();
         if before.iter().zip(c.dna()).any(|(b, a)| b.value != a.value) {
             changed = true;
             break;
@@ -193,7 +205,11 @@ fn gaussian_mutation_sigma_zero_no_change() {
     let mut c = build_f64_chromosome(5);
     let before = c.dna().to_vec();
     // sigma = 0 means noise = 0, so value should not change
-    mutation::factory(Mutation::Gaussian(GaussianParams { sigma: Some(0.0) }), &mut c).unwrap();
+    mutation::factory(
+        Mutation::Gaussian(GaussianParams { sigma: Some(0.0) }),
+        &mut c,
+    )
+    .unwrap();
     for (b, a) in before.iter().zip(c.dna()) {
         assert_eq!(b.value, a.value, "Sigma 0 should not change values");
     }
@@ -205,7 +221,11 @@ fn gaussian_mutation_sigma_zero_no_change() {
 fn gaussian_mutation_large_sigma_stays_in_range() {
     let mut c = build_f64_chromosome(3);
     for _ in 0..100 {
-        mutation::factory(Mutation::Gaussian(GaussianParams { sigma: Some(1e10) }), &mut c).unwrap();
+        mutation::factory(
+            Mutation::Gaussian(GaussianParams { sigma: Some(1e10) }),
+            &mut c,
+        )
+        .unwrap();
         for gene in c.dna() {
             let (lo, hi) = gene.ranges[0];
             assert!(
@@ -226,7 +246,11 @@ fn gaussian_mutation_single_gene() {
     let mut c = RangeChromosome::<f64>::new();
     let dna = vec![RangeGenotype::new(0, vec![(0.0, 100.0)], 50.0)];
     c.set_dna(Cow::Owned(dna));
-    mutation::factory(Mutation::Gaussian(GaussianParams { sigma: Some(5.0) }), &mut c).unwrap();
+    mutation::factory(
+        Mutation::Gaussian(GaussianParams { sigma: Some(5.0) }),
+        &mut c,
+    )
+    .unwrap();
     assert_eq!(c.dna().len(), 1);
     let (lo, hi) = c.dna()[0].ranges[0];
     assert!(c.dna()[0].value >= lo && c.dna()[0].value <= hi);
@@ -244,7 +268,11 @@ fn creep_mutation_empty_via_factory() {
 #[test]
 fn gaussian_mutation_empty_via_factory() {
     let mut c = RangeChromosome::<f64>::new();
-    mutation::factory(Mutation::Gaussian(GaussianParams { sigma: Some(5.0) }), &mut c).unwrap();
+    mutation::factory(
+        Mutation::Gaussian(GaussianParams { sigma: Some(5.0) }),
+        &mut c,
+    )
+    .unwrap();
     assert_eq!(c.dna().len(), 0);
 }
 
@@ -488,7 +516,11 @@ fn build_multi_range_chromosome() -> MultiRangeChromosome<f64> {
 fn multi_range_gaussian_values_stay_within_per_gene_bounds_1000_iterations() {
     let mut c = build_multi_range_chromosome();
     for iter in 0..1000 {
-        mutation::factory(Mutation::Gaussian(GaussianParams { sigma: Some(10.0) }), &mut c).unwrap();
+        mutation::factory(
+            Mutation::Gaussian(GaussianParams { sigma: Some(10.0) }),
+            &mut c,
+        )
+        .unwrap();
         for gene in c.dna() {
             assert!(
                 gene.value >= gene.lo && gene.value <= gene.hi,
@@ -524,7 +556,11 @@ fn multi_range_gaussian_per_gene_rate_controls_noise_scale() {
     rng::set_seed(Some(123));
     for _ in 0..2000 {
         let before: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
-        mutation::factory(Mutation::Gaussian(GaussianParams { sigma: Some(1.0) }), &mut c).unwrap();
+        mutation::factory(
+            Mutation::Gaussian(GaussianParams { sigma: Some(1.0) }),
+            &mut c,
+        )
+        .unwrap();
         let after: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
 
         let d0 = (after[0] - before[0]).abs();
@@ -578,7 +614,11 @@ fn multi_range_gaussian_mutation_direct_call_clamps_to_bounds() {
 #[test]
 fn multi_range_gaussian_mutation_empty_dna_does_nothing() {
     let mut c = MultiRangeChromosome::<f64>::default();
-    mutation::factory(Mutation::Gaussian(GaussianParams { sigma: Some(5.0) }), &mut c).unwrap();
+    mutation::factory(
+        Mutation::Gaussian(GaussianParams { sigma: Some(5.0) }),
+        &mut c,
+    )
+    .unwrap();
     assert_eq!(c.dna().len(), 0);
 }
 

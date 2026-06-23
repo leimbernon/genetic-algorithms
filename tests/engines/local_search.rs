@@ -1,7 +1,8 @@
+use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::{LocalSearchConfiguration, ProblemSolving};
+use genetic_algorithms::error::GaError;
 use genetic_algorithms::ga::Ga;
 use genetic_algorithms::genotypes::Range as RangeGene;
-use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::operations::{
     factory, factory_with_config, Crossover, GaussianParams, HillClimbingConfig, LocalSearch,
     LocalSearchApplicationStrategy, LocalSearchMode, Mutation, Selection, Survivor,
@@ -10,7 +11,6 @@ use genetic_algorithms::traits::{
     ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, LocalSearchConfig,
     LocalSearchOperator, MutationConfig, SelectionConfig, StoppingConfig,
 };
-use genetic_algorithms::error::GaError;
 use std::borrow::Cow;
 
 /// Sphere function: sum of squares — minimum at 0.0.

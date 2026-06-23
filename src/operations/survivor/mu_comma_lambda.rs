@@ -41,13 +41,12 @@ pub fn mu_comma_lambda<U: ChromosomeT>(
 ) {
     crate::log_debug!(target="survivor_events", method="mu_comma_lambda"; "Starting (mu,lambda) survivor selection");
 
-    // Offspring are stamped with `set_age(age)` where `age` is the generation
-    // counter (starts at 1). The freshest individuals — the offspring — carry
-    // the highest age value in the merged parent+offspring population. Retain
-    // only those, discarding all parents born in earlier generations.
-    let offspring_age = chromosomes.iter().map(|c| c.age()).max().unwrap_or(0);
-    chromosomes.retain(|c| c.age() == offspring_age);
-    crate::log_trace!(target="survivor_events", method="mu_comma_lambda"; "Offspring count after parent removal (offspring_age={}): {}", offspring_age, chromosomes.len());
+    // Offspring are stamped with `set_age(0)` when created. In the merged
+    // parent+offspring population, offspring carry age 0 while parents have
+    // age > 0. Retain only age-0 individuals (the offspring), discarding
+    // all parents.
+    chromosomes.retain(|c| c.age() == 0);
+    crate::log_trace!(target="survivor_events", method="mu_comma_lambda"; "Offspring count after parent removal: {}", chromosomes.len());
 
     if chromosomes.len() <= population_size {
         crate::log_debug!(target="survivor_events", method="mu_comma_lambda"; "(mu,lambda) survivor selection finished (all offspring kept)");

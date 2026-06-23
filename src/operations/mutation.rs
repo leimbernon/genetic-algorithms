@@ -22,11 +22,11 @@
 pub use self::inversion::inversion;
 pub use self::scramble::scramble;
 pub use self::swap::swap;
+use super::Mutation;
 use super::{
     CauchyParams, CreepParams, GaussianParams, LevyFlightParams, PolynomialParams,
     SelfAdaptiveGaussianParams,
 };
-use super::Mutation;
 use crate::chromosomes::ChromosomeLength;
 use crate::error::GaError;
 use crate::traits::{ChromosomeT, LinearChromosome, MutationOperator, RealValuedMutation};

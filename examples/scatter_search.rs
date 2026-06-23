@@ -32,15 +32,19 @@ fn sphere(dna: &[RangeGene<f64>]) -> f64 {
 
 fn init_population(n: usize) -> Vec<RangeChromosome<f64>> {
     let mut r = rng::make_rng();
-    (0..n).map(|_| {
-        let dna: Vec<RangeGene<f64>> = (0..DIMENSIONS).map(|j| {
-            let v = r.random::<f64>() * (SEARCH_HI - SEARCH_LO) + SEARCH_LO;
-            RangeGene::new(j as i32, vec![(SEARCH_LO, SEARCH_HI)], v)
-        }).collect();
-        let mut c = <RangeChromosome<f64> as Default>::default();
-        c.set_dna(Cow::Owned(dna));
-        c
-    }).collect()
+    (0..n)
+        .map(|_| {
+            let dna: Vec<RangeGene<f64>> = (0..DIMENSIONS)
+                .map(|j| {
+                    let v = r.random::<f64>() * (SEARCH_HI - SEARCH_LO) + SEARCH_LO;
+                    RangeGene::new(j as i32, vec![(SEARCH_LO, SEARCH_HI)], v)
+                })
+                .collect();
+            let mut c = <RangeChromosome<f64> as Default>::default();
+            c.set_dna(Cow::Owned(dna));
+            c
+        })
+        .collect()
 }
 
 fn main() {
@@ -68,9 +72,15 @@ fn main() {
     println!("Iterations: {}", result.iterations);
     println!("Reference set size: {}", result.reference_set.len());
     println!("Best fitness: {:.8}", result.best_fitness);
-    let dna_str: Vec<String> = result.best.dna().iter()
+    let dna_str: Vec<String> = result
+        .best
+        .dna()
+        .iter()
         .map(|g| format!("{:.5}", g.real_value()))
         .collect();
     println!("Best DNA:    [{}]", dna_str.join(", "));
-    assert!(result.best_fitness.is_finite(), "best_fitness must be finite");
+    assert!(
+        result.best_fitness.is_finite(),
+        "best_fitness must be finite"
+    );
 }

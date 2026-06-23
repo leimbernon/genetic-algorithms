@@ -44,12 +44,16 @@ impl SelectionOperator for Selection {
     {
         match self {
             Selection::Random => Ok(random(chromosomes, num_parents)),
-            Selection::RouletteWheel => {
-                Ok(roulette_wheel_selection(chromosomes, number_of_couples, num_parents))
-            }
-            Selection::StochasticUniversalSampling => {
-                Ok(stochastic_universal_sampling(chromosomes, number_of_couples, num_parents))
-            }
+            Selection::RouletteWheel => Ok(roulette_wheel_selection(
+                chromosomes,
+                number_of_couples,
+                num_parents,
+            )),
+            Selection::StochasticUniversalSampling => Ok(stochastic_universal_sampling(
+                chromosomes,
+                number_of_couples,
+                num_parents,
+            )),
             Selection::Tournament => Ok(tournament(
                 chromosomes,
                 number_of_couples,
@@ -57,12 +61,17 @@ impl SelectionOperator for Selection {
                 num_parents,
             )),
             Selection::Rank => Ok(rank_selection(chromosomes, number_of_couples, num_parents)),
-            Selection::Boltzmann => {
-                Ok(boltzmann_selection(chromosomes, number_of_couples, 1.0, num_parents))
-            }
-            Selection::Truncation => {
-                Ok(truncation_selection(chromosomes, number_of_couples, num_parents))
-            }
+            Selection::Boltzmann => Ok(boltzmann_selection(
+                chromosomes,
+                number_of_couples,
+                1.0,
+                num_parents,
+            )),
+            Selection::Truncation => Ok(truncation_selection(
+                chromosomes,
+                number_of_couples,
+                num_parents,
+            )),
             // WARNING: The `SelectionOperator` trait does not carry operator-specific
             // configuration, so `niche_radius` defaults to 0.1 on this path.
             // Island-model and NSGA-II callers that use `Selection::Clearing` with
@@ -73,16 +82,19 @@ impl SelectionOperator for Selection {
                     "Selection::Clearing called through SelectionOperator trait: \
                      niche_radius defaults to 0.1 (configured value ignored). \
                      Use selection::factory for the full configuration.");
-                Ok(clearing_selection(chromosomes, 0.1, number_of_couples, num_parents))
-            }
-            Selection::Lexicase | Selection::EpsilonLexicase => {
-                Err(GaError::SelectionError(
-                    "Selection::Lexicase/EpsilonLexicase cannot be called through the \
-                     SelectionOperator trait: use selection::factory_lexicase. \
-                     Island-model and NSGA-II paths do not support VectorFitness."
-                        .to_string(),
+                Ok(clearing_selection(
+                    chromosomes,
+                    0.1,
+                    number_of_couples,
+                    num_parents,
                 ))
             }
+            Selection::Lexicase | Selection::EpsilonLexicase => Err(GaError::SelectionError(
+                "Selection::Lexicase/EpsilonLexicase cannot be called through the \
+                     SelectionOperator trait: use selection::factory_lexicase. \
+                     Island-model and NSGA-II paths do not support VectorFitness."
+                    .to_string(),
+            )),
         }
     }
 }

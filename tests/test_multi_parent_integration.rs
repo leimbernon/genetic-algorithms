@@ -12,7 +12,9 @@ use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::Ga;
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::initializers::range_random_initialization;
-use genetic_algorithms::operations::{Crossover, GaussianParams, Mutation, SelfAdaptiveGaussianParams, Selection, Survivor};
+use genetic_algorithms::operations::{
+    Crossover, GaussianParams, Mutation, Selection, SelfAdaptiveGaussianParams, Survivor,
+};
 use genetic_algorithms::traits::{
     ChromosomeT, ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
 };

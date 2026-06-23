@@ -106,4 +106,3 @@ where
         idx, range_idx, alpha, alpha_clamped
     );
 }
-

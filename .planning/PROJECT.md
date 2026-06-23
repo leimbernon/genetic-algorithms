@@ -8,23 +8,9 @@ A modular, concurrent Genetic Algorithms library for Rust. Provides composable o
 
 Users can solve complex optimization problems with composable, performant genetic algorithms — without fighting the library.
 
-## Current Milestone: v3.0.0 — Advanced Representations, Alternative Strategies & Architecture Simplification
+## Current Milestone: v3.0.0 — Shipped 2026-06-23
 
-**Goal:** Use the major semver break to simplify library architecture and usability, introduce new genotypes and alternative strategies, and add advanced chromosome representations.
-
-**Target features:**
-- Architecture audit and API simplification — reduce boilerplate, clean up types that grew organically across v2.x
-- Unified `Strategy` trait abstracting over GA, HillClimb, and Permutate (#177)
-- HillClimb strategy: Stochastic and SteepestAscent variants (#172)
-- Permutate strategy: exhaustive enumeration for small search spaces (#173)
-- `Unique<T>` genotype for permutation problems (TSP, scheduling) (#174)
-- `MultiRange<T>` genotype: per-gene independent ranges and mutation (#175)
-- `MultiUnique<T>` genotype: multiple independent permutation groups (#176)
-- Lexicase Selection: multi-case fitness evaluation (#220)
-- Multi-parent crossover operators: UNDX, SPX, PCX (#221)
-- Self-adaptive mutation: strategy parameters co-evolving within the chromosome (#222)
-- Tree Chromosome for Genetic Programming (#223)
-- Variable-length chromosomes (#224)
+**Delivered:** Architecture audit (ChromosomeT split, LinearChromosome supertrait, Reporter removal), 3 new genotype types (Unique, MultiRange, MultiUnique), Strategy trait + HillClimbEngine + PermutateEngine, Lexicase selection, Multi-parent crossover (UNDX/SPX/PCX), Self-adaptive mutation, Variable-length chromosomes, Tree chromosome + GP engine, 3 new engines (CMA-ES, PSO, EDA), Restart strategies (IPOP/BIPOP), Batch fitness, Surrogate-assisted evaluation, Fitness cache, Build performance optimization (criterion→divan, parallel feature, ga.rs split), Prelude module, Per-engine convergence tests, 42K+ LOC Rust.
 
 ## Last Milestone: v2.4.0 — Observer Integration, New Operators, Advanced Multi-Objective & Framework Extensions (Shipped 2026-05-18)
 
@@ -97,24 +83,32 @@ Eliminated unnecessary heap allocations, reduced algorithmic complexity, and imp
 - ✓ `MultiCaseFitness: ChromosomeT` opt-in trait: `case_fitness() -> &[f64]`, `set_case_fitness(Vec<f64>)` — v3.0.0 Phase 50
 - ✓ `LexicaseSelection`: shuffles test cases per event, filters case-by-case to elites, syncs scalar fitness to mean — v3.0.0 Phase 50
 - ✓ `EpsilonLexicaseSelection`: fixed or dynamic MAD epsilon per case; `SelectionConfiguration::epsilon` with `0.0` = dynamic MAD sentinel — v3.0.0 Phase 50
+- ✓ Architecture audit: ChromosomeT split into minimal core + LinearChromosome supertrait — v3.0.0 Phase 47
+- ✓ API simplification: StoppingCriteria flattening, ChromosomeLength enum, builder cleanup — v3.0.0 Phase 47
+- ✓ Remove deprecated `Reporter<U>` trait — v3.0.0 Phase 47
+- ✓ Unified `Strategy` trait abstracting GA, HillClimb, and Permutate — v3.0.0 Phase 49
+- ✓ HillClimb strategy: Stochastic and SteepestAscent variants — v3.0.0 Phase 49
+- ✓ Permutate strategy: exhaustive enumeration with safety gate — v3.0.0 Phase 49
+- ✓ `UniqueChromosome<T>` for permutation problems — v3.0.0 Phase 48
+- ✓ `MultiRangeChromosome<T>`: per-gene independent ranges — v3.0.0 Phase 48
+- ✓ `MultiUniqueChromosome<T>`: multiple independent permutation groups — v3.0.0 Phase 48
+- ✓ Multi-parent crossover: UNDX, SPX, PCX with RealValued marker trait — v3.0.0 Phase 51
+- ✓ Self-adaptive mutation: SelfAdaptiveGaussian with log-normal sigma update — v3.0.0 Phase 51
+- ✓ Tree Chromosome for Genetic Programming (GpGa engine) — v3.0.0 Phase 53
+- ✓ Variable-length chromosomes: Insertion/Deletion mutation, VariableLength crossover — v3.0.0 Phase 52
+- ✓ CMA-ES engine with IPOP/BIPOP restart strategies — v3.0.0 Phase 56/59
+- ✓ PSO engine with configurable topology — v3.0.0 Phase 57
+- ✓ EDA/UMDA engine (Bernoulli + Gaussian) — v3.0.0 Phase 58
+- ✓ Batch fitness evaluation + fitness cache — v3.0.0 Phase 60
+- ✓ Surrogate-assisted evaluation — v3.0.0 Phase 62
+- ✓ Prelude module for ergonomic imports — v3.0.0 Phase 81
+- ✓ Per-engine convergence integration tests — v3.0.0 Phase 82
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] Architecture audit: full review of public API, traits, builders, enums, and module structure — v3.0.0
-- [ ] API simplification: reduce boilerplate for common-case usage, clean up types that grew organically across v2.x — v3.0.0
-- [ ] Remove deprecated `Reporter<U>` trait (soft-deprecated since v2.2.0) — v3.0.0
-- [ ] Unified `Strategy` trait abstracting GA, HillClimb, and Permutate under one interface (#177) — v3.0.0
-- [ ] HillClimb strategy: Stochastic and SteepestAscent variants (#172) — v3.0.0
-- [ ] Permutate strategy: exhaustive enumeration for small search spaces (#173) — v3.0.0
-- [ ] `Unique<T>` genotype for permutation problems (TSP, scheduling) (#174) — v3.0.0
-- [ ] `MultiRange<T>` genotype: per-gene independent ranges and mutation behavior (#175) — v3.0.0
-- [ ] `MultiUnique<T>` genotype: multiple independent permutation groups (#176) — v3.0.0
-- [ ] Multi-parent crossover operators: UNDX, SPX, PCX (#221) — v3.0.0
-- [ ] Self-adaptive mutation: strategy parameters co-evolving within the chromosome (#222) — v3.0.0
-- [ ] Tree Chromosome for Genetic Programming: breaks `dna() -> &[Gene]` linear assumption (#223) — v3.0.0
-- [ ] Variable-length chromosomes: most architecturally disruptive change (#224) — v3.0.0
+(none — v3.0.0 shipped; next milestone not yet planned)
 
 ### Future
 
@@ -133,10 +127,12 @@ Eliminated unnecessary heap allocations, reduced algorithmic complexity, and imp
 
 ## Context
 
-- Library is published on crates.io; v3.0.0 is a major bump — breaking changes are intentional and expected
-- v2.4.0 shipped: ~20,000+ LOC Rust, 10 runnable examples, full observer system, 5 multi-objective engines, 4 alt-metaheuristic engines, framework extensions, benchmark suites, WASM support
-- `Reporter<U>` (v2.1.0) is soft-deprecated since v2.2.0 — will be removed in v3.0.0
-- `GaObserver<U>` is the canonical lifecycle hook system; all new engines use it
+- Library is published on crates.io; v3.0.0 is a major bump with breaking changes
+- v3.0.0 shipped: ~42,000 LOC Rust, 29 runnable examples, 15 engines (GA, NSGA-II/III, MOEA/D, SPEA2, SMS-EMOA, IBEA, Island, DE, Scatter, Cellular, ALPS, CMA-ES, PSO, EDA, GP), full observer system, framework extensions, WASM support
+- `Reporter<U>` removed in v3.0.0; `GaObserver<U>` is the canonical lifecycle hook system
+- `ChromosomeT` split into minimal core + `LinearChromosome` supertrait; `TreeChromosome` for GP
+- `RealGene` trait (renamed from `DeGene`) shared across DE, Scatter, CMA-ES, PSO engines
+- Feature flags: `serde`, `observer-tracing`, `observer-metrics`, `visualization`, `benchmarks`, `logging`, `parallel`
 - Feature flags: `serde`, `observer-tracing`, `observer-metrics`, `visualization`, `benchmarks`
 - GitHub milestones #4 (Alternative strategies) and #11 (Advanced Representations) define v3.0.0 scope
 - Architecture simplification is a first-class goal — v3.0.0 is the only opportunity for breaking ergonomic fixes
@@ -181,12 +177,9 @@ Eliminated unnecessary heap allocations, reduced algorithmic complexity, and imp
 ## Context
 
 - Library is published on crates.io; backward compatibility matters
-- v2.3.0 shipped: src/ restructured into engines/, types/, observe/ (non-breaking); 4 new alternative engines; ~17,000 LOC Rust (estimated), 10 runnable examples
-- `Reporter<U>` (v2.1.0) coexists with `GaObserver<U>` (v2.2.0) — soft-deprecated but not removed
-- All observer traits use default no-op methods for forward compatibility
-- Feature flags keep optional dependencies (`tracing`, `metrics`) out of default builds
-- New engines (DE, Scatter, Cellular, ALPS) do NOT yet have `GaObserver` hooks — next milestone priority
-- GitHub milestones: #1–#9 shipped; next milestone candidates: Observer for new engines, New Operators (#196–#202), Advanced Multi-Objective (#203–#207)
+- v3.0.0 shipped: 42K+ LOC Rust, 15 engines, 29 examples, WASM support, full observer system
+- All v3.0.0 requirements satisfied; milestone archived to `.planning/milestones/v3.0.0-*`
+- Feature flags: `serde`, `observer-tracing`, `observer-metrics`, `visualization`, `benchmarks`, `logging`, `parallel`
 
 ## Evolution
 
@@ -206,4 +199,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-15 after Phase 68 — Build/perf M2 dependency hygiene complete: env_logger removed from [dependencies], LogLevel/with_logs() removed, logging feature gate added (default-on), crate::log_*! macro family introduced, CI feature matrix extended, logger-history.md intel file created. 8/8 must-haves verified, SC-6 gap closed.*
+*Last updated: 2026-06-24 after v3.0.0 milestone — Advanced Representations, Alternative Strategies & Architecture Simplification. 51 phases, 121 plans, 42K+ LOC Rust, 15 engines, 29 examples.*

@@ -102,7 +102,9 @@ fn multi_range_chromosome_operator_compat_no_restriction_mutations() {
 fn multi_range_chromosome_single_point_crossover_accepted_at_build() {
     use genetic_algorithms::configuration::ProblemSolving;
     use genetic_algorithms::ga::Ga;
-    use genetic_algorithms::operations::{Crossover, GaussianParams, Mutation, Selection, Survivor};
+    use genetic_algorithms::operations::{
+        Crossover, GaussianParams, Mutation, Selection, Survivor,
+    };
     use genetic_algorithms::traits::{
         ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
     };
@@ -153,7 +155,11 @@ fn multi_range_gaussian_mutation_stays_within_per_gene_bounds() {
     let mut c = build_multi_range_chromosome();
     // Run 1000 iterations and verify every value stays within its gene's (lo, hi)
     for _ in 0..1000 {
-        mutation::factory(Mutation::Gaussian(GaussianParams { sigma: Some(10.0) }), &mut c).unwrap();
+        mutation::factory(
+            Mutation::Gaussian(GaussianParams { sigma: Some(10.0) }),
+            &mut c,
+        )
+        .unwrap();
         for gene in c.dna() {
             assert!(
                 gene.value >= gene.lo && gene.value <= gene.hi,
@@ -190,7 +196,11 @@ fn multi_range_gaussian_mutation_per_gene_rate_controls_noise_scale() {
     rng::set_seed(Some(42));
     for _ in 0..2000 {
         let before: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
-        mutation::factory(Mutation::Gaussian(GaussianParams { sigma: Some(1.0) }), &mut c).unwrap();
+        mutation::factory(
+            Mutation::Gaussian(GaussianParams { sigma: Some(1.0) }),
+            &mut c,
+        )
+        .unwrap();
         let after: Vec<f64> = c.dna().iter().map(|g| g.value).collect();
 
         let delta_0 = (after[0] - before[0]).abs();
