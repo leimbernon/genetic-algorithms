@@ -203,6 +203,19 @@ fn test_de_early_stopping() {
     assert!(result.generations < 10_000);
 }
 
+/// Convergence regression test: DE/rand/1/binomial must reach sphere minimum < 1.0
+/// on 5 dimensions within 300 generations. Prevents silent regressions in search dynamics.
+#[test]
+fn test_de_convergence() {
+    let mut engine = sphere_engine(DeMutationStrategy::Rand1, DeCrossoverMode::Binomial);
+    let result = engine.run();
+    assert!(
+        result.best_fitness < 1.0,
+        "DE should converge to sphere minimum < 1.0; got {}",
+        result.best_fitness
+    );
+}
+
 // ─── DE cache tests ─────────────────────────────────────────────────────────
 
 /// DE with cache enabled completes and produces valid results.
@@ -217,7 +230,10 @@ fn test_de_cache_enabled() {
         .with_fitness_cache_size(128);
     let mut engine = DeEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 42), sphere);
     let result = engine.run();
-    assert!(result.best_fitness.is_finite(), "best_fitness must be finite with cache");
+    assert!(
+        result.best_fitness.is_finite(),
+        "best_fitness must be finite with cache"
+    );
     assert!(result.generations > 0);
 }
 

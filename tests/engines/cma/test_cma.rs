@@ -10,8 +10,8 @@ use std::sync::{Arc, Mutex};
 
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::cma::{CmaConfiguration, CmaEngine, RestartStrategy};
-use genetic_algorithms::error::GaError;
 use genetic_algorithms::configuration::ProblemSolving;
+use genetic_algorithms::error::GaError;
 use genetic_algorithms::ga::TerminationCause;
 use genetic_algorithms::genotypes::Range as RangeGene;
 use genetic_algorithms::observer::GaObserver;
@@ -660,11 +660,64 @@ fn test_cma_global_best_across_restarts() {
 #[test]
 fn test_run_empty_init_returns_error() {
     let config = CmaConfiguration::default_for_dim(3).with_max_generations(5);
-    let mut engine =
-        CmaEngine::new(config, |_n| Vec::<RangeChromosome<f64>>::new(), sphere);
+    let mut engine = CmaEngine::new(config, |_n| Vec::<RangeChromosome<f64>>::new(), sphere);
     assert!(
         matches!(engine.run(), Err(GaError::InitializationError(_))),
         "CmaEngine with empty init_fn should return InitializationError"
+    );
+}
+
+/// Convergence regression test: CMA-ES must reach sphere minimum < 1.0
+/// on 5 dimensions (no restart). Prevents silent regressions in search dynamics.
+#[test]
+fn test_cma_convergence() {
+    let config = CmaConfiguration::default_for_dim(5)
+        .with_max_generations(300)
+        .with_problem_solving(ProblemSolving::Minimization)
+        .with_sigma0(0.3)
+        .with_fitness_target(1.0);
+
+    let mut engine = CmaEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 42), sphere);
+
+    let result = engine.run().expect("engine run should succeed");
+
+    assert!(
+        result.best_fitness < 1.0,
+        "CMA-ES should converge to sphere minimum < 1.0; got {}",
+        result.best_fitness
+    );
+}
+
+/// Convergence regression test: CMA-ES with IPOP restart must reach sphere minimum < 1.0
+/// on 5 dimensions and trigger at least one restart. Prevents silent regressions in
+/// restart-augmented search dynamics.
+#[test]
+fn test_cma_ipop_convergence() {
+    let config = CmaConfiguration::default_for_dim(5)
+        .with_max_generations(500)
+        .with_problem_solving(ProblemSolving::Minimization)
+        .with_sigma0(0.3)
+        .with_restart_strategy(RestartStrategy::Ipop {
+            population_scale: 2.0,
+            stagnation_threshold: 100,
+            max_restarts: 3,
+        });
+
+    let spy = Arc::new(SpyObserver::default());
+
+    let mut engine = CmaEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 42), sphere)
+        .with_observer(spy.clone());
+
+    let result = engine.run().expect("engine run should succeed");
+
+    assert!(
+        result.best_fitness < 1.0,
+        "CMA with IPOP should converge to sphere minimum < 1.0; got {}",
+        result.best_fitness
+    );
+    assert!(
+        spy.restart_count.load(Ordering::SeqCst) >= 1,
+        "IPOP should trigger at least one restart"
     );
 }
 

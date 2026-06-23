@@ -238,11 +238,7 @@ fn test_new_rejects_zero_rows() {
     let config = CellularConfiguration::default()
         .with_grid(0, 5)
         .with_max_generations(10);
-    let result = CellularEngine::new(
-        config,
-        |n| random_pop(n, 3, -5.0, 5.0, 42),
-        sphere,
-    );
+    let result = CellularEngine::new(config, |n| random_pop(n, 3, -5.0, 5.0, 42), sphere);
     assert!(
         matches!(result, Err(GaError::ConfigurationError(_))),
         "CellularEngine::new() with rows=0 should return ConfigurationError"
@@ -256,13 +252,35 @@ fn test_new_rejects_zero_cols() {
     let config = CellularConfiguration::default()
         .with_grid(5, 0)
         .with_max_generations(10);
-    let result = CellularEngine::new(
-        config,
-        |n| random_pop(n, 3, -5.0, 5.0, 42),
-        sphere,
-    );
+    let result = CellularEngine::new(config, |n| random_pop(n, 3, -5.0, 5.0, 42), sphere);
     assert!(
         matches!(result, Err(GaError::ConfigurationError(_))),
         "CellularEngine::new() with cols=0 should return ConfigurationError"
+    );
+}
+
+/// Convergence regression test: Cellular GA must reach sphere minimum < 1.0
+/// on 5 dimensions within 300 generations. Prevents silent regressions in search dynamics.
+#[test]
+fn test_cellular_convergence() {
+    let config = CellularConfiguration::default()
+        .with_grid(6, 6)
+        .with_neighborhood(Neighborhood::Moore)
+        .with_update_mode(UpdateMode::Asynchronous)
+        .with_max_generations(300)
+        .with_selection(Selection::Tournament)
+        .with_crossover(Crossover::Uniform)
+        .with_mutation(Mutation::Gaussian(GaussianParams { sigma: Some(0.5) }))
+        .with_problem_solving(ProblemSolving::Minimization)
+        .with_fitness_target(1.0);
+
+    let mut engine = CellularEngine::new(config, |n| random_pop(n, 5, -5.0, 5.0, 42), sphere)
+        .expect("valid test config");
+    let result = engine.run();
+
+    assert!(
+        result.best_fitness < 1.0,
+        "Cellular should converge to sphere minimum < 1.0; got {}",
+        result.best_fitness
     );
 }
