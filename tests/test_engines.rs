@@ -25,6 +25,9 @@ mod engines {
         mod test_island_nsga2;
         mod test_island_topology;
     }
+    mod lexicase {
+        mod test_ga_run_lexicase;
+    }
     mod nsga2 {
         mod test_crowding_distance;
         mod test_non_dominated_sort;
