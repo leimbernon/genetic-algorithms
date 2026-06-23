@@ -2,7 +2,6 @@
 
 use crate::error::GaError;
 use crate::traits::LinearChromosome;
-use log::{debug, trace};
 use rand::Rng;
 use std::borrow::Cow;
 
@@ -10,6 +9,16 @@ use std::borrow::Cow;
 ///
 /// For every gene position a coin is flipped — the child gets the gene from
 /// parent 1 or parent 2 with equal probability.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::crossover::uniform;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let parent1 = Binary::new();
+/// let parent2 = Binary::new();
+/// let _ = uniform(&parent1, &parent2);
+/// ```
 ///
 /// # Errors
 ///
@@ -28,14 +37,14 @@ pub fn uniform<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>
     let len = parent_1.dna().len();
     let mut dna_child_1 = Vec::with_capacity(len);
     let mut dna_child_2 = Vec::with_capacity(len);
-    debug!(target="crossover_events", method="uniform"; "Starting the  uniform crossover");
+    crate::log_debug!(target="crossover_events", method="uniform"; "Starting the  uniform crossover");
 
     let mut child_1 = U::new();
     let mut child_2 = U::new();
 
     for i in 0..len {
         let crossover = rng.random_range(0..2);
-        trace!(target="crossover_events", method="uniform"; "Random crossover number {}", crossover);
+        crate::log_trace!(target="crossover_events", method="uniform"; "Random crossover number {}", crossover);
 
         if crossover == 0 {
             dna_child_1.push(parent_1.dna().get(i).cloned().unwrap());
@@ -49,7 +58,7 @@ pub fn uniform<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>
     //Move the DNA into children to avoid extra clones
     child_1.set_dna(Cow::Owned(dna_child_1));
     child_2.set_dna(Cow::Owned(dna_child_2));
-    debug!(target="crossover_events", method="uniform"; "Uniform crossover finished");
+    crate::log_debug!(target="crossover_events", method="uniform"; "Uniform crossover finished");
 
     Ok(vec![child_1, child_2])
 }

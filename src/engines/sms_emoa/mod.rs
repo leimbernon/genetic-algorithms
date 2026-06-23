@@ -60,7 +60,8 @@
 //!
 //! ## Complete Example
 //!
-//! ```ignore
+//! ```rust,no_run
+//! // no_run: SMS-EMOA engine example — illustrative API usage, not a runnable benchmark
 //! use genetic_algorithms::sms_emoa::SmsEmoaGa;
 //! use genetic_algorithms::sms_emoa::configuration::SmsEmoaConfiguration;
 //! use genetic_algorithms::configuration::GaConfiguration;
@@ -71,16 +72,16 @@
 //!     .with_max_generations(250);
 //!
 //! let ga_config = GaConfiguration::default();
-//! let mut sms_emoa = SmsEmoaGa::<MyChromosome>::new(sms_config, ga_config)
-//!     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
-//!     .with_objective_fns(vec![
-//!         Box::new(|dna| { /* ZDT1 f1 */ 0.0 }),
-//!         Box::new(|dna| { /* ZDT1 f2 */ 0.0 }),
-//!     ])
-//!     .build()?;
-//!
-//! let pareto_front = sms_emoa.run()?;
-//! println!("Front size: {}", pareto_front.len());
+//! // let mut sms_emoa = SmsEmoaGa::<MyChromosome>::new(sms_config, ga_config)
+//! //     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
+//! //     .with_objective_fns(vec![
+//! //         Box::new(|dna| { /* ZDT1 f1 */ 0.0 }),
+//! //         Box::new(|dna| { /* ZDT1 f2 */ 0.0 }),
+//! //     ])
+//! //     .build()?;
+//! //
+//! // let pareto_front = sms_emoa.run()?;
+//! // println!("Front size: {}", pareto_front.len());
 //! ```
 //!
 //! ## Configuration Tips
@@ -121,7 +122,7 @@ use crate::operations::{crossover, mutation};
 use crate::sms_emoa::configuration::SmsEmoaConfiguration;
 use crate::traits::{InitializationFn, LinearChromosome, MutationOperator, VectorFitness};
 use rand::Rng;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
 use rayon::prelude::*;
 use std::sync::Arc;
 use std::time::Instant;
@@ -131,6 +132,19 @@ use std::time::Instant;
 /// # Type Parameters
 ///
 /// * `U` - Chromosome type implementing `ChromosomeT`.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::sms_emoa::SmsEmoaGa;
+/// use genetic_algorithms::sms_emoa::configuration::SmsEmoaConfiguration;
+/// use genetic_algorithms::configuration::GaConfiguration;
+/// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+///
+/// let sms_config = SmsEmoaConfiguration::default();
+/// let ga_config = GaConfiguration::default();
+/// let engine = SmsEmoaGa::<RangeChromosome<f64>>::new(sms_config, ga_config);
+/// ```
 pub struct SmsEmoaGa<U>
 where
     U: LinearChromosome,
@@ -147,7 +161,6 @@ where
     pub observer: Option<Arc<dyn SmsEmoaObserver<U> + Send + Sync>>,
 }
 
-#[allow(dead_code)]
 impl<U> SmsEmoaGa<U>
 where
     U: LinearChromosome,
@@ -261,12 +274,14 @@ where
 
         Ok(contributions)
     }
-
 }
 
 impl<U> SmsEmoaGa<U>
 where
-    U: LinearChromosome + mutation::ValueMutable + VectorFitness,
+    U: LinearChromosome
+        + mutation::ValueMutable
+        + VectorFitness
+        + crate::traits::RealValuedMutation,
 {
     /// Initializes the population with random chromosomes and evaluates objectives in parallel.
     fn initialize_population(&self) -> Result<Vec<ParetoIndividual<U>>, GaError> {
@@ -299,7 +314,7 @@ where
             0,
         );
 
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_par_iter()
             .map(|mut chrom| {
@@ -308,7 +323,7 @@ where
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_iter()
             .map(|mut chrom| {
@@ -320,7 +335,6 @@ where
 
         Ok(population)
     }
-
 
     /// Creates one offspring via binary tournament selection, crossover, and mutation.
     fn create_one_offspring(&self, population: &[ParetoIndividual<U>]) -> Result<U, GaError> {
@@ -346,7 +360,9 @@ where
         for child in children.iter_mut() {
             let mp: f64 = rng.random();
             if mp <= mut_prob {
-                mutation_config.method.mutate(child, &mutation_config.method)?;
+                mutation_config
+                    .method
+                    .mutate(child, &mutation_config.method)?;
             }
         }
 

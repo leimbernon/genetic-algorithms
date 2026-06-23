@@ -21,7 +21,7 @@ fn test_lexicase_produces_more_specialists_than_tournament() {
         traits::VectorFitness,
     };
 
-    const K: usize = 5;            // number of cases
+    const K: usize = 5; // number of cases
     const N_SPECIALISTS: usize = 50; // 5 groups × 10 specialists
     const N_GENERALISTS: usize = 10;
     const COUPLES: usize = 50;
@@ -69,8 +69,7 @@ fn test_lexicase_produces_more_specialists_than_tournament() {
         number_of_couples: COUPLES,
         ..Default::default()
     };
-    let lex_pairs = factory_lexicase(&mut pop, lex_config, 1)
-        .expect("lexicase selection failed");
+    let lex_pairs = factory_lexicase(&mut pop, lex_config, 1).expect("lexicase selection failed");
 
     // --- Tournament selection ---
     let tour_config = SelectionConfiguration {
@@ -78,13 +77,16 @@ fn test_lexicase_produces_more_specialists_than_tournament() {
         number_of_couples: COUPLES,
         ..Default::default()
     };
-    let tour_pairs = selection::factory(&pop_tour, tour_config, 1, 2)
-        .expect("tournament selection failed");
+    let tour_pairs =
+        selection::factory(&pop_tour, tour_config, 1, 2).expect("tournament selection failed");
 
     // Compute average per-case variance across selected individuals.
     // Higher variance = more diverse case-score profiles = more specialists selected.
     let avg_case_variance = |pairs: &[Vec<usize>], population: &[MultiCaseChromosome]| -> f64 {
-        let indices: Vec<usize> = pairs.iter().flat_map(|group| [group[0], group[1]]).collect();
+        let indices: Vec<usize> = pairs
+            .iter()
+            .flat_map(|group| [group[0], group[1]])
+            .collect();
         let total = indices.len() as f64;
         let mut total_var = 0.0;
         for case_i in 0..K {

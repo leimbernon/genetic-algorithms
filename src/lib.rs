@@ -12,15 +12,16 @@
 //! Minimize the Rastrigin function using 5-dimensional [`Range<f64>`](crate::genotypes::Range)
 //! chromosomes with the standard [`Ga`](crate::ga::Ga) engine:
 //!
-//! ```rust,ignore
+//! ```rust,no_run
+//! // no_run: full GA loop with 500 generations — too slow for doctest
 //! use genetic_algorithms::chromosomes::Range as RangeChromosome;
 //! use genetic_algorithms::configuration::ProblemSolving;
 //! use genetic_algorithms::ga::Ga;
 //! use genetic_algorithms::genotypes::Range as RangeGenotype;
 //! use genetic_algorithms::initializers::range_random_initialization;
-//! use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+//! use genetic_algorithms::operations::{Crossover, GaussianParams, Mutation, Selection, Survivor};
 //! use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig};
-//! use genetic_algorithms::{CompositeObserver, LogObserver};
+//! use genetic_algorithms::{ChromosomeLength, CompositeObserver, LogObserver};
 //! use std::sync::Arc;
 //!
 //! let fitness_fn = |dna: &[RangeGenotype<f64>]| -> f64 {
@@ -34,20 +35,20 @@
 //! let alleles = vec![RangeGenotype::new(0, vec![(-5.12, 5.12)], 0.0_f64)];
 //! let alleles_clone = alleles.clone();
 //!
-//! let mut ga = Ga::new()
-//!     .with_genes_per_chromosome(5_usize)
+//! let mut ga: Ga<RangeChromosome<f64>> = Ga::new()
+//!     .with_chromosome_length(ChromosomeLength::Fixed(5))
 //!     .with_population_size(100)
-//!     .with_initialization_fn(move |genes_per_chromosome, _, _| {
-//!         range_random_initialization(genes_per_chromosome, Some(&alleles_clone), Some(false))
+//!     .with_initialization_fn(move |n, _| {
+//!         range_random_initialization(n, Some(&alleles_clone))
 //!     })
 //!     .with_fitness_fn(fitness_fn)
 //!     .with_selection_method(Selection::Tournament)
 //!     .with_crossover_method(Crossover::Uniform)
-//!     .with_mutation_method(Mutation::Gaussian)
+//!     .with_mutation_method(Mutation::Gaussian(GaussianParams { sigma: None }))
 //!     .with_survivor_method(Survivor::Fitness)
 //!     .with_problem_solving(ProblemSolving::Minimization)
 //!     .with_max_generations(500)
-//!     .with_observer(Arc::new(CompositeObserver::new().add(Arc::new(LogObserver))))
+//!     .with_observer(Arc::new(CompositeObserver::new().register(Arc::new(LogObserver))))
 //!     .build()
 //!     .expect("Invalid configuration");
 //!
@@ -55,9 +56,9 @@
 //! println!("Best fitness: {:.4}", population.best_chromosome.fitness);
 //! ```
 //!
-//! ## Engines (12 total)
+//! ## Engines (13 total)
 //!
-//! This crate offers 12 optimization engines, each designed for specific problem types:
+//! This crate offers 13 optimization engines, each designed for specific problem types:
 //!
 //! | Engine | Module | Objectives | Problem Type | Key Strength |
 //! |--------|--------|------------|--------------|--------------|
@@ -68,6 +69,7 @@
 //! | [`AlpsEngine<U>`](crate::alps::AlpsEngine) | `alps` | Single | Continuous / Combinatorial | Age-layered population structure for sustained diversity |
 //! | [`IslandGa<U>`](crate::island::IslandGa) | `island` | Single | Any | Parallel sub-populations with configurable migration topologies |
 //! | [`GpGa<N>`](crate::gp::GpGa) | `gp` | Single | Symbolic / Tree-structured | Genetic Programming with tree chromosomes, bloat control, and standard GP operators |
+//! | [`EdaEngine<U>`](crate::eda::EdaEngine) / [`EdaRealEngine<U>`](crate::eda::EdaRealEngine) | `eda` | Single | Binary / Continuous | UMDA probabilistic model — no crossover/mutation, learns distribution from selected parents |
 //! | [`Nsga2Ga<U>`](crate::nsga2::Nsga2Ga) | `nsga2` | 2 | Continuous / Combinatorial | Fast Pareto ranking with crowding distance |
 //! | [`Nsga3Ga<U>`](crate::nsga3::Nsga3Ga) | `nsga3` | 3+ | Continuous | Reference-point based niching for many-objective problems |
 //! | [`MoeaDGa<U>`](crate::moead::MoeaDGa) | `moead` | 2+ | Continuous | Decomposition-based scalarization (Tchebycheff, PBI, weighted sum) |
@@ -125,6 +127,8 @@
 //!
 //! | Flag | Description | Default |
 //! |------|-------------|---------|
+//! | `logging` | Enables `log` crate emission of events via `LogObserver`. Disable via `default-features = false` to shed `log` for minimal binary size (embedded / ultra-lean WASM). | **On** |
+//! | `parallel` | Parallel fitness evaluation via rayon (default-on; disable via `default-features = false` to shed rayon + crossbeam dependencies for embedded / wasm-only builds). | **On** |
 //! | `serde` | Serialization/deserialization for checkpoint save/load via `serde_json` | Off |
 //! | `benchmarks` | Standard benchmark functions (Sphere, Rastrigin, Rosenbrock, ZDT, DTLZ) and multi-objective quality indicators | Off |
 //! | `visualization` | PNG/SVG fitness plots, diversity charts, and histogram generation via `plotters` | Off |
@@ -195,7 +199,7 @@
 //! [`IslandGaObserver`], [`Nsga2Observer`],
 //! [`Nsga3Observer`], [`Spea2Observer`],
 //! [`MoeaDObserver`], [`SmsEmoaObserver`],
-//! and [`IbeaObserver`].
+//! [`IbeaObserver`], [`CmaObserver`], [`PsoObserver`], and [`EdaObserver`].
 //!
 //! Zero overhead when no observer is attached (stored as `Option<Arc<dyn GaObserver<U>>>`).
 //!
@@ -234,6 +238,8 @@
 //! | Single-objective, sustained exploration needed | [`AlpsEngine<U>`](crate::alps::AlpsEngine) | Age layers prevent premature convergence |
 //! | Parallel / distributed single-objective | [`IslandGa<U>`](crate::island::IslandGa) | Independent sub-populations with periodic migration |
 //! | Symbolic regression / program synthesis | [`GpGa<N>`](crate::gp::GpGa) | Tree chromosomes, standard GP operators, built-in bloat control |
+//! | Binary / discrete, distribution estimation | [`EdaEngine<U>`](crate::eda::EdaEngine) | UMDA Bernoulli model; no crossover/mutation; effective on deceptive problems |
+//! | Continuous, distribution estimation | [`EdaRealEngine<U>`](crate::eda::EdaRealEngine) | UMDA Gaussian model; estimates mean/std per gene; good for unimodal landscapes |
 //! | Exactly 2 objectives | [`Nsga2Ga<U>`](crate::nsga2::Nsga2Ga) | Fast O(MN²) ranking, well-established baseline |
 //! | 3+ objectives (many-objective) | [`Nsga3Ga<U>`](crate::nsga3::Nsga3Ga) | Reference points scale beyond crowding distance |
 //! | 2+ objectives, continuous | [`MoeaDGa<U>`](crate::moead::MoeaDGa) | Decomposition is efficient and interpretable |
@@ -257,6 +263,58 @@
 //! - [docs.rs/genetic_algorithms](https://docs.rs/genetic_algorithms/latest/genetic_algorithms) — Full API reference with module-level documentation
 //! - [crates.io](https://crates.io/crates/genetic_algorithms) — Package registry and version history
 
+// Internal logging macro family — delegates to ::log::* when the `logging` feature is enabled,
+// expands to () when disabled. Avoids 100+ per-call-site #[cfg(feature = "logging")] annotations.
+#[cfg(feature = "logging")]
+macro_rules! log_info {
+    ($($arg:tt)*) => { ::log::info!($($arg)*) };
+}
+#[cfg(not(feature = "logging"))]
+macro_rules! log_info {
+    ($($arg:tt)*) => {
+        ()
+    };
+}
+
+#[cfg(feature = "logging")]
+macro_rules! log_debug {
+    ($($arg:tt)*) => { ::log::debug!($($arg)*) };
+}
+#[cfg(not(feature = "logging"))]
+macro_rules! log_debug {
+    ($($arg:tt)*) => {
+        ()
+    };
+}
+
+#[cfg(feature = "logging")]
+macro_rules! log_trace {
+    ($($arg:tt)*) => { ::log::trace!($($arg)*) };
+}
+#[cfg(not(feature = "logging"))]
+macro_rules! log_trace {
+    ($($arg:tt)*) => {
+        ()
+    };
+}
+
+#[cfg(feature = "logging")]
+macro_rules! log_warn {
+    ($($arg:tt)*) => { ::log::warn!($($arg)*) };
+}
+#[cfg(not(feature = "logging"))]
+macro_rules! log_warn {
+    ($($arg:tt)*) => {
+        ()
+    };
+}
+
+// Make macros accessible from all submodules via `crate::log_*!`
+pub(crate) use log_debug;
+pub(crate) use log_info;
+pub(crate) use log_trace;
+pub(crate) use log_warn;
+
 extern crate core;
 
 pub mod aos;
@@ -272,7 +330,7 @@ pub mod constraints;
 pub mod error;
 pub mod extension;
 pub mod fitness;
-#[path = "engines/ga.rs"]
+#[path = "engines/ga/mod.rs"]
 pub mod ga;
 #[path = "types/genotypes/mod.rs"]
 pub mod genotypes;
@@ -298,8 +356,6 @@ pub mod cellular;
 pub mod de;
 #[path = "engines/hill_climb/mod.rs"]
 pub mod hill_climb;
-#[path = "engines/permutate/mod.rs"]
-pub mod permutate;
 #[path = "engines/island/mod.rs"]
 pub mod island;
 #[path = "engines/multi_objective/mod.rs"]
@@ -309,6 +365,8 @@ pub mod niching;
 pub mod nsga2;
 #[path = "engines/nsga3/mod.rs"]
 pub mod nsga3;
+#[path = "engines/permutate/mod.rs"]
+pub mod permutate;
 #[path = "engines/scatter/mod.rs"]
 pub mod scatter;
 
@@ -333,17 +391,33 @@ pub mod cma;
 #[path = "engines/pso/mod.rs"]
 pub mod pso;
 
+#[path = "engines/eda/mod.rs"]
+pub mod eda;
+
 pub use aos::{AosState, AosStrategy};
+pub use chromosomes::{
+    ChromosomeLength, MultiRangeChromosome, MultiUniqueChromosome, UniqueChromosome,
+};
+pub use cma::{RestartEvent, RestartKind, RestartStrategy};
 pub use constraints::ConstraintHandling;
 pub use constraints::PenaltyStrategy;
+pub use eda::{EdaConfiguration, EdaEngine, EdaModel, EdaRealEngine, EdaResult};
+pub use fitness::BatchFitnessEvaluator;
+pub use fitness::SurrogateModel;
 pub use ga::TerminationCause;
+pub use genotypes::{MultiRangeGenotype, UniqueGenotype};
 pub use hall_of_fame::{DistanceMetric, HallOfFame, HallOfFameConfig};
+pub use hill_climb::{HillClimbConfiguration, HillClimbEngine, HillClimbMode};
+pub use initializers::{multi_range_random_initialization, unique_random_initialization};
 pub use observer::AllObserver;
+pub use observer::CmaObserver;
 pub use observer::CompositeObserver;
+pub use observer::EdaObserver;
 pub use observer::ExtensionEvent;
 pub use observer::GaObserver;
 pub use observer::IbeaObserver;
 pub use observer::IslandGaObserver;
+#[cfg(feature = "logging")]
 pub use observer::LogObserver;
 #[cfg(feature = "observer-metrics")]
 pub use observer::MetricsObserver;
@@ -351,16 +425,13 @@ pub use observer::MoeaDObserver;
 pub use observer::NoopObserver;
 pub use observer::Nsga2Observer;
 pub use observer::Nsga3Observer;
+pub use observer::PsoObserver;
 pub use observer::SmsEmoaObserver;
 pub use observer::Spea2Observer;
 #[cfg(feature = "observer-tracing")]
 pub use observer::TracingObserver;
-pub use chromosomes::{
-    ChromosomeLength, MultiRangeChromosome, MultiUniqueChromosome, UniqueChromosome,
-};
-pub use genotypes::{MultiRangeGenotype, UniqueGenotype};
-pub use hill_climb::{HillClimbConfiguration, HillClimbEngine, HillClimbMode};
-pub use initializers::{multi_range_random_initialization, unique_random_initialization};
 pub use permutate::{PermutateConfiguration, PermutateEngine};
-pub use traits::{LinearChromosome, OperatorCompat, RealGene, Strategy, VectorFitness};
 pub use pso::{PsoConfiguration, PsoEngine, PsoInertia, PsoResult, PsoTopology};
+pub use traits::{
+    LinearChromosome, OperatorCompat, RealGene, RealValuedMutation, Strategy, VectorFitness,
+};

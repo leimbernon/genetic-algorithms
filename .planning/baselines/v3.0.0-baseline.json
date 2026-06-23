@@ -1,0 +1,8 @@
+{
+  "dev_build_s": 14.0,
+  "wasm_check_s": 21.0,
+  "test_suite_s": 245.0,
+  "dep_count": 71,
+  "public_api_hash": "unavailable",
+  "captured_at": "2026-06-22"
+}

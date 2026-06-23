@@ -7,10 +7,23 @@
 
 use crate::chromosomes::ChromosomeLength;
 use crate::configuration::LocalSearchConfiguration;
-use crate::configuration::{LogLevel, ProblemSolving};
+use crate::configuration::ProblemSolving;
 use crate::operations::{Crossover, Extension, Mutation, Selection, Survivor};
 
 /// Configuration for parent selection.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::ga::Ga;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::operations::Selection;
+/// use genetic_algorithms::traits::{ConfigurationT, SelectionConfig};
+///
+/// let ga: Ga<Binary> = Ga::new()
+///     .with_selection_method(Selection::Tournament)
+///     .with_number_of_couples(10);
+/// ```
 pub trait SelectionConfig {
     /// Sets how many parent pairs are formed each generation.
     fn with_number_of_couples(self, number_of_couples: usize) -> Self;
@@ -26,6 +39,20 @@ pub trait SelectionConfig {
 }
 
 /// Configuration for crossover operators.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::ga::Ga;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::operations::Crossover;
+/// use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig};
+///
+/// let ga: Ga<Binary> = Ga::new()
+///     .with_crossover_method(Crossover::BlendAlpha)
+///     .with_blend_alpha(0.5)
+///     .with_crossover_probability_max(0.9);
+/// ```
 pub trait CrossoverConfig {
     /// Sets the number of crossover points (for multi-point crossover).
     fn with_crossover_number_of_points(self, number_of_points: usize) -> Self;
@@ -52,19 +79,33 @@ pub trait CrossoverConfig {
 }
 
 /// Configuration for mutation operators.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::ga::Ga;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::operations::{Mutation, GaussianParams};
+/// use genetic_algorithms::traits::{ConfigurationT, MutationConfig};
+///
+/// let ga: Ga<Binary> = Ga::new()
+///     .with_mutation_method(Mutation::Gaussian(GaussianParams { sigma: Some(0.1) }))
+///     .with_mutation_probability_max(0.05);
+/// ```
 pub trait MutationConfig {
     /// Sets the maximum mutation probability (also the static probability when adaptive GA is off).
     fn with_mutation_probability_max(self, probability_max: f64) -> Self;
     /// Sets the minimum mutation probability (used only by adaptive GA).
     fn with_mutation_probability_min(self, probability_min: f64) -> Self;
-    /// Sets the mutation method (e.g., `Mutation::Swap`, `Mutation::Gaussian { sigma: Some(0.1) }`).
+    /// Sets the mutation method (e.g., `Mutation::Swap`, `Mutation::Gaussian(GaussianParams { sigma: Some(0.1) })`).
     ///
     /// Operator-specific parameters are now embedded directly in the variant:
-    /// ```rust,ignore
-    /// use genetic_algorithms::operations::Mutation;
+    /// ```rust,no_run
+    /// // no_run: API illustration — `ga` is a configured Ga instance
+    /// use genetic_algorithms::operations::{Mutation, GaussianParams, CreepParams};
     /// // v3.0.0 — pass params inside the variant:
-    /// ga.with_mutation_method(Mutation::Gaussian { sigma: Some(0.05) });
-    /// ga.with_mutation_method(Mutation::Creep { step: Some(0.1) });
+    /// // ga.with_mutation_method(Mutation::Gaussian(GaussianParams { sigma: Some(0.05) }));
+    /// // ga.with_mutation_method(Mutation::Creep(CreepParams { step: Some(0.1) }));
     /// ```
     fn with_mutation_method(self, method: Mutation) -> Self;
     /// Enables or disables dynamic mutation probability adjustment based on population cardinality.
@@ -76,6 +117,17 @@ pub trait MutationConfig {
 }
 
 /// Configuration for survivor selection.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::ga::Ga;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::traits::{ConfigurationT, SurvivorConfig};
+///
+/// let ga: Ga<Binary> = Ga::new()
+///     .with_length_penalty(0.01); // parsimony pressure
+/// ```
 pub trait SurvivorConfig {
     /// Sets the parsimony pressure penalty coefficient for survivor selection.
     ///
@@ -89,6 +141,19 @@ pub trait SurvivorConfig {
 }
 
 /// Configuration for stopping / termination criteria.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::ga::Ga;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::traits::{ConfigurationT, StoppingConfig};
+///
+/// let ga: Ga<Binary> = Ga::new()
+///     .with_max_generations(500)
+///     .with_stagnation_limit(50)
+///     .with_convergence_threshold(1e-6);
+/// ```
 pub trait StoppingConfig {
     /// Sets the maximum number of generations before the GA stops.
     fn with_max_generations(self, max_generations: usize) -> Self;
@@ -107,6 +172,19 @@ pub trait StoppingConfig {
 }
 
 /// Configuration for fitness sharing / niching.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::ga::Ga;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::traits::{ConfigurationT, NichingConfig};
+///
+/// let ga: Ga<Binary> = Ga::new()
+///     .with_niching_enabled(true)
+///     .with_niching_sigma_share(0.1)
+///     .with_niching_alpha(1.0);
+/// ```
 pub trait NichingConfig {
     /// Enables or disables fitness sharing (niching).
     fn with_niching_enabled(self, enabled: bool) -> Self;
@@ -117,12 +195,37 @@ pub trait NichingConfig {
 }
 
 /// Configuration for elitism.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::ga::Ga;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::traits::{ConfigurationT, ElitismConfig};
+///
+/// let ga: Ga<Binary> = Ga::new()
+///     .with_elitism(2); // preserve top 2 individuals unchanged
+/// ```
 pub trait ElitismConfig {
     /// Sets the number of top individuals preserved unchanged between generations.
     fn with_elitism(self, elitism_count: usize) -> Self;
 }
 
 /// Configuration for extension strategies (population diversity control).
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::ga::Ga;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::operations::Extension;
+/// use genetic_algorithms::traits::{ConfigurationT, ExtensionConfig};
+///
+/// let ga: Ga<Binary> = Ga::new()
+///     .with_extension_method(Extension::MassExtinction)
+///     .with_extension_diversity_threshold(0.01)
+///     .with_extension_survival_rate(0.2);
+/// ```
 pub trait ExtensionConfig {
     /// Sets the extension strategy method.
     fn with_extension_method(self, method: Extension) -> Self;
@@ -138,6 +241,24 @@ pub trait ExtensionConfig {
 }
 
 /// Configuration for local search / memetic algorithm refinement.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::ga::Ga;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::operations::local_search::{LocalSearch, LocalSearchApplicationStrategy, LocalSearchMode};
+/// use genetic_algorithms::configuration::LocalSearchConfiguration;
+/// use genetic_algorithms::traits::{ConfigurationT, LocalSearchConfig};
+///
+/// let ls_config = LocalSearchConfiguration {
+///     method: LocalSearch::HillClimbing,
+///     application_strategy: LocalSearchApplicationStrategy::AllOffspring,
+///     mode: LocalSearchMode::Lamarckian,
+///     ..Default::default()
+/// };
+/// let ga: Ga<Binary> = Ga::new().with_local_search_configuration(ls_config);
+/// ```
 pub trait LocalSearchConfig {
     /// Configures the local search operator and application strategy.
     ///
@@ -152,6 +273,26 @@ pub trait LocalSearchConfig {
 /// Combines all focused sub-traits (`SelectionConfig`, `CrossoverConfig`,
 /// `MutationConfig`, `StoppingConfig`, `NichingConfig`, `ElitismConfig`)
 /// with general GA settings (population size, threading, logging, etc.).
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::ga::Ga;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+/// use genetic_algorithms::configuration::ProblemSolving;
+/// use genetic_algorithms::traits::{ConfigurationT, StoppingConfig, SelectionConfig, CrossoverConfig, MutationConfig};
+///
+/// let _ga: Ga<Binary> = Ga::new()
+///     .with_population_size(100)
+///     .with_max_generations(200)
+///     .with_problem_solving(ProblemSolving::Minimization)
+///     .with_selection_method(Selection::Tournament)
+///     .with_crossover_method(Crossover::Uniform)
+///     .with_mutation_method(Mutation::Swap)
+///     .with_survivor_method(Survivor::Fitness)
+///     .with_rng_seed(42);
+/// ```
 pub trait ConfigurationT:
     SelectionConfig
     + CrossoverConfig
@@ -169,8 +310,6 @@ pub trait ConfigurationT:
     fn with_adaptive_ga(self, adaptive_ga: bool) -> Self;
     /// Sets the number of threads used for parallel fitness evaluation.
     fn with_threads(self, number_of_threads: usize) -> Self;
-    /// Sets the logging verbosity level.
-    fn with_logs(self, log_level: LogLevel) -> Self;
     /// Sets the survivor-selection strategy (fitness-based or age-based).
     fn with_survivor_method(self, method: Survivor) -> Self;
 

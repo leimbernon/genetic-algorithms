@@ -1,8 +1,7 @@
 //! Partially Mapped Crossover (PMX) implementation.
 
 use crate::error::GaError;
-use crate::traits::{LinearChromosome, GeneT};
-use log::debug;
+use crate::traits::{GeneT, LinearChromosome};
 use rand::Rng;
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -20,6 +19,16 @@ use std::collections::HashMap;
 /// 4. Fill remaining positions directly from the other parent.
 ///
 /// Both parents must have the same DNA length (≥ 2) and contain unique gene IDs.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::crossover::pmx;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let parent1 = Binary::new();
+/// let parent2 = Binary::new();
+/// let _ = pmx(&parent1, &parent2);
+/// ```
 pub fn pmx<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, GaError> {
     let len = parent_1.dna().len();
 
@@ -37,7 +46,7 @@ pub fn pmx<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, Ga
         ));
     }
 
-    debug!(target="crossover_events", method="pmx"; "Starting PMX crossover");
+    crate::log_debug!(target="crossover_events", method="pmx"; "Starting PMX crossover");
 
     let mut rng = crate::rng::make_rng();
 
@@ -58,7 +67,7 @@ pub fn pmx<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, Ga
     child_1.set_dna(Cow::Owned(child_dna_1));
     child_2.set_dna(Cow::Owned(child_dna_2));
 
-    debug!(target="crossover_events", method="pmx"; "PMX crossover finished with points ({}, {})", start, end);
+    crate::log_debug!(target="crossover_events", method="pmx"; "PMX crossover finished with points ({}, {})", start, end);
 
     Ok(vec![child_1, child_2])
 }
@@ -67,7 +76,12 @@ pub fn pmx<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, Ga
 ///
 /// `donor` provides the copied segment; `other` provides the remaining genes
 /// and the mapping source.
-pub(crate) fn pmx_build_child<G: GeneT>(donor: &[G], other: &[G], start: usize, end: usize) -> Vec<G> {
+pub(crate) fn pmx_build_child<G: GeneT>(
+    donor: &[G],
+    other: &[G],
+    start: usize,
+    end: usize,
+) -> Vec<G> {
     // Pre-fill child from `other`; the segment will be overwritten from `donor`.
     let mut child = other.to_vec();
 

@@ -136,13 +136,14 @@ When breaking changes are unavoidable, use parallel traits/wrappers (see issues 
 Every new feature **must compile for `wasm32-unknown-unknown`**. This target has no threads and no `std::time`. Apply these rules at implementation time, not as a retrofit:
 
 - **`std::time::Instant` / `SystemTime`** — never call `.now()` or `.elapsed()` unconditionally. Gate the call: `#[cfg(not(target_arch = "wasm32"))]`. The type annotation (`Option<Instant>`) can remain un-gated; only the instantiation must be gated.
-- **`rayon` parallelism** — never call `.par_iter()` unconditionally. Duplicate only the iterator expression behind cfg gates; keep the closure body shared:
+- **`rayon` parallelism** — never call `.par_iter()` unconditionally. Use the canonical combined `wasm32+parallel` gate (D-06). Duplicate only the iterator expression behind cfg gates; keep the closure body shared:
   ```rust
-  #[cfg(not(target_arch = "wasm32"))]
+  #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
   let results: Vec<_> = items.par_iter().map(|x| process(x)).collect();
-  #[cfg(target_arch = "wasm32")]
+  #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
   let results: Vec<_> = items.iter().map(|x| process(x)).collect();
   ```
+  After Phase 69, the canonical gate for rayon is the combined `wasm32+parallel` form above. Do not reintroduce `#[cfg(not(target_arch = "wasm32"))]` as the sole gate on rayon call-sites.
 - **Verify during implementation** — run `cargo check --target wasm32-unknown-unknown` before considering a feature complete. CI enforces this via `.github/workflows/wasm-check.yml`, but catching it locally is cheaper.
 - **New dependencies** — check that any new crate either supports `wasm32-unknown-unknown` or is gated behind a non-wasm cfg.
 

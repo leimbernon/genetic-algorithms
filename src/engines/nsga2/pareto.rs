@@ -5,6 +5,17 @@ use crate::traits::ChromosomeT;
 ///
 /// Stores the objective values, the non-domination rank and crowding distance
 /// assigned during NSGA-II sorting.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::nsga2::pareto::ParetoIndividual;
+/// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+///
+/// let ind = ParetoIndividual::new(RangeChromosome::<f64>::default(), vec![0.5, 0.8]);
+/// assert_eq!(ind.objectives, vec![0.5, 0.8]);
+/// assert_eq!(ind.rank, 0);
+/// ```
 #[derive(Debug, Clone)]
 pub struct ParetoIndividual<U>
 where
@@ -44,6 +55,17 @@ where
 }
 
 /// A collection of individuals on a Pareto front.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::nsga2::pareto::{ParetoFront, ParetoIndividual};
+/// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+///
+/// let ind = ParetoIndividual::new(RangeChromosome::<f64>::default(), vec![0.5, 0.8]);
+/// let front = ParetoFront::new(vec![ind]);
+/// assert_eq!(front.len(), 1);
+/// ```
 #[derive(Debug, Clone)]
 pub struct ParetoFront<U>
 where
@@ -76,6 +98,15 @@ where
 /// Returns `true` if individual `a` dominates individual `b` (all-objectives minimization).
 ///
 /// `a` dominates `b` if `a` is no worse on all objectives and strictly better on at least one.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::nsga2::pareto::dominates;
+///
+/// assert!(dominates(&[1.0, 2.0], &[2.0, 3.0]));
+/// assert!(!dominates(&[2.0, 1.0], &[1.0, 2.0]));
+/// ```
 pub fn dominates(a: &[f64], b: &[f64]) -> bool {
     let mut at_least_one_better = false;
     for (ai, bi) in a.iter().zip(b.iter()) {
@@ -96,6 +127,16 @@ pub fn dominates(a: &[f64], b: &[f64]) -> bool {
 ///
 /// If `directions` is empty or shorter than the objectives, the missing entries default
 /// to `Minimize`.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::nsga2::pareto::dominates_with_directions;
+/// use genetic_algorithms::multi_objective::ObjectiveDirection;
+///
+/// let dirs = [ObjectiveDirection::Minimize, ObjectiveDirection::Maximize];
+/// assert!(dominates_with_directions(&[1.0, 5.0], &[2.0, 4.0], &dirs));
+/// ```
 pub fn dominates_with_directions(a: &[f64], b: &[f64], directions: &[ObjectiveDirection]) -> bool {
     let mut at_least_one_better = false;
     for (idx, (ai, bi)) in a.iter().zip(b.iter()).enumerate() {
@@ -123,6 +164,17 @@ pub fn dominates_with_directions(a: &[f64], b: &[f64], directions: &[ObjectiveDi
 /// 1. A feasible solution dominates any infeasible solution.
 /// 2. Among two infeasible solutions, the one with smaller total constraint violation is preferred.
 /// 3. Among two feasible solutions, standard Pareto dominance applies.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::nsga2::pareto::constrained_dominates;
+/// use genetic_algorithms::multi_objective::ObjectiveDirection;
+///
+/// let dirs = [ObjectiveDirection::Minimize];
+/// // feasible dominates infeasible
+/// assert!(constrained_dominates(&[1.0], &[0.5], 0.0, 1.0, &dirs));
+/// ```
 pub fn constrained_dominates(
     a_obj: &[f64],
     b_obj: &[f64],

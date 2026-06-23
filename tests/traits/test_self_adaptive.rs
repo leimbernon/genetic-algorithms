@@ -12,8 +12,7 @@ fn range_chromosome_lazy_init_strategy_params_to_ones() {
     c.set_dna(Cow::Owned(dna));
     let params = c.strategy_params();
     assert_eq!(
-        params,
-        &[1.0; 5],
+        params, &[1.0; 5],
         "strategy_params should be initialized to ones after set_dna with 5 genes, got {:?}",
         params
     );

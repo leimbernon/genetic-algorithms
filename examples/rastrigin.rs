@@ -25,7 +25,7 @@ use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::ga::{Ga, TerminationCause};
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::initializers::range_random_initialization;
-use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+use genetic_algorithms::operations::{Crossover, GaussianParams, Mutation, Selection, Survivor};
 use genetic_algorithms::population::Population;
 use genetic_algorithms::stats::GenerationStats;
 use genetic_algorithms::traits::{
@@ -33,10 +33,36 @@ use genetic_algorithms::traits::{
 };
 #[cfg(feature = "observer-metrics")]
 use genetic_algorithms::MetricsObserver;
-use genetic_algorithms::{ChromosomeLength, CompositeObserver, LogObserver};
+use genetic_algorithms::{rng, ChromosomeLength, CompositeObserver, LogObserver};
 use std::sync::Arc;
 
 fn main() {
+    let _ = env_logger::try_init();
+    // Parse optional --seed <N> argument for reproducible runs (used by build_perf.sh golden capture).
+    // When --seed is provided, rayon is fixed to 1 thread so the counter-based RNG in
+    // rng::make_rng() is called in a deterministic order. The seed is also passed via
+    // with_rng_seed() so the GA engine re-applies it at run() time (the engine resets the seed
+    // internally, overriding any set_seed() call made before build()).
+    let args: Vec<String> = std::env::args().collect();
+    let seed_opt: Option<u64> = args
+        .iter()
+        .position(|a| a == "--seed")
+        .and_then(|pos| args.get(pos + 1))
+        .and_then(|v| v.parse::<u64>().ok());
+
+    if let Some(s) = seed_opt {
+        #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
+        {
+            // Fix rayon to single thread for reproducible RNG counter ordering.
+            rayon::ThreadPoolBuilder::new()
+                .num_threads(1)
+                .build_global()
+                .ok(); // ignore error if pool already initialized
+        }
+        // Pre-set seed for initialization function (runs before ga.run()).
+        rng::set_seed(Some(s));
+    }
+
     // --- Problem parameters ---
     const DIMENSIONS: usize = 5;
     const POP_SIZE: usize = 100;
@@ -59,12 +85,12 @@ fn main() {
     let alleles_clone = alleles.clone();
 
     // --- Build composite observer (LogObserver always active; MetricsObserver when feature flag set) ---
-    let composite = CompositeObserver::new().add(Arc::new(LogObserver));
+    let composite = CompositeObserver::new().register(Arc::new(LogObserver));
     #[cfg(feature = "observer-metrics")]
-    let composite = composite.add(Arc::new(MetricsObserver::new("rastrigin")));
+    let composite = composite.register(Arc::new(MetricsObserver::new("rastrigin")));
 
     // --- Build the GA configuration ---
-    let mut ga = Ga::new()
+    let mut ga_builder = Ga::new()
         // Chromosome: DIMENSIONS genes, each a continuous value in [-5.12, 5.12]
         .with_chromosome_length(ChromosomeLength::Fixed(DIMENSIONS))
         .with_population_size(POP_SIZE)
@@ -78,14 +104,21 @@ fn main() {
         // Crossover: Uniform blend
         .with_crossover_method(Crossover::Uniform)
         // Mutation: Gaussian perturbation (appropriate for continuous optimization)
-        .with_mutation_method(Mutation::Gaussian { sigma: None })
+        .with_mutation_method(Mutation::Gaussian(GaussianParams { sigma: None }))
         // Survivor selection: Fitness-based
         .with_survivor_method(Survivor::Fitness)
         // Problem: minimize fitness toward 0.0
         .with_problem_solving(ProblemSolving::Minimization)
         .with_max_generations(MAX_GENERATIONS)
         // Observer: CompositeObserver fans out to LogObserver (and MetricsObserver if feature enabled)
-        .with_observer(Arc::new(composite))
+        .with_observer(Arc::new(composite));
+
+    // Wire seed into GA engine so run() re-applies it (engine resets seed internally at run time).
+    if let Some(s) = seed_opt {
+        ga_builder = ga_builder.with_rng_seed(s);
+    }
+
+    let mut ga = ga_builder
         .build()
         .expect("Failed to build GA configuration");
 
@@ -99,19 +132,32 @@ fn main() {
 
     // --- Run the GA with a callback to report progress ---
     let report_interval = 50;
+
+    // Stats accumulator for --plot (visualization feature); move added for accumulator capture
+    #[cfg(feature = "visualization")]
+    let plot_stats: std::sync::Arc<
+        std::sync::Mutex<Vec<genetic_algorithms::stats::GenerationStats>>,
+    > = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+    #[cfg(feature = "visualization")]
+    let plot_stats_clone = plot_stats.clone();
+
     let result = ga.run_with_callback(
         Some(
-            |gen: &usize,
-             pop: &Population<RangeChromosome<f64>>,
-             _stats: &GenerationStats,
-             _cause: &TerminationCause|
-             -> std::ops::ControlFlow<()> {
+            move |gen: &usize,
+                  pop: &Population<RangeChromosome<f64>>,
+                  _stats: &GenerationStats,
+                  _cause: &TerminationCause|
+                  -> std::ops::ControlFlow<()> {
                 let avg_fitness =
                     pop.chromosomes.iter().map(|c| c.fitness()).sum::<f64>() / pop.size() as f64;
                 println!(
                     "Generation {:4}: best = {:8.4}, avg = {:8.4}",
                     gen, pop.best_chromosome.fitness, avg_fitness
                 );
+                #[cfg(feature = "visualization")]
+                if let Ok(mut guard) = plot_stats_clone.lock() {
+                    guard.push(_stats.clone());
+                }
                 std::ops::ControlFlow::Continue(())
             },
         ),
@@ -130,6 +176,17 @@ fn main() {
                 println!("Near-optimal solution found!");
             } else {
                 println!("Did not reach optimum. Try increasing generations or population size.");
+            }
+
+            #[cfg(feature = "visualization")]
+            if std::env::args().any(|a| a == "--plot") {
+                // requires --features visualization
+                let stats_guard = plot_stats.lock().unwrap_or_else(|e| e.into_inner());
+                let stats = &*stats_guard;
+                std::fs::create_dir_all("docs/images").expect("failed to create docs/images");
+                genetic_algorithms::visualization::plot_fitness(stats, "docs/images/rastrigin.png")
+                    .expect("plot failed");
+                println!("Fitness plot saved to docs/images/rastrigin.png");
             }
         }
         Err(e) => {

@@ -7,7 +7,6 @@
 use genetic_algorithms::chromosomes::Binary as BinaryChromosome;
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::configuration::{GaConfiguration, ProblemSolving};
-use genetic_algorithms::ChromosomeLength;
 use genetic_algorithms::error::GaError;
 use genetic_algorithms::ga::TerminationCause;
 use genetic_algorithms::genotypes::Binary as BinaryGene;
@@ -16,9 +15,10 @@ use genetic_algorithms::island::configuration::{IslandConfiguration, MigrationPo
 use genetic_algorithms::island::topology::MigrationTopology;
 use genetic_algorithms::niching::configuration::NichingConfiguration;
 use genetic_algorithms::nsga2::configuration::{Nsga2Configuration, ObjectiveDirection};
-use genetic_algorithms::operations::{AlignmentStrategy, Crossover, Mutation, Selection, Survivor};
+use genetic_algorithms::operations::{AlignmentStrategy, CauchyParams, CreepParams, Crossover, DifferentialParams, GaussianParams, LevyFlightParams, Mutation, NonUniformParams, PolynomialParams, Selection, SelfAdaptiveGaussianParams, Survivor};
 use genetic_algorithms::population::Population;
 use genetic_algorithms::stats::GenerationStats;
+use genetic_algorithms::ChromosomeLength;
 
 /// Helper: serialize to JSON and deserialize back, returning the round-tripped value.
 fn round_trip<T: serde::Serialize + serde::de::DeserializeOwned>(value: &T) -> T {
@@ -88,36 +88,36 @@ fn serde_mutation_enum() {
         Mutation::Scramble,
         Mutation::Value,
         Mutation::BitFlip,
-        Mutation::Creep { step: None },
-        Mutation::Creep { step: Some(0.05) },
-        Mutation::Gaussian { sigma: None },
-        Mutation::Gaussian { sigma: Some(0.2) },
-        Mutation::Polynomial { eta: None },
-        Mutation::Polynomial { eta: Some(20.0) },
-        Mutation::NonUniform { b: None },
-        Mutation::NonUniform { b: Some(2.0) },
+        Mutation::Creep(CreepParams { step: None }),
+        Mutation::Creep(CreepParams { step: Some(0.05) }),
+        Mutation::Gaussian(GaussianParams { sigma: None }),
+        Mutation::Gaussian(GaussianParams { sigma: Some(0.2) }),
+        Mutation::Polynomial(PolynomialParams { eta: None }),
+        Mutation::Polynomial(PolynomialParams { eta: Some(20.0) }),
+        Mutation::NonUniform(NonUniformParams { b: None }),
+        Mutation::NonUniform(NonUniformParams { b: Some(2.0) }),
         Mutation::PermutationInsert,
         Mutation::Insertion,
         Mutation::Deletion,
-        Mutation::Differential { f: None },
-        Mutation::Differential { f: Some(0.5) },
-        Mutation::Cauchy { scale: None },
-        Mutation::Cauchy { scale: Some(1.0) },
-        Mutation::LevyFlight { alpha: None },
-        Mutation::LevyFlight { alpha: Some(1.5) },
+        Mutation::Differential(DifferentialParams { f: None }),
+        Mutation::Differential(DifferentialParams { f: Some(0.5) }),
+        Mutation::Cauchy(CauchyParams { scale: None }),
+        Mutation::Cauchy(CauchyParams { scale: Some(1.0) }),
+        Mutation::LevyFlight(LevyFlightParams { alpha: None }),
+        Mutation::LevyFlight(LevyFlightParams { alpha: Some(1.5) }),
         Mutation::Uniform,
-        Mutation::SelfAdaptiveGaussian {
+        Mutation::SelfAdaptiveGaussian(SelfAdaptiveGaussianParams {
             tau: None,
             tau_prime: None,
             sigma_min: None,
             sigma_max: None,
-        },
-        Mutation::SelfAdaptiveGaussian {
+        }),
+        Mutation::SelfAdaptiveGaussian(SelfAdaptiveGaussianParams {
             tau: Some(0.3),
             tau_prime: Some(0.2),
             sigma_min: Some(1e-5),
             sigma_max: Some(1.0),
-        },
+        }),
     ];
     for v in &variants {
         assert_eq!(&round_trip(v), v, "Round-trip failed for {:?}", v);
@@ -163,7 +163,7 @@ fn serde_ga_configuration_with_values() {
         .with_chromosome_length(ChromosomeLength::Fixed(16))
         .with_selection_method(Selection::Boltzmann)
         .with_crossover_method(Crossover::Sbx)
-        .with_mutation_method(Mutation::Polynomial { eta: None })
+        .with_mutation_method(Mutation::Polynomial(PolynomialParams { eta: None }))
         .with_survivor_method(Survivor::MuPlusLambda)
         .with_problem_solving(ProblemSolving::Maximization)
         .with_max_generations(500)
@@ -442,7 +442,8 @@ use genetic_algorithms::checkpoint::{load_checkpoint, save_checkpoint, Checkpoin
 use genetic_algorithms::ga::Ga;
 use genetic_algorithms::initializers::binary_initializer::binary_random_initialization;
 use genetic_algorithms::traits::{
-    ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig, SelectionConfig, StoppingConfig,
+    ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig,
+    SelectionConfig, StoppingConfig,
 };
 use std::path::Path;
 

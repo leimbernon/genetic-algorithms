@@ -20,6 +20,7 @@ use genetic_algorithms::traits::{
 };
 
 fn main() {
+    let _ = env_logger::try_init();
     println!("=== AOS Demo: Crossover Portfolio with Probability Matching ===\n");
 
     // Problem: minimize sum of 8 gene values (each in [0, 100])
@@ -28,7 +29,9 @@ fn main() {
     let alleles_clone = alleles.clone();
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(
+            n.try_into().unwrap(),
+        ))
         .with_population_size(50)
         .with_max_generations(100)
         .with_initialization_fn(move |genes_per_chromosome, _| {
@@ -67,7 +70,11 @@ fn main() {
     // Show best solution (first few genes)
     let dna = population.best_chromosome.dna();
     let first_few: Vec<i32> = dna.iter().take(4).map(|g| g.value()).collect();
-    println!("Best chromosome (first 4 of {} genes): {:?}", dna.len(), first_few);
+    println!(
+        "Best chromosome (first 4 of {} genes): {:?}",
+        dna.len(),
+        first_few
+    );
 
     println!("\n=== AOS Demo Complete ===");
     println!("The GA dynamically selected among Uniform, SinglePoint, and BlendAlpha crossover");

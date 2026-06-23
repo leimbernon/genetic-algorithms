@@ -4,8 +4,7 @@
 use crate::structures::{Chromosome, Gene};
 use genetic_algorithms::{
     fitness::FitnessFnWrapper,
-    operations::survivor::deterministic_crowding::deterministic_crowding,
-    traits::ChromosomeT,
+    operations::survivor::deterministic_crowding::deterministic_crowding, traits::ChromosomeT,
 };
 
 fn gene(id: i32) -> Gene {
@@ -61,7 +60,7 @@ fn test_dc_fitter_offspring_replaces_parent() {
     // Both have same DNA so Hamming distance = 0.
     let dna = vec![gene(1), gene(2)];
     let mut pop = vec![
-        make_chromosome(5.0, 1, dna.clone()), // parent
+        make_chromosome(5.0, 1, dna.clone()),  // parent
         make_chromosome(10.0, 0, dna.clone()), // offspring
     ];
     deterministic_crowding(&mut pop);
@@ -95,7 +94,11 @@ fn test_dc_equal_fitness_keeps_offspring() {
     deterministic_crowding(&mut pop);
     assert_eq!(pop.len(), 1);
     assert_eq!(pop[0].fitness(), 5.0);
-    assert_eq!(pop[0].age(), 0, "Offspring should win on tie (>= condition)");
+    assert_eq!(
+        pop[0].age(),
+        0,
+        "Offspring should win on tie (>= condition)"
+    );
 }
 
 // ---- Most-similar parent matching ----

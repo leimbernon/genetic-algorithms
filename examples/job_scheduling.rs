@@ -80,6 +80,7 @@ const PROCESSING_TIMES: [[u32; 5]; 15] = [
 ];
 
 fn main() {
+    let _ = env_logger::try_init();
     // --- Problem parameters ---
     const N_JOBS: usize = 15;
     const N_MACHINES: usize = 5;

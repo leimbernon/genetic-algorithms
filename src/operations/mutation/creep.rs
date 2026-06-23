@@ -25,6 +25,15 @@ use std::fmt::Debug;
 ///
 /// * `individual` - The chromosome to mutate.
 /// * `step` - The maximum perturbation magnitude in each direction.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::creep::creep_mutation;
+/// use genetic_algorithms::chromosomes::Range;
+/// let mut chromosome: Range<f64> = Range::new();
+/// creep_mutation(&mut chromosome, 0.05);
+/// ```
 pub fn creep_mutation<T>(individual: &mut RangeChromosome<T>, step: T)
 where
     T: Sync

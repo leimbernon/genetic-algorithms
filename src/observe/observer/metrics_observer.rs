@@ -22,15 +22,16 @@
 //!
 //! # Usage
 //!
-//! ```ignore
+//! ```rust,no_run
+//! // no_run: MetricsObserver usage — illustrative API example, requires observer-metrics feature
 //! use std::sync::Arc;
 //! use genetic_algorithms::MetricsObserver;
 //!
-//! let mut ga = Ga::new()
-//!     // ... configuration ...
-//!     .with_observer(Arc::new(MetricsObserver::new("experiment_42")))
-//!     .build()
-//!     .unwrap();
+//! // let mut ga = Ga::new()
+//! //     // ... configuration ...
+//! //     .with_observer(Arc::new(MetricsObserver::new("experiment_42")))
+//! //     .build()
+//! //     .unwrap();
 //! ```
 
 use crate::observer::{ExtensionEvent, GaObserver, IslandGaObserver, Nsga2Observer};
@@ -123,7 +124,7 @@ impl<U: ChromosomeT> GaObserver<U> for MetricsObserver {
             .record(duration.as_secs_f64() * 1000.0);
     }
 
-    fn on_new_best(&self, _generation: usize, _best: U) {
+    fn on_new_best(&self, _generation: usize, _best: &U) {
         metrics::counter!("ga.event.new_best", "run_id" => self.run_id).increment(1);
     }
 

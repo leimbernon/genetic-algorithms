@@ -2,6 +2,15 @@
 ///
 /// Determines how islands are connected and which islands exchange individuals
 /// during migration events.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::island::topology::MigrationTopology;
+///
+/// let topology = MigrationTopology::Ring;
+/// assert_eq!(topology, MigrationTopology::Ring);
+/// ```
 #[derive(Debug, Clone, PartialEq, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum MigrationTopology {
@@ -38,6 +47,15 @@ pub enum MigrationTopology {
 /// # Returns
 ///
 /// A vector of island indices that are neighbors of `island_index`.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::island::topology::{MigrationTopology, neighbors};
+///
+/// let ns = neighbors(0, 4, &MigrationTopology::Ring);
+/// assert_eq!(ns, vec![1]);
+/// ```
 pub fn neighbors(
     island_index: usize,
     num_islands: usize,

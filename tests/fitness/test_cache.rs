@@ -1,6 +1,7 @@
-use genetic_algorithms::fitness::cache::{hash_dna, FitnessCache};
+use genetic_algorithms::fitness::cache::{hash_dna, wrap_with_cache, FitnessCache};
 use genetic_algorithms::genotypes::Binary as BinaryGene;
 use genetic_algorithms::traits::GeneT;
+use std::sync::Arc;
 
 // --- FitnessCache unit tests ---
 
@@ -244,9 +245,7 @@ fn ga_with_fitness_cache_range_chromosome() {
         .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(3))
         .with_alleles(alleles)
         .with_fitness_fn(|dna: &[RangeGene<f64>]| dna.iter().map(|g| g.value).sum::<f64>())
-        .with_initialization_fn(move |n, _| {
-            range_random_initialization(n, Some(&alleles_clone))
-        })
+        .with_initialization_fn(move |n, _| range_random_initialization(n, Some(&alleles_clone)))
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
         .with_mutation_method(Mutation::Value)
@@ -259,4 +258,57 @@ fn ga_with_fitness_cache_range_chromosome() {
 
     let result = ga.run();
     assert!(result.is_ok());
+}
+
+// ─── Phase 60 foundation tests ────────────────────────────────────────────────
+
+/// Verifies that wrap_with_cache returns a usable cache handle.
+/// - Initial hits and misses are both 0.
+/// - After two calls with identical DNA: hits == 1, misses == 1.
+#[test]
+fn wrap_with_cache_returns_handle() {
+    let call_count = Arc::new(std::sync::atomic::AtomicU64::new(0));
+    let call_count_clone = Arc::clone(&call_count);
+
+    #[allow(clippy::type_complexity)]
+    let base_fn: Arc<dyn Fn(&[BinaryGene]) -> f64 + Send + Sync> =
+        Arc::new(move |dna: &[BinaryGene]| {
+            call_count_clone.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            dna.len() as f64
+        });
+
+    let (wrapped_fn, cache_handle) = wrap_with_cache(base_fn, 16);
+
+    // Initial state: no calls made yet
+    {
+        let cache = cache_handle.lock().unwrap();
+        assert_eq!(cache.hits(), 0);
+        assert_eq!(cache.misses(), 0);
+    }
+
+    let dna: Vec<BinaryGene> = vec![{
+        let mut g = <BinaryGene as Default>::default();
+        g.set_id(1);
+        g.value = true;
+        g
+    }];
+
+    // First call — cache miss, base fn invoked
+    let _ = wrapped_fn(&dna);
+    {
+        let cache = cache_handle.lock().unwrap();
+        assert_eq!(cache.hits(), 0);
+        assert_eq!(cache.misses(), 1);
+    }
+
+    // Second call with identical DNA — cache hit, base fn NOT invoked again
+    let _ = wrapped_fn(&dna);
+    {
+        let cache = cache_handle.lock().unwrap();
+        assert_eq!(cache.hits(), 1);
+        assert_eq!(cache.misses(), 1);
+    }
+
+    // Base function was only called once (the first time)
+    assert_eq!(call_count.load(std::sync::atomic::Ordering::SeqCst), 1);
 }

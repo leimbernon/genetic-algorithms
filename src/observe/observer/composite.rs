@@ -1,4 +1,4 @@
-//! Fan-out observer that dispatches all 19 lifecycle hooks to every inner observer in insertion order.
+//! Fan-out observer that dispatches all 20 lifecycle hooks to every inner observer in insertion order.
 //!
 //! [`CompositeObserver<U>`] lets you combine multiple observers — for example,
 //! `LogObserver` and a custom `MetricsObserver` — without writing manual dispatch
@@ -8,16 +8,17 @@
 //!
 //! # Builder Pattern
 //!
-//! ```ignore
+//! ```rust,no_run
+//! // no_run: API illustration — ga and my_metrics_observer must be defined by the user
 //! use std::sync::Arc;
 //! use genetic_algorithms::{AllObserver, CompositeObserver};
 //! use genetic_algorithms::observer::LogObserver;
 //!
-//! let composite = CompositeObserver::new()
-//!     .add(Arc::new(LogObserver))
-//!     .add(Arc::new(my_metrics_observer));
-//!
-//! ga.with_observer(Arc::new(composite));
+//! // let composite = CompositeObserver::new()
+//! //     .register(Arc::new(LogObserver))
+//! //     .register(Arc::new(my_metrics_observer));
+//! //
+//! // ga.with_observer(Arc::new(composite));
 //! ```
 //!
 //! # Fan-out semantics
@@ -26,6 +27,7 @@
 //! corresponding hook on each inner observer. Errors in one observer do not
 //! affect the others (all hooks return `()`).
 
+use crate::cma::restart::RestartEvent;
 use crate::ga::TerminationCause;
 use crate::observer::{AllObserver, ExtensionEvent, GaObserver, IslandGaObserver, Nsga2Observer};
 use crate::stats::GenerationStats;
@@ -33,14 +35,25 @@ use crate::traits::ChromosomeT;
 use std::sync::Arc;
 use std::time::Duration;
 
-/// Fan-out observer that dispatches all 19 lifecycle hooks to every inner
+/// Fan-out observer that dispatches all 20 lifecycle hooks to every inner
 /// observer in insertion order.
 ///
-/// Build with [`CompositeObserver::new()`] and chain [`CompositeObserver::add()`]
+/// Build with [`CompositeObserver::new()`] and chain [`CompositeObserver::register()`]
 /// calls to register inner observers. The composite itself satisfies
 /// [`AllObserver<U>`] via the blanket impl in `src/observer/mod.rs`, so it can
 /// be attached to `Ga<U>`, `IslandGa<U>`, or `Nsga2Ga<U>` using the same
 /// `Arc<dyn GaObserver<U>>` or `Arc<dyn IslandGaObserver<U>>` fields.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use std::sync::Arc;
+/// use genetic_algorithms::observer::{CompositeObserver, LogObserver};
+/// use genetic_algorithms::chromosomes::Binary;
+///
+/// let composite = CompositeObserver::<Binary>::new()
+///     .register(Arc::new(LogObserver));
+/// ```
 pub struct CompositeObserver<U: ChromosomeT> {
     observers: Vec<Arc<dyn AllObserver<U> + Send + Sync>>,
 }
@@ -55,13 +68,22 @@ impl<U: ChromosomeT> CompositeObserver<U> {
 
     /// Registers an inner observer and returns `self` for chaining.
     ///
-    /// Observers are called in the order they are added.
-    // `add` is the idiomatic builder-pattern name here and does not implement
-    // arithmetic — suppress the false-positive `should_implement_trait` lint.
-    #[allow(clippy::should_implement_trait)]
-    pub fn add(mut self, obs: Arc<dyn AllObserver<U> + Send + Sync>) -> Self {
+    /// Observers are dispatched in registration order for every lifecycle hook.
+    /// This is the canonical registration method; prefer it over the deprecated [`add`](Self::add).
+    pub fn register(mut self, obs: Arc<dyn AllObserver<U> + Send + Sync>) -> Self {
         self.observers.push(obs);
         self
+    }
+
+    /// Registers an inner observer (deprecated alias for [`register`](Self::register)).
+    ///
+    /// Kept for backward compatibility within v3.0.0. Use [`register`](Self::register) instead.
+    #[deprecated(since = "3.0.0", note = "Use `register` instead")]
+    // The name `add` conflicts with `std::ops::Add::add` in Clippy's eyes, but this is a
+    // deprecated wrapper kept only for API backward compatibility. The real method is `register`.
+    #[allow(clippy::should_implement_trait)]
+    pub fn add(self, obs: Arc<dyn AllObserver<U> + Send + Sync>) -> Self {
+        self.register(obs)
     }
 
     /// Returns the number of observers currently registered.
@@ -89,7 +111,7 @@ impl<U: ChromosomeT> Clone for CompositeObserver<U> {
 }
 
 // ---------------------------------------------------------------------------
-// GaObserver — 12 hooks
+// GaObserver — 13 hooks
 // ---------------------------------------------------------------------------
 
 impl<U: ChromosomeT> GaObserver<U> for CompositeObserver<U> {
@@ -145,9 +167,9 @@ impl<U: ChromosomeT> GaObserver<U> for CompositeObserver<U> {
         }
     }
 
-    fn on_new_best(&self, generation: usize, best: U) {
+    fn on_new_best(&self, generation: usize, best: &U) {
         for obs in &self.observers {
-            obs.on_new_best(generation, best.clone());
+            obs.on_new_best(generation, best);
         }
     }
 
@@ -160,6 +182,12 @@ impl<U: ChromosomeT> GaObserver<U> for CompositeObserver<U> {
     fn on_extension_triggered(&self, event: ExtensionEvent) {
         for obs in &self.observers {
             obs.on_extension_triggered(event);
+        }
+    }
+
+    fn on_restart(&self, event: &RestartEvent) {
+        for obs in &self.observers {
+            obs.on_restart(event);
         }
     }
 

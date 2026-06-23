@@ -20,8 +20,9 @@
 use std::sync::Arc;
 
 use crate::configuration::{CrossoverConfiguration, ProblemSolving};
-use crate::operations::mutation::ValueMutable;
+use crate::error::GaError;
 use crate::operations::crossover;
+use crate::operations::mutation::ValueMutable;
 use crate::rng::make_rng;
 use crate::traits::{FitnessFn, LinearChromosome, MutationOperator, SelectionOperator};
 use rand::Rng;
@@ -29,6 +30,22 @@ use rand::Rng;
 use super::configuration::{CellularConfiguration, Neighborhood, UpdateMode};
 
 /// Result returned by [`CellularEngine::run`].
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::cellular::{CellularConfiguration, CellularEngine, CellularResult};
+/// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+///
+/// let config = CellularConfiguration::default();
+/// let mut engine = CellularEngine::<RangeChromosome<f64>>::new(
+///     config,
+///     |n| vec![RangeChromosome::default(); n],
+///     |dna| dna.iter().map(|g| g.value() * g.value()).sum(),
+/// ).unwrap();
+/// let result: CellularResult<RangeChromosome<f64>> = engine.run();
+/// println!("Best fitness: {}", result.best_fitness);
+/// ```
 pub struct CellularResult<U: LinearChromosome> {
     /// Final grid population (row-major, length = `rows × cols`).
     pub population: Vec<U>,
@@ -45,30 +62,29 @@ pub struct CellularResult<U: LinearChromosome> {
 /// Evolves a population laid out on a 2D toroidal grid using local
 /// neighbourhood interactions.
 ///
-/// # Example
+/// # Examples
 ///
-/// ```ignore
+/// ```rust,no_run
 /// use genetic_algorithms::cellular::{CellularConfiguration, CellularEngine, Neighborhood, UpdateMode};
 /// use genetic_algorithms::chromosomes::Range as RangeChromosome;
-/// use genetic_algorithms::genotypes::Range as RangeGene;
-/// use genetic_algorithms::operations::{Crossover, Mutation, Selection};
 /// use genetic_algorithms::configuration::ProblemSolving;
+/// use genetic_algorithms::operations::{Mutation, GaussianParams};
 ///
 /// let config = CellularConfiguration::default()
 ///     .with_grid(8, 8)
 ///     .with_neighborhood(Neighborhood::Moore)
 ///     .with_update_mode(UpdateMode::Asynchronous)
 ///     .with_max_generations(200)
-///     .with_mutation_sigma(0.1)
-///     .with_problem_solving(ProblemSolving::Minimization)
-///     .with_fitness_target(0.01);
+///     .with_mutation(Mutation::Gaussian(GaussianParams { sigma: Some(0.1) }))
+///     .with_problem_solving(ProblemSolving::Minimization);
 ///
-/// let mut engine = CellularEngine::new(
+/// let mut engine = CellularEngine::<RangeChromosome<f64>>::new(
 ///     config,
-///     |n| /* build n chromosomes */ todo!(),
+///     |n| vec![RangeChromosome::default(); n],
 ///     |dna| dna.iter().map(|g| g.value() * g.value()).sum(),
-/// );
+/// ).unwrap();
 /// let result = engine.run();
+/// println!("Generations: {}", result.generations);
 /// ```
 pub struct CellularEngine<U: LinearChromosome> {
     config: CellularConfiguration,
@@ -86,22 +102,33 @@ where
     /// * `init_fn` — called once with `rows * cols`; must return that many
     ///   initialised chromosomes (fitness is ignored — the engine re-evaluates).
     /// * `fitness_fn` — maps a DNA slice to a scalar fitness value.
+    ///
+    /// # Errors
+    ///
+    /// Returns `GaError::ConfigurationError` if `config.rows == 0` or
+    /// `config.cols == 0` — a zero-size grid is rejected at construction time
+    /// (D-06: validation moved into `new()`).
     pub fn new(
         config: CellularConfiguration,
         init_fn: impl Fn(usize) -> Vec<U> + Send + Sync + 'static,
         fitness_fn: impl Fn(&[U::Gene]) -> f64 + Send + Sync + 'static,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, GaError> {
+        if config.rows == 0 || config.cols == 0 {
+            return Err(GaError::ConfigurationError(
+                "CellularEngine: rows and cols must both be > 0".to_string(),
+            ));
+        }
+        Ok(Self {
             config,
             init_fn: Arc::new(init_fn),
             fitness_fn: Arc::new(fitness_fn),
-        }
+        })
     }
 }
 
 impl<U> CellularEngine<U>
 where
-    U: LinearChromosome + Clone + ValueMutable + 'static,
+    U: LinearChromosome + Clone + ValueMutable + crate::traits::RealValuedMutation + 'static,
 {
     /// Run the Cellular GA and return the result.
     pub fn run(&mut self) -> CellularResult<U> {
@@ -117,9 +144,8 @@ where
         }
 
         // ── Best tracking ─────────────────────────────────────────────────────
-        if pop.is_empty() {
-            panic!("CellularEngine: grid must have at least 1 cell (rows > 0 && cols > 0)");
-        }
+        // Validation moved to new() (D-06); pop is guaranteed non-empty here.
+        debug_assert!(!pop.is_empty(), "grid validated > 0 in new()");
         let mut best_fitness = pop[0].fitness();
         let mut best = pop[0].clone();
         for ind in &pop {
@@ -172,7 +198,18 @@ where
                     // Select a mate from the neighborhood using the configured operator.
                     // We ask for 1 couple with num_parents=2; take the second element of the
                     // group as the mate so we don't just pick the cell itself.
-                    let pairs = self.config.selection.select(&local, 1, 1, 2);
+                    // Degrade gracefully when the configured selection cannot run through the
+                    // trait (e.g. Lexicase requires VectorFitness, not available here).
+                    let pairs = match self.config.selection.select(&local, 1, 1, 2) {
+                        Ok(p) => p,
+                        Err(_) => {
+                            crate::log_warn!(target: "selection_events",
+                                "CellularEngine: configured selection cannot run through the \
+                                 trait (e.g. Lexicase); skipping mate selection for this cell");
+                            // Fallback: use the first neighbor as mate (index 1 in local).
+                            vec![vec![0, 1]]
+                        }
+                    };
                     let mate_local_idx = if let Some(group) = pairs.first() {
                         let a = group[0];
                         let b = group[1];
@@ -201,7 +238,10 @@ where
                         };
 
                     // Mutate offspring
-                    let _ = self.config.mutation.mutate(&mut offspring, &self.config.mutation);
+                    let _ = self
+                        .config
+                        .mutation
+                        .mutate(&mut offspring, &self.config.mutation);
 
                     // Evaluate
                     let offspring_fitness = (self.fitness_fn)(offspring.dna());

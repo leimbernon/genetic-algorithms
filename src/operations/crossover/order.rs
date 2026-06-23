@@ -2,11 +2,20 @@
 
 use crate::error::GaError;
 use crate::traits::LinearChromosome;
-use log::debug;
 use rand::Rng;
 use std::borrow::Cow;
 use std::collections::HashSet;
 
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::crossover::order;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let parent1 = Binary::new();
+/// let parent2 = Binary::new();
+/// let _ = order(&parent1, &parent2);
+/// ```
+///
 /// Order Crossover (OX): preserves the relative order of genes.
 ///
 /// Essential for TSP and permutation problems where gene order matters.
@@ -31,7 +40,7 @@ pub fn order<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, 
         ));
     }
 
-    debug!(target="crossover_events", method="order"; "Starting order crossover (OX)");
+    crate::log_debug!(target="crossover_events", method="order"; "Starting order crossover (OX)");
     let mut rng = crate::rng::make_rng();
 
     let mut p1 = rng.random_range(0..len);
@@ -43,15 +52,15 @@ pub fn order<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, 
         std::mem::swap(&mut p1, &mut p2);
     }
 
-    let child_dna_1 = ox_build_child(parent_1.dna(), parent_2.dna(), p1, p2);
-    let child_dna_2 = ox_build_child(parent_2.dna(), parent_1.dna(), p1, p2);
+    let child_dna_1 = ox_build_child(parent_1.dna(), parent_2.dna(), p1, p2)?;
+    let child_dna_2 = ox_build_child(parent_2.dna(), parent_1.dna(), p1, p2)?;
 
     let mut child_1 = U::new();
     let mut child_2 = U::new();
     child_1.set_dna(Cow::Owned(child_dna_1));
     child_2.set_dna(Cow::Owned(child_dna_2));
 
-    debug!(target="crossover_events", method="order"; "Order crossover finished with points ({}, {})", p1, p2);
+    crate::log_debug!(target="crossover_events", method="order"; "Order crossover finished with points ({}, {})", p1, p2);
     Ok(vec![child_1, child_2])
 }
 
@@ -60,7 +69,7 @@ pub(crate) fn ox_build_child<G: crate::traits::GeneT>(
     filler: &[G],
     p1: usize,
     p2: usize,
-) -> Vec<G> {
+) -> Result<Vec<G>, GaError> {
     let len = donor.len();
     let mut child: Vec<Option<G>> = vec![None; len];
 
@@ -94,17 +103,18 @@ pub(crate) fn ox_build_child<G: crate::traits::GeneT>(
         child_pos = (child_pos + 1) % len;
     }
 
+    // Collect into Result — an unfilled slot means non-unique gene IDs in the parents.
     child
         .into_iter()
         .enumerate()
         .map(|(i, g)| {
-            g.unwrap_or_else(|| {
-                panic!(
-                    "Order crossover: child position {} was not filled. \
-                     This indicates non-unique gene IDs in the parents.",
+            g.ok_or_else(|| {
+                GaError::CrossoverError(format!(
+                    "Order crossover: child position {} was not filled \
+                     — indicates non-unique gene IDs in the parents.",
                     i
-                )
+                ))
             })
         })
-        .collect()
+        .collect::<Result<Vec<_>, _>>()
 }

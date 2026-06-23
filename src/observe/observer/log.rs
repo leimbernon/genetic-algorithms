@@ -6,15 +6,16 @@
 //!
 //! # Usage
 //!
-//! ```ignore
+//! ```rust,no_run
+//! // no_run: API illustration — Ga requires full configuration to build
 //! use std::sync::Arc;
 //! use genetic_algorithms::observer::LogObserver;
 //!
-//! let mut ga = Ga::new()
-//!     // ... configuration ...
-//!     .with_observer(Arc::new(LogObserver))
-//!     .build()
-//!     .unwrap();
+//! // let mut ga = Ga::new()
+//! //     // ... configuration ...
+//! //     .with_observer(Arc::new(LogObserver))
+//! //     .build()
+//! //     .unwrap();
 //! ```
 //!
 //! # Note
@@ -37,12 +38,21 @@ use std::time::Duration;
 /// All messages use the same target, level, KV fields, and format strings as
 /// the original hardcoded `log!()` calls in `ga.rs`. Attach with:
 ///
-/// ```ignore
+/// ```text
+/// // API illustration — ga must be a configured Ga instance
 /// ga.with_observer(Arc::new(LogObserver));
 /// ```
 ///
 /// **Note:** Attaching `LogObserver` alongside another observer that prints per-generation output
 /// may produce redundant output.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::observer::LogObserver;
+///
+/// let _obs = LogObserver;
+/// ```
 pub struct LogObserver;
 
 impl<U: ChromosomeT> GaObserver<U> for LogObserver {
@@ -108,7 +118,7 @@ impl<U: ChromosomeT> GaObserver<U> for LogObserver {
         log::debug!(target="ga_events", method="run"; "Survivors selected");
     }
 
-    fn on_new_best(&self, _generation: usize, _best: U) {
+    fn on_new_best(&self, _generation: usize, _best: &U) {
         // No direct log call existed for new best — it was implicit in "Best chromosome calculated"
     }
 
@@ -143,18 +153,20 @@ impl<U: ChromosomeT> GaObserver<U> for LogObserver {
             );
         }
 
-        // Absorbed from limit_reached() — lines 1207 and 1232:
-        log::debug!(target="ga_events", method="limit_reached"; "Started limit reached method");
-        // Note: trace-level limit-reached messages (lines 1214, 1223) are condition-dependent
-        // and cannot be reproduced from on_generation_end parameters (we don't know which
-        // condition triggered). Emit both unconditionally at trace level for coverage.
-        log::trace!(target="ga_events", method="limit_reached"; "limit reached for minimization");
-        log::trace!(target="ga_events", method="limit_reached"; "limit reached for fixed fitness");
-        log::debug!(target="ga_events", method="limit_reached"; "Limit reached method finished");
+        // Note: limit_reached trace messages are condition-dependent and are emitted from
+        // on_run_end once the termination cause is known. They are intentionally NOT emitted
+        // here to avoid spurious "limit reached" noise on every generation.
     }
 
-    fn on_run_end(&self, _cause: TerminationCause, _all_stats: &[GenerationStats]) {
-        // No direct log call existed for run end in the original code
+    fn on_run_end(&self, cause: TerminationCause, _all_stats: &[GenerationStats]) {
+        // Reproduces the condition-dependent trace messages from the old limit_reached()
+        // helper (lines 1214 and 1223 of the pre-v2.2.0 ga.rs). Only emitted when the
+        // termination cause confirms a limit was actually reached.
+        log::debug!(target="ga_events", method="limit_reached"; "Started limit reached method");
+        if matches!(cause, TerminationCause::FitnessTargetReached) {
+            log::trace!(target="ga_events", method="limit_reached"; "limit reached for fixed fitness");
+        }
+        log::debug!(target="ga_events", method="limit_reached"; "Limit reached method finished");
     }
 }
 

@@ -27,7 +27,7 @@ use rand::Rng;
 /// The `adapt_strategy_params()` update rule is provided as a default
 /// implementation via the trait body, so implementors get it for free.
 ///
-/// # Example
+/// # Examples
 ///
 /// ```rust
 /// use genetic_algorithms::chromosomes::Range;
@@ -101,8 +101,7 @@ pub trait SelfAdaptive: ChromosomeT {
             let u2_local: f64 = rng.random_range(0.0..std::f64::consts::TAU);
             let local_noise: f64 = (-2.0 * u1_local.ln()).sqrt() * u2_local.cos();
 
-            *sigma = (*sigma * (tau_prime * global_noise + tau * local_noise).exp())
-                .max(sigma_min);
+            *sigma = (*sigma * (tau_prime * global_noise + tau * local_noise).exp()).max(sigma_min);
         }
 
         self.set_strategy_params(new_params);

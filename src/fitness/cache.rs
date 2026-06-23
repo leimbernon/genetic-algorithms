@@ -18,6 +18,19 @@ use crate::traits::{FitnessFn, GeneT};
 /// The cache uses a `HashMap` for O(1) lookups and a `VecDeque` for tracking
 /// access order. When the cache exceeds its capacity, the least recently used
 /// entry is evicted.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::fitness::cache::FitnessCache;
+///
+/// let mut cache = FitnessCache::new(4);
+/// cache.put(42, 0.9);
+/// assert_eq!(cache.get(42), Some(0.9));
+/// assert_eq!(cache.get(99), None);
+/// assert_eq!(cache.hits(), 1);
+/// assert_eq!(cache.misses(), 1);
+/// ```
 pub struct FitnessCache {
     map: HashMap<u64, f64>,
     order: VecDeque<u64>,
@@ -98,6 +111,18 @@ impl FitnessCache {
 ///
 /// This approach works for all gene types (including `Range<f64>` which
 /// does not implement `Hash`) since `Debug` is required by the `Ga` impl.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::fitness::cache::hash_dna;
+/// use genetic_algorithms::genotypes::Binary as BinaryGene;
+///
+/// let dna = vec![BinaryGene { id: 0, value: true }, BinaryGene { id: 1, value: false }];
+/// let h1 = hash_dna(&dna);
+/// let h2 = hash_dna(&dna);
+/// assert_eq!(h1, h2);
+/// ```
 pub fn hash_dna<G: Debug>(dna: &[G]) -> u64 {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     // Hash each gene's Debug representation to capture full state
@@ -111,23 +136,39 @@ pub fn hash_dna<G: Debug>(dna: &[G]) -> u64 {
 
 /// Wraps a fitness function with LRU caching.
 ///
-/// Returns a new fitness function that checks the cache before calling the
-/// original function. Cache hits avoid the (potentially expensive) fitness
-/// evaluation entirely.
+/// Returns a tuple `(wrapped_fn, cache_handle)` where:
+/// - `wrapped_fn` is a new fitness function that checks the cache before
+///   calling the original, avoiding redundant evaluations for identical DNA.
+/// - `cache_handle` is a shared `Arc<Mutex<FitnessCache>>` that callers can
+///   use to read hit/miss statistics or reset the cache between runs.
 ///
 /// The cache is shared across all chromosomes and threads via `Arc<Mutex<...>>`.
-pub fn wrap_with_cache<G>(fitness_fn: Arc<FitnessFn<G>>, cache_size: usize) -> Arc<FitnessFn<G>>
+///
+/// # Example
+///
+/// ```text
+/// // API illustration — my_fitness_fn must be defined by the user
+/// let (cached_fn, cache) = wrap_with_cache(my_fitness_fn, 1024);
+/// // After a run:
+/// let stats = cache.lock().unwrap();
+/// println!("hits={} misses={}", stats.hits(), stats.misses());
+/// ```
+pub fn wrap_with_cache<G>(
+    fitness_fn: Arc<FitnessFn<G>>,
+    cache_size: usize,
+) -> (Arc<FitnessFn<G>>, Arc<Mutex<FitnessCache>>)
 where
     G: GeneT + Debug + 'static,
 {
     let cache = Arc::new(Mutex::new(FitnessCache::new(cache_size)));
+    let cache_for_fn = Arc::clone(&cache);
 
-    Arc::new(move |dna: &[G]| {
+    let wrapped = Arc::new(move |dna: &[G]| {
         let key = hash_dna(dna);
 
         // Try cache first
         {
-            let mut cache = cache.lock().expect("fitness cache lock poisoned");
+            let mut cache = cache_for_fn.lock().expect("fitness cache lock poisoned");
             if let Some(fitness) = cache.get(key) {
                 return fitness;
             }
@@ -138,10 +179,12 @@ where
 
         // Store result
         {
-            let mut cache = cache.lock().expect("fitness cache lock poisoned");
+            let mut cache = cache_for_fn.lock().expect("fitness cache lock poisoned");
             cache.put(key, fitness);
         }
 
         fitness
-    })
+    });
+
+    (wrapped, cache)
 }

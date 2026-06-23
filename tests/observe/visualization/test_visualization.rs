@@ -7,7 +7,8 @@
 
 use genetic_algorithms::stats::GenerationStats;
 use genetic_algorithms::visualization::{
-    plot_diversity, plot_fitness, plot_histogram, VisualizationError,
+    plot_diversity, plot_fitness, plot_histogram, plot_pareto_front_2d, plot_pareto_front_3d,
+    plot_true_fitness_calls, VisualizationError,
 };
 
 fn make_stats(n: usize) -> Vec<GenerationStats> {
@@ -22,6 +23,28 @@ fn make_stats(n: usize) -> Vec<GenerationStats> {
             diversity: 10.0,
             dynamic_mutation_probability: None,
             avg_node_count: 0.0,
+            cache_hits: None,
+            cache_misses: None,
+            true_fitness_calls: None,
+        })
+        .collect()
+}
+
+fn make_stats_with_surrogate(n: usize) -> Vec<GenerationStats> {
+    (0..n)
+        .map(|i| GenerationStats {
+            generation: i,
+            best_fitness: 100.0 - i as f64,
+            worst_fitness: i as f64,
+            avg_fitness: 50.0,
+            fitness_std_dev: 10.0,
+            population_size: 100,
+            diversity: 10.0,
+            dynamic_mutation_probability: None,
+            avg_node_count: 0.0,
+            cache_hits: None,
+            cache_misses: None,
+            true_fitness_calls: Some(50 + i as u64),
         })
         .collect()
 }
@@ -288,4 +311,139 @@ fn test_plot_histogram_identical_values() {
     );
 
     let _ = std::fs::remove_file(&path);
+}
+
+// ── plot_pareto_front_2d tests ────────────────────────────────────────────────
+
+#[test]
+fn test_plot_pareto_front_2d_png() {
+    let points: Vec<(f64, f64)> = (0..10)
+        .map(|i| (i as f64 * 0.1, 1.0 - i as f64 * 0.1))
+        .collect();
+    let path = std::env::temp_dir().join("test_viz_pareto2d.png");
+    let path_str = path.to_str().unwrap();
+
+    let _ = std::fs::remove_file(&path);
+
+    let result = plot_pareto_front_2d(&points, path_str);
+    assert!(
+        result.is_ok(),
+        "plot_pareto_front_2d PNG failed: {:?}",
+        result.err()
+    );
+    assert!(path.exists(), "PNG file was not created");
+    assert!(
+        std::fs::metadata(&path).unwrap().len() > 0,
+        "PNG file is empty"
+    );
+
+    let _ = std::fs::remove_file(&path);
+}
+
+#[test]
+fn test_pareto_2d_insufficient_empty() {
+    let p: Vec<(f64, f64)> = vec![];
+    let path = std::env::temp_dir().join("test_viz_pareto2d_empty.png");
+    let path_str = path.to_str().unwrap();
+
+    let result = plot_pareto_front_2d(&p, path_str);
+    assert!(
+        matches!(result, Err(VisualizationError::InsufficientData)),
+        "Expected InsufficientData, got: {:?}",
+        result
+    );
+}
+
+#[test]
+fn test_pareto_2d_insufficient_single() {
+    let p: Vec<(f64, f64)> = vec![(0.0, 0.0)];
+    let path = std::env::temp_dir().join("test_viz_pareto2d_single.png");
+    let path_str = path.to_str().unwrap();
+
+    let result = plot_pareto_front_2d(&p, path_str);
+    assert!(
+        matches!(result, Err(VisualizationError::InsufficientData)),
+        "Expected InsufficientData, got: {:?}",
+        result
+    );
+}
+
+// ── plot_pareto_front_3d tests ────────────────────────────────────────────────
+
+#[test]
+fn test_plot_pareto_front_3d_png() {
+    let points: Vec<(f64, f64, f64)> = (0..10)
+        .map(|i| (i as f64 * 0.1, i as f64 * 0.1, 1.0 - i as f64 * 0.1))
+        .collect();
+    let path = std::env::temp_dir().join("test_viz_pareto3d.png");
+    let path_str = path.to_str().unwrap();
+
+    let _ = std::fs::remove_file(&path);
+
+    let result = plot_pareto_front_3d(&points, path_str);
+    assert!(
+        result.is_ok(),
+        "plot_pareto_front_3d PNG failed: {:?}",
+        result.err()
+    );
+    assert!(path.exists(), "PNG file was not created");
+    assert!(
+        std::fs::metadata(&path).unwrap().len() > 0,
+        "PNG file is empty"
+    );
+
+    let _ = std::fs::remove_file(&path);
+}
+
+#[test]
+fn test_pareto_3d_insufficient_empty() {
+    let p: Vec<(f64, f64, f64)> = vec![];
+    let path = std::env::temp_dir().join("test_viz_pareto3d_empty.png");
+    let path_str = path.to_str().unwrap();
+
+    let result = plot_pareto_front_3d(&p, path_str);
+    assert!(
+        matches!(result, Err(VisualizationError::InsufficientData)),
+        "Expected InsufficientData, got: {:?}",
+        result
+    );
+}
+
+// ── plot_true_fitness_calls tests ─────────────────────────────────────────────
+
+#[test]
+fn test_plot_true_fitness_calls_png() {
+    let stats = make_stats_with_surrogate(5);
+    let path = std::env::temp_dir().join("test_viz_tfc.png");
+    let path_str = path.to_str().unwrap();
+
+    let _ = std::fs::remove_file(&path);
+
+    let result = plot_true_fitness_calls(&stats, path_str);
+    assert!(
+        result.is_ok(),
+        "plot_true_fitness_calls PNG failed: {:?}",
+        result.err()
+    );
+    assert!(path.exists(), "PNG file was not created");
+    assert!(
+        std::fs::metadata(&path).unwrap().len() > 0,
+        "PNG file is empty"
+    );
+
+    let _ = std::fs::remove_file(&path);
+}
+
+#[test]
+fn test_true_fitness_calls_insufficient_all_none() {
+    let stats = make_stats(5);
+    let path = std::env::temp_dir().join("test_viz_tfc_none.png");
+    let path_str = path.to_str().unwrap();
+
+    let result = plot_true_fitness_calls(&stats, path_str);
+    assert!(
+        matches!(result, Err(VisualizationError::InsufficientData)),
+        "Expected InsufficientData, got: {:?}",
+        result
+    );
 }

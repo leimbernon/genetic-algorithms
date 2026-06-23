@@ -5,7 +5,7 @@
 
 [![Rust Unit Tests](https://github.com/leimbernon/rust_genetic_algorithms/actions/workflows/rust-unit-tests.yml/badge.svg)](https://github.com/leimbernon/rust_genetic_algorithms/actions/workflows/rust-unit-tests.yml)
 
-Modular and concurrent evolutionary computation library for Rust. Provides 12 optimization engines — standard GA, multi-objective (NSGA-II/III, MOEA/D, SPEA2, SMS-EMOA, IBEA), island model, Differential Evolution, Scatter Search, Cellular GA, ALPS, and Genetic Programming (GP) — all generic over chromosome and gene types via traits.
+Modular and concurrent evolutionary computation library for Rust. Provides **17 optimization engines** — standard GA, multi-objective (NSGA-II/III, MOEA/D, SPEA2, SMS-EMOA, IBEA), island model, Differential Evolution, CMA-ES (with IPOP/BIPOP restarts), Particle Swarm Optimization, Estimation of Distribution (UMDA), Scatter Search, Cellular GA, ALPS, Hill Climbing, exhaustive Permutation search, and Genetic Programming (GP) — all generic over chromosome and gene types via traits.
 
 Key capabilities:
 - Clear abstractions: traits for genes, chromosomes, and configuration.
@@ -17,10 +17,20 @@ Key capabilities:
 - Variable-length chromosomes: `ChromosomeLength::Variable { min, max }` with `Mutation::Insertion` / `Mutation::Deletion` and `Crossover::VariableLength`.
 - Parsimony pressure: length-penalized fitness during survivor selection via `with_length_penalty`.
 - Genetic Programming engine (`GpGa`) with subtree crossover, subtree/point/hoist mutation, ramped half-and-half initialization, and built-in `MathNode` / `BoolNode` primitive sets.
-- Lifecycle observer system (`GaObserver`) with built-in `LogObserver`, `CompositeObserver`, `MetricsObserver`, `TracingObserver`, `AllObserver`, and `NoopObserver`.
-- Optional `visualization` feature for PNG/SVG fitness and diversity charts.
+- **CMA-ES (`CmaEngine`)** with Hansen-default parameter formulas, Jacobi eigendecomposition (no LAPACK, WASM-compatible), and `RestartStrategy::Ipop` / `Bipop` for multimodal landscapes.
+- **PSO (`PsoEngine`)** with configurable inertia (Constant, LinearDecay, RandomRange), topology (Global, Ring, VonNeumann), and absorbing boundary handling.
+- **EDA (`EdaEngine` / `EdaRealEngine`)** — UMDA Bernoulli and Gaussian probabilistic models; no crossover/mutation required.
+- **Constraint handling (`ConstraintHandling`)** — Static / Dynamic / Adaptive / Death penalties and feasibility-rules support.
+- **Hall of Fame (`HallOfFame`)** — bounded elite archive with deduplication and optional minimum-distance diversity (`DistanceMetric`).
+- **Adaptive Operator Selection (`AosStrategy`)** — Probability Matching, Adaptive Pursuit, and Multi-Armed Bandit credit assignment.
+- **Batch fitness (`BatchFitnessEvaluator`)** and **surrogate-assisted evaluation (`SurrogateModel`)** for expensive black-box objectives.
+- **Memetic algorithms** via `LocalSearchOperator` (Lamarckian / Baldwinian modes).
+- **Standard benchmark suite** (`benchmarks` feature): Sphere, Rastrigin, Ackley, ZDT1–6, DTLZ1–7 and multi-objective indicators (Hypervolume, GD, IGD, Spread).
+- Lifecycle observer system (`GaObserver`, 13 hooks including `on_restart`) with built-in `LogObserver`, `CompositeObserver`, `MetricsObserver`, `TracingObserver`, `AllObserver`, and `NoopObserver`.
+- Optional `visualization` feature for PNG/SVG fitness, diversity, and Pareto-front charts.
 - `Cow<[Gene]>` for zero-copy DNA operations.
 - Compound stopping criteria: stagnation, convergence threshold, time limit.
+- First-class WebAssembly support (`wasm32-unknown-unknown` is a CI gate).
 
 ## Table of Contents
 - [Documentation](#documentation)
@@ -33,6 +43,7 @@ Key capabilities:
   - [Initializers](#initializers)
   - [Operators](#operators)
   - [Engines](#engines)
+    - [Which engine should I use?](#which-engine-should-i-use)
   - [Observer (GaObserver)](#observer-gaobserver)
   - [Visualization](#visualization)
   - [GA Configuration](#ga-configuration)
@@ -75,6 +86,26 @@ genetic_algorithms = { version = "3.0.0", features = ["observer-tracing"] }
 # Observer integration with the `metrics` crate
 genetic_algorithms = { version = "3.0.0", features = ["observer-metrics"] }
 ```
+
+To shed the `log` crate entirely for embedded / ultra-lean / wasm-only builds:
+
+```toml
+genetic_algorithms = { version = "3.0.0", default-features = false }
+```
+
+The `logging` feature is on by default. Disabling it removes the `log` dependency and causes all internal log emissions to expand to `()` at compile time. `LogObserver` is also unavailable without this feature.
+
+The `parallel` feature is also on by default. Disable via `default-features = false` to shed the `rayon` + `crossbeam` dependencies for embedded / wasm-only builds:
+
+```toml
+# Disable rayon for wasm-only or embedded builds
+genetic_algorithms = { version = "3.0.0", default-features = false, features = ["logging"] }
+```
+
+| Feature | Description | Default |
+|---------|-------------|---------|
+| `logging` | `log` crate events via `LogObserver` | **On** |
+| `parallel` | Parallel fitness evaluation via rayon (default-on; disable to shed rayon + crossbeam dependencies for embedded / wasm-only builds) | **On** |
 
 ## Quick Start
 
@@ -153,22 +184,48 @@ Custom chromosomes can be added by implementing `ChromosomeT`.
 
 ### Operators
 
-- **Selection:** `Random`, `RouletteWheel`, `StochasticUniversalSampling`, `Tournament`, `Rank`, `Boltzmann`, `Truncation`, `Clearing`
-- **Crossover:** `Cycle`, `MultiPoint`, `Uniform`, `SinglePoint`, `Order` (OX), `Pmx` (Partially Mapped), `Sbx` (Simulated Binary), `BlendAlpha` (BLX-α), `Arithmetic`, `Clone`, `Rejuvenate`, `EdgeRecombination`, `VariableLength(AlignmentStrategy)` (for variable-length chromosomes)
-- **Mutation:** `Swap`, `Inversion`, `Scramble`, `Value` (Range<T>), `BitFlip` (Binary), `Creep` (uniform perturbation), `Gaussian` (normal perturbation), `Polynomial` (NSGA-II style), `NonUniform` (decreasing magnitude), `PermutationInsert` (permutation move), `Insertion` (grow variable-length chromosome), `Deletion` (shrink variable-length chromosome), `Cauchy`, `LevyFlight`, `Uniform`, `ListValue` (List<T>), `Differential`
+- **Selection:** `Random`, `RouletteWheel`, `StochasticUniversalSampling`, `Tournament`, `Rank`, `Boltzmann`, `Truncation`, `Clearing`, `Lexicase`, `EpsilonLexicase`
+- **Crossover:** `Cycle`, `MultiPoint`, `Uniform`, `SinglePoint`, `Order` (OX), `Pmx` (Partially Mapped), `Sbx` (Simulated Binary), `BlendAlpha` (BLX-α), `Arithmetic`, `Clone`, `Rejuvenate`, `EdgeRecombination`, `VariableLength(AlignmentStrategy)` (for variable-length chromosomes), `Undx`, `Spx`, `Pcx` (multi-parent real-valued crossover via the `RealValued` marker trait)
+- **Mutation:** `Swap`, `Inversion`, `Scramble`, `Value` (Range<T>), `BitFlip` (Binary), `Creep` (uniform perturbation), `Gaussian` (normal perturbation), `Polynomial` (NSGA-II style), `NonUniform` (decreasing magnitude), `PermutationInsert` (permutation move), `Insertion` (grow variable-length chromosome), `Deletion` (shrink variable-length chromosome), `Cauchy`, `LevyFlight`, `Uniform`, `ListValue` (List<T>), `Differential`, `SelfAdaptiveGaussian` (log-normal sigma update, requires `SelfAdaptive` chromosome)
 - **Survivor:** `Fitness` (keep best), `Age` (prefer younger), `MuPlusLambda` (parents + offspring compete), `MuCommaLambda` (offspring only), `DeterministicCrowding`; parsimony pressure via `with_length_penalty`
 - **Extension:** `Noop`, `MassExtinction`, `MassGenesis`, `MassDegeneration`, `MassDeduplication`
 
 ### Engines
+
+#### Which engine should I use?
+
+Start from your problem, not from the algorithm. Pick the first row that matches; the *Description* table below has the details.
+
+| Your problem | Use | Why |
+|--------------|-----|-----|
+| Real-valued, expensive/black-box, ≤ ~40 dims | `CmaEngine<U>` | Self-adapting covariance; strongest general real-valued optimizer. Add `RestartStrategy::Ipop`/`Bipop` if multimodal |
+| Real-valued, fast to evaluate, want a swarm | `PsoEngine<U>` | Few parameters, quick convergence on smooth landscapes |
+| Real-valued, rugged/multimodal, robust default | `DeEngine<U>` | Differential Evolution; JADE/L-SHADE self-tune the rates |
+| Binary or categorical (feature selection, OneMax…) | `Ga<U>` or `EdaEngine<U>` | `Ga` for general use; `EdaEngine` (UMDA) when the variables are near-independent |
+| Permutation (TSP, scheduling, routing) | `Ga<U>` with `UniqueChromosome<T>` + `Crossover::Ox`/`Pmx` | Permutation-safe genotype and operators; multiple groups → `MultiUniqueChromosome<T>` |
+| Per-gene different bounds (heterogeneous reals) | `Ga<U>` with `MultiRangeChromosome<T>` | Each gene clamps to its own `(lo, hi)` |
+| Evolving programs / symbolic expressions | `GpGa<N>` | Tree chromosomes, bloat control, ramped half-and-half init |
+| 2–3 objectives (trade-off front) | `Nsga2Ga<U>` | The standard, well-understood MOO baseline |
+| 4+ objectives (many-objective) | `Nsga3Ga<U>` or `MoeaDGa<U>` | Reference-point / decomposition based; NSGA-II degrades past 3 |
+| Multi-objective, want explicit hypervolume quality | `SmsEmoaGa<U>` / `IbeaGa<U>` | Indicator-driven selection |
+| Large/structured population, premature-convergence concerns | `IslandGa<U>`, `CellularEngine<U>`, or `AlpsEngine<U>` | Migration / spatial / age-layering preserve diversity |
+| Just need a local-search or exhaustive baseline | `HillClimbEngine<U>` / `PermutateEngine<U>` | Sanity-check baselines; `Permutate` only for tiny spaces |
+
+> Anything `RealGene`-bound (`CmaEngine`, `PsoEngine`, real `EdaEngine`) needs a real-valued genotype such as `RangeChromosome<f64>` or `MultiRangeChromosome<f64>`.
 
 | Engine | Module | Objectives | Description |
 |--------|--------|------------|-------------|
 | `Ga<U>` | `ga` | Single | Standard single-population GA with full operator support, adaptive mode, elitism, and extensions |
 | `IslandGa<U>` | `island` | Single | Island model with configurable migration topology, frequency, and migrant selection |
 | `DeEngine<U>` | `de` | Single | Differential Evolution — 5 mutation strategies + JADE/L-SHADE adaptive variants |
+| `CmaEngine<U>` | `cma` | Single | Covariance Matrix Adaptation Evolution Strategy (CMA-ES); Hansen-default formulas; `RestartStrategy::Ipop` / `Bipop` for multimodal landscapes |
+| `PsoEngine<U>` | `pso` | Single | Particle Swarm Optimization — configurable inertia (`PsoInertia`), topology (`PsoTopology`), absorbing boundary |
+| `EdaEngine<U>` / `EdaRealEngine<U>` | `eda` | Single | UMDA: Bernoulli model for binary problems, Gaussian model for continuous — no crossover/mutation |
 | `ScatterEngine<U>` | `scatter` | Single | Scatter Search with reference set diversification and combination methods |
 | `CellularEngine<U>` | `cellular` | Single | Cellular GA on a 2D toroidal grid with 4 neighborhood topologies |
 | `AlpsEngine<U>` | `alps` | Single | Age-Layered Population Structure with 3 age schemes and cross-layer mating |
+| `HillClimbEngine<U>` | `hill_climb` | Single | Local-search baseline strategy — `Stochastic` or `SteepestAscent` mode |
+| `PermutateEngine<U>` | `permutate` | Single | Exhaustive enumeration over a permutation space with a hard safety gate against combinatorial explosion |
 | `GpGa<N>` | `gp` | Single | Genetic Programming — tree chromosomes, subtree/point/hoist mutation, ramped half-and-half initialization |
 | `Nsga2Ga<U>` | `nsga2` | 2+ | NSGA-II — fast non-dominated sorting with crowding distance diversity |
 | `Nsga3Ga<U>` | `nsga3` | 3+ | NSGA-III — reference-point based selection for many-objective problems |
@@ -252,7 +309,7 @@ GP mutation operators:
 
 ### Observer (GaObserver)
 
-> **Note:** `Reporter<U>` is deprecated since 2.2.0 and will be removed in v3.0.0. Use `GaObserver` instead.
+> **v3.0.0:** the legacy `Reporter<U>` trait has been removed. Use `GaObserver` instead — see [MIGRATION.md](./MIGRATION.md).
 
 Attach a lifecycle observer via `.with_observer(Arc::new(my_observer))`. All hooks take `&self` — safe in rayon parallel regions. Zero overhead when no observer is attached (stored as `Option<Arc<_>>`).
 
@@ -260,6 +317,8 @@ Attach a lifecycle observer via `.with_observer(Arc::new(my_observer))`. All hoo
 
 | Hook | When it fires |
 |------|--------------|
+| `on_run_start` | Before the first generation |
+| `on_generation_start` | At the start of each generation |
 | `on_selection_complete` | After parent selection |
 | `on_crossover_complete` | After crossover batch |
 | `on_mutation_complete` | After mutation batch |
@@ -268,8 +327,8 @@ Attach a lifecycle observer via `.with_observer(Arc::new(my_observer))`. All hoo
 | `on_new_best` | When a new best chromosome is found |
 | `on_stagnation` | When no improvement for N generations |
 | `on_extension_triggered` | When diversity extension fires |
+| `on_restart` | When `CmaEngine` triggers an IPOP/BIPOP restart (`RestartEvent`) |
 | `on_generation_end` | End of each generation (with `GenerationStats`) |
-| `on_run_start` | Before the first generation |
 | `on_run_end` | After the last generation |
 
 #### Engine-specific sub-traits
@@ -358,6 +417,33 @@ visualization::plot_histogram(&fitness, "distribution.png")?;
 
 Format is determined by path extension (`.png` or `.svg`). All functions return `Result<(), VisualizationError>`.
 
+#### Multi-Objective Pareto Fronts
+
+| Algorithm | Benchmark | Plot |
+|-----------|-----------|------|
+| NSGA-II | ZDT1 (2-obj) | ![NSGA-II ZDT1 Pareto front](docs/images/nsga2_zdt1.png) |
+| SPEA2 | ZDT1 (2-obj) | ![SPEA2 ZDT1 Pareto front](docs/images/spea2_zdt1.png) |
+| SMS-EMOA | ZDT1 (2-obj) | ![SMS-EMOA ZDT1 Pareto front](docs/images/sms_emoa_zdt1.png) |
+| IBEA | ZDT1 (2-obj) | ![IBEA ZDT1 Pareto front](docs/images/ibea_zdt1.png) |
+| NSGA-III | DTLZ2 (3-obj, three-panel) | ![NSGA-III DTLZ2 Pareto front](docs/images/nsga3_dtlz2.png) |
+
+Generate each plot by running the corresponding example with `--plot`, for example:
+
+```bash
+cargo run --example nsga2_zdt1 --features visualization -- --plot
+cargo run --example sms_emoa_zdt1 --features "visualization,benchmarks" -- --plot
+```
+
+#### Single-Objective Fitness Progress
+
+![Rastrigin fitness over generations](docs/images/rastrigin.png)
+
+Generated via:
+
+```bash
+cargo run --example rastrigin --features visualization -- --plot
+```
+
 ### GA Configuration
 
 `GaConfiguration` (or the `Ga` builder) exposes:
@@ -370,7 +456,7 @@ Format is determined by path extension (`.png` or `.svg`). All functions return 
 - **Elitism:** `elitism_count` — preserve the top N individuals unchanged across generations.
 - **Extension:** configure via `with_extension_method()`, `with_extension_diversity_threshold()`, `with_extension_survival_rate()`, `with_extension_mutation_rounds()`, `with_extension_elite_count()`.
 - **Stopping criteria:** `StoppingCriteria` with `stagnation_generations`, `convergence_threshold`, `max_duration_secs`. The GA stops when any enabled criterion is met.
-- **Infra:** `adaptive_ga`, `number_of_threads`, `log_level`.
+- **Infra:** `adaptive_ga`, `number_of_threads`.
 
 ### Adaptive GA
 
@@ -387,6 +473,33 @@ When `adaptive_ga = false`:
 - Selection, crossover, mutation, and fitness evaluation are parallelized each generation.
 - `Cow<[Gene]>` prevents needless cloning of DNA vectors.
 - `select_nth_unstable_by()` used over full sort when finding top-k individuals.
+
+### Logging
+
+The library emits structured `log!()` events (using the [`log`](https://crates.io/crates/log)
+facade) but **does not install a logger**. Install your own subscriber in `main()`:
+
+```rust
+fn main() {
+    env_logger::init(); // or: tracing_subscriber::fmt::init(), etc.
+
+    let mut ga = Ga::new()
+        // ... configure ...
+        .build()
+        .unwrap();
+    ga.run().unwrap();
+}
+```
+
+Control verbosity with `RUST_LOG`: `RUST_LOG=genetic_algorithms=warn cargo run`. The GA emits
+events on the `ga_events`, `population_events`, and related log targets.
+
+Add `env_logger` to your project's `[dev-dependencies]` for examples and tests:
+
+```toml
+[dev-dependencies]
+env_logger = "0.11"
+```
 
 ## WebAssembly
 
@@ -455,6 +568,16 @@ Run any example directly with `cargo run --example <name>`:
 | `constrained_g1` | Constraint handling | `cargo run --example constrained_g1` |
 | `hall_of_fame_demo` | Solution archive | `cargo run --example hall_of_fame_demo` |
 | `memetic_rastrigin` | Memetic algorithm | `cargo run --example memetic_rastrigin` |
+| `cma_es_rastrigin` | CMA-ES on Rastrigin | `cargo run --example cma_es_rastrigin` |
+| `ipop_rastrigin` | CMA-ES + IPOP restarts | `cargo run --example ipop_rastrigin` |
+| `pso_rastrigin` | Particle Swarm Optimization | `cargo run --example pso_rastrigin` |
+| `eda_trap` | Estimation of Distribution (UMDA) | `cargo run --example eda_trap` |
+| `surrogate_rastrigin` | Surrogate-assisted evaluation | `cargo run --example surrogate_rastrigin` |
+| `de_rastrigin` | Differential Evolution (L-SHADE) | `cargo run --example de_rastrigin` |
+| `scatter_search` | Scatter Search with local search | `cargo run --example scatter_search` |
+| `cellular_ga` | Cellular GA (Moore neighborhood) | `cargo run --example cellular_ga` |
+| `alps` | ALPS age-layered evolution | `cargo run --example alps` |
+| `gp_symbolic_regression` | GP symbolic regression (MathNode) | `cargo run --example gp_symbolic_regression` |
 
 ## Development
 

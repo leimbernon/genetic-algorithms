@@ -12,7 +12,6 @@
 //! The shrinking-pool state in the filter cascade cannot be parallelised.
 
 use crate::traits::{ChromosomeT, VectorFitness};
-use log::{debug, trace};
 use rand::Rng;
 
 // WASM: intentionally sequential — lexicase inner loop uses a shrinking pool state
@@ -30,9 +29,7 @@ fn compute_mad_epsilons<U: VectorFitness>(chromosomes: &[U], num_cases: usize) -
                 .iter()
                 .map(|c| c.fitness_values()[case_i])
                 .collect();
-            scores.sort_unstable_by(|a, b| {
-                a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal)
-            });
+            scores.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
 
             let n = scores.len();
             let median = if n % 2 == 1 {
@@ -42,9 +39,7 @@ fn compute_mad_epsilons<U: VectorFitness>(chromosomes: &[U], num_cases: usize) -
             };
 
             let mut abs_devs: Vec<f64> = scores.iter().map(|&s| (s - median).abs()).collect();
-            abs_devs.sort_unstable_by(|a, b| {
-                a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal)
-            });
+            abs_devs.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
 
             if n % 2 == 1 {
                 abs_devs[n / 2]
@@ -95,7 +90,7 @@ fn select_one_winner<U: VectorFitness>(
     }
 
     let winner = pool[rng.random_range(0..pool.len())];
-    trace!(target = "selection_events", method = "lexicase"; "Winner: index={}", winner);
+    crate::log_trace!(target = "selection_events", method = "lexicase"; "Winner: index={}", winner);
     winner
 }
 
@@ -115,6 +110,15 @@ fn select_one_winner<U: VectorFitness>(
 ///
 /// `Vec<Vec<usize>>` of parent index groups. Returns empty vec if population
 /// has fewer than 2 individuals or case scores are empty.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::selection::lexicase_selection;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let population: Vec<Binary> = vec![Binary::new(); 10];
+/// let pairs = lexicase_selection(&population, 5, 2);
+/// ```
 pub fn lexicase_selection<U>(
     chromosomes: &[U],
     number_of_couples: usize,
@@ -124,15 +128,18 @@ where
     U: ChromosomeT + VectorFitness,
 {
     let num_parents = num_parents.max(2);
-    debug!(target = "selection_events", method = "lexicase"; "Starting lexicase selection with number_of_couples={}", number_of_couples);
+    crate::log_debug!(target = "selection_events", method = "lexicase"; "Starting lexicase selection with number_of_couples={}", number_of_couples);
 
     if chromosomes.len() < 2 || chromosomes[0].fitness_values().is_empty() {
         return Vec::new();
     }
 
     let num_cases = chromosomes[0].fitness_values().len();
-    if chromosomes.iter().any(|c| c.fitness_values().len() != num_cases) {
-        log::warn!(target: "selection_events", "lexicase: fitness_values length mismatch — returning empty selection");
+    if chromosomes
+        .iter()
+        .any(|c| c.fitness_values().len() != num_cases)
+    {
+        crate::log_warn!(target: "selection_events", "lexicase: fitness_values length mismatch — returning empty selection");
         return Vec::new();
     }
     let zero_eps = vec![0.0f64; num_cases];
@@ -142,13 +149,18 @@ where
     while mating.len() < number_of_couples {
         let mut group = Vec::with_capacity(num_parents);
         for _ in 0..num_parents {
-            group.push(select_one_winner(chromosomes, num_cases, &zero_eps, &mut rng));
+            group.push(select_one_winner(
+                chromosomes,
+                num_cases,
+                &zero_eps,
+                &mut rng,
+            ));
         }
-        trace!(target = "selection_events", method = "lexicase"; "Group: {:?}", group);
+        crate::log_trace!(target = "selection_events", method = "lexicase"; "Group: {:?}", group);
         mating.push(group);
     }
 
-    debug!(target = "selection_events", method = "lexicase"; "Lexicase selection finished: {} groups", mating.len());
+    crate::log_debug!(target = "selection_events", method = "lexicase"; "Lexicase selection finished: {} groups", mating.len());
     mating
 }
 
@@ -169,6 +181,15 @@ where
 ///
 /// `Vec<Vec<usize>>` of parent index groups. Returns empty vec if population
 /// has fewer than 2 individuals or case scores are empty.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::selection::epsilon_lexicase_selection;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let population: Vec<Binary> = vec![Binary::new(); 10];
+/// let pairs = epsilon_lexicase_selection(&population, 5, Some(0.01), 2);
+/// ```
 pub fn epsilon_lexicase_selection<U>(
     chromosomes: &[U],
     number_of_couples: usize,
@@ -179,15 +200,18 @@ where
     U: ChromosomeT + VectorFitness,
 {
     let num_parents = num_parents.max(2);
-    debug!(target = "selection_events", method = "epsilon_lexicase"; "Starting epsilon-lexicase selection with number_of_couples={} epsilon={:?}", number_of_couples, epsilon);
+    crate::log_debug!(target = "selection_events", method = "epsilon_lexicase"; "Starting epsilon-lexicase selection with number_of_couples={} epsilon={:?}", number_of_couples, epsilon);
 
     if chromosomes.len() < 2 || chromosomes[0].fitness_values().is_empty() {
         return Vec::new();
     }
 
     let num_cases = chromosomes[0].fitness_values().len();
-    if chromosomes.iter().any(|c| c.fitness_values().len() != num_cases) {
-        log::warn!(target: "selection_events", "epsilon_lexicase: fitness_values length mismatch — returning empty selection");
+    if chromosomes
+        .iter()
+        .any(|c| c.fitness_values().len() != num_cases)
+    {
+        crate::log_warn!(target: "selection_events", "epsilon_lexicase: fitness_values length mismatch — returning empty selection");
         return Vec::new();
     }
     let per_case_eps = match epsilon {
@@ -200,12 +224,17 @@ where
     while mating.len() < number_of_couples {
         let mut group = Vec::with_capacity(num_parents);
         for _ in 0..num_parents {
-            group.push(select_one_winner(chromosomes, num_cases, &per_case_eps, &mut rng));
+            group.push(select_one_winner(
+                chromosomes,
+                num_cases,
+                &per_case_eps,
+                &mut rng,
+            ));
         }
-        trace!(target = "selection_events", method = "epsilon_lexicase"; "Group: {:?}", group);
+        crate::log_trace!(target = "selection_events", method = "epsilon_lexicase"; "Group: {:?}", group);
         mating.push(group);
     }
 
-    debug!(target = "selection_events", method = "epsilon_lexicase"; "Epsilon-lexicase selection finished: {} groups", mating.len());
+    crate::log_debug!(target = "selection_events", method = "epsilon_lexicase"; "Epsilon-lexicase selection finished: {} groups", mating.len());
     mating
 }

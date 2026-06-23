@@ -2,13 +2,13 @@
 
 use std::sync::Arc;
 
+use super::configuration::PermutateConfiguration;
 use crate::configuration::ProblemSolving;
 use crate::error::GaError;
 use crate::ga::TerminationCause;
 use crate::observer::GaObserver;
 use crate::stats::GenerationStats;
 use crate::traits::{ChromosomeT, Strategy};
-use super::configuration::PermutateConfiguration;
 
 /// Exhaustive permutation search engine.
 ///
@@ -18,6 +18,17 @@ use super::configuration::PermutateConfiguration;
 ///
 /// Candidates must have fitness pre-evaluated before being passed to the engine —
 /// `chromosome.fitness()` is called directly, not a fitness function.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::permutate::{PermutateConfiguration, PermutateEngine};
+/// use genetic_algorithms::chromosomes::Binary;
+///
+/// let candidates: Vec<Binary> = vec![Binary::default(); 10];
+/// let config = PermutateConfiguration::default();
+/// let mut engine = PermutateEngine::new(config, candidates);
+/// ```
 pub struct PermutateEngine<U: ChromosomeT> {
     config: PermutateConfiguration,
     candidates: Vec<U>,
@@ -82,7 +93,7 @@ impl<U: ChromosomeT + Clone> PermutateEngine<U> {
         for (idx, candidate) in self.candidates.iter().enumerate() {
             // Safety gate: stop if too many candidates evaluated.
             if idx >= gate {
-                log::warn!(
+                crate::log_warn!(
                     target: "ga_events",
                     "PermutateEngine: safety gate of {} reached, stopping after {} candidates",
                     gate,
@@ -99,8 +110,7 @@ impl<U: ChromosomeT + Clone> PermutateEngine<U> {
             };
 
             if is_new_best {
-                let candidate_clone = candidate.clone();
-                self.notify(|obs| obs.on_new_best(idx, candidate_clone));
+                self.notify(|obs| obs.on_new_best(idx, candidate));
                 best = Some(candidate.clone());
             }
 
@@ -115,6 +125,9 @@ impl<U: ChromosomeT + Clone> PermutateEngine<U> {
                 diversity: 0.0,
                 dynamic_mutation_probability: None,
                 avg_node_count: 0.0,
+                cache_hits: None,
+                cache_misses: None,
+                true_fitness_calls: None,
             };
             self.notify(|obs| obs.on_generation_end(&stats));
             all_stats.push(stats);

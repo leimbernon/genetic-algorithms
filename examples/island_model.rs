@@ -56,7 +56,7 @@ use genetic_algorithms::initializers::range_random_initialization;
 use genetic_algorithms::island::configuration::IslandConfiguration;
 use genetic_algorithms::island::topology::MigrationTopology;
 use genetic_algorithms::island::IslandGa;
-use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+use genetic_algorithms::operations::{Crossover, GaussianParams, Mutation, Selection, Survivor};
 use genetic_algorithms::traits::{ChromosomeT, LinearChromosome};
 #[cfg(feature = "observer-metrics")]
 use genetic_algorithms::MetricsObserver;
@@ -64,6 +64,7 @@ use genetic_algorithms::{CompositeObserver, IslandGaObserver, LogObserver};
 use std::sync::Arc;
 
 fn main() {
+    let _ = env_logger::try_init();
     // --- Problem parameters ---
     const DIMENSIONS: usize = 20;
     const POP_SIZE_PER_ISLAND: usize = 50;
@@ -97,10 +98,10 @@ fn main() {
 
     // --- Heterogeneous GA configs: 4 islands with different mutation probabilities ---
     // Low mutation islands exploit; high mutation islands explore broadly.
-    use genetic_algorithms::ChromosomeLength;
     use genetic_algorithms::traits::{
         ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig,
     };
+    use genetic_algorithms::ChromosomeLength;
     let mutation_probs = [0.01_f64, 0.05, 0.10, 0.20];
     let ga_configs: Vec<GaConfiguration> = mutation_probs
         .iter()
@@ -111,7 +112,7 @@ fn main() {
                 .with_problem_solving(ProblemSolving::Minimization)
                 .with_max_generations(MAX_GENERATIONS)
                 .with_mutation_probability_max(prob)
-                .with_mutation_method(Mutation::Gaussian { sigma: None })
+                .with_mutation_method(Mutation::Gaussian(GaussianParams { sigma: None }))
                 .with_crossover_method(Crossover::Uniform)
                 .with_selection_method(Selection::Tournament)
                 .with_survivor_method(Survivor::Fitness)
@@ -120,9 +121,9 @@ fn main() {
 
     // --- Build composite observer (LogObserver always active; MetricsObserver when feature flag set) ---
     // CompositeObserver implements IslandGaObserver — forwards all island hooks to inner observers.
-    let composite = CompositeObserver::new().add(Arc::new(LogObserver));
+    let composite = CompositeObserver::new().register(Arc::new(LogObserver));
     #[cfg(feature = "observer-metrics")]
-    let composite = composite.add(Arc::new(MetricsObserver::new("island_model")));
+    let composite = composite.register(Arc::new(MetricsObserver::new("island_model")));
 
     // --- Print problem summary ---
     println!("== Island Model: Rastrigin {}D Minimization ==", DIMENSIONS);

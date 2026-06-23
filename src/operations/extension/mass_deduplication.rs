@@ -5,8 +5,7 @@
 //! population back to its target size.
 
 use crate::configuration::ProblemSolving;
-use crate::traits::{LinearChromosome, GeneT};
-use log::info;
+use crate::traits::{GeneT, LinearChromosome};
 use std::collections::HashMap;
 use std::hash::{DefaultHasher, Hash, Hasher};
 
@@ -14,6 +13,16 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 ///
 /// For each group of duplicates, the one with the best fitness is kept.
 /// The population may be smaller after this operation; the GA loop handles regrowth.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::extension::mass_deduplication::mass_deduplication;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::configuration::ProblemSolving;
+/// let mut population: Vec<Binary> = vec![Binary::new(); 20];
+/// mass_deduplication(&mut population, ProblemSolving::Maximization);
+/// ```
 pub fn mass_deduplication<U: LinearChromosome>(
     chromosomes: &mut Vec<U>,
     problem_solving: ProblemSolving,
@@ -74,7 +83,7 @@ pub fn mass_deduplication<U: LinearChromosome>(
     });
 
     let removed = original_len - chromosomes.len();
-    info!(
+    crate::log_info!(
         target = "extension_events",
         method = "mass_deduplication";
         "MassDeduplication applied: removed {} duplicates, {} unique remain",

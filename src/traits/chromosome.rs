@@ -6,6 +6,21 @@ use crate::traits::GeneT;
 /// set of methods that every chromosome type must provide regardless of its
 /// internal representation (flat-slice, tree, variable-length, etc.).
 ///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::traits::{ChromosomeT, GeneT, LinearChromosome};
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::traits::ChromosomeT as _;
+///
+/// // Use a built-in type that implements ChromosomeT:
+/// let mut chrom = Binary::new();
+/// chrom.set_fitness(0.95);
+/// assert_eq!(chrom.fitness(), 0.95);
+/// chrom.set_age(2);
+/// assert_eq!(chrom.age(), 2);
+/// ```
+///
 /// # Flat-slice chromosomes
 ///
 /// Types backed by a contiguous DNA slice (the traditional GA representation)

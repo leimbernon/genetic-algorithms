@@ -9,7 +9,8 @@ pub(crate) use crate::{
     configuration::{LimitConfiguration, ProblemSolving},
     traits::ChromosomeT,
 };
-use log::{debug, trace};
+#[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
+use rayon::prelude::*;
 
 /// Fitness-based survivor selection: sorts the combined population by fitness
 /// and truncates to `population_size`.
@@ -23,15 +24,33 @@ use log::{debug, trace};
 /// * `chromosomes` - Combined parents + offspring (modified in place).
 /// * `population_size` - Desired population size after selection.
 /// * `limit_configuration` - Controls sorting direction and optional target.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::survivor::fitness_based;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::configuration::{LimitConfiguration, ProblemSolving};
+/// let mut population: Vec<Binary> = vec![Binary::new(); 20];
+/// let limits = LimitConfiguration { problem_solving: ProblemSolving::Maximization, ..LimitConfiguration::default() };
+/// fitness_based(&mut population, 10, limits);
+/// ```
 pub fn fitness_based<U: ChromosomeT>(
     chromosomes: &mut Vec<U>,
     population_size: usize,
     limit_configuration: LimitConfiguration,
 ) {
-    debug!(target="survivor_events", method="fitness_based"; "Starting fitness based survivor method");
+    crate::log_debug!(target="survivor_events", method="fitness_based"; "Starting fitness based survivor method");
     if limit_configuration.problem_solving != ProblemSolving::FixedFitness {
         //We sort the chromosomes by their fitness if there is not a fixed fitness problem
-        chromosomes.sort_by(|a, b| {
+        #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
+        chromosomes.par_sort_unstable_by(|a, b| {
+            b.fitness()
+                .partial_cmp(&a.fitness())
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+        #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
+        chromosomes.sort_unstable_by(|a, b| {
             b.fitness()
                 .partial_cmp(&a.fitness())
                 .unwrap_or(std::cmp::Ordering::Equal)
@@ -39,7 +58,14 @@ pub fn fitness_based<U: ChromosomeT>(
     } else {
         //We sort the chromosomes by their distance with the fitness target in a fixed fitness problem
         let target = limit_configuration.fitness_target.unwrap_or(0.0);
-        chromosomes.sort_by(|a, b| {
+        #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
+        chromosomes.par_sort_unstable_by(|a, b| {
+            b.fitness_distance(&target)
+                .partial_cmp(&a.fitness_distance(&target))
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+        #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
+        chromosomes.sort_unstable_by(|a, b| {
             b.fitness_distance(&target)
                 .partial_cmp(&a.fitness_distance(&target))
                 .unwrap_or(std::cmp::Ordering::Equal)
@@ -48,7 +74,7 @@ pub fn fitness_based<U: ChromosomeT>(
 
     // Drop surplus individuals in a single bulk operation instead of
     // one-by-one Vec::remove calls (which are O(N) each).
-    trace!(target="survivor_events", method="fitness_based"; "Chromosomes length {} - population size {}", chromosomes.len(), population_size);
+    crate::log_trace!(target="survivor_events", method="fitness_based"; "Chromosomes length {} - population size {}", chromosomes.len(), population_size);
     if chromosomes.len() > population_size {
         match limit_configuration.problem_solving {
             // Sorted descending: best (highest) at front, worst at tail.
@@ -64,5 +90,5 @@ pub fn fitness_based<U: ChromosomeT>(
         }
     }
 
-    debug!(target="survivor_events", method="fitness_based"; "Fitness based survivor method finished");
+    crate::log_debug!(target="survivor_events", method="fitness_based"; "Fitness based survivor method finished");
 }

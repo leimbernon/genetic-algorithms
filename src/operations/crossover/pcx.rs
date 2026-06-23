@@ -4,7 +4,6 @@ use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
 use crate::operations::crossover::sbx::SbxConvertible;
 use crate::traits::LinearChromosome;
-use log::debug;
 use rand::Rng;
 use std::borrow::Cow;
 use std::fmt::Debug;
@@ -32,6 +31,17 @@ use std::fmt::Debug;
 ///
 /// A `Vec` containing exactly 1 offspring, or a `GaError::CrossoverError` if
 /// fewer than 3 parents are provided or parent DNA lengths are mismatched.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::crossover::pcx::pcx;
+/// use genetic_algorithms::chromosomes::Range;
+/// let p1: Range<f64> = Range::new();
+/// let p2: Range<f64> = Range::new();
+/// let p3: Range<f64> = Range::new();
+/// let _ = pcx(&[&p1, &p2, &p3], 3, None, None);
+/// ```
 pub fn pcx<T>(
     parents: &[&RangeChromosome<T>],
     _num_parents: usize,
@@ -41,7 +51,7 @@ pub fn pcx<T>(
 where
     T: Sync + Send + Clone + Default + Debug + PartialOrd + Copy + 'static + SbxConvertible,
 {
-    debug!(target: "crossover_events", method = "pcx"; "Starting PCX crossover with {} parents", parents.len());
+    crate::log_debug!(target: "crossover_events", method = "pcx"; "Starting PCX crossover with {} parents", parents.len());
 
     if parents.len() < 3 {
         return Err(GaError::CrossoverError(
@@ -62,7 +72,7 @@ where
 
     if expected == 0 {
         let child = RangeChromosome::<T>::new();
-        debug!(target: "crossover_events", method = "pcx"; "PCX crossover finished");
+        crate::log_debug!(target: "crossover_events", method = "pcx"; "PCX crossover finished");
         return Ok(vec![child]);
     }
 
@@ -86,9 +96,7 @@ where
 
     let mut rng = crate::rng::make_rng();
     let dna0 = parents[0].dna();
-    let p0_vals: Vec<f64> = (0..expected)
-        .map(|i| T::to_f64(dna0[i].value))
-        .collect();
+    let p0_vals: Vec<f64> = (0..expected).map(|i| T::to_f64(dna0[i].value)).collect();
 
     // ONE Box-Muller draw per parent direction vector; accumulate across all gene dimensions
     let mut directional = vec![0.0_f64; expected];
@@ -126,6 +134,6 @@ where
     let mut child = RangeChromosome::<T>::new();
     child.set_dna(Cow::Owned(child_dna));
 
-    debug!(target: "crossover_events", method = "pcx"; "PCX crossover finished");
+    crate::log_debug!(target: "crossover_events", method = "pcx"; "PCX crossover finished");
     Ok(vec![child])
 }

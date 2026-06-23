@@ -5,6 +5,95 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-06-17
+
+v3.0.0 is a major release focused on **advanced representations, alternative metaheuristics, and architecture simplification**. It introduces five new optimization engines (CMA-ES, PSO, EDA, HillClimb, Permutate), three new genotypes for permutation and per-gene-bounded problems, tree chromosomes for Genetic Programming, variable-length chromosomes, lexicase selection, batch & surrogate-assisted fitness evaluation, and removes the long-deprecated `Reporter<U>` API. See [`MIGRATION.md`](./MIGRATION.md) for migration recipes for every breaking change.
+
+### Added — New engines
+- **`CmaEngine<U>`** (`cma` module) — Covariance Matrix Adaptation Evolution Strategy. Hansen-default parameter formulas (auto `cc` / `cs` / `c1` / `cmu`), Jacobi eigendecomposition + Box-Muller sampling (no LAPACK, WASM-compatible). `CmaConfiguration` builder with `with_sigma0()`, `with_population_size()`, `with_cc()` / `with_cs()` / `with_c1()` / `with_cmu()`, `with_fitness_target()`, `with_problem_solving()`.
+- **`RestartStrategy::Ipop` / `Bipop`** for `CmaEngine` — Hansen-2009 increasing-population and bi-population restart strategies for multimodal problems. Emits `RestartEvent` via new `GaObserver::on_restart` hook.
+- **`PsoEngine<U>`** (`pso` module) — Particle Swarm Optimization with `PsoConfiguration` builder. `PsoInertia::{Constant, LinearDecay, RandomRange}`, `PsoTopology::{Global, Ring, VonNeumann}`, absorbing-boundary handling, full observer wiring.
+- **`EdaEngine<U>` / `EdaRealEngine<U>`** (`eda` module) — Estimation of Distribution Algorithm (UMDA). Bernoulli model for binary chromosomes, Gaussian model for continuous. No crossover/mutation — samples directly from the learned distribution. `EdaConfiguration` builder, `EdaResult<U>` output.
+- **`HillClimbEngine<U>`** (`hill_climb` module) — Local-search baseline strategy with `HillClimbMode::Stochastic` and `SteepestAscent`. Implements the new `Strategy<U>` trait.
+- **`PermutateEngine<U>`** (`permutate` module) — Exhaustive permutation enumeration with a hard safety gate (returns `GaError::PermutationSpaceExceeded` instead of silently running out of memory).
+- **`GpGa<N>`** (`gp` module) — Genetic Programming engine on tree chromosomes (`GpChromosome<N>`). Ramped half-and-half initialization, subtree crossover, `GpMutation::{SubtreeMutation, PointMutation, HoistMutation}`, bloat control via `max_depth` and `max_node_count`. Built-in primitive sets: `MathNode` (symbolic regression, with `Const(f64)` ephemeral random constants and `Var(usize)` indexed variables), `BoolNode` (classification trees). `Display` impl prints the evolved program as a Lisp S-expression. Serde support is stack-safe via `serde_stacker` (trees of depth ≥ 64 round-trip without overflow).
+
+### Added — Trait system & chromosome representations
+- **`LinearChromosome: ChromosomeT`** supertrait — captures the flat-slice DNA contract (`dna()`, `dna_mut()`, `set_dna()`, `new_gene()`, `set_gene()`). All linear operators now bound on `LinearChromosome` rather than `ChromosomeT`. Tree chromosomes deliberately do **not** implement this trait, making linear-vs-tree mismatches a compile-time error.
+- **`TreeChromosome: ChromosomeT`** supertrait — `tree()`, `tree_mut()`, `depth()`, `node_count()` contract for tree-shaped chromosomes. `GpChromosome<N>` is the canonical implementor.
+- **`RealGene`** trait (renamed from `DeGene`) in `src/traits/real_gene.rs` — shared real-valued-arithmetic contract for `DeEngine`, `ScatterEngine`, `CmaEngine`, `PsoEngine`. New `bounds()` method.
+- **`MultiCaseFitness: ChromosomeT`** trait — per-test-case fitness used by lexicase selection and reused by `GpChromosome` for program-synthesis problems.
+- **`Strategy<U>`** trait — unified engine entry point for alternative-strategy engines (`HillClimbEngine`, `PermutateEngine`).
+- **`SelfAdaptive: ChromosomeT`** trait — chromosomes carrying their own mutation parameters (sigma) for self-adaptive ES-style updates.
+- **`VectorFitness`** trait — for chromosomes returning multi-dimensional fitness vectors.
+- **`UniqueChromosome<T>`** + **`UniqueGenotype<T>`** — permutation chromosomes with no duplicate genes (TSP, scheduling, ordering).
+- **`MultiRangeChromosome<T>`** + **`MultiRangeGenotype<T>`** — per-gene independent `(min, max)` bounds.
+- **`MultiUniqueChromosome<T>`** — multiple independent permutation groups within one chromosome.
+- **Variable-length chromosomes** — `ChromosomeLength::Variable { min, max }` policy, `Mutation::Insertion` / `Mutation::Deletion` operators, `Crossover::VariableLength(AlignmentStrategy::{Trim, Pad})`, parsimony pressure via `with_length_penalty()`. Fixed-operator guard panics in `build()` if a variable-length mutation is configured on a `Fixed` chromosome.
+- **Lexicase Selection** — `Selection::Lexicase` + `Selection::EpsilonLexicase` for problems with per-case fitness; behavioral-diversity CI test.
+- **Multi-parent crossover** — `Crossover::Undx`, `Crossover::Spx`, `Crossover::Pcx` for real-valued chromosomes via the `RealValued` marker trait.
+- **Self-adaptive Gaussian mutation** — `Mutation::SelfAdaptiveGaussian` with log-normal sigma update.
+
+### Added — Framework extensions
+- **`ConstraintHandling`** + **`PenaltyStrategy::{Static, Dynamic, Adaptive, Death}`** + Deb's feasibility rules + `RepairOperator` (Phase 40).
+- **`HallOfFame<U>`** + **`HallOfFameConfig`** + **`DistanceMetric`** — bounded elite archive with deduplication and optional minimum-distance diversity (Phase 41).
+- **Warm starting & population seeding** — initial population, seeded population, checkpoint resumption (Phase 42).
+- **`AosStrategy`** + **`AosState`** — Adaptive Operator Selection with Probability Matching, Adaptive Pursuit, and Multi-Armed Bandit credit assignment (Phase 43).
+- **`BatchFitnessEvaluator<U>`** trait — single-call fitness evaluation for a batch of chromosomes (enables GPU / API-based evaluators). Wired into `Ga` and `CmaEngine`; mutually exclusive with the scalar `fitness_fn` (Ga: `ConfigurationError`; CMA: last-writer-wins, documented).
+- **Fitness cache** — opt-in via builder flag; cache hit rate exposed in `GenerationStats`. WASM-compatible (no threads, no `std::time`).
+- **`SurrogateModel<U>`** trait — surrogate-assisted evaluation. Attach via `.with_surrogate(model, prescreening_fraction)`; only top-fraction surrogate-ranked offspring proceed to true fitness. True-fitness call count exposed in `GenerationStats` and observable via `GaObserver`.
+
+### Added — Observability
+- **`GaObserver::on_restart`** hook — fires when `CmaEngine` triggers an IPOP/BIPOP restart, carrying a `RestartEvent` with `RestartKind`, generation number, and new population size.
+- All five new engines (`CmaEngine`, `PsoEngine`, `EdaEngine`, `HillClimbEngine`, `PermutateEngine`) accept `Option<Arc<dyn GaObserver<U>>>` with the same zero-overhead `None` branch.
+
+### Added — Visualization
+- **`visualization::plot_pareto_front`** (`visualization` feature) — 2D and 3D Pareto-front plotting for multi-objective runs. New `--plot` flag on `nsga2_zdt1`, `spea2_zdt1`, `sms_emoa_zdt1`, `ibea_zdt1`, `nsga3_dtlz2`, `rastrigin` examples produces PNG/SVG output. Pre-rendered images committed to `docs/images/` and linked from `README.md`.
+- **`visualization::plot_true_fitness_calls`** — surrogate-savings chart.
+
+### Added — Examples
+- `cma_es_rastrigin` — CMA-ES on Rastrigin.
+- `ipop_rastrigin` — CMA-ES with IPOP restarts on multimodal Rastrigin (DIMENSIONS=10, stagnation_threshold=50, max_restarts=3).
+- `pso_rastrigin` — PSO on Rastrigin.
+- `eda_trap` — UMDA on the deceptive trap problem.
+- `surrogate_rastrigin` — Surrogate-assisted GA on Rastrigin.
+
+### Added — Dependency hygiene
+- **`logging` feature (default-on)**. Disable via `default-features = false` to shed the `log` crate entirely for ultra-lean / embedded / wasm-only builds. The library uses an internal macro family (`crate::log_info!`, `crate::log_debug!`, `crate::log_trace!`, `crate::log_warn!`, `crate::log_error!`) that expands to `::log::*` when the feature is enabled and to `()` when disabled. `LogObserver` is only available when `logging` is on. (Phase 68 / Plan 68-02)
+- **`parallel` feature (default-on)**. Disable via `default-features = false` to shed rayon + crossbeam dependencies for embedded / wasm-only builds. All rayon call-sites are gated under `#[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]`; sequential fallbacks are provided under `#[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]`. Phase 69 Action #3.
+
+### Changed (breaking)
+- **Library no longer auto-installs `env_logger`**. Apps wanting log output must call `env_logger::init()` (or any other `log` subscriber) themselves in `main()`. Sheds ~12 transitive deps; `env_logger` is now a dev-dependency only. (Phase 68 / Plan 68-01)
+- **`ChromosomeT` split** — `ChromosomeT` is now a minimal core (fitness, age). The flat-slice DNA surface moved to the new `LinearChromosome: ChromosomeT` supertrait. Custom chromosome implementors must split their impls. Tree chromosomes implement `TreeChromosome: ChromosomeT` instead.
+- **`DeGene` → `RealGene`** hard rename. Trait moved to `src/traits/real_gene.rs`. Affects custom `DeEngine` / `ScatterEngine` impls.
+- **`LinearChromosome::default(mut self) -> Self`** reset helper renamed to `reset()` to avoid clashing with `std::default::Default`.
+- **`Mutation` enum variant parameters** — adjusted for clarity (see `MIGRATION.md` for full mapping).
+- **`SelectionOperator::select`** return-type tightened (see `MIGRATION.md`).
+- **`ChromosomeLength`** replaces `LimitConfiguration::genes_per_chromosome` — chromosome-length policy now lives with the chromosome, not the limits.
+- **`StoppingCriteria` struct flattened** — its three fields (`stagnation_generations`, `convergence_threshold`, `max_duration_secs`) become individual builder methods on the engine configuration.
+- **`LimitConfiguration` field removals** — `needs_unique_ids` and `alleles_can_be_repeated` removed. Use `UniqueChromosome<T>` / `UniqueGenotype<T>` for permutation problems.
+- **`GaConfiguration` fields** are now `pub(crate)`. External read access goes through accessor methods.
+
+### Removed
+- **`configuration::LogLevel` enum** and **`ConfigurationT::with_logs()` builder method** — both only configured the now-removed `env_logger` auto-installer. Filter log verbosity via `RUST_LOG` or your own subscriber. (Phase 68 / Plan 68-01)
+- **`Reporter<U>` trait** and built-in `NoopReporter`, `SimpleReporter`, `DurationReporter` (deprecated since 2.2.0). Use `GaObserver<U>` + `LogObserver` instead. `.with_reporter()` builder method removed; use `.with_observer()`.
+
+### Architecture & quality
+- Non-breaking directory reorganization: `src/engines/`, `src/types/`, `src/observe/`, `src/traits/` are the canonical sub-trees; `src/lib.rs` re-exports via `#[path]` aliases so the public API path is unchanged.
+- `lib.rs` engine catalog and "When to Use Which Engine" decision table refreshed to cover all 17 engines.
+- Repo hygiene: `*.log` added to `.gitignore`; stray `server.log` removed from working tree.
+- Tune `[profile.dev]`, `[profile.dev.package."*"]`, and `[profile.test]` for faster local dev/test wall-clock (~5-15 % clean dev build; ~50 % test runtime). See `docs/DEVELOPMENT.md` §Cargo profiles. (Phase 67 / Plan 67-01)
+- CI switched from `cargo test` to `cargo nextest run` in `rust-unit-tests.yml`, `coverage.yml` (`cargo llvm-cov nextest`), and installs nextest in `wasm-check.yml` for future-proofing. Local `cargo test` workflow unchanged. (Phase 67 / Plan 67-02)
+- CI now installs and uses `mold` as the Linux linker in `rust-unit-tests.yml`, `coverage.yml`, `rust-clippy.yml`, `examples-smoke.yml`. `.cargo/config.toml` declares `linker = "clang"` + `-fuse-ld=mold` for `x86_64-unknown-linux-gnu`; a commented-out lld block documents the macOS opt-in. WASM block preserved. (Phase 67 / Plan 67-03)
+- CI now uses `mozilla-actions/sccache-action@v0.0.9` with `RUSTC_WRAPPER=sccache` across five workflows (`rust-unit-tests.yml`, `coverage.yml`, `wasm-check.yml`, `rust-clippy.yml`, `examples-smoke.yml`). Cache hit-rate logged via `sccache --show-stats`. `build-perf-gate.yml` intentionally excluded to preserve cold-build measurements. (Phase 67 / Plan 67-04)
+- Bench harness migrated from criterion to divan (Phase 69 Action #7). All 13 bench files (`selection`, `crossover`, `mutation`, `survivor`, `ga_run`, `nsga2`, `island_ga`, `de`, `scatter`, `alps`, `cellular`, `rastrigin`, `metrics_observer`) ported to divan 0.1.21. criterion removed from `[dev-dependencies]`. No public-API change. (Phase 69 / Plan 69-01)
+- `src/engines/ga.rs` (3342 lines) split into 11 submodules under `src/engines/ga/`: `mod.rs` (orchestrator), `lifecycle.rs`, `generation.rs`, `adaptive.rs`, `aos.rs`, `extension.rs`, `cache.rs`, `batch.rs`, `stats.rs`, `observer.rs`, `stopping.rs`. No API change; zero semantic change verified via cargo expand symbol diff and 1661 passing tests. (Phase 69 / Plan 69-04). See `.planning/intel/ga-internals.md` for per-submodule responsibilities and visibility rules.
+- Coverage baseline harness via `cargo-llvm-cov` + new CI gate enforcing per-module thresholds. (Phase 64 / Plan 64-01)
+- v3.0.0 release notes & migration guide finalized — `MIGRATION.md` covers all 10 breaking changes with `### Compiler error` blocks; `## [3.0.0]` CHANGELOG entry dated and consolidated. (Phase 65 / Plans 65-01, 65-02)
+
+
+---
+
 ## [2.4.0] - 2026-05-18
 
 ### Added
@@ -475,7 +564,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[2.4.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/2.3.0...HEAD
+[3.0.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/2.4.0...HEAD
+[2.4.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/2.3.0...2.4.0
 [2.3.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/2.2.1...2.3.0
 [2.2.1]: https://github.com/leimbernon/rust_genetic_algorithms/compare/2.2.0...2.2.1
 [2.2.0]: https://github.com/leimbernon/rust_genetic_algorithms/compare/2.1.0...2.2.0

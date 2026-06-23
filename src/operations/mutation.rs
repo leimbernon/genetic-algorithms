@@ -7,7 +7,10 @@
 //! the [`Mutation`] variant in the configuration.
 //!
 //! Chromosome types that need value-aware mutations should implement the
-//! [`ValueMutable`] trait.
+//! [`ValueMutable`] trait. Real-valued mutations (polynomial, Cauchy,
+//! Lévy Flight, uniform, self-adaptive Gaussian) dispatch via the
+//! [`RealValuedMutation`] trait at
+//! compile time, replacing previous runtime downcasting.
 //!
 //! ## Length-changing operators
 //!
@@ -19,13 +22,14 @@
 pub use self::inversion::inversion;
 pub use self::scramble::scramble;
 pub use self::swap::swap;
+use super::{
+    CauchyParams, CreepParams, GaussianParams, LevyFlightParams, PolynomialParams,
+    SelfAdaptiveGaussianParams,
+};
 use super::Mutation;
 use crate::chromosomes::ChromosomeLength;
-use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
-use crate::traits::{ChromosomeT, LinearChromosome, MutationOperator};
-use log::warn;
-use std::any::Any;
+use crate::traits::{ChromosomeT, LinearChromosome, MutationOperator, RealValuedMutation};
 
 pub mod bit_flip;
 pub mod cauchy;
@@ -48,124 +52,6 @@ pub mod value;
 /// Default distribution index for Polynomial mutation when none is configured.
 const DEFAULT_POLYNOMIAL_ETA: f64 = 20.0;
 
-/// Attempt polynomial mutation by downcasting a generic individual to `Range<T>`.
-///
-/// Tries `f64`, `f32`, `i32`, `i64` in order. Returns `Some(Ok(()))` or
-/// `Some(Err(...))` if the type matched, `None` if no supported type matched.
-fn try_polynomial<U: LinearChromosome + 'static>(
-    individual: &mut U,
-    eta_m: f64,
-) -> Option<Result<(), GaError>> {
-    macro_rules! try_type {
-        ($t:ty) => {
-            if let Some(ind) = (individual as &mut dyn Any).downcast_mut::<RangeChromosome<$t>>() {
-                return Some(polynomial::polynomial_mutation(ind, eta_m));
-            }
-        };
-    }
-    try_type!(f64);
-    try_type!(f32);
-    try_type!(i32);
-    try_type!(i64);
-    None
-}
-
-/// Attempt Cauchy mutation by downcasting a generic individual to `Range<T>`.
-///
-/// Tries `f64`, `f32`, `i32`, `i64` in order. Returns `Some(Ok(()))` if the type
-/// matched and mutation succeeded, `None` if no supported type matched.
-fn try_cauchy<U: LinearChromosome + 'static>(
-    individual: &mut U,
-    scale: f64,
-) -> Option<Result<(), GaError>> {
-    macro_rules! try_type {
-        ($t:ty) => {
-            if let Some(ind) = (individual as &mut dyn Any).downcast_mut::<RangeChromosome<$t>>() {
-                cauchy::cauchy_mutation(ind, scale);
-                return Some(Ok(()));
-            }
-        };
-    }
-    try_type!(f64);
-    try_type!(f32);
-    try_type!(i32);
-    try_type!(i64);
-    None
-}
-
-/// Attempt Lévy Flight mutation by downcasting a generic individual to `Range<T>`.
-///
-/// Tries `f64`, `f32`, `i32`, `i64` in order. Returns `Some(Ok(()))` if the type
-/// matched and mutation succeeded, `None` if no supported type matched.
-fn try_levy<U: LinearChromosome + 'static>(
-    individual: &mut U,
-    alpha: f64,
-) -> Option<Result<(), GaError>> {
-    macro_rules! try_type {
-        ($t:ty) => {
-            if let Some(ind) = (individual as &mut dyn Any).downcast_mut::<RangeChromosome<$t>>() {
-                levy_flight::levy_flight_mutation(ind, alpha);
-                return Some(Ok(()));
-            }
-        };
-    }
-    try_type!(f64);
-    try_type!(f32);
-    try_type!(i32);
-    try_type!(i64);
-    None
-}
-
-/// Attempt Uniform mutation by downcasting a generic individual to `Range<T>`.
-///
-/// Tries `f64`, `f32`, `i32`, `i64` in order. Returns `Some(Ok(()))` if the type
-/// matched and mutation succeeded, `None` if no supported type matched.
-fn try_uniform<U: LinearChromosome + 'static>(
-    individual: &mut U,
-) -> Option<Result<(), GaError>> {
-    macro_rules! try_type {
-        ($t:ty) => {
-            if let Some(ind) = (individual as &mut dyn Any).downcast_mut::<RangeChromosome<$t>>() {
-                uniform::uniform_mutation(ind);
-                return Some(Ok(()));
-            }
-        };
-    }
-    try_type!(f64);
-    try_type!(f32);
-    try_type!(i32);
-    try_type!(i64);
-    None
-}
-
-/// Attempt self-adaptive Gaussian mutation by downcasting a generic individual to `Range<T>`.
-///
-/// Tries `f64`, `f32`, `i32`, `i64` in order. Returns `Some(Ok(()))` or
-/// `Some(Err(...))` if the type matched, `None` if no supported type matched
-/// (indicating the chromosome does not implement [`SelfAdaptive`](crate::traits::SelfAdaptive)).
-fn try_self_adaptive<U: LinearChromosome + 'static>(
-    individual: &mut U,
-    tau: f64,
-    tau_prime: f64,
-    sigma_min: f64,
-    sigma_max: Option<f64>,
-) -> Option<Result<(), GaError>> {
-    macro_rules! try_type {
-        ($t:ty) => {
-            if let Some(ind) = (individual as &mut dyn Any).downcast_mut::<RangeChromosome<$t>>() {
-                return Some(self_adaptive_gaussian::self_adaptive_gaussian_mutation(
-                    ind, tau, tau_prime, sigma_min, sigma_max,
-                ));
-            }
-        };
-    }
-    try_type!(f64);
-    try_type!(f32);
-    try_type!(i32);
-    try_type!(i64);
-    None
-}
-
 /// Trait for chromosomes that support specialized mutation operators.
 ///
 /// Implementing this trait allows a chromosome to be used with `Mutation::Value`,
@@ -175,13 +61,22 @@ fn try_self_adaptive<U: LinearChromosome + 'static>(
 /// Override the methods relevant to your chromosome type:
 /// - **Binary chromosomes**: override `bit_flip_mutate`
 /// - **Range chromosomes**: override `value_mutate`, `creep_mutate`, `gaussian_mutate`
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::ValueMutable;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let mut chromosome = Binary::new();
+/// chromosome.bit_flip_mutate();
+/// ```
 pub trait ValueMutable: LinearChromosome {
     /// Performs value mutation on this chromosome in-place.
     ///
     /// The default implementation logs a warning and falls back to swap mutation.
     /// Override this for chromosome types that have a meaningful value range per gene.
     fn value_mutate(&mut self) {
-        warn!(
+        crate::log_warn!(
             "value_mutate() not overridden for this chromosome type; \
              falling back to swap mutation. Implement ValueMutable::value_mutate() \
              for proper value mutation behavior."
@@ -194,7 +89,7 @@ pub trait ValueMutable: LinearChromosome {
     /// The default implementation logs a warning and falls back to swap mutation.
     /// Override this for Binary chromosomes to flip a random gene's boolean value.
     fn bit_flip_mutate(&mut self) {
-        warn!(
+        crate::log_warn!(
             "bit_flip_mutate() not overridden for this chromosome type; \
              falling back to swap mutation. Implement ValueMutable::bit_flip_mutate() \
              for proper bit-flip behavior."
@@ -207,7 +102,7 @@ pub trait ValueMutable: LinearChromosome {
     /// The default implementation logs a warning and falls back to swap mutation.
     /// Override this for `Range<T>` chromosomes to apply small uniform perturbation.
     fn creep_mutate(&mut self, _step: f64) {
-        warn!(
+        crate::log_warn!(
             "creep_mutate() not overridden for this chromosome type; \
              falling back to swap mutation. Implement ValueMutable::creep_mutate() \
              for proper creep mutation behavior."
@@ -220,7 +115,7 @@ pub trait ValueMutable: LinearChromosome {
     /// The default implementation logs a warning and falls back to swap mutation.
     /// Override this for `Range<T>` chromosomes to apply gaussian perturbation.
     fn gaussian_mutate(&mut self, _sigma: f64) {
-        warn!(
+        crate::log_warn!(
             "gaussian_mutate() not overridden for this chromosome type; \
              falling back to swap mutation. Implement ValueMutable::gaussian_mutate() \
              for proper gaussian mutation behavior."
@@ -230,13 +125,9 @@ pub trait ValueMutable: LinearChromosome {
 }
 
 impl MutationOperator for Mutation {
-    fn mutate<U>(
-        &self,
-        individual: &mut U,
-        mutation: &Mutation,
-    ) -> Result<(), GaError>
+    fn mutate<U>(&self, individual: &mut U, mutation: &Mutation) -> Result<(), GaError>
     where
-        U: LinearChromosome + ValueMutable + 'static,
+        U: LinearChromosome + ValueMutable + RealValuedMutation + 'static,
     {
         match mutation {
             Mutation::Swap => swap(individual),
@@ -244,24 +135,19 @@ impl MutationOperator for Mutation {
             Mutation::Scramble => scramble(individual),
             Mutation::Value => individual.value_mutate(),
             Mutation::BitFlip => individual.bit_flip_mutate(),
-            Mutation::Creep { step } => {
+            Mutation::Creep(CreepParams { step }) => {
                 let s = step.unwrap_or(0.01);
                 individual.creep_mutate(s);
             }
-            Mutation::Gaussian { sigma } => {
+            Mutation::Gaussian(GaussianParams { sigma }) => {
                 let s = sigma.unwrap_or(0.1);
                 individual.gaussian_mutate(s);
             }
-            Mutation::Polynomial { eta } => {
+            Mutation::Polynomial(PolynomialParams { eta }) => {
                 let eta_val = eta.unwrap_or(DEFAULT_POLYNOMIAL_ETA);
-                return try_polynomial(individual, eta_val).unwrap_or_else(|| {
-                    Err(GaError::MutationError(
-                        "Polynomial mutation requires Range<T> chromosomes where T is f64, f32, i32, or i64."
-                            .to_string(),
-                    ))
-                });
+                return individual.polynomial_mutation(eta_val);
             }
-            Mutation::NonUniform { .. } => {
+            Mutation::NonUniform(..) => {
                 return Err(GaError::MutationError(
                     "Mutation::NonUniform requires generation context (generation, max_generations). \
                      It is applied automatically by the GA engine."
@@ -290,53 +176,41 @@ impl MutationOperator for Mutation {
                 ));
             }
             Mutation::ListValue => individual.value_mutate(),
-            Mutation::Differential { .. } => {
+            Mutation::Differential(..) => {
                 return Err(GaError::MutationError(
                     "Mutation::Differential requires population context. \
-                     It is applied automatically by the GA engine when configured — \
-                     do not call factory_with_params() directly."
+                     It is applied automatically by the GA engine when configured."
                         .to_string(),
                 ));
             }
-            Mutation::Cauchy { scale } => {
+            Mutation::Cauchy(CauchyParams { scale }) => {
                 let s = scale.unwrap_or(1.0);
-                return try_cauchy(individual, s).unwrap_or_else(|| {
-                    Err(GaError::MutationError(
-                        "Cauchy mutation requires Range<T> chromosomes where T is f64, f32, i32, or i64."
-                            .to_string(),
-                    ))
-                });
+                return individual.cauchy_mutation(s);
             }
-            Mutation::LevyFlight { alpha } => {
+            Mutation::LevyFlight(LevyFlightParams { alpha }) => {
                 let a = alpha.unwrap_or(1.5);
-                return try_levy(individual, a).unwrap_or_else(|| {
-                    Err(GaError::MutationError(
-                        "Lévy Flight mutation requires Range<T> chromosomes where T is f64, f32, i32, or i64."
-                            .to_string(),
-                    ))
-                });
+                return individual.levy_flight_mutation(a);
             }
             Mutation::Uniform => {
-                return try_uniform(individual).unwrap_or_else(|| {
-                    Err(GaError::MutationError(
-                        "Uniform mutation requires Range<T> chromosomes where T is f64, f32, i32, or i64."
-                            .to_string(),
-                    ))
-                });
+                return individual.uniform_mutation();
             }
-            Mutation::SelfAdaptiveGaussian { tau, tau_prime, sigma_min, sigma_max } => {
+            Mutation::SelfAdaptiveGaussian(SelfAdaptiveGaussianParams {
+                tau,
+                tau_prime,
+                sigma_min,
+                sigma_max,
+            }) => {
                 let n_hint = individual.dna().len().max(1);
                 let effective_tau = tau.unwrap_or_else(|| 1.0 / (2.0 * n_hint as f64).sqrt());
                 let effective_tau_prime =
                     tau_prime.unwrap_or_else(|| 1.0 / (2.0 * (n_hint as f64).sqrt()).sqrt());
                 let effective_sigma_min = sigma_min.unwrap_or(1e-5_f64);
-                return try_self_adaptive(individual, effective_tau, effective_tau_prime, effective_sigma_min, *sigma_max)
-                    .unwrap_or_else(|| {
-                        Err(GaError::MutationError(
-                            "SelfAdaptiveGaussian requires a chromosome implementing SelfAdaptive (RangeChromosome<T>)."
-                                .to_string(),
-                        ))
-                    });
+                return individual.self_adaptive_gaussian_mutation(
+                    effective_tau,
+                    effective_tau_prime,
+                    effective_sigma_min,
+                    *sigma_max,
+                );
             }
         }
         Ok(())
@@ -354,35 +228,19 @@ impl MutationOperator for Mutation {
 ///
 /// `Ok(())` if the mutation succeeded, or `Err(GaError::MutationError)` if the
 /// mutation cannot be applied to this chromosome type.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::operations::{mutation::factory, Mutation};
+///
+/// let mut individual = Binary::new();
+/// factory(Mutation::BitFlip, &mut individual).unwrap();
+/// ```
 pub fn factory<U>(mutation: Mutation, individual: &mut U) -> Result<(), GaError>
 where
-    U: LinearChromosome + ValueMutable + 'static,
-{
-    mutation.mutate(individual, &mutation.clone())
-}
-
-/// Applies the specified mutation operator. Inline variant parameters take effect directly.
-///
-/// The `step` and `sigma` arguments are **ignored** in v3.0.0 — parameters are now
-/// carried by the `Mutation` variant itself (e.g. `Mutation::Gaussian { sigma: Some(0.05) }`).
-/// This function signature is retained for source compatibility; callers should migrate to
-/// constructing parameterized variants instead.
-///
-/// # Arguments
-///
-/// * `mutation` - The mutation variant to apply (carries its own params).
-/// * `individual` - Mutable reference to the chromosome to mutate.
-/// * `step` - **Deprecated / ignored.** Embed the value in the variant instead.
-/// * `sigma` - **Deprecated / ignored.** Embed the value in the variant instead.
-#[allow(unused_variables)]
-pub fn factory_with_params<U>(
-    mutation: Mutation,
-    individual: &mut U,
-    step: Option<f64>,
-    sigma: Option<f64>,
-) -> Result<(), GaError>
-where
-    U: LinearChromosome + ValueMutable + 'static,
+    U: LinearChromosome + ValueMutable + RealValuedMutation + 'static,
 {
     mutation.mutate(individual, &mutation.clone())
 }
@@ -407,17 +265,24 @@ where
 /// * `mutation` - The mutation variant to apply.
 /// * `individual` - The chromosome to mutate.
 /// * `chromosome_length` - Length policy; required for `Insertion`/`Deletion`.
-/// * `_step` - Ignored (retained for call-site compatibility).
-/// * `_sigma` - Ignored (retained for call-site compatibility).
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::chromosomes::{Binary, ChromosomeLength};
+/// use genetic_algorithms::operations::{mutation::factory_with_chromosome_length, Mutation};
+///
+/// let mut individual = Binary::new();
+/// let cl = ChromosomeLength::Variable { min: 2, max: 10 };
+/// factory_with_chromosome_length(Mutation::Insertion, &mut individual, Some(cl)).unwrap();
+/// ```
 pub fn factory_with_chromosome_length<U>(
     mutation: Mutation,
     individual: &mut U,
     chromosome_length: Option<ChromosomeLength>,
-    _step: Option<f64>,
-    _sigma: Option<f64>,
 ) -> Result<(), GaError>
 where
-    U: LinearChromosome + ValueMutable + 'static,
+    U: LinearChromosome + ValueMutable + RealValuedMutation + 'static,
 {
     match mutation {
         Mutation::Insertion => {
@@ -437,21 +302,31 @@ where
 /// This is a convenience entry point for `Mutation::SelfAdaptiveGaussian`. It
 /// constructs the parameterized variant and delegates to the trait implementation.
 ///
-/// Returns `Err(GaError::MutationError)` if the chromosome does not downcast to a
-/// supported `SelfAdaptive` type (i.e., `RangeChromosome<f64|f32|i32|i64>`).
-pub fn factory_self_adaptive<U: LinearChromosome + ValueMutable + 'static>(
+/// Returns `Err(GaError::MutationError)` if the chromosome does not implement
+/// the `RealValuedMutation` trait.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::chromosomes::Range;
+/// use genetic_algorithms::operations::mutation::factory_self_adaptive;
+///
+/// let mut individual = Range::<f64>::new();
+/// factory_self_adaptive(&mut individual, Some(0.1), Some(0.01), Some(0.001), Some(1.0)).unwrap();
+/// ```
+pub fn factory_self_adaptive<U: LinearChromosome + ValueMutable + RealValuedMutation + 'static>(
     individual: &mut U,
     tau: Option<f64>,
     tau_prime: Option<f64>,
     sigma_min: Option<f64>,
     sigma_max: Option<f64>,
 ) -> Result<(), GaError> {
-    let variant = Mutation::SelfAdaptiveGaussian {
+    let variant = Mutation::SelfAdaptiveGaussian(SelfAdaptiveGaussianParams {
         tau,
         tau_prime,
         sigma_min,
         sigma_max,
-    };
+    });
     variant.mutate(individual, &variant.clone())
 }
 
@@ -464,6 +339,16 @@ pub fn factory_self_adaptive<U: LinearChromosome + ValueMutable + 'static>(
 ///
 /// `Ok(())` on success, or `Err(GaError::MutationError)` if the variant requires
 /// a chromosome type that implements `ValueMutable` or `SelfAdaptive`.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::operations::{mutation::factory_non_value, Mutation};
+///
+/// let mut individual = Binary::new();
+/// factory_non_value(Mutation::Swap, &mut individual).unwrap();
+/// ```
 pub fn factory_non_value<U>(mutation: Mutation, individual: &mut U) -> Result<(), GaError>
 where
     U: LinearChromosome + 'static,
@@ -491,22 +376,22 @@ where
                  Use Swap, Inversion, or Scramble instead."
                 .to_string(),
         )),
-        Mutation::Creep { .. } => Err(GaError::MutationError(
+        Mutation::Creep(..) => Err(GaError::MutationError(
             "Mutation::Creep requires the chromosome type to implement ValueMutable. \
                  Use Swap, Inversion, or Scramble instead, or implement ValueMutable for your type."
                 .to_string(),
         )),
-        Mutation::Gaussian { .. } => Err(GaError::MutationError(
+        Mutation::Gaussian(..) => Err(GaError::MutationError(
             "Mutation::Gaussian requires the chromosome type to implement ValueMutable. \
                  Use Swap, Inversion, or Scramble instead, or implement ValueMutable for your type."
                 .to_string(),
         )),
-        Mutation::Polynomial { .. } => Err(GaError::MutationError(
+        Mutation::Polynomial(..) => Err(GaError::MutationError(
             "Mutation::Polynomial requires Range<T> chromosomes where T is f64, f32, i32, or i64. \
                  Use Swap, Inversion, or Scramble instead."
                 .to_string(),
         )),
-        Mutation::NonUniform { .. } => Err(GaError::MutationError(
+        Mutation::NonUniform(..) => Err(GaError::MutationError(
             "Mutation::NonUniform requires Range<T> chromosomes and generation context. \
                  Call non_uniform::non_uniform_mutation() directly."
                 .to_string(),
@@ -531,16 +416,16 @@ where
                  Use Swap, Inversion, or Scramble instead."
                 .to_string(),
         )),
-        Mutation::Differential { .. } => Err(GaError::MutationError(
+        Mutation::Differential(..) => Err(GaError::MutationError(
             "Mutation::Differential requires Range<T> chromosomes and population context. \
              Use Swap, Inversion, or Scramble instead.".to_string(),
         )),
-        Mutation::Cauchy { .. } => Err(GaError::MutationError(
+        Mutation::Cauchy(..) => Err(GaError::MutationError(
             "Mutation::Cauchy requires Range<T> chromosomes where T is f64, f32, i32, or i64. \
              Use Swap, Inversion, or Scramble for non-Range chromosomes."
                 .to_string(),
         )),
-        Mutation::LevyFlight { .. } => Err(GaError::MutationError(
+        Mutation::LevyFlight(..) => Err(GaError::MutationError(
             "Mutation::LevyFlight requires Range<T> chromosomes where T is f64, f32, i32, or i64. \
              Use Swap, Inversion, or Scramble for non-Range chromosomes.".to_string(),
         )),
@@ -548,7 +433,7 @@ where
             "Mutation::Uniform requires Range<T> chromosomes where T is f64, f32, i32, or i64. \
              Use Swap, Inversion, or Scramble for non-Range chromosomes.".to_string(),
         )),
-        Mutation::SelfAdaptiveGaussian { .. } => Err(GaError::MutationError(
+        Mutation::SelfAdaptiveGaussian(..) => Err(GaError::MutationError(
             "Mutation::SelfAdaptiveGaussian requires a chromosome implementing SelfAdaptive. \
              Use Swap, Inversion, or Scramble for non-SelfAdaptive chromosomes.".to_string(),
         )),
@@ -568,6 +453,21 @@ where
 /// # Returns
 ///
 /// The adapted mutation probability.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::traits::ChromosomeT;
+/// use genetic_algorithms::operations::mutation::aga_probability;
+///
+/// let mut p1 = Binary::new();
+/// p1.set_fitness(0.8);
+/// let mut p2 = Binary::new();
+/// p2.set_fitness(0.4);
+/// let prob = aga_probability(&p1, &p2, 0.6, 0.9, 0.1);
+/// assert_eq!(prob, 0.1);
+/// ```
 pub fn aga_probability<U: ChromosomeT>(
     parent_1: &U,
     parent_2: &U,
@@ -591,6 +491,23 @@ pub fn aga_probability<U: ChromosomeT>(
 /// Computes population cardinality as the ratio of unique fitness values to population size.
 ///
 /// Returns a value in `[0.0, 1.0]` where 1.0 means all individuals have distinct fitness.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::traits::ChromosomeT;
+/// use genetic_algorithms::operations::mutation::compute_cardinality;
+///
+/// let mut c1 = Binary::new();
+/// c1.set_fitness(1.0);
+/// let mut c2 = Binary::new();
+/// c2.set_fitness(2.0);
+/// let mut c3 = Binary::new();
+/// c3.set_fitness(1.0);
+/// let cardinality = compute_cardinality(&[c1, c2, c3]);
+/// assert!((cardinality - 2.0 / 3.0).abs() < 1e-9);
+/// ```
 pub fn compute_cardinality<U: ChromosomeT>(chromosomes: &[U]) -> f64 {
     if chromosomes.is_empty() {
         return 0.0;
@@ -607,6 +524,17 @@ pub fn compute_cardinality<U: ChromosomeT>(chromosomes: &[U]) -> f64 {
 ///
 /// Increases probability when cardinality is below target (low diversity),
 /// decreases it when cardinality is above target (high diversity).
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::operations::mutation::dynamic_probability;
+///
+/// let prob = dynamic_probability(0.05, 0.3, 0.5, 0.01, 0.9, 0.01);
+/// assert!((prob - 0.06).abs() < 1e-9);
+/// let prob = dynamic_probability(0.05, 0.7, 0.5, 0.01, 0.9, 0.01);
+/// assert!((prob - 0.04).abs() < 1e-9);
+/// ```
 pub fn dynamic_probability(
     current_probability: f64,
     cardinality: f64,

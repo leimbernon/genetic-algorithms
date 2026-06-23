@@ -12,11 +12,13 @@
 //! The engine compiles safely for `wasm32-unknown-unknown`.
 
 use std::borrow::Cow;
-use std::sync::Arc;
+use std::fmt::Debug;
+use std::sync::{Arc, Mutex};
 
 use rand::Rng;
 
 use crate::configuration::ProblemSolving;
+use crate::error::GaError;
 use crate::ga::TerminationCause;
 use crate::observer::GaObserver;
 use crate::rng::make_rng;
@@ -28,6 +30,23 @@ use super::configuration::{inertia_weight, PsoConfiguration, PsoTopology};
 // ─── PsoResult ────────────────────────────────────────────────────────────────
 
 /// Result returned by [`PsoEngine::run`].
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::pso::{PsoConfiguration, PsoEngine, PsoResult};
+/// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+/// use genetic_algorithms::RealGene;
+///
+/// let config = PsoConfiguration::default();
+/// let mut engine = PsoEngine::<RangeChromosome<f64>>::new(
+///     config,
+///     |n| vec![RangeChromosome::default(); n],
+///     |dna| dna.iter().map(|g| g.real_value().powi(2)).sum(),
+/// );
+/// let result: PsoResult<RangeChromosome<f64>> = engine.run().unwrap();
+/// println!("Best fitness: {}", result.best_fitness);
+/// ```
 pub struct PsoResult<U: LinearChromosome> {
     /// Final population (all particles evaluated at end of run).
     pub population: Vec<U>,
@@ -135,22 +154,23 @@ impl PsoState {
 /// Generic over the chromosome type `U`; `U::Gene` must implement [`RealGene`]
 /// so that velocity and position arithmetic can be performed on gene values.
 ///
-/// # Example
+/// # Examples
 ///
-/// ```ignore
+/// ```rust,no_run
 /// use genetic_algorithms::pso::{PsoConfiguration, PsoEngine};
 /// use genetic_algorithms::chromosomes::Range as RangeChromosome;
-/// use genetic_algorithms::genotypes::Range as RangeGene;
+/// use genetic_algorithms::RealGene;
 ///
 /// let config = PsoConfiguration::default()
 ///     .with_max_generations(500);
 ///
-/// let mut engine = PsoEngine::new(
+/// let mut engine = PsoEngine::<RangeChromosome<f64>>::new(
 ///     config,
-///     |n| { /* return Vec<RangeChromosome<f64>> of length n */ todo!() },
+///     |n| vec![RangeChromosome::default(); n],
 ///     |dna| dna.iter().map(|g| g.real_value().powi(2)).sum(),
 /// );
-/// let result = engine.run();
+/// let result = engine.run().unwrap();
+/// println!("Generations: {}", result.generations);
 /// ```
 pub struct PsoEngine<U: LinearChromosome>
 where
@@ -160,6 +180,7 @@ where
     init_fn: Arc<dyn Fn(usize) -> Vec<U> + Send + Sync>,
     fitness_fn: Arc<FitnessFn<U::Gene>>,
     observer: Option<Arc<dyn GaObserver<U> + Send + Sync>>,
+    fitness_cache: Option<Arc<Mutex<crate::fitness::cache::FitnessCache>>>,
 }
 
 impl<U: LinearChromosome + Clone> PsoEngine<U>
@@ -182,6 +203,7 @@ where
             init_fn: Arc::new(init_fn),
             fitness_fn: Arc::new(fitness_fn),
             observer: None,
+            fitness_cache: None,
         }
     }
 
@@ -247,7 +269,13 @@ where
     ///
     /// Returns `pbest_positions[winner][d]` where `winner` is the neighbor with
     /// the best personal-best fitness.
-    fn lbest_position(&self, particle_i: usize, gene_d: usize, neighborhood_size: usize, state: &PsoState) -> f64 {
+    fn lbest_position(
+        &self,
+        particle_i: usize,
+        gene_d: usize,
+        neighborhood_size: usize,
+        state: &PsoState,
+    ) -> f64 {
         let n = state.n_particles;
         // Clamp k to [1, n-1] so we never query 0 or n neighbors.
         let k = neighborhood_size.min(n - 1).max(1);
@@ -282,10 +310,22 @@ where
     ///
     /// When `population_size` is 0, a default of 30 particles is used
     /// (PSO literature standard).
-    pub fn run(&mut self) -> PsoResult<U> {
+    pub fn run(&mut self) -> Result<PsoResult<U>, GaError>
+    where
+        U::Gene: Debug,
+    {
         let mut rng = make_rng();
-        let is_maximization =
-            matches!(self.config.problem_solving, ProblemSolving::Maximization);
+        let is_maximization = matches!(self.config.problem_solving, ProblemSolving::Maximization);
+
+        // D-05: bootstrap cache handle at run() start.
+        if let Some(size) = self.config.fitness_cache_size {
+            if self.fitness_cache.is_none() {
+                let (wrapped_fn, cache_handle) =
+                    crate::fitness::cache::wrap_with_cache(Arc::clone(&self.fitness_fn), size);
+                self.fitness_fn = wrapped_fn;
+                self.fitness_cache = Some(cache_handle);
+            }
+        }
 
         // ── Observer: run start ───────────────────────────────────────────────
         self.notify(|obs| obs.on_run_start());
@@ -302,7 +342,9 @@ where
 
         // Guard: empty population from user's init_fn
         if pop.is_empty() {
-            panic!("PsoEngine: init_fn returned an empty population");
+            return Err(GaError::InitializationError(
+                "PsoEngine: init_fn returned an empty population".to_string(),
+            ));
         }
 
         // ── Evaluate initial population fitness ───────────────────────────────
@@ -319,11 +361,21 @@ where
         let mut state = PsoState::new(&pop, best_idx, &mut rng);
 
         // ── Observer: initial best ────────────────────────────────────────────
-        self.notify(|obs| obs.on_new_best(0, best.clone()));
+        self.notify(|obs| obs.on_new_best(0, &best));
 
         let mut termination_cause = TerminationCause::GenerationLimitReached;
-        let mut all_stats: Vec<GenerationStats> =
-            Vec::with_capacity(self.config.max_generations);
+        let mut all_stats: Vec<GenerationStats> = Vec::with_capacity(self.config.max_generations);
+
+        // Cache snapshot for per-generation delta stats.
+        let (mut prev_cache_hits, mut prev_cache_misses) = match &self.fitness_cache {
+            Some(ch) => {
+                let c = ch
+                    .lock()
+                    .map_err(|_| GaError::InternalError("fitness cache mutex poisoned".to_string()))?;
+                (c.hits(), c.misses())
+            }
+            None => (0, 0),
+        };
 
         // ── Main loop ─────────────────────────────────────────────────────────
         for gen in 0..self.config.max_generations {
@@ -332,8 +384,9 @@ where
             let w = inertia_weight(&self.config.inertia, gen, self.config.max_generations);
 
             // ── Update each particle ──────────────────────────────────────────
-            // `i` is required for cross-indexing into `state.velocities`,
-            // `state.pbest_positions`, and `state.pbest_fitness` in parallel.
+            // `i` is required to cross-index state.velocities[i], state.pbest_positions[i],
+            // state.pbest_fitness[i] — three independent vectors. Refactoring to
+            // enumerate() over a single vec would break this contract.
             #[allow(clippy::needless_range_loop)]
             for i in 0..pop.len() {
                 // Read current position.
@@ -423,14 +476,22 @@ where
                 best = pop[owner].clone();
                 best.set_dna(Cow::Owned(new_dna));
                 best.set_fitness(state.gbest_fitness);
-                let best_clone = best.clone();
-                self.notify(|obs| obs.on_new_best(gen, best_clone));
+                self.notify(|obs| obs.on_new_best(gen, &best));
             }
 
             // ── Generation stats ──────────────────────────────────────────────
             let fitness_values: Vec<f64> = pop.iter().map(|c| c.fitness()).collect();
-            let stats =
+            let mut stats =
                 GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
+            if let Some(ref ch) = self.fitness_cache {
+                let c = ch
+                    .lock()
+                    .map_err(|_| GaError::InternalError("fitness cache mutex poisoned".to_string()))?;
+                stats.cache_hits = Some(c.hits().saturating_sub(prev_cache_hits));
+                stats.cache_misses = Some(c.misses().saturating_sub(prev_cache_misses));
+                prev_cache_hits = c.hits();
+                prev_cache_misses = c.misses();
+            }
             self.notify(|obs| obs.on_generation_end(&stats));
             all_stats.push(stats);
 
@@ -448,11 +509,11 @@ where
         let all_stats_ref = all_stats.as_slice();
         self.notify(|obs| obs.on_run_end(termination_cause, all_stats_ref));
 
-        PsoResult {
+        Ok(PsoResult {
             population: pop,
             best,
             best_fitness,
             generations,
-        }
+        })
     }
 }

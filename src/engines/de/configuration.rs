@@ -81,6 +81,11 @@ pub struct DeConfiguration {
     pub problem_solving: ProblemSolving,
     /// Optional fitness target — engine stops early when reached.
     pub fitness_target: Option<f64>,
+    /// Fitness cache capacity in entries.
+    ///
+    /// When set, `run()` wraps the scalar `fitness_fn` with an LRU cache of this
+    /// size, avoiding redundant evaluations for duplicate DNA.
+    pub fitness_cache_size: Option<usize>,
 }
 
 impl Default for DeConfiguration {
@@ -95,6 +100,7 @@ impl Default for DeConfiguration {
             adaptive: DeAdaptive::None,
             problem_solving: ProblemSolving::Minimization,
             fitness_target: None,
+            fitness_cache_size: None,
         }
     }
 }
@@ -143,6 +149,15 @@ impl DeConfiguration {
     /// Builder: set fitness target for early stopping.
     pub fn with_fitness_target(mut self, t: f64) -> Self {
         self.fitness_target = Some(t);
+        self
+    }
+    /// Builder: enable the fitness cache.
+    ///
+    /// Sets the LRU cache capacity to `size` entries. When the engine runs,
+    /// `fitness_fn` is wrapped with the cache, avoiding redundant evaluations
+    /// for duplicate DNA.
+    pub fn with_fitness_cache_size(mut self, size: usize) -> Self {
+        self.fitness_cache_size = Some(size);
         self
     }
 }

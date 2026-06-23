@@ -20,6 +20,15 @@ use rand::Rng;
 use std::f64;
 
 /// Strategy variant for adaptive operator selection.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::aos::AosStrategy;
+///
+/// let pm = AosStrategy::pm_default();
+/// assert!(matches!(pm, AosStrategy::ProbabilityMatching { .. }));
+/// ```
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum AosStrategy {
@@ -110,6 +119,15 @@ impl ArmState {
 /// Tracks per-arm rewards, selection probabilities (for PM/AP), and
 /// selection counts (for MAB UCB). Provides methods to select operators,
 /// record rewards, and update probabilities.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::aos::{AosState, AosStrategy};
+///
+/// let state = AosState::new(3, AosStrategy::pm_default(), 10);
+/// assert_eq!(state.num_arms(), 3);
+/// ```
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct AosState {
@@ -379,6 +397,15 @@ impl AosState {
 /// Formula: `(parent_fitness - offspring_fitness) / max(|best_fitness|, EPSILON)`
 ///
 /// A positive result means the offspring is better (lower fitness for minimization).
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::aos::compute_normalized_reward;
+///
+/// let reward = compute_normalized_reward(1.0, 0.8, 1.0);
+/// assert!((reward - 0.2).abs() < 1e-9);
+/// ```
 /// A negative result means the offspring is worse.
 /// The denominator is clamped to `f64::EPSILON` to prevent division by zero (T-43-03).
 ///
@@ -395,338 +422,4 @@ pub fn compute_normalized_reward(
     delta / denom
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use rand::rngs::SmallRng;
-    use rand::SeedableRng;
 
-    fn make_rng() -> SmallRng {
-        SmallRng::seed_from_u64(42)
-    }
-
-    // ---------------------------------------------------------------------------
-    // AosStrategy default constructors
-    // ---------------------------------------------------------------------------
-
-    #[test]
-    fn test_pm_default() {
-        let s = AosStrategy::pm_default();
-        match s {
-            AosStrategy::ProbabilityMatching {
-                alpha,
-                learning_rate,
-            } => {
-                assert!((alpha - 0.8).abs() < 1e-10);
-                assert!((learning_rate - 0.3).abs() < 1e-10);
-            }
-            _ => panic!("Expected ProbabilityMatching"),
-        }
-    }
-
-    #[test]
-    fn test_ap_default() {
-        let s = AosStrategy::ap_default();
-        match s {
-            AosStrategy::AdaptivePursuit { beta, c } => {
-                assert!((beta - 0.5).abs() < 1e-10);
-                assert!((c - 1.5).abs() < 1e-10);
-            }
-            _ => panic!("Expected AdaptivePursuit"),
-        }
-    }
-
-    #[test]
-    fn test_mab_default() {
-        let s = AosStrategy::mab_default();
-        match s {
-            AosStrategy::MultiArmedBandit { c, epsilon } => {
-                assert!((c - 1.0).abs() < 1e-10);
-                assert!((epsilon - 0.1).abs() < 1e-10);
-            }
-            _ => panic!("Expected MultiArmedBandit"),
-        }
-    }
-
-    // ---------------------------------------------------------------------------
-    // AosState construction
-    // ---------------------------------------------------------------------------
-
-    #[test]
-    fn test_new_creates_correct_number_of_arms() {
-        let state = AosState::new(3, AosStrategy::pm_default(), 50);
-        assert_eq!(state.num_arms(), 3);
-        assert_eq!(state.probabilities().len(), 3);
-        assert_eq!(state.selection_counts().len(), 3);
-        assert_eq!(state.arms.len(), 3);
-    }
-
-    #[test]
-    fn test_new_uniform_probabilities() {
-        let state = AosState::new(4, AosStrategy::pm_default(), 50);
-        for &p in state.probabilities() {
-            assert!((p - 0.25).abs() < 1e-10);
-        }
-    }
-
-    #[test]
-    fn test_new_exploration_generations() {
-        let state = AosState::new(2, AosStrategy::pm_default(), 50);
-        assert_eq!(state.exploration_generations(), 25);
-    }
-
-    #[test]
-    fn test_new_zero_arms() {
-        let state = AosState::new(0, AosStrategy::pm_default(), 50);
-        assert_eq!(state.num_arms(), 0);
-        assert!(state.probabilities().is_empty());
-    }
-
-    // ---------------------------------------------------------------------------
-    // select_operator — exploration phase
-    // ---------------------------------------------------------------------------
-
-    #[test]
-    fn test_select_exploration_distribution() {
-        let mut state = AosState::new(5, AosStrategy::pm_default(), 100);
-        let mut rng = make_rng();
-        let mut counts = [0usize; 5];
-        for _ in 0..500 {
-            let op = state.select_operator(&mut rng, 10); // exploration (10 < 50)
-            assert!(op < 5);
-            counts[op] += 1;
-        }
-        // All 5 arms should have been selected at least once
-        assert!(
-            counts.iter().all(|&c| c > 0),
-            "All arms should be selected during exploration"
-        );
-    }
-
-    #[test]
-    fn test_select_exploration_tracks_counts() {
-        let mut state = AosState::new(3, AosStrategy::pm_default(), 50);
-        let mut rng = make_rng();
-        let _ = state.select_operator(&mut rng, 0);
-        assert_eq!(state.total_selections(), 1);
-        let total_counts: usize = state.selection_counts().iter().sum();
-        assert_eq!(total_counts, 1);
-    }
-
-    // ---------------------------------------------------------------------------
-    // select_operator — post-exploration PM/AP
-    // ---------------------------------------------------------------------------
-
-    #[test]
-    fn test_select_pm_post_exploration() {
-        let mut state = AosState::new(2, AosStrategy::pm_default(), 50);
-        let mut rng = make_rng();
-        // Post-exploration (gen > 25)
-        let _ = state.select_operator(&mut rng, 30);
-        // Should not panic — selection works
-    }
-
-    #[test]
-    fn test_select_ap_post_exploration() {
-        let mut state = AosState::new(2, AosStrategy::ap_default(), 50);
-        let mut rng = make_rng();
-        let _ = state.select_operator(&mut rng, 30);
-    }
-
-    // ---------------------------------------------------------------------------
-    // select_operator — MAB
-    // ---------------------------------------------------------------------------
-
-    #[test]
-    fn test_select_mab_forced_exploration() {
-        let mut state = AosState::new(3, AosStrategy::mab_default(), 50);
-        let mut rng = make_rng();
-        // All arms have selection_count == 0 — first MAB selection should pick
-        // the first arm with count 0 (forced exploration)
-        let op = state.select_operator(&mut rng, 30);
-        assert!(op < 3);
-    }
-
-    #[test]
-    fn test_select_mab_ucb1_after_rewards() {
-        let mut state = AosState::new(3, AosStrategy::mab_default(), 50);
-        let mut rng = make_rng();
-
-        // Seed some selections first to get past forced exploration
-        state.record_rewards(&[(0, 0.5), (0, 0.6), (0, 0.7)]);
-        state.record_rewards(&[(1, 0.1), (1, 0.0), (1, -0.1)]);
-        state.record_rewards(&[(2, 0.3), (2, 0.2), (2, 0.4)]);
-
-        // Seed enough selections so no forced exploration remains
-        for i in 0..5 {
-            // Record selects at exploration phases and post-exploration
-            let _ = state.select_operator(&mut rng, i);
-        }
-        // Post-exploration
-        let _ = state.select_operator(&mut rng, 30);
-    }
-
-    // ---------------------------------------------------------------------------
-    // record_rewards
-    // ---------------------------------------------------------------------------
-
-    #[test]
-    fn test_record_rewards_single() {
-        let mut state = AosState::new(2, AosStrategy::pm_default(), 50);
-        state.record_rewards(&[(0, 0.5), (1, -0.2)]);
-        assert!((state.arm_mean_reward(0) - 0.5).abs() < 1e-10);
-        assert!((state.arm_mean_reward(1) - (-0.2)).abs() < 1e-10);
-    }
-
-    #[test]
-    fn test_record_rewards_out_of_bounds_dropped() {
-        let mut state = AosState::new(2, AosStrategy::pm_default(), 50);
-        // Should not panic
-        state.record_rewards(&[(5, 0.5)]);
-        // Arm 0 should still have default mean (no reward recorded)
-        assert!((state.arm_mean_reward(0) - 0.0).abs() < 1e-10);
-    }
-
-    #[test]
-    fn test_record_rewards_batch() {
-        let mut state = AosState::new(3, AosStrategy::pm_default(), 10);
-        let rewards: Vec<(usize, f64)> = vec![(0, 0.8), (1, 0.1), (0, 0.6)];
-        state.record_rewards(&rewards);
-        // Arm 0: two rewards, mean should be 0.7
-        assert!((state.arm_mean_reward(0) - 0.7).abs() < 1e-10);
-        // Arm 1: one reward, mean = 0.1
-        assert!((state.arm_mean_reward(1) - 0.1).abs() < 1e-10);
-        // Arm 2: no rewards, mean = 0.0
-        assert!((state.arm_mean_reward(2) - 0.0).abs() < 1e-10);
-    }
-
-    // ---------------------------------------------------------------------------
-    // update — PM
-    // ---------------------------------------------------------------------------
-
-    #[test]
-    fn test_update_pm_changes_probabilities() {
-        let mut state = AosState::new(
-            3,
-            AosStrategy::ProbabilityMatching {
-                alpha: 0.8,
-                learning_rate: 0.3,
-            },
-            10,
-        );
-        // Give arm 0 high rewards, arms 1-2 low
-        for _ in 0..3 {
-            state.record_rewards(&[(0, 1.0), (1, -0.5), (2, -0.3)]);
-        }
-        state.update();
-        // After update, arm 0 should have higher probability
-        let probs = state.probabilities().to_vec();
-        assert!(
-            probs[0] > probs[1],
-            "Arm 0 should have higher prob, got {:?}",
-            probs
-        );
-        // Probabilities should sum to ~1.0
-        let sum: f64 = probs.iter().sum();
-        assert!(
-            (sum - 1.0).abs() < 0.01,
-            "Probabilities should sum to ~1.0, got {}",
-            sum
-        );
-    }
-
-    // ---------------------------------------------------------------------------
-    // update — AP
-    // ---------------------------------------------------------------------------
-
-    #[test]
-    fn test_update_ap() {
-        let mut state = AosState::new(2, AosStrategy::AdaptivePursuit { beta: 0.5, c: 1.5 }, 10);
-        state.record_rewards(&[(0, 1.0), (1, -1.0)]);
-        state.update();
-        let probs = state.probabilities().to_vec();
-        let sum: f64 = probs.iter().sum();
-        assert!(
-            (sum - 1.0).abs() < 0.01,
-            "Probabilities should sum to ~1.0, got {}",
-            sum
-        );
-    }
-
-    // ---------------------------------------------------------------------------
-    // update — MAB (no-op, verifies no panic)
-    // ---------------------------------------------------------------------------
-
-    #[test]
-    fn test_update_mab_noop() {
-        let mut state = AosState::new(2, AosStrategy::mab_default(), 10);
-        state.record_rewards(&[(0, 1.0), (1, -1.0)]);
-        state.update();
-        // MAB does not update probabilities; they should remain uniform
-        for &p in state.probabilities() {
-            assert!((p - 0.5).abs() < 1e-10);
-        }
-    }
-
-    // ---------------------------------------------------------------------------
-    // compute_normalized_reward
-    // ---------------------------------------------------------------------------
-
-    #[test]
-    fn test_compute_normalized_reward_positive() {
-        // Offspring better (lower fitness) than parent: positive reward
-        let reward = compute_normalized_reward(10.0, 5.0, 20.0);
-        assert!(
-            reward > 0.0,
-            "Better offspring should give positive reward, got {}",
-            reward
-        );
-        assert!(
-            (reward - 0.25).abs() < 1e-10,
-            "Expected ~0.25, got {}",
-            reward
-        );
-    }
-
-    #[test]
-    fn test_compute_normalized_reward_negative() {
-        // Offspring worse (higher fitness) than parent: negative reward
-        let reward = compute_normalized_reward(5.0, 10.0, 20.0);
-        assert!(
-            reward < 0.0,
-            "Worse offspring should give negative reward, got {}",
-            reward
-        );
-    }
-
-    #[test]
-    fn test_compute_normalized_reward_zero_delta() {
-        let reward = compute_normalized_reward(10.0, 10.0, 20.0);
-        assert!(
-            (reward).abs() < 1e-10,
-            "Equal fitness should give ~0 reward, got {}",
-            reward
-        );
-    }
-
-    #[test]
-    fn test_compute_normalized_reward_zero_best() {
-        // Best fitness of 0 should not cause NaN (EPSILON clamp)
-        let reward = compute_normalized_reward(10.0, 5.0, 0.0);
-        assert!(
-            !reward.is_nan(),
-            "Reward should not be NaN when best_fitness=0"
-        );
-        assert!(reward > 0.0, "Positive reward expected");
-    }
-
-    #[test]
-    fn test_compute_normalized_reward_best_nonzero() {
-        let reward = compute_normalized_reward(100.0, 95.0, 50.0);
-        assert!(
-            (reward - 0.1).abs() < 1e-10,
-            "Expected ~0.1, got {}",
-            reward
-        );
-    }
-}

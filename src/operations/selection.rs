@@ -38,38 +38,50 @@ impl SelectionOperator for Selection {
         number_of_couples: usize,
         number_of_threads: usize,
         num_parents: usize,
-    ) -> Vec<Vec<usize>>
+    ) -> Result<Vec<Vec<usize>>, GaError>
     where
         U: ChromosomeT + Sync + Send + 'static + Clone,
     {
         match self {
-            Selection::Random => random(chromosomes, num_parents),
-            Selection::RouletteWheel => roulette_wheel_selection(chromosomes, number_of_couples, num_parents),
-            Selection::StochasticUniversalSampling => {
-                stochastic_universal_sampling(chromosomes, number_of_couples, num_parents)
+            Selection::Random => Ok(random(chromosomes, num_parents)),
+            Selection::RouletteWheel => {
+                Ok(roulette_wheel_selection(chromosomes, number_of_couples, num_parents))
             }
-            Selection::Tournament => tournament(chromosomes, number_of_couples, number_of_threads, num_parents),
-            Selection::Rank => rank_selection(chromosomes, number_of_couples, num_parents),
-            Selection::Boltzmann => boltzmann_selection(chromosomes, number_of_couples, 1.0, num_parents),
-            Selection::Truncation => truncation_selection(chromosomes, number_of_couples, num_parents),
+            Selection::StochasticUniversalSampling => {
+                Ok(stochastic_universal_sampling(chromosomes, number_of_couples, num_parents))
+            }
+            Selection::Tournament => Ok(tournament(
+                chromosomes,
+                number_of_couples,
+                number_of_threads,
+                num_parents,
+            )),
+            Selection::Rank => Ok(rank_selection(chromosomes, number_of_couples, num_parents)),
+            Selection::Boltzmann => {
+                Ok(boltzmann_selection(chromosomes, number_of_couples, 1.0, num_parents))
+            }
+            Selection::Truncation => {
+                Ok(truncation_selection(chromosomes, number_of_couples, num_parents))
+            }
             // WARNING: The `SelectionOperator` trait does not carry operator-specific
             // configuration, so `niche_radius` defaults to 0.1 on this path.
             // Island-model and NSGA-II callers that use `Selection::Clearing` with
             // a custom `niche_radius` must go through `selection::factory` instead.
             // The single-population GA always uses the factory path and is unaffected.
             Selection::Clearing => {
-                log::warn!(target: "selection_events",
+                crate::log_warn!(target: "selection_events",
                     "Selection::Clearing called through SelectionOperator trait: \
                      niche_radius defaults to 0.1 (configured value ignored). \
                      Use selection::factory for the full configuration.");
-                clearing_selection(chromosomes, 0.1, number_of_couples, num_parents)
+                Ok(clearing_selection(chromosomes, 0.1, number_of_couples, num_parents))
             }
             Selection::Lexicase | Selection::EpsilonLexicase => {
-                panic!(
-                    "Selection::Lexicase/EpsilonLexicase cannot be called through SelectionOperator \
-                     trait: use selection::factory_lexicase for Lexicase/EpsilonLexicase operators. \
+                Err(GaError::SelectionError(
+                    "Selection::Lexicase/EpsilonLexicase cannot be called through the \
+                     SelectionOperator trait: use selection::factory_lexicase. \
                      Island-model and NSGA-II paths do not support VectorFitness."
-                );
+                        .to_string(),
+                ))
             }
         }
     }
@@ -89,6 +101,21 @@ impl SelectionOperator for Selection {
 ///
 /// `Ok(Vec<Vec<usize>>)` with parent groups (each inner Vec has `num_parents` indices),
 /// or `Err(GaError::SelectionError)` if the population is too small to form groups.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::configuration::SelectionConfiguration;
+/// use genetic_algorithms::operations::selection::factory;
+/// use genetic_algorithms::traits::ChromosomeT;
+///
+/// let mut c1 = Binary::new(); c1.set_fitness(1.0);
+/// let mut c2 = Binary::new(); c2.set_fitness(2.0);
+/// let config = SelectionConfiguration { number_of_couples: 2, ..Default::default() };
+/// let groups = factory(&[c1, c2], config, 1, 2).unwrap();
+/// assert_eq!(groups.len(), 2);
+/// ```
 pub fn factory<U>(
     chromosomes: &[U],
     configuration: SelectionConfiguration,
@@ -140,7 +167,7 @@ where
             configuration.number_of_couples,
             number_of_threads,
             num_parents,
-        ),
+        )?,
     };
 
     Ok(groups)
@@ -161,6 +188,27 @@ where
 /// - `GaError::SelectionError` if `fitness_values()` is empty on the first chromosome.
 /// - `GaError::SelectionError` if any chromosome has a NaN fitness value.
 /// - `GaError::ConfigurationError` if called with a non-lexicase selection method.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::configuration::SelectionConfiguration;
+/// use genetic_algorithms::operations::{selection::factory_lexicase, Selection};
+/// use genetic_algorithms::traits::{ChromosomeT, VectorFitness};
+///
+/// let mut c1 = Binary::new();
+/// c1.set_fitness_values(vec![1.0, 0.5]);
+/// let mut c2 = Binary::new();
+/// c2.set_fitness_values(vec![0.8, 0.9]);
+/// let config = SelectionConfiguration {
+///     method: Selection::Lexicase,
+///     number_of_couples: 2,
+///     ..Default::default()
+/// };
+/// let groups = factory_lexicase(&mut [c1, c2], config, 1).unwrap();
+/// assert_eq!(groups.len(), 2);
+/// ```
 pub fn factory_lexicase<U>(
     chromosomes: &mut [U],
     configuration: SelectionConfiguration,
@@ -191,9 +239,7 @@ where
 
     // Lexicase always produces 2-parent groups
     let groups = match configuration.method {
-        Selection::Lexicase => {
-            lexicase_selection(chromosomes, configuration.number_of_couples, 2)
-        }
+        Selection::Lexicase => lexicase_selection(chromosomes, configuration.number_of_couples, 2),
         Selection::EpsilonLexicase => epsilon_lexicase_selection(
             chromosomes,
             configuration.number_of_couples,

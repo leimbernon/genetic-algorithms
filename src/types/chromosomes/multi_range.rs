@@ -19,8 +19,8 @@
 
 use crate::fitness::FitnessFnWrapper;
 use crate::genotypes::MultiRangeGenotype;
-use crate::operations::mutation::ValueMutable;
 use crate::operations::mutation::gaussian::{multi_range_gaussian_mutation, GaussianConvertible};
+use crate::operations::mutation::ValueMutable;
 use crate::traits::{ChromosomeT, LinearChromosome, OperatorCompat, RealValued, VectorFitness};
 use std::borrow::Cow;
 use std::fmt;
@@ -130,7 +130,9 @@ impl<T: Sync + Send + Copy + Default + Debug + 'static> VectorFitness for MultiR
     }
 }
 
-impl<T: Sync + Send + Copy + Default + Debug + 'static> LinearChromosome for MultiRangeChromosome<T> {
+impl<T: Sync + Send + Copy + Default + Debug + 'static> LinearChromosome
+    for MultiRangeChromosome<T>
+{
     fn dna(&self) -> &[Self::Gene] {
         &self.dna
     }
@@ -186,4 +188,9 @@ where
     fn gaussian_mutate(&mut self, _sigma: f64) {
         multi_range_gaussian_mutation(self, _sigma);
     }
+}
+
+impl<T: Sync + Send + Copy + Default + Debug + 'static> crate::traits::RealValuedMutation
+    for MultiRangeChromosome<T>
+{
 }

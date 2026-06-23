@@ -15,6 +15,15 @@ use std::borrow::Cow;
 /// the memetic algorithm loop. The enum implements
 /// [`LocalSearchOperator`], so it can be passed directly to the GA
 /// configuration.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::operations::local_search::LocalSearch;
+///
+/// let op = LocalSearch::HillClimbing;
+/// assert_eq!(op, LocalSearch::HillClimbing);
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum LocalSearch {
@@ -48,6 +57,16 @@ impl LocalSearchOperator for LocalSearch {
 /// |-----------------|---------|
 /// | `step_size`     | `0.1`   |
 /// | `max_iterations`| `20`    |
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::operations::local_search::HillClimbingConfig;
+///
+/// let config = HillClimbingConfig { step_size: 0.05, max_iterations: 50 };
+/// assert_eq!(config.step_size, 0.05);
+/// assert_eq!(config.max_iterations, 50);
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct HillClimbingConfig {
@@ -70,6 +89,17 @@ impl Default for HillClimbingConfig {
 ///
 /// Controls the application frequency of the local search operator within
 /// the memetic algorithm loop.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::operations::local_search::LocalSearchApplicationStrategy;
+///
+/// let strategy = LocalSearchApplicationStrategy::BestN { n: 5 };
+/// assert_eq!(strategy, LocalSearchApplicationStrategy::BestN { n: 5 });
+/// let default = LocalSearchApplicationStrategy::default();
+/// assert_eq!(default, LocalSearchApplicationStrategy::AllOffspring);
+/// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum LocalSearchApplicationStrategy {
@@ -99,6 +129,17 @@ pub enum LocalSearchApplicationStrategy {
 ///   information acquired during the individual's lifetime is inherited).
 /// - **Baldwinian**: only the fitness is updated; the original genotype is
 ///   retained (acquired improvements affect selection but are not inherited).
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::operations::local_search::LocalSearchMode;
+///
+/// let mode = LocalSearchMode::Baldwinian;
+/// assert_eq!(mode, LocalSearchMode::Baldwinian);
+/// let default = LocalSearchMode::default();
+/// assert_eq!(default, LocalSearchMode::Lamarckian);
+/// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum LocalSearchMode {
@@ -116,6 +157,15 @@ pub enum LocalSearchMode {
 /// Returns the [`LocalSearch`] enum, which itself implements
 /// [`LocalSearchOperator`] so it can be used wherever a boxed or generic
 /// operator is expected.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::operations::local_search::{factory, LocalSearch};
+///
+/// let op = factory(LocalSearch::HillClimbing);
+/// assert_eq!(op, LocalSearch::HillClimbing);
+/// ```
 pub fn factory(op: LocalSearch) -> LocalSearch {
     op
 }
@@ -124,6 +174,17 @@ pub fn factory(op: LocalSearch) -> LocalSearch {
 ///
 /// Returns a [`HillClimbingConfig`] (which implements
 /// [`LocalSearchOperator`]) when the variant is `HillClimbing`.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::operations::local_search::{factory_with_config, HillClimbingConfig, LocalSearch};
+///
+/// let config = HillClimbingConfig { step_size: 0.02, max_iterations: 100 };
+/// let result = factory_with_config(LocalSearch::HillClimbing, config);
+/// assert_eq!(result.step_size, 0.02);
+/// assert_eq!(result.max_iterations, 100);
+/// ```
 pub fn factory_with_config(op: LocalSearch, config: HillClimbingConfig) -> HillClimbingConfig {
     match op {
         LocalSearch::HillClimbing => config,
@@ -207,98 +268,3 @@ impl LocalSearchOperator for HillClimbingConfig {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::chromosomes::Range as RangeChromosome;
-    use crate::genotypes::Range as RangeGene;
-    use crate::traits::{ChromosomeT, LinearChromosome};
-
-    /// Simple quadratic fitness: sum of squares.
-    fn quadratic(dna: &[RangeGene<f64>]) -> f64 {
-        dna.iter().map(|g| g.value * g.value).sum::<f64>()
-    }
-
-    #[test]
-    fn test_hill_climbing_returns_improvements_count() {
-        let genes: Vec<RangeGene<f64>> = (0..5)
-            .map(|i| RangeGene::new(i, vec![(-10.0, 10.0)], 8.0))
-            .collect();
-        let mut chromo = RangeChromosome::<f64>::new();
-        chromo.set_dna(Cow::Owned(genes));
-        chromo.set_fitness(quadratic(chromo.dna()));
-
-        let config = HillClimbingConfig {
-            step_size: 1.0,
-            max_iterations: 50,
-        };
-        let result = config.improve(&mut chromo, &quadratic);
-        assert!(result.is_ok());
-        let improvements = result.unwrap();
-        assert!(improvements > 0, "expected at least one improvement");
-        // Fitness should be lower (minimization) after hill climbing
-        assert!(
-            chromo.fitness() < 400.0,
-            "fitness should improve: {}",
-            chromo.fitness()
-        );
-    }
-
-    #[test]
-    fn test_hill_climbing_unsupported_type() {
-        use crate::chromosomes::Binary as BinaryChromosome;
-        use crate::genotypes::Binary as BinaryGene;
-
-        let mut chromo = BinaryChromosome::new();
-        let result = HillClimbingConfig::default().improve(&mut chromo, &|_: &[BinaryGene]| 0.0);
-        assert!(result.is_err());
-        match result {
-            Err(GaError::LocalSearchError(msg)) => {
-                assert!(msg.contains("HillClimbing"));
-            }
-            _ => panic!("expected LocalSearchError"),
-        }
-    }
-
-    #[test]
-    fn test_hill_climbing_empty_dna() {
-        let mut chromo = RangeChromosome::<f64>::new();
-        let result = HillClimbingConfig::default().improve(&mut chromo, &quadratic);
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 0);
-    }
-
-    #[test]
-    fn test_local_search_application_strategy_default() {
-        let strategy = LocalSearchApplicationStrategy::default();
-        assert!(matches!(
-            strategy,
-            LocalSearchApplicationStrategy::AllOffspring
-        ));
-    }
-
-    #[test]
-    fn test_local_search_mode_default() {
-        let mode = LocalSearchMode::default();
-        assert!(matches!(mode, LocalSearchMode::Lamarckian));
-    }
-
-    #[test]
-    fn test_factory_returns_enum() {
-        let op = factory(LocalSearch::HillClimbing);
-        assert_eq!(op, LocalSearch::HillClimbing);
-    }
-
-    #[test]
-    fn test_factory_with_config() {
-        let config = HillClimbingConfig {
-            step_size: 0.01,
-            max_iterations: 10,
-        };
-        let result = factory_with_config(LocalSearch::HillClimbing, config);
-        // factory_with_config returns HillClimbingConfig which implements LocalSearchOperator
-        let mut chromo = RangeChromosome::<f64>::new();
-        let improve_result = result.improve(&mut chromo, &|_: &[RangeGene<f64>]| 0.0);
-        assert!(improve_result.is_ok());
-    }
-}

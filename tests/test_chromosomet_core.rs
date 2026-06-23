@@ -78,10 +78,16 @@ fn test_chromosomet_core_minimal_impl() {
 
     // Default fitness_distance implementation: |target - fitness|
     let distance = c.fitness_distance(&0.0);
-    assert!((distance - 5.0).abs() < 1e-10, "expected 5.0, got {distance}");
+    assert!(
+        (distance - 5.0).abs() < 1e-10,
+        "expected 5.0, got {distance}"
+    );
 
     let distance_neg = c.fitness_distance(&10.0);
-    assert!((distance_neg - 5.0).abs() < 1e-10, "expected 5.0, got {distance_neg}");
+    assert!(
+        (distance_neg - 5.0).abs() < 1e-10,
+        "expected 5.0, got {distance_neg}"
+    );
 }
 
 /// Test: MinimalChromo has no dna(), dna_mut(), set_dna(), or set_fitness_fn() methods.

@@ -35,8 +35,17 @@ impl genetic_algorithms::traits::ChromosomeT for MoTestChromosome {
     }
     /// Produces 3 objectives from the binary DNA (sum, -sum, sum-of-squares).
     fn calculate_fitness(&mut self) {
-        let sum: f64 = self.dna.iter().map(|g| if g.value { 1.0 } else { 0.0 }).sum();
-        let sq: f64 = self.dna.iter().map(|g| if g.value { 1.0 } else { 0.0 }).sum::<f64>().powi(2);
+        let sum: f64 = self
+            .dna
+            .iter()
+            .map(|g| if g.value { 1.0 } else { 0.0 })
+            .sum();
+        let sq: f64 = self
+            .dna
+            .iter()
+            .map(|g| if g.value { 1.0 } else { 0.0 })
+            .sum::<f64>()
+            .powi(2);
         self.fitness_values = vec![sum, -sum, sq];
         self.fitness = sum;
     }
@@ -84,12 +93,25 @@ struct TwoObjectiveChromosome {
 
 impl genetic_algorithms::traits::ChromosomeT for TwoObjectiveChromosome {
     type Gene = genetic_algorithms::genotypes::Binary;
-    fn fitness(&self) -> f64 { self.fitness }
-    fn set_fitness(&mut self, v: f64) -> &mut Self { self.fitness = v; self }
-    fn set_age(&mut self, _: usize) -> &mut Self { self }
-    fn age(&self) -> usize { 0 }
+    fn fitness(&self) -> f64 {
+        self.fitness
+    }
+    fn set_fitness(&mut self, v: f64) -> &mut Self {
+        self.fitness = v;
+        self
+    }
+    fn set_age(&mut self, _: usize) -> &mut Self {
+        self
+    }
+    fn age(&self) -> usize {
+        0
+    }
     fn calculate_fitness(&mut self) {
-        let sum: f64 = self.dna.iter().map(|g| if g.value { 1.0 } else { 0.0 }).sum();
+        let sum: f64 = self
+            .dna
+            .iter()
+            .map(|g| if g.value { 1.0 } else { 0.0 })
+            .sum();
         // Always produces only 2 values, even when num_objectives=3
         self.fitness_values = vec![sum, -sum];
         self.fitness = sum;
@@ -97,22 +119,36 @@ impl genetic_algorithms::traits::ChromosomeT for TwoObjectiveChromosome {
 }
 
 impl genetic_algorithms::traits::LinearChromosome for TwoObjectiveChromosome {
-    fn dna(&self) -> &[Self::Gene] { &self.dna }
-    fn dna_mut(&mut self) -> &mut [Self::Gene] { &mut self.dna }
+    fn dna(&self) -> &[Self::Gene] {
+        &self.dna
+    }
+    fn dna_mut(&mut self) -> &mut [Self::Gene] {
+        &mut self.dna
+    }
     fn set_dna<'a>(&mut self, dna: Cow<'a, [Self::Gene]>) -> &mut Self {
-        self.dna = dna.into_owned(); self
+        self.dna = dna.into_owned();
+        self
     }
     fn set_fitness_fn<F>(&mut self, _: F) -> &mut Self
-    where F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static { self }
+    where
+        F: Fn(&[Self::Gene]) -> f64 + Send + Sync + 'static,
+    {
+        self
+    }
 }
 
 impl VectorFitness for TwoObjectiveChromosome {
-    fn fitness_values(&self) -> &[f64] { &self.fitness_values }
-    fn set_fitness_values(&mut self, values: Vec<f64>) { self.fitness_values = values; }
+    fn fitness_values(&self) -> &[f64] {
+        &self.fitness_values
+    }
+    fn set_fitness_values(&mut self, values: Vec<f64>) {
+        self.fitness_values = values;
+    }
 }
 
 impl genetic_algorithms::operations::mutation::ValueMutable for TwoObjectiveChromosome {}
 impl genetic_algorithms::traits::OperatorCompat for TwoObjectiveChromosome {}
+impl genetic_algorithms::traits::RealValuedMutation for TwoObjectiveChromosome {}
 
 // --- validate() error-path tests ---
 
@@ -142,8 +178,7 @@ fn test_nsga2_validate_population_too_small() {
         .with_num_objectives(1)
         .with_population_size(1);
     let ga_config = GaConfiguration::default();
-    let nsga2 = Nsga2Ga::<Binary>::new(config, ga_config)
-        .with_initialization_fn(|_, _| vec![]);
+    let nsga2 = Nsga2Ga::<Binary>::new(config, ga_config).with_initialization_fn(|_, _| vec![]);
 
     let result = nsga2.validate();
     assert!(result.is_err());
@@ -154,15 +189,14 @@ fn test_nsga2_validate_population_too_small() {
 #[test]
 fn test_nsga2_run_rejects_mismatched_objective_count() {
     use genetic_algorithms::initializers::binary_random_initialization;
-    use genetic_algorithms::ChromosomeLength;
     use genetic_algorithms::traits::ConfigurationT;
+    use genetic_algorithms::ChromosomeLength;
 
     let config = Nsga2Configuration::new()
-        .with_num_objectives(3)  // expects 3
+        .with_num_objectives(3) // expects 3
         .with_population_size(8)
         .with_max_generations(1);
-    let ga_config = GaConfiguration::default()
-        .with_chromosome_length(ChromosomeLength::Fixed(4));
+    let ga_config = GaConfiguration::default().with_chromosome_length(ChromosomeLength::Fixed(4));
 
     let mut nsga2 = Nsga2Ga::<TwoObjectiveChromosome>::new(config, ga_config)
         .with_initialization_fn(|n, _| binary_random_initialization(n, None));

@@ -2,13 +2,13 @@
 
 use std::sync::Arc;
 
+use super::configuration::{HillClimbConfiguration, HillClimbMode};
 use crate::configuration::ProblemSolving;
 use crate::error::GaError;
 use crate::ga::TerminationCause;
 use crate::observer::GaObserver;
 use crate::stats::GenerationStats;
 use crate::traits::{LinearChromosome, Strategy};
-use super::configuration::{HillClimbConfiguration, HillClimbMode};
 
 /// Type alias for the neighbor-generation function stored inside [`HillClimbEngine`].
 type NeighborFn<U> = Arc<dyn Fn(&U) -> Vec<U> + Send + Sync>;
@@ -23,6 +23,27 @@ type NeighborFn<U> = Arc<dyn Fn(&U) -> Vec<U> + Send + Sync>;
 ///   best (more thorough, higher per-iteration cost).
 ///
 /// Implements [`Strategy<U>`] for runtime swapping with other engines.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::hill_climb::{HillClimbConfiguration, HillClimbEngine, HillClimbMode};
+/// use genetic_algorithms::chromosomes::Binary;
+///
+/// let initial = Binary::default();
+/// let config = HillClimbConfiguration::default()
+///     .with_mode(HillClimbMode::Stochastic)
+///     .with_no_improvement_limit(50);
+///
+/// let mut engine = HillClimbEngine::new(
+///     config,
+///     initial,
+///     |current| {
+///         // generate neighbors by bit-flipping each position
+///         vec![current.clone()]
+///     },
+/// );
+/// ```
 pub struct HillClimbEngine<U: LinearChromosome> {
     config: HillClimbConfiguration,
     neighbor_fn: NeighborFn<U>,
@@ -80,9 +101,7 @@ impl<U: LinearChromosome + Clone> HillClimbEngine<U> {
     /// via [`HillClimbEngine::best`] after this call.
     pub fn run(&mut self) -> Result<(), GaError> {
         let mut current = self.current.take().ok_or_else(|| {
-            GaError::ConfigurationError(
-                "HillClimbEngine: no initial solution provided".to_string(),
-            )
+            GaError::ConfigurationError("HillClimbEngine: no initial solution provided".to_string())
         })?;
 
         self.notify(|obs| obs.on_run_start());
@@ -118,8 +137,7 @@ impl<U: LinearChromosome + Clone> HillClimbEngine<U> {
             };
 
             if let Some(next) = best_neighbor {
-                let next_clone = next.clone();
-                self.notify(|obs| obs.on_new_best(iteration, next_clone));
+                self.notify(|obs| obs.on_new_best(iteration, &next));
                 current = next;
                 no_improvement_count = 0;
             } else {
@@ -136,6 +154,9 @@ impl<U: LinearChromosome + Clone> HillClimbEngine<U> {
                 diversity: 0.0,
                 dynamic_mutation_probability: None,
                 avg_node_count: 0.0,
+                cache_hits: None,
+                cache_misses: None,
+                true_fitness_calls: None,
             };
             self.notify(|obs| obs.on_generation_end(&stats));
             all_stats.push(stats);

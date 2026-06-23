@@ -13,11 +13,12 @@ use genetic_algorithms::hall_of_fame::{DistanceMetric, HallOfFameConfig};
 use genetic_algorithms::initializers::range_random_initialization;
 use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::traits::{
-    ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig, SelectionConfig,
-    StoppingConfig,
+    ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig,
+    SelectionConfig, StoppingConfig,
 };
 
 fn main() {
+    let _ = env_logger::try_init();
     println!("=== Hall of Fame / Solution Archive Demo ===");
     println!();
 
@@ -36,17 +37,14 @@ fn main() {
     };
 
     let mut ga: Ga<RangeChromosome<i32>> = Ga::new()
-        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(n.try_into().unwrap()))
+        .with_chromosome_length(genetic_algorithms::ChromosomeLength::Fixed(
+            n.try_into().unwrap(),
+        ))
         .with_population_size(50)
         .with_initialization_fn(move |genes_per_chromosome, _| {
-            range_random_initialization(
-                genes_per_chromosome,
-                Some(&alleles_clone),
-            )
+            range_random_initialization(genes_per_chromosome, Some(&alleles_clone))
         })
-        .with_fitness_fn(|dna: &[RangeGene<i32>]| {
-            dna.iter().map(|g| g.value() as f64).sum::<f64>()
-        })
+        .with_fitness_fn(|dna: &[RangeGene<i32>]| dna.iter().map(|g| g.value() as f64).sum::<f64>())
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::Uniform)
         .with_mutation_method(Mutation::Swap)

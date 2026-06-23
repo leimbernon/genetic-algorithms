@@ -12,9 +12,7 @@
 //! 3. Keep the fitter of the (offspring, most-similar-parent) pair; discard the other.
 //! 4. Offspring that have no available parent to pair with survive unconditionally.
 
-use crate::traits::{LinearChromosome, GeneT};
-use log::{debug, trace};
-
+use crate::traits::{GeneT, LinearChromosome};
 /// Hamming distance between two DNA slices on gene IDs.
 ///
 /// Counts positions where `gene_a.id() != gene_b.id()`, comparing up to
@@ -41,8 +39,17 @@ fn hamming_distance<U: LinearChromosome>(a: &U, b: &U) -> usize {
 /// # Arguments
 ///
 /// * `chromosomes` - Combined parents + offspring (modified in place).
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::survivor::deterministic_crowding;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let mut population: Vec<Binary> = vec![Binary::new(); 20];
+/// deterministic_crowding(&mut population);
+/// ```
 pub fn deterministic_crowding<U: LinearChromosome>(chromosomes: &mut Vec<U>) {
-    debug!(target="survivor_events", method="deterministic_crowding"; "Starting deterministic crowding survivor");
+    crate::log_debug!(target="survivor_events", method="deterministic_crowding"; "Starting deterministic crowding survivor");
 
     // Partition indices into offspring (age==0) and parents (age>0).
     let mut offspring_indices: Vec<usize> = Vec::new();
@@ -56,7 +63,7 @@ pub fn deterministic_crowding<U: LinearChromosome>(chromosomes: &mut Vec<U>) {
         }
     }
 
-    trace!(target="survivor_events", method="deterministic_crowding";
+    crate::log_trace!(target="survivor_events", method="deterministic_crowding";
         "Offspring: {} | Parents: {}", offspring_indices.len(), parent_indices.len());
 
     // Track which indices survive.
@@ -70,7 +77,7 @@ pub fn deterministic_crowding<U: LinearChromosome>(chromosomes: &mut Vec<U>) {
     for &off_idx in &offspring_indices {
         if available_parents.is_empty() {
             // No parent available — offspring survives unconditionally (D-06).
-            trace!(target="survivor_events", method="deterministic_crowding";
+            crate::log_trace!(target="survivor_events", method="deterministic_crowding";
                 "Offspring {} has no available parent; survives unconditionally", off_idx);
             continue;
         }
@@ -99,12 +106,12 @@ pub fn deterministic_crowding<U: LinearChromosome>(chromosomes: &mut Vec<U>) {
         if off_wins {
             // Offspring wins — remove parent.
             survive[best_parent_idx] = false;
-            trace!(target="survivor_events", method="deterministic_crowding";
+            crate::log_trace!(target="survivor_events", method="deterministic_crowding";
                 "Offspring {} (fit={}) beats parent {} (fit={})", off_idx, off_fitness, best_parent_idx, par_fitness);
         } else {
             // Parent wins — remove offspring.
             survive[off_idx] = false;
-            trace!(target="survivor_events", method="deterministic_crowding";
+            crate::log_trace!(target="survivor_events", method="deterministic_crowding";
                 "Parent {} (fit={}) beats offspring {} (fit={})", best_parent_idx, par_fitness, off_idx, off_fitness);
         }
 
@@ -120,6 +127,6 @@ pub fn deterministic_crowding<U: LinearChromosome>(chromosomes: &mut Vec<U>) {
         keep
     });
 
-    debug!(target="survivor_events", method="deterministic_crowding";
+    crate::log_debug!(target="survivor_events", method="deterministic_crowding";
         "Deterministic crowding finished: {} survivors", chromosomes.len());
 }

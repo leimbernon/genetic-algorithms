@@ -1,8 +1,3 @@
-use criterion::{
-    criterion_group, criterion_main, AxisScale, BatchSize, BenchmarkId, Criterion,
-    PlotConfiguration,
-};
-
 use genetic_algorithms::chromosomes::ChromosomeLength;
 use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::fitness::FitnessFnWrapper;
@@ -95,6 +90,7 @@ impl LinearChromosome for SimpleChromosome {
 }
 impl ValueMutable for SimpleChromosome {}
 impl OperatorCompat for SimpleChromosome {}
+impl genetic_algorithms::traits::RealValuedMutation for SimpleChromosome {}
 
 // ---------------------------------------------------------------------------
 // Setup helper
@@ -144,49 +140,30 @@ fn build_island_ga(
 // Benchmarks
 // ---------------------------------------------------------------------------
 
-#[cfg(not(tarpaulin_include))]
-fn benchmark_island_ga_run(c: &mut Criterion) {
-    let mut group = c.benchmark_group("island_ga_run");
-    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+mod island_ga_run {
+    use super::*;
 
-    let configs: Vec<(usize, usize, usize, usize, usize)> = vec![
-        // (num_islands, pop_per_island, gene_length, max_generations, migration_interval)
-        (2, 20, 6, 10, 5),
+    /// args = (num_islands, pop_per_island, gene_length, max_generations, migration_interval)
+    #[cfg(not(tarpaulin_include))]
+    #[divan::bench(args = [
+        (2usize, 20usize, 6usize, 10usize, 5usize),
         (3, 20, 6, 10, 5),
         (4, 20, 6, 10, 5),
         (3, 50, 6, 10, 5),
         (3, 20, 6, 20, 5),
-    ];
-
-    for &(islands, pop, genes, gens, mig) in &configs {
-        group.bench_with_input(
-            BenchmarkId::new(
-                "IslandGa::run",
-                format!(
-                    "islands_{}_pop_{}_genes_{}_gen_{}_mig_{}",
-                    islands, pop, genes, gens, mig
-                ),
-            ),
-            &(islands, pop, genes, gens, mig),
-            |b, &(ni, pp, gl, mg, mi)| {
-                b.iter_batched(
-                    || build_island_ga(ni, pp, gl, mg, mi),
-                    |mut ga| {
-                        let _ = ga.run();
-                    },
-                    BatchSize::SmallInput,
-                );
-            },
-        );
+    ])]
+    fn benchmark_island_ga_run(
+        bencher: divan::Bencher,
+        (islands, pop, genes, gens, mig): (usize, usize, usize, usize, usize),
+    ) {
+        bencher
+            .with_inputs(|| build_island_ga(islands, pop, genes, gens, mig))
+            .bench_values(|mut ga| {
+                let _ = ga.run();
+            });
     }
-
-    group.finish();
 }
 
-criterion_group! {
-    name = island_benchmarks;
-    config = Criterion::default();
-    targets = benchmark_island_ga_run
+fn main() {
+    divan::main();
 }
-
-criterion_main!(island_benchmarks);

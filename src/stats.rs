@@ -21,6 +21,18 @@
 /// Per-generation statistics for tracking GA convergence and behavior.
 ///
 /// Collected at the end of each generation and optionally passed to callbacks.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::stats::GenerationStats;
+///
+/// let stats = GenerationStats::from_fitness_values(0, &[1.0, 2.0, 3.0], true);
+/// assert_eq!(stats.generation, 0);
+/// assert_eq!(stats.best_fitness, 3.0); // maximization
+/// assert_eq!(stats.worst_fitness, 1.0);
+/// assert!((stats.avg_fitness - 2.0).abs() < 1e-10);
+/// ```
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct GenerationStats {
@@ -51,6 +63,27 @@ pub struct GenerationStats {
     /// deserialization of checkpoints created before this field was added.
     #[cfg_attr(feature = "serde", serde(default))]
     pub avg_node_count: f64,
+    /// Number of LRU fitness cache hits in this generation.
+    ///
+    /// `None` when no fitness cache is configured. When set, represents the
+    /// delta hits accumulated during this generation's fitness evaluations.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub cache_hits: Option<u64>,
+    /// Number of LRU fitness cache misses in this generation.
+    ///
+    /// `None` when no fitness cache is configured. When set, represents the
+    /// delta misses accumulated during this generation's fitness evaluations.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub cache_misses: Option<u64>,
+    /// Number of offspring that reached true fitness evaluation after surrogate prescreening.
+    ///
+    /// `None` when no surrogate model is configured. When set, represents the
+    /// post-prescreening offspring count that reached true fitness evaluation in
+    /// this generation. Use this to track how much evaluation cost is being saved
+    /// by the surrogate: `true_fitness_calls / total_offspring` gives the
+    /// evaluation fraction.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub true_fitness_calls: Option<u64>,
 }
 
 impl GenerationStats {
@@ -74,6 +107,9 @@ impl GenerationStats {
                 diversity: 0.0,
                 dynamic_mutation_probability: None,
                 avg_node_count: 0.0,
+                cache_hits: None,
+                cache_misses: None,
+                true_fitness_calls: None,
             };
         }
 
@@ -114,6 +150,9 @@ impl GenerationStats {
             diversity: std_dev,
             dynamic_mutation_probability: None,
             avg_node_count: 0.0,
+            cache_hits: None,
+            cache_misses: None,
+            true_fitness_calls: None,
         }
     }
 }

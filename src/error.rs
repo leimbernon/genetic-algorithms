@@ -24,6 +24,23 @@ use std::fmt;
 ///
 /// This enum covers configuration errors, validation errors,
 /// operator errors, and initialization errors.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::error::GaError;
+///
+/// let err = GaError::ConfigurationError("population_size must be > 0".to_string());
+/// assert!(err.to_string().contains("population_size"));
+///
+/// // GaError implements std::error::Error — use it with the ? operator:
+/// fn check(ok: bool) -> Result<(), GaError> {
+///     if ok { Ok(()) }
+///     else { Err(GaError::ValidationError("check failed".to_string())) }
+/// }
+/// assert!(check(true).is_ok());
+/// assert!(check(false).is_err());
+/// ```
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum GaError {
@@ -69,6 +86,11 @@ pub enum GaError {
     TreeDepthExceeded(String),
     /// A tree exceeded the configured maximum node count limit.
     TreeSizeExceeded(String),
+    /// An internal invariant was violated — for example, a mutex was poisoned by a
+    /// panicking thread. This is not a user configuration error; it signals that the
+    /// GA runtime itself encountered an unrecoverable internal state. Callers should
+    /// treat this as a fatal run-time fault and propagate it rather than swallowing it.
+    InternalError(String),
 }
 
 impl fmt::Display for GaError {
@@ -115,6 +137,7 @@ impl fmt::Display for GaError {
             GaError::LocalSearchError(msg) => write!(f, "Local search error: {}", msg),
             GaError::TreeDepthExceeded(msg) => write!(f, "Tree depth exceeded: {}", msg),
             GaError::TreeSizeExceeded(msg) => write!(f, "Tree size exceeded: {}", msg),
+            GaError::InternalError(msg) => write!(f, "Internal error: {}", msg),
         }
     }
 }

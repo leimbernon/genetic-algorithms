@@ -2,6 +2,46 @@
 
 > Standard benchmark functions for evaluating optimization algorithms — requires the `benchmarks` feature flag.
 
+## Running the Micro-Benchmarks
+
+This crate uses [divan](https://crates.io/crates/divan) as its benchmarking harness. All bench files have `harness = false` in `Cargo.toml` and provide a `fn main() { divan::main(); }` entry point.
+
+### Run all benchmarks
+
+```bash
+cargo bench
+```
+
+### Run a specific bench binary
+
+```bash
+cargo bench --bench selection
+cargo bench --bench ga_run
+cargo bench --bench crossover
+```
+
+### Feature-isolated benches
+
+Two bench files require non-default features:
+
+```bash
+# de.rs — Differential Evolution strategies (requires benchmarks feature)
+cargo bench --bench de --features benchmarks
+
+# metrics_observer.rs — MetricsObserver correctness under parallel load (requires observer-metrics)
+cargo bench --bench metrics_observer --features observer-metrics
+```
+
+### Controlling sample count
+
+Default sample count is set per-bench via the `#[divan::bench(sample_count = N)]` attribute.
+Long-running benches (de, alps, cellular, scatter) use `sample_count = 10` to keep CI wall-clock
+reasonable. You can override at runtime:
+
+```bash
+cargo bench --bench selection -- --sample-count 50
+```
+
 ## Overview
 
 This module provides implementations of well-known single-objective, bi-objective (ZDT), and many-objective (DTLZ) benchmark functions behind the `benchmarks` feature flag. All functions implement the `BenchmarkFn` trait which provides a unified `evaluate(&[f64]) -> Vec<f64>` interface along with metadata (name, bounds, known optimum).

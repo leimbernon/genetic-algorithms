@@ -1,8 +1,8 @@
 //! DE mutation strategies and adaptive parameter generation.
 
 use super::configuration::DeMutationStrategy;
-use crate::traits::RealGene;
 use crate::traits::LinearChromosome;
+use crate::traits::RealGene;
 use rand::Rng;
 
 // ─── Utility distributions ───────────────────────────────────────────────────
@@ -41,20 +41,34 @@ pub(crate) fn pick_distinct(
     chosen
 }
 
+// ─── Mutation parameter bundle (D-07) ─────────────────────────────────────────
+
+/// Configuration parameters for a single DE mutation call.
+///
+/// Groups the four "strategy" arguments so that `mutate()` stays below
+/// Clippy's `too_many_arguments` limit (the remaining positional args are
+/// `pop`, `rng`, and `archive` — data inputs, not configuration).
+pub struct DeMutationParams<'a> {
+    /// The DE mutation variant to apply.
+    pub strategy: &'a DeMutationStrategy,
+    /// Index of the target individual in `pop`.
+    pub target_idx: usize,
+    /// Index of the globally best individual in `pop`.
+    pub best_idx: usize,
+    /// Scale factor F controlling the differential step size.
+    pub f: f64,
+}
+
 // ─── Core mutation ────────────────────────────────────────────────────────────
 
 /// Produce a mutant vector for individual `i` using the chosen strategy.
 ///
-/// `best_idx` is the index of the globally best individual.
+/// `params.best_idx` is the index of the globally best individual.
 /// `archive` is an optional slice of archived (inferior) individuals used by
 /// some adaptive variants.
-#[allow(clippy::too_many_arguments)]
 pub fn mutate<U>(
-    strategy: &DeMutationStrategy,
+    params: &DeMutationParams<'_>,
     pop: &[U],
-    i: usize,
-    best_idx: usize,
-    f: f64,
     rng: &mut impl Rng,
     archive: Option<&[U]>,
 ) -> Vec<U::Gene>
@@ -62,56 +76,67 @@ where
     U: LinearChromosome,
     U::Gene: RealGene,
 {
-    let dim = pop[i].dna().len();
+    let DeMutationParams {
+        strategy,
+        target_idx: i,
+        best_idx,
+        f,
+    } = params;
+    let dim = pop[*i].dna().len();
     match strategy {
         DeMutationStrategy::Rand1 => {
-            let rs = pick_distinct(rng, pop.len(), i, 3);
-            mutant_from_base(pop[rs[0]].dna(), pop[rs[1]].dna(), pop[rs[2]].dna(), f, dim)
-        }
-        DeMutationStrategy::Best1 => {
-            let rs = pick_distinct(rng, pop.len(), i, 2);
+            let rs = pick_distinct(rng, pop.len(), *i, 3);
             mutant_from_base(
-                pop[best_idx].dna(),
                 pop[rs[0]].dna(),
                 pop[rs[1]].dna(),
-                f,
+                pop[rs[2]].dna(),
+                *f,
+                dim,
+            )
+        }
+        DeMutationStrategy::Best1 => {
+            let rs = pick_distinct(rng, pop.len(), *i, 2);
+            mutant_from_base(
+                pop[*best_idx].dna(),
+                pop[rs[0]].dna(),
+                pop[rs[1]].dna(),
+                *f,
                 dim,
             )
         }
         DeMutationStrategy::CurrentToBest1 => {
-            let rs = pick_distinct(rng, pop.len(), i, 2);
+            let rs = pick_distinct(rng, pop.len(), *i, 2);
             current_to_best(
-                pop[i].dna(),
-                pop[best_idx].dna(),
+                pop[*i].dna(),
+                pop[*best_idx].dna(),
                 pop[rs[0]].dna(),
                 pop[rs[1]].dna(),
-                f,
-                dim,
+                *f,
                 archive,
                 rng,
             )
         }
         DeMutationStrategy::Rand2 => {
-            let rs = pick_distinct(rng, pop.len(), i, 5);
+            let rs = pick_distinct(rng, pop.len(), *i, 5);
             two_diff_base(
                 pop[rs[0]].dna(),
                 pop[rs[1]].dna(),
                 pop[rs[2]].dna(),
                 pop[rs[3]].dna(),
                 pop[rs[4]].dna(),
-                f,
+                *f,
                 dim,
             )
         }
         DeMutationStrategy::Best2 => {
-            let rs = pick_distinct(rng, pop.len(), i, 4);
+            let rs = pick_distinct(rng, pop.len(), *i, 4);
             two_diff_base(
-                pop[best_idx].dna(),
+                pop[*best_idx].dna(),
                 pop[rs[0]].dna(),
                 pop[rs[1]].dna(),
                 pop[rs[2]].dna(),
                 pop[rs[3]].dna(),
-                f,
+                *f,
                 dim,
             )
         }
@@ -122,23 +147,24 @@ where
 fn mutant_from_base<G: RealGene>(base: &[G], a: &[G], b: &[G], f: f64, dim: usize) -> Vec<G> {
     (0..dim)
         .map(|j| {
-            base[j].with_real_value(base[j].real_value() + f * (a[j].real_value() - b[j].real_value()))
+            base[j]
+                .with_real_value(base[j].real_value() + f * (a[j].real_value() - b[j].real_value()))
         })
         .collect()
 }
 
 /// `current + F*(best-current) + F*(r1-r2)`  (DE/current-to-best/1 or DE/current-to-pbest/1)
-#[allow(clippy::too_many_arguments)]
 fn current_to_best<G: RealGene>(
     current: &[G],
     best: &[G],
     r1: &[G],
     r2_pop: &[G],
     f: f64,
-    dim: usize,
     archive: Option<&[impl LinearChromosome<Gene = G>]>,
     rng: &mut impl Rng,
 ) -> Vec<G> {
+    let dim = current.len(); // derived from input; not passed to stay under too_many_arguments
+
     // r2 is drawn from population ∪ archive when archive is present (JADE)
     let r2_dna: &[G] = if let Some(arc) = archive {
         if !arc.is_empty() && rng.random_bool(0.5) {

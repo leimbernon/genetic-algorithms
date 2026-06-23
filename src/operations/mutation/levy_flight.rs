@@ -6,7 +6,6 @@
 use crate::chromosomes::Range as RangeChromosome;
 use crate::operations::mutation::gaussian::GaussianConvertible;
 use crate::traits::LinearChromosome;
-use log::debug;
 use rand::Rng;
 use std::fmt::Debug;
 
@@ -39,6 +38,15 @@ fn gamma_approx(x: f64) -> f64 {
 /// Applies Lévy Flight perturbation to a single randomly selected gene of `individual`.
 /// `alpha` is the Lévy stability index (typical range: (0.0, 2.0); default 1.5).
 /// The step is scaled by the gene range width `(hi - lo)` so behavior is range-independent.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::levy_flight::levy_flight_mutation;
+/// use genetic_algorithms::chromosomes::Range;
+/// let mut chromosome: Range<f64> = Range::new();
+/// levy_flight_mutation(&mut chromosome, 1.5);
+/// ```
 pub fn levy_flight_mutation<T>(individual: &mut RangeChromosome<T>, alpha: f64)
 where
     T: Sync + Send + Clone + Default + Debug + PartialOrd + Copy + 'static + GaussianConvertible,
@@ -92,35 +100,10 @@ where
     gene.value = T::from_f64(new_val_f64);
     individual.set_gene(idx, gene);
 
-    debug!(
+    crate::log_debug!(
         target: "mutation_events",
         "LevyFlight mutation applied at idx={} range_idx={} alpha={} (clamped {})",
         idx, range_idx, alpha, alpha_clamped
     );
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn mantegna_sigma_u_finite_positive_at_default_alpha() {
-        let s = mantegna_sigma_u(1.5);
-        assert!(s.is_finite() && s > 0.0, "σ_u(1.5) = {}", s);
-        // Expected ~0.6966 (Yang 2010); allow loose tolerance.
-        assert!(
-            (s - 0.6966).abs() < 0.05,
-            "σ_u(1.5) = {}, expected ~0.6966",
-            s
-        );
-    }
-
-    #[test]
-    fn gamma_approx_known_values() {
-        // Γ(1) = 1, Γ(2) = 1, Γ(3) = 2, Γ(0.5) = √π ≈ 1.7724
-        assert!((gamma_approx(1.0) - 1.0).abs() < 1e-3);
-        assert!((gamma_approx(2.0) - 1.0).abs() < 1e-3);
-        assert!((gamma_approx(3.0) - 2.0).abs() < 5e-3);
-        assert!((gamma_approx(0.5) - std::f64::consts::PI.sqrt()).abs() < 5e-3);
-    }
-}

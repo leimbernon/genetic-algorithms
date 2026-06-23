@@ -1,7 +1,5 @@
 use genetic_algorithms::ga::Ga;
-use genetic_algorithms::traits::{
-    ConfigurationT, SelectionConfig, StoppingConfig,
-};
+use genetic_algorithms::traits::{ConfigurationT, SelectionConfig, StoppingConfig};
 
 mod structures;
 

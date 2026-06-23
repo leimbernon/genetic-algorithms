@@ -75,7 +75,8 @@
 //!
 //! ## Complete Example
 //!
-//! ```ignore
+//! ```rust,no_run
+//! // no_run: NSGA3 engine example — illustrative API usage, not a runnable benchmark
 //! use genetic_algorithms::nsga3::Nsga3Ga;
 //! use genetic_algorithms::nsga3::configuration::Nsga3Configuration;
 //! use genetic_algorithms::configuration::GaConfiguration;
@@ -87,12 +88,12 @@
 //!     .with_reference_points_auto(12);
 //!
 //! let ga_config = GaConfiguration::default();
-//! let mut nsga3 = Nsga3Ga::<MyChromosome>::new(nsga3_config, ga_config)
-//!     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
-//!     .build()?;
-//!
-//! let pareto_front = nsga3.run()?;
-//! println!("Front size: {}", pareto_front.len());
+//! // let mut nsga3 = Nsga3Ga::<MyChromosome>::new(nsga3_config, ga_config)
+//! //     .with_initialization_fn(|n, alleles, repeat| { /* ... */ })
+//! //     .build()?;
+//! //
+//! // let pareto_front = nsga3.run()?;
+//! // println!("Front size: {}", pareto_front.len());
 //! ```
 //!
 //! ## Configuration Tips
@@ -137,7 +138,7 @@ use crate::observer::Nsga3Observer;
 use crate::operations::mutation;
 use crate::traits::{InitializationFn, LinearChromosome, MutationOperator, VectorFitness};
 use rand::Rng;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
 use rayon::prelude::*;
 use std::sync::Arc;
 use std::time::Instant;
@@ -147,6 +148,19 @@ use std::time::Instant;
 /// # Type Parameters
 ///
 /// * `U` - Chromosome type implementing `ChromosomeT`.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::nsga3::Nsga3Ga;
+/// use genetic_algorithms::nsga3::configuration::Nsga3Configuration;
+/// use genetic_algorithms::configuration::GaConfiguration;
+/// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+///
+/// let nsga3_config = Nsga3Configuration::default();
+/// let ga_config = GaConfiguration::default();
+/// let engine = Nsga3Ga::<RangeChromosome<f64>>::new(nsga3_config, ga_config);
+/// ```
 pub struct Nsga3Ga<U>
 where
     U: LinearChromosome + VectorFitness,
@@ -348,7 +362,10 @@ where
 
 impl<U> Nsga3Ga<U>
 where
-    U: LinearChromosome + VectorFitness + mutation::ValueMutable,
+    U: LinearChromosome
+        + VectorFitness
+        + mutation::ValueMutable
+        + crate::traits::RealValuedMutation,
 {
     /// Runs the NSGA-III algorithm and returns the first Pareto front.
     ///
@@ -492,7 +509,7 @@ where
             0,
         );
 
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_par_iter()
             .map(|mut chrom| {
@@ -501,7 +518,7 @@ where
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
         let population: Vec<ParetoIndividual<U>> = chromosomes
             .into_iter()
             .map(|mut chrom| {
@@ -523,7 +540,7 @@ where
 
         let pop_size = self.nsga3_config.population_size;
         let crossover_config = self.ga_config.crossover_configuration;
-        let mutation_config = self.ga_config.mutation_configuration.clone();
+        let mutation_config = self.ga_config.mutation_configuration;
         let crossover_prob = crossover_config.probability_max.unwrap_or(1.0);
         let mut_prob = mutation_config.probability_max.unwrap_or(0.1);
 
@@ -551,14 +568,19 @@ where
             for child in children.iter_mut() {
                 let mp: f64 = rng.random();
                 if mp <= mut_prob {
-                    if matches!(mutation_config.method, crate::operations::Mutation::Differential { .. }) {
+                    if matches!(
+                        mutation_config.method,
+                        crate::operations::Mutation::Differential(..)
+                    ) {
                         return Err(GaError::MutationError(
                             "Differential mutation is not supported in NSGA-III; \
                              use Cauchy, LevyFlight, Polynomial, or a standard mutation method instead."
                                 .to_string(),
                         ));
                     }
-                    mutation_config.method.mutate(child, &mutation_config.method)?;
+                    mutation_config
+                        .method
+                        .mutate(child, &mutation_config.method)?;
                 }
             }
 
@@ -570,7 +592,7 @@ where
             }
         }
 
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
         let offspring: Vec<ParetoIndividual<U>> = raw_offspring
             .into_par_iter()
             .map(|mut chrom| {
@@ -579,7 +601,7 @@ where
                 ParetoIndividual::new(chrom, objectives)
             })
             .collect();
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
         let offspring: Vec<ParetoIndividual<U>> = raw_offspring
             .into_iter()
             .map(|mut chrom| {

@@ -47,7 +47,7 @@ fn rastrigin(dna: &[RangeGene<f64>]) -> f64 {
 /// Build an initial population of `n` chromosomes, each with `DIMENSIONS`
 /// genes sampled uniformly from `[SEARCH_LO, SEARCH_HI]`.
 fn init_population(n: usize) -> Vec<RangeChromosome<f64>> {
-    rng::set_seed(Some(42));
+    // Seed must be set by the caller (main) before invoking init_population.
     let mut r = rng::make_rng();
     (0..n)
         .map(|_| {
@@ -65,20 +65,32 @@ fn init_population(n: usize) -> Vec<RangeChromosome<f64>> {
 }
 
 fn main() {
+    let _ = env_logger::try_init();
+    // Parse optional --seed <N> argument for reproducible runs (used by build_perf.sh golden capture).
+    // Falls back to seed 42 when not specified (original behaviour).
+    let args: Vec<String> = std::env::args().collect();
+    let seed = args
+        .iter()
+        .position(|a| a == "--seed")
+        .and_then(|pos| args.get(pos + 1))
+        .and_then(|v| v.parse::<u64>().ok())
+        .unwrap_or(42);
+    rng::set_seed(Some(seed));
+
     let config = CmaConfiguration::default_for_dim(DIMENSIONS)
         .with_sigma0(0.5)
         .with_max_generations(300)
         .with_fitness_target(1e-3)
         .with_problem_solving(ProblemSolving::Minimization);
 
-    let mut engine = CmaEngine::new(config, init_population, rastrigin)
-        .with_observer(Arc::new(LogObserver));
+    let mut engine =
+        CmaEngine::new(config, init_population, rastrigin).with_observer(Arc::new(LogObserver));
 
     println!("== CMA-ES: {DIMENSIONS}D Rastrigin Minimization ==");
     println!("sigma0=0.5, max_generations=300, target=1e-3");
     println!("--------------------------------------------------");
 
-    let result = engine.run();
+    let result = engine.run().expect("engine run should succeed");
 
     println!("Generations: {}", result.generations);
     println!("Best fitness: {:.6}", result.best_fitness);

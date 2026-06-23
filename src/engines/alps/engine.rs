@@ -22,16 +22,33 @@
 use std::sync::Arc;
 
 use crate::configuration::{CrossoverConfiguration, ProblemSolving};
-use crate::operations::mutation::ValueMutable;
+use crate::error::GaError;
 use crate::operations::crossover;
-use crate::traits::MutationOperator;
+use crate::operations::mutation::ValueMutable;
 use crate::rng::make_rng;
-use crate::traits::{LinearChromosome, FitnessFn};
+use crate::traits::MutationOperator;
+use crate::traits::{FitnessFn, LinearChromosome};
 use rand::Rng;
 
 use super::configuration::AlpsConfiguration;
 
 /// Result returned by [`AlpsEngine::run`].
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::alps::{AlpsConfiguration, AlpsEngine, AlpsResult};
+/// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+///
+/// let config = AlpsConfiguration::default();
+/// let mut engine = AlpsEngine::<RangeChromosome<f64>>::new(
+///     config,
+///     |n| vec![RangeChromosome::default(); n],
+///     |dna| dna.iter().map(|g| g.value() * g.value()).sum(),
+/// ).unwrap();
+/// let result: AlpsResult<RangeChromosome<f64>> = engine.run();
+/// println!("Best fitness: {}", result.best_fitness);
+/// ```
 pub struct AlpsResult<U: LinearChromosome> {
     /// Final layer populations (index 0 = youngest).
     pub layers: Vec<Vec<U>>,
@@ -48,13 +65,13 @@ pub struct AlpsResult<U: LinearChromosome> {
 /// Evolves multiple age-layered sub-populations with cross-layer mating and
 /// periodic reseeding of the youngest layer to maintain diversity.
 ///
-/// # Example
+/// # Examples
 ///
-/// ```ignore
+/// ```rust,no_run
 /// use genetic_algorithms::alps::{AlpsAgeScheme, AlpsConfiguration, AlpsEngine};
 /// use genetic_algorithms::chromosomes::Range as RangeChromosome;
-/// use genetic_algorithms::genotypes::Range as RangeGene;
 /// use genetic_algorithms::configuration::ProblemSolving;
+/// use genetic_algorithms::operations::{Mutation, GaussianParams};
 ///
 /// let config = AlpsConfiguration::default()
 ///     .with_n_layers(5)
@@ -63,16 +80,17 @@ pub struct AlpsResult<U: LinearChromosome> {
 ///     .with_age_gap(5)
 ///     .with_injection_interval(10)
 ///     .with_max_generations(500)
-///     .with_mutation_sigma(0.1)
+///     .with_mutation(Mutation::Gaussian(GaussianParams { sigma: Some(0.1) }))
 ///     .with_problem_solving(ProblemSolving::Minimization)
 ///     .with_fitness_target(0.01);
 ///
-/// let mut engine = AlpsEngine::new(
+/// let mut engine = AlpsEngine::<RangeChromosome<f64>>::new(
 ///     config,
-///     |n| /* build n chromosomes */ todo!(),
+///     |n| vec![RangeChromosome::default(); n],
 ///     |dna| dna.iter().map(|g| g.value() * g.value()).sum(),
-/// );
+/// ).unwrap();
 /// let result = engine.run();
+/// println!("Generations: {}", result.generations);
 /// ```
 pub struct AlpsEngine<U: LinearChromosome> {
     config: AlpsConfiguration,
@@ -87,31 +105,41 @@ impl<U: LinearChromosome> AlpsEngine<U> {
     /// * `init_fn` — called with a count `n`; must return `n` initialised
     ///   chromosomes (fitness is ignored — the engine re-evaluates).
     /// * `fitness_fn` — maps a DNA slice to a scalar fitness value.
+    ///
+    /// # Errors
+    ///
+    /// Returns `GaError::ConfigurationError` if `config.layer_size == 0` or
+    /// `config.n_layers == 0` — zero-size configs are rejected at construction
+    /// time (D-07: validation moved into `new()`).
     pub fn new(
         config: AlpsConfiguration,
         init_fn: impl Fn(usize) -> Vec<U> + Send + Sync + 'static,
         fitness_fn: impl Fn(&[U::Gene]) -> f64 + Send + Sync + 'static,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, GaError> {
+        if config.layer_size == 0 {
+            return Err(GaError::ConfigurationError(
+                "AlpsEngine: layer_size must be > 0".to_string(),
+            ));
+        }
+        if config.n_layers == 0 {
+            return Err(GaError::ConfigurationError(
+                "AlpsEngine: n_layers must be > 0".to_string(),
+            ));
+        }
+        Ok(Self {
             config,
             init_fn: Arc::new(init_fn),
             fitness_fn: Arc::new(fitness_fn),
-        }
+        })
     }
 }
 
 impl<U> AlpsEngine<U>
 where
-    U: LinearChromosome + Clone + ValueMutable + 'static,
+    U: LinearChromosome + Clone + ValueMutable + crate::traits::RealValuedMutation + 'static,
 {
     /// Run the ALPS algorithm and return the result.
     pub fn run(&mut self) -> AlpsResult<U> {
-        if self.config.layer_size == 0 {
-            panic!("AlpsEngine: layer_size must be > 0");
-        }
-        if self.config.n_layers == 0 {
-            panic!("AlpsEngine: n_layers must be > 0");
-        }
         let max_ages = self.config.max_ages();
         let crossover_cfg = CrossoverConfiguration {
             method: self.config.crossover,
@@ -196,7 +224,10 @@ where
                             _ => layers[layer_idx][a].clone(),
                         };
 
-                    let _ = self.config.mutation.mutate(&mut offspring, &self.config.mutation);
+                    let _ = self
+                        .config
+                        .mutation
+                        .mutate(&mut offspring, &self.config.mutation);
 
                     let f = (self.fitness_fn)(offspring.dna());
                     offspring.set_fitness(f);

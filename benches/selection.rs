@@ -1,7 +1,3 @@
-use criterion::{
-    criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion, PlotConfiguration,
-    Throughput,
-};
 use genetic_algorithms::fitness::FitnessFnWrapper;
 use rand::Rng;
 use std::borrow::Cow;
@@ -95,101 +91,83 @@ fn setup_population(population_size: usize, gene_length: usize) -> Vec<SimpleChr
         .collect()
 }
 
-// Benchmark function with parameterized population and gene length
-#[cfg(not(tarpaulin_include))]
-fn benchmark_selection_methods(c: &mut Criterion) {
-    let population_sizes = vec![10, 100, 1000];
-    let gene_lengths = vec![10, 100, 1000];
+mod selection_methods {
+    use super::*;
 
-    let mut group = c.benchmark_group("selection_methods");
-    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
-
-    for &population_size in &population_sizes {
-        for &gene_length in &gene_lengths {
-            let chromosomes = setup_population(population_size, gene_length);
-            let couples = population_size / 2;
-
-            group.throughput(Throughput::Elements(population_size as u64));
-
-            // Benchmark random selection
-            group.bench_with_input(
-                BenchmarkId::new(
-                    "random selection",
-                    format!("population_{}_genes_{}", population_size, gene_length),
-                ),
-                &chromosomes,
-                |b, chromosomes| {
-                    b.iter(|| {
-                        let _ = random(chromosomes, 2);
-                    });
-                },
-            );
-
-            // Benchmark roulette wheel selection
-            group.bench_with_input(
-                BenchmarkId::new(
-                    "roulette wheel selection",
-                    format!("population_{}_genes_{}", population_size, gene_length),
-                ),
-                &chromosomes,
-                |b, chromosomes| {
-                    b.iter(|| {
-                        let _ = roulette_wheel_selection(chromosomes, couples, 2);
-                    });
-                },
-            );
-
-            // Benchmark stochastic universal sampling
-            group.bench_with_input(
-                BenchmarkId::new(
-                    "stochastic universal sampling",
-                    format!("population_{}_genes_{}", population_size, gene_length),
-                ),
-                &chromosomes,
-                |b, chromosomes| {
-                    b.iter(|| {
-                        let _ = stochastic_universal_sampling(chromosomes, couples, 2);
-                    });
-                },
-            );
-
-            // Benchmark rank-based selection
-            group.bench_with_input(
-                BenchmarkId::new(
-                    "rank selection",
-                    format!("population_{}_genes_{}", population_size, gene_length),
-                ),
-                &chromosomes,
-                |b, chromosomes| {
-                    b.iter(|| {
-                        let _ = rank_selection(chromosomes, couples, 2);
-                    });
-                },
-            );
-
-            // Benchmark tournament selection (single config; thread param is unused)
-            group.bench_with_input(
-                BenchmarkId::new(
-                    "tournament",
-                    format!("population_{}_genes_{}", population_size, gene_length),
-                ),
-                &chromosomes,
-                |b, chromosomes| {
-                    b.iter(|| {
-                        let _ = tournament(chromosomes, couples, 1, 2);
-                    });
-                },
-            );
-        }
+    /// args = (population_size, gene_length)
+    #[cfg(not(tarpaulin_include))]
+    #[divan::bench(args = [
+        (10usize, 10usize), (10, 100), (10, 1000),
+        (100, 10), (100, 100), (100, 1000),
+        (1000, 10), (1000, 100), (1000, 1000),
+    ])]
+    fn random_selection(bencher: divan::Bencher, (population_size, gene_length): (usize, usize)) {
+        let chromosomes = setup_population(population_size, gene_length);
+        bencher.bench(|| {
+            let _ = random(&chromosomes, 2);
+        });
     }
-    group.finish();
+
+    #[cfg(not(tarpaulin_include))]
+    #[divan::bench(args = [
+        (10usize, 10usize), (10, 100), (10, 1000),
+        (100, 10), (100, 100), (100, 1000),
+        (1000, 10), (1000, 100), (1000, 1000),
+    ])]
+    fn roulette_wheel(bencher: divan::Bencher, (population_size, gene_length): (usize, usize)) {
+        let chromosomes = setup_population(population_size, gene_length);
+        let couples = population_size / 2;
+        bencher.bench(|| {
+            let _ = roulette_wheel_selection(&chromosomes, couples, 2);
+        });
+    }
+
+    #[cfg(not(tarpaulin_include))]
+    #[divan::bench(args = [
+        (10usize, 10usize), (10, 100), (10, 1000),
+        (100, 10), (100, 100), (100, 1000),
+        (1000, 10), (1000, 100), (1000, 1000),
+    ])]
+    fn stochastic_universal_sampling(
+        bencher: divan::Bencher,
+        (population_size, gene_length): (usize, usize),
+    ) {
+        let chromosomes = setup_population(population_size, gene_length);
+        let couples = population_size / 2;
+        bencher.bench(|| {
+            let _ = super::stochastic_universal_sampling(&chromosomes, couples, 2);
+        });
+    }
+
+    #[cfg(not(tarpaulin_include))]
+    #[divan::bench(args = [
+        (10usize, 10usize), (10, 100), (10, 1000),
+        (100, 10), (100, 100), (100, 1000),
+        (1000, 10), (1000, 100), (1000, 1000),
+    ])]
+    fn rank_selection(bencher: divan::Bencher, (population_size, gene_length): (usize, usize)) {
+        let chromosomes = setup_population(population_size, gene_length);
+        let couples = population_size / 2;
+        bencher.bench(|| {
+            let _ = super::rank_selection(&chromosomes, couples, 2);
+        });
+    }
+
+    #[cfg(not(tarpaulin_include))]
+    #[divan::bench(args = [
+        (10usize, 10usize), (10, 100), (10, 1000),
+        (100, 10), (100, 100), (100, 1000),
+        (1000, 10), (1000, 100), (1000, 1000),
+    ])]
+    fn tournament(bencher: divan::Bencher, (population_size, gene_length): (usize, usize)) {
+        let chromosomes = setup_population(population_size, gene_length);
+        let couples = population_size / 2;
+        bencher.bench(|| {
+            let _ = super::tournament(&chromosomes, couples, 1, 2);
+        });
+    }
 }
 
-// Create the benchmark group (profiler removed due to criterion version mismatch with pprof)
-criterion_group! {
-    name = selection_benchmarks;
-    config = Criterion::default();
-    targets = benchmark_selection_methods
+fn main() {
+    divan::main();
 }
-
-criterion_main!(selection_benchmarks);

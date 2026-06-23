@@ -3,7 +3,6 @@
 use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
 use crate::traits::LinearChromosome;
-use log::debug;
 use rand::Rng;
 use std::borrow::Cow;
 use std::fmt::Debug;
@@ -27,6 +26,16 @@ use std::fmt::Debug;
 /// # Returns
 ///
 /// Two children chromosomes, or an error if parents have mismatched lengths.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::crossover::sbx::sbx;
+/// use genetic_algorithms::chromosomes::Range;
+/// let parent1: Range<f64> = Range::new();
+/// let parent2: Range<f64> = Range::new();
+/// let _ = sbx(&parent1, &parent2, 10.0);
+/// ```
 pub fn sbx<T>(
     parent_1: &RangeChromosome<T>,
     parent_2: &RangeChromosome<T>,
@@ -44,7 +53,7 @@ where
         )));
     }
 
-    debug!(target="crossover_events", method="sbx"; "Starting SBX crossover with eta={}", eta);
+    crate::log_debug!(target="crossover_events", method="sbx"; "Starting SBX crossover with eta={}", eta);
 
     let mut rng = crate::rng::make_rng();
     let dna1 = parent_1.dna();
@@ -99,11 +108,19 @@ where
     child_1.set_dna(Cow::Owned(child_dna_1));
     child_2.set_dna(Cow::Owned(child_dna_2));
 
-    debug!(target="crossover_events", method="sbx"; "SBX crossover finished");
+    crate::log_debug!(target="crossover_events", method="sbx"; "SBX crossover finished");
     Ok(vec![child_1, child_2])
 }
 
 /// Trait for types that can be converted to/from an f64 value (for SBX).
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::operations::crossover::sbx::SbxConvertible;
+/// assert_eq!(<f64 as SbxConvertible>::from_f64(0.5), 0.5_f64);
+/// assert_eq!(<f64 as SbxConvertible>::to_f64(2.0_f64), 2.0_f64);
+/// ```
 pub trait SbxConvertible {
     /// Converts an `f64` value to this type (e.g., rounding for integers).
     fn from_f64(val: f64) -> Self;

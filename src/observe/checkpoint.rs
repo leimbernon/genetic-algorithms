@@ -35,6 +35,23 @@ use std::path::Path;
 /// accumulated per-generation statistics. The fitness function and
 /// initialization function are **not** included because they are not
 /// serializable — the caller must re-attach them after loading.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::checkpoint::Checkpoint;
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::population::Population;
+/// use genetic_algorithms::configuration::GaConfiguration;
+///
+/// let cp = Checkpoint::<Binary> {
+///     population: Population::new(vec![]),
+///     configuration: GaConfiguration::default(),
+///     generation: 10,
+///     stats: vec![],
+/// };
+/// assert_eq!(cp.generation, 10);
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(bound(serialize = "U: Serialize", deserialize = "U: Deserialize<'de>"))]
 pub struct Checkpoint<U>
@@ -59,6 +76,24 @@ where
 ///
 /// Returns [`GaError::CheckpointError`] if directory creation, file writing,
 /// or JSON serialization fails.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use std::path::Path;
+/// use genetic_algorithms::checkpoint::{Checkpoint, save_checkpoint};
+/// use genetic_algorithms::chromosomes::Binary;
+/// use genetic_algorithms::population::Population;
+/// use genetic_algorithms::configuration::GaConfiguration;
+///
+/// let cp = Checkpoint::<Binary> {
+///     population: Population::new(vec![]),
+///     configuration: GaConfiguration::default(),
+///     generation: 5,
+///     stats: vec![],
+/// };
+/// save_checkpoint(&cp, Path::new("/tmp/checkpoint.json")).unwrap();
+/// ```
 pub fn save_checkpoint<U>(checkpoint: &Checkpoint<U>, path: &Path) -> Result<(), GaError>
 where
     U: ChromosomeT + Serialize,
@@ -94,6 +129,17 @@ where
 ///
 /// Returns [`GaError::CheckpointError`] if the file cannot be read or
 /// the JSON cannot be deserialized into a `Checkpoint<U>`.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use std::path::Path;
+/// use genetic_algorithms::checkpoint::load_checkpoint;
+/// use genetic_algorithms::chromosomes::Binary;
+///
+/// let cp = load_checkpoint::<Binary>(Path::new("/tmp/checkpoint.json")).unwrap();
+/// assert!(cp.generation > 0);
+/// ```
 pub fn load_checkpoint<U>(path: &Path) -> Result<Checkpoint<U>, GaError>
 where
     U: ChromosomeT + for<'de> Deserialize<'de>,

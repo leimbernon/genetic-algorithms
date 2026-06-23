@@ -2,7 +2,6 @@
 
 use crate::error::GaError;
 use crate::traits::LinearChromosome;
-use log::debug;
 use rand::Rng;
 use std::borrow::Cow;
 
@@ -10,6 +9,16 @@ use std::borrow::Cow;
 ///
 /// Given parents `[A B C D E]` and `[V W X Y Z]` with crossover point 2,
 /// produces children `[A B X Y Z]` and `[V W C D E]`.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::crossover::single_point;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let parent1 = Binary::new();
+/// let parent2 = Binary::new();
+/// let _ = single_point(&parent1, &parent2);
+/// ```
 ///
 /// # Errors
 ///
@@ -29,7 +38,7 @@ pub fn single_point<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<V
         ));
     }
 
-    debug!(target="crossover_events", method="single_point"; "Starting single-point crossover");
+    crate::log_debug!(target="crossover_events", method="single_point"; "Starting single-point crossover");
     let mut rng = crate::rng::make_rng();
     // Crossover point: between 1 and len-1 (exclusive bounds ensure both parts are non-empty)
     let point = rng.random_range(1..len);
@@ -51,6 +60,6 @@ pub fn single_point<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<V
     child_1.set_dna(Cow::Owned(child_dna_1));
     child_2.set_dna(Cow::Owned(child_dna_2));
 
-    debug!(target="crossover_events", method="single_point"; "Single-point crossover finished at point {}", point);
+    crate::log_debug!(target="crossover_events", method="single_point"; "Single-point crossover finished at point {}", point);
     Ok(vec![child_1, child_2])
 }

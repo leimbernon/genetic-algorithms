@@ -1,8 +1,3 @@
-use criterion::{
-    criterion_group, criterion_main, AxisScale, BatchSize, BenchmarkId, Criterion,
-    PlotConfiguration,
-};
-
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
 use genetic_algorithms::fitness::FitnessFnWrapper;
 use genetic_algorithms::genotypes::Binary as BinaryGene;
@@ -194,116 +189,73 @@ fn setup_range_chromosome(gene_length: usize) -> RangeChromosome<f64> {
 // Benchmarks
 // ---------------------------------------------------------------------------
 
-#[cfg(not(tarpaulin_include))]
-fn benchmark_mutation_methods(c: &mut Criterion) {
-    let gene_lengths = vec![10, 100, 1000];
+mod mutation_methods {
+    use super::*;
 
-    let mut group = c.benchmark_group("mutation_methods");
-    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
-
-    for &gene_length in &gene_lengths {
+    #[cfg(not(tarpaulin_include))]
+    #[divan::bench(args = [10usize, 100, 1000])]
+    fn swap(bencher: divan::Bencher, gene_length: usize) {
         let chromosome = setup_chromosome(gene_length);
-
-        // Swap mutation — setup clone outside the timed loop
-        group.bench_with_input(
-            BenchmarkId::new("swap", format!("genes_{}", gene_length)),
-            &chromosome,
-            |b, chromosome| {
-                b.iter_batched(
-                    || chromosome.clone(),
-                    |mut c| swap(&mut c),
-                    BatchSize::SmallInput,
-                );
-            },
-        );
-
-        // Inversion mutation
-        group.bench_with_input(
-            BenchmarkId::new("inversion", format!("genes_{}", gene_length)),
-            &chromosome,
-            |b, chromosome| {
-                b.iter_batched(
-                    || chromosome.clone(),
-                    |mut c| inversion(&mut c),
-                    BatchSize::SmallInput,
-                );
-            },
-        );
-
-        // Scramble mutation
-        group.bench_with_input(
-            BenchmarkId::new("scramble", format!("genes_{}", gene_length)),
-            &chromosome,
-            |b, chromosome| {
-                b.iter_batched(
-                    || chromosome.clone(),
-                    |mut c| scramble(&mut c),
-                    BatchSize::SmallInput,
-                );
-            },
-        );
-
-        // Bit-flip mutation (binary chromosome)
-        let binary_chromosome = setup_binary_chromosome(gene_length);
-        group.bench_with_input(
-            BenchmarkId::new("bit_flip", format!("genes_{}", gene_length)),
-            &binary_chromosome,
-            |b, chromosome| {
-                b.iter_batched(
-                    || chromosome.clone(),
-                    |mut c| bit_flip(&mut c),
-                    BatchSize::SmallInput,
-                );
-            },
-        );
-
-        // Value mutation (range chromosome)
-        let range_chromosome = setup_range_chromosome(gene_length);
-        group.bench_with_input(
-            BenchmarkId::new("value", format!("genes_{}", gene_length)),
-            &range_chromosome,
-            |b, chromosome: &RangeChromosome<f64>| {
-                b.iter_batched(
-                    || chromosome.clone(),
-                    |mut c| value_mutation(&mut c),
-                    BatchSize::SmallInput,
-                );
-            },
-        );
-
-        // Creep mutation (range chromosome)
-        group.bench_with_input(
-            BenchmarkId::new("creep", format!("genes_{}", gene_length)),
-            &range_chromosome,
-            |b, chromosome: &RangeChromosome<f64>| {
-                b.iter_batched(
-                    || chromosome.clone(),
-                    |mut c| creep_mutation(&mut c, 1.0),
-                    BatchSize::SmallInput,
-                );
-            },
-        );
-
-        // Gaussian mutation (range chromosome)
-        group.bench_with_input(
-            BenchmarkId::new("gaussian", format!("genes_{}", gene_length)),
-            &range_chromosome,
-            |b, chromosome: &RangeChromosome<f64>| {
-                b.iter_batched(
-                    || chromosome.clone(),
-                    |mut c| gaussian_mutation(&mut c, 1.0),
-                    BatchSize::SmallInput,
-                );
-            },
-        );
+        bencher
+            .with_inputs(|| chromosome.clone())
+            .bench_values(|mut c| super::swap(&mut c));
     }
-    group.finish();
+
+    #[cfg(not(tarpaulin_include))]
+    #[divan::bench(args = [10usize, 100, 1000])]
+    fn inversion(bencher: divan::Bencher, gene_length: usize) {
+        let chromosome = setup_chromosome(gene_length);
+        bencher
+            .with_inputs(|| chromosome.clone())
+            .bench_values(|mut c| super::inversion(&mut c));
+    }
+
+    #[cfg(not(tarpaulin_include))]
+    #[divan::bench(args = [10usize, 100, 1000])]
+    fn scramble(bencher: divan::Bencher, gene_length: usize) {
+        let chromosome = setup_chromosome(gene_length);
+        bencher
+            .with_inputs(|| chromosome.clone())
+            .bench_values(|mut c| super::scramble(&mut c));
+    }
+
+    #[cfg(not(tarpaulin_include))]
+    #[divan::bench(args = [10usize, 100, 1000])]
+    fn bit_flip(bencher: divan::Bencher, gene_length: usize) {
+        let binary_chromosome = setup_binary_chromosome(gene_length);
+        bencher
+            .with_inputs(|| binary_chromosome.clone())
+            .bench_values(|mut c| super::bit_flip(&mut c));
+    }
+
+    #[cfg(not(tarpaulin_include))]
+    #[divan::bench(args = [10usize, 100, 1000])]
+    fn value(bencher: divan::Bencher, gene_length: usize) {
+        let range_chromosome = setup_range_chromosome(gene_length);
+        bencher
+            .with_inputs(|| range_chromosome.clone())
+            .bench_values(|mut c| value_mutation(&mut c));
+    }
+
+    #[cfg(not(tarpaulin_include))]
+    #[divan::bench(args = [10usize, 100, 1000])]
+    fn creep(bencher: divan::Bencher, gene_length: usize) {
+        let range_chromosome = setup_range_chromosome(gene_length);
+        bencher
+            .with_inputs(|| range_chromosome.clone())
+            .bench_values(|mut c| creep_mutation(&mut c, 1.0));
+    }
+
+    #[cfg(not(tarpaulin_include))]
+    #[divan::bench(args = [10usize, 100, 1000])]
+    fn gaussian(bencher: divan::Bencher, gene_length: usize) {
+        let range_chromosome = setup_range_chromosome(gene_length);
+        bencher
+            .with_inputs(|| range_chromosome.clone())
+            .bench_values(|mut c| gaussian_mutation(&mut c, 1.0));
+    }
 }
 
-criterion_group! {
-    name = mutation_benchmarks;
-    config = Criterion::default();
-    targets = benchmark_mutation_methods
+fn main() {
+    divan::main();
 }
-
-criterion_main!(mutation_benchmarks);

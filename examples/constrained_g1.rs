@@ -8,16 +8,16 @@
 //! cargo run --example constrained_g1
 //! ```
 
-use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::chromosomes::Range as RangeChromosome;
+use genetic_algorithms::configuration::ProblemSolving;
 use genetic_algorithms::constraints::PenaltyStrategy;
 use genetic_algorithms::ga::Ga;
 use genetic_algorithms::genotypes::Range as RangeGene;
 use genetic_algorithms::initializers::range_random_initialization;
-use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
+use genetic_algorithms::operations::{Crossover, GaussianParams, Mutation, Selection, Survivor};
 use genetic_algorithms::traits::{
-    ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig, SelectionConfig,
-    StoppingConfig,
+    ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig,
+    SelectionConfig, StoppingConfig,
 };
 
 const N_VARS: usize = 13;
@@ -25,6 +25,7 @@ const POP_SIZE: usize = 200;
 const MAX_GEN: usize = 200;
 
 fn main() {
+    let _ = env_logger::try_init();
     println!("Constrained G1 benchmark with static penalty");
     println!(
         "Variables: {}, Population: {}, Generations: {}",
@@ -72,7 +73,7 @@ fn main() {
         .with_fitness_fn(fitness_fn)
         .with_selection_method(Selection::Tournament)
         .with_crossover_method(Crossover::BlendAlpha)
-        .with_mutation_method(Mutation::Gaussian { sigma: None })
+        .with_mutation_method(Mutation::Gaussian(GaussianParams { sigma: None }))
         .with_problem_solving(ProblemSolving::Minimization)
         .with_survivor_method(Survivor::Fitness)
         .with_max_generations(MAX_GEN)

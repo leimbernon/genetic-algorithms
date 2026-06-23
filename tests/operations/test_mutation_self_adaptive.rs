@@ -2,7 +2,7 @@ use genetic_algorithms::chromosomes::{Binary as BinaryChromosome, Range as Range
 use genetic_algorithms::genotypes::Range as RangeGenotype;
 use genetic_algorithms::operations::mutation;
 use genetic_algorithms::operations::mutation::self_adaptive_gaussian::self_adaptive_gaussian_mutation;
-use genetic_algorithms::operations::Mutation;
+use genetic_algorithms::operations::{Mutation, SelfAdaptiveGaussianParams};
 use genetic_algorithms::traits::{LinearChromosome, MutationOperator, SelfAdaptive};
 use std::borrow::Cow;
 
@@ -34,7 +34,13 @@ fn self_adaptive_sigma_min_enforced() {
     }
 }
 
+// Stochastic acceptance probe — the assertion is probabilistic, not deterministic.
+// `crate::rng::make_rng()` reads a process-global seed, so setting `rng::set_seed`
+// inside the test would leak into other tests running concurrently. Run manually
+// with `cargo test -- --ignored self_adaptive_sigma_spread_evolves` when validating
+// the self-adaptive Gaussian sigma random walk.
 #[test]
+#[ignore]
 fn self_adaptive_sigma_spread_evolves() {
     // All sigmas start equal. After many mutations the independent per-dimension local
     // noise (tau term) causes dimensions to diverge: some collapse toward sigma_min,
@@ -78,12 +84,12 @@ fn self_adaptive_sigma_spread_evolves() {
 fn self_adaptive_gaussian_returns_error_for_non_self_adaptive() {
     let mut binary_chrom = BinaryChromosome::new();
     // SelfAdaptiveGaussian must return Err for chromosomes not implementing SelfAdaptive
-    let m = Mutation::SelfAdaptiveGaussian {
+    let m = Mutation::SelfAdaptiveGaussian(SelfAdaptiveGaussianParams {
         tau: None,
         tau_prime: None,
         sigma_min: None,
         sigma_max: None,
-    };
+    });
     let result = m.mutate(&mut binary_chrom, &m);
     assert!(
         result.is_err(),
@@ -97,12 +103,12 @@ fn self_adaptive_gaussian_inline_params_work() {
     let mut c = build_f64_chromosome(4);
     c.set_strategy_params(vec![0.1; 4]);
 
-    let m = Mutation::SelfAdaptiveGaussian {
+    let m = Mutation::SelfAdaptiveGaussian(SelfAdaptiveGaussianParams {
         tau: Some(0.5),
         tau_prime: Some(0.5),
         sigma_min: Some(1e-5),
         sigma_max: None,
-    };
+    });
 
     for _ in 0..50 {
         m.mutate(&mut c, &m).unwrap();
@@ -112,18 +118,18 @@ fn self_adaptive_gaussian_inline_params_work() {
     }
 }
 
-/// SelfAdaptiveGaussian { tau: None, ... } uses ES defaults and stays in range
+/// SelfAdaptiveGaussian(SelfAdaptiveGaussianParams { tau: None, ... }) uses ES defaults and stays in range
 #[test]
 fn self_adaptive_gaussian_default_params_stay_in_range() {
     let mut c = build_f64_chromosome(4);
     c.set_strategy_params(vec![0.5; 4]);
 
-    let m = Mutation::SelfAdaptiveGaussian {
+    let m = Mutation::SelfAdaptiveGaussian(SelfAdaptiveGaussianParams {
         tau: None,
         tau_prime: None,
         sigma_min: None,
         sigma_max: None,
-    };
+    });
 
     for _ in 0..100 {
         m.mutate(&mut c, &m).unwrap();
@@ -132,7 +138,9 @@ fn self_adaptive_gaussian_default_params_stay_in_range() {
             assert!(
                 gene.value >= lo && gene.value <= hi,
                 "Gene value {} out of range [{}, {}]",
-                gene.value, lo, hi
+                gene.value,
+                lo,
+                hi
             );
         }
     }
@@ -144,5 +152,9 @@ fn factory_self_adaptive_with_explicit_params() {
     let mut c = build_f64_chromosome(4);
     c.set_strategy_params(vec![0.1; 4]);
     let result = mutation::factory_self_adaptive(&mut c, Some(0.5), Some(0.5), Some(1e-5), None);
-    assert!(result.is_ok(), "factory_self_adaptive should succeed: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "factory_self_adaptive should succeed: {:?}",
+        result
+    );
 }

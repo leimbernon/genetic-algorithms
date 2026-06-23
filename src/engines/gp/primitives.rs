@@ -256,8 +256,18 @@ impl Node<MathNode> {
     ///
     /// # Example
     ///
-    /// ```rust,ignore
+    /// ```rust,no_run
+    /// // no_run: eval_with_vars example — illustrative API usage
+    /// use genetic_algorithms::gp::{Node, MathNode};
+    ///
     /// // Tree represents "x0 + x1"
+    /// let tree: Node<MathNode> = Node::Function {
+    ///     value: MathNode::Add,
+    ///     children: vec![
+    ///         Box::new(Node::Terminal(MathNode::Var(0))),
+    ///         Box::new(Node::Terminal(MathNode::Var(1))),
+    ///     ],
+    /// };
     /// let result = tree.eval_with_vars(&[3.0, 5.0]);
     /// assert!((result - 8.0).abs() < 1e-10);
     /// ```

@@ -9,13 +9,12 @@
 //! This operator is exposed as a free function so that engine integrations
 //! (e.g., the standard `Ga<U>` engine in Plan 03) can call it directly with
 //! full population context. Calling it via `MutationOperator::mutate` or
-//! `factory_with_params` returns `GaError::MutationError` as a safety net.
+//! `factory` returns `GaError::MutationError` as a safety net for differential mutation.
 
 use crate::chromosomes::Range as RangeChromosome;
 use crate::error::GaError;
 use crate::operations::mutation::gaussian::GaussianConvertible;
 use crate::traits::LinearChromosome;
-use log::debug;
 use rand::Rng;
 use std::any::Any;
 use std::borrow::Cow;
@@ -32,6 +31,16 @@ use std::borrow::Cow;
 /// * `chromosomes` - The full population slice (including `individual` at `target_idx`).
 /// * `target_idx` - Index of `individual` within `chromosomes`.
 /// * `f` - The differential weight (scale factor). Typical range: 0.4–1.0.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::differential::differential_mutation;
+/// use genetic_algorithms::chromosomes::Range;
+/// let mut individual: Range<f64> = Range::new();
+/// let population: Vec<Range<f64>> = vec![Range::new(); 5];
+/// let _ = differential_mutation(&mut individual, &population, 0, 0.8);
+/// ```
 ///
 /// # Errors
 ///
@@ -62,7 +71,7 @@ where
         )));
     }
 
-    debug!(target: "mutation_events", "Starting differential mutation f={}", f);
+    crate::log_debug!(target: "mutation_events", "Starting differential mutation f={}", f);
 
     macro_rules! try_type {
         ($t:ty) => {
@@ -126,7 +135,7 @@ where
                     new_dna[i].value = <$t as GaussianConvertible>::from_f64(clamped);
                 }
                 target.set_dna(Cow::Owned(new_dna));
-                debug!(target: "mutation_events", "Finished differential mutation");
+                crate::log_debug!(target: "mutation_events", "Finished differential mutation");
                 return Ok(());
             }
         };

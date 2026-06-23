@@ -193,3 +193,8 @@ impl<T: Sync + Send + Clone + Default + Debug> fmt::Display for UniqueChromosome
 /// ensures that incompatible mutations are rejected at `Ga::build()` before any
 /// generation runs.
 impl<T: Sync + Send + Clone + Default + Debug + 'static> ValueMutable for UniqueChromosome<T> {}
+
+impl<T: Sync + Send + Clone + Default + Debug + 'static> crate::traits::RealValuedMutation
+    for UniqueChromosome<T>
+{
+}

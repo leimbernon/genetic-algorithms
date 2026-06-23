@@ -1,8 +1,8 @@
 mod structures;
 mod engines {
-    mod test_ga;
-    mod test_examples;
     mod local_search;
+    mod test_examples;
+    mod test_ga;
     mod alps {
         mod test_alps;
     }
@@ -24,6 +24,9 @@ mod engines {
         mod test_island_migration;
         mod test_island_nsga2;
         mod test_island_topology;
+    }
+    mod lexicase {
+        mod test_ga_run_lexicase;
     }
     mod nsga2 {
         mod test_crowding_distance;
@@ -63,8 +66,24 @@ mod engines {
     mod aos {
         mod test_aos;
     }
+    mod multi_objective {
+        mod indicators {
+            mod test_generational_distance;
+            mod test_hypervolume;
+            mod test_inverted_generational_distance;
+            mod test_spread;
+        }
+    }
     mod pso {
         mod test_pso;
+    }
+    mod eda {
+        mod test_eda;
+    }
+    mod gp {
+        mod test_gp_chromosome;
+        mod test_gp_configuration;
+        mod test_gp_primitives;
     }
     mod test_strategy_trait;
     mod hill_climb {

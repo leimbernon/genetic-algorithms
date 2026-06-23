@@ -25,3 +25,9 @@ __pycache__/
 .claude/
 .planning/
 .DS_Store
+
+# Local logs
+*.log
+
+# Build performance measurement outputs (ephemeral; committed baseline is in .planning/baselines/)
+target/build-perf/

@@ -23,7 +23,7 @@
 
 use crate::configuration::ProblemSolving;
 use crate::traits::ChromosomeT;
-use log::{debug, trace};
+#[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
 use rayon::prelude::*;
 use std::fmt;
 use std::ops::{Index, IndexMut};
@@ -35,6 +35,22 @@ use std::ops::{Index, IndexMut};
 /// - Maintain best chromosome according to the configured problem objective.
 /// - Compute average (f_avg) and maximum (f_max) fitness (used by adaptive GA).
 /// - Parallel fitness calculation to leverage multiple threads.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::population::Population;
+/// use genetic_algorithms::chromosomes::Binary;
+///
+/// // Create an empty population, then populate it.
+/// let chromosomes: Vec<Binary> = Vec::new();
+/// let pop = Population::new(chromosomes);
+/// assert_eq!(pop.chromosomes.len(), 0);
+///
+/// // An empty population for use before the first generation:
+/// let empty: Population<Binary> = Population::new_empty();
+/// assert_eq!(empty.chromosomes.len(), 0);
+/// ```
 pub struct Population<U>
 where
     U: ChromosomeT,
@@ -113,11 +129,18 @@ where
         _number_of_threads: usize,
         problem_solving: ProblemSolving,
     ) {
-        debug!(target="population_events", method="fitness_calculation"; "Started the population fitness calculation");
+        crate::log_debug!(target="population_events", method="fitness_calculation"; "Started the population fitness calculation");
 
         // Calculate fitness in parallel for chromosomes that have not yet been evaluated.
         // NaN fitness indicates a chromosome whose fitness has never been computed.
+        #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
         self.chromosomes.par_iter_mut().for_each(|chromosome| {
+            if chromosome.fitness().is_nan() {
+                chromosome.calculate_fitness();
+            }
+        });
+        #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
+        self.chromosomes.iter_mut().for_each(|chromosome| {
             if chromosome.fitness().is_nan() {
                 chromosome.calculate_fitness();
             }
@@ -145,18 +168,18 @@ where
             }
         }
 
-        debug!(target="ga_events", method="population_fitness_calculation"; "Population fitness calculation finished");
+        crate::log_debug!(target="ga_events", method="population_fitness_calculation"; "Population fitness calculation finished");
     }
 
     /// Update the best chromosome given a candidate, according to the problem objective.
     pub fn decide_best_chromosome(&mut self, new_chromosome: &U, problem_solving: ProblemSolving) {
-        debug!(target="population_events", method="decide_best_chromosome"; "Started the best chromosome method");
+        crate::log_debug!(target="population_events", method="decide_best_chromosome"; "Started the best chromosome method");
 
         if !self.best_chromosome_is_set {
             self.best_chromosome = new_chromosome.clone();
             self.best_chromosome_is_set = true;
         } else {
-            trace!(target="population_events", method="decide_best_chromosome"; "Best chromosome fitness: {} - New chromosome fitness: {}",
+            crate::log_trace!(target="population_events", method="decide_best_chromosome"; "Best chromosome fitness: {} - New chromosome fitness: {}",
                 self.best_chromosome.fitness(), new_chromosome.fitness());
 
             let is_self_better = match problem_solving {
@@ -174,7 +197,7 @@ where
             };
         }
 
-        debug!(target="chromosome_events", method="get_best_chromosome"; "Best chromosome method finished");
+        crate::log_debug!(target="chromosome_events", method="get_best_chromosome"; "Best chromosome method finished");
     }
 }
 

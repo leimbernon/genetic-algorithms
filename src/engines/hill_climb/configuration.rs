@@ -3,6 +3,15 @@
 use crate::configuration::ProblemSolving;
 
 /// Search mode used by [`HillClimbEngine`](super::engine::HillClimbEngine).
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::hill_climb::HillClimbMode;
+///
+/// let mode = HillClimbMode::SteepestAscent;
+/// assert_eq!(mode, HillClimbMode::SteepestAscent);
+/// ```
 #[derive(Debug, Clone, PartialEq)]
 pub enum HillClimbMode {
     /// Accept the first neighbor with higher fitness; early exit from neighbor scan.
@@ -12,6 +21,18 @@ pub enum HillClimbMode {
 }
 
 /// Configuration for a [`HillClimbEngine`](super::engine::HillClimbEngine) run.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::hill_climb::{HillClimbConfiguration, HillClimbMode};
+/// use genetic_algorithms::configuration::ProblemSolving;
+///
+/// let config = HillClimbConfiguration::default()
+///     .with_mode(HillClimbMode::SteepestAscent)
+///     .with_no_improvement_limit(50)
+///     .with_problem_solving(ProblemSolving::Minimization);
+/// ```
 #[derive(Clone)]
 pub struct HillClimbConfiguration {
     /// Hill-climbing search mode.

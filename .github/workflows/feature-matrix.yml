@@ -1,0 +1,74 @@
+name: Feature matrix
+
+on:
+  push:
+    branches: [main, "milestone/**"]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test-matrix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    strategy:
+      matrix:
+        include:
+          - name: "default"
+            features: ""
+            cmd: "cargo test --quiet"
+          - name: "serde"
+            features: "--features serde"
+            cmd: "cargo test --quiet --features serde"
+          - name: "visualization"
+            features: "--features visualization"
+            cmd: "cargo test --quiet --features visualization"
+          - name: "benchmarks"
+            features: "--features benchmarks"
+            cmd: "cargo test --quiet --features benchmarks"
+          - name: "observer-tracing"
+            features: "--features observer-tracing"
+            cmd: "cargo test --quiet --features observer-tracing"
+          - name: "observer-metrics"
+            features: "--features observer-metrics"
+            cmd: "cargo test --quiet --features observer-metrics"
+          - name: "all-features"
+            features: "--all-features"
+            cmd: "cargo test --quiet --all-features"
+          - name: "no-default-features"
+            features: "--no-default-features"
+            cmd: "cargo test --quiet --no-default-features"
+          - name: "logging-explicit"
+            features: "--no-default-features --features logging"
+            cmd: "cargo test --quiet --no-default-features --features logging"
+          - name: "parallel-off"
+            features: "--no-default-features --features logging"
+            cmd: "cargo test --quiet --no-default-features --features logging"
+          - name: "wasm32"
+            features: ""
+            cmd: "cargo check --target wasm32-unknown-unknown --lib"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install stable toolchain with wasm32 target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache cargo registry and target
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: feature-matrix-${{ matrix.name }}
+
+      - name: ${{ matrix.name }}
+        run: ${{ matrix.cmd }}
+
+      - name: Enforce no unconditional rayon references in src/
+        run: |
+          if grep -rn 'rayon::' src/ | grep -v '#\[cfg'; then
+            echo "ERROR: unconditional rayon:: reference found in src/ — all rayon call-sites must be cfg-gated"
+            exit 1
+          fi

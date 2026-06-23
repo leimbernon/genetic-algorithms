@@ -1,6 +1,15 @@
 use crate::island::topology::MigrationTopology;
 
 /// Policy for selecting migrants and replacing individuals in the destination island.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::island::configuration::MigrationPolicy;
+///
+/// let policy = MigrationPolicy::BestReplaceWorst;
+/// assert_eq!(policy, MigrationPolicy::BestReplaceWorst);
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum MigrationPolicy {

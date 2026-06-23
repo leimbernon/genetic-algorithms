@@ -5,9 +5,8 @@
 //! runs in parallel using Rayon for large populations.
 
 use crate::traits::ChromosomeT;
-use log::{debug, trace};
 use rand::Rng;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
 use rayon::prelude::*;
 
 /// Tournament selection: for each parent slot, two individuals are chosen at
@@ -22,6 +21,15 @@ use rayon::prelude::*;
 /// * `couples` - Desired number of parent groups (clamped to `population / num_parents`).
 /// * `_number_of_threads` - Unused; parallelism is managed by Rayon's global pool.
 /// * `num_parents` - Number of parents per group (must be >= 2).
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::selection::tournament;
+/// use genetic_algorithms::chromosomes::Binary;
+/// let population: Vec<Binary> = vec![Binary::new(); 10];
+/// let pairs = tournament(&population, 5, 1, 2);
+/// ```
 pub fn tournament<U>(
     chromosomes: &[U],
     couples: usize,
@@ -39,7 +47,7 @@ fn tournament_impl<U>(chromosomes: &[U], couples: usize, num_parents: usize) -> 
 where
     U: ChromosomeT + Send + Sync + 'static + Clone,
 {
-    debug!(target="selection_events", method="tournament"; "Starting tournament selection");
+    crate::log_debug!(target="selection_events", method="tournament"; "Starting tournament selection");
     let num_parents = num_parents.max(2);
     let couples = if couples * num_parents > chromosomes.len() {
         chromosomes.len() / num_parents
@@ -52,7 +60,7 @@ where
 
     // Use rayon to run tournaments in parallel — each iteration picks 2 random contestants
     // and the winner goes to a results vector. We collect num_parents*couples winners and group them.
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(all(not(target_arch = "wasm32"), feature = "parallel"))]
     let winners: Vec<usize> = (0..total_contestants)
         .into_par_iter()
         .map(|_| {
@@ -60,7 +68,7 @@ where
             let index_1 = rng.random_range(0..chromosomes.len());
             let index_2 = rng.random_range(0..chromosomes.len());
 
-            trace!(target="selection_events", method="tournament"; "Tournament between {} and {}", index_1, index_2);
+            crate::log_trace!(target="selection_events", method="tournament"; "Tournament between {} and {}", index_1, index_2);
 
             if chromosomes[index_1].fitness() >= chromosomes[index_2].fitness() {
                 index_1
@@ -69,14 +77,14 @@ where
             }
         })
         .collect();
-    #[cfg(target_arch = "wasm32")]
+    #[cfg(any(target_arch = "wasm32", not(feature = "parallel")))]
     let winners: Vec<usize> = (0..total_contestants)
         .map(|_| {
             let mut rng = crate::rng::make_rng();
             let index_1 = rng.random_range(0..chromosomes.len());
             let index_2 = rng.random_range(0..chromosomes.len());
 
-            trace!(target="selection_events", method="tournament"; "Tournament between {} and {}", index_1, index_2);
+            crate::log_trace!(target="selection_events", method="tournament"; "Tournament between {} and {}", index_1, index_2);
 
             if chromosomes[index_1].fitness() >= chromosomes[index_2].fitness() {
                 index_1
@@ -91,11 +99,11 @@ where
     for chunk in winners.chunks(num_parents) {
         if chunk.len() == num_parents {
             let group = chunk.to_vec();
-            trace!(target="selection_events", method="tournament"; "Mating group: {:?}", group);
+            crate::log_trace!(target="selection_events", method="tournament"; "Mating group: {:?}", group);
             mating.push(group);
         }
     }
 
-    debug!(target="selection_events", method="tournament"; "Tournament selection finished");
+    crate::log_debug!(target="selection_events", method="tournament"; "Tournament selection finished");
     mating
 }

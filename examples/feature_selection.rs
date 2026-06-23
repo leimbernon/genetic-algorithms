@@ -30,13 +30,14 @@ use genetic_algorithms::operations::{Crossover, Mutation, Selection, Survivor};
 use genetic_algorithms::population::Population;
 use genetic_algorithms::stats::GenerationStats;
 use genetic_algorithms::traits::{
-    ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig, SelectionConfig,
-    StoppingConfig,
+    ChromosomeT, ConfigurationT, CrossoverConfig, LinearChromosome, MutationConfig,
+    SelectionConfig, StoppingConfig,
 };
 use genetic_algorithms::LogObserver;
 use std::sync::Arc;
 
 fn main() {
+    let _ = env_logger::try_init();
     // --- Problem parameters ---
     const NUM_FEATURES: usize = 20;
     const POP_SIZE: usize = 80;

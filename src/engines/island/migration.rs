@@ -4,7 +4,6 @@ use crate::island::topology::neighbors;
 use crate::nsga2::pareto::ParetoIndividual;
 use crate::population::Population;
 use crate::traits::ChromosomeT;
-use log::debug;
 use rand::Rng;
 use std::sync::Arc;
 
@@ -27,6 +26,23 @@ use std::sync::Arc;
 ///
 /// Returns `GaError::MigrationError` if an island is empty or migration count exceeds
 /// population size.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::island::migration::migrate;
+/// use genetic_algorithms::island::configuration::IslandConfiguration;
+/// use genetic_algorithms::configuration::ProblemSolving;
+/// use genetic_algorithms::population::Population;
+/// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+///
+/// let config = IslandConfiguration::new().with_migration_count(1);
+/// let mut islands: Vec<Population<RangeChromosome<f64>>> = vec![
+///     Population::new(vec![RangeChromosome::default()]),
+///     Population::new(vec![RangeChromosome::default()]),
+/// ];
+/// let _ = migrate(&mut islands, &config, ProblemSolving::Minimization);
+/// ```
 pub fn migrate<U>(
     islands: &mut [Population<U>],
     config: &IslandConfiguration,
@@ -87,7 +103,7 @@ where
                     replace_random(&mut islands[dest_idx], source_migrants, &mut rng);
                 }
             }
-            debug!(
+            crate::log_debug!(
                 target: "island_events",
                 "Migrated {} individuals from island {} to island {} (policy={:?})",
                 source_migrants.len(),
@@ -252,6 +268,23 @@ where
 ///
 /// Returns `GaError::MigrationError` if an island is empty or migration count exceeds
 /// the island population size.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::island::migration::migrate_pareto;
+/// use genetic_algorithms::island::configuration::IslandConfiguration;
+/// use genetic_algorithms::nsga2::pareto::ParetoIndividual;
+/// use genetic_algorithms::chromosomes::Range as RangeChromosome;
+///
+/// let config = IslandConfiguration::new().with_migration_count(1);
+/// let ind = ParetoIndividual::new(RangeChromosome::default(), vec![0.0, 1.0]);
+/// let mut islands: Vec<Vec<ParetoIndividual<RangeChromosome<f64>>>> = vec![
+///     vec![ind.clone()],
+///     vec![ind.clone()],
+/// ];
+/// let _ = migrate_pareto(&mut islands, &config);
+/// ```
 pub fn migrate_pareto<U>(
     islands: &mut [Vec<ParetoIndividual<U>>],
     config: &IslandConfiguration,
@@ -292,7 +325,7 @@ where
         for &dest_idx in &dest_indices {
             let migrants = source_migrants.clone();
             replace_worst_pareto(&mut islands[dest_idx], &migrants);
-            debug!(
+            crate::log_debug!(
                 target: "island_events",
                 "Pareto migration: {} individuals from island {} to island {}",
                 migrants.len(),

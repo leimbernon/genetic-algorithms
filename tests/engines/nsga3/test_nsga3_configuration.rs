@@ -47,7 +47,9 @@ fn test_nsga3_with_reference_points_custom() {
     let config = Nsga3Configuration::new()
         .with_num_objectives(3)
         .with_reference_points(custom.clone());
-    let pts = config.effective_reference_points().expect("custom reference points should be Some");
+    let pts = config
+        .effective_reference_points()
+        .expect("custom reference points should be Some");
     assert_eq!(pts, custom);
 }
 

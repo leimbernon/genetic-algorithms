@@ -28,6 +28,13 @@ use crate::error::GaError;
 /// The penalty is computed per-generation based on constraint violations
 /// and then added to the raw fitness value. All variants work with
 /// minimization, maximization, and fixed-fitness problems.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::constraints::PenaltyStrategy;
+/// let strategy = PenaltyStrategy::Static { coefficient: 10.0 };
+/// ```
 #[derive(Clone, Debug, Default, PartialEq)]
 pub enum PenaltyStrategy {
     /// No penalty applied (default).
@@ -60,6 +67,15 @@ pub enum PenaltyStrategy {
 }
 
 /// Constraint handling method for comparisons in selection, survivor, and elite operations.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::constraints::ConstraintHandling;
+///
+/// let handling = ConstraintHandling::FeasibilityRules;
+/// assert_eq!(handling, ConstraintHandling::FeasibilityRules);
+/// ```
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum ConstraintHandling {
     /// Deb's feasibility rules (Deb, 2000):
@@ -73,6 +89,15 @@ pub enum ConstraintHandling {
 ///
 /// Each constraint violation should be >= 0 (0 means the constraint is satisfied).
 /// Returns the sum of all violations.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::constraints::total_violation;
+///
+/// assert_eq!(total_violation(&[0.5, 1.5, 0.0]), 2.0);
+/// assert_eq!(total_violation(&[]), 0.0);
+/// ```
 pub fn total_violation(violations: &[f64]) -> f64 {
     violations.iter().sum()
 }
@@ -80,6 +105,15 @@ pub fn total_violation(violations: &[f64]) -> f64 {
 /// Applies a static penalty to the raw fitness value.
 ///
 /// `fitness_penalized = fitness + R * total_violation`
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::constraints::apply_static_penalty;
+///
+/// let penalized = apply_static_penalty(10.0, 2.0, 5.0);
+/// assert_eq!(penalized, 20.0);
+/// ```
 pub fn apply_static_penalty(fitness: f64, total_violation: f64, coefficient: f64) -> f64 {
     fitness + coefficient * total_violation
 }
@@ -87,6 +121,15 @@ pub fn apply_static_penalty(fitness: f64, total_violation: f64, coefficient: f64
 /// Applies the Joines & Houck (1994) dynamic penalty.
 ///
 /// `fitness_penalized = fitness + (C * generation)^alpha * total_violation^beta`
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::constraints::apply_dynamic_penalty;
+///
+/// let penalized = apply_dynamic_penalty(5.0, 5.0, 5, 1.0, 1.0, 1.0);
+/// assert!((penalized - 30.0).abs() < 1e-9);
+/// ```
 pub fn apply_dynamic_penalty(
     fitness: f64,
     total_violation: f64,
@@ -104,6 +147,16 @@ pub fn apply_dynamic_penalty(
 ///
 /// Returns `Ok(())` if valid, or `Err(GaError::InvalidConstraintConfiguration)` with
 /// a descriptive message.
+///
+/// # Examples
+///
+/// ```rust
+/// use genetic_algorithms::constraints::{PenaltyStrategy, validate_penalty_strategy};
+///
+/// assert!(validate_penalty_strategy(&PenaltyStrategy::None).is_ok());
+/// assert!(validate_penalty_strategy(&PenaltyStrategy::Static { coefficient: 5.0 }).is_ok());
+/// assert!(validate_penalty_strategy(&PenaltyStrategy::Static { coefficient: -1.0 }).is_err());
+/// ```
 pub fn validate_penalty_strategy(strategy: &PenaltyStrategy) -> Result<(), GaError> {
     match strategy {
         PenaltyStrategy::None => Ok(()),

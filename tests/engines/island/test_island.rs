@@ -52,18 +52,8 @@ fn test_island_ga_heterogeneous_configs() {
             .with_fitness_fn(|_| 0.0);
 
     assert_eq!(island_ga.ga_configs.len(), 2);
-    assert_eq!(
-        island_ga
-            .config_for_island(0)
-            .limit().population_size,
-        20
-    );
-    assert_eq!(
-        island_ga
-            .config_for_island(1)
-            .limit().population_size,
-        30
-    );
+    assert_eq!(island_ga.config_for_island(0).limit().population_size, 20);
+    assert_eq!(island_ga.config_for_island(1).limit().population_size, 30);
 }
 
 #[test]
@@ -75,12 +65,7 @@ fn test_island_ga_config_for_island_cycles_last() {
 
     // Only one config — all islands should get the same one
     for i in 0..4 {
-        assert_eq!(
-            island_ga
-                .config_for_island(i)
-                .limit().population_size,
-            50
-        );
+        assert_eq!(island_ga.config_for_island(i).limit().population_size, 50);
     }
 }
 

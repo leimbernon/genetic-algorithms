@@ -18,7 +18,6 @@
 use crate::chromosomes::ChromosomeLength;
 use crate::error::GaError;
 use crate::traits::LinearChromosome;
-use log::debug;
 use rand::Rng;
 use std::borrow::Cow;
 
@@ -36,6 +35,16 @@ use std::borrow::Cow;
 /// * `individual` — The chromosome to mutate.
 /// * `chromosome_length` — Must be `ChromosomeLength::Variable { min, max }`.
 ///   Returns `Err(GaError::MutationError)` for `ChromosomeLength::Fixed`.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::length_mutation::length_insertion_mutation;
+/// use genetic_algorithms::chromosomes::{Binary, ChromosomeLength};
+/// let mut chromosome = Binary::new();
+/// let length = ChromosomeLength::Variable { min: 2, max: 10 };
+/// let _ = length_insertion_mutation(&mut chromosome, length);
+/// ```
 ///
 /// # Errors
 ///
@@ -59,12 +68,12 @@ pub fn length_insertion_mutation<U: LinearChromosome>(
     let current_len = individual.dna().len();
 
     if current_len == 0 {
-        debug!(target = "mutation_events", method = "length_insertion"; "Empty DNA, skipping insertion");
+        crate::log_debug!(target = "mutation_events", method = "length_insertion"; "Empty DNA, skipping insertion");
         return Ok(());
     }
 
     if current_len >= max {
-        debug!(target = "mutation_events", method = "length_insertion";
+        crate::log_debug!(target = "mutation_events", method = "length_insertion";
             "DNA length {} already at max {}, skipping insertion", current_len, max);
         return Ok(());
     }
@@ -84,7 +93,7 @@ pub fn length_insertion_mutation<U: LinearChromosome>(
     dna.insert(insert_pos, new_gene);
     individual.set_dna(Cow::Owned(dna));
 
-    debug!(target = "mutation_events", method = "length_insertion";
+    crate::log_debug!(target = "mutation_events", method = "length_insertion";
         "Inserted gene at position {} (new length: {})", insert_pos, current_len + 1);
 
     Ok(())
@@ -100,6 +109,16 @@ pub fn length_insertion_mutation<U: LinearChromosome>(
 /// * `individual` — The chromosome to mutate.
 /// * `chromosome_length` — Must be `ChromosomeLength::Variable { min, max }`.
 ///   Returns `Err(GaError::MutationError)` for `ChromosomeLength::Fixed`.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use genetic_algorithms::operations::mutation::length_mutation::length_deletion_mutation;
+/// use genetic_algorithms::chromosomes::{Binary, ChromosomeLength};
+/// let mut chromosome = Binary::new();
+/// let length = ChromosomeLength::Variable { min: 2, max: 10 };
+/// let _ = length_deletion_mutation(&mut chromosome, length);
+/// ```
 ///
 /// # Errors
 ///
@@ -123,12 +142,12 @@ pub fn length_deletion_mutation<U: LinearChromosome>(
     let current_len = individual.dna().len();
 
     if current_len == 0 {
-        debug!(target = "mutation_events", method = "length_deletion"; "Empty DNA, skipping deletion");
+        crate::log_debug!(target = "mutation_events", method = "length_deletion"; "Empty DNA, skipping deletion");
         return Ok(());
     }
 
     if current_len <= min {
-        debug!(target = "mutation_events", method = "length_deletion";
+        crate::log_debug!(target = "mutation_events", method = "length_deletion";
             "DNA length {} already at min {}, skipping deletion", current_len, min);
         return Ok(());
     }
@@ -144,7 +163,7 @@ pub fn length_deletion_mutation<U: LinearChromosome>(
     dna.remove(delete_pos);
     individual.set_dna(Cow::Owned(dna));
 
-    debug!(target = "mutation_events", method = "length_deletion";
+    crate::log_debug!(target = "mutation_events", method = "length_deletion";
         "Deleted gene at position {} (new length: {})", delete_pos, current_len - 1);
 
     Ok(())
