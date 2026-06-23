@@ -172,6 +172,8 @@ pub trait GaObserver<U: ChromosomeT>: Send + Sync {
 pub struct NoopObserver;
 
 impl<U: ChromosomeT> GaObserver<U> for NoopObserver {}
+impl<U: ChromosomeT> IslandGaObserver<U> for NoopObserver {}
+impl<U: ChromosomeT> Nsga2Observer<U> for NoopObserver {}
 
 /// Observer for [`IslandGa<U>`](crate::island::IslandGa) engine-specific events.
 ///

@@ -426,9 +426,9 @@ where
                 let mut miss_indices: Vec<usize> = Vec::new();
 
                 {
-                    let mut cache = cache_handle
-                        .lock()
-                        .map_err(|_| GaError::InternalError("fitness cache mutex poisoned".to_string()))?;
+                    let mut cache = cache_handle.lock().map_err(|_| {
+                        GaError::InternalError("fitness cache mutex poisoned".to_string())
+                    })?;
                     for (i, chromosome) in pop.iter().enumerate() {
                         let key = crate::fitness::cache::hash_dna(chromosome.dna());
                         match cache.get(key) {
@@ -450,9 +450,9 @@ where
                         miss_indices.len()
                     );
 
-                    let mut cache = cache_handle
-                        .lock()
-                        .map_err(|_| GaError::InternalError("fitness cache mutex poisoned".to_string()))?;
+                    let mut cache = cache_handle.lock().map_err(|_| {
+                        GaError::InternalError("fitness cache mutex poisoned".to_string())
+                    })?;
                     for (pos, &orig_i) in miss_indices.iter().enumerate() {
                         let f = miss_values[pos];
                         fitness_values[orig_i] = f;
@@ -679,8 +679,7 @@ where
 
             // Evaluate fitness (D-04: batch path replaces scalar loop)
             if self.batch_evaluator.is_some() {
-                self.batch_evaluate_pop(&mut pop)
-                    .expect("batch_evaluate_pop failed on initial population");
+                self.batch_evaluate_pop(&mut pop)?;
             } else {
                 for ind in &mut pop {
                     let f = (self.fitness_fn)(ind.dna());
@@ -730,9 +729,9 @@ where
                 // D-07: snapshot cache counters before this generation to compute deltas.
                 let (prev_cache_hits, prev_cache_misses) = match &self.fitness_cache {
                     Some(ch) => {
-                        let c = ch
-                            .lock()
-                            .map_err(|_| GaError::InternalError("fitness cache mutex poisoned".to_string()))?;
+                        let c = ch.lock().map_err(|_| {
+                            GaError::InternalError("fitness cache mutex poisoned".to_string())
+                        })?;
                         (c.hits(), c.misses())
                     }
                     None => (0, 0),
@@ -772,8 +771,7 @@ where
 
                 // D-04: batch-evaluate offspring after the build loop (collect-then-batch).
                 if self.batch_evaluator.is_some() {
-                    self.batch_evaluate_pop(&mut offspring)
-                        .expect("batch_evaluate_pop failed on offspring");
+                    self.batch_evaluate_pop(&mut offspring)?;
                 }
 
                 pop = offspring;
@@ -930,9 +928,9 @@ where
                     GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
                 // D-07: populate per-generation cache delta stats when a cache is active.
                 if let Some(ref ch) = self.fitness_cache {
-                    let c = ch
-                        .lock()
-                        .map_err(|_| GaError::InternalError("fitness cache mutex poisoned".to_string()))?;
+                    let c = ch.lock().map_err(|_| {
+                        GaError::InternalError("fitness cache mutex poisoned".to_string())
+                    })?;
                     stats.cache_hits = Some(c.hits().saturating_sub(prev_cache_hits));
                     stats.cache_misses = Some(c.misses().saturating_sub(prev_cache_misses));
                 }
@@ -1026,14 +1024,11 @@ where
         }
 
         // Unwrap global best (always set after at least one iteration)
-        let final_best = global_best
-            .ok_or_else(|| {
-                // Defensive fallback; should never be reached in practice since
-                // we always init at least one pop above.
-                GaError::InternalError(
-                    "CmaEngine: no best chromosome found (empty run)".to_string(),
-                )
-            })?;
+        let final_best = global_best.ok_or_else(|| {
+            // Defensive fallback; should never be reached in practice since
+            // we always init at least one pop above.
+            GaError::InternalError("CmaEngine: no best chromosome found (empty run)".to_string())
+        })?;
 
         let generations = all_stats.len();
         let all_stats_ref = all_stats.as_slice();

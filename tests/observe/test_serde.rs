@@ -15,7 +15,11 @@ use genetic_algorithms::island::configuration::{IslandConfiguration, MigrationPo
 use genetic_algorithms::island::topology::MigrationTopology;
 use genetic_algorithms::niching::configuration::NichingConfiguration;
 use genetic_algorithms::nsga2::configuration::{Nsga2Configuration, ObjectiveDirection};
-use genetic_algorithms::operations::{AlignmentStrategy, CauchyParams, CreepParams, Crossover, DifferentialParams, GaussianParams, LevyFlightParams, Mutation, NonUniformParams, PolynomialParams, Selection, SelfAdaptiveGaussianParams, Survivor};
+use genetic_algorithms::operations::{
+    AlignmentStrategy, CauchyParams, CreepParams, Crossover, DifferentialParams, GaussianParams,
+    LevyFlightParams, Mutation, NonUniformParams, PolynomialParams, Selection,
+    SelfAdaptiveGaussianParams, Survivor,
+};
 use genetic_algorithms::population::Population;
 use genetic_algorithms::stats::GenerationStats;
 use genetic_algorithms::ChromosomeLength;

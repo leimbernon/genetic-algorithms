@@ -38,15 +38,19 @@ fn sphere(dna: &[RangeGene<f64>]) -> f64 {
 
 fn init_population(n: usize) -> Vec<RangeChromosome<f64>> {
     let mut r = rng::make_rng();
-    (0..n).map(|_| {
-        let dna: Vec<RangeGene<f64>> = (0..DIMENSIONS).map(|j| {
-            let v = r.random::<f64>() * (SEARCH_HI - SEARCH_LO) + SEARCH_LO;
-            RangeGene::new(j as i32, vec![(SEARCH_LO, SEARCH_HI)], v)
-        }).collect();
-        let mut c = <RangeChromosome<f64> as Default>::default();
-        c.set_dna(Cow::Owned(dna));
-        c
-    }).collect()
+    (0..n)
+        .map(|_| {
+            let dna: Vec<RangeGene<f64>> = (0..DIMENSIONS)
+                .map(|j| {
+                    let v = r.random::<f64>() * (SEARCH_HI - SEARCH_LO) + SEARCH_LO;
+                    RangeGene::new(j as i32, vec![(SEARCH_LO, SEARCH_HI)], v)
+                })
+                .collect();
+            let mut c = <RangeChromosome<f64> as Default>::default();
+            c.set_dna(Cow::Owned(dna));
+            c
+        })
+        .collect()
 }
 
 fn main() {
@@ -67,11 +71,8 @@ fn main() {
 
     let max_ages = config.max_ages();
 
-    let mut engine = AlpsEngine::<RangeChromosome<f64>>::new(
-        config,
-        init_population,
-        sphere,
-    ).expect("AlpsEngine::new should succeed");
+    let mut engine = AlpsEngine::<RangeChromosome<f64>>::new(config, init_population, sphere)
+        .expect("AlpsEngine::new should succeed");
 
     println!("== ALPS (Fibonacci): {DIMENSIONS}D Sphere ==");
     println!("layers=5, layer_size=20, age_gap=5, inject_every=10");
@@ -86,9 +87,15 @@ fn main() {
         println!("  Layer {i}: {} individuals", layer.len());
     }
     println!("Best fitness: {:.8}", result.best_fitness);
-    let dna_str: Vec<String> = result.best.dna().iter()
+    let dna_str: Vec<String> = result
+        .best
+        .dna()
+        .iter()
         .map(|g| format!("{:.5}", g.real_value()))
         .collect();
     println!("Best DNA:    [{}]", dna_str.join(", "));
-    assert!(result.best_fitness.is_finite(), "best_fitness must be finite");
+    assert!(
+        result.best_fitness.is_finite(),
+        "best_fitness must be finite"
+    );
 }

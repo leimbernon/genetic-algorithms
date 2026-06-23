@@ -155,7 +155,7 @@ use genetic_algorithms::configuration::ProblemSolving;
 let config = CmaConfiguration::default_for_dim(10)
     .with_sigma0(3.4)
     .with_restart_strategy(RestartStrategy::Ipop {
-        population_scale: 2,
+        population_scale: 2.0,
         stagnation_threshold: 50,
         max_restarts: 3,
     })

@@ -17,6 +17,7 @@ use crate::error::GaError;
 use crate::operations;
 use crate::population::Population;
 use crate::traits::{GeneT, LinearChromosome, OperatorCompat};
+use crate::chromosomes::ChromosomeLength;
 use std::collections::HashSet;
 
 /// Validate a GA configuration and/or population before running.
@@ -72,6 +73,12 @@ where
 
         //2.6 Condition checker for the couples
         number_of_couples_is_set(configuration)?;
+
+        //2.7 Validate ChromosomeLength::Variable bounds
+        validate_chromosome_length(configuration)?;
+
+        //2.8 Validate length_penalty is non-negative
+        validate_length_penalty(configuration)?;
     }
 
     Ok(())
@@ -207,6 +214,46 @@ where
             return Err(GaError::ConfigurationError(format!(
                 "Mutation::{:?} is not valid for this chromosome type. Valid mutations: {:?}",
                 configuration.mutation_configuration.method, valid
+            )));
+        }
+    }
+    Ok(())
+}
+
+/// Validates `ChromosomeLength::Variable { min, max }` bounds.
+///
+/// Enforces `min >= 1` and `min <= max` to prevent nonsensical configurations
+/// that would cause undefined behavior in insertion/deletion mutation operators.
+pub fn validate_chromosome_length(configuration: &GaConfiguration) -> Result<(), GaError> {
+    match configuration.limit_configuration.chromosome_length {
+        ChromosomeLength::Variable { min, max } => {
+            if min == 0 {
+                return Err(GaError::ConfigurationError(
+                    "ChromosomeLength::Variable requires min >= 1, got min = 0".to_string(),
+                ));
+            }
+            if min > max {
+                return Err(GaError::ConfigurationError(format!(
+                    "ChromosomeLength::Variable requires min <= max, got min = {}, max = {}",
+                    min, max
+                )));
+            }
+        }
+        ChromosomeLength::Fixed(_) => {}
+    }
+    Ok(())
+}
+
+/// Validates that `length_penalty` is non-negative.
+///
+/// A negative length penalty would reverse parsimony pressure (penalizing shorter
+/// chromosomes instead of longer ones), which contradicts the documented semantics.
+pub fn validate_length_penalty(configuration: &GaConfiguration) -> Result<(), GaError> {
+    if let Some(penalty) = configuration.length_penalty {
+        if penalty < 0.0 {
+            return Err(GaError::ConfigurationError(format!(
+                "length_penalty must be >= 0.0, got {}",
+                penalty
             )));
         }
     }

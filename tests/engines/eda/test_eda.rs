@@ -442,7 +442,10 @@ fn eda_12_bernoulli_cache_enabled() {
         .with_fitness_cache_size(128);
     let mut engine = EdaEngine::new(config, |n| random_binary_pop(n, 10), onemax);
     let result = engine.run().expect("engine run should succeed");
-    assert!(result.best_fitness >= 0.0, "best_fitness must be non-negative with cache");
+    assert!(
+        result.best_fitness >= 0.0,
+        "best_fitness must be non-negative with cache"
+    );
     assert_eq!(result.generations, 20);
 }
 
@@ -459,7 +462,10 @@ fn eda_13_gaussian_cache_enabled() {
         .with_fitness_cache_size(128);
     let mut engine = EdaRealEngine::new(config, |n| random_range_pop(n, 5, -3.0, 3.0, 11), sphere);
     let result = engine.run().expect("engine run should succeed");
-    assert!(result.best_fitness.is_finite(), "best_fitness must be finite with cache");
+    assert!(
+        result.best_fitness.is_finite(),
+        "best_fitness must be finite with cache"
+    );
     assert_eq!(result.generations, 20);
 }
 
@@ -518,8 +524,7 @@ fn test_real_run_empty_init_returns_error() {
         selection_ratio: 0.5,
         fitness_cache_size: None,
     };
-    let mut engine =
-        EdaRealEngine::new(config, |_n| Vec::<RangeChromosome<f64>>::new(), sphere);
+    let mut engine = EdaRealEngine::new(config, |_n| Vec::<RangeChromosome<f64>>::new(), sphere);
     assert!(
         matches!(engine.run(), Err(GaError::InitializationError(_))),
         "EdaRealEngine with empty init_fn should return InitializationError"

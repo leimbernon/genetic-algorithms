@@ -1,5 +1,30 @@
 # Milestones
 
+## v3.0.0 Advanced Representations, Alternative Strategies & Architecture Simplification (Shipped: 2026-06-23)
+
+**Phases:** 47–84 (38 phases, 121 plans) | **LOC:** 42,000+ Rust | **Tests:** 291 passing
+
+**Key accomplishments:**
+
+- Architecture audit: `ChromosomeT` split into minimal core + `LinearChromosome` supertrait; `Reporter<U>` removed; `ChromosomeLength` enum; `StoppingCriteria` flattened; `MIGRATION.md` published
+- 3 new genotype types: `UniqueChromosome<T>` (permutations), `MultiRangeChromosome<T>` (per-gene bounds), `MultiUniqueChromosome<T>` (multi-group permutations)
+- `Strategy<U>` trait + `HillClimbEngine` (Stochastic/SteepestAscent) + `PermutateEngine` with safety gate
+- Lexicase selection (standard + epsilon) with `MultiCaseFitness`/`VectorFitness` trait
+- Multi-parent crossover: UNDX, SPX, PCX with `RealValued` marker trait; `SelfAdaptiveGaussian` mutation
+- Variable-length chromosomes: `ChromosomeLength::Variable`, Insertion/Deletion mutation, `VariableLength` crossover, parsimony pressure
+- Tree chromosome + `GpGa<U>` engine: `TreeChromosome` supertrait, ramped half-and-half init, subtree crossover/mutation, bloat control, `serde_stacker` for deep trees
+- 3 new engines: CMA-ES (with IPOP/BIPOP restart), PSO (configurable topology), EDA/UMDA (Bernoulli + Gaussian)
+- Batch fitness evaluation, fitness cache extension, surrogate-assisted evaluation
+- Build performance: `criterion` → `divan`, `parallel` feature gating `rayon`, `engines/ga.rs` split into 11 submodules
+- Prelude module, per-engine convergence tests, 29 runnable examples
+- Phase 84: Fixed critical bugs (age_based sort order, mu_comma_lambda offspring detection, CMA .expect() panics, PSO observer protocol, ChromosomeLength validator)
+
+**Known deferred items:** Phase 67 VERIFICATION.md human_needed (1 item). See `.planning/milestones/v3.0.0-MILESTONE-AUDIT.md`.
+
+**Archive:** `.planning/milestones/v3.0.0-ROADMAP.md`, `.planning/milestones/v3.0.0-REQUIREMENTS.md`
+
+---
+
 ## v2.4.0 — Observer Integration, New Operators, Advanced Multi-Objective & Framework Extensions (Shipped: 2026-05-18)
 
 Wired GaObserver into all 4 alt-metaheuristic engines, expanded the operator library, added 5 multi-objective engines, multi-objective quality indicators, full framework extensions suite, standard benchmark functions, WASM support, and a documentation refactor.

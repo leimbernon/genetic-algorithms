@@ -394,14 +394,14 @@ fn test_age_based_survivor() {
 
     age::age_based(&mut population, 6);
 
-    //Tests that the population has 6 chromosomes
+    //Tests that the population has 6 chromosomes (youngest first)
     assert_eq!(population.len(), 6);
-    assert_eq!(population[0].age(), 3);
-    assert_eq!(population[1].age(), 3);
-    assert_eq!(population[2].age(), 2);
-    assert_eq!(population[3].age(), 2);
-    assert_eq!(population[4].age(), 2);
-    assert_eq!(population[5].age(), 2);
+    assert_eq!(population[0].age(), 0);
+    assert_eq!(population[1].age(), 0);
+    assert_eq!(population[2].age(), 1);
+    assert_eq!(population[3].age(), 1);
+    assert_eq!(population[4].age(), 1);
+    assert_eq!(population[5].age(), 1);
 }
 
 #[test]
@@ -840,7 +840,7 @@ fn test_age_survivor_target_one() {
         .collect();
     age::age_based(&mut population, 1);
     assert_eq!(population.len(), 1);
-    assert_eq!(population[0].age(), 4); // Oldest
+    assert_eq!(population[0].age(), 0); // Youngest
 }
 
 // --- Age-based with all same age ---

@@ -12,10 +12,10 @@
 //! // no_run: API illustration — ga and my_metrics_observer must be defined by the user
 //! use std::sync::Arc;
 //! use genetic_algorithms::{AllObserver, CompositeObserver};
-//! use genetic_algorithms::observer::LogObserver;
+//! use genetic_algorithms::observer::NoopObserver;
 //!
 //! // let composite = CompositeObserver::new()
-//! //     .register(Arc::new(LogObserver))
+//! //     .register(Arc::new(NoopObserver))
 //! //     .register(Arc::new(my_metrics_observer));
 //! //
 //! // ga.with_observer(Arc::new(composite));
@@ -48,11 +48,11 @@ use std::time::Duration;
 ///
 /// ```rust,no_run
 /// use std::sync::Arc;
-/// use genetic_algorithms::observer::{CompositeObserver, LogObserver};
+/// use genetic_algorithms::observer::{CompositeObserver, NoopObserver};
 /// use genetic_algorithms::chromosomes::Binary;
 ///
 /// let composite = CompositeObserver::<Binary>::new()
-///     .register(Arc::new(LogObserver));
+///     .register(Arc::new(NoopObserver));
 /// ```
 pub struct CompositeObserver<U: ChromosomeT> {
     observers: Vec<Arc<dyn AllObserver<U> + Send + Sync>>,

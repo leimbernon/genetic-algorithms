@@ -17,21 +17,19 @@ fn make_chromosome(fitness: f64, age: usize) -> Chromosome {
     }
 }
 
-// In the GA loop, offspring are stamped with `set_age(age)` where `age` is the
-// generation counter (starts at 1, increments each generation). Parents have
-// lower age values from prior generations. The (mu,lambda) survivor selection
-// keeps only the freshest individuals — those with the maximum age in the merged
-// population — which are always the current generation's offspring.
+// In the GA loop, offspring are stamped with `set_age(0)` when created.
+// Parents have age > 0 from prior generations (incremented each gen).
+// The (mu,lambda) survivor selection keeps only age-0 individuals (the offspring).
 
 #[test]
 fn test_mu_comma_lambda_only_keeps_offspring() {
-    // Simulate generation 5: offspring age=5, parents age < 5.
+    // Offspring have age=0, parents have age > 0.
     let mut chromosomes = vec![
         make_chromosome(10.0, 3), // parent -- should be discarded
-        make_chromosome(5.0, 5),  // offspring (age == current gen)
+        make_chromosome(5.0, 0),  // offspring (age == 0)
         make_chromosome(8.0, 1),  // parent -- should be discarded
-        make_chromosome(3.0, 5),  // offspring (age == current gen)
-        make_chromosome(7.0, 5),  // offspring (age == current gen)
+        make_chromosome(3.0, 0),  // offspring (age == 0)
+        make_chromosome(7.0, 0),  // offspring (age == 0)
     ];
     let config = LimitConfiguration {
         problem_solving: ProblemSolving::Maximization,
@@ -45,17 +43,17 @@ fn test_mu_comma_lambda_only_keeps_offspring() {
     assert_eq!(chromosomes[0].fitness(), 7.0);
     assert_eq!(chromosomes[1].fitness(), 5.0);
     // Verify the parent with fitness 10.0 was discarded
-    assert!(chromosomes.iter().all(|c| c.age() == 5));
+    assert!(chromosomes.iter().all(|c| c.age() == 0));
 }
 
 #[test]
 fn test_mu_comma_lambda_minimization() {
-    // Simulate generation 3: offspring age=3, parent age=2.
+    // Offspring have age=0, parents have age > 0.
     let mut chromosomes = vec![
         make_chromosome(1.0, 2),  // parent -- discarded even though best
-        make_chromosome(10.0, 3), // offspring
-        make_chromosome(4.0, 3),  // offspring
-        make_chromosome(6.0, 3),  // offspring
+        make_chromosome(10.0, 0), // offspring
+        make_chromosome(4.0, 0),  // offspring
+        make_chromosome(6.0, 0),  // offspring
     ];
     let config = LimitConfiguration {
         problem_solving: ProblemSolving::Minimization,
@@ -86,12 +84,12 @@ fn test_mu_comma_lambda_empty_population() {
 
 #[test]
 fn test_mu_comma_lambda_fewer_offspring_than_target() {
-    // Simulate generation 7: offspring age=7, parents age < 7.
+    // Offspring have age=0, parents have age > 0.
     let mut chromosomes = vec![
         make_chromosome(10.0, 5), // parent -- discarded
-        make_chromosome(3.0, 7),  // offspring
+        make_chromosome(3.0, 0),  // offspring
         make_chromosome(8.0, 2),  // parent -- discarded
-        make_chromosome(6.0, 7),  // offspring
+        make_chromosome(6.0, 0),  // offspring
     ];
     let config = LimitConfiguration {
         problem_solving: ProblemSolving::Maximization,
@@ -102,14 +100,13 @@ fn test_mu_comma_lambda_fewer_offspring_than_target() {
 
     // Only 2 offspring exist, target is 5 -- keep all offspring
     assert_eq!(chromosomes.len(), 2);
-    assert!(chromosomes.iter().all(|c| c.age() == 7));
+    assert!(chromosomes.iter().all(|c| c.age() == 0));
 }
 
 #[test]
 fn test_mu_comma_lambda_no_offspring() {
-    // Edge case: population with all same-age individuals (e.g., generation 1
-    // where all start with age=1). All are treated as the current generation's
-    // "offspring" since they share the max age — none are discarded.
+    // Edge case: all individuals have age > 0 (no offspring). With the age-0
+    // convention, this means no one survives — the population becomes empty.
     let mut chromosomes = vec![
         make_chromosome(10.0, 1),
         make_chromosome(5.0, 1),
@@ -122,6 +119,6 @@ fn test_mu_comma_lambda_no_offspring() {
 
     mu_comma_lambda(&mut chromosomes, 3, config);
 
-    // All share the max age (1), so all survive (all are "youngest").
-    assert_eq!(chromosomes.len(), 3);
+    // No age-0 individuals → all discarded.
+    assert_eq!(chromosomes.len(), 0);
 }

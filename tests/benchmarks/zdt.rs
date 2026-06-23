@@ -1,7 +1,5 @@
 #[cfg(feature = "benchmarks")]
-use genetic_algorithms::benchmarks::zdt::{
-    ZDT1, ZDT2, ZDT3, ZDT4, ZDT5, ZDT6,
-};
+use genetic_algorithms::benchmarks::zdt::{ZDT1, ZDT2, ZDT3, ZDT4, ZDT5, ZDT6};
 #[cfg(feature = "benchmarks")]
 use genetic_algorithms::benchmarks::BenchmarkFn;
 

@@ -1,7 +1,5 @@
 #[cfg(feature = "benchmarks")]
-use genetic_algorithms::benchmarks::dtlz::{
-    DTLZ1, DTLZ2, DTLZ3, DTLZ4, DTLZ5, DTLZ6, DTLZ7,
-};
+use genetic_algorithms::benchmarks::dtlz::{DTLZ1, DTLZ2, DTLZ3, DTLZ4, DTLZ5, DTLZ6, DTLZ7};
 #[cfg(feature = "benchmarks")]
 use genetic_algorithms::benchmarks::BenchmarkFn;
 
@@ -148,8 +146,8 @@ fn test_dtlz7_return_length() {
 fn test_dtlz7_first_two_linear() {
     let dtlz7 = DTLZ7::new(22, 3);
     let x = [
-        0.2_f64, 0.7, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
-        0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+        0.2_f64, 0.7, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+        0.5, 0.5, 0.5, 0.5, 0.5,
     ];
     let result = dtlz7.evaluate(&x);
     assert!(

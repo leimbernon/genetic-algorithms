@@ -21,7 +21,7 @@
 //! use genetic_algorithms::initializers::range_random_initialization;
 //! use genetic_algorithms::operations::{Crossover, GaussianParams, Mutation, Selection, Survivor};
 //! use genetic_algorithms::traits::{ConfigurationT, CrossoverConfig, MutationConfig, SelectionConfig, StoppingConfig};
-//! use genetic_algorithms::{ChromosomeLength, CompositeObserver, LogObserver};
+//! use genetic_algorithms::{ChromosomeLength, CompositeObserver, NoopObserver};
 //! use std::sync::Arc;
 //!
 //! let fitness_fn = |dna: &[RangeGenotype<f64>]| -> f64 {
@@ -48,7 +48,7 @@
 //!     .with_survivor_method(Survivor::Fitness)
 //!     .with_problem_solving(ProblemSolving::Minimization)
 //!     .with_max_generations(500)
-//!     .with_observer(Arc::new(CompositeObserver::new().register(Arc::new(LogObserver))))
+//!     .with_observer(Arc::new(CompositeObserver::new().register(Arc::new(NoopObserver))))
 //!     .build()
 //!     .expect("Invalid configuration");
 //!

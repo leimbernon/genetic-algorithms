@@ -339,9 +339,9 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
         // Cache snapshot for per-generation delta stats.
         let (mut prev_cache_hits, mut prev_cache_misses) = match &self.fitness_cache {
             Some(ch) => {
-                let c = ch
-                    .lock()
-                    .map_err(|_| GaError::InternalError("fitness cache mutex poisoned".to_string()))?;
+                let c = ch.lock().map_err(|_| {
+                    GaError::InternalError("fitness cache mutex poisoned".to_string())
+                })?;
                 (c.hits(), c.misses())
             }
             None => (0, 0),
@@ -410,9 +410,9 @@ impl<U: LinearChromosome + Clone> EdaEngine<U> {
             let mut stats =
                 GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
             if let Some(ref ch) = self.fitness_cache {
-                let c = ch
-                    .lock()
-                    .map_err(|_| GaError::InternalError("fitness cache mutex poisoned".to_string()))?;
+                let c = ch.lock().map_err(|_| {
+                    GaError::InternalError("fitness cache mutex poisoned".to_string())
+                })?;
                 stats.cache_hits = Some(c.hits().saturating_sub(prev_cache_hits));
                 stats.cache_misses = Some(c.misses().saturating_sub(prev_cache_misses));
                 prev_cache_hits = c.hits();
@@ -705,9 +705,9 @@ where
         // Cache snapshot for per-generation delta stats.
         let (mut prev_cache_hits, mut prev_cache_misses) = match &self.fitness_cache {
             Some(ch) => {
-                let c = ch
-                    .lock()
-                    .map_err(|_| GaError::InternalError("fitness cache mutex poisoned".to_string()))?;
+                let c = ch.lock().map_err(|_| {
+                    GaError::InternalError("fitness cache mutex poisoned".to_string())
+                })?;
                 (c.hits(), c.misses())
             }
             None => (0, 0),
@@ -774,9 +774,9 @@ where
             let mut stats =
                 GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
             if let Some(ref ch) = self.fitness_cache {
-                let c = ch
-                    .lock()
-                    .map_err(|_| GaError::InternalError("fitness cache mutex poisoned".to_string()))?;
+                let c = ch.lock().map_err(|_| {
+                    GaError::InternalError("fitness cache mutex poisoned".to_string())
+                })?;
                 stats.cache_hits = Some(c.hits().saturating_sub(prev_cache_hits));
                 stats.cache_misses = Some(c.misses().saturating_sub(prev_cache_misses));
                 prev_cache_hits = c.hits();

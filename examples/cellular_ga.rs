@@ -38,15 +38,19 @@ fn sphere(dna: &[RangeGene<f64>]) -> f64 {
 
 fn init_population(n: usize) -> Vec<RangeChromosome<f64>> {
     let mut r = rng::make_rng();
-    (0..n).map(|_| {
-        let dna: Vec<RangeGene<f64>> = (0..DIMENSIONS).map(|j| {
-            let v = r.random::<f64>() * (SEARCH_HI - SEARCH_LO) + SEARCH_LO;
-            RangeGene::new(j as i32, vec![(SEARCH_LO, SEARCH_HI)], v)
-        }).collect();
-        let mut c = <RangeChromosome<f64> as Default>::default();
-        c.set_dna(Cow::Owned(dna));
-        c
-    }).collect()
+    (0..n)
+        .map(|_| {
+            let dna: Vec<RangeGene<f64>> = (0..DIMENSIONS)
+                .map(|j| {
+                    let v = r.random::<f64>() * (SEARCH_HI - SEARCH_LO) + SEARCH_LO;
+                    RangeGene::new(j as i32, vec![(SEARCH_LO, SEARCH_HI)], v)
+                })
+                .collect();
+            let mut c = <RangeChromosome<f64> as Default>::default();
+            c.set_dna(Cow::Owned(dna));
+            c
+        })
+        .collect()
 }
 
 fn main() {
@@ -56,7 +60,7 @@ fn main() {
     // 10×10 grid = 100 individuals
     let config = CellularConfiguration::default()
         .with_grid(10, 10)
-        .with_neighborhood(Neighborhood::Moore)   // 8-cell neighborhood
+        .with_neighborhood(Neighborhood::Moore) // 8-cell neighborhood
         .with_update_mode(UpdateMode::Asynchronous)
         .with_selection(Selection::Tournament)
         .with_crossover(Crossover::Uniform)
@@ -65,11 +69,8 @@ fn main() {
         .with_problem_solving(ProblemSolving::Minimization)
         .with_fitness_target(1e-4);
 
-    let mut engine = CellularEngine::<RangeChromosome<f64>>::new(
-        config,
-        init_population,
-        sphere,
-    ).expect("CellularEngine::new should succeed");
+    let mut engine = CellularEngine::<RangeChromosome<f64>>::new(config, init_population, sphere)
+        .expect("CellularEngine::new should succeed");
 
     println!("== Cellular GA (Moore, Async): {DIMENSIONS}D Sphere ==");
     println!("grid=10×10, max_generations=300, target=1e-4");
@@ -79,9 +80,15 @@ fn main() {
 
     println!("Generations: {}", result.generations);
     println!("Best fitness: {:.8}", result.best_fitness);
-    let dna_str: Vec<String> = result.best.dna().iter()
+    let dna_str: Vec<String> = result
+        .best
+        .dna()
+        .iter()
         .map(|g| format!("{:.5}", g.real_value()))
         .collect();
     println!("Best DNA:    [{}]", dna_str.join(", "));
-    assert!(result.best_fitness.is_finite(), "best_fitness must be finite");
+    assert!(
+        result.best_fitness.is_finite(),
+        "best_fitness must be finite"
+    );
 }

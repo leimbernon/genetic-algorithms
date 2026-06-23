@@ -54,7 +54,11 @@ fn build_ga(selection: Selection) -> Ga<MultiCaseChromosome> {
 fn test_ga_run_lexicase_completes() {
     let mut ga = build_ga(Selection::Lexicase);
     let result = ga.run_lexicase();
-    assert!(result.is_ok(), "run_lexicase() returned Err: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "run_lexicase() returned Err: {:?}",
+        result.err()
+    );
     let population = result.unwrap();
     assert!(
         !population.chromosomes.is_empty(),
@@ -90,7 +94,11 @@ fn test_ga_run_epsilon_lexicase_completes() {
             genetic_algorithms::initializers::generic_random_initialization::<MultiCaseChromosome>,
         );
     let result = ga.run_lexicase();
-    assert!(result.is_ok(), "run_lexicase() with EpsilonLexicase returned Err: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "run_lexicase() with EpsilonLexicase returned Err: {:?}",
+        result.err()
+    );
     let population = result.unwrap();
     assert!(
         !population.chromosomes.is_empty(),

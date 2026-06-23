@@ -267,4 +267,3 @@ impl LocalSearchOperator for HillClimbingConfig {
         Ok(improvements)
     }
 }
-

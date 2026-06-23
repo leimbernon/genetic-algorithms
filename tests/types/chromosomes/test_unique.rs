@@ -74,7 +74,10 @@ fn pmx_crossover_accepted_at_build() {
 /// Ga::build() with Mutation::Gaussian + UniqueChromosome<i32> returns ConfigurationError.
 #[test]
 fn gaussian_mutation_rejected_at_build() {
-    let result = make_ga(Crossover::Pmx, Mutation::Gaussian(GaussianParams { sigma: None }));
+    let result = make_ga(
+        Crossover::Pmx,
+        Mutation::Gaussian(GaussianParams { sigma: None }),
+    );
     assert!(
         matches!(result, Err(GaError::ConfigurationError(_))),
         "Expected ConfigurationError for Gaussian mutation with UniqueChromosome"

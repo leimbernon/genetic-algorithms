@@ -421,5 +421,3 @@ pub fn compute_normalized_reward(
     let denom = best_fitness.abs().max(f64::EPSILON);
     delta / denom
 }
-
-

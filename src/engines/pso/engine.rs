@@ -327,9 +327,6 @@ where
             }
         }
 
-        // ── Observer: run start ───────────────────────────────────────────────
-        self.notify(|obs| obs.on_run_start());
-
         // ── Determine population size (default 30 when 0) ────────────────────
         let pop_size = if self.config.population_size == 0 {
             30
@@ -340,12 +337,16 @@ where
         // ── Build initial population ──────────────────────────────────────────
         let mut pop: Vec<U> = (self.init_fn)(pop_size.max(1));
 
-        // Guard: empty population from user's init_fn
+        // Guard: empty population from user's init_fn (before observer start
+        // to avoid firing on_run_start without a matching on_run_end).
         if pop.is_empty() {
             return Err(GaError::InitializationError(
                 "PsoEngine: init_fn returned an empty population".to_string(),
             ));
         }
+
+        // ── Observer: run start ───────────────────────────────────────────────
+        self.notify(|obs| obs.on_run_start());
 
         // ── Evaluate initial population fitness ───────────────────────────────
         for ind in &mut pop {
@@ -369,9 +370,9 @@ where
         // Cache snapshot for per-generation delta stats.
         let (mut prev_cache_hits, mut prev_cache_misses) = match &self.fitness_cache {
             Some(ch) => {
-                let c = ch
-                    .lock()
-                    .map_err(|_| GaError::InternalError("fitness cache mutex poisoned".to_string()))?;
+                let c = ch.lock().map_err(|_| {
+                    GaError::InternalError("fitness cache mutex poisoned".to_string())
+                })?;
                 (c.hits(), c.misses())
             }
             None => (0, 0),
@@ -484,9 +485,9 @@ where
             let mut stats =
                 GenerationStats::from_fitness_values(gen, &fitness_values, is_maximization);
             if let Some(ref ch) = self.fitness_cache {
-                let c = ch
-                    .lock()
-                    .map_err(|_| GaError::InternalError("fitness cache mutex poisoned".to_string()))?;
+                let c = ch.lock().map_err(|_| {
+                    GaError::InternalError("fitness cache mutex poisoned".to_string())
+                })?;
                 stats.cache_hits = Some(c.hits().saturating_sub(prev_cache_hits));
                 stats.cache_misses = Some(c.misses().saturating_sub(prev_cache_misses));
                 prev_cache_hits = c.hits();
@@ -509,10 +510,15 @@ where
         let all_stats_ref = all_stats.as_slice();
         self.notify(|obs| obs.on_run_end(termination_cause, all_stats_ref));
 
+        // CR-01: Verify best chromosome fitness matches best_fitness to
+        // guarantee result.best.fitness() == result.best_fitness.
+        let verified_fitness = (self.fitness_fn)(best.dna());
+        best.set_fitness(verified_fitness);
+
         Ok(PsoResult {
             population: pop,
             best,
-            best_fitness,
+            best_fitness: verified_fitness,
             generations,
         })
     }
