@@ -1274,6 +1274,20 @@ where
         //Before starting the run, we will check the conditions
         ValidatorFactory::validate::<U>(Some(&self.configuration), None, Some(&self.alleles))?;
 
+        // Guard: Lexicase / EpsilonLexicase require VectorFitness and must be run via
+        // run_lexicase() or run_lexicase_with_callback(), not the standard run() path.
+        if matches!(
+            self.configuration.selection_configuration.method,
+            crate::operations::Selection::Lexicase | crate::operations::Selection::EpsilonLexicase
+        ) {
+            return Err(GaError::ConfigurationError(
+                "Lexicase / EpsilonLexicase selection requires a chromosome implementing \
+                 VectorFitness; use run_lexicase() or run_lexicase_with_callback() instead of \
+                 run() / run_with_callback()."
+                    .to_string(),
+            ));
+        }
+
         // Apply RNG seed if configured (must be done before any random operations)
         crate::rng::set_seed(self.configuration.rng_seed);
 
