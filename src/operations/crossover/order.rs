@@ -1,7 +1,7 @@
 //! Order crossover (OX) implementation.
 
 use crate::error::GaError;
-use crate::traits::LinearChromosome;
+use crate::traits::{GeneT, LinearChromosome};
 use rand::Rng;
 use std::borrow::Cow;
 use std::collections::HashSet;
@@ -37,6 +37,14 @@ pub fn order<U: LinearChromosome>(parent_1: &U, parent_2: &U) -> Result<Vec<U>, 
     if len < 3 {
         return Err(GaError::CrossoverError(
             "DNA length must be at least 3 for order crossover".to_string(),
+        ));
+    }
+
+    let ids_1: HashSet<i32> = parent_1.dna().iter().map(|g| g.id()).collect();
+    let ids_2: HashSet<i32> = parent_2.dna().iter().map(|g| g.id()).collect();
+    if ids_1.len() != len || ids_2.len() != len {
+        return Err(GaError::CrossoverError(
+            "Order crossover requires unique gene IDs in both parents (permutation)".to_string(),
         ));
     }
 
