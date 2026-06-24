@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.0.0] - 2026-06-17
+## [3.0.0] - 2026-06-24
 
 v3.0.0 is a major release focused on **advanced representations, alternative metaheuristics, and architecture simplification**. It introduces five new optimization engines (CMA-ES, PSO, EDA, HillClimb, Permutate), three new genotypes for permutation and per-gene-bounded problems, tree chromosomes for Genetic Programming, variable-length chromosomes, lexicase selection, batch & surrogate-assisted fitness evaluation, and removes the long-deprecated `Reporter<U>` API. See [`MIGRATION.md`](./MIGRATION.md) for migration recipes for every breaking change.
 
